@@ -1,3 +1,13 @@
+Mon Jun  1 11:26:39 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* read-mail.jl (rm-open-mailboxes): list of buffers, this stops
+	buffers being gc'd while they're still in use (references to
+	buffers are by marks, which are `weak' references)
+
+	* rm-restrict.jl: minor changes, renamed rule functions from
+	`rm-rule-X' to `rm-rule:X', added a `(body REGEXP)' rule to
+	search the body of the message
+
 Sun May 31 12:06:02 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* read-mail.jl: more work. pretty much works. getting new mail
