@@ -1,5 +1,17 @@
 1998-10-29  John Harper  <john@dcs.warwick.ac.uk>
 
+	* completion.jl (complete-at-point, show-completions): these
+	replace the -buffer- completion commands. They use the list of
+	completion generators completion-hooks to do the real work. The
+	default generator is complete-from-buffer
+	* lisp.jl (lisp-complete-sexp): this is now just a generator,
+	put in the completion-hooks in Lisp buffers
+
+	* prompt.jl (prompt-complete-function,
+	prompt-list-completions-function): deleted. If
+	prompt-completion-function is `t', call complete-at-point
+	(before-prompt-hook): new hook
+
 	* completion.jl (completion-insert): new function to handle
 	inserting from a list of completions at the cursor
 	(complete-from-buffer, show-buffer-completions): new commands
