@@ -567,8 +567,10 @@ struct alloc_data {
     struct alloc_data *next;
     size_t size;
     void *function;
-    char data[0] CONCAT(ALIGN_, rep_MALLOC_ALIGNMENT);
+    double unused;			/* double to force good alignment */
 };
+
+#define SIZEOF_ALLOC_DATA (sizeof (struct alloc_data) - sizeof (double))
 
 static struct alloc_data *allocations;
 
@@ -576,7 +578,7 @@ void *
 rep_alloc(u_int length)
 {
     void *mem;
-    length += sizeof(struct alloc_data);
+    length += SIZEOF_ALLOC_DATA;
     mem = malloc(length);
     if(mem != 0)
     {
@@ -585,10 +587,10 @@ rep_alloc(u_int length)
 	/* Check that the alignment promised actually occurs */
 	assert((((rep_PTR_SIZED_INT)mem) & (rep_MALLOC_ALIGNMENT - 1)) == 0);
 
-	mem = ((char *)mem) + sizeof(struct alloc_data);
+	mem = ((char *)mem) + SIZEOF_ALLOC_DATA;
 	x->next = allocations;
 	allocations = x;
-	x->size = length - sizeof(struct alloc_data);
+	x->size = length - SIZEOF_ALLOC_DATA;
 	x->function = rep_db_return_address();
     }
     return mem;
@@ -598,8 +600,8 @@ void *
 rep_realloc(void *ptr, u_int length)
 {
     void *mem;
-    length += sizeof(struct alloc_data);
-    ptr = (void *)(((char *)ptr) - sizeof(struct alloc_data));
+    length += SIZEOF_ALLOC_DATA;
+    ptr = (void *)(((char *)ptr) - SIZEOF_ALLOC_DATA);
     mem = realloc(ptr, length);
     if(mem != 0)
     {
@@ -617,8 +619,8 @@ rep_realloc(void *ptr, u_int length)
 		p = p->next;
 	    p->next = x;
 	}
-	mem = ((char *)mem) + sizeof(struct alloc_data);
-	x->size = length - sizeof(struct alloc_data);
+	mem = ((char *)mem) + SIZEOF_ALLOC_DATA;
+	x->size = length - SIZEOF_ALLOC_DATA;
 	x->function = rep_db_return_address();
     }
     return mem;
@@ -627,7 +629,7 @@ rep_realloc(void *ptr, u_int length)
 void
 rep_free(void *ptr)
 {
-    struct alloc_data *x = (struct alloc_data *)(((char *)ptr) - sizeof(struct alloc_data));
+    struct alloc_data *x = (struct alloc_data *)(((char *)ptr) - SIZEOF_ALLOC_DATA);
     struct alloc_data **p = &allocations;
     while(*p != 0 && (*p) != x)
 	p = &((*p)->next);
@@ -647,7 +649,8 @@ rep_print_allocations(void)
 	{
 	    char *sname;
 	    void *saddr;
-	    fprintf(stderr, "\t(%p, %d)", x->data, x->size);
+	    fprintf(stderr, "\t(%p, %d)",
+		    ((char *)x) + SIZEOF_ALLOC_DATA, x->size);
 	    if(rep_find_c_symbol(x->function, &sname, &saddr))
 		fprintf(stderr, "\t\t<%s+%d>", sname, x->function - saddr);
 	    fprintf(stderr, "\n");
