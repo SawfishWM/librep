@@ -73,6 +73,7 @@ AC_CHECK_HEADER(dlfcn.h,
  AC_DEFINE(HAVE_DYNAMIC_LOADING)
  dynamic_file_suffix="so"
  DL_CFLAGS=${DL_CFLAGS:-"-fpic -shared"}
+ DL_LDFLAGS="-rdynamic"
  AC_DEFINE(DYNAMIC_FILE_SUFFIX, "so")])
 
 dnl Checks for typedefs, structures, and compiler characteristics.
@@ -170,6 +171,7 @@ AC_SUBST(HAVE_UNIX)
 AC_SUBST(HAVE_X11)
 AC_SUBST(dynamic_file_suffix)
 AC_SUBST(DL_CFLAGS)
+AC_SUBST(DL_LDFLAGS)
 
 dnl Build all files
 AC_OUTPUT(${output_files})

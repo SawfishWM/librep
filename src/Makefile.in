@@ -82,10 +82,10 @@ else
 endif
 
 jade : jade_protos.h doc-strings.h $(OBJS) $(LIBOBJS)
-	$(CC) $(LDFLAGS) -o jade $(OBJS) $(LIBOBJS) $(LIBS)
+	$(CC) $(LDFLAGS) $(DL_LDFLAGS) -o jade $(OBJS) $(LIBOBJS) $(LIBS)
 
 jaded : jade_protos.h doc-strings.h $(OBJS) $(LIBOBJS)
-	$(CC) $(LDFLAGS) -o jaded $(OBJS) $(LIBOBJS) $(LIBS)
+	$(CC) $(LDFLAGS) $(DL_LDFLAGS) -o jaded $(OBJS) $(LIBOBJS) $(LIBS)
 
 ifeq ($(DUMPED_JADE), 1)
 $(DUMPED_ASM) : $(DUMPED_CMP)

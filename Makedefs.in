@@ -45,6 +45,7 @@ CPPFLAGS=-DHAVE_CONFIG_H -I. -I$(top_srcdir)/src -I../lib -I.. @CPPFLAGS@
 CFLAGS=@CFLAGS@ @X_CFLAGS@
 DL_CFLAGS=@DL_CFLAGS@
 LDFLAGS=@LDFLAGS@
+DL_LDFLAGS=@DL_LDFLAGS@
 LIBS=@LIBS@
 LIBOBJS=@LIBOBJS@ @ALLOCA@
 X11LIBS=@X_PRE_LIBS@ -lX11 @X_LIBS@ @X_EXTRA_LIBS@
@@ -68,7 +69,7 @@ HAVE_UNIX=@HAVE_UNIX@
 	  -DJADE_EXEC_DIR=$(jadeexecdir) -o $@ $< $(LIBS)
 
 %.$(dynsuffix) : %.c
-	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(DL_CFLAGS) -DJADE -DJADE_DL -o $@ $<
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(DL_CFLAGS) -DJADE -DJADE_DL -o $@ $<
 
 # This rule builds dependancy files from C source files.
 .%.d : %.c
