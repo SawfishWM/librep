@@ -1,3 +1,14 @@
+1998-12-09  John Harper  <john@dcs.warwick.ac.uk>
+
+	* keys.c (eval_input_event): don't overwrite prefix-arg after
+	handling prefix-keymap
+
+1998-12-08  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_files.c (sys_expand_file_name): handle "foo/../bar"
+	correctly (where we have to backtrack to the start of the
+	output buffer)
+
 1998-12-03  John Harper  <john@dcs.warwick.ac.uk>
 
 	* misc.c (cmd_user_full_name): if given a parameter, it's the

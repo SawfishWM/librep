@@ -1,3 +1,14 @@
+1998-12-09  John Harper  <john@dcs.warwick.ac.uk>
+
+	* miranda.jl (miranda): take program arguments from variable
+	miranda-program-args (not including file name)
+
+1998-12-08  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rcs.jl (rcs-callback-with-description): install local keymap
+	_after_ calling text-mode. This loses text-mode's bindings,
+	should really install the rcs bindings as a minor-mode..
+
 1998-12-04  John Harper  <john@dcs.warwick.ac.uk>
 
 	* prompt.jl (prompt): only add result to prompt-history if it's
