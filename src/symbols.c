@@ -50,7 +50,8 @@ char *alloca ();
 /* The number of hash buckets in each rep_obarray, this is a prime number. */
 #define rep_OBSIZE		509
 
-#define rep_SYMBOLBLK_SIZE	405		/* ~8k */
+#define rep_SYMBOLBLK_SIZE	680		/* ~8k */
+#define rep_FUNARGBLK_SIZE	340		/* ~8k */
 
 /* Symbol allocation blocks */
 typedef struct rep_symbol_block_struct {
@@ -58,13 +59,17 @@ typedef struct rep_symbol_block_struct {
     rep_ALIGN_CELL(rep_symbol symbols[rep_SYMBOLBLK_SIZE]);
 } rep_symbol_block;
 
+/* Closure allocation blocks */
+typedef struct rep_funarg_block_struct {
+    struct rep_funarg_block_struct *next;
+    rep_ALIGN_CELL(rep_funarg data[rep_FUNARGBLK_SIZE]);
+} rep_funarg_block;
+
 /* Main storage of symbols.  */
 repv rep_obarray;
 
 /* Plist storage */
 static repv plist_structure;
-
-static rep_funarg *funargs;
 
 DEFSYM(nil, "nil");
 DEFSYM(t, "t");
@@ -87,6 +92,10 @@ repv rep_void_value = rep_VAL(&void_object);
 static rep_symbol_block *symbol_block_chain;
 static rep_symbol *symbol_freelist;
 int rep_allocated_symbols, rep_used_symbols;
+
+static rep_funarg_block *funarg_block_chain;
+static rep_funarg *funarg_freelist;
+int rep_allocated_funargs, rep_used_funargs;
 
 
 /* Symbol management */
@@ -371,7 +380,25 @@ Return a functional object which makes the closure of FUNCTION and the
 current environment.
 ::end:: */
 {
-    rep_funarg *f = rep_ALLOC_CELL (sizeof (rep_funarg));
+    rep_funarg *f;
+    if(!funarg_freelist)
+    {
+	rep_funarg_block *sb = rep_ALLOC_CELL(sizeof(rep_funarg_block));
+	if(sb)
+	{
+	    int i;
+	    rep_allocated_funargs += rep_FUNARGBLK_SIZE;
+	    sb->next = funarg_block_chain;
+	    funarg_block_chain = sb;
+	    for(i = 0; i < (rep_FUNARGBLK_SIZE - 1); i++)
+		sb->data[i].car = rep_VAL(&sb->data[i + 1]);
+	    sb->data[i].car = rep_VAL(funarg_freelist);
+	    funarg_freelist = sb->data;
+	}
+    }
+
+    f = funarg_freelist;
+    funarg_freelist = rep_FUNARG (f->car);
     rep_data_after_gc += sizeof (rep_funarg);
     f->car = rep_Funarg;
     if (rep_bytecode_interpreter != Fjade_byte_code)
@@ -380,10 +407,7 @@ current environment.
     f->name = name;
     f->env = rep_env;
     f->special_env = rep_special_env;
-    f->fh_env = rep_fh_env;
     f->structure = rep_structure;
-    f->next = funargs;
-    funargs = f;
     return rep_VAL (f);
 }
 
@@ -482,20 +506,30 @@ set-special-environment ENV
 static void
 funarg_sweep (void)
 {
-    rep_funarg *f = funargs;
-    funargs = 0;
-    while (f != 0)
+    rep_funarg_block *sb = funarg_block_chain;
+    funarg_freelist = NULL;
+    rep_used_funargs = 0;
+    while(sb)
     {
-	rep_funarg *next = f->next;
-	if (!rep_GC_CELL_MARKEDP(rep_VAL(f)))
-	    rep_FREE_CELL(f);
-	else
+	int i;
+	rep_funarg_block *nxt = sb->next;
+	for(i = 0; i < rep_FUNARGBLK_SIZE; i++)
 	{
-	    rep_GC_CLR_CELL(rep_VAL(f));
-	    f->next = funargs;
-	    funargs = f;
+	    /* if on the freelist then the CELL_IS_8 bit
+	       will be unset (since the pointer is long aligned) */
+	    if (rep_CELL_CONS_P(rep_VAL(&sb->data[i]))
+		|| !rep_GC_CELL_MARKEDP(rep_VAL(&sb->data[i])))
+	    {
+		sb->data[i].car = rep_VAL(funarg_freelist);
+		funarg_freelist = &sb->data[i];
+	    }
+	    else
+	    {
+		rep_GC_CLR_CELL(rep_VAL(&sb->data[i]));
+		rep_used_funargs++;
+	    }
 	}
-	f = next;
+	sb = nxt;
     }
 }
 
