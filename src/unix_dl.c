@@ -42,7 +42,6 @@
 #   define RTLD_NOW 0
 #  endif
 # endif
-#endif
 
 #elif defined (HAVE_DL_H)
 # include <dl.h>
