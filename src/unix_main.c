@@ -1,4 +1,4 @@
-/* unix_misc.c -- Miscellaneous functions for Unix
+/* unix_main.c -- Miscellaneous functions for Unix
    Copyright (C) 1993, 1994 John Harper <john@dcs.warwick.ac.uk>
    $Id$
 
