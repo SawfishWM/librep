@@ -1844,9 +1844,22 @@ integerp ARG
 Return t if ARG is a integer.
 ::end:: */
 {
-    return (rep_INTP (arg)
-	    || (rep_NUMBERP (arg)
-		&& rep_NUMBER_BIGNUM_P (arg))) ? Qt : Qnil;
+    if (!rep_NUMERICP (arg))
+	return Qnil;
+    switch (rep_NUMERIC_TYPE (arg))
+    {
+    case rep_NUMBER_INT: case rep_NUMBER_BIGNUM:
+	return Qt;
+
+    case rep_NUMBER_RATIONAL:
+	return Qnil;
+
+    case rep_NUMBER_FLOAT:
+	return (floor (rep_NUMBER(arg,f)) == rep_NUMBER(arg,f)) ? Qt : Qnil;
+
+    default:
+	abort ();
+    }
 }
 
 DEFUN("fixnump", Ffixnump, Sfixnump, (repv arg), rep_Subr1) /*
