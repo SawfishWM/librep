@@ -49,7 +49,9 @@
 
 (defun describe-function-1 (fun)
   (let*
-      ((fval (symbol-value fun))
+      ((fval (if (symbolp fun)
+		 (symbol-value fun)
+	       fun))
        (type (cond
 	      ((special-form-p fval)
 	       "Special Form")
@@ -59,6 +61,8 @@
 	       "Built-in Function")
 	      (t
 	       "Function"))))
+    (when (closurep fval)
+      (setq fval (closure-function fval)))
     ;; Check if it's been compiled.
     (when (or (bytecodep fval)
 	      (and (consp fval) (assq 'jade-byte-code fval)))
