@@ -792,12 +792,12 @@ Void_t *(*__morecore)() = __default_morecore_init;
 
 #else /* INTERNAL_LINUX_C_LIB */
 
-#if defined (__FreeBSD__)
-extern char*       sbrk(ptrdiff_t);
-#elif __STD_C
+#ifndef __FreeBSD__
+#if __STD_C
 extern Void_t*     sbrk(ptrdiff_t);
 #else
 extern Void_t*     sbrk();
+#endif
 #endif
 
 #ifndef MORECORE
