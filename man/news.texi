@@ -3,6 +3,32 @@
 @chapter News
 @cindex News
 
+@unnumberedsec 0.9
+
+@itemize @bullet
+
+@item Support for using GNU readline (give configure the
+@samp{--with-readline} option)
+
+@item New functions: @code{letrec}, @code{caar}, @dots{}, @code{cddr},
+@code{caaar}, @dots{}, @code{cdddr}, @code{in-hook-p},
+@code{make-variable-special}
+
+@item Changed @code{unless} to have the Common Lisp semantics---return
+@code{nil} when the condition evaluates true, not the value of the
+condition
+
+@item Fixed/added some compiler optimisations
+
+@item Fixed @code{rep-xgettext} script to remove duplicated strings and
+to search exhaustively
+
+@item @code{add-hook} forces the hook variable to be special (in case
+it wasn't declared using @code{defvar})
+
+@end itemize
+
+
 @unnumberedsec 0.8.1
 
 Fixed some documentation bugs; fixed some build problems

@@ -1,3 +1,23 @@
+1999-12-12  John Harper  <john@dcs.warwick.ac.uk>
+
+	* version 0.9
+
+1999-12-11  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep-xgettext.jl (output): fixed checking for multiple
+	occurrences in the same file
+
+	* bytecodes.h (OP_CAAR, OP_CADR, OP_CDAR, OP_CDDR, OP_CADDR,
+	OP_CADDDR, OP_CADDDDR, OP_CADDDDDR, OP_CADDDDDDR,
+	OP_CADDDDDDDR): new instructions
+
+	* lispmach.c: execute c..r instructions
+
+1999-12-10  John Harper  <john@dcs.warwick.ac.uk>
+
+	* readline.c: new plugin, wraps the readline () function, or
+	calls Fread_line if not available
+
 1999-12-07  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep-xgettext.jl: scan the car of lists as well as the cdr;

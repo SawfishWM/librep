@@ -1,4 +1,32 @@
+1999-12-12  John Harper  <john@dcs.warwick.ac.uk>
+
+	* version 0.9
+
+	* disassembler.jl (disassemble): escape all control codes when
+	printing, not just newlines
+
+1999-12-11  John Harper  <john@dcs.warwick.ac.uk>
+
+	* date.jl (parse-date): fix calculation of day-of-week
+
+	* bytecodes. (op-caar, op-cadr, op-cdar, op-cddr, op-caddr,
+	op-cadddr, op-caddddr, op-cadddddr, op-caddddddr,
+	op-cadddddddr): new instructions
+	* disassembler.jl, gaol.jl: added c..r instructions
+
+	* compiler.jl: optimise constant index nth and nthcdr calls to
+	single c...r instructions where possible
+
+	* compiler-opt.jl (comp-peephole-opt): fixed optimisation
+	looking for `const; const|dup...'
+	(comp-peephole-opt): optimise pairs of car or cdr instructions
+	to a single instruction
+
+	* lisp.jl (caar, ..., cddr, caaar, ..., cdddr): new functions
+
 1999-12-10  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep.jl, debug.jl: use proper readline
 
 	* lisp.jl (in-hook-p): new function
 	(add-hook): if variable is unbound, make it special before
