@@ -1,3 +1,10 @@
+2000-04-03  John Harper  <john@dcs.warwick.ac.uk>
+
+	* symbols.c (symbol_cmp): compare symbol names if non-equal
+
+	* main.c (rep_load_environment): remember to protect the file
+	name until it's actually used
+
 2000-03-29  John Harper  <john@dcs.warwick.ac.uk>
 
 	* misc.c (rep_misc_init): removed references to `value' field
