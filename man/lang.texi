@@ -6644,7 +6644,7 @@ first character (following a possible @samp{^}). To include a literal
 @samp{-}, make it the first or last character.
 
 Also, any of the @samp{*}, @samp{+} or @samp{?} operators can be
-suffixed by a @samp{?} character (i.e. @samp{*?}, @samp{*+},
+suffixed by a @samp{?} character (i.e. @samp{*?}, @samp{+?},
 @samp{??}). The meaning of the operator remains the same but it becomes
 @dfn{non-greedy}. This means that it will match the @emph{smallest}
 number of characters satisfying the regular expression, instead of the
