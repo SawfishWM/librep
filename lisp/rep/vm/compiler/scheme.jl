@@ -23,6 +23,8 @@
 
 ;; XXX this is pretty much untested..
 
+(declare (unsafe-for-call/cc))
+
 (define-structure rep.vm.compiler.scheme ()
 
     (open rep
@@ -148,6 +150,7 @@
       (emit-insn '(dup))
       (increment-stack)
       (emit-varset sym)
+      (note-binding-modified sym)
       (decrement-stack)))
   (put 'set! 'scheme-compile-fun compile-set!)
 
@@ -211,10 +214,6 @@
       (emit-insn '(swap))
       (emit-insn '(pop))))
   (put 'case 'scheme-compile-fun compile-case)
-
-  (put 'call/cc 'scheme-compile-fun (get 'call/cc 'rep-compile-fun))
-  (put 'call-with-current-continuation 'scheme-compile-fun
-       (get 'call-with-current-continuation 'rep-compile-fun))
 
   (defun do-predicate (form)
     (let* ((rep-fun (or (get (car form) 'scheme-compile-rep) (car form)))

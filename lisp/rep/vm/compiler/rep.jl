@@ -21,6 +21,8 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
+(declare (unsafe-for-call/cc))
+
 (define-structure rep.vm.compiler.rep ()
 
     (open rep
@@ -380,6 +382,7 @@
 	    (emit-insn '(dup))
 	    (increment-stack)
 	    (emit-varset sym)
+	    (note-binding-modified sym)
 	    (decrement-stack))
 	;; need to preserve left-right evaluation order
 	(compile-form-1 sym)
@@ -862,6 +865,7 @@
 		(increment-stack)
 	      (decrement-stack (1- arg-count))))
 	(emit-insn `(call ,arg-count))
+	(note-function-call-made)
 	(decrement-stack arg-count))))
   (put 'funcall 'rep-compile-fun compile-funcall)
 
@@ -921,12 +925,6 @@
     (note-closure-made)
     (decrement-stack))
   (put 'make-closure 'rep-compile-fun compile-make-closure)
-
-  (defun compile-call/cc (form)
-    (note-call/cc)
-    (compile-funcall (cons 'funcall form)))
-  (put 'call/cc 'rep-compile-fun compile-call/cc)
-  (put 'call-with-current-continuation 'rep-compile-fun compile-call/cc)
 
   (defun get-form-opcode (form)
     (cond ((symbolp form) (get form 'rep-compile-opcode))

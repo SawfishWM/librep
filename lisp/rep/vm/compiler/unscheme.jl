@@ -61,10 +61,6 @@
   (put '\#cond 'unscheme-compile-fun (get 'cond 'rep-compile-fun))
   (put 'case 'unscheme-compile-fun (get 'case 'rep-compile-fun))
 
-  (put 'call/cc 'scheme-compile-fun (get 'call/cc 'rep-compile-fun))
-  (put 'call-with-current-continuation 'scheme-compile-fun
-       (get 'call-with-current-continuation 'rep-compile-fun))
-
   ;; set properties of scheme functions that are pseudonyms of rep fns
   (mapc (lambda (cell)
 	  (if (symbolp cell)
