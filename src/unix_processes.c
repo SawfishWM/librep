@@ -864,6 +864,82 @@ set in the PROCESS prior to calling this function.
     return(res);
 }
 
+_PR VALUE cmd_call_process_area(VALUE arg_list);
+DEFUN("call-process-area", cmd_call_process_area, subr_call_process_area, (VALUE arg_list), V_SubrN, DOC_call_process_area) /*
+::doc:call_process_area::
+call-process-area [PROCESS] START END DELETEP [PROGRAM] [ARGS...]
+
+Starts a process running on process-object PROCESS. Waits for the child to
+exit, then returns the exit-value of the child. If PROCESS is unspecified
+the make-process function will be called (with zero arguments) to create one.
+
+The area of the current buffer between START and END is used as the
+input stream of the new process. If DELETE-P is non-nil the area will
+be deleted from the buffer before the process is started.
+
+PROGRAM is the filename of the binary image, it will be searched for in
+all directories listed in the `PATH' environment variable.
+ARGS are the arguments to give to the process.
+
+If any of the optional parameters are unspecified they should have been
+set in the PROCESS prior to calling this function.
+::end:: */
+{
+    if(CONSP(arg_list))
+    {
+	VALUE proc = VCAR(arg_list);
+	arg_list = VCDR(arg_list);
+	if(CONSP(arg_list) && POSP(VCAR(arg_list)))
+	{
+	    VALUE start = VCAR(arg_list);
+	    arg_list = VCDR(arg_list);
+	    if(CONSP(arg_list) && POSP(VCAR(arg_list)))
+	    {
+		VALUE end = VCAR(arg_list);
+		arg_list = VCDR(arg_list);
+		if(CONSP(arg_list))
+		{
+		    bool deletep = !NILP(VCAR(arg_list));
+		    VALUE temp_file;
+		    VALUE ret;
+		    arg_list = VCDR(arg_list);
+		    temp_file = cmd_tmp_file_name();
+		    if(temp_file && STRINGP(temp_file))
+		    {
+			/* Open the file to make it private. */
+			int fd = open(VSTR(temp_file),
+				      O_RDWR | O_CREAT | O_TRUNC,
+				      S_IRUSR | S_IWUSR);
+			if(fd < 0)
+			    return signal_file_error(temp_file);
+			close(fd);
+		    }
+		    ret = cmd_write_buffer_area(start, end,
+						temp_file, sym_nil);
+		    if(ret && !NILP(ret))
+		    {
+			if(deletep)
+			{
+			    ret = cmd_delete_area(start, end, sym_nil);
+			    if(!ret || NILP(ret))
+				goto error;
+			}
+			/* Splice together the arguments to call-process.
+			   PROC FILE-NAME REST.. */
+			arg_list = cmd_cons(proc, cmd_cons(temp_file,
+							   arg_list));
+			ret = cmd_call_process(arg_list);
+		    }
+		error:
+		    unlink(VSTR(temp_file));	/* ignore errors! */
+		    return ret;
+		}
+	    }
+	}
+    }
+    return cmd_signal(sym_bad_arg, list_1(arg_list));
+}
+
 _PR VALUE cmd_signal_process(VALUE proc, VALUE sig, VALUE grp);
 DEFUN("signal-process", cmd_signal_process, subr_signal_process, (VALUE proc, VALUE sig, VALUE grp), V_Subr3, DOC_signal_process) /*
 ::doc:signal_process::
@@ -1362,6 +1438,7 @@ proc_init(void)
     ADD_SUBR(subr_make_process);
     ADD_SUBR(subr_start_process);
     ADD_SUBR(subr_call_process);
+    ADD_SUBR(subr_call_process_area);
     ADD_SUBR(subr_signal_process);
     ADD_SUBR(subr_interrupt_process);
     ADD_SUBR(subr_kill_process);
