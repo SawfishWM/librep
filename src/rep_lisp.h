@@ -396,13 +396,8 @@ typedef struct {
     repv car;				/* bits 8->11 are flags */
     repv next;				/* next symbol in rep_obarray bucket */
     repv name;
-    repv value;
     repv prop_list;
 } rep_symbol;
-
-/* This bit set in car means that the value is a constant, and therefore
-   can't be modified. */
-#define rep_SF_CONSTANT	(1 << (rep_CELL8_TYPE_BITS + 0))
 
 /* Means that the symbol's value may be in some form of local storage,
    if so then that occurrence takes precedence. */
@@ -577,6 +572,7 @@ typedef struct rep_funarg_struct {
     repv env;
     repv special_env;
     repv fh_env;			/* file handlers */
+    repv structure;
 } rep_funarg;
 
 /* Is this closure allowed to execute byte-code? */
@@ -596,6 +592,7 @@ typedef struct rep_funarg_struct {
 	else						\
 	    rep_bytecode_interpreter = 0;		\
 	rep_fh_env = rep_FUNARG(f)->fh_env;		\
+	rep_structure = rep_FUNARG(f)->structure;	\
     } while (0)
 
 #define rep_USE_DEFAULT_ENV			\
@@ -603,6 +600,7 @@ typedef struct rep_funarg_struct {
 	rep_env = Qt;				\
 	rep_special_env = Fcons (Qnil, Qt);	\
 	rep_fh_env = Qt;			\
+	rep_structure = rep_default_structure;	\
 	rep_bytecode_interpreter = Fjade_byte_code; \
     } while (0)
 
@@ -783,6 +781,7 @@ struct rep_Call {
     repv saved_env;
     repv saved_special_env;
     repv saved_fh_env;
+    repv saved_structure;
     repv (*saved_bytecode)(repv, repv, repv, repv);
 };
 
@@ -791,6 +790,7 @@ struct rep_Call {
 	(lc).saved_env = rep_env;	\
 	(lc).saved_special_env = rep_special_env; \
 	(lc).saved_fh_env = rep_fh_env;	\
+	(lc).saved_structure = rep_structure; \
 	(lc).saved_bytecode = rep_bytecode_interpreter; \
 	(lc).next = rep_call_stack;	\
 	rep_call_stack = &(lc);		\
@@ -801,6 +801,7 @@ struct rep_Call {
 	rep_env = (lc).saved_env;	\
 	rep_special_env = (lc).saved_special_env; \
 	rep_fh_env = (lc).saved_fh_env;	\
+	rep_structure = (lc).saved_structure; \
 	rep_bytecode_interpreter = (lc).saved_bytecode; \
 	rep_call_stack = (lc).next;	\
     } while (0)
@@ -830,10 +831,13 @@ struct rep_Call {
     repv fsym args
 
 /* Add a subroutine */    
-#define rep_ADD_SUBR(subr) rep_add_subr(&subr)
+#define rep_ADD_SUBR(subr) rep_add_subr(&subr, rep_TRUE)
+
+/* Add a non-exported subroutine */
+#define rep_ADD_INTERNAL_SUBR(subr) rep_add_subr(&subr, rep_FALSE)
 
 /* Add an interactive subroutine */    
-#define rep_ADD_SUBR_INT(subr) rep_ADD_SUBR(subr)
+#define rep_ADD_SUBR_INT(subr) rep_add_subr(&subr, rep_TRUE)
 
 /* Declare a symbol stored in variable QX. */
 #define DEFSYM(x, name) \
