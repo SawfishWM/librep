@@ -346,7 +346,9 @@
 	  (compile-constant nil))
 	(if body
 	    (progn
-	      (compile-constant `(lambda () ,@body))
+	      ;; compile non-top-level structure bodies, so that
+	      ;; they can access the active bindings
+	      (compile-constant (compile-lambda `(lambda () ,@body)))
 	      (emit-insn (bytecode enclose))
 	      (note-closure-made))
 	  (compile-constant nil))
