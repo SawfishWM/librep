@@ -45,8 +45,8 @@
 ;;; stack needed is calculated by the compiler.
 
 ;; Instruction set version
-(defconst bytecode-major 3)
-(defconst bytecode-minor 1)
+(defconst bytecode-major 4)
+(defconst bytecode-minor 0)
 
 ;; Opcodes
 (defconst op-call 0x08)			;call (stk[n] stk[n-1] ... stk[0])
@@ -61,9 +61,9 @@
 (defconst op-last-with-args 0x37)
 
 (defconst op-ref 0x40)			;replace symbol with it's value
-(defconst op-set 0x41)			;set (sym)stk[0]=stk[1], pops symbol
-(defconst op-fref 0x42)			;similar to vref/vset, but for
-(defconst op-fset 0x43)			; function value.
+(defconst op-set 0x41)
+(defconst op-fref 0x42)			;similar to ref for function slot
+(defconst op-fset 0x43)
 (defconst op-init-bind 0x44)		;initialise a new set of bindings
 (defconst op-unbind 0x45)		;unbind all bindings in the top set
 (defconst op-dup 0x46)			;duplicate top of stack
