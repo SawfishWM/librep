@@ -390,6 +390,18 @@ Return the structure associated with the closure FUNARG.
     return rep_FUNARG(funarg)->structure;
 }
 
+DEFUN("closure-name", Fclosure_name,
+      Sclosure_name, (repv funarg), rep_Subr1) /*
+::doc:closure-name::
+closure-name FUNARG
+
+Return the name associated with the closure FUNARG.
+::end:: */
+{
+    rep_DECLARE1(funarg, rep_FUNARGP);
+    return rep_FUNARG(funarg)->name;
+}
+
 DEFUN("closurep", Fclosurep, Sclosurep, (repv arg), rep_Subr1) /*
 ::doc:closurep::
 funargp ARG
@@ -1273,6 +1285,7 @@ rep_symbols_init(void)
     rep_ADD_SUBR(Sclosure_function);
     rep_ADD_SUBR(Sset_closure_function);
     rep_ADD_SUBR(Sclosure_structure);
+    rep_ADD_SUBR(Sclosure_name);
     rep_ADD_SUBR(Sclosurep);
     rep_ADD_SUBR(Sset_special_environment);
     rep_ADD_SUBR(Sdefvar);
