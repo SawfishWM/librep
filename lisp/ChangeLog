@@ -1,5 +1,17 @@
 1998-08-10  John Harper  <john@dcs.warwick.ac.uk>
 
+	* completion.jl: new file, generalises the old code in
+	prompt.jl for displaying completions
+	* prompt.jl: use the new completion functions
+	* lisp-mode.jl (lisp-complete-sexp): new command bound to M-TAB
+
+	* read-mail.jl (rm-auto-delete-rules): new variable, a list of
+	rules that are applied to newly-received messages. If any
+	match, the message is marked as deleted
+
+	* rm-restrict.jl (rm-apply-rules): new function, similar to
+	rm-apply-rule but takes a list of rules to test
+
 	* remote-ftp.jl (remote-ftp-handler): support for opening
 	remote files with open-file. All access types are supported
 	(read, write, append), a local copy is used so all operations

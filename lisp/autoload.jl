@@ -190,6 +190,7 @@
 (autoload 'html-style-add-style "html-style")
 (autoload 'rm-filter-by-rule "rm-restrict")
 (autoload 'rm-apply-rule "rm-restrict")
+(autoload 'rm-apply-rules "rm-restrict")
 (autoload 'rm-prompt-for-rule "rm-restrict")
 (autoload 'rm-defrule "rm-restrict" t)
 (autoload 'sh-mode "sh-mode" t)
