@@ -95,7 +95,7 @@ while [ x"$1" != x ]; do
   case $1 in
     -l)
       files=`find $2 -name '*.jl' -print`
-      aliases=`grep -h '(define-structure-alias' $files |
+      aliases=`grep '(define-structure-alias' $files |
         sed -e 's/^.*(define-structure-alias \([^ ]*\) \([^ ]*\)).*$/\2#\1/' |
 	tr . /`
       doit $3 $aliases
@@ -104,7 +104,7 @@ while [ x"$1" != x ]; do
 
     -c)
       files=`find $2 -name '*.c' -print`
-      aliases=`grep -H '::alias:' $files |
+      aliases=`grep '::alias:' $files |
         sed -e 's/^.*::alias:\([^ ]*\) \(.*\)::.*$/\2#\1/' |
 	tr . /`
       doit $3 $aliases
