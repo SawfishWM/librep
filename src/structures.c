@@ -95,16 +95,6 @@
 #define MIN_BUCKETS 8
 #define MAX_MULTIPLIER 2
 
-#define HASH(x,n) (((x) >> 4) % (n))
-
-struct rep_struct_node_struct {
-    rep_struct_node *next;
-    repv symbol;
-    repv binding;
-    int is_constant : 1;
-    int is_exported : 1;
-};
-
 int rep_structure_type;
 static rep_struct *all_structures;
 
@@ -131,7 +121,6 @@ DEFSYM(_user_structure_, "*user-structure*");
 DEFSYM(_root_structure_, "*root-structure*");
 
 repv F_get_structure (repv);
-static rep_struct_node *search_imports (rep_struct *s, repv var);
 static rep_struct_node *lookup_or_add (rep_struct *s, repv var);
 
 
@@ -358,10 +347,13 @@ structure_exports_inherited_p (rep_struct *s, repv var)
 static inline rep_struct_node *
 lookup (rep_struct *s, repv var)
 {
+    /* this is also in OP_REFG in lispmach.c */
+
     rep_struct_node *n;
     if (s->total_buckets != 0)
     {
-	for (n = s->buckets[HASH (var, s->total_buckets)]; n != 0; n = n->next)
+	for (n = s->buckets[rep_STRUCT_HASH (var, s->total_buckets)];
+	     n != 0; n = n->next)
 	{
 	    if (n->symbol == var)
 		return n;
@@ -400,8 +392,8 @@ lookup_or_add (rep_struct *s, repv var)
 		for (n = s->buckets[i]; n != 0; n = next)
 		{
 		    next = n->next;
-		    n->next = buckets[HASH (n->symbol, new_total)];
-		    buckets[HASH (n->symbol, new_total)] = n;
+		    n->next = buckets[rep_STRUCT_HASH (n->symbol, new_total)];
+		    buckets[rep_STRUCT_HASH (n->symbol, new_total)] = n;
 		}
 	    }
 	    s->total_buckets = new_total;
@@ -414,8 +406,8 @@ lookup_or_add (rep_struct *s, repv var)
 	n->symbol = var;
 	n->is_constant = 0;
 	n->is_exported = s->export_all;
-	n->next = s->buckets[HASH (var, s->total_buckets)];
-	s->buckets[HASH (var, s->total_buckets)] = n;
+	n->next = s->buckets[rep_STRUCT_HASH (var, s->total_buckets)];
+	s->buckets[rep_STRUCT_HASH (var, s->total_buckets)] = n;
 	s->total_bindings++;
 
 	if (structure_exports_inherited_p (s, var))
@@ -441,7 +433,7 @@ lookup_recursively (repv name, repv var)
 	    return n->is_exported ? n : 0;
 	rep_STRUCTURE (s)->exclusion = 1;
 	if (structure_exports_inherited_p (rep_STRUCTURE (s), var))
-	    n = search_imports (rep_STRUCTURE (s), var);
+	    n = rep_search_imports (rep_STRUCTURE (s), var);
 	rep_STRUCTURE (s)->exclusion = 0;
 	return n;
     }
@@ -449,8 +441,8 @@ lookup_recursively (repv name, repv var)
 	return 0;
 }
 
-static rep_struct_node *
-search_imports (rep_struct *s, repv var)
+rep_struct_node *
+rep_search_imports (rep_struct *s, repv var)
 {
     rep_struct_node *n = lookup_cache (s, var);
     if (n != 0)
@@ -622,9 +614,11 @@ Returns a void value if no such binding.
     rep_DECLARE2 (var, rep_SYMBOLP);
     s = rep_STRUCTURE (structure);
 
+    /* this is also in OP_REFG in lispmach.c */
+
     n = lookup (s, var);
     if (n == 0)
-	n = search_imports (s, var);
+	n = rep_search_imports (s, var);
     return (n != 0) ? n->binding : rep_void_value;
 }
 
@@ -952,10 +946,10 @@ Return `t' if ARG is a structure object.
     return rep_STRUCTUREP (arg) ? Qt : Qnil;
 }
 
-DEFUN ("%eval-in-structure", F_eval_in_structure, S_eval_in_structure,
+DEFUN ("eval", Freal_eval, Seval_real,
        (repv form, repv structure, repv env), rep_Subr3) /*
-::doc:%eval-in-structure::
-%eval-in-structure FORM STRUCTURE
+::doc:eval::
+eval FORM [STRUCTURE]
 
 Return the result of evaluating FORM inside structure object STRUCTURE
 (with a null lexical environment).
@@ -965,13 +959,21 @@ Return the result of evaluating FORM inside structure object STRUCTURE
     repv old = rep_structure, old_env = rep_env;
     rep_GC_root gc_old, gc_old_env;
 
+    if (structure == Qnil)
+	structure = rep_structure;
     rep_DECLARE2 (structure, rep_STRUCTUREP);
 
     rep_PUSHGC (gc_old, old);
     rep_PUSHGC (gc_old_env, old_env);
     rep_structure = structure;
     rep_env = env;
+
+    result = Fsymbol_value (Qrun_byte_code, Qt);
+    if (Ffunctionp (result) == Qnil)
+	rep_bytecode_interpreter = 0;
+
     result = Feval (form);
+
     rep_structure = old;
     rep_env = old_env;
     rep_POPGC; rep_POPGC;
@@ -1286,7 +1288,7 @@ rep_structures_init (void)
     rep_ADD_INTERNAL_SUBR (S_access_structures);
     rep_ADD_INTERNAL_SUBR (S_current_structure);
     rep_ADD_INTERNAL_SUBR (S_structurep);
-    rep_ADD_INTERNAL_SUBR (S_eval_in_structure);
+    rep_ADD_INTERNAL_SUBR (Seval_real);
     rep_ADD_INTERNAL_SUBR (S_make_closure_in_structure);
     rep_ADD_INTERNAL_SUBR (S_structure_walk);
 #ifdef DEBUG
