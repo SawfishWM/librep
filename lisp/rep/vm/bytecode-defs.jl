@@ -61,7 +61,6 @@
 
       (ref . 0x40)			;replace symbol with it's value
       (set . 0x41)
-      (dset . 0x42)
       (enclose . 0x43)
       (init-bind . 0x44)		;initialise a new set of bindings
       (unbind . 0x45)			;unbind all bindings in the top set
@@ -229,7 +228,7 @@
      nil nil nil nil nil nil nil nil
      -1  nil nil nil nil nil nil nil	;0x30
      +1  nil nil nil nil nil nil nil
-     0   -1  -1  0   0   0   +1  0	;0x40
+     0   -1  nil 0   0   0   +1  0	;0x40
      -1  +1  +1  -1  0   0   -1  -1
      -1  -1  -1  -1  0   0   -1  0	;0x50
      -1  -1  -1  -1  0   0   -1  -1

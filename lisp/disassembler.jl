@@ -33,7 +33,7 @@
      "list" nil nil nil nil nil nil nil
      "bind" nil nil nil nil nil nil nil	; 0x30
      "refn" nil nil nil nil nil nil nil
-     "ref" "set" "dset" "enclose"
+     "ref" "set" nil "enclose"
      "init-bind" "unbind" "dup" "swap"	; 0x40
      "pop" "push\tnil" "push\tt" "cons"
      "car" "cdr" "rplaca" "rplacd"
