@@ -148,10 +148,18 @@
 	  (setq keep-going t))
 
 	 ;; {setq,bindspec} X; refq X --> dup; {setq,bindspec} X
-	 ((and (or (eq (car insn0) op-setq)
-		   (eq (car insn0) op-bindspec))
-	       (eq (car insn1) op-refq)
-	       (eq (cdr insn0) (cdr insn1)))
+	 ;; setn #X; refn #X --> dup; setn #X
+	 ;; bind X; refn #0 --> dup; bind X
+	 ((or (and (or (eq (car insn0) op-setq)
+		       (eq (car insn0) op-bindspec))
+		   (eq (car insn1) op-refq)
+		   (eq (cdr insn0) (cdr insn1)))
+	      (and (eq (car insn0) op-setn)
+		   (eq (car insn1) op-refn)
+		   (eq (cdr insn0) (cdr insn1)))
+	      (and (eq (car insn0) op-bind)
+		   (eq (car insn1) op-refn)
+		   (eq (cdr insn1) 0)))
 	  (rplaca insn1 (car insn0))
 	  (rplaca insn0 op-dup)
 	  (rplacd insn0 nil)
