@@ -114,16 +114,9 @@ General programming tasks:
    the singular. But then again, there's no reason why individual files
    can't be accessed through the generic vc
 
- - Write a file handler to access remote files. Syntax would be
-   something like /[USER@]HOST:FILE-NAME as in Emacs. There are a
-   number of ways this can be implemented: rcp, ftp, even using wget
-   for read-only access..
+ - Add more backends for accessing remote files
 
-   Note that support for "urls as file names" won't be added, since
-   urls are a fundamentally different animal to file names. For a
-   start, they don't necessarily refer to a static chunk of data (e.g.
-   the mailto and telnet types..) find-url handles this problem quite
-   adequately I think..
+   Make remote-rcp work properly, and add others (ssh, http, ..?)
 
  - Implement an HTML-view mode that renders HTML in one buffer into
    another buffer for viewing

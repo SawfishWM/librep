@@ -1,3 +1,16 @@
+Fri Jun 12 17:34:16 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* remote-ftp.jl: new file, an FTP backend for accessing remote
+	files; seems to work quite well
+
+	* remote-rcp.jl: new file, split from remote.jl. Doesn't work
+	very well
+
+	* mail-headers.jl (mail-parse-date): made a lot more agreeable
+	in what it will parse
+
+	* debug.jl (debug-error-entry): always print backtrace
+
 Wed Jun 10 08:49:52 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* isearch.jl: many changes. Now uses the minibuffer, highlights

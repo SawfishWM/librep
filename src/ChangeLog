@@ -1,3 +1,8 @@
+Fri Jun 12 18:11:17 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_files.c (sys_expand_file_names): fix somes bugs when
+	handling "." and ".." in otherwise empty strings
+
 Thu Jun 11 16:44:42 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_main.c (wait_for_input, handle_input, sys_event_loop,

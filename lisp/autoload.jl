@@ -177,4 +177,10 @@
 (autoload 'rm-prompt-for-rule "rm-restrict")
 (autoload 'rm-defrule "rm-restrict" t)
 (autoload 'sh-mode "sh-mode" t)
+(autoload 'remote-file-handler "remote")
+(setq file-handler-alist (cons '("^/((.*)@)?(.*):" . remote-file-handler) file-handler-alist))
+(put 'ftp 'remote-backend 'remote-ftp-handler)
+(autoload 'remote-ftp-handler "remote-ftp")
+(put 'rcp 'remote-backend 'remote-rcp-handler)
+(autoload 'remote-rcp-handler "remote-rcp")
 ;;; ::autoload-end::
