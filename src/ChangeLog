@@ -1,3 +1,9 @@
+1999-08-29  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_processes.c, unix_main.c, test-dl.c, repsdbm.c,
+	rep_lisp.h, rep.c, misc.c, message.c, lisp.c, debug-buffer.c:
+	fixed some possible compiler errors (from `-ansi -pedantic')
+
 1999-08-28  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep.h.in: (rep_PTR_SIZED_INT_SUFFIX, rep_PTR_SIZED_INT_CONV):
