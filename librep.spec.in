@@ -3,22 +3,26 @@
 %define ver	@version@
 %define rel	1
 
-Summary: embeddable Lisp environment
+Summary: embeddable LISP environment
 Name: %{nam}
 Version: %{ver}
 Release: %{rel}
 Copyright: GPL
 Group: Development/Languages
-Source: ftp.dcs.warwick.ac.uk:/people/John.Harper/librep/librep-%{ver}.tar.gz
+Source: ftp://ftp.dcs.warwick.ac.uk/people/John.Harper/librep/librep-%{ver}.tar.gz
 URL: http://www.dcs.warwick.ac.uk/~john/sw/librep.html
 Packager: John Harper <john@dcs.warwick.ac.uk>
 Buildroot: /var/tmp/%{nam}-root
 
 %description
-This is an Emacs Lisp-like runtime library for UNIX. It contains a LISP
+This is a lightweight LISP environment for UNIX. It contains a LISP
 interpreter, byte-code compiler and virtual machine. Applications may
 use the LISP interpreter as an extension language, or it may be used
 for standalone scripts.
+
+Originally inspired by Emacs Lisp, the language dialect combines many
+of the elisp features while trying to remove some of the main
+deficiencies, with features from Common Lisp.
 
 %package devel
 Summary: librep include files and link libraries
@@ -46,7 +50,7 @@ gzip -9nf $RPM_BUILD_ROOT%{_prefix}/info/librep*
 rm -rf $RPM_BUILD_ROOT
 
 %files
-%doc NEWS README etc/TODO
+%doc NEWS README THANKS etc/TODO
 %{_prefix}/bin/rep
 %{_prefix}/bin/rep-remote
 %{_prefix}/lib/librep.so.*
@@ -59,6 +63,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files devel
 %{_prefix}/bin/rep-config
+%{_prefix}/bin/rep-xgettext
 %{_prefix}/bin/repdoc
 %{_prefix}/lib/librep.a
 %{_prefix}/lib/librep.so

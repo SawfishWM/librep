@@ -91,10 +91,15 @@ last updated @value{UPDATED} for librep version @value{VERSION}.
 
 @code{librep} is distributed under the terms of the GNU General Public
 License, this basically means that you can give it to anyone for any
-price as long as full source code is included. For the actual legalese
+price as long as full source code is included; you also have the right
+to distribute modified copies in the same way. For the actual legalese
 see the file @file{COPYING} in the distribution (or
 @pxref{(emacs)Copying}). I reserve the right to use a different licence
 in future releases.
+
+In case it isn't obvious, scripts written to use librep are not
+considered derived works, and therefore may be licensed however the
+author wishes.
 
 The only parts of librep which are not my own work are as follows:
 
@@ -109,6 +114,10 @@ The public domain @code{sdbm} database library by Ozan Yigit.
 
 @item
 The backquote package from Emacs version 19, written by Rick Sladkey.
+
+@item
+The GNU @code{gettext} implementation for internalized message
+catalogues.
 @end itemize
 
 Be aware that there is absolutely NO WARRANTY for this program, you use
@@ -123,7 +132,9 @@ promises regarding the reliability of this software.
 @code{librep} is a dialect of Lisp, originally developed for embedding
 in other applications, but also suitable for general use. It was
 originally written to be mostly-compatible with Emacs Lisp, although
-there is no intention of having the two languages fully compatible.
+there is no intention of having the two languages fully compatible. The
+main difference between the two dialects is that rep is lexically
+scoped.
 
 @code{librep} started out as part of a text editor I wrote, which
 gradually warped into being an Emacs-clone as more features were added.
@@ -140,6 +151,8 @@ Some of the features of @code{librep} are:
 @itemize @bullet
 @item Contains its own byte-compiler and virtual machine
 
+@item Lexically scoped (with dynamically scoped special variables)
+
 @item Most ``standard'' Emacs Lisp functions, with some others from
 Common Lisp
 
@@ -148,9 +161,12 @@ Common Lisp
 of the curly-brace quantifiers, and no matching of already-remembered
 expressions)
 
-@item ``Virtual'' file handling, with FTP and @code{rcp} backends
+@item ``Virtual'' file handling, with FTP and @code{rcp} backends. Also
+supports tilde-expansion and read-only access to tar archives
 
 @item Self-documenting
+
+@item Support for executing untrusted code in a controlled environment
 
 @item Spawn UNIX subprocesses (synchronously and asynchronously) with
 full control over all standard I/O (separate @code{stdout} and
@@ -167,18 +183,8 @@ stream types
 @item Designed for embedding within other applications, or as a
 stand-alone interpreter
 
-@item Separately available are GTK+ and MySQL bindings, included is a
-SDBM binding
-@end itemize
-
-@noindent
-However, there are a few misfeatures that have to be mentioned:
-
-@itemize @bullet
-@item Uses dynamic variable binding (as in Emacs Lisp), so not as fast
-as it could be if lexical scoping was used.
-
-@item The compiler doesn't optimise as much as it should do.
+@item Separately available are GTK+ and MySQL bindings, included are
+SDBM and @code{gettext} bindings
 @end itemize
 
 

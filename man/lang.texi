@@ -21,24 +21,26 @@ functions.
 * Control Structures::          Special forms. Conditionals, loops, etc@dots{}
 * Variables::                   Symbols represent named variables
 * Functions::                   Functions are the building blocks of Lisp
-                                  programs
+                                 programs
 * Macros::                      User-defined control structures
+* Lexical Environment::		Manipulating closures and bindings
 
 * Streams::                     Data sinks and sources; character streams
 * Loading::                     Programs are stored in files
 * Compiled Lisp::               Making programs run faster
 
-* Hooks::                       Hooks allow the extending of Jade
+* Hooks::                       Hooks promote extensibility
 
 * Files::                       Manipulating files in the filing system
-* Processes::                   Jade can launch and control subprocesses
-                                  when running under Unix
+* Processes::                   launch and control subprocesses when
+                                 running under Unix
 
 * Regular Expressions::		Matching regular expressions
 * Time and Date::		Manipulating time and date
+* i18n::			Internationalisation
 
 * Miscellaneous Functions::     Functions which don't fit elsewhere in
-                                  this manual
+                                 this manual
 
 * Debugging::                   How to debug Lisp programs
 * Tips::                        General ideas for @code{librep} programming
@@ -61,7 +63,7 @@ sdbm-store,
 sdbmp,
 set-default,
 setq-default,
-with-object
+with-object,
 
 
 @node Intro, Data Types, , The language
@@ -1867,6 +1869,11 @@ Note that an alternate way to compare strings (or anything!) is to use the
 @code{equal} function.
 @end defun
 
+@defun string-equal string1 string2
+Returns non-@code{nil} if @var{string1} and @var{string2} are the same,
+ignoring differences in character case.
+@end defun
+
 @defun string< string1 string2
 This function returns @code{t} if @var{string1} is `less' than @code{string2}.
 This is determined by comparing the two strings a character at a time, the
@@ -1883,6 +1890,10 @@ In @code{librep} the standard @code{<} function understands strings so
 (string< "abc" "abb")
     @result{} nil
 @end lisp
+@end defun
+
+@defun string-lessp string1 string2
+Similar to @code{string<} but ignores character case in comparisons.
 @end defun
 
 See @ref{String Functions} for a few more string manipulating
@@ -3338,48 +3349,70 @@ run-time, and therefore has to be computed from a form.
 @cindex Scope and extent
 @cindex Variables, scope and extent of
 
-In the @code{librep} dialect of Lisp all variables have @dfn{indefinite
-scope} and @dfn{dynamic extent}. What this means is that references to
-variables may occur anywhere in a program (i.e. bindings established in
-one function are visible within functions called from the original
-function) and that references may occur at any point in time between
-the binding being created and it being unbound.
+In the @code{librep} dialect of Lisp by default variables have
+@dfn{lexical scope}. This means that bindings are associated with
+textual region of programs, and may be accessed by any forms within
+this associated textual region. Moreover, the bindings are persistent,
+even when the flow of control has not passed through the associated
+region.
 
-The combination of indefinite scope and dynamic extent is often
-termed @dfn{dynamic scope}.
-
-As an aside, Lisp objects have @dfn{indefinite extent}, meaning that
-the object will exist for as long as there is a possibility of it being
-referenced (and possibly longer---until the garbage collector runs,
-@pxref{Garbage Collection}).
-
-Note that in Common Lisp only those variables declared `special' have
-indefinite scope and dynamic extent.
-
-Dynamic scoping is easy to abuse, making programs hard to understand
-and debug. It is a good idea to @code{defvar} (@pxref{Defining
-Variables}) any variables whose bindings are referred to in functions
-other than which the binding was created. It is possible that future
-versions of @code{librep} will use @emph{lexical scoping}, except where
-variables are declared using @code{defvar}. The compiler gives warnings
-where unsafe dynamic effects are being used.
-
-A quick example of the use of dynamic scope,
+Consider the following example:
 
 @lisp
+(let
+    ((counter 0))
+  (defun count ()
+    (setq counter (1+ counter))
+    counter))
+@end lisp
+
+@noindent
+the value of the @code{counter} variable persists, and is incremented
+each time the @code{count} function is called. The @code{counter}
+variable is accessible from nowhere but the forms written inside the
+@code{let} statement declaring it.
+
+@lisp
+(count)
+  @result{} 1
+(count)
+  @result{} 2
+@end lisp
+
+An alternative method of scoping variables is also available. Any
+variables declared using the @code{defvar} special form are said to be
+@dfn{special} variables, they have @dfn{indefinite scope} and
+@dfn{dynamic extent}, often simplified to @dfn{dynamic scope}. What
+this means is that references to these variables may occur anywhere in
+a program (i.e. bindings established in one function are visible within
+functions called from the original function) and that references may
+occur at any point in time between the binding being created and it
+being unbound.
+
+Dynamic scoping is easy to abuse, making programs hard to understand
+and debug. A quick example of the use of dynamic scope,
+
+@lisp
+(defvar *foo-var* nil)
+
 (defun foo (x)
   (let
-      ((foo-var (* x 20)))
+      ;; a dynamically-scoped binding
+      ((*foo-var* (* x 20)))
     (bar x)
     @dots{}
 
 (defun bar (y)
   ;; Since this function is called from
   ;; the function @code{foo} it can refer
-  ;; to any bindings which @code{foo} can.
-  (setq y (+ y foo-var))
+  ;; to @code{*foo-var*}
+  (setq y (+ y *foo-var*))
   @dots{}
 @end lisp
+
+@noindent
+As shown in the previous example, many programmers mark special
+variables by enclosing them within asterisks.
 
 
 @node Void Variables, Constant Variables, Scope and Extent, Variables
@@ -3450,8 +3483,8 @@ The compiler assumes that a constant is always the same, whenever it is
 evaluated. It may even be evaluated more than once. @xref{Compiled
 Lisp}.
 
-The special form @code{defconst} can be used to define constants,
-see @ref{Defining Variables}.
+The special form @code{defconst} can be used to define global
+constants, see @ref{Defining Variables}.
 
 
 @node Defining Variables, , Constant Variables, Variables
@@ -3460,14 +3493,15 @@ see @ref{Defining Variables}.
 @cindex Variables, defining
 
 The special forms @code{defvar} and @code{defconst} allow you to define
-the global variables which will be used in a program. This is entirely
-optional, though is highly recommended.
+the special (i.e. global, dynamically-scoped) variables which will be
+used in a program.
 
 @defspec defvar variable form [doc-string]
-This special form defines a global variable, the symbol @var{variable}.
-If the value of @var{variable} is void the @var{form} is evaluated and
-its value is stored as the value of @var{variable} (note that the
-default value is modified, never a buffer-local value).
+This special form defines a special variable, the symbol
+@var{variable}. If the value of @var{variable} is void the @var{form}
+is evaluated and its value is stored as the value of @var{variable}
+(note that only the default value is modified, never a buffer-local
+value).
 
 If the @var{doc-string} argument is defined it is a string documenting
 @var{variable}. This string is then stored as the symbol's
@@ -3475,21 +3509,19 @@ If the @var{doc-string} argument is defined it is a string documenting
 @code{describe-variable} function.
 
 @lisp
-(defvar my-variable '(x y)
+(defvar *my-variable* '(x y)
   "This variable is an example showing the usage of the @code{defvar}
 special form.")
-    @result{} my-variable
+    @result{} *my-variable*
 @end lisp
-
-Declaring a variable with @code{defvar} also ensures that the variable
-has dynamic scope.
 @end defspec
 
 @defspec defconst constant form [doc-string]
-@code{defconst} defines a constant, the symbol @var{constant}. Its value
-(in the case of a buffer-local symbol, its default value) is set to the
-result of evaluating @var{form}. Note that unlike @code{defvar} the value
-of the symbol is @emph{always} set, even if it already has a value.
+@code{defconst} defines a special constant, the symbol @var{constant}.
+Its value (in the case of a buffer-local symbol, its default value) is
+set to the result of evaluating @var{form}. Note that unlike
+@code{defvar} the value of the symbol is @emph{always} set, even if it
+already has a value.
 
 The @var{doc-string} argument, if defined, is the documentation string
 for the constant.
@@ -3556,6 +3588,7 @@ Returns a string naming the primitive subroutine @var{subr}.
 * Anonymous Functions::         Or they can be un-named
 * Predicate Functions::         Functions which return boolean values
 * Defining Functions::          How to write a function definition
+* Local Functions::             Binding functions temporarily
 * Calling Functions::           Functions can be called by hand
 * Mapping Functions::           Map a function to the elements of a list
 @end menu
@@ -3574,6 +3607,11 @@ primitive functions in C) are defined using lambda expressions.
 Note that a lambda expression is @emph{not} an expression, evaluating a
 lambda expression will give an error (unless there is a function called
 @code{lambda}).
+
+However, neither is a lambda expression a function, it must be
+associated with an @dfn{environment}, defining the set of lexically
+bound variables and functions that it may access. This joining of a
+lambda expression and an environment is called a @dfn{closure}.
 
 The format of a lambda expression is:
 
@@ -3604,7 +3642,7 @@ When used in a full lambda expression this looks like:
 
 @noindent
 this defines an anonymous function with two parameters, @code{x} and
-@code{y}, and returns their sum when called.
+@code{y}, and evaluates to their sum.
 
 To complicate matters there are several @dfn{lambda-list keywords}
 which modify the meaning of symbols in the lambda-list. Each keyword is
@@ -3728,8 +3766,8 @@ then returns @var{symbol}.
 @cindex Functions, anonymous
 
 When supplying functions as arguments to other functions it is useful
-to give an actual function @emph{definition} (i.e. a lambda expression)
-instead of the name of a function.
+to give an actual function @emph{definition} (i.e. an enclosed lambda
+expression) instead of the name of a function.
 
 In Lisp, unlike most other programming languages, functions have no
 inherent name. As seen in the last section named-functions are created
@@ -3760,14 +3798,18 @@ special form (like @code{'} is a shortcut to @code{quote}). In general,
 @var{x})}.
 
 @defspec function arg
-This special form is nearly identical to the @code{quote} form, it
-always returns its argument without evaluating it. The difference is
-that the Lisp compiler knows to compile the @var{arg} into a byte-code
-form (unless @var{arg} is a symbol in which case it is not compiled).
+If @var{arg} is a list, then return the closure of @var{arg} and the
+current lexical environment; otherwise just return @var{arg}.
+@end defspec
 
 What this means is when you have to quote a function, use the @code{#'}
-syntax.
-@end defspec
+syntax. In certain cases it may be necessary to create a non-constant
+function, for example by using backquoting (@pxref{Backquoting}). In
+these cases the @code{make-closure} function may be used.
+
+@defun make-closure arg
+Return the closure of @var{arg} and the current lexical environment.
+@end defun
 
 
 @node Predicate Functions, Defining Functions, Anonymous Functions, Functions
@@ -3791,7 +3833,7 @@ called @code{const-variable-p}. On the other hand the predicate to test
 for the quality @dfn{cons} (a Cons cell) is called @code{consp}.
 
 
-@node Defining Functions, Calling Functions, Predicate Functions, Functions
+@node Defining Functions, Local Functions, Predicate Functions, Functions
 @subsection Defining Functions
 @cindex Defining functions
 @cindex Functions, defining
@@ -3835,7 +3877,36 @@ directories in the Lisp load path."
 @end lisp
 
 
-@node Calling Functions, Mapping Functions, Defining Functions, Functions
+@node Local Functions, Calling Functions, Defining Functions, Functions
+@subsection Local Functions
+@cindex Local functions
+@cindex Functions, local
+
+The @code{defun} special form allows globally-accessible functions to
+be defined. It is often desirable to declare functions local to the
+current lexical environment. The @code{flet} special form enables this.
+
+@defspec flet bindings forms@dots{}
+Similar to the @code{let} special form, but binds functions instead of
+variables, then evaluates the @var{forms} in the new functional
+environment. @var{bindings} is a list containing function definitions,
+each written as @code{(@var{name} @var{lambda-list} @var{body})}. For
+example:
+
+@lisp
+(flet
+    ((+ (x y)
+       (- x y)))
+  (+ 3 2))
+    @result{} 1
+@end lisp
+
+@noindent
+this locally redefines the @code{+} function to implement subtraction.
+@end defspec
+
+
+@node Calling Functions, Mapping Functions, Local Functions, Functions
 @subsection Calling Functions
 @cindex Calling functions
 @cindex Functions, calling
@@ -3957,7 +4028,7 @@ function is equivalent to:
 @end defun
 
 
-@node Macros, Streams, Functions, The language
+@node Macros, Lexical Environment, Functions, The language
 @section Macros
 @cindex Macros
 
@@ -4159,7 +4230,97 @@ used before they are defined (two passes are made through the source
 file).
 
 
-@node Streams, Loading, Macros, The language
+@node Lexical Environment, Streams, Macros, The language
+@section Lexical Environment
+@cindex Lexical environment
+@cindex Environment, lexical
+
+We have already seen how the @code{let}, @code{let*} and @code{flet}
+allow temporary values to be assigned to variables, and local functions
+to be defined. These are mostly achieved through manipulation of the
+current lexical environment.
+
+When any function is defined, it is associated with the currently
+active lexical environment (a function and its environment is
+collectively called a @dfn{closure}). This environment defines all
+variable and function bindings that may be accessed, and their current
+values. When the function is called, its associated environment is
+reactivated, allowing these variables and functions to be accessed. The
+@code{function} special form, and the @code{make-closure} function have
+already been described, allowing closures to be created
+(@pxref{Anonymous Functions}).
+
+This section describes the other methods for affecting the current
+environment.
+
+@defun closurep arg
+Returns non-@code{nil} if @var{arg} is a closure.
+@end defun
+
+@defun closure-function closure
+Returns the function object associated with the lexical closure
+@var{closure}.
+@end defun
+
+@defspec save-environment forms@dots{}
+Evaluate all of @var{forms}, then reload the environment that was
+active when the special form was entered. Returns the value of the last
+form to be evaluated.
+@end defspec
+
+@defun set-variable-environment env
+Set the current variable environment to the list @var{env}.
+Each element of the list is a cons cell @code{(@var{symbol} .
+@var{value})} defining the currently bound local variables, and their
+values.
+@end defun
+
+@defun set-function-environment env
+Set the current function environment to the list @var{env}. Each
+element is a cons cell @code{(@var{symbol} . @var{value})} defining the
+currently accessible functions, and their values.
+
+If the last cons cell in the list is dotted to the symbol @code{t}
+instead of @code{nil}, then all globally defined functions are also
+available.
+@end defun
+
+As seen in the @code{set-function-environment} function, the lexical
+environment also provides a crude method of restricting which functions
+may be called by forms evaluating within the environment. A similar
+feature allows the set of special variables accessible from the
+environment to be defined.
+
+@defun set-special-environment env
+Set the list of symbols defining the special variables accessible from
+the current environment to @var{env}. If @var{env} is the symbol
+@code{t}, then all special variables are accessible.
+@end defun
+
+In the case of a restricted special environment, new special variables
+may still be defined (by @code{defvar}), but only if they have not
+previously been defined elsewhere (by @code{defvar}).
+
+Finally, the lexical environment also allows access to be granted to
+specific file handlers. This special case is necessary to enable a
+two-level system of file-access-control, first it must be possible to
+call the underlying file operation function (e.g.
+@code{directory-files}, or whatever), then it must be possible to call
+the file handler.
+
+@defun set-file-handler-environment env
+Set the currently accessible file handlers to the list @var{env}.
+Alternatively, if @var{env} is actually the symbol @code{t}, then all
+handlers are accessible (provided they're in the function environment).
+
+Each entry in the list must be a cons cell @code{(@var{handler} .
+@var{closure})} mapping handlers to their implementation. If
+@var{closure} is actually the symbol @code{t} then the default handler
+function is called in an unrestricted lexical environment.
+@end defun
+
+
+@node Streams, Loading, Lexical Environment, The language
 @section Streams
 @cindex Streams
 @cindex Input and output
@@ -5180,10 +5341,10 @@ value of the @code{standard-output} variable).
 When called interactively it will prompt for a function to disassemble.
 @end deffn
 
-When reading the output of the disassembler bear in mind that Jade
-simulates a stack machine for the code to run on. All calculations are
-performed on the stack, the value left on the stack when the piece
-of code ends is the value of the byte-code form.
+When reading the output of the disassembler bear in mind that
+@code{librep} simulates a stack machine for the code to run on. All
+calculations are performed on the stack, the value left on the stack
+when the piece of code ends is the value of the byte-code form.
 
 Here is a small example. Consider the following function definition:
 
@@ -6030,8 +6191,8 @@ Lisp output stream.
 
 @menu
 * Process Objects::             Lisp objects associated with subprocesses
-* Asynchronous Processes::      Subprocesses running in parallel with Jade
-* Synchronous Processes::       Subprocesses which Jade runs serially
+* Asynchronous Processes::      Subprocesses running in parallel
+* Synchronous Processes::       Subprocesses which run to completion
 * Process I/O::                 Input and output with subprocesses
 * Process States::              Suspending subprocesses
 * Signalling Processes::        Sending signals to subprocesses
@@ -6788,7 +6949,7 @@ strings (@pxref{Strings}).
 @end defun
 
 
-@node Time and Date, Miscellaneous Functions, Regular Expressions, The language
+@node Time and Date, i18n, Regular Expressions, The language
 @section Time and Date
 @cindex Time and date
 @cindex Date and time
@@ -7036,7 +7197,49 @@ XXX provide more information on accepted formats, outputs for
 incomplete descriptions, etc@dots{}
 
 
-@node Miscellaneous Functions, Debugging, Time and Date, The language
+@node i18n, Miscellaneous Functions, Time and Date, The language
+@section Internationalisation
+@cindex Internationalisation
+
+@code{librep} has support for internationalisation (or i18n) of text
+messages, using the GNU @code{gettext} implementation (@pxref{Top, ,
+Overview, gettext, The GNU gettext Manual}), a run-time library
+managing the mapping between text strings in the programmer's native
+language and in the language of the end user.
+
+Three functions are provided to access the message catalogues
+maintained by GNU @code{gettext}. Require the feature @code{gettext} to
+load them.
+
+@defun _ string
+Attempt to find a native language equivalent of @var{string}. If no
+equivalent is found the original string is returned.
+
+Note that this function is always defined, even if the @code{gettext}
+feature hasn't been required. In this case it always returns the
+original string.
+@end defun
+
+@defun bindtextdomain domain directory
+Tell @code{gettext} that message catalogues for message domain
+@var{domain} (a string) can be found under the directory called
+@var{directory}.
+@end defun
+
+@defun textdomain domain
+Note that any strings that are to be translated in the future (until
+the next call to @code{textdomain}) are in the domain called
+@var{domain} (a string).
+@end defun
+
+The usual method of constructing message catalogue templates
+(@file{.pot} files) is to run @code{xgettext} on the C source files of
+the program (that have been annotated for i18n). librep provides the
+@code{rep-xgettext} program to perform the same task for files of Lisp
+code.
+
+
+@node Miscellaneous Functions, Debugging, i18n, The language
 @section Miscellaneous Functions
 @cindex Miscellaneous functions
 
@@ -7067,8 +7270,9 @@ is @code{unix}.
 @end defvar
 
 @defun system-name
-This function returns a string naming the host that Jade is running on. When
-possible this be a fully-qualified name (i.e. including the domain)
+This function returns a string naming the host that the interpreter is
+running on. When possible this be a fully-qualified name (i.e.
+including the domain)
 @end defun
 
 @defvar rep-build-id
@@ -7523,7 +7727,7 @@ For advice on getting the most out of the compiler, see
 @menu
 * Comment Styles::              Differrent types of comments
 * Program Layout::              How I lay out the programs I write
-* General Tips::                Do's and Don't's of Jade programming
+* General Tips::                Do's and Don't's of rep programming
 @end menu
 
 @node Comment Styles, Program Layout, , Tips

@@ -4,6 +4,28 @@
 @cindex News
 
 
+@unnumberedsec 0.8
+
+@itemize @bullet
+
+@item Default scoping is now lexical, only variables declared using
+@code{defvar} are dynamically scoped.
+
+This also means that lambda expressions are no longer functions, they
+have to be enclosed with a lexical environment (using @code{function}
+or @code{make-closure})
+
+@item @code{gaol} module providing semi-safe environment for untrusted
+code to evaluate in
+
+@item Support for i18n through @code{gettext} module; also support for
+@samp{%1$s} type format specifiers
+
+@item New functions @code{string-equal} and @code{string-lessp}
+
+@end itemize
+
+
 @unnumberedsec 0.7.1
 
 @itemize @bullet

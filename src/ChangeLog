@@ -1,3 +1,20 @@
+1999-11-21  John Harper  <john@dcs.warwick.ac.uk>
+
+	* version 0.8
+
+	* lispcmds.c (Ffunctionp, Fmacrop, Fspecial_form_p,
+	Fsubr_name): use Fsymbol_function for dereferencing the symbol,
+	instead of just looking in the function slot
+
+	* files.c (Fset_file_handler_environment): new function, gives
+	a safe method of granting access to checked file handlers
+	(provided the actual invoking function is accessible)
+
+	* symbols.c (Fmake_closure): initialise fh_env
+	* values.c (mark_value): mark fh_env
+
+	* rep_lisp.h (rep_USE_DEFAULT_ENV): new macro
+
 1999-11-19  John Harper  <john@dcs.warwick.ac.uk>
 
 	* gettext.c: all gettext functions are now prefixed by gnu_

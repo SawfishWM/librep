@@ -1,3 +1,18 @@
+1999-11-21  John Harper  <john@dcs.warwick.ac.uk>
+
+	* version 0.8
+
+	* gaol.jl (gaol-add-file-handler, gaol-replace-file-handler):
+	new functions, allow access to be granted to file handlers
+	without letting any operation be performed
+
+1999-11-20  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.jl (string-equal-p, string-less-p): deleted
+
+	* compiler.jl (comp-test-funcall): check if a locally-bound
+	function before warning that it's undefined
+
 1999-11-18  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lisp.jl: unless it's already bound, make the _ function
