@@ -234,6 +234,9 @@
 #define OP_FLUID_SET 0xc0
 #define OP_FLUID_BIND 0xc1
 
+#define OP_MEMQL 0xc2			/* call-2 memql */
+#define OP_NUM_EQ 0xc3
+
 
 /* Jump opcodes */
 
