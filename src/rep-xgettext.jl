@@ -21,200 +21,43 @@ exec rep "$0" "$@"
 ;; along with librep; see the file COPYING.  If not, write to
 ;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-(defvar *current-file* nil)
-(defvar *found-strings* nil)		;list of (STRING FILES...)
+(require 'rep.i18n.xgettext)
 
 (defvar *write-c-file* nil)
 
-(defvar *included-defns* t)
-
-(defvar *only-commands* nil)
-
-(defun parse (filename)
-  (let
-      ((file (open-file filename 'read)))
-    (when file
-      (unwind-protect
-	  (condition-case nil
-	      (let
-		  ((*current-file* filename))
-		(while t
-		  (let
-		      ((form (read file))
-		       (*current-file* filename))
-		    (scan form))))
-	    (end-of-stream))
-	(close-file file)))))
-
-(defmacro scan-list (x)
-  `(when (consp ,x)
-     (mapc scan ,x)))
-
-(defmacro includep (type)
-  `(or (eq *included-defns* t) (memq ,type *included-defns*)))
-
-(defmacro include-functionp (form)
-  `(or (not *only-commands*) (assq 'interactive ,form)))
-
-(defun scan (form)
-  (if (and (consp form) (eq (car form) '_) (stringp (nth 1 form)))
-      (output (nth 1 form))
-
-    (when (and (car form) (macrop (car form)))
-      (setq form (macroexpand form)))
-    (cond ((eq (car form) 'quote))
-
-	  ((memq (car form) '(setq setq-default))
-	   (let
-	       ((tem (cdr form)))
-	     (while (cdr tem)
-	       (scan (nth 1 tem))
-	       (setq tem (nthcdr 2 tem)))))
-
-	  ((eq (car form) 'let)
-	   (mapc (lambda (x)
-		   (when (consp x)
-		     (scan-list (cdr x)))) (nth 1 form))
-	   (scan-list (nthcdr 2 form)))
-
-	  ((eq (car form) 'let*)
-	   (mapc (lambda (x)
-		   (when (consp x)
-		     (scan-list (cdr x)))) (nth 1 form))
-	   (scan-list (nthcdr 2 form)))
-
-	  ((eq (car form) 'function)
-	   (scan (cdr form)))
-
-	  ((eq (car form) 'cond)
-	   (mapc (lambda (f)
-		   (scan-list f)) (cdr form)))
-
-	  ((eq (car form) 'case)
-	   (mapc (lambda (f)
-		   (scan-list (cdr f))) (cdr form)))
-
-	  ((eq (car form) 'condition-case)
-	   (mapc (lambda (handler)
-		   (scan-list (cdr handler))) (nthcdr 2 form)))
-
-	  ((eq (car (car form)) 'lambda)
-	   ;; an inline lambda expression
-	   (scan (car form)))
-
-	  ((and (memq (car form) '(defun defmacro defsubst))
-		(includep (car form)) (include-functionp form))
-	   (let
-	       ((doc (nth 3 form)))
-	     (when (stringp doc)
-	       (output doc))
-	     (scan-list (nthcdr 2 form))))
-
-	  ((and (memq (car form) '(defvar defconst defcustom))
-		(includep (car form)))
-	   (let
-	       ((doc (nth 3 form)))
-	     (when (stringp doc)
-	       (output doc))
-	     (scan-list (nthcdr 2 form))))
-
-	  ((and (memq (car form) '(defgroup))
-		(includep (car form)))
-	   (let
-	       ((doc (nth 2 form)))
-	     (when (stringp doc)
-	       (output doc))
-	     (scan-list (nthcdr 2 form))))
-
-	  ((consp form)
-	   (scan-list form)))))
-
-(defun output (string)
-  (let
-      ((cell (assoc string *found-strings*)))
-    (if cell
-	(unless (member *current-file* (cdr cell))
-	  (rplacd cell (cons *current-file* (cdr cell))))
-      (setq *found-strings* (cons (list string *current-file*)
-				  *found-strings*)))))
-
-(defun output-all ()
-  (mapc (lambda (x)
-	  (let ((string (car x))
-		(files (cdr x)))
-	    (mapc (lambda (f)
-		    (format standard-output "%s %s %s\n"
-			    (if *write-c-file* "  /*" "#:")
-			    f (if *write-c-file* "*/" ""))) files)
-	    (let*
-		((print-escape 'newlines)
-		 (out (format nil "%S" string))
-		 (point 0))
-	      (if *write-c-file*
-		  (format standard-output "  _(%s);\n\n" out)
-		(while (and (< point (length out))
-			    (string-match "\\\\n" out point))
-		  (setq out (concat (substring out 0 (match-start)) "\\n\"\n\""
-				    (substring out (match-end))))
-		  (setq point (+ (match-end) 3)))
-		(format standard-output "msgid %s\nmsgstr \"\"\n\n" out)))))
-	(nreverse *found-strings*)))
-
 
 ;; entry point
+
+(when (get-command-line-option "--help")
+  (write standard-output "\
+usage: rep-xgettext [OPTIONS...] FILES...
+
+where OPTIONS are any of:
+
+  --include DEFINER
+  --c
+  --pot\n")
+  (throw 'quit 0))
 
 (when (or (get-command-line-option "-c") (get-command-line-option "--c"))
   (setq *write-c-file* t))
 (when (or (get-command-line-option "-p") (get-command-line-option "--pot"))
   (setq *write-c-file* nil))
 
-(let
-    (tem)
+(let ((included '()) tem)
   (while (setq tem (get-command-line-option "--include" t))
-    (setq *included-defns* (cons (intern tem) *included-defns*))))
-
-(when (get-command-line-option "--only-commands")
-  (setq *only-commands* t))
-
-(if *write-c-file*
-    (write standard-output "\
-/* SOME DESCRIPTIVE TITLE */
-/* This file is intended to be parsed by xgettext.
- * It is not intended to be compiled.
- */
-
-#if 0
-void some_function_name() {\n\n")
-
-  (format standard-output "\
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR Free Software Foundation, Inc.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
-#, fuzzy
-msgid \"\"
-msgstr \"\"
-\"Project-Id-Version: PACKAGE VERSION\\n\"
-\"POT-Creation-Date: %s\\n\"
-\"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\\n\"
-\"Last-Translator: FULL NAME <EMAIL@ADDRESS>\\n\"
-\"Language-Team: LANGUAGE <LL@li.org>\\n\"
-\"MIME-Version: 1.0\\n\"
-\"Content-Type: text/plain; charset=CHARSET\\n\"
-\"Content-Transfer-Encoding: ENCODING\\n\"\n\n"
-	  (current-time-string nil "%Y-%m-%d %H:%M%z")))
+    (setq included (cons (intern tem) included)))
+  (when included
+    (set-included-definers included)))
 
 (while command-line-args
-  (let
-      ((file (car command-line-args)))
+  (let ((file (car command-line-args)))
     (setq command-line-args (cdr command-line-args))
-    (parse file)))
-(output-all)
+    (scan-file file)))
 
-(when *write-c-file*
-  (write standard-output "\
-}
-#endif\n"))
+(if *write-c-file*
+    (output-c-file)
+  (output-pot-file))
 
 ;; Local variables:
 ;; major-mode: lisp-mode
