@@ -623,7 +623,7 @@ file_prin(VALUE strm, VALUE obj)
     stream_puts(strm, "#<file ", -1, FALSE);
     if(VFILE(obj)->name)
     {
-	stream_puts(strm, VSTR(VFILE(obj)->name), -1, FALSE);
+	stream_puts(strm, VPTR(VFILE(obj)->name), -1, TRUE);
 	stream_putc(strm, '>');
     }
     else
