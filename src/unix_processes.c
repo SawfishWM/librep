@@ -690,7 +690,7 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 		    int actual;
 		    fd_set inputs;
 		    bool done_out = FALSE, done_err = FALSE, exited = FALSE;
-		    int interrupt_count = 0;
+		    int interrupt_count = 0, post_exit_count = 0;
 
 		    FD_ZERO(&inputs);
 		    FD_SET(pr->pr_Stdout, &inputs);
@@ -704,7 +704,7 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 			fd_set copy = inputs;
 			struct timeval timeout;
 			int number;
-			timeout.tv_sec = exited ? 0 : 1;
+			timeout.tv_sec = 1;
 			timeout.tv_usec = 0;
 
 			sigchld_restart(FALSE);
@@ -785,11 +785,10 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 			   flags won't get set until the _orphan_ quits.
 
 			   Solution: Check for process exit here. If it
-			   has exited, allow one more attempt to read
-			   input (with a null timeout), before breaking
-			   the loop. */
+			   has exited, allow a few more attempts to read
+			   input, before breaking the loop. */
 
-			if(exited)
+			if(exited && ++post_exit_count > 2)
 			    break;
 
 			if(got_sigchld && waitpid(pr->pr_Pid,
