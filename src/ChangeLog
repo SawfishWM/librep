@@ -1,3 +1,16 @@
+2000-01-25  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep-xgettext.jl: support for outputting strings as a file of
+	C code
+
+	* rep-xgettext.jl (scan): support `case' statement
+
+	* main.c (rep_top_level_exit): call before-exit-hook
+
+	* unix_main.c (rep_sig_restart): use siginterrupt () instead of
+	sigaction () when possible (it seems to be more reliable in
+	certain cases?)
+
 2000-01-24  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lispcmds.c (Fcase): new special form, similar to in scheme
