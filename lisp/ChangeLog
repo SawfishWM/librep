@@ -1,3 +1,13 @@
+2000-03-14  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.jl (setq-default): now a macro
+	* compiler.jl (comp-trans-setq-default): deleted
+
+	* lisp.jl (dynamic-wind): defined in terms of call-with-barrier
+
+	* lisp-doc.jl (describe-function-1): handle macros, improper
+	parameter lists; some cosmetic improvements
+
 2000-03-13  John Harper  <john@dcs.warwick.ac.uk>
 
 	* compiler.jl (compile-file): only expand macros if the form

@@ -1,3 +1,7 @@
+2000-03-14  John Harper  <john@dcs.warwick.ac.uk>
+
+	* symbols.c (Fsetq_default): deleted, now a macro
+
 2000-03-13  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lisp.c (rep_bind_lambda_list): call Fcopy_sequence () on

@@ -479,7 +479,6 @@ extern repv Fsymbol_plist(repv);
 extern repv Fgensym(void);
 extern repv Fsymbolp(repv);
 extern repv Fsetq(repv);
-extern repv Fsetq_default(repv);
 extern repv Fmakunbound(repv);
 extern repv Fget(repv, repv);
 extern repv Fput(repv, repv, repv);

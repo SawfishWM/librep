@@ -35,6 +35,14 @@ Outstanding bugs
 General programming tasks:
 ==========================
 
+ - remove special forms (replacing them with macros) where both
+   possible and desirable
+
+   The current (14-3-99) list of special forms is:
+
+   case catch cond condition-case defconst defmacro defun defvar lambda
+   prog1 prog2 progn quote setq unwind-protect while with-object
+
  - eliminate tail calls in interpreted code
 
  - add a hygienic macro facility
