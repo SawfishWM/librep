@@ -37,8 +37,18 @@ sdbm-open PATH ACCESS-TYPE [MODE]
 {
     int uflags, umode;
     rep_dbm *dbm;
+    rep_GC_root gc_flags, gc_mode;
+
+    rep_PUSHGC(gc_flags, flags);
+    rep_PUSHGC(gc_mode, mode);
+    file = Flocal_file_name (file);
+    rep_POPGC; rep_POPGC;
+
+    if (!file)
+	return file;
     rep_DECLARE1(file, rep_STRINGP);
     rep_DECLARE2(flags, rep_SYMBOLP);
+
     uflags = (flags == Qwrite ? O_RDWR | O_CREAT | O_TRUNC
 	      : (flags == Qappend ? O_RDWR | O_CREAT : O_RDONLY));
     umode = rep_INTP(mode) ? rep_INT(mode) : 0666;
