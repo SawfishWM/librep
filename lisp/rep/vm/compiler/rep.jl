@@ -61,7 +61,7 @@
   ;; List of symbols, when the car of a top-level form is a member of this
   ;; list, don't macroexpand the form before compiling.
   (define top-level-unexpanded
-    '(defun defmacro defvar defconst defsubst require define-value
+    '(defun defmacro defvar defconst defsubst require
       declare eval-when-compile define-structure structure))
 
   ;; setup properties to tell the compiler where to look for symbols
@@ -116,12 +116,7 @@
        (fluid-set const-env (cons (cons (nth 1 form) (nth 2 form))
 				  (fluid const-env))))
 
-      ((define-value)
-       (let
-	   ((sym (nth 1 form)))
-	 (when (compiler-constant-p sym)
-	   (remember-lexical-variable
-	    (compiler-constant-value sym)))))
+      ((%define) (remember-lexical-variable (nth 1 form)))
 
       ((require)
        (if (compiler-constant-p (cadr form))
@@ -210,14 +205,11 @@
 	   (remember-variable (nth 1 form))))
        form)
 
-      ((define-value)
-       (let
-	   ((sym (nth 1 form))
-	    (value (nth 2 form)))
-	 (when (compiler-constant-p sym)
-	   (setq sym (compiler-constant-value sym))
-	   (unless (memq sym (fluid defines))
-	     (remember-lexical-variable (compiler-constant-value sym))))
+      ((%define)
+       (let ((sym (nth 1 form))
+	     (value (nth 2 form)))
+	 (unless (memq sym (fluid defines))
+	   (remember-lexical-variable (compiler-constant-value sym)))
 	 (when (and (listp value) (not (compiler-constant-p value)))
 	   ;; Compile the definition. A good idea?
 	   (rplaca (nthcdr 2 form) (compile-form (nth 2 form))))
@@ -326,6 +318,13 @@
       (compile-form-1 (nth 1 form))
       (emit-jmp-insn (bytecode jpt) top-label)))
   (put 'while 'rep-compile-fun compile-while)
+
+  (defun compile-%define (form)
+    (compile-constant (nth 1 form))
+    (compile-form-1 (nth 2 form))
+    (emit-insn (bytecode %define))
+    (decrement-stack))
+  (put '%define 'rep-compile-fun compile-%define)
 
   ;; Compile mapc specially if we can open code the function call
   (defun compile-mapc (form)
@@ -474,24 +473,22 @@
 
   (defun compile-defun (form)
     (remember-function (nth 1 form) (nth 2 form))
+    (compile-constant (nth 1 form))
     (compile-constant
      (compile-lambda (cons 'lambda (nthcdr 2 form)) (nth 1 form)))
     (emit-insn (bytecode enclose))
-    (emit-insn (bytecode dup))
-    (increment-stack)
-    (emit-varset (nth 1 form))
+    (emit-insn (bytecode %define))
     (decrement-stack))
   (put 'defun 'rep-compile-fun compile-defun)
 
   (defun compile-defmacro (form)
     (remember-function (nth 1 form) (nth 2 form))
+    (compile-constant (nth 1 form))
     (compile-constant
      (cons 'macro
 	   (compile-lambda (cons 'lambda (nthcdr 2 form)) (nth 1 form))))
     (emit-insn (bytecode enclose))
-    (emit-insn (bytecode dup))
-    (increment-stack)
-    (emit-varset (nth 1 form))
+    (emit-insn (bytecode %define))
     (decrement-stack))
   (put 'defmacro 'rep-compile-fun compile-defmacro)
 

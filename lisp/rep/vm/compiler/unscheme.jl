@@ -62,6 +62,7 @@
   (put '\#progn 'unscheme-compile-fun (get 'progn 'rep-compile-fun))
 
   (put 'set! 'unscheme-compile-fun (get 'set! 'scheme-compile-fun))
+  (put '\#define 'unscheme-compile-fun (get '%define 'rep-compile-fun))
 
   ;; compile let* specially to coalesce all bindings into a single frame
   (put 'let* 'unscheme-compile-fun (get 'let* 'rep-compile-fun))

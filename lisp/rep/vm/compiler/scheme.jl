@@ -164,6 +164,8 @@
       (decrement-stack)))
   (put 'set! 'scheme-compile-fun compile-set!)
 
+  (put '\#define 'unscheme-compile-fun (get '%define 'rep-compile-fun))
+
   (defun compile-\#test (form)
     (compile-form-1 (cadr form))
     (emit-insn (bytecode scm-test)))
