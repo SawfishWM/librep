@@ -64,6 +64,15 @@
 /* Pushes the ARG'th value in the lexical environment */
 #define OP_REFN 0x38
 
+#define OP_REFN_0 0x38
+#define OP_REFN_1 0x39
+#define OP_REFN_2 0x3a
+#define OP_REFN_3 0x3b
+#define OP_REFN_4 0x3c
+#define OP_REFN_5 0x3d
+#define OP_REFN_6 0x3e
+#define OP_REFN_7 0x3f
+
 /* Sets the ARG'th value in the lexical environment. Pops value */
 #define OP_SETN 0xe8
 

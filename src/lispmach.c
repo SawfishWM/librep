@@ -291,8 +291,8 @@ list_ref (repv list, int elt)
  &&TAG0(OP_LIST), &&TAG0(OP_LIST), &&TAG1(OP_LIST), &&TAG2(OP_LIST),				\
  &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, /*30*/			\
  &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT,				\
- &&TAG0(OP_REFN), &&TAG0(OP_REFN), &&TAG0(OP_REFN), &&TAG0(OP_REFN), /*38*/			\
- &&TAG0(OP_REFN), &&TAG0(OP_REFN), &&TAG1(OP_REFN), &&TAG2(OP_REFN),				\
+ &&TAG(OP_REFN_0), &&TAG(OP_REFN_1), &&TAG(OP_REFN_2), &&TAG(OP_REFN_3), /*38*/			\
+ &&TAG(OP_REFN_4), &&TAG(OP_REFN_5), &&TAG(OP_REFN_6), &&TAG(OP_REFN_7),				\
 												\
  &&TAG(OP_REF), &&TAG(OP_SET), &&TAG(OP_FLUID_REF), &&TAG(OP_ENCLOSE), /*40*/			\
  &&TAG(OP_INIT_BIND), &&TAG(OP_UNBIND), &&TAG(OP_DUP), &&TAG(OP_SWAP),				\
@@ -853,7 +853,48 @@ again:
 	    SAFE_NEXT;
 	END_INSN
 
-	BEGIN_INSN_WITH_ARG (OP_REFN)
+	/* REFN is a normal INSN_WITH_ARG, but factor out the constant
+	   argument where possible, to enable hardcoding the number
+	   of cdr's to skip. */
+	   
+	BEGIN_INSN (OP_REFN_0)
+	    PUSH (rep_CAR (rep_env));
+	    SAFE_NEXT;
+	END_INSN
+
+	BEGIN_INSN (OP_REFN_1)
+	    PUSH (rep_CADR (rep_env));
+	    SAFE_NEXT;
+	END_INSN
+
+	BEGIN_INSN (OP_REFN_2)
+	    PUSH (rep_CADDR (rep_env));
+	    SAFE_NEXT;
+	END_INSN
+
+	BEGIN_INSN (OP_REFN_3)
+	    PUSH (rep_CADDDR (rep_env));
+	    SAFE_NEXT;
+	END_INSN
+
+	BEGIN_INSN (OP_REFN_4)
+	    PUSH (rep_CAR (rep_CDDDDR (rep_env)));
+	    SAFE_NEXT;
+	END_INSN
+
+	BEGIN_INSN (OP_REFN_5)
+	    PUSH (rep_CADR (rep_CDDDDR (rep_env)));
+	    SAFE_NEXT;
+	END_INSN
+
+	BEGIN_INSN (OP_REFN_6)
+	    arg = FETCH;
+	    PUSH (rep_CAR (snap_environment (arg)));
+	    SAFE_NEXT;
+	END_INSN
+
+	BEGIN_INSN (OP_REFN_7)
+	    FETCH2 (arg);
 	    PUSH (rep_CAR (snap_environment (arg)));
 	    SAFE_NEXT;
 	END_INSN
