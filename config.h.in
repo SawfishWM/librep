@@ -244,6 +244,9 @@
 /* Define if using Doug Lea's malloc */
 #undef DOUG_LEA_MALLOC
 
+/* Define if using libc's malloc */
+#undef LIBC_MALLOC
+
 /* Define if using r_alloc and friends */
 #undef USE_R_ALLOC
 

@@ -60,15 +60,16 @@ AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
 AC_CHECK_HEADERS(fcntl.h sys/ioctl.h sys/time.h sys/utsname.h unistd.h siginfo.h memory.h stropts.h termios.h)
 
-dnl Check for Doug Lea's malloc in libc, otherwise compile gmalloc
+dnl Check for Doug Lea's malloc in libc, otherwise compile dlmalloc.c
 doug_lea_malloc=yes
 AC_CHECK_FUNC(malloc_get_state, , doug_lea_malloc=no)
 AC_CHECK_FUNC(malloc_set_state, , doug_lea_malloc=no)
-if test "$doug_lea_malloc" = "yes"; then
-  AC_DEFINE(DOUG_LEA_MALLOC)
+if test "$doug_lea_malloc" = "no"; then
+  JADE_LIBOBJS="${JADE_LIBOBJS} dlmalloc.o"
 else
-  JADE_LIBOBJS="${JADE_LIBOBJS} gmalloc.o"
+  AC_DEFINE(LIBC_MALLOC)
 fi
+AC_DEFINE(DOUG_LEA_MALLOC)
 
 dnl Use r_alloc or not?
 use_r_alloc=yes
