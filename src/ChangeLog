@@ -1,3 +1,8 @@
+2000-02-12  John Harper  <john@dcs.warwick.ac.uk>
+
+	* files.c (rep_file_fdopen): new function, open a file object
+	from a file descriptor and libc mode string
+
 2000-02-09  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lisp.c (rep_load_autoload): handle overwriting macro

@@ -121,6 +121,7 @@ extern repv Fstdin_file(void);
 extern repv Fstdout_file(void);
 extern repv Fstderr_file(void);
 extern repv Fmake_temp_name(void);
+extern repv rep_file_fdopen (int fd, char *mode);
 
 /* from find.c */
 extern rep_regexp *rep_compile_regexp(repv re);
