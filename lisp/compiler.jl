@@ -316,9 +316,13 @@ that files which shouldn't be compiled aren't."
 
 ;; Increment the current stack size, setting the maximum stack size if
 ;; necessary
-(defun comp-inc-stack ()
-  (when (> (setq comp-current-stack (1+ comp-current-stack)) comp-max-stack)
-    (setq comp-max-stack comp-current-stack)))
+(defmacro comp-inc-stack (&optional n)
+  (list 'when (list '> (list 'setq 'comp-current-stack
+			     (if n
+				 (list '+ 'comp-current-stack n)
+			       (list '1+ 'comp-current-stack)))
+		       'comp-max-stack)
+	'(setq comp-max-stack comp-current-stack)))
 
 ;; Decrement the current stack usage
 (defmacro comp-dec-stack (&optional n)
@@ -382,7 +386,13 @@ that files which shouldn't be compiled aren't."
 
 ;; Push a constant onto the stack
 (defun comp-compile-constant (form)
-  (comp-write-op op-push (comp-add-constant form))
+  (cond
+   ((eq form nil)
+    (comp-write-op op-nil))
+   ((eq form t)
+    (comp-write-op op-t))
+   (t
+    (comp-write-op op-push (comp-add-constant form))))
   (comp-inc-stack))
 
 ;; Put a constant into the alist of constants, returning its index number.
@@ -737,8 +747,7 @@ that files which shouldn't be compiled aren't."
     ;;		pop
     ;;		ejmp end
     ;; [overall, stack +1]
-    (comp-inc-stack)
-    (comp-inc-stack)
+    (comp-inc-stack 2)
     (comp-set-label cleanup-label)
     (comp-compile-body (nthcdr 2 form))
     (comp-write-op op-pop)
@@ -779,8 +788,7 @@ that files which shouldn't be compiled aren't."
     (comp-compile-jmp op-jmp start-label)
     (comp-set-label cleanup-label)
 
-    (comp-inc-stack)			;reach here with two items on stack
-    (comp-inc-stack)
+    (comp-inc-stack 2)			;reach here with two items on stack
     (if (consp handlers)
 	(progn
 	  ;; Loop over all but the last handler
