@@ -271,6 +271,7 @@ rep_load_environment (repv file)
 	"rep.module-system",
 	"rep.lang.math",
 	"rep.data",
+	"rep.regexp",
 	"rep.system",
 	"rep.io.streams",
 	"rep.io.files",
