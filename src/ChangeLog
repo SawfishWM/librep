@@ -1,3 +1,11 @@
+2000-04-10  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispcmds.c (Fload): ignore the NO-SUFFIX parameter while
+	searching for dl libraries
+
+	* unix_dl.c (rep_open_dl_library): when opening a structure,
+	correctly set feature_sym to the name of the structure
+
 2000-04-09  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep_lisp.h (rep_symbol): removed `prop_list' field
