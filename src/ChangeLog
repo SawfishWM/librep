@@ -1,3 +1,17 @@
+2000-06-24  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispmach.c, lispcmds.c, lisp.c: when signalling Qbad_arg or
+	Qmissing_arg, first element of error data is function object if
+	known, else nil
+
+	* readline.c (completion_generator): call the function
+	rl-completion-generator in a separate thread context
+
+2000-06-23  John Harper  <john@dcs.warwick.ac.uk>
+
+	* gettext.c (rep_dl_init): set binding of `_' in `rep' module
+	to point to the `gettext' function
+
 2000-06-22  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lisp.c (read_symbol): don't treat `0/...' as symbols

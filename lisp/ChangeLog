@@ -1,3 +1,14 @@
+2000-06-25  John Harper  <john@dcs.warwick.ac.uk>
+
+	* ring.jl (ring->list): new function
+
+2000-06-23  John Harper  <john@dcs.warwick.ac.uk>
+
+	* ring.jl: encapsulate rings in datums, cleaned up the api
+	(added ring-append, ring-ref, ring-replace. ring-ref counts
+	from zero unlike the old get-from-ring), no longer uses macros
+	for inlining
+
 2000-06-22  John Harper  <john@dcs.warwick.ac.uk>
 
 	* version 0.12.2

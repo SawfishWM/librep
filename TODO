@@ -95,6 +95,17 @@ General programming tasks:
 
  - I/O shouldn't block all threads
 
+   wait_for_input () already groks threads, so I think the only problem
+   is the use of stdio/fd functions. How does stdio handle streams that
+   have been set non-blocking? Maybe reimplement basic stdio?
+
+   at the bottom level, have something like:
+
+   thread_select (THREAD, int NEVENTS, struct pollfd *EVENTS, TIMEOUT)
+
+   Then the call to rep_sleep_for () in thread_invoke () is replaced by
+   a direct call to poll () (instead of a timeout using select)
+
  - add regression tests
 
  - scheme compilation is worse than rep compilation
