@@ -75,7 +75,7 @@
      "fluid-set" "fluid-bind" "memql" "num-eq"
      "test-scm" "test-scm-f" "%define" "spec-bind"	; #xc0
      "set" "required-arg" "optional-arg" "rest-arg"
-     "not-zero-p" "keyword-arg" nil nil
+     "not-zero-p" "keyword-arg" "optional-arg-with-default" "keyword-arg-with-default"
      nil nil nil nil nil nil nil nil	; #xd0
      nil nil nil nil nil nil nil nil
      nil nil nil nil nil nil nil nil	; #xe0
