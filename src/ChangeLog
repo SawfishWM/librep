@@ -1,3 +1,8 @@
+1999-11-27  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_processes.c, timers.c, symbols.c, repsdbm.c, files.c:
+	remember to add to rep_data_after_gc when allocating data
+
 1999-11-25  John Harper  <john@dcs.warwick.ac.uk>
 
 	* values.c, unix_dl.c, timers.c, symbols.c, rep_subrs.h,

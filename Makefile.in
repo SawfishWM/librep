@@ -41,7 +41,8 @@ install : all installdirs
 	set -e; for dir in $(INSTALL_SUBDIRS); do \
 	  ( cd $$dir && $(MAKE) $@ ); \
 	done
-	$(INSTALL_DATA) DOC.* $(DESTDIR)$(repdir)/$(version)
+	$(INSTALL_DATA) DOC.pag $(DESTDIR)$(repdir)/$(version)
+	$(INSTALL_DATA) DOC.dir $(DESTDIR)$(repdir)/$(version)
 	$(INSTALL_SCRIPT) libtool $(DESTDIR)$(repcommonexecdir)
 	$(INSTALL_DATA) rules.mk $(DESTDIR)$(repcommonexecdir)
 	$(INSTALL_DATA) rep.m4 $(DESTDIR)$(aclocaldir)

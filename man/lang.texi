@@ -2069,10 +2069,10 @@ foo\(bar\)              ; @samp{foo(bar)}
 @subsection Symbol Attributes
 @cindex Symbol attributes
 
-All symbols have four basic attributes: name, value, function and
-plist. Most important is the @dfn{print name} of the symbol. This is a
-string naming the symbol, after it has been defined (when the symbol is
-first created) it may not be changed.
+All symbols have three basic attributes: name, value and property list.
+Most important is the @dfn{print name} of the symbol. This is a string
+naming the symbol, after it has been defined (when the symbol is first
+created) it may not be changed.
 
 @defun symbol-name symbol
 This function returns the print name of the symbol @var{symbol}.
@@ -2084,19 +2084,12 @@ This function returns the print name of the symbol @var{symbol}.
 @end defun
 
 Each symbol also has a @dfn{value} storing the value of this symbol
-when it is referenced as a variable. Usually this cell is accessed
-implicitly by evaluating a variable form (i.e. just writing the name of
-the symbol) but it can also be read via the @code{symbol-value}
-function (@pxref{Variables}). Some applications that embed
-@code{librep} may allow symbols to have local values, based on context,
-but this never happens in the stand-alone interpreter.
-
-Similar to the value cell each symbol also has a @dfn{function} cell
-which contains the function definition of the symbol (@pxref{Named
-Functions}). The @code{symbol-function} function can be used to read
-this cell and the @code{fset} function to set it. When a symbol occurs
-in the first element of an evaluated list, it is the function value
-that provides the function to invoke.
+when it is evaluated. Usually this cell is accessed implicitly by
+evaluating a variable form (i.e. just writing the name of the symbol)
+but it can also be read via the @code{symbol-value} function
+(@pxref{Variables}). Some applications that embed @code{librep} may
+allow symbols to have local values, based on context, but this never
+happens in the stand-alone interpreter.
 
 Lastly, there is the symbol's @dfn{property list}, or plist. This is
 similar to an alist (@pxref{Association Lists}), though stored
@@ -2412,9 +2405,10 @@ the stack size limit (causing a segmentation fault).
 @cindex Forms, symbol
 @cindex Forms, variable
 
-When the evaluator is applied to a symbol the computed value of the form
-is the object stored in the symbol's variable slot. Basically this means
-that to get the value of a variable you simply write its name. For example,
+When the evaluator is applied to a symbol the computed value of the
+form is the value associated with the symbol in the current
+environment. Basically this means that to get the value of a variable
+you simply write its name. For example,
 
 @lisp
 rep-version
@@ -2427,7 +2421,7 @@ get the value of the variable @code{rep-version} and the result when
 this form is evaluated.
 
 Since forms are evaluated within the current environment the value of a
-variable is its newest binding. @xref{Variables}.
+variable is its most-recent extant binding. @xref{Variables}.
 
 If the value of an evaluated symbol is void an error is signalled.
 
@@ -2445,11 +2439,11 @@ macros, special forms and autoloads. When the evaluator finds a form
 which is a list it tries to classify the form into one of these four
 types.
 
-First of all it looks at the first element of the list, if it is a
-symbol it gets the value from the function slot of the symbol (note
-that the first element of a list form is @emph{never} evaluated
-itself). This value (either the first element or the symbol's function
-value) is enough to classify the form into one of the four types.
+First of all it evaluates the first element of the list; the computed
+value of this element decides how the rest of the elements in the list
+are treated. For example, if the first element is a symbol whose value
+is a function, then that function is called with the other values in
+the list.
 
 @menu
 * Function Call Forms::         `Normal' subroutines
@@ -2464,25 +2458,23 @@ value) is enough to classify the form into one of the four types.
 @cindex Function call forms
 @cindex Forms, function call
 
-The first element of a function call form is the name of the function,
-this can be either a symbol (in which case the symbol's function value
-is indirected through to get the real function definition) or a lambda
-expression (@pxref{Lambda Expressions}).
-
-Any other elements of the list are forms to be evaluated (in left to
-right order) and their values become the arguments to the function. The
-function is applied to these arguments and the result that it returns
-becomes the value of the form.
+When the first element of a list form evaluates to a function object
+(either a primitive subroutine or a closure), all other elements in the
+list are evaluated sequentially, then these values are applied to the
+function definition. The result returned by the function is then taken
+as the value of the whole list form.
 
 For example, consider the form @code{(/ 100 (1+ 4))}. This is a
-function call to the function @code{/}. First the @code{100} form is
-evaluated: it is a number, so self-evaluates to the value @code{100}.
-Next the form @code{(1+ 4)} is evaluated. This is also a function call
-and computes to a value of @code{5} which becomes the second argument
-to the @code{/} function. Now the @code{/} function is applied to its
-evaluated arguments of @code{100} and @code{5}, and returns the value
-@code{20}. This then becomes the value of the form @code{(/ 100 (1+
-4))}.
+function call to the function stored in the variable @code{/}. First
+the @code{/} form is evaluated, it is a variable containing a data
+value representing the primitive subroutine for integer division. Then
+the @code{100} form is evaluated: it is a number, so self-evaluates to
+the value @code{100}. Next the form @code{(1+ 4)} is evaluated. This is
+also a function call and computes to a value of @code{5} which becomes
+the second argument to the @code{/} function. Now the @code{/} function
+is applied to its evaluated arguments of @code{100} and @code{5}, and
+returns the value @code{20}. This then becomes the value of the form
+@code{(/ 100 (1+ 4))}.
 
 @lisp
 (/ 100 (1+ 4))
@@ -2546,7 +2538,7 @@ The special forms supported by librep are: @code{and}, @code{catch},
 Returns @code{t} if @var{arg} is a special form.
 
 @lisp
-(special-form-p 'setq)
+(special-form-p setq)
     @result{} t
 @end lisp
 @end defun
@@ -2565,8 +2557,7 @@ function, then re-evaluates the original form. By then the autoload
 form will have been overwritten in the symbol's function slot by the
 true function (when it was loaded) so the form will execute properly.
 
-An autoload form is a list whose first element is the symbol @code{autoload},
-for full details see @ref{Autoloading}.
+For more details see @ref{Autoloading}.
 
 
 @node Self-Evaluating Forms, Quoting, List Forms, Evaluation
@@ -3135,6 +3126,12 @@ is either @code{t} or a list containing the @var{error-symbol} to
 When the debugger exits the error is signalled as normal.
 @end defvar
 
+@defvar backtrace-on-error
+Similar to @code{debug-on-error}, but if an error is matched, the
+current backtrace is printed to the standard error stream, and control
+continues.
+@end defvar
+
 When you expect an error to occur and need to be able to regain control
 afterwards the @code{condition-case} special form may be used.
 
@@ -3216,14 +3213,14 @@ variable has more than one binding currently in place, only the most
 recent is available---there is no way the previous binding can be
 accessed until the previous binding is removed.
 
-An accurate way of visualising variable binding is to think of each
-variable as a stack. When the variable is bound to, a new value is
-pushed onto the stack, when it is unbound the top of the stack is
-popped. Similarly when the stack is empty the value of the variable is
-void (@pxref{Void Variables}). Assigning a value to the variable
-(@pxref{Setting Variables}) overwrites the top value on the stack with
-a new value. When the value of the variable is required it is simply
-read from the top of the stack.
+One way of visualising variable binding is to think of each variable as
+a stack. When the variable is bound to, a new value is pushed onto the
+stack, when it is unbound the top of the stack is popped. Similarly
+when the stack is empty the value of the variable is void (@pxref{Void
+Variables}). Assigning a value to the variable (@pxref{Setting
+Variables}) overwrites the top value on the stack with a new value.
+When the value of the variable is required it is simply read from the
+top of the stack.
 
 Apart from function applications there are two special forms which
 perform variable binding (i.e. creating local variables), @code{let}
@@ -3351,9 +3348,9 @@ run-time, and therefore has to be computed from a form.
 
 In the @code{librep} dialect of Lisp by default variables have
 @dfn{lexical scope}. This means that bindings are associated with
-textual region of programs, and may be accessed by any forms within
+textual regions of programs, and may be accessed by any forms within
 this associated textual region. Moreover, the bindings are persistent,
-even when the flow of control has not passed through the associated
+even when the flow of control is currently outside the associated
 region.
 
 Consider the following example:
@@ -3411,8 +3408,8 @@ and debug. A quick example of the use of dynamic scope,
 @end lisp
 
 @noindent
-As shown in the previous example, many programmers mark special
-variables by enclosing them within asterisks.
+As shown in the previous example, a common convention is to mark
+special variables by enclosing there names within asterisks.
 
 
 @node Void Variables, Constant Variables, Scope and Extent, Variables
@@ -3563,13 +3560,13 @@ Returns @code{t} if @var{object} is a function (i.e. it can be used
 as the function argument of @code{funcall}.
 
 @lisp
-(functionp 'set)
+(functionp set)
     @result{} t
 
-(functionp 'setq)
+(functionp setq)
     @result{} nil
 
-(functionp #'(lambda (x) (+ x 2)))
+(functionp (lambda (x) (+ x 2)))
    @result{} t
 @end lisp
 @end defun
@@ -3584,17 +3581,16 @@ Returns a string naming the primitive subroutine @var{subr}.
 
 @menu
 * Lambda Expressions::          Structure of a function object
-* Named Functions::             Functions can be named by symbols,
+* Defining Functions::          How to write a function definition
 * Anonymous Functions::         Or they can be un-named
 * Predicate Functions::         Functions which return boolean values
-* Defining Functions::          How to write a function definition
 * Local Functions::             Binding functions temporarily
 * Calling Functions::           Functions can be called by hand
 * Mapping Functions::           Map a function to the elements of a list
 @end menu
 
 
-@node Lambda Expressions, Named Functions, , Functions
+@node Lambda Expressions, Defining Functions, , Functions
 @subsection Lambda Expressions
 @cindex Lambda expressions
 @cindex Functions, lambda expressions
@@ -3604,16 +3600,7 @@ objects. A lambda expression is a list whose first element is the
 symbol @code{lambda}. All functions written in Lisp (as opposed to the
 primitive functions in C) are defined using lambda expressions.
 
-Note that a lambda expression is @emph{not} an expression, evaluating a
-lambda expression will give an error (unless there is a function called
-@code{lambda}).
-
-However, neither is a lambda expression a function, it must be
-associated with an @dfn{environment}, defining the set of lexically
-bound variables and functions that it may access. This joining of a
-lambda expression and an environment is called a @dfn{closure}.
-
-The format of a lambda expression is:
+The general format of a lambda expression is:
 
 @lisp
 (lambda @var{lambda-list} [@var{doc}] [@var{interactive-declaration}] @var{body-forms}@dots{} )
@@ -3641,12 +3628,31 @@ When used in a full lambda expression this looks like:
 @end lisp
 
 @noindent
-this defines an anonymous function with two parameters, @code{x} and
-@code{y}, and evaluates to their sum.
+this evaluates to an anonymous function with two parameters, @code{x}
+and @code{y}, which when called evaluates to their sum.
 
-To complicate matters there are several @dfn{lambda-list keywords}
-which modify the meaning of symbols in the lambda-list. Each keyword is
-a symbol whose name begins with an ampersand, they are:
+Note that a lambda expression itself is @emph{not} a function, it must
+be associated with a lexical environment, this conjunction is usually
+called a closure; it is the closure that may be called as a function.
+
+However, to confuse matters, a lambda expression @emph{evaluates} to
+the closure of itself and the current environment. Consider the
+following example:
+
+@lisp
+(lambda (x) (1+ x))
+    @result{} #<closure>
+
+(functionp (lambda (x) (1+ x)))
+    @result{} t
+
+(functionp '(lambda (x) (1+ x)))
+    @result{} nil
+@end lisp
+
+There are several @dfn{lambda-list keywords} which modify the meaning
+of symbols in the lambda-list. Each keyword is a symbol whose name
+begins with an ampersand, they are:
 
 @table @code
 @item &optional
@@ -3701,79 +3707,56 @@ the function call. Finally, all parameters are unbound and control
 passes back to the caller.
 
 
-@node Named Functions, Anonymous Functions, Lambda Expressions, Functions
-@subsection Named Functions
-@cindex Named functions
-@cindex Functions, named
+@node Defining Functions, Anonymous Functions, Lambda Expressions, Functions
+@subsection Defining Functions
+@cindex Defining functions
+@cindex Functions, defining
 
-Functions are normally associated with symbols, the name of the symbol
-being the name of the associated function definition. Each symbol has a
-special function cell (separate from the symbol's value as a variable
---- variables and functions may have the same name without any problems
-occurring) which is used to store the function's definition, either a
-lambda expression (@pxref{Lambda Expressions}) or a primitive function.
+Globally accessible functions are usually defined by the @code{defun}
+special form.
 
-The evaluator knows to indirect through the function value of a symbol
-in any function call (@pxref{Function Call Forms}) so the normal way to
-call a function is to write its name as the first element in a list,
-any arguments making up the other elements in the list. @xref{List
-Forms}.
+@defspec defun name lambda-list body-forms@dots{}
+@code{defun} initialises the function definition of the symbol
+@var{name} to the lambda expression resulting from the concatenation of
+the symbol @code{lambda}, @var{lambda-list} and the @var{body-forms}.
 
-The functions and special forms which take functions as their arguments
-(i.e. @code{funcall}) can also take symbols. For example,
+The @var{body-forms} may contain a documentation string for the
+function as its first form and an interactive calling specification as
+its first (if there is no doc-string) or second form if the function
+may be called interactively by the user (@pxref{Lambda Expressions}).
+@end defspec
 
-@lisp
-(funcall 'message "An example")
-@equiv{}
-(message "An example")
-@end lisp
-
-@defun symbol-function symbol
-Returns the value of the function cell in the symbol @var{symbol}.
+An example function definition taken from the @code{librep} source code is:
 
 @lisp
-(symbol-function 'symbol-function)
-    @result{} #<subr symbol-function>
+(defun load-all (file)
+  "Try to load files called FILE (or FILE.jl, etc) from all
+directories in the Lisp load path."
+  (mapc (lambda (dir)
+          (let
+              ((full-name (expand-file-name file dir)))
+            (when (or (file-exists-p full-name)
+                      (file-exists-p (concat full-name ".jl"))
+                      (file-exists-p (concat full-name ".jlc")))
+              (load full-name nil t))))
+        load-path))
 @end lisp
-@end defun
-
-@defun fboundp symbol
-This function returns @code{t} if the symbol @var{symbol} has a
-non-void value in its function cell, @code{nil} otherwise.
-
-@lisp
-(fboundp 'setq)
-    @result{} t
-@end lisp
-@end defun
-
-@defun fset symbol new-value
-Sets the value of the function cell in the symbol @var{symbol} to
-@var{new-value}, then returns @var{new-value}.
-
-This function is rarely used, see @ref{Defining Functions}.
-@end defun
-
-@defun fmakunbound symbol
-This function makes the value of the function cell in @var{symbol} void,
-then returns @var{symbol}.
-@end defun
 
 
-@node Anonymous Functions, Predicate Functions, Named Functions, Functions
+@node Anonymous Functions, Predicate Functions, Defining Functions, Functions
 @subsection Anonymous Functions
 @cindex Anonymous functions
 @cindex Functions, anonymous
 
-When supplying functions as arguments to other functions it is useful
-to give an actual function @emph{definition} (i.e. an enclosed lambda
-expression) instead of the name of a function.
+When supplying functions as arguments to other functions it is often
+useful to give an actual function @emph{definition} (i.e. an enclosed
+lambda expression) instead of the name of a function.
 
 In Lisp, unlike most other programming languages, functions have no
 inherent name. As seen in the last section named-functions are created
-by storing a function in a special slot of a symbol, if you want, a
-function can have many different names: simply store the function in
-many different symbols!
+by storing a function object in a variable, if you want, a function can
+have many different names: simply store the function in many different
+variables!
 
 So, when you want to pass a function as an argument there is the option
 of just writing down its definition. This is especially useful with
@@ -3782,37 +3765,25 @@ following form removes all elements from the @var{list} which are even
 and greater than 20.
 
 @lisp
-(setq @var{list} (delete-if #'(lambda (x)
-                                (and (zerop (% x 2))
-                                     (> x 20)))
-                            @var{list}))
+(setq @var{list} (delete-if (lambda (x)
+                        (and (zerop (% x 2)) (> x 20)))
+                      @var{list}))
 @end lisp
 
 The above lambda expression combines two predicates applied to its
 argument.
 
-Note that this function definition is quoted by @code{#'}, not the
-normal @code{'}. This is a special shortcut for the @code{function}
-special form (like @code{'} is a shortcut to @code{quote}). In general,
-@code{#'@var{x}} is expanded by the Lisp reader to @code{(function
-@var{x})}.
-
-@defspec function arg
-If @var{arg} is a list, then return the closure of @var{arg} and the
-current lexical environment; otherwise just return @var{arg}.
-@end defspec
-
-What this means is when you have to quote a function, use the @code{#'}
-syntax. In certain cases it may be necessary to create a non-constant
-function, for example by using backquoting (@pxref{Backquoting}). In
-these cases the @code{make-closure} function may be used.
+In certain cases it may be necessary to create a non-constant function,
+for example by using backquoting (@pxref{Backquoting}). In these cases
+the @code{make-closure} function may be used to create a function
+object from a lambda expression.
 
 @defun make-closure arg
 Return the closure of @var{arg} and the current lexical environment.
 @end defun
 
 
-@node Predicate Functions, Defining Functions, Anonymous Functions, Functions
+@node Predicate Functions, Local Functions, Anonymous Functions, Functions
 @subsection Predicate Functions
 @cindex Predicate functions
 @cindex Boolean values, predicate functions
@@ -3833,77 +3804,27 @@ called @code{const-variable-p}. On the other hand the predicate to test
 for the quality @dfn{cons} (a Cons cell) is called @code{consp}.
 
 
-@node Defining Functions, Local Functions, Predicate Functions, Functions
-@subsection Defining Functions
-@cindex Defining functions
-@cindex Functions, defining
-
-Named functions (@pxref{Named Functions}) are normally defined by the
-@code{defun} special form.
-
-@defspec defun name lambda-list body-forms@dots{}
-@code{defun} initialises the function definition of the symbol @var{name}
-to the lambda expression resulting from the concatenation of the
-symbol @code{lambda}, @var{lambda-list} and the @var{body-forms}. So,
-
-@lisp
-(defun foo (x y)
-  @dots{}
-@equiv{}
-(fset 'foo #'(lambda (x y)
-               @dots{}
-@end lisp
-
-The @var{body-forms} may contain a documentation string for the function
-as its first form and an interactive calling specification as its first (if
-there is no doc-string) or second form if the function may be called
-interactively by the user (@pxref{Lambda Expressions}).
-@end defspec
-
-An example function definition taken from the @code{librep} source code is:
-
-@lisp
-(defun load-all (file)
-  "Try to load files called FILE (or FILE.jl, etc) from all
-directories in the Lisp load path."
-  (mapc #'(lambda (dir)
-            (let
-                ((full-name (expand-file-name file dir)))
-              (when (or (file-exists-p full-name)
-                        (file-exists-p (concat full-name ".jl"))
-                        (file-exists-p (concat full-name ".jlc")))
-                (load full-name nil t))))
-        load-path))
-@end lisp
-
-
-@node Local Functions, Calling Functions, Defining Functions, Functions
+@node Local Functions, Calling Functions, Predicate Functions, Functions
 @subsection Local Functions
 @cindex Local functions
 @cindex Functions, local
 
 The @code{defun} special form allows globally-accessible functions to
 be defined. It is often desirable to declare functions local to the
-current lexical environment. The @code{flet} special form enables this.
+current lexical environment. The @code{let} and @code{let*} special
+form that were introduced earlier allow this since named functions are
+simply functional values stored in variables.
 
-@defspec flet bindings forms@dots{}
-Similar to the @code{let} special form, but binds functions instead of
-variables, then evaluates the @var{forms} in the new functional
-environment. @var{bindings} is a list containing function definitions,
-each written as @code{(@var{name} @var{lambda-list} @var{body})}. For
-example:
+For example,
 
 @lisp
-(flet
-    ((+ (x y)
-       (- x y)))
-  (+ 3 2))
-    @result{} 1
+(let
+    ((temporary-function (lambda (x)
+                           (+ x 42))))
+  @dots{}
+  (temporary-function 20)
+  @dots{}
 @end lisp
-
-@noindent
-this locally redefines the @code{+} function to implement subtraction.
-@end defspec
 
 
 @node Calling Functions, Mapping Functions, Local Functions, Functions
@@ -3912,23 +3833,13 @@ this locally redefines the @code{+} function to implement subtraction.
 @cindex Functions, calling
 
 Most of the time function applications are made by the evaluator when
-it detects a function call form (@pxref{List Forms}); when the function
-to be called is not known until run-time it is possible to call the
-function directly, using the @code{funcall} function.
+it finds a functional value after evaluating the first element of a
+list form. However two functions are available for manually calling
+functions.
 
 @defun funcall function &rest args
 Applies the argument values @var{args} to the function @var{function}, then
 returns its result.
-
-Note that the argument values @var{args} are @emph{not} evaluated. This
-means that @code{funcall} can @emph{not} be used to call macros or
-special forms---they would need the unevaluated versions of
-@var{args}, which are not available to @code{funcall}.
-
-@lisp
-(funcall '+ 1 2 3)
-    @result{} 6
-@end lisp
 @end defun
 
 @defun apply function &rest args
@@ -3938,8 +3849,11 @@ a @emph{list} of arguments which are appended to the other members of
 function @var{function}.
 
 @lisp
-(apply '+ 1 '(2 3))
+(apply + 1 '(2 3))
     @result{} 6
+
+(apply + (make-list 1000000 1))
+    @result{} 1000000
 @end lisp
 @end defun
 
@@ -3962,7 +3876,7 @@ returned.
 The @var{function} must accept a single argument value.
 
 @lisp
-(mapcar '1+ '(1 2 3 4 5))
+(mapcar 1+ '(1 2 3 4 5))
     @result{} (2 3 4 5 6)
 @end lisp
 @end defun
@@ -3977,8 +3891,8 @@ function are the important thing, not the results. It is often the most
 efficient way of traversing all items in a list, for example:
 
 @lisp
-(mapc #'(lambda (x)
-          (print x standard-error)) list)
+(mapc (lambda (x)
+        (print x standard-error)) list)
 @end lisp
 @end defun
 
@@ -3995,7 +3909,7 @@ element of @var{list} is applied to the predicate function
 element is destructively removed from @var{list}.
 
 @lisp
-(delete-if 'stringp '(1 "foo" 2 "bar" 3 "baz"))
+(delete-if stringp '(1 "foo" 2 "bar" 3 "baz"))
     @result{} (1 2 3)
 @end lisp
 @end defun
@@ -4006,7 +3920,7 @@ This function does the inverse of @code{delete-if}. It applies
 then the element is destructively removed from the list.
 
 @lisp
-(delete-if-not 'stringp '(1 "foo" 2 "bar" 3 "baz"))
+(delete-if-not stringp '(1 "foo" 2 "bar" 3 "baz"))
     @result{} ("foo" "bar" "baz")
 @end lisp
 @end defun
@@ -4020,10 +3934,9 @@ function @var{predicate} returns non-@code{nil} when applied to. This
 function is equivalent to:
 
 @lisp
-(mapcar 'nconc (mapcar #'(lambda (x)
-                           (when (funcall @var{predicate} x)
-                             (list x)))
-                       @var{list}))
+(mapcar nconc (mapcar (lambda (x)
+                        (and (@var{predicate} x) (list x)))
+                      @var{list}))
 @end lisp
 @end defun
 
@@ -4268,28 +4181,22 @@ active when the special form was entered. Returns the value of the last
 form to be evaluated.
 @end defspec
 
-@defun set-variable-environment env
+@defun set-environment env
 Set the current variable environment to the list @var{env}.
 Each element of the list is a cons cell @code{(@var{symbol} .
 @var{value})} defining the currently bound local variables, and their
 values.
-@end defun
-
-@defun set-function-environment env
-Set the current function environment to the list @var{env}. Each
-element is a cons cell @code{(@var{symbol} . @var{value})} defining the
-currently accessible functions, and their values.
 
 If the last cons cell in the list is dotted to the symbol @code{t}
-instead of @code{nil}, then all globally defined functions are also
+instead of @code{nil}, then all globally defined values are also
 available.
 @end defun
 
-As seen in the @code{set-function-environment} function, the lexical
-environment also provides a crude method of restricting which functions
-may be called by forms evaluating within the environment. A similar
-feature allows the set of special variables accessible from the
-environment to be defined.
+As seen in the @code{set-environment} function, the lexical environment
+also provides a crude method of restricting which variables may be
+accessed by forms evaluating within the environment (and thus, which
+functions may be called). A similar feature allows the set of special
+variables accessible from the environment to be defined.
 
 @defun set-special-environment env
 Set the list of symbols defining the special variables accessible from
@@ -4662,10 +4569,15 @@ characters introduce a substitution, using the next unused argument.
 The substitutions have the following syntax,
 
 @example
-%[@var{flags}][@var{field-width}]@var{conversion}
+%[@var{index}$][@var{flags}][@var{field-width}]@var{conversion}
 @end example
 
 @noindent
+@var{index} is an optional decimal number specifying exactly which of
+the @var{values} this conversion refers to (with the first at position
+one), and is usually used when translating messages; by default the
+next value is used.
+
 @var{field-width} is a positive decimal integer, defining the size in
 characters of the substitution output.
 
@@ -4734,7 +4646,7 @@ value of @var{stream} is returned.
 (format nil "foo %S bar 0x%x" '(x . y) 255)
     @result{} "foo (x . y) bar 0xff"
 
-(format standard-output "The %s is %s!" "dog" "purple")
+(format standard-output "The %2$s is %1$s!" "purple" "dog")
     @print{} The dog is purple!
     @result{} #<buffer *jade*>
 @end lisp
@@ -4909,45 +4821,18 @@ are first required. This speeds up the initialisation process and may
 save memory.
 
 Functions which may be autoloaded have a special form in their symbol's
-function cell---an @dfn{autoload form}. This is a list whose first
-element is the symbol @code{autoload}. When the function call
-dispatcher finds one of these forms it loads the program file specified
-in the form then re-evaluates the function call. The true function
-definition will then have been loaded and therefore the call may
-proceed as normal.
+function cell---an @dfn{autoload form}. This is a special kind of
+closure. When the function call dispatcher finds one of these forms it
+loads the program file specified in the form then re-evaluates the
+function call. The true function definition will then have been loaded
+and therefore the call may proceed as normal.
 
-The structure of an autoload form is:
+Autoload stubs may be created through the @code{autoload} function.
 
-@lisp
-(autoload @var{program-file} [@var{is-command}])
-@end lisp
-
-@var{program-file} is the argument to give to the @code{load} function when
-the function is to be loaded. It should be the program containing a definition
-of the autoloaded function.
-
-The optional @var{is-command} object specifies whether or not the
-function may be called interactively (i.e. it is has an
-@code{interactive} declaration).
-
-@defun autoload symbol &rest autoload-defn
-Installs an autoload form into the function cell of the symbol @var{symbol}.
-The form is a cons cell whose car is @code{autoload} and whose cdr is
-the argument @var{autoload-defn}.
-
-Returns the resulting autoload form.
-
-@lisp
-(autoload 'foo "foos-file")
-    @result{} (autoload "foos-file")
-(symbol-function 'foo)
-    @result{} (autoload "foos-file")
-
-(autoload 'bar "bars-file" t)
-    @result{} (autoload "bars-file" t)
-(commandp 'bar)
-    @result{} t
-@end lisp
+@defun autoload symbol file &optional is-command
+Installs an autoload form into the symbol @var{symbol}. It marks that
+when @var{symbol} is called as a function the lisp library @var{file}
+should be loaded to provided the actual definition of @var{symbol}.
 @end defun
 
 It is not necessary to call the @code{autoload} function manually.
@@ -4990,16 +4875,17 @@ are marked by the @code{;;;###autoload} comment in the current buffer.
 The unsaved @file{autoloads.jl} buffer will become the current buffer.
 @end table
 
-XXX these don't really belong here, but they'll do for now@dots{}
+XXX these editor commands don't really belong here, but they'll do for
+now@dots{}
 
 
 @node Features, , Autoloading, Loading
 @subsection Features
 @cindex Features
 
-@dfn{Features} correspond to modules of the editor. Each feature is
-loaded separately. Each feature has a name, when a certain feature is
-required its user asks for it to be present (with the @code{require}
+@dfn{Features} correspond to modules of the lisp system. Each feature
+is loaded separately. Each feature has a name, when a certain feature
+is required its user asks for it to be present (with the @code{require}
 function), the feature may then be used as normal.
 
 When a feature is loaded one of the top-level forms evaluated is a call to
@@ -5019,8 +4905,7 @@ features
 @end defvar
 
 @defun featurep feature
-Returns non-@code{nil} if the feature @var{feature} is currently
-loaded.
+Returns non-@code{nil} if the feature @var{feature} has been loaded.
 @end defun
 
 @defun provide feature
@@ -5035,7 +4920,7 @@ to this function is normally one of the top-level forms in a module.
 @end lisp
 @end defun
 
-@deffn Command require feature &optional file
+@defun require feature &optional file
 Show that the caller is planning to use the feature @var{feature} (a symbol).
 This function will check the @code{features} variable to see if @var{feature}
 is already loaded, if so it will return immediately.
@@ -5053,7 +4938,7 @@ else the print name of the symbol @var{feature} is used.
 @end lisp
 
 When called interactively the symbol @var{feature} is prompted for.
-@end deffn
+@end defun
 
 
 @node Compiled Lisp, Hooks, Loading, The language
@@ -5156,17 +5041,14 @@ example:
 
 (compile-function 'test)
     @result{} test
-
-(symbol-function 'test)
-    @result{} #[(x) "^Xh" [x] 1]
 @end lisp
 
 @defun make-byte-code-subr args code constants stack &optional doc interactive macrop
-This function is used by the compiler to create byte-code subrs.
+This function is used by the compiler to create byte-code subroutines.
 @end defun
 
 @defun bytecodep arg
-Returns @code{t} if @var{arg} is a byte-code subr.
+Returns @code{t} if @var{arg} is a byte-code subroutine.
 @end defun
 
 
@@ -5213,9 +5095,9 @@ elegant) version of the above function is:
 @lisp
 (defun scan-list (list elt)
   (catch 'return
-    (mapc #'(lambda (x)
-              (when (eq x elt)
-                (throw 'return elt)))
+    (mapc (lambda (x)
+            (when (eq x elt)
+              (throw 'return elt)))
           list)
     nil))
 @end lisp
@@ -5278,17 +5160,17 @@ from all the special forms) are:
 @code{lognot}, @code{not}, @code{logior}, @code{logand}, @code{logxor},
 @code{equal}, @code{eq}, @code{=}, @code{/=}, @code{>}, @code{<},
 @code{>=}, @code{<=}, @code{1+}, @code{1-}, @code{-}, @code{set},
-@code{fset}, @code{lsh}, @code{zerop}, @code{null}, @code{atom},
-@code{consp}, @code{listp}, @code{numberp}, @code{stringp},
-@code{vectorp}, @code{throw}, @code{fboundp}, @code{boundp},
-@code{symbolp}, @code{get}, @code{put}, @code{signal}, @code{return},
-@code{reverse}, @code{nreverse}, @code{assoc}, @code{assq},
-@code{rassoc}, @code{rassq}, @code{last}, @code{mapcar}, @code{mapc},
-@code{member}, @code{memq}, @code{delete}, @code{delq},
-@code{delete-if}, @code{delete-if-not}, @code{copy-sequence},
-@code{sequencep}, @code{functionp}, @code{special-form-p},
-@code{subrp}, @code{eql}, @code{max}, @code{min}, @code{filter},
-@code{macrop}, @code{bytecodep}, @code{bind-object}.
+@code{lsh}, @code{zerop}, @code{null}, @code{atom}, @code{consp},
+@code{listp}, @code{numberp}, @code{stringp}, @code{vectorp},
+@code{throw}, @code{boundp}, @code{symbolp}, @code{get}, @code{put},
+@code{signal}, @code{return}, @code{reverse}, @code{nreverse},
+@code{assoc}, @code{assq}, @code{rassoc}, @code{rassq}, @code{last},
+@code{mapcar}, @code{mapc}, @code{member}, @code{memq}, @code{delete},
+@code{delq}, @code{delete-if}, @code{delete-if-not},
+@code{copy-sequence}, @code{sequencep}, @code{functionp},
+@code{special-form-p}, @code{subrp}, @code{eql}, @code{max},
+@code{min}, @code{filter}, @code{macrop}, @code{bytecodep},
+@code{bind-object}.
 
 @item
 When a file is being compiled each top-level form it contains is inspected
@@ -5428,34 +5310,27 @@ will be called in turn.
 The names of hooks of this type will normally end in @code{-hook}.
 
 @defun add-hook hook function &optional at-end
-This function adds a new function @var{function} to the list of functions
-installed in the (list) hook @var{hook} (a symbol).
+This function adds a new function @var{function} to the list of
+functions installed in the (list) hook @var{hook} (a symbol).
 
-If @var{at-end} is non-@code{nil} the new function is added at the end of
-the hook's list of functions (and therefore will be called last when the
-hook is evaluated), otherwise the new function is added to the front
-of the list.
+If @var{at-end} is non-@code{nil} the new function is added at the end
+of the hook's list of functions (and therefore will be called last when
+the hook is evaluated), otherwise the new function is added to the
+front of the list.
 
 @lisp
 text-mode-hook
-    @result{} (fill-mode-on)
-(add-hook 'text-mode-hook 'my-function)
-    @result{} (my-function fill-mode-on)
+    @result{} (#<closure fill-mode-on>)
+(add-hook 'text-mode-hook my-function)
+    @result{} (#<closure my-function> #<closure fill-mode-on>)
 @end lisp
 @end defun
 
 @defun remove-hook hook function
-This function removes the function @var{function} from the list of functions
-stored in the (list) hook @var{hook} (a symbol).
+This function removes the function @var{function} from the list of
+functions stored in the (list) hook @var{hook} (a symbol).
 
 @emph{All} instances of @var{function} are deleted from the hook.
-
-@lisp
-text-mode-hook
-    @result{} (my-function fill-mode-on)
-(remove-hook 'text-mode-hook 'my-function)
-    @result{} (fill-mode-on)
-@end lisp
 @end defun
 
 There are actually three calling conventions for this type of hook,
@@ -6124,7 +5999,7 @@ A method of accessing files, or a @dfn{backend} is a symbol whose
 to be accessed. For example the @code{ftp} backend is initialised as:
 
 @lisp
-(put 'ftp 'remote-backend 'remote-ftp-handler)
+(put 'ftp 'remote-backend remote-ftp-handler)
 @end lisp
 
 The backend function is called as @code{(@var{function}
@@ -7609,10 +7484,10 @@ reader sees it.
 
 Semantic errors are what we normally call bugs---errors in logic, the
 program is syntactically correct but doesn't do what you want it to.
-For these types of errors Jade implements a simple debugger which
-allows you to single step through the Lisp forms of your program as
-they are being evaluated. Although it is possible to use the debugger
-from @code{librep} on its own, it is currently pretty unpleasant.
+For these types of errors librep provides hooks to allow interactive
+debugging. The debugger supplied with librep uses these hooks to
+implement a simple command line debugger; programs using librep as an
+extension language may provide their own debugger interface.
 
 There are several ways to enter the Lisp debugger; functions can be
 marked so that they cause the debugger to be entered when they are
@@ -7620,9 +7495,10 @@ called, breakpoints can be written in functions or it can be called
 explicitly with a form to step through.
 
 @deffn Command trace symbol
-This command marks the symbol @var{symbol} so that each time the
-function stored in the function cell of @var{symbol} is called the
-debugger is entered immediately.
+This command marks the symbol @var{symbol} so that each time its value
+is dereferenced the debugger is entered when the next form is
+evaluated. This can be used to set breakpoints on functions (or
+variables).
 
 When called interactively @var{symbol} is prompted for.
 @end deffn
@@ -7649,13 +7525,13 @@ Prints a description of the current Lisp function call stack to
 
 @lisp
 (backtrace (current-buffer))
-     @print{} backtrace ((current-buffer)) nil
-     @print{} eval-and-print ((backtrace (current-buffer))) t
+     @print{} #<subr backtrace> ((current-buffer)) nil
+     @print{} #<closure eval-and-print> ((backtrace (current-buffer))) t
      @result{} t
 @end lisp
 
-Each line represents a stack frame, the first item is the name of the
-called function, the second is the list of arguments applied to it. The
+Each line represents a stack frame, the first item is the called
+function, the second is the list of arguments applied to it. The
 third item is @code{t} if the list of arguments as displayed has
 already been evaluated.
 @end defun
@@ -7750,10 +7626,10 @@ right of the Lisp code. When editing in Jade's Lisp mode the command
 For example,
 
 @lisp
-(defconst op-call 0x08)	        ;call (stk[n] stk[n-1] ... stk[0])
+(defconst op-call 0x08)         ;call (stk[n] stk[n-1] ... stk[0])
                                 ; pops n values, replacing the
                                 ; function with the result.
-(defconst op-push 0x10)	        ;pushes constant # n
+(defconst op-push 0x10)         ;pushes constant # n
 @end lisp
 
 @item ;;
@@ -7796,7 +7672,7 @@ For example,
 
 @lisp
 ;;; Notes:
-;;;
+
 ;;; Instruction Encoding
 ;;; ====================
 ;;; Instructions which get an argument (with opcodes of zero up to

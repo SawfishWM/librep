@@ -4,9 +4,9 @@
 @footnotestyle end
 
 @set EDITION 1.0
-@set VERSION 0.0
-@set UPDATED 1 June 1999
-@set UPDATE-MONTH June 1999
+@set VERSION 0.8
+@set UPDATED 27 November 1999
+@set UPDATE-MONTH November 1999
 
 @ifinfo
 @direntry
@@ -134,7 +134,7 @@ in other applications, but also suitable for general use. It was
 originally written to be mostly-compatible with Emacs Lisp, although
 there is no intention of having the two languages fully compatible. The
 main difference between the two dialects is that rep is lexically
-scoped.
+scoped and only has a single namespace.
 
 @code{librep} started out as part of a text editor I wrote, which
 gradually warped into being an Emacs-clone as more features were added.
