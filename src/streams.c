@@ -372,7 +372,7 @@ top:
 	    if(curr_win->w_Flags & WINFF_MESSAGE)
 	    {
 		WIN *w = curr_win;
-		u_char *s = sys_realloc(w->w_Message, w->w_MessageLen + 1);
+		u_char *s = sys_realloc(w->w_Message, w->w_MessageLen + 2);
 		if(s != 0)
 		{
 		    s[w->w_MessageLen++] = c;
@@ -501,7 +501,7 @@ top:
 		WIN *w = curr_win;
 		u_char *s;
 		newlen = w->w_MessageLen + bufLen;
-		s = sys_realloc(w->w_Message, newlen);
+		s = sys_realloc(w->w_Message, newlen + 1);
 		if(s != 0)
 		{
 		    memcpy(s + w->w_MessageLen, buf, bufLen);
