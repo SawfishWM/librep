@@ -98,7 +98,7 @@ rep_register_type(u_int code, char *name,
     rep_type *t = rep_alloc(sizeof(rep_type));
     if (t == 0)
     {
-	rep_mem_error();
+	rep_mem_error ();
 	return;
     }
     t->code = code;
@@ -252,7 +252,7 @@ rep_box_string (char *ptr, long len)
 	    string_freelist = cb->data;
 	}
 	else
-	    return rep_mem_error();
+	    return rep_mem_error ();
 	str = string_freelist;
     }
     string_freelist = rep_STRING(str->car);
@@ -480,7 +480,7 @@ rep_allocate_cons (void)
 	    rep_cons_freelist = cb->cons;
 	}
 	else
-	    return rep_mem_error();
+	    return rep_CONS (rep_mem_error ());
 	cn = rep_cons_freelist;
     }
     return cn;
