@@ -215,10 +215,10 @@ init_scm_booleans (void)
 {
     if (rep_scm_t == 0)
     {
-	rep_scm_t = Fmake_datum (Qnil, rep_void_value,
-				 rep_VAL (&S_scheme_bool_printer));
-	rep_scm_f = Fmake_datum (Qnil, rep_void_value,
-				 rep_VAL (&S_scheme_bool_printer));
+	rep_scm_t = Fmake_datum (Qnil, rep_VAL (&S_scheme_bool_printer));
+	rep_scm_f = Fmake_datum (Qnil, rep_VAL (&S_scheme_bool_printer));
+	Fdefine_datum_printer (rep_VAL (&S_scheme_bool_printer),
+			       rep_VAL (&S_scheme_bool_printer));
 	rep_mark_static (&rep_scm_t);
 	rep_mark_static (&rep_scm_f);
     }
