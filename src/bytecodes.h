@@ -22,7 +22,7 @@
 #define BYTECODES_H
 
 #define BYTECODE_MAJOR_VERSION 4
-#define BYTECODE_MINOR_VERSION 0
+#define BYTECODE_MINOR_VERSION 1
 
 /* Number of bits encoded in each extra opcode forming the argument. */
 #define ARG_SHIFT    8
@@ -166,6 +166,14 @@
 #define OP_FILTER 0x97			/* call-2 filter */
 #define OP_MACROP 0x98			/* call-1 macrop */
 #define OP_BYTECODEP 0x99		/* call-1 bytecodep */
+
+#define OP_PUSHI0 0x9a			/* push #0 */
+#define OP_PUSHI1 0x9b			/* push #1 */
+#define OP_PUSHI2 0x9c			/* push #2 */
+#define OP_PUSHIM1 0x9d			/* push #-1 */
+#define OP_PUSHIM2 0x9e			/* push #-2 */
+#define OP_PUSHI 0x9f			/* push pc[0] */
+#define OP_PUSHIW 0xa0			/* push pc[0,1] */
 
 #define OP_SET_CURRENT_BUFFER 0xb0	/* call-2 set-current-buffer */
 #define OP_BIND_BUFFER 0xb1
