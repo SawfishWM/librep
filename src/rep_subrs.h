@@ -478,6 +478,7 @@ extern repv Fmakunbound(repv);
 extern repv Fget(repv, repv);
 extern repv Fput(repv, repv, repv);
 extern repv Fapropos(repv, repv, repv);
+extern repv Fmake_variable_special (repv sym);
 extern repv Fspecial_variable_p(repv sym);
 extern repv Ftrace(repv sym);
 extern repv Funtrace(repv sym);
