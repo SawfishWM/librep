@@ -10,8 +10,13 @@ and more long-term ideas are marked -
 Outstanding bugs
 ================
 
+ ! (expand-file-name "/.." "") should evaluate to "/"
+
  ! uses setlocale("LC_NUMERIC", "C") to make floating point I/O work,
    need to reimplement this locally
+
+   [ this is only done temporarily now, but rep-gtk still has some
+     instances that can't be removed until librep 0.14 I guess.. ]
 
  ! modules with `(set-binds)' config shouldn't inline constants?
 
@@ -80,6 +85,10 @@ Outstanding bugs
 
 General programming tasks:
 ==========================
+
+ + avoid spurious init-bind and unbind instructions
+
+   (generated when lexical bindings aren't heap allocated)
 
  + rename backquote* as quasiquote* -- helps scheme, doesn't affect rep
 
@@ -188,7 +197,8 @@ General programming tasks:
 
    Only do this for _heavily_ used bytecode subrs. Measure this by
    adding an extra vector slot, and counting the number of vm
-   iterations
+   instructions executed (and dividing by the length of the
+   code-string?)
 
    Another option is to generate direct-threaded code from the bytecode
    (and cache it). I have an attempt at this but it needs either (1) an
