@@ -81,6 +81,11 @@ Outstanding bugs
 
  + document in manual: current-utime, new read syntaxes
 
+ + deprecated:
+
+   * 0xNN and 0NN integer syntaxes (0.13+)
+   * define-value
+
 
 General programming tasks:
 ==========================

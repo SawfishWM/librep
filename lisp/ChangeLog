@@ -1,3 +1,11 @@
+2000-08-01  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep/io/file-handlers/tar.jl,
+	rep/io/file-handlers/remote/rep.jl,
+	rep/io/file-handlers/remote/rcp.jl,
+	rep/io/file-handlers/remote/ftp.jl, rep/util/base64.jl: don't
+	use 0NN octal syntax
+
 2000-07-31  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep.jl: always define _

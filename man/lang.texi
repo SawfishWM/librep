@@ -388,8 +388,8 @@ here is a small summary of how to write each type.
 @table @asis
 @item Numbers
 A number is number written as an integer---decimal, octal (when the
-number is preceded by @samp{0}) or hexadecimal (when the number is
-preceded by @samp{0x})---or a decimal rational or floating point value.
+number is preceded by @samp{#o}) or hexadecimal (when the number is
+preceded by @samp{#x})---or a decimal rational or floating point value.
 An optional minus sign may be the first character in a number. Some
 examples are,
 
@@ -397,10 +397,10 @@ examples are,
 42
     @result{} 42
 
-0177
+#o177
     @result{} 127
 
--0xff
+#x-ff
     @result{} -255
 
 3/2
@@ -682,29 +682,62 @@ inexactness is a contagious property of a number.
 @end quotation
 
 Exact numbers include both integers and rational numbers, there is no
-theoretical limit to the range of the values that may be represented.
-Inexact numbers are currently implemented using double precision
-floating point values.
+theoretical limit to the range of the values that may be represented
+@footnote{However, depending on implementation restrictions, very large
+integers may be coerced to an inexact representation.}. Inexact numbers
+are currently implemented using double precision floating point values.
 
-The read syntax of an integer is simply the number written in decimal,
-octal or hexadecimal. If the integer starts with the string @samp{0x} it
-is assumed to be hexadecimal or if it starts with a zero it is treated
-as octal. The first character may be an optional minus or plus sign (this
-should come before any base-specifier). Examples of valid integer read
-syntaxes for the number 42 could be @samp{42}, @samp{0x2a}, @samp{052},
-@samp{+052}, @dots{}
+The read syntax of any number is:
+@code{[@var{pfx}@dots{}][@var{sgn}]@var{data}@dots{}}, where the
+optional @var{sgn} is one of the characters @samp{-} or @samp{+},
+@var{data} is the representation of the number, and @var{pfx} is zero
+or more of the following prefix strings:
 
-The read syntax of a rational number is two integers separated by a
-@samp{/} character. The second integer may not have a @samp{+} or
-@samp{-} prefix. For example, @samp{3/2} represents the rational number
-three divided by two. 
+@table @code
+@item #b
+@itemx #B
+Integers are described in binary,
 
-Inexact numbers are parsed from one of two forms, decimal point form,
-which is simply a decimal number containing a decimal point, and
-exponential form which is a decimal number followed by a letter
-@samp{e} and a decimal exponent multiplying the first part of the
-number by that power of ten. For example, @samp{10.0}, @samp{10.} and
-@samp{1e1} both read as the inexact number ten.
+@item #o
+@itemx #O
+Integers are in octal,
+
+@item #d
+@itemx #D
+Integers are in decimal (the default),
+
+@item #x
+@itemx #X
+Integers are in hexadecimal,
+
+@item #e
+@itemx #E
+Coerce the number to an exact representation after parsing it,
+
+@item #i
+@itemx #I
+Coerce to an inexact representation.
+@end table
+
+@noindent
+
+The representation of an integer is simply the digits representing that
+integer, in the radix chosen by any given prefix (defaults to decimal).
+Examples of valid integer read syntaxes for the number 42 could be
+@samp{42}, @samp{#x2a}, @samp{#o52}, @samp{#o+52}, @dots{}
+
+The representation of a rational number is two sequences of digits,
+separated by a @samp{/} character. For example, @samp{3/2} represents
+the rational number three divided by two. 
+
+Inexact numbers are parsed from one of two representations: decimal
+point form, which is simply a decimal number containing a decimal
+point, and exponential form, which is a decimal number followed by the
+letter @samp{e} and a decimal exponent multiplying the first part of
+the number by that power of ten. For example, @samp{10.0}, @samp{10.}
+and @samp{1e1} all read as the inexact number ten. Note that the radix
+prefixes currently have no effect when parsing inexact numbers, decimal
+is used exclusively.
 
 An integer's printed representation is simply the number printed in
 decimal with a preceding minus sign if it is negative. Rational numbers
@@ -8968,10 +9001,10 @@ right of the Lisp code. When editing in Jade's Lisp mode the command
 For example,
 
 @lisp
-(defconst op-call 0x08)         ;call (stk[n] stk[n-1] ... stk[0])
+(defconst op-call #x08)         ;call (stk[n] stk[n-1] ... stk[0])
                                 ; pops n values, replacing the
                                 ; function with the result.
-(defconst op-push 0x10)         ;pushes constant # n
+(defconst op-push #x10)         ;pushes constant # n
 @end lisp
 
 @item ;;

@@ -1,5 +1,22 @@
 2000-08-01  John Harper  <john@dcs.warwick.ac.uk>
 
+	* lispmach.c: fixed top-of-stack caching bugs
+
+	* continuations.c (exit_barrier_cell): cdr of this is set to
+	raw rep_throw_value, don't use Qnil if rep_throw_value is null
+	(and this was only done in one of the two uses anyway)
+
+	(make_thread): don't call thread_invoke after thread_delete
+	(since the thread is current, thread_delete will already have
+	called invoke)
+
+	* lisp.c (read_symbol): deprecated `0xNN' and `0NN' read
+	syntaxes for hexadecimal and octal numbers (use `#xNN' and
+	`#oNN')
+
+	* main.c (rep_deprecated): new internal function for reporting
+	deprecated features. Only reports each feature once
+
 	* gettext.c: if using gettext in ../intl/, define gnu_foo as
 	foo__, removes the need to patch the intl files
 
