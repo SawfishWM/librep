@@ -138,6 +138,8 @@
        (list* 'defvar (nth 1 form) (define-scan-form (nth 2 form))
 	      (nthcdr 3 form)))
 
+      ((structure define-structure) form)
+
       (t (let ((expansion (macroexpand-1 form macro-environment)))
 	   (if (eq expansion form)
 	       (define-scan-body form)
