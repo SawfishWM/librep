@@ -110,7 +110,7 @@ is one of these that form is compiled.")
        comp-const-env
        form)
     (message (concat "Compiling " file-name "...") t)
-    (when (setq src-file (open file-name "r"))
+    (when (setq src-file (open-file file-name "r"))
       (unwind-protect
 	  ;; Pass 1. Scan for macro definitions in FILE-NAME
 	  (while (not (file-eof-p src-file))
@@ -119,9 +119,9 @@ is one of these that form is compiled.")
 	      (setq comp-macro-env (cons (cons (nth 1 form)
 					       (cons 'lambda (nthcdr 2 form)))
 					 comp-macro-env))))
-	(close src-file))
-      (when (and (setq src-file (open file-name "r"))
-		 (setq dst-file (open (concat file-name ?c) "w")))
+	(close-file src-file))
+      (when (and (setq src-file (open-file file-name "r"))
+		 (setq dst-file (open-file (concat file-name ?c) "w")))
 	(condition-case error-info
 	    (unwind-protect
 		(progn
@@ -148,8 +148,8 @@ is one of these that form is compiled.")
 			(setq form (compile-form form))))
 		      (when form
 			(print form dst-file)))))
-	      (close dst-file)
-	      (close src-file))
+	      (close-file dst-file)
+	      (close-file src-file))
 	  (error
 	   ;; Be sure to remove any partially written dst-file. Also, signal
 	   ;; the error again so that the user sees it.
