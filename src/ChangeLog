@@ -1,3 +1,9 @@
+Tue May 12 16:35:42 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* x11_keys.c (translate_mods): extra arg SUBST-META controlling
+	whether or not to switch the designated meta modifier for the
+	more general EV_MOD_META bit. Needed by x11_find_meta.
+
 Sun May 10 21:19:48 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* keys.c (ev_mod_meta): deleted, replaced by window-local meta
