@@ -1,3 +1,17 @@
+1998-08-27  John Harper  <john@dcs.warwick.ac.uk>
+
+	* faces.c (cmd_set_face_attribute): if setting the background
+	or foreground attributes, and the value is a string, call
+	get-color with that string
+
+	* editcommands.c (cmd_clear_buffer): call reset_global_extent
+
+	* extent.c (extent_cmp): function to test if two fragments
+	belong to the same `extent'. Used by the `equal' function
+	(cmd_buffer_put): deleted
+	(cmd_map_extents): map a function over all extents in an area
+	(map_section_extents): protect against gc
+
 1998-08-26  John Harper  <john@dcs.warwick.ac.uk>
 
 	* extent.c (cmd_extent_start, cmd_extent_end): new functions
