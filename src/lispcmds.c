@@ -1503,6 +1503,9 @@ path_error:
 
     /* Loading succeeded. Look for an applicable item in
        the after-load-alist. */
+    if (rep_STRUCTUREP (result) && rep_STRUCTURE (result)->name != Qnil)
+	/* use the canonical name in case of aliasing.. */
+	file = rep_SYM (rep_STRUCTURE (result)->name)->name;
     rep_PUSHGC (gc_result, result);
     rep_PUSHGC (gc_file, file);
     {
