@@ -42,6 +42,9 @@ The name of the program running the rep interpreter.
 /* Called when we get a termination signal. */
 void (*rep_on_termination_fun)(void);
 
+/* The event-loop function, may be entered recursively. */
+repv (*rep_event_loop_fun)(void) = rep_event_loop;
+
 DEFSYM(exit, "exit");
 DEFSYM(quit, "quit");
 DEFSYM(top_level, "top-level");
@@ -373,7 +376,15 @@ recursive-edit
 Enter a new recursive-edit.
 ::end:: */
 {
-    return rep_event_loop();
+    repv ret = (*rep_event_loop_fun)();
+
+#ifdef C_ALLOCA
+    /* Using the C implementation of alloca. So garbage collect
+       anything below the current stack depth. */
+    alloca(0);
+#endif
+
+    return ret;
 }
 
 DEFUN("recursion-depth", Frecursion_depth, Srecursion_depth, (void), rep_Subr0) /*
