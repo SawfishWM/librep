@@ -18,7 +18,7 @@ Before release
 
    (recent acm toplas paper by Matthias Blume about this in ML)
 
- + document in manual: named-let, current-utime, new read syntaxes
+ + document in manual: current-utime, new read syntaxes
 
 
 Outstanding bugs

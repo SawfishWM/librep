@@ -1,3 +1,8 @@
+2000-06-05  John Harper  <john@dcs.warwick.ac.uk>
+
+	* datums.c, lisp.c: moved rep_scm_f and rep_scm_t to datums.c;
+	initialize always, not just when first read
+
 2000-06-01  John Harper  <john@dcs.warwick.ac.uk>
 
 	* readline.c (rep_dl_init): rl-completion-generator is no

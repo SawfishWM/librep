@@ -21,17 +21,16 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-;; need to support the full read syntax of numbers
-
-;; the only thing really missing from r5rs are macros, r4rs should
-;; be reasonably okay
+;; the only things really missing from r5rs are macros and multiple
+;; values, r4rs should be reasonably okay
 
 ;; other warts:
 
 ;;   (eq? 'FOO 'foo) => #f, guile also fails here
 ;;   `(..) => (backquote ..) not (quasiquote ..)
-;;   (symbol? '()) => #t, not #f
+;;   (symbol? 'nil) => #f, not #t (so that (symbol? '()) => #f)
 ;;   no separate character type
+;;   reader doesn't handle numbers like: 15#
 
 ;; to test this, run the repl, then: ",new test" and ",open scheme"
 

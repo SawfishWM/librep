@@ -1,3 +1,12 @@
+2000-06-05  John Harper  <john@dcs.warwick.ac.uk>
+
+	* scheme-data.jl (symbol?): (symbol? '()) => #f
+	(string->symbol): copy the name if a symbol needs to be created
+	and interned
+
+	* define.jl (define-scan-form): don't mistake (let () ..) for a
+	named let
+
 2000-06-04  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep-repl.jl (rl-completion-generator): fix from Ceri to
