@@ -715,8 +715,11 @@ rep_readl(repv strm, register int *c_p)
 	case '#':
 	    switch(*c_p = rep_stream_getc(strm))
 	    {
+		int comment_terminator;
+
 	    case EOF:
 		goto eof;
+
 	    case '\'':
 		form = Fcons(Qfunction, Fcons(Qnil, Qnil));
 		rep_PUSHGC(gc_form, form);
@@ -731,6 +734,7 @@ rep_readl(repv strm, register int *c_p)
 		    return rep_NULL;
 		else
 		    return form;
+
 	    case '[':
 		{
 		    repv vec = read_vector(strm, c_p);
@@ -747,6 +751,91 @@ rep_readl(repv strm, register int *c_p)
 		    }
 		    break;
 		}
+
+	    case '(':
+		return read_vector (strm, c_p);
+
+	    case '|':
+		/* comment delimited by `#| ... |#' */
+		comment_terminator = '|';
+		{
+		    register int c;
+		read_comment:
+		    while ((c = rep_stream_getc (strm)) != EOF)
+		    {
+		    comment_again:
+			if (c == comment_terminator)
+			{
+			    c = rep_stream_getc (strm);
+			    if (c == EOF || c == '#')
+				break;
+			    else
+				goto comment_again;
+			}
+		    }
+		    if (c != EOF)
+			c = rep_stream_getc (strm);
+		    *c_p = c;
+		    continue;
+		}
+
+	    case '\\':
+		{
+		    static const struct {
+			char *name;
+			int value;
+		    } char_names[] = {
+		      { "space", ' ' },
+		      { "newline", '\n' },
+		      { "backspace", '\010' },
+		      { "tab", '\t' },
+		      { "linefeed", '\n' },
+		      { "return", '\r' },
+		      { "page", '\f' },
+		      { "rubout", '\177' },
+		      { 0, 0 }
+		    };
+
+		    int c = rep_stream_getc (strm), c2, i;
+
+		    if (c == EOF)
+			goto eof;
+		    if (!isalpha (c))
+		    {
+			*c_p = rep_stream_getc (strm);
+			return rep_MAKE_INT (c);
+		    }
+		    c2 = rep_stream_getc (strm);
+		    if (c2 == EOF)
+			goto eof;
+		    if (!isalpha (c2))
+		    {
+			*c_p = c2;
+			return rep_MAKE_INT (c);
+		    }
+		    c = tolower (c);
+		    c2 = tolower (c2);
+		    for (i = 0; char_names[i].name != 0; i++)
+		    {
+			if (char_names[i].name[0] == c
+			    && char_names[i].name[1] == c2)
+			{
+			    char *ptr = char_names[i].name + 2;
+			    while ((c = rep_stream_getc (strm)) != EOF)
+			    {
+				if (*ptr == 0)
+				{
+				    *c_p = c;
+				    return rep_MAKE_INT (char_names[i].value);
+				}
+				if (tolower (c) != *ptr++)
+				    goto error;
+			    }
+			}
+		    }
+		    goto error;
+		}
+
 	    case '!':
 		if (rep_FILEP(strm))
 		{
@@ -754,23 +843,12 @@ rep_readl(repv strm, register int *c_p)
 		    if (pos && rep_INTP(pos) && rep_INT(pos) == 2)
 		    {
 			/* #! at the start of the file. Skip until !# */
-			register int c;
-			while ((c = rep_stream_getc (strm)) != EOF)
-			{
-			    if (c == '!')
-			    {
-				c = rep_stream_getc (strm);
-				if (c == EOF || c == '#')
-				    break;
-			    }
-			}
-			if (c != EOF)
-			    c = rep_stream_getc (strm);
-			*c_p = c;
-			continue;
+			comment_terminator = '!';
+			goto read_comment;
 		    }
 		}
-		/* FALL THROUGH */
+		/* fall through */
+
 	    default: error:
 		return Fsignal(Qinvalid_read_syntax, rep_LIST_1(strm));
 	    }
@@ -779,7 +857,7 @@ rep_readl(repv strm, register int *c_p)
 	    return read_symbol(strm, c_p);
 	}
     }
-    /* NOT REACHED */
+    /* not reached */
 
 eof:
     return Fsignal(Qend_of_stream, rep_LIST_1(strm));
