@@ -1,3 +1,41 @@
+2000-09-03  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep/util/repl.jl: added command `,locate SYM' to find the
+	module that a variable is bound in
+
+	* rep/lang/doc.jl (describe-value): fixed bug of not looking
+	for the documentation of functions not yet autoloaded
+
+	* rep/structures.jl (locate-binding): new function
+
+	* rep/data/string-util.jl (string-replace): new function
+	* rep/data.jl: autoload string-replace
+
+	* rep/lang/doc.jl: store doc strings under keys `MODULE#SYMBOL'
+	instead of just `SYMBOL'. (The old-style keys are still checked
+	when searching for documentation.) Changed some function
+	parameter lists to include a STRUCTURE parameter
+
+	* rep/lang/compat-doc.jl: new file, a compatibility layer for
+	the 'lisp-doc module in the last rep release
+
+	* rep/util/repl.jl: `,describe' command scans the imported
+	modules for the binding of the thing being queried
+
+	* rep/vm/compiler/modules.jl: export current-module
+	* rep/vm/compiler/rep.jl, rep/vm/compiler/basic.jl: changed for
+	new rep.lang.doc function parameters
+
+	* rep/util/repl.jl (repl-completions): new function
+
+2000-09-02  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep/util/gaol.jl (define-gaol-structure): new function, used
+	to assign a module name to a gaol
+
+	* rep/util/ispell.jl: use accept-process-input-1 so as not to
+	call other process handlers asynchronously
+
 2000-08-27    <john@dcs.warwick.ac.uk>
 
 	* rep/vm/compiler/inline.jl, rep/vm/compiler/basic.jl: now

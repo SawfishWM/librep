@@ -82,8 +82,6 @@ General programming tasks:
 
  + add restricted load to gaol? (same directory only?)
 
- + should index doc strings by MODULE.FUNCTION not just FUNCTION
-
  + %make-structure shouldn't map names to structures itself
 
    it's done this way to allow mutually recursive structures (debatable

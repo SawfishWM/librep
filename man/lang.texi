@@ -4289,7 +4289,7 @@ replaced by @samp{/} characters).
 
 When searching for files to load, the standard filename suffixes are
 used to differentiate Lisp files from other types of files (@pxref{Load
-Function}). This file should contain a module definition form (as
+Function}). This file should contain a @code{define-structure} form (as
 described in the previous section) as the last top-level form in the
 file.
 

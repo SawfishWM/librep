@@ -1,3 +1,48 @@
+2000-09-04  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_dl.c (rep_open_dl_library): when no `dlname=' line was
+	found, include the name of the file when signalling an error
+
+	* structures.c (Fintern_structure): don't name the module after
+	the thing we're trying to load (this means that module files
+	must contain `define-structure' not `structure forms
+
+2000-09-03  John Harper  <john@dcs.warwick.ac.uk>
+
+	* values.c, unix_processes.c, unix_main.c, timers.c, tables.c,
+	symbols.c, structures.c, streams.c, repsdbm.c, repint_subrs.h,
+	repgdbm.c, rep_subrs.h, numbers.c, misc.c, main.c, macros.c,
+	lispmach.c, lispcmds.c, lisp.c, fluids.c, find.c, files.c,
+	datums.c, continuations.c: changed magic doc string tags from
+	`::doc:SYMBOL::' to `::doc:MODULE#SYMBOL::'
+
+2000-09-02  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.c (rep_assign_args): new function, for binding C
+	variables to a list of arguments
+
+	* main.c (rep_handle_input_exception): fixed bug of returning
+	with a null result after catching Qquit
+
+	* unix_main.c (rep_accept_input_for_callbacks): new function,
+	obsoletes rep_accept_input which just accepted a single
+	callback
+	(rep_accept_input_for_fds): new function
+
+	* unix_processes.c (rep_register_process_input_handler): new
+	function, adds a handler to those dispatched by
+	accept-process-input
+	(Faccept_process_input): able to accept input for more than
+	one source (will be used by the mythical `socket' plugin)
+	(Faccept_process_input_1): new function, just listens for
+	input from a single subprocess
+
+2000-09-01  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_files.c (rep_expand_file_name): fix bug of expanding
+	`../..' to `'. Also, don't allow null strings to be returned,
+	output `.' instead
+
 2000-08-31  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep.h, rep_config.h.in, Makefile.in, rep-config.sh: don't
