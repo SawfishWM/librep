@@ -1,3 +1,9 @@
+1999-11-29  John Harper  <john@dcs.warwick.ac.uk>
+
+	* values.c, unix_processes.c, unix_main.c, timers.c, symbols.c,
+	streams.c, repsdbm.c, misc.c, main.c, lispmach.c, lispcmds.c,
+	lisp.c, find.c, files.c: changed embedded doc keys
+
 1999-11-28  John Harper  <john@dcs.warwick.ac.uk>
 
 	* version 0.8
