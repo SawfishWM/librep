@@ -61,7 +61,7 @@
 ;; list of accessible special variables
 (defvar gaol-safe-specials
   '(nil t batch-mode downcase-table features file-handler-alist flatten-table
-    operating-system rep-version upcase-table load-filename))
+    operating-system rep-version upcase-table load-filename macro-environment))
 
 ;; features that the restricted code may ask for
 (defvar gaol-safe-features '(timers))
