@@ -19,6 +19,7 @@
 ;;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 (require 'remote)
+(require 'maildefs)			;for user-mail-address
 (provide 'remote-ftp)
 
 
@@ -38,6 +39,16 @@
 
 (defvar remote-ftp-timeout 30
   "Number of seconds to wait for ftp output before giving up.")
+
+(defvar remote-ftp-max-sessions 5
+  "If non-nil, the maximum number of FTP clients that may be running
+concurrently.")
+
+(defvar remote-ftp-anon-users "anonymous|ftp"
+  "Regular expression matching user names of `anonymous' FTP sessions.")
+
+(defvar remote-ftp-anon-passwd user-mail-address
+  "Password sent to anonymous FTP sessions.")
 
 (defvar remote-ftp-sessions nil
   "List of ftp structures defining all running ftp sessions.")
@@ -103,6 +114,9 @@ file types.")
     (mapc #'(lambda (s)
 	      (when (and (string= (aref s remote-ftp-host) host)
 			 (string= (aref s remote-ftp-user) user))
+		;; Move S to the head of the list
+		(setq remote-ftp-sessions
+		      (cons s (delq s remote-ftp-sessions)))
 		(throw 'foo s)))
 	  remote-ftp-sessions)
     ;; Create a new session
@@ -113,6 +127,10 @@ file types.")
 				'remote-ftp-sentinel
 				nil ftp-program
 				(append remote-ftp-args (list host)))))
+      (when (and remote-ftp-max-sessions
+		 (> (length remote-ftp-sessions) remote-ftp-max-sessions))
+	;; Kill the session last used the earliest
+	(remote-ftp-close-session (last remote-ftp-sessions)))
       (set-process-connection-type process 'pty)
       (aset session remote-ftp-host host)
       (aset session remote-ftp-user user)
@@ -188,9 +206,12 @@ file types.")
 	  (progn
 	    (remote-ftp-write
 	     session "%s\n"
-	     (list (pwd-prompt (format nil "Password for %s@%s:"
-				       (aref session remote-ftp-user)
-				       (aref session remote-ftp-host)))))
+	     (list (if (string-match remote-ftp-anon-users
+				     (aref session remote-ftp-user))
+		       remote-ftp-anon-passwd
+		     (pwd-prompt (format nil "Password for %s@%s:"
+					 (aref session remote-ftp-user)
+					 (aref session remote-ftp-host))))))
 	    ;; Can't be anything more?
 	    (setq point (length output)))
 	(if (string-match "\n" output point)
@@ -339,6 +360,12 @@ file types.")
   (let
       ((dir (file-name-directory filename))
        (base (file-name-nondirectory filename)))
+    (when (string= base "")
+      ;; hack, hack
+      (setq base (file-name-nondirectory dir)
+	    dir (file-name-directory dir))
+      (when (string= base "")
+	(setq base ".")))
     (unless (and (stringp (aref session remote-ftp-cached-dir))
 		 (string= dir (aref session remote-ftp-cached-dir)))
       ;; Cache directory DIR
