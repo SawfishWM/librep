@@ -102,7 +102,7 @@
   (let
       ((doc (documentation var t))
        (old-buf (current-buffer)))
-    (describe-variable-1 var old-buf)
+    (describe-variable-1 var)
     (format standard-output "%s\n" (or doc "Undocumented."))))
 
 
@@ -118,25 +118,27 @@ the function doc is provided."
 	(doc key dbm) 
     ;; First check for in-core documentation
     (if is-variable
-	(when (setq doc (get symbol 'variable-documentation))
+	(when (and (boundp symbol)
+		   (setq doc (get symbol 'variable-documentation)))
 	  (throw 'exit doc))
       ;; a function
-      (setq doc (symbol-function symbol))
-      (when (consp doc)
-	(if (eq 'macro (car doc))
-	    (setq doc (nth 3 doc))
-	  (setq doc (nth 2 doc)))
-	(when (stringp doc)
-	  (throw 'exit doc))))
+      (when (fboundp symbol)
+	(setq doc (symbol-function symbol))
+	(when (consp doc)
+	  (if (eq 'macro (car doc))
+	      (setq doc (nth 3 doc))
+	    (setq doc (nth 2 doc)))
+	  (when (stringp doc)
+	    (throw 'exit doc)))))
     ;; Then for doc strings in the databases
     (require 'sdbm)
     (setq key (concat (if is-variable ?V ?S) (symbol-name symbol)))
     (mapc #'(lambda (file)
-	      (setq dbm (dbm-open file 'read))
+	      (setq dbm (sdbm-open file 'read))
 	      (when dbm
 		(unwind-protect
-		    (setq doc (dbm-fetch dbm key))
-		  (dbm-close dbm))
+		    (setq doc (sdbm-fetch dbm key))
+		  (sdbm-close dbm))
 		(when doc
 		  (throw 'exit doc))))
 	  documentation-files))))
@@ -152,7 +154,7 @@ the function doc is provided."
   "Adds a documentation string STRING to the file of such strings."
   (require 'sdbm)
   (let
-      ((dbm (dbm-open documentation-file 'append))
+      ((dbm (sdbm-open documentation-file 'append))
        (key (concat (if is-variable ?V ?S) (symbol-name symbol))))
-    (dbm-store dbm key string 'replace)
-    (dbm-close dbm)))
+    (sdbm-store dbm key string 'replace)
+    (sdbm-close dbm)))
