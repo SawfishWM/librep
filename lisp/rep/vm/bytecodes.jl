@@ -46,7 +46,7 @@
 
 ;; Instruction set version
 (defconst bytecode-major 2)
-(defconst bytecode-minor 3)
+(defconst bytecode-minor 4)
 
 ;; Opcodes
 (defconst op-call 0x08)			;call (stk[n] stk[n-1] ... stk[0])
@@ -161,6 +161,9 @@
 (defconst op-swap2 0xba)		;s[0]=s[1], s[1]=s[2], s[2]=s[0]
 
 (defconst op-mod 0xbb)			;new 21-11-97
+
+(defconst op-pos 0xbc)			;new 20-12-97
+(defconst op-posp 0xbd)
 
 (defconst op-last-before-jmps 0xf8)
 

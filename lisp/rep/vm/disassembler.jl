@@ -47,7 +47,7 @@
    nil nil nil nil nil nil nil nil	 ; 0xa0
    nil nil nil nil nil nil nil nil
    "set-current-buffer" "bind-buffer" "current-buffer" "bufferp" "markp" "windowp" "bind-window" "viewp"
-   "bind-view" "current-view" "swap2" "mod" nil nil nil nil
+   "bind-view" "current-view" "swap2" "mod" "pos" "posp" nil nil
    nil nil nil nil nil nil nil nil	 ; 0xc0
    nil nil nil nil nil nil nil nil
    nil nil nil nil nil nil nil nil	 ; 0xd0
