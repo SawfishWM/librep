@@ -1,5 +1,11 @@
 2000-07-11  John Harper  <john@dcs.warwick.ac.uk>
 
+	* macros.c (Fmacroexpand_1): new function, does a single macro
+	expansion (without caching the result). `macro-environment' may
+	now be a structure instead of a function, in which case it
+	defines the module in which to dereference symbols. Also if a
+	function, it's a function to do a _single_ macro expansion
+
 	* lispcmds.c (Fload): return nil if file is empty, not null
 
 	* repgdbm.c (Fgdbm_open): check for defined (GDBM_NOLOCK)
