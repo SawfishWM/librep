@@ -24,15 +24,15 @@ AC_INIT(src/rep_subrs.h)
 AC_CONFIG_HEADER(config.h src/rep_config.h)
 
 dnl Release versioning info
-version="0.15.2"
+version="0.16"
 
 dnl libtool versioning info: `CURRENT:REVISION:AGE'. CURRENT is the
 dnl current interface id, REVISION is the version number of this
 dnl implementation, AGE defines the first interface id also supported
 dnl (i.e. all interfaces between CURRENT-AGE and CURRENT are supported)
-libcurrent=11
-librevision=2
-libage=2
+libcurrent=12
+librevision=0
+libage=3
 libversion="$libcurrent:$librevision:$libage"
 
 makefile_template="Makefile.in:Makedefs.in"

@@ -1,3 +1,7 @@
+2002-06-20  John Harper  <jsh@unfactored.org>
+
+	* version 0.16	 
+
 2002-05-06  John Harper  <jsh@unfactored.org>
 
 	* gettext.c (bindtextdomaincodeset): new stub. Patch from

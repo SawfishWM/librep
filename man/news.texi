@@ -3,6 +3,36 @@
 @appendix News
 @cindex News
 
+@heading 0.16
+
+@itemize @bullet
+
+@item New modules @code{rep.data.trie}, @code{rep.threads.proxy}
+
+@item Also added @code{rep.xml.reader} and @code{rep.xml.printer},
+though these should probably be used with extreme caution
+
+@item Appending to queues is now O(1) not O(n)
+
+@item Many changes to @code{rep.net.rpc} module, protocol is
+incompatible with previous version. Should be more robust
+
+@item @code{rep.i18n.gettext} module exports the
+@code{bindtextdomaincodeset} function (Christophe Fergeau)
+
+@item Slightly more secure way of seeding the rng
+
+@item @code{inexact->exact} can now convert floating point numbers to
+rationals (though not optimally). This means that @code{numerator} and
+@code{denominator} also work better with floats now
+
+@item New function @code{file-ttyp}
+
+@item Some random bug fixes
+
+@end itemize
+
+
 @heading 0.15
 
 @itemize @bullet

@@ -1,5 +1,7 @@
 2002-06-20  John Harper  <jsh@unfactored.org>
 
+	* version 0.16
+
 	* rep/xml/reader.jl, rep/xml/printer.jl: some code I wrote when
 	I was interested in making rep speak xml-rpc. I didn't finish
 	it, but, if I recall correctly, the xml parser and printer
