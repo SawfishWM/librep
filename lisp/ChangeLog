@@ -1,4 +1,23 @@
+2000-07-27  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep/util/repl.jl: core repl is now called for each line of
+	input. Also functions to create repl state objects. Allows
+	tricks like running a replicated repl on a remote system
+
+	* rep/user.jl: handle --help option if seen
+
+2000-07-25  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep/util/base64.jl: more code borrowed from Jade that may be
+	useful
+
+	* rep/util/ispell.jl: ripped this code from Jade to provide a
+	generally useful ispell interface
+
 2000-07-24  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep/vm/compiler/scheme.jl (compile-case): compile `case'
+	forms, cut-n-pasted from the `rep' compiler
 
 	* rep/vm/compiler/modules.jl (compiler-macroexpand-1): handle
 	autoloading macros

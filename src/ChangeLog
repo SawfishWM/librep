@@ -1,3 +1,29 @@
+2000-07-27  John Harper  <john@dcs.warwick.ac.uk>
+
+	* structures.c, repint.h, lispmach.c, lisp.c: apply_bytecode
+	field of structures is now null to denote the default
+	interpreter, and anything else just gets called. Non-bytecode
+	enabled closures get a function that just returns an error
+
+	* rep.c: deleted usage function
+
+	* main.c: make no effort to handle --help, let applications or
+	scripts do it instead
+
+	* lispcmds.c (Fload): when looking for an entry in the
+	after-load-alist, if a structure was returned, search for the
+	name of that structure
+
+2000-07-25  John Harper  <john@dcs.warwick.ac.uk>
+
+	* repint.h: make all bitfields unsigned (patch from Albert
+	Chin-A-Young <china@thewrittenword.com>)
+
+	* numbers.c: on Solaris use LLONG_{MIN,MAX} (patch from Albert
+	Chin-A-Young <china@thewrittenword.com>). Always define
+	LONG_LONG_{MIN,MAX} if it doesn't already exist, not only if
+	not using gmp
+
 2000-07-24  John Harper  <john@dcs.warwick.ac.uk>
 
 	* macros.c (Fmacroexpand_1): do autoloading of macros here

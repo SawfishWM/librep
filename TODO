@@ -56,8 +56,6 @@ Outstanding bugs
  ! If a compiled file FOO.jlc is made from source file FOO, but FOO is
    newer, load doesn't notice, and loads the invalid FOO.jlc
 
- ! it's impossible for scripts to present their own --help option
-
  ! non-fixnum numbers can't be dumped / dump totally broken re: modules
 
  ! `random' only accepts its range as a fixnum
