@@ -109,7 +109,6 @@ again:
 	    rep_GC_root gc_form, gc_env;
 	    lc.fun = Qnil;
 	    lc.args = Qnil;
-	    lc.args_evalled_p = Qnil;
 
 	    rep_PUSH_CALL (lc);
 	    rep_USE_FUNARG (car);

@@ -127,7 +127,6 @@ DEFSYM(term_interrupt, "term-interrupt");
 
 DEFSYM(debug_on_error, "debug-on-error");
 DEFSYM(backtrace_on_error, "backtrace-on-error");
-DEFSYM(backtrace_verbosely, "backtrace-verbosely");
 DEFSYM(debug_macros, "debug-macros");
 DEFSYM(error_handler_function, "error-handler-function"); /*
 ::doc:debug-on-error::
@@ -174,6 +173,8 @@ The number of list levels to descend when printing before abbreviating.
 DEFSYM(load, "load");
 DEFSYM(require, "require");
 
+DEFSYM(ellipsis, "...");
+
 /* When rep_TRUE Feval() calls the "debug-entry" function */
 rep_bool rep_single_step_flag;
 
@@ -201,6 +202,8 @@ int rep_test_int_period = 1000;
    interrupt, it should set `rep_throw_value' to `rep_int_cell' */
 static void default_test_int (void) { }
 void (*rep_test_int_fun)(void) = default_test_int;
+
+static int current_frame_id (void);
 
 
 /* Reading */
@@ -293,9 +296,11 @@ read_list(repv strm, register int *c_p)
 {
     repv result = Qnil;
     repv last = rep_NULL;
+    long start_line = read_local_file ? rep_FILE (strm)->line_number : -1;
     rep_GC_root gc_result;
-    rep_PUSHGC(gc_result, result);
+
     *c_p = rep_stream_getc(strm);
+    rep_PUSHGC(gc_result, result);
     while(result != rep_NULL)
     {
 	switch(*c_p)
@@ -395,6 +400,10 @@ read_list(repv strm, register int *c_p)
     }
 end:
     rep_POPGC;
+
+    if (result != rep_NULL)
+	rep_record_origin (result, strm, start_line);
+
     return result;
 }
 
@@ -1141,54 +1150,15 @@ eval_list(repv list)
     return result;
 }
 
-static repv
-copy_to_vector (repv argList, int nargs, repv *args,
-		rep_bool eval_args, rep_bool eval_in_env)
+static inline void
+copy_to_vector (repv argList, int nargs, repv *args)
 {
-    if (eval_args)
+    int i;
+    for (i = 0; i < nargs; i++)
     {
-	repv old_env = rep_env, old_struct = rep_structure;
-	rep_GC_root gc_arglist;
-	rep_GC_n_roots gc_args;
-	rep_GC_root gc_old_env, gc_old_struct;
-	int i;
-	rep_PUSHGC(gc_arglist, argList);
-	rep_PUSHGCN(gc_args, args, 0);
-	if (!eval_in_env)
-	{
-	    rep_env = rep_call_stack->saved_env;
-	    rep_structure = rep_call_stack->saved_structure;
-	}
-	rep_PUSHGC(gc_old_env, old_env);
-	rep_PUSHGC(gc_old_struct, old_struct);
-	for(i = 0; i < nargs; i++)
-	{
-	    if((args[i] = rep_eval(rep_CAR(argList), Qnil)) == rep_NULL)
-	    {
-		rep_POPGC;
-		rep_POPGCN;
-		rep_POPGC; rep_POPGC;
-		return rep_NULL;
-	    }
-	    argList = rep_CDR(argList);
-	    gc_args.count++;
-	}
-	rep_env = old_env;
-	rep_structure = old_struct;
-	rep_POPGC;
-	rep_POPGCN;
-	rep_POPGC; rep_POPGC;
+	args[i] = rep_CAR (argList);
+	argList = rep_CDR (argList);
     }
-    else
-    {
-	int i;
-	for (i = 0; i < nargs; i++)
-	{
-	    args[i] = rep_CAR (argList);
-	    argList = rep_CDR (argList);
-	}
-    }
-    return Qt;
 }
 
 static repv
@@ -1398,28 +1368,22 @@ out:
    IMPORTANT: this expects the top of the call stack to have the
    saved environments in which arguments need to be evaluated */
 static repv
-bind_lambda_list(repv lambdaList, repv argList,
-		 rep_bool eval_args, rep_bool eval_in_env)
+bind_lambda_list(repv lambdaList, repv argList)
 {
-    repv *evalled_args;
-    int evalled_nargs;
+    repv *argv;
+    int argc;
 
-    evalled_nargs = rep_list_length(argList);
-    evalled_args = alloca(sizeof(repv) * evalled_nargs);
+    argc = rep_list_length (argList);
+    argv = alloca (sizeof (repv) * argc);
 
     /* Evaluate arguments, and stick them in the evalled_args array */
-    if (!copy_to_vector (argList, evalled_nargs, evalled_args,
-			 eval_args, eval_in_env))
-    {
-	return rep_NULL;
-    }
+    copy_to_vector (argList, argc, argv);
    
-    return bind_lambda_list_1 (lambdaList, evalled_args, evalled_nargs);
+    return bind_lambda_list_1 (lambdaList, argv, argc);
 }
 
 static repv
-eval_lambda(repv lambdaExp, repv argList, rep_bool eval_args,
-	    rep_bool eval_in_env, repv tail_posn)
+eval_lambda(repv lambdaExp, repv argList, repv tail_posn)
 {
     repv result;
 again:
@@ -1432,8 +1396,7 @@ again:
 
 	rep_PUSHGC(gc_lambdaExp, lambdaExp);
 	rep_PUSHGC(gc_argList, argList);
-	boundlist = bind_lambda_list(rep_CAR(lambdaExp), argList,
-				     eval_args, eval_in_env);
+	boundlist = bind_lambda_list(rep_CAR(lambdaExp), argList);
 	rep_POPGC; rep_POPGC;
 
 	if(boundlist)
@@ -1463,7 +1426,6 @@ again:
 		    rep_USE_FUNARG (func);
 		    lambdaExp = rep_FUNARG (func)->fun;
 		    argList = args;
-		    eval_args = rep_FALSE;
 		    goto again;
 		}
 		else
@@ -1568,7 +1530,7 @@ DEFUN ("load-autoload", Fload_autoload,
 DEFSTRING(max_depth, "max-lisp-depth exceeded, possible infinite recursion?");
 
 static repv
-funcall (repv fun, repv arglist, rep_bool eval_args, repv tail_posn)
+apply (repv fun, repv arglist, repv tail_posn)
 {
     int type;
     repv result = rep_NULL;
@@ -1594,7 +1556,6 @@ funcall (repv fun, repv arglist, rep_bool eval_args, repv tail_posn)
 
     lc.fun = fun;
     lc.args = arglist;
-    lc.args_evalled_p = eval_args ? Qnil : Qt;
     rep_PUSH_CALL (lc);
 
     if(rep_data_after_gc >= rep_gc_threshold)
@@ -1610,15 +1571,8 @@ again:
     {
 	int i, nargs;
 	repv car, argv[5];
-	rep_GC_n_roots gc_argv;
 
     case rep_SubrN:
-	if(eval_args)
-	{
-	    arglist = eval_list(arglist);
-	    if(arglist == rep_NULL)
-		goto end;
-	}
 	if (closure)
 	    rep_USE_FUNARG(closure);
 	result = rep_SUBRNFUN(fun)(arglist);
@@ -1656,30 +1610,16 @@ again:
 	/* FALL THROUGH */
 
     do_subr:
-	if(eval_args)
-	    rep_PUSHGCN(gc_argv, argv, nargs);
 	for(i = 0; i < nargs; i++)
 	{
 	    if(rep_CONSP(arglist))
 	    {
-		if(!eval_args)
-		    argv[i] = rep_CAR(arglist);
-		else
-		{
-		    argv[i] = rep_eval(rep_CAR(arglist), Qnil);
-		    if(argv[i] == rep_NULL)
-		    {
-			rep_POPGCN;
-			goto end;
-		    }
-		}
+		argv[i] = rep_CAR(arglist);
 		arglist = rep_CDR(arglist);
 	    }
 	    else
 		break;
 	}
-	if(eval_args)
-	    rep_POPGCN;
 	if (closure)
 	    rep_USE_FUNARG(closure);
 	switch(type)
@@ -1709,8 +1649,7 @@ again:
 	if(closure && car == Qlambda)
 	{
 	    rep_USE_FUNARG (closure);
-	    result = eval_lambda (fun, arglist, eval_args,
-				  rep_FALSE, tail_posn);
+	    result = eval_lambda (fun, arglist, tail_posn);
 	}
 	else if(closure && car == Qautoload)
 	{
@@ -1739,15 +1678,11 @@ again:
 
 	    nargs = rep_list_length (arglist);
 	    args = alloca (sizeof (repv) * nargs);
-	    if (copy_to_vector (arglist, nargs, args, eval_args, rep_FALSE))
-	    {
-		if (bc_apply == 0)
-		    result = rep_apply_bytecode (fun, nargs, args);
-		else
-		    result = bc_apply (fun, nargs, args);
-	    }
+	    copy_to_vector (arglist, nargs, args);
+	    if (bc_apply == 0)
+		result = rep_apply_bytecode (fun, nargs, args);
 	    else
-		result = rep_NULL;
+		result = bc_apply (fun, nargs, args);
 	    break;
 	}
 	/* FALL THROUGH */
@@ -1760,7 +1695,6 @@ again:
     if(rep_throw_value != rep_NULL)
 	result = rep_NULL;
 
-end:
     assert (result != rep_NULL || rep_throw_value != rep_NULL);
     rep_POP_CALL(lc);
     rep_POPGC; rep_POPGC; rep_POPGC;
@@ -1774,13 +1708,21 @@ end:
 repv
 rep_funcall(repv fun, repv arglist, rep_bool eval_args)
 {
-    return funcall (fun, arglist, eval_args, Qnil);
+    if (eval_args)
+    {
+	rep_GC_root gc_fun;
+	rep_PUSHGC (gc_fun, fun);
+	arglist = eval_list (arglist);
+	rep_POPGC;
+    }
+
+    return apply (fun, arglist, Qnil);
 }
 
 repv
 rep_apply (repv fun, repv args)
 {
-    return rep_funcall (fun, args, rep_FALSE);
+    return apply (fun, args, Qnil);
 }
 
 DEFUN("funcall", Ffuncall, Sfuncall, (repv args), rep_SubrN) /*
@@ -1852,14 +1794,23 @@ eval(repv obj, repv tail_posn)
 	    && Fsymbol_value (Qlambda, Qt) == rep_VAL (&Slambda))
 	{
 	    /* inline lambda; don't need to enclose it.. */
+	    rep_GC_root gc_obj;
 	    struct rep_Call lc;
-	    lc.fun = rep_CAR (obj);
-	    lc.args = rep_CDR (obj);
-	    lc.args_evalled_p = Qnil;
-	    rep_PUSH_CALL (lc);
-	    ret = eval_lambda (rep_CAR (obj), rep_CDR (obj),
-			       rep_TRUE, rep_TRUE, tail_posn);
-	    rep_POP_CALL (lc);
+
+	    rep_PUSHGC (gc_obj, obj);
+	    ret = eval_list (rep_CDR (obj));
+	    rep_POPGC;
+
+	    if (ret != rep_NULL)
+	    {
+		lc.fun = rep_CAR (obj);
+		lc.args = ret;
+		rep_PUSH_CALL (lc);
+
+		ret = eval_lambda (rep_CAR (obj), ret, tail_posn);
+
+		rep_POP_CALL (lc);
+	    }
 	}
 	else
 	{
@@ -1924,7 +1875,15 @@ eval(repv obj, repv tail_posn)
 	    else
 	    {
 		rep_lisp_depth--;
-		return funcall (funcobj, rep_CDR(obj), rep_TRUE, tail_posn);
+
+		rep_PUSHGC (gc_obj, funcobj);
+		ret = eval_list (rep_CDR (obj));
+		rep_POPGC;
+
+		if (ret != rep_NULL)
+		    ret = apply (funcobj, ret, tail_posn);
+
+		return ret;
 	    }
 	}
 	rep_lisp_depth--;
@@ -1964,7 +1923,7 @@ rep_eval (repv obj, repv tail_posn)
     {
 	repv dbres;
 	repv dbargs = rep_list_3(obj, rep_MAKE_INT(DbDepth),
-				 rep_box_pointer (rep_call_stack));
+				 rep_MAKE_INT (current_frame_id ()));
 	if(dbargs)
 	{
 	    rep_GC_root gc_dbargs;
@@ -2037,10 +1996,15 @@ one.
 ::end:: */
 {
     repv result = Qnil;
-    rep_GC_root gc_args;
-    rep_PUSHGC(gc_args, args);
-    while(rep_CONSP(args))
+    repv old_current = rep_call_stack != 0 ? rep_call_stack->current_form : 0;
+    rep_GC_root gc_args, gc_old_current;
+    rep_PUSHGC (gc_args, args);
+    rep_PUSHGC (gc_old_current, old_current);
+    while (rep_CONSP (args))
     {
+	if (rep_call_stack != 0)
+	    rep_call_stack->current_form = rep_CAR (args);
+
 	result = rep_eval(rep_CAR(args),
 			  rep_CDR (args) == Qnil ? tail_posn : Qnil);
 	args = rep_CDR(args);
@@ -2048,7 +2012,10 @@ one.
 	if(!result || rep_INTERRUPTP)
 	    break;
     }
-    rep_POPGC;
+    if (rep_call_stack != 0)
+	rep_call_stack->current_form = old_current;
+
+    rep_POPGC; rep_POPGC;
     return result;
 }
 
@@ -2065,7 +2032,6 @@ rep_call_lispn (repv fun, int argc, repv *argv)
 
 	lc.fun = fun;
 	lc.args = rep_void_value;
-	lc.args_evalled_p = Qt;
 	rep_PUSH_CALL (lc);
 	rep_USE_FUNARG (fun);
 	bc_apply = rep_STRUCTURE (rep_structure)->apply_bytecode;
@@ -2469,9 +2435,9 @@ handler.
 	|| (rep_CONSP(on_error)
 	    && (tmp = Fmemq (error, on_error)) && tmp != Qnil))
     {
-	fprintf (stderr, "\nLisp backtrace:");
+	fprintf (stderr, "\nLisp backtrace:\n");
 	Fbacktrace (Fstderr_file());
-	fputs ("\n\n", stderr);
+	fputs ("\n", stderr);
     }	
 
     errlist = Fcons(error, data);
@@ -2488,8 +2454,7 @@ handler.
 	rep_PUSHGC(gc_on_error, on_error);
 	tmp = (rep_call_with_barrier
 	       (Ffuncall, Fcons (Fsymbol_value (Qdebug_error_entry, Qt),
-				 rep_list_2(errlist,
-					    rep_box_pointer (rep_call_stack))),
+				 rep_list_2(errlist, rep_MAKE_INT (current_frame_id ()))),
 		rep_TRUE, 0, 0, 0));
 	rep_POPGC;
 	Fset(Qdebug_on_error, on_error);
@@ -2570,6 +2535,40 @@ rep_mem_error(void)
 #endif
 }
 
+static int
+current_frame_id (void)
+{
+    int i;
+    struct rep_Call *lc;
+    i = 0;
+    for (lc = rep_call_stack; lc != 0; lc = lc->next)
+	i++;
+    return i - 1;
+}
+
+static struct rep_Call *
+stack_frame_ref (int idx)
+{
+    struct rep_Call *lc;
+    int total, wanted;
+
+    total = 0;
+    for (lc = rep_call_stack; lc != 0; lc = lc->next)
+	total++;
+
+    wanted = (total - 1) - idx;
+    if (wanted < 0)
+	return 0;
+
+    for (lc = rep_call_stack; lc != 0; lc = lc->next)
+    {
+	if (wanted-- == 0)
+	    return lc;
+    }
+
+    return 0;
+}
+
 DEFUN("backtrace", Fbacktrace, Sbacktrace, (repv strm), rep_Subr1) /*
 ::doc:rep.lang.debug#backtrace::
 backtrace [STREAM]
@@ -2582,18 +2581,25 @@ where ARGS-EVALLED-P is either `t' or `nil', depending on whether or not
 ARGLIST had been evaluated or not before being put into the stack.
 ::end:: */
 {
-    struct rep_Call *lc = rep_call_stack;
-    repv verbosely = Fsymbol_value (Qbacktrace_verbosely, Qt);
     repv old_print_escape = Fsymbol_value (Qprint_escape, Qt);
+    int total_frames, i;
 
     if(rep_NILP(strm) && !(strm = Fsymbol_value(Qstandard_output, Qnil)))
 	return rep_signal_arg_error (strm, 1);
 
     Fset (Qprint_escape, Qt);
 
-    while (lc != 0)
+    total_frames = current_frame_id () + 1;
+    i = 0;
+
+    for (i = 0; i < total_frames; i++)
     {
+	struct rep_Call *lc = stack_frame_ref (i);
 	repv function_name = Qnil;
+
+	if (lc == 0)
+	    continue;
+
 	if (rep_FUNARGP (lc->fun))
 	{
 	    if (rep_STRINGP (rep_FUNARG (lc->fun)->name))
@@ -2604,35 +2610,53 @@ ARGLIST had been evaluated or not before being put into the stack.
 	    if (rep_STRINGP (rep_XSUBR (lc->fun)->name))
 		function_name = rep_XSUBR (lc->fun)->name;
 	}
+	else if (rep_CONSP (lc->fun) && rep_CAR (lc->fun) == Qlambda
+		 && rep_CONSP (rep_CDR (lc->fun)))
+	{
+	    function_name = rep_list_3 (Qlambda, rep_CADR (lc->fun),
+					Qellipsis);
+	}
 
 	if (function_name != Qnil)
 	{
-	    rep_stream_puts (strm, "\n(", -1, rep_FALSE);
+	    char buf[16];
+
+	    sprintf (buf, "#%-3d ", i);
+	    rep_stream_puts (strm, buf, -1, rep_FALSE);
+
 	    rep_princ_val (strm, function_name);
 
-	    if (verbosely != Qnil && !rep_VOIDP (lc->args))
+	    if (rep_VOIDP (lc->args)
+		|| (rep_STRINGP (function_name)
+		    && strcmp (rep_STR (function_name), "run-byte-code") == 0))
+		rep_stream_puts (strm, " ...", -1, rep_FALSE);
+	    else
 	    {
-		repv args = lc->args;
-		while (rep_CONSP (args) && !rep_INTERRUPTP)
+		rep_stream_putc (strm, ' ');
+		rep_print_val (strm, lc->args);
+	    }
+
+	    if (lc->current_form != rep_NULL)
+	    {
+		repv origin = Flexical_origin (lc->current_form);
+		if (origin && origin != Qnil)
 		{
-		    rep_stream_putc (strm, ' ');
-		    rep_print_val (strm, rep_CAR (args));
-		    args = rep_CDR (args);
-		    rep_TEST_INT;
-		}
-		if (!rep_INTERRUPTP && args != Qnil)
-		{
-		    rep_stream_puts (strm, " . ", -1, rep_FALSE);
-		    rep_print_val (strm, args);
+		    char buf[256];
+#ifdef HAVE_SNPRINTF
+		    snprintf (buf, sizeof (buf), " at %s:%d",
+			      rep_STR (rep_CAR (origin)),
+			      rep_INT (rep_CDR (origin)));
+#else
+		    sprintf (buf, " at %s:%d",
+			     rep_STR (rep_CAR (origin)),
+			     rep_INT (rep_CDR (origin)));
+#endif
+		    rep_stream_puts (strm, buf, -1, rep_FALSE);
 		}
 	    }
-	    else
-		rep_stream_puts (strm, " ...", -1, rep_FALSE);
 
-	    rep_stream_putc (strm, ')');
-
+	    rep_stream_putc (strm, '\n');
 	}
-	lc = lc->next;
     }
 
     Fset (Qprint_escape, old_print_escape);
@@ -2640,44 +2664,22 @@ ARGLIST had been evaluated or not before being put into the stack.
     return Qt;
 }
 
-DEFUN("debug-frame-environment", Fdebug_frame_environment,
-      Sdebug_frame_environment, (repv pointer), rep_Subr1)
+DEFUN ("stack-frame-ref", Fstack_frame_ref,
+       Sstack_frame_ref, (repv idx), rep_Subr1)
 {
-    struct rep_Call *fp = rep_call_stack;
-    struct rep_Call *ptr = rep_unbox_pointer (pointer);
-    rep_DECLARE(1, pointer, ptr != 0);
-    while (fp != 0 && fp->next != ptr)
-	fp = fp->next;
-    if (fp != 0)
-	return Fcons (fp->saved_env, fp->saved_structure);
-    else
-	return Qnil;
-}
+    struct rep_Call *lc;
 
-DEFUN ("debug-outer-frame", Fdebug_outer_frame,
-       Sdebug_outer_frame, (repv pointer), rep_Subr1)
-{
-    struct rep_Call *fp = rep_call_stack;
-    struct rep_Call *ptr = rep_unbox_pointer (pointer);
-    rep_DECLARE(1, pointer, ptr != 0);
-    while (fp != 0 && fp != ptr)
-	fp = fp->next;
-    if (fp != 0 && fp->next != 0)
-	return rep_box_pointer (fp->next);
-    else
-	return Qnil;
-}
+    rep_DECLARE1 (idx, rep_INTP);
 
-DEFUN ("debug-inner-frame", Fdebug_inner_frame,
-       Sdebug_inner_frame, (repv pointer), rep_Subr1)
-{
-    struct rep_Call *fp = rep_call_stack;
-    struct rep_Call *ptr = rep_unbox_pointer (pointer);
-    rep_DECLARE(1, pointer, ptr != 0);
-    while (fp != 0 && fp->next != ptr)
-	fp = fp->next;
-    if (fp != 0)
-	return rep_box_pointer (fp);
+    lc = stack_frame_ref (rep_INT (idx));
+
+    if (lc != 0)
+    {
+	return rep_list_5 (lc->fun, rep_VOIDP (lc->args)
+			   ? rep_undefined_value : lc->args,
+			   lc->current_form ? lc->current_form : Qnil,
+			   lc->saved_env, lc->saved_structure);
+    }
     else
 	return Qnil;
 }
@@ -2738,9 +2740,7 @@ rep_lisp_init(void)
     rep_ADD_SUBR(Sbreak);
     rep_ADD_SUBR_INT(Sstep);
     rep_ADD_SUBR(Sbacktrace);
-    rep_ADD_SUBR(Sdebug_frame_environment);
-    rep_ADD_SUBR(Sdebug_outer_frame);
-    rep_ADD_SUBR(Sdebug_inner_frame);
+    rep_ADD_SUBR(Sstack_frame_ref);
     rep_pop_structure (tem);
 
     /* Stuff for error-handling */
@@ -2770,8 +2770,6 @@ rep_lisp_init(void)
     Fset (Qdebug_on_error, Qnil);
     rep_INTERN_SPECIAL(backtrace_on_error);
     Fset (Qbacktrace_on_error, Qnil);
-    rep_INTERN_SPECIAL(backtrace_verbosely);
-    Fset (Qbacktrace_verbosely, Qnil);
     rep_INTERN_SPECIAL(debug_macros);
     Fset (Qdebug_macros, Qnil);
     rep_INTERN_SPECIAL(error_handler_function);
@@ -2791,6 +2789,8 @@ rep_lisp_init(void)
 
     rep_INTERN(load);
     rep_INTERN(require);
+
+    rep_INTERN(ellipsis);
 
     /* Allow the bootstrap code to work.. */
     rep_STRUCTURE (rep_default_structure)->imports

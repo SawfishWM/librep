@@ -962,7 +962,13 @@ current position will also fail.
 	    else if(where == Qend)
 		whence = SEEK_END;
 
-            rep_FILE (file)->car |= rep_LFF_BOGUS_LINE_NUMBER;
+	    if (whence == SEEK_SET && offset == rep_MAKE_INT (0))
+	    {
+		rep_FILE (file)->line_number = 1;
+		rep_FILE (file)->car &= ~rep_LFF_BOGUS_LINE_NUMBER;
+	    }
+	    else
+		rep_FILE (file)->car |= rep_LFF_BOGUS_LINE_NUMBER;
 
 	    if(fseek(rep_FILE(file)->file.fh,
 		     rep_get_long_int(offset), whence) != 0)

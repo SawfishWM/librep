@@ -998,6 +998,7 @@ last garbage-collection is greater than `garbage-threshold'.
     }
 
     rep_mark_regexp_data();
+    rep_mark_origins ();
 
 #ifdef HAVE_DYNAMIC_LOADING
     rep_mark_dl_data();
@@ -1009,9 +1010,9 @@ last garbage-collection is greater than `garbage-threshold'.
     {
 	rep_MARKVAL(lc->fun);
 	rep_MARKVAL(lc->args);
+	rep_MARKVAL(lc->current_form);
 	rep_MARKVAL(lc->saved_env);
 	rep_MARKVAL(lc->saved_structure);
-	/* don't bother marking `args_evalled_p' it's always `nil' or `t'  */
 	lc = lc->next;
     }
 

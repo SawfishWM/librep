@@ -176,14 +176,14 @@ struct rep_Call {
     struct rep_Call *next;
     repv fun;
     repv args;
-    /* t if `args' is list of *evalled* arguments.  */
-    repv args_evalled_p;
+    repv current_form;			/* used for debugging, set by progn */
     repv saved_env;
     repv saved_structure;
 };
 
 #define rep_PUSH_CALL(lc)		\
     do {				\
+	(lc).current_form = rep_NULL;	\
 	(lc).saved_env = rep_env;	\
 	(lc).saved_structure = rep_structure; \
 	(lc).next = rep_call_stack;	\

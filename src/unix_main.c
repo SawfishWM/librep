@@ -795,9 +795,9 @@ fatal_signal_handler(int sig)
 
     /* Try and output the Lisp call stack; this may or may not
        provoke another error, but who cares.. */
-    fprintf(stderr, "\nLisp backtrace:");
+    fprintf(stderr, "\nLisp backtrace:\n");
     Fbacktrace(Fstderr_file());
-    fputs("\n\n", stderr);
+    fputs("\n", stderr);
 
     /* Now reraise the signal, since it's currently blocked
        the default action will occur, i.e. termination */
@@ -843,9 +843,9 @@ usr_signal_handler (int sig)
     switch (sig)
     {
     case SIGUSR1:
-	fprintf(stderr, "\n\nLisp backtrace:");
+	fprintf(stderr, "\n\nLisp backtrace:\n");
 	Fbacktrace(Fstderr_file());
-	fputs("\n\n\n", stderr);
+	fputs("\n\n", stderr);
 	break;
 
     case SIGUSR2:

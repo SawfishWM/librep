@@ -1230,6 +1230,7 @@ mark_cont (repv obj)
 	struct rep_Call *lc = FIXUP(struct rep_Call *, c, calls);
 	rep_MARKVAL(lc->fun);
 	rep_MARKVAL(lc->args);
+	rep_MARKVAL(lc->current_form);
 	rep_MARKVAL(lc->saved_env);
 	rep_MARKVAL(lc->saved_structure);
     }

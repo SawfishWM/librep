@@ -90,6 +90,13 @@ extern repv rep_parse_number (char *buf, u_int len, u_int radix,
 			      int sign, u_int type);
 extern void rep_numbers_init (void);
 
+/* from origin.c */
+extern rep_bool rep_record_origins;
+extern void rep_record_origin (repv form, repv stream, long start_line);
+extern repv Flexical_origin (repv form);
+extern void rep_mark_origins (void);
+extern void rep_origin_init (void);
+
 /* from regsub.c */
 extern void rep_default_regsub(int, rep_regsubs *, char *, char *, void *);
 extern int rep_default_regsublen(int, rep_regsubs *, char *, void *);

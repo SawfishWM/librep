@@ -1278,7 +1278,6 @@ within STRUCTURE. The value of the last form evaluated is returned.
     /* Create the lexical environment for the file. */
     lc.fun = Qnil;
     lc.args = Qnil;
-    lc.args_evalled_p = Qnil;
     rep_PUSH_CALL (lc);
     rep_env = Qnil;
     rep_structure = structure;
@@ -1329,7 +1328,6 @@ DEFUN ("load-dl-file", Fload_dl_file, Sload_dl_file,
     /* Create the lexical environment for the file. */
     lc.fun = Qnil;
     lc.args = Qnil;
-    lc.args_evalled_p = Qnil;
     rep_PUSH_CALL (lc);
     rep_env = Qnil;
     rep_structure = structure;

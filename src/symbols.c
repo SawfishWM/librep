@@ -571,7 +571,7 @@ rep_call_with_closure (repv closure, repv (*fun)(repv arg), repv arg)
     if (rep_FUNARGP (closure))
     {
 	struct rep_Call lc;
-	lc.fun = lc.args = lc.args_evalled_p = Qnil;
+	lc.fun = lc.args = Qnil;
 	rep_PUSH_CALL (lc);
 	rep_USE_FUNARG (closure);
 	ret = fun (arg);

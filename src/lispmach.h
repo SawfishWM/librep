@@ -611,7 +611,6 @@ again: {
 	    tmp = TOP;
 	    lc.fun = tmp;
 	    lc.args = rep_void_value;
-	    lc.args_evalled_p = Qt;
 	    rep_PUSH_CALL (lc);
 	    SYNC_GC;
 
@@ -749,7 +748,6 @@ again: {
 				rep_call_stack = lc.next;
 				rep_call_stack->fun = lc.fun;
 				rep_call_stack->args = lc.args;
-				rep_call_stack->args_evalled_p = lc.args_evalled_p;
 
 				/* since impurity==0 there can only be lexical
 				   bindings; these were unbound when switching

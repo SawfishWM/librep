@@ -1,3 +1,40 @@
+2001-08-07  John Harper  <jsh@pixelslut.com>
+
+	* origin.c: new file. Records and fetches line numbering
+	information for lisp forms (when enabled). Adds non-trivial
+	memory overhead, but is invaluable for debugging (both at
+	compile- and at run-time)
+
+	* lisp.c (read_list): call rep_record_origin () on the produced
+	list, giving the stream and starting line of the read form
+	(where possible)
+
+	(copy_to_vector, bind_lambda_list, bind_lambda_list_1,
+	eval_lambda, apply): removed the eval_args and (kludgey)
+	eval_in_env parameters. Now all function applications going
+	through apply () (ne funcall) must have an _evaluated_ list of
+	arguments. This may cons more in interpreted mode, but
+	simplifies a lot of things and is better for debugging (since
+	only evaluated arguments are put in the stack frame)
+
+	(Fbacktrace): made output more elegant (again)
+
+	(Fstack_frame_ref): return a list representing a given frame on
+	the stack
+
+	(Fdebug_frame_environment, Fdebug_outer_frame,
+	Fdebug_inner_frame): deleted these functions
+
+	* unix_main.c: adapted a couple of functions for new backtrace
+	format
+
+	* values.c, symbols.c, repint.h, macros.c, lispmach.h,
+	lispcmds.c, continuations.c: removed the args_evalled_p field
+	of the rep_Call structure, replaced by a current_form field
+
+	* files.c (Fseek_file): recognize that seeks to the start of
+	the file should reset the line number to one, not munge it
+
 2001-08-02  John Harper  <jsh@pixelslut.com>
 
 	* lisp.c: signal an error if EOF is read while parsing a block

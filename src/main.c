@@ -147,6 +147,8 @@ get_main_options(char *prog_name, int *argc_p, char ***argv_p)
 	Fset (Qbatch_mode, Qt);
     if (rep_get_option("--interp", 0))
 	Fset (Qinterpreted_mode, Qt);
+    if (rep_get_option("--line-numbers", 0))
+	rep_record_origins = rep_TRUE;
 
     return rep_TRUE;
 }
@@ -229,6 +231,7 @@ rep_init_from_dump(char *prog_name, int *argc, char ***argv,
 
 	rep_lisp_init();
 	rep_values_init();
+	rep_origin_init ();		/* must be after values */
 	rep_macros_init ();
 	rep_lispcmds_init();
 	rep_lispmach_init();
