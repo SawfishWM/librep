@@ -1,5 +1,7 @@
 2000-02-14  John Harper  <john@dcs.warwick.ac.uk>
 
+	* lispmach.c (Fjade_byte_code): fix typo in OP_SETG instruction
+
 	* tables.c: added support for weakly-keyed hash tables
 
 	* continuations.c: test if root_barrier == 0 at sensible points

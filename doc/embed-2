@@ -1,0 +1,123 @@
+Date: Mon, 14 Feb 2000 13:31:51 GMT
+From: John Harper <john@dcs.warwick.ac.uk>
+To: "Mikolaj J. Habryn" <dichro-mail-766da09@rcpt.to>
+Subject: Re: embedding librep
+
+Mikolaj J. Habryn writes:
+|  Hmm - I'm having trouble reaching sourceforge at the moment, but
+|I'll dig through the archives and subscribe as soon as that changes.
+
+well, there's not much there, but there may be a few useful messages..
+
+|
+|  It appears that rep_load_environment does the actual execution of
+|the code - I presume that what I want to do is register lambda
+|expressions inside there (calling back into the C-code to do so), and
+|then return into inner_main.
+
+rep_load_environment is usually just used to do initialisation, in the
+case of rep.c it's the whole program, but that's not usual. Sawmill
+main.c is probably a better example, it's inner_main does the
+following:
+
+static repv
+inner_main (repv arg)
+{
+    repv res = rep_load_environment(rep_string_dup ("sawmill"));
+    if (res != rep_NULL)
+    {
+        /* final initialisation.. */
+        if(rep_SYM(Qbatch_mode)->value == Qnil)
+            manage_windows ();
+
+        /* then jump into the event loop.. */
+        if(rep_SYM(Qbatch_mode)->value == Qnil)
+            res = Frecursive_edit ();
+    }
+    return res;
+}
+
+this is called after all exported lisp functions have been registered.
+manage_windows is a function to adopt all existing top-level windows,
+Frecursive_edit is rep's built-in event loop (you use
+rep_register_input_fd to register a function to be called when data
+arrives on a particular fd, e.g. sawmill's X connection)
+
+after this function exits, so will sawmill
+
+|
+|  How do I make a C function visible to the lisp code, to register the 
+|hooks with, and so that the hooks can get extra information if they
+|need it?
+
+by convention a lisp function `foo-bar' is represented by a C function
+Ffoo_bar and a subroutine data object Sfoo_bar. These are defined using
+the DEFUN macro:
+
+DEFUN ("foo-bar", Ffoo_bar, Sfoo_bar, (repv arg1), rep_Subr1)
+{
+	/* signal an error if `arg1' isn't a cons */
+	rep_DECLARE (1, arg1, rep_CONSP (arg1));
+
+	... do something with arg
+
+	return some-result-repv;
+}
+
+(repv arg1) is the actual argument list for the function, rep_Subr1
+defines the type of the subroutine object, in this case a function
+receiving a single argument, there's rep_Subr[1-5] and rep_SubrN which
+takes a single parameter, the _list_ of arguments given to the function
+
+to register this function with the interpreter it's necessary to then
+call:
+	rep_ADD_SUBR (Sfoo_bar);
+
+in an initialisation function somewhere.
+
+|
+|  How do I actually call the hooks, once they've been registered with
+|the C code?
+
+DEFUN-declared functions can be called as normal C functions. To create
+a hook, you need to define a symbol, i.e.:
+
+DEFSYM (foo_bar, "foo-bar");
+
+this sets up storage for a symbol `foo-bar', and creates a `repv Qfoo_bar'
+variable. You then need to call
+
+	rep_INTERN (foo_bar);
+
+in an initialisation function to initialise `Qfoo_bar'. If the symbol
+needs dynamic scope (i.e. it's used to represent a hook), then you do:
+
+	rep_INTERN_SPECIAL (foo_bar);
+
+you can then do for example:
+
+	Fset (Qfoo_bar, Qnil);
+
+to initialise it to nil, though that's not actually required for hooks.
+
+To invoke a hook, use Fcall_hook, i.e.
+
+	Fcall_hook (Qfoo_bar, ARG-LIST, TYPE)
+
+ARG-LIST is the list of argument values to pass to the hook, e.g. to
+pass a single value use `rep_LIST_1 (VALUE)'. TYPE is a symbol defining
+how to interpret the values returned by functions, usually just use
+Qnil to force all functions in the hook to be called.
+
+If you just want to call a single lisp function, you can use
+rep_call_lispN, for example:
+
+	rep_call_lisp1 (Fsymbol_value (Qfoo_bar, Qt), VALUE);
+
+when you do anything that may execute lisp code, you need to careful
+about garbage collection. Basically, you must have told the interpreter
+about any lisp values you're going to use after the called lisp code
+finishes executing.
+
+	John
+

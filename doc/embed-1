@@ -1,0 +1,82 @@
+Date: Mon, 14 Feb 2000 11:49:27 GMT
+From: John Harper <john@dcs.warwick.ac.uk>
+To: "Mikolaj J. Habryn" <dichro-mail-682f458@rcpt.to>
+Subject: Re: embedding librep
+
+Mikolaj J. Habryn writes:
+|  Hi John - do you have any simple examples of using librep in an
+|inferior role? I need a scripting interface for a program that I'm
+|writing, and I'd much rather re-use somebody else's code :) Is there
+|anything other than sawmill (or presumably jade) that I could squint
+|at and try to understand?
+
+the simplest (and only other) example is rep.c in librep/src, it's not
+commented so here's a slightly simplified annotated version (from cvs
+librep)
+
+#include <rep.h>
+
+static repv
+inner_main (repv arg)
+{
+	-- this boots the lisp environment, then loads the rep.jl[c] script
+
+    return rep_load_environment (rep_string_dup ("rep"));
+}
+
+int
+main(int argc, char **argv)
+{
+    char *prog_name = *argv++;
+    argc--;
+
+	-- this initialises the lisp data structures
+
+    rep_init (prog_name, &argc, &argv, 0, 0);
+
+    if (rep_get_option ("--version", 0))
+    {
+	printf ("rep version %s\n", REP_VERSION);
+	return 0;
+    }
+
+	-- this function is complex, it creates an execution context
+	   then calls inner_main from within this new context. It's
+	   needed because new librep does continuations and (soft)
+	   threading
+
+    rep_call_with_barrier (inner_main, Qnil, rep_TRUE, 0, 0, 0);
+
+	-- this function just checks if an error occurred, if so it
+	   will print some descriptive message, and returns a suitable
+	   exit code
+
+    return rep_top_level_exit ();
+}
+
+
+But this is only half the story (or less). The main thing you'd have to
+understand is the C representation of Lisp data types. The header file
+rep_lisp.h defines this, and is reasonably well commented. For each
+data type there will be at least two macros rep_FOOP (x) which tests
+if a repv (a lisp pointer) is of type FOO, and rep_FOO (x) which casts
+the lisp pointer to the correct C pointer.
+
+So, e.g. for pairs, there's rep_CONSP and rep_CONS. There's also
+accessor macros rep_CAR (x) and rep_CDR (x) for this type.
+
+Another thing is that if a repv == rep_NULL, then an error occurred
+somewhere, and control should be unwound back to the top-level
+
+Garbage collection also complicates things, I posted a message to
+librep-list explaining the mechanics of this, it will be in the
+archives on sourceforge..
+
+I've been meaning to document all this, but it's quite an undertaking :-)
+
+If you decide to use rep, I'm happy to answer as many questions as you
+have, or just post them to librep-list@lists.sourceforge.net
+
+	John
+
+

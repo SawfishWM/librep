@@ -1,0 +1,60 @@
+Date: Sun, 19 Dec 1999 14:58:46 GMT
+From: John Harper <john@dcs.warwick.ac.uk>
+To: Ceri Storey <cez@nomorespam.freeserve.co.uk>
+Subject: Re: [Librep-list] GC questions
+CC: librep-list@mail1.sourceforge.net
+Sender: librep-list-admin@sourceforge.net
+
+Ceri Storey writes:
+|I was wondering a few things about how the gc works. 
+|
+|what are the `sweep' functions*, and the (PUSH|POP)GC macros for?
+|how does the GC find it's initial set of roots?
+
+okay, I'm assuming you know basically how a mark/sweep gc works (mark
+phase: mark all reachable objects from a set of roots; sweep phase: free
+all unreachable objects, unmark any other objects)
+
+rep's gc relies on C code that calls functions that may gc marking all
+objects that may be referenced after the control returns. It does this
+on the stack, using a chained list of rep_GC_root objects, each one
+contains a pointer to the protected lisp object, and a pointer to the
+next rep_GC_root object
+
+the rep_PUSHGC and rep_POPGC macros simply maintain the linkage of the
+chain of rep_GC_root objects, and the values they protect.
+rep_PUSHGC(x,y) installs protection for repv y using rep_GC_root x,
+rep_POPGC removes the last piece of protection added
+
+so if I have a data object foo, that needs to be protected across a
+function call bar (), I'd do something like:
+
+	repv foo;
+	rep_GC_root gc_foo;
+
+	rep_PUSHGC (gc_foo, foo);
+	bar ();
+	rep_POPGC;
+
+the mark phase of gc then uses each item in the chain of rep_GC_root
+objects as a root to mark from
+
+(there's also a second chain of roots, type rep_GC_n_roots, that
+protects a counted-array of lisp values)
+
+the second phase of gc is sweeping. By this point any objects that may
+be referenced in the future have been marked, any others are not
+marked.
+
+each data type has its own sweep function; this normally works by
+freeing any unmarked objects of its type, and rebuilding its list of
+all allocated objects (of its type). You can use a singly-linked list
+to do this in O(N) time by reversing the list each sweep
+
+(each data type can also have two marking functions, one to mark the
+contents of a single object of its type that is known to be reachable,
+and one to mark objects that it knows must not be freed, even when
+there are no references to them)
+
+	John
+
