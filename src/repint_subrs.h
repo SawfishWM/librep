@@ -28,6 +28,7 @@ extern void rep_continuations_init (void);
 extern void rep_datums_init (void);
 
 /* from files.c */
+extern repv rep_get_fh_env (void);
 extern void rep_files_init(void);
 extern void rep_files_kill(void);
 
@@ -101,6 +102,7 @@ extern int rep_pre_symbols_init(void);
 extern void rep_symbols_init(void);
 extern void rep_symbols_kill(void);
 extern int rep_allocated_symbols, rep_used_symbols;
+extern int rep_allocated_funargs, rep_used_funargs;
 
 /* from values.c */
 extern int rep_type_cmp(repv, repv);
