@@ -172,7 +172,7 @@ EXCLUDE-LIST is a list of files which shouldn't be compiled."
   (let
       ((dir (directory-files dir-name)))
     (while (consp dir)
-      (when (and (regexp-match "\\.jl$" (car dir))
+      (when (and (string-match "\\.jl$" (car dir))
 		 (null (member (car dir) exclude-list)))
 	(let*
 	    ((file (file-name-concat dir-name (car dir)))

@@ -66,23 +66,23 @@ Ctrl-c Ctrl-x	: Set value of form\n\n"))
 ;;;###autoload
 (defun debug-entry (debug-obj debug-depth)
   (with-buffer debug-buffer
-    (goto-char (line-start (buffer-end)))
+    (goto (start-of-line (end-of-buffer)))
     (let
 	((print-escape-newlines t))
       (format debug-buffer "%s%S\n" (make-string (* 2 debug-depth)) debug-obj))
-    (goto-glyph (next-line 1 (indent-pos (prev-line))))
+    (goto-glyph (forward-line 1 (indent-pos (forward-line -1))))
     (catch 'debug
       (recursive-edit))))
 
 (defun debug-exit (debug-val debug-depth)
   (with-buffer debug-buffer
-    (goto-char (line-start (buffer-end)))
+    (goto (start-of-line (end-of-buffer)))
     (format debug-buffer "%s=> %S\n" (make-string (* 2 debug-depth)) debug-val)))
 
 ;;;###autoload
 (defun debug-error-entry (error-list)
   (with-buffer debug-buffer
-    (goto-char (line-start (buffer-end)))
+    (goto (start-of-line (end-of-buffer)))
     (format debug-buffer "*** Error: %s: %S\n" (unless (get (car error-list) 'error-message) (car error-list)) (cdr error-list))
     (catch 'debug
       (recursive-edit)
@@ -118,9 +118,9 @@ Ctrl-c Ctrl-x	: Set value of form\n\n"))
 
 ;; DEPTH is the number of stack frames to discard
 (defun debug-backtrace (depth)
-  (goto-char (line-start (buffer-end)))
+  (goto (start-of-line (end-of-buffer)))
   (let
       ((old-pos (cursor-pos)))
     (backtrace debug-buffer)
-    (delete-area old-pos (next-line (1+ depth) (copy-pos old-pos)))
+    (delete-area old-pos (forward-line (1+ depth) old-pos))
     (split-line)))
