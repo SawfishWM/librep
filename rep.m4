@@ -6,9 +6,16 @@ dnl Test for librep, define REP_VERSION, REP_CFLAGS, REP_LIBS and REP_EXECDIR
 dnl
 AC_DEFUN(AM_PATH_REP,
 [dnl
+  AC_ARG_WITH(rep_prefix,[  --with-rep-prefix=PFX   Prefix where rep is installed (optional)],
+	      [rep_prefix="$withval"], [rep_prefix=""])
+  if test "x$rep_prefix" = "x"; then
+    rep_config="rep-config"
+  else
+    rep_config="${rep_prefix}/bin/rep-config"
+  fi
   min_rep_version=ifelse([$1], ,0.1,$1)
   AC_MSG_CHECKING(for rep - version >= $min_rep_version)
-  rep_version=`rep-config --version`
+  rep_version=`$rep_config --version`
   if test $? -eq 0; then
     rep_major=`echo $rep_version \
 	| sed -e 's/\([[0-9]]\+\)\.\([[0-9]]\+\)\(\.\([[0-9]]\+\)\)\?/\1/'`
@@ -23,9 +30,9 @@ AC_DEFUN(AM_PATH_REP,
 	       -a $rep_minor -ge $min_rep_minor ')';
     then
       REP_VERSION="${rep_version}"
-      REP_CFLAGS="`rep-config --cflags`"
-      REP_LIBS="`rep-config --libs`"
-      REP_EXECDIR="`rep-config --execdir`"
+      REP_CFLAGS="`$rep_config --cflags`"
+      REP_LIBS="`$rep_config --libs`"
+      REP_EXECDIR="`$rep_config --execdir`"
       AC_SUBST(REP_VERSION)
       AC_SUBST(REP_CFLAGS)
       AC_SUBST(REP_LIBS)
