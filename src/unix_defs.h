@@ -21,7 +21,6 @@
 #ifndef _UNIX_DEFS_H
 #define _UNIX_DEFS_H
 
-#include "lists.h"
 #include "build.h"
 #include <stdlib.h>
 

@@ -1,4 +1,9 @@
-1998-11-14  John Harper  <john@jsh.org>
+1998-11-20  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lists.c, lists.h: removed these files, nothing uses them
+	anymore
+
+1998-11-14  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_main.c (handle_input): fixes to the input_pending stuff
 

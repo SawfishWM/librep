@@ -44,7 +44,7 @@ COMMON_HDRS =	jade.h edit.h lisp.h value.h keys.h stringmem.h \
 X11_SRCS =	x11_keys.c x11_main.c x11_misc.c x11_windows.c
 X11_HDRS =	x11_defs.h x11_windowsys.h
 
-UNIX_SRCS =	lists.c unix_dl.c unix_files.c unix_main.c unix_processes.c
+UNIX_SRCS =	unix_dl.c unix_files.c unix_main.c unix_processes.c
 UNIX_HDRS =	unix_defs.h
 
 SRCS = $(COMMON_SRCS)
