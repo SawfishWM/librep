@@ -131,7 +131,7 @@ db_print_backtrace(void *_db, char *fun)
 
 # define STACK_PROBE(i)					\
     do {						\
-	if(stack[i-1] != 0)				\
+	if(i == 0 || stack[i-1] != 0)			\
 	    stack[i] = __builtin_return_address(i);	\
 	else						\
 	    stack[i] = 0;				\
