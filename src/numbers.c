@@ -2619,23 +2619,34 @@ accuracy.
 ::end:: */
 {
     rep_DECLARE1(arg, rep_NUMERICP);
+
     if (rep_INTP (arg) || !rep_NUMBER_FLOAT_P (arg))
 	return arg;
+
+#ifdef HAVE_GMP
+    else
+    {
+	rep_number_q *q;
+
+	q = make_number (rep_NUMBER_RATIONAL);
+	mpq_init (q->q);
+	mpq_set_d (q->q, rep_get_float (arg));
+
+	return maybe_demote (rep_VAL (q));
+    }
+#else
     else
     {
 	double x, y;
 	rep_number_z *z;
 
 	rationalize (arg, &x, &y);
-
 	z = make_number (rep_NUMBER_BIGNUM);
-#ifdef HAVE_GMP
-	mpz_init_set_d (z->z, x / y);
-#else
 	z->z = x / y;
-#endif
+
 	return maybe_demote (rep_VAL (z));
     }
+#endif
 }
 
 DEFUN("numerator", Fnumerator, Snumerator, (repv arg), rep_Subr1) /*
@@ -2659,7 +2670,7 @@ Return the numerator of rational number X.
     }
 #endif
 
-    if (rep_NUMBER_FLOAT_P (arg))
+    if (rep_NUMBER_INEXACT_P (arg))
 	inexact = rep_TRUE;
 
     rationalize (arg, &x, NULL);
@@ -2688,7 +2699,7 @@ Return the denominator of rational number X.
     }
 #endif
 
-    if (rep_NUMBER_FLOAT_P (arg))
+    if (rep_NUMBER_INEXACT_P (arg))
 	inexact = rep_TRUE;
 
     rationalize (arg, NULL, &y);
