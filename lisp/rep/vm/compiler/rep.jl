@@ -673,14 +673,20 @@
       (emit-jmp-insn (bytecode jmp) start-label)
       (fix-label cleanup-label)
 
-      (increment-stack 2)		;reach here with two items on stack
+      (increment-stack)		;reach here with one item on stack
       (if (consp handlers)
 	  (fluid-let ((spec-bindings (fluid spec-bindings))
 		      (lex-bindings (fluid lex-bindings))
 		      (lambda-name (fluid lambda-name)))
-	    (when (nth 1 form)
-	      (test-variable-bind (nth 1 form))
-	      (note-binding (nth 1 form)))
+	    (if (nth 1 form)
+		(let ((var (nth 1 form)))
+		  (when (spec-bound-p var)
+		    (compiler-error
+		     "condition-case can only bind lexically: %s" var))
+		  (test-variable-bind var)
+		  (note-binding var))
+	      ;; something always gets bound
+	      (note-binding (gensym)))
 	    ;; Loop over all but the last handler
 	    (while (consp (cdr handlers))
 	      (if (consp (car handlers))
@@ -709,7 +715,7 @@
 		  ;;		push CONDITIONS
 		  ;;		errorpro
 		  ;;		ejmp pc
-		  ;; pc:		HANDLER
+		  ;; pc:	HANDLER
 		  ;;		jmp end
 		  (compile-constant (car (car handlers)))
 		  (emit-insn (bytecode errorpro))
@@ -722,15 +728,12 @@
 	      (compiler-error "Badly formed condition-case handler")))
 	(compiler-error "No handlers in condition-case"))
       (decrement-stack)
-      (decrement-stack)
 
       ;; start:
-      ;;		push VAR
       ;;		push cleanup
       ;;		binderr
       ;;		FORM
       (fix-label start-label)
-      (compile-constant (nth 1 form))
       (push-label-addr cleanup-label)
       (emit-insn (bytecode binderr))
       (increment-b-stack)
@@ -739,14 +742,9 @@
 
       ;; end:
       ;;		unbind			;unbind error handler or VAR
-      ;;		swap			;result<->VAR
-      ;;		pop			;pop VAR
       (fix-label end-label)
       (emit-insn (bytecode unbind))
-      (decrement-b-stack)
-      (emit-insn (bytecode swap))
-      (emit-insn (bytecode pop))
-      (decrement-stack))))
+      (decrement-b-stack))))
   (put 'condition-case 'rep-compile-fun compile-condition-case)
 
   (defun compile-with-object (form)
@@ -945,8 +943,6 @@
     (put 'aref 'rep-compile-opcode (bytecode aref))
     (put 'length 'rep-compile-fun compile-1-args)
     (put 'length 'rep-compile-opcode (bytecode length))
-    (put 'eval 'rep-compile-fun compile-1-args)
-    (put 'eval 'rep-compile-opcode (bytecode eval))
     (put '+ 'rep-compile-fun compile-binary-op)
     (put '+ 'rep-compile-opcode (bytecode add))
     (put '* 'rep-compile-fun compile-binary-op)
