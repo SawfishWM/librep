@@ -1,3 +1,16 @@
+2000-06-18  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispmach.c: when CHECK_STACK_USAGE is defined, embed the
+	stack assertions into the SAFE_NEXT macro. This ensures that
+	the stack is checked after _all_ instructions
+
+	* structures.c, macros.c: include <string.h> (and <memory.h> if
+	needed) (from George Lebl <jirka@5z.com>)
+
+	* numbers.c: if SIZEOF_LONG == SIZEOF_LONG_LONG, then use long
+	conversion functions to define long long conversions (from
+	George Lebl <jirka@5z.com>)
+
 2000-06-16  John Harper  <john@dcs.warwick.ac.uk>
 
 	* repint.h (inline_Fcons): when using GCC define this function
