@@ -79,6 +79,8 @@
   extern char **environ;
 #endif
 
+void (*rep_sigchld_fun) (void) = 0;
+
 static struct sigaction chld_sigact;
 static sigset_t chld_sigset;
 
@@ -166,6 +168,8 @@ static RETSIGTYPE
 sigchld_handler(int sig)
 {
     got_sigchld = rep_TRUE;
+    if (rep_sigchld_fun != 0)
+	(*rep_sigchld_fun) ();
 }
 
 static void
