@@ -25,8 +25,7 @@
 
 (open-structures '(rep.lang.symbols
 		   rep.data
-		   rep.system
-		   rep.io.streams))
+		   rep.system))
 
 (defun file-name= (name1 name2)
   "Returns t when NAME1 and NAME2 both name the same file."

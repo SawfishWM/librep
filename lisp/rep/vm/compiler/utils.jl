@@ -52,7 +52,6 @@
 	    note-declaration)
 
     (open rep
-	  rep.io.streams
 	  rep.io.files
 	  rep.vm.compiler.modules
 	  rep.vm.compiler.bindings

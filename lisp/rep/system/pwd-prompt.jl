@@ -23,8 +23,7 @@
 
 (declare (in-module rep.system))
 
-(open-structures '(rep.io.streams
-		   rep.regexp))
+(open-structures '(rep.regexp))
 
 ;;;###autoload
 (defun pwd-prompt (prompt)

@@ -25,7 +25,6 @@
     (open rep
 	  rep.system
 	  rep.io.processes
-	  rep.io.streams
 	  rep.io.files
 	  rep.io.file-handlers.remote.utils)
 

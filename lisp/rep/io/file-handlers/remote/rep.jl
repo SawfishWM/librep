@@ -30,7 +30,6 @@
     (open rep
 	  rep.regexp
 	  rep.system
-	  rep.io.streams
 	  rep.io.processes
 	  rep.io.files
 	  rep.io.file-handlers.remote.utils)

@@ -27,7 +27,6 @@
 	   rep.regexp
 	   rep.system
 	   rep.io.files
-	   rep.io.streams
 	   rep.io.processes)
      (set-binds))
 

@@ -25,7 +25,6 @@
 
 (open-structures '(rep.lang.symbols
 		   rep.io.files
-		   rep.io.streams
 		   rep.module-system
 		   rep.data))
 

@@ -37,7 +37,6 @@
 	    add-documentation-params)
 
     (open rep
-	  rep.io.streams
 	  rep.structures)
 
   (defun describe-lambda-list (lambda-list)

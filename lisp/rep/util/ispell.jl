@@ -34,7 +34,6 @@
 
     (open rep
 	  rep.regexp
-	  rep.io.streams
 	  rep.io.processes
 	  rep.system)
 

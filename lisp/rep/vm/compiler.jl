@@ -38,7 +38,6 @@
     (open rep
 	  rep.structures
 	  rep.system
-	  rep.io.streams
 	  rep.io.files
 	  rep.regexp
 	  rep.vm.compiler.basic

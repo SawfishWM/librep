@@ -29,7 +29,6 @@
     (open rep
 	  rep.structures
 	  rep.regexp
-	  rep.io.streams
 	  rep.io.readline)
 
 ;;; the form stopped on

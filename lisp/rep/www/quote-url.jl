@@ -33,7 +33,6 @@
 	    unquote-url)
 
     (open rep
-	  rep.io.streams
 	  rep.regexp)
 
   (defconst url-meta-re "[^a-zA-Z0-9$_.!~*'(),-]"

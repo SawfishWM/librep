@@ -28,7 +28,6 @@
 	    disassemble-1)
 
     (open rep
-	  rep.io.streams
 	  rep.vm.bytecodes)
 
   (define-structure-alias disassembler rep.vm.disassembler)

@@ -28,8 +28,7 @@
     (export base64-encode
 	    base64-decode)
 
-    (open rep
-	  rep.io.streams)
+    (open rep)
 
   ;; INPUT and OUTPUT are any type of stream
 

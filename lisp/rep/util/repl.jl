@@ -33,7 +33,6 @@
     (open rep
 	  rep.structures
 	  rep.regexp
-	  rep.io.streams
 	  rep.io.readline)
 
   (define current-repl (make-fluid))

@@ -59,6 +59,7 @@
 				    (structure-interface rep.lang.math)
 				    (structure-interface rep.lang.debug)
 				    (structure-interface rep.data)
+				    (structure-interface rep.io.streams)
 				    (structure-interface rep.vm.interpreter)
 				    (structure-interface rep.module-system)
 				    (export backquote))))
