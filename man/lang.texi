@@ -3298,8 +3298,8 @@ Variables}). As a consequence of these drawbacks, @code{rep} provides a
 second method of implementing dynamically scoped variables, known as
 @dfn{fluid variables}, or just @dfn{fluids}.
 
-A fluid is a first class Lisp object that may be passed around as any
-other Lisp object. It's sole function is to provide a location from
+A fluid is a first class Lisp object that may be passed around like any
+other Lisp object. Its sole function is to provide a location from
 which dynamic bindings may be created. Fluids are anonymous objects,
 they are usually named by being stored in lexically scoped variables.
 
@@ -4068,7 +4068,7 @@ e.g. the two following forms have exactly the same effect:
 @end lisp
 
 @noindent
-But note the changed position of the parentheses. This is because
+But note the different position of the parentheses. This is because
 @code{define} may also be used to define (lexical) variables. Hence the
 following is also equivalent:
 
@@ -4093,7 +4093,7 @@ containing scope. For example:
 @end lisp
 
 @noindent
-This defines a top-level function called @code{foo}; but this also
+This defines a top-level function called @code{foo}. However it also
 contains an inner function named @code{bar}, that is only accessible
 within @code{foo}. Since @code{bar} is defined inside @code{foo}, and
 librep uses lexical scope by default, the variable @code{x} defined by
@@ -4139,11 +4139,11 @@ module systems.
 
 Modules are known as @dfn{structures} and may be anonymous or named.
 Each structure specifies and implements an @dfn{interface}, essentially
-a list of names listing the definitions within the module that may be
-referenced by other modules. Each structure is a separate global
+a list of names listing the definitions within that module that may be
+accessed by other modules. Each structure is a separate global
 namespace, with a number of variable bindings. Each closure contains a
-reference to the structure it was instantiated in, providing the source
-for referencing any unbound variables.
+reference to the structure it was instantiated in, for accessing the
+bindings of any free variables referenced by that closure.
 
 As well as specifying its name and interface, each module also lists
 the other modules whose bindings it may reference. Structures may
@@ -4215,8 +4215,7 @@ and configuration @var{config}.
 
 After configuring the module as specified, the sequence of forms
 @var{body@dots{}} is evaluated; it should include the definitions
-required to fulfil the interface that the module has promised to
-exhibit.
+required by the interface that the module has promised to implement.
 
 The @var{config} form is either a list of configuration clauses, or a
 single configuration clause. Each such clause must be of the following
@@ -4446,8 +4445,8 @@ conditional special form necessary---all others can be implemented as
 macros.
 
 @defmac if condition true-form else-forms@dots{}
-The @code{if} construct is the nearest thing in Lisp to the @dfn{if-then-else}
-construct found in most programming languages.
+The @code{if} form is the nearest thing in Lisp to the
+@dfn{if-then-else} construct found in most programming languages.
 
 First the @var{condition} form is evaluated, if it returns true the
 @var{true-form} is evaluated and its result returned. Otherwise the
