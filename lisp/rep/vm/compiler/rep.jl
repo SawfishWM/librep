@@ -712,7 +712,7 @@
 	  (let-fluids ((spec-bindings (fluid spec-bindings))
 		       (lex-bindings (fluid lex-bindings))
 		       (lambda-name (fluid lambda-name)))
-	    (if (nth 1 form)
+	    (if (and (nth 1 form) (not (eq (nth 1 form) 'nil)))
 		(let ((var (nth 1 form)))
 		  (when (spec-bound-p var)
 		    (compiler-error
@@ -793,6 +793,18 @@
 	(emit-insn (bytecode list) count)
 	(decrement-stack (1- count)))))
   (put 'list 'rep-compile-fun compile-list)
+
+  (defun compile-list* (form)
+    (do ((args (cdr form) (cdr args))
+	 (count 0 (1+ count)))
+	((null args)
+	 ;; merge the arguments into a single list
+	 (do ((i 0 (1+ i)))
+	     ((>= i (1- count)))
+	   (emit-insn (bytecode cons))
+	   (decrement-stack)))
+      (compile-form-1 (car args))))
+  (put 'list* 'rep-compile-fun compile-list*)
 
   ;; Funcall normally translates to a single call instruction. However,
   ;; if the function being called is a constant lambda expression, open
