@@ -24,6 +24,8 @@ top_srcdir=@top_srcdir@
 srcdir=@srcdir@
 VPATH=@top_srcdir@/src:@top_srcdir@/lib-src:../lib:.
 
+JADE_LIBOBJS=@JADE_LIBOBJS@
+
 # Check if we're building a dumped binary
 ifeq ($(notdir $(shell pwd)), jaded)
   DUMPED_JADE = 1
@@ -34,8 +36,8 @@ endif
 COMMON_SRCS =	buffers.c commands.c debug-buffer.c edit.c editcommands.c \
 		extent.c faces.c files.c find.c glyphs.c housekeeping.c \
 		keys.c lisp.c lispcmds.c lispmach.c main.c misc.c movement.c \
-		redisplay.c regexp.c regjade.c regsub.c streams.c stringmem.c \
-		symbols.c undo.c values.c views.c windows.c
+		redisplay.c regexp.c regjade.c regsub.c streams.c \
+		stringmem.c symbols.c undo.c values.c views.c windows.c
 COMMON_HDRS =	jade.h edit.h lisp.h value.h keys.h stringmem.h \
 		revision.h regexp.h
 
@@ -75,21 +77,19 @@ ifneq ($(HAVE_X11), 0)
  LIBS += $(X11LIBS)
 endif
 
-ifeq ($(HAVE_GNU_MALLOC),0)
- LIBS := ../lib/gmalloc.o $(LIBS) ../lib/libmalloc.a
-endif
-
 ifeq ($(DUMPED_JADE), 0)
  all : jade
 else
  all : jaded
 endif
 
-jade : jade_protos.h doc-strings.h $(OBJS) $(LIBOBJS)
-	$(CC) $(LDFLAGS) $(DL_LDFLAGS) -o jade $(OBJS) $(LIBOBJS) $(LIBS)
+jade : jade_protos.h doc-strings.h $(OBJS) $(JADE_LIBOBJS) $(LIBOBJS)
+	$(CC) $(LDFLAGS) $(DL_LDFLAGS) -o jade $(OBJS) \
+	  $(JADE_LIBOBJS) $(LIBOBJS) $(LIBS)
 
-jaded : jade_protos.h doc-strings.h $(OBJS) $(LIBOBJS)
-	$(CC) $(LDFLAGS) $(DL_LDFLAGS) -o jaded $(OBJS) $(LIBOBJS) $(LIBS)
+jaded : jade_protos.h doc-strings.h $(OBJS) $(JADE_LIBOBJS) $(LIBOBJS)
+	$(CC) $(LDFLAGS) $(DL_LDFLAGS) -o jaded $(OBJS) \
+	  $(JADE_LIBOBJS) $(LIBOBJS) $(LIBS)
 
 ifeq ($(DUMPED_JADE), 1)
 $(DUMPED_ASM) : $(DUMPED_CMP)
