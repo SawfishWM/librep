@@ -1,3 +1,8 @@
+1999-12-16  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_dl.c: check .la files for `rep_open_globally=yes' line,
+	if so, open with RTLD_GLOBAL to export all symbols
+
 1999-12-12  John Harper  <john@dcs.warwick.ac.uk>
 
 	* version 0.9
