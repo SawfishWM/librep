@@ -80,23 +80,24 @@
 	     (error-handler (car data) (cdr data))))))))
 
   (define (repl &optional initial-structure)
+    ;; returns t if repl should run again
+    (define (run-repl)
+      (let ((input (readline
+		    (format nil (if (repl-pending (fluid current-repl))
+				    "" "%s> ")
+			    (repl-struct (fluid current-repl))))))
+	(and input (repl-iterate (fluid current-repl) input))))
+    (define (interrupt-handler data)
+      (if (eq (car data) 'user-interrupt)
+	  (progn
+	    (format standard-output "User interrupt!\n")
+	    (loop))
+	(raise-exception data)))
     (let-fluids ((current-repl (make-repl initial-structure)))
       (write standard-output "\nEnter `,help' to list commands.\n")
       (let loop ()
-	(call-with-exception-handler
-	 (lambda ()
-	   (let ((input (readline
-			 (format nil (if (repl-pending (fluid current-repl))
-					 "" "%s> ")
-				 (repl-struct (fluid current-repl))))))
-	     (when (and input (repl-iterate (fluid current-repl) input))
-	       (loop))))
-	 (lambda (data)
-	   (if (eq (car data) 'user-interrupt)
-	       (progn
-		 (format standard-output "User interrupt!\n")
-		 (loop))
-	     (raise-exception data)))))))
+	(when (call-with-exception-handler run-repl interrupt-handler)
+	  (loop)))))
 
   (define (print-list data &optional map)
     (unless map (setq map identity))
