@@ -1,3 +1,14 @@
+1999-01-27  John Harper  <john@dcs.warwick.ac.uk>
+
+	* views.c (cmd_with_view): fix bug when switching windows as
+	well as views
+
+1999-01-24  John Harper  <john@dcs.warwick.ac.uk>
+
+	* views.c (format_mode_string, format_mode_value,
+	update_status_buffer): buf_len is now signed, so that negative
+	values are detected, not wrapped around!
+
 1999-01-20  John Harper  <john@dcs.warwick.ac.uk>
 
 	* buffers.c (make_marks_non_resident): add a comment noting that

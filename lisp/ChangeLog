@@ -1,3 +1,42 @@
+1999-01-27  John Harper  <john@dcs.warwick.ac.uk>
+
+	* mime-decode.jl (mime-encode-mmencode): new function, wrapper
+	for the base64 and quoted-printable coders, if possible and
+	desirable, then an external `mmencode' program is used to do
+	the translation
+
+	* find-url.jl, html-display.jl: fix which view to display in
+
+1999-01-26  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rm-mime.jl: bind the `w' prefix in read-mail mode to the
+	`html-display-map'
+
+	* html-display.jl (html-display-current-link): search up the
+	extent stack correctly
+	(html-display-map): autoload'able
+
+	* mime-decode.jl (mime-decode): handle `text/html' MIME parts
+	by calling html-decode
+
+	* html-decode.jl: more bug fixes
+
+1999-01-25  John Harper  <john@dcs.warwick.ac.uk>
+
+	* remote-ftp.jl (remote-ftp-close-all): new function
+	(remote-ftp-close-host): made interactive
+
+1999-01-24  John Harper  <john@dcs.warwick.ac.uk>
+
+	* remote-ftp.jl: misc fixes to try and handle non-successful
+	logins more gracefully; not 100% successful yet..
+
+	* ispell.jl (ispell-kill-process): keep looping while
+	accept-process-output times out, not while it doesn't!
+
+	* html-display.jl (html-display-select): handle URL's that are
+	specified relative to the root of the current server
+
 1999-01-22  John Harper  <john@dcs.warwick.ac.uk>
 
 	* html-decode.jl: parse <frameset> sections half-heartedly, and

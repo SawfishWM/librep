@@ -239,4 +239,9 @@
 (autoload 'next-event "keymap")
 (autoload 'html-decode "html-decode")
 (autoload 'html-display "html-display" t)
+(autoload-keymap 'html-display-map "html-display")
+(autoload 'mime-encode-base64 "mime-base64")
+(autoload 'mime-decode-base64 "mime-base64")
+(autoload 'mime-encode-quoted-printable "mime-quoted-printable")
+(autoload 'mime-decode-quoted-printable "mime-quoted-printable")
 ;;; ::autoload-end::
