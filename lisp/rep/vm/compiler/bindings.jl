@@ -308,4 +308,16 @@
       (when vars
 	(fluid-set spec-bindings (cons (car vars) (fluid spec-bindings)))
 	(loop (cdr vars)))))
-  (put 'special 'compiler-decl-fun declare-special))
+  (put 'special 'compiler-decl-fun declare-special)
+
+  ;; (declare (heap-allocated VARS...))
+
+  (define (declare-heap-allocated form)
+    (let loop ((vars (cdr form)))
+      (when vars
+	(tag-binding (car vars) 'heap-allocated)
+	(loop (cdr vars)))))
+  (put 'heap-allocated 'compiler-decl-fun declare-heap-allocated)
+
+  ;; (declare (used-call/cc))
+  (put 'used-call/cc 'compiler-decl-fun note-call/cc))
