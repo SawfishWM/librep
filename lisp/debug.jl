@@ -23,17 +23,16 @@
 (defvar debug-buffer (open-buffer "*debugger*")
   "Buffer to use for the Lisp debugger.")
 
-(defvar debug-ctrl-c-keymap (make-keylist)
+(defvar debug-ctrl-c-keymap 
+  (bind-keys (make-sparse-keymap)
+    "Ctrl-s" 'debug-step
+    "Ctrl-i" '(debug-set-result nil)
+    "Ctrl-n" 'debug-next
+    "Ctrl-c" 'debug-continue
+    "Ctrl-r" 'debug-continue
+    "Ctrl-b" '(debug-backtrace 2)
+    "Ctrl-x" 'debug-set-result)
   "Keymap for debugger's ctrl-c prefix.")
-
-(bind-keys debug-ctrl-c-keymap
-  "Ctrl-s" 'debug-step
-  "Ctrl-i" '(debug-set-result nil)
-  "Ctrl-n" 'debug-next
-  "Ctrl-c" 'debug-continue
-  "Ctrl-r" 'debug-continue
-  "Ctrl-b" '(debug-backtrace 2)
-  "Ctrl-x" 'debug-set-result)
 
 (defun debug-mode ()
   "Debug Mode:\n
