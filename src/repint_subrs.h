@@ -65,8 +65,8 @@ extern char *stpcpy(char *, const char *);
 extern void rep_misc_init(void);
 
 /* from numbers.c */
-extern repv rep_parse_number (char *buf, int len, int radix,
-			      int sign, int type);
+extern repv rep_parse_number (char *buf, u_int len, u_int radix,
+			      int sign, u_int type);
 extern void rep_numbers_init (void);
 
 /* from regsub.c */
