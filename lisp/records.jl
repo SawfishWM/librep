@@ -118,7 +118,10 @@
   (define (record-printer rt)
     (lambda (record stream)
       (if (record-type-discloser rt)
-	  (prin1 ((record-type-discloser rt) record) stream)
+	  (let ((out ((record-type-discloser rt) record)))
+	    (if (stringp out)
+		(write stream out)
+	      (prin1 out stream)))
 	(format stream "#<%s>" (record-type-name rt)))))
 
 ;;; syntax
