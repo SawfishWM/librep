@@ -143,7 +143,7 @@ supplied an error is signalled.
     if (rep_get_option (rep_STR(opt), (arg == Qnil) ? 0 : &param))
 	return param;
     else
-	return (arg == Qnil) ? Qnil : rep_NULL;
+	return Qnil;
 }
 
 static int
