@@ -110,7 +110,6 @@ top:
 	}
 	break;
 
-    case rep_Symbol:
     case rep_Funarg:
     function:
 	if((res = rep_call_lisp0(stream)) && rep_INTP(res))
@@ -181,7 +180,6 @@ top:
 	}
 	break;
 
-    case rep_Symbol:
     case rep_Funarg:
     function:
 	tmp = rep_MAKE_INT(c);
@@ -259,8 +257,6 @@ top:
 	break;
 
     case rep_Symbol:
-    case rep_Funarg:
-    function:
 	if(stream == Qt)
 	{
 	    tmps[0] = (u_char)c;
@@ -269,7 +265,11 @@ top:
 		(*rep_message_fun)(rep_append_message, tmps, 1);
 	    rc = 1;
 	}
-	else if((res = rep_call_lisp1(stream, rep_MAKE_INT(c))) && !rep_NILP(res))
+	break;
+
+    case rep_Funarg:
+    function:
+	if((res = rep_call_lisp1(stream, rep_MAKE_INT(c))) && !rep_NILP(res))
 	    rc = 1;
 	break;
 
@@ -357,27 +357,26 @@ top:
 	break;
 
     case rep_Symbol:
-    case rep_Funarg:
-    function:
 	if(stream == Qt)
 	{
 	    if (rep_message_fun != 0)
 		(*rep_message_fun)(rep_append_message, buf, bufLen);
 	    rc = bufLen;
 	}
+	break;
+
+    case rep_Funarg:
+    function:
+	if(isValString)
+	    args = rep_VAL(data);
 	else
+	    args = rep_string_dupn(buf, bufLen);
+	if((res = rep_call_lisp1(stream, args)) && !rep_NILP(res))
 	{
-	    if(isValString)
-		args = rep_VAL(data);
+	    if(rep_INTP(res))
+		rc = rep_INT(res);
 	    else
-		args = rep_string_dupn(buf, bufLen);
-	    if((res = rep_call_lisp1(stream, args)) && !rep_NILP(res))
-	    {
-		if(rep_INTP(res))
-		    rc = rep_INT(res);
-		else
-		    rc = bufLen;
-	    }
+		rc = bufLen;
 	}
 	break;
 
@@ -547,6 +546,25 @@ are available returns nil.
     if((rc = rep_stream_getc(stream)) != EOF)
 	return(rep_MAKE_INT(rc));
     return(Qnil);
+}
+
+DEFUN("peek-char", Fpeek_char, Speek_char, (repv stream), rep_Subr1) /*
+::doc:peek-char::
+peek-char STREAM
+
+Returns the next character from the input-stream STREAM, *without*
+removing that character from the head of the stream. If no more
+characters are available returns nil.
+::end:: */
+{
+    int c = rep_stream_getc (stream);
+    if (c != EOF)
+    {
+	rep_stream_ungetc (stream, c);
+	return rep_MAKE_INT (c);
+    }
+    else
+	return Qnil;
 }
 
 DEFUN("read-chars", Fread_chars, Sread_chars,
@@ -1099,11 +1117,12 @@ return the new characters.
     return(string);
 }
 
-DEFUN("streamp", Fstreamp, Sstreamp, (repv arg), rep_Subr1) /*
-::doc:streamp::
-streamp ARG
+DEFUN("input-stream-p", Finput_stream_p,
+      Sinput_stream_p, (repv arg), rep_Subr1) /*
+::doc:input-stream-p::
+input-stream-p ARG
 
-Returns t if ARG is a stream.
+Returns t if ARG is an input stream.
 ::end:: */
 {
     repv res = Qnil;
@@ -1112,7 +1131,6 @@ Returns t if ARG is a stream.
 	repv car, cdr;
 	rep_type *t;
 
-    case rep_Symbol:
     case rep_Funarg:
 	res = Qt;
 	break;
@@ -1125,18 +1143,67 @@ Returns t if ARG is a stream.
 	else
 	{
 	    t = rep_get_data_type(rep_TYPE(car));
-	    if ((t->putc && t->puts) || (t->getc && t->ungetc))
+	    if (t->getc && t->ungetc)
 		res = Qt;
 	}
 	break;
 
     default:
 	if (rep_FILEP(arg))
-	    res = Qt;
+	    res = Qt;			/* XXX broken */
 	else
 	{
 	    t = rep_get_data_type(rep_TYPE(arg));
-	    if ((t->putc && t->puts) || (t->getc && t->ungetc))
+	    if (t->getc && t->ungetc)
+		res = Qt;
+	}
+    }
+    return(res);
+}
+
+DEFUN("output-stream-p", Foutput_stream_p,
+      Soutput_stream_p, (repv arg), rep_Subr1) /*
+::doc:output-stream-p::
+output-stream-p ARG
+
+Returns t if ARG is an output stream.
+::end:: */
+{
+    repv res = Qnil;
+    switch(rep_TYPE(arg))
+    {
+	repv car, cdr;
+	rep_type *t;
+
+    case rep_Symbol:
+	if (arg == Qt)
+	    res = Qt;
+	break;
+
+    case rep_Funarg:
+	res = Qt;
+	break;
+
+    case rep_Cons:
+	car = rep_CAR(arg);
+	cdr = rep_CDR(arg);
+	if(rep_INTP(cdr) && rep_STRINGP(car))
+	    res = Qt;
+	else
+	{
+	    t = rep_get_data_type(rep_TYPE(car));
+	    if (t->putc && t->puts)
+		res = Qt;
+	}
+	break;
+
+    default:
+	if (rep_FILEP(arg))
+	    res = Qt;			/* XXX broken */
+	else
+	{
+	    t = rep_get_data_type(rep_TYPE(arg));
+	    if (t->putc && t->puts)
 		res = Qt;
 	}
     }
@@ -1149,6 +1216,7 @@ rep_streams_init(void)
     rep_INTERN_SPECIAL(format_hooks_alist);
     rep_ADD_SUBR(Swrite);
     rep_ADD_SUBR(Sread_char);
+    rep_ADD_SUBR(Speek_char);
     rep_ADD_SUBR(Sread_chars);
     rep_ADD_SUBR(Sread_line);
     rep_ADD_SUBR(Scopy_stream);
@@ -1160,5 +1228,6 @@ rep_streams_init(void)
     rep_ADD_SUBR(Smake_string_input_stream);
     rep_ADD_SUBR(Smake_string_output_stream);
     rep_ADD_SUBR(Sget_output_stream_string);
-    rep_ADD_SUBR(Sstreamp);
+    rep_ADD_SUBR(Sinput_stream_p);
+    rep_ADD_SUBR(Soutput_stream_p);
 }
