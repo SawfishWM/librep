@@ -58,7 +58,7 @@
    "ejmp\t%d" "jpn\t%d" "jpt\t%d" "jmp\t%d" "jn\t%d" "jt\t%d" "jnp\t%d" "jtp\t%d" ])
 
 ;;;###autoload
-(defun disassemble (arg &optional stream)
+(defun disassemble (arg &optional stream depth)
   "Dissasembles ARG, with output to STREAM, or the *disassembly* buffer."
   (interactive "aFunction to disassemble:")
   (let
@@ -72,11 +72,14 @@
       (insert "\n" stream)
       (goto (start-of-buffer))
       (setq stream (cons stream t)))
-    (if (symbolp arg)
-	(progn
-	  (format stream "Disassembly of function %s:\n\n" arg)
-	  (setq arg (symbol-function arg)))
-      (format stream "Disassembly of form %S:\n\n" arg))
+    (unless depth
+      (setq depth 0))
+    (when (zerop depth)
+      (if (symbolp arg)
+	  (progn
+	    (format stream "Disassembly of function %s:\n\n" arg)
+	    (setq arg (symbol-function arg)))
+	(format stream "Disassembly of form %S:\n\n" arg)))
     (cond
      ((and (consp arg) (eq (car arg) 'jade-byte-code))
       (setq code-string (nth 1 arg)
@@ -85,21 +88,23 @@
      (t
       (setq code-string (aref arg 1)
 	    consts (aref arg 2))
-      (format stream "Arguments: %S\nInteractive spec: %S\nDoc string: %S\n"
-	      (aref arg 0) (aref arg 5) (aref arg 4))
-      (if (zerop (logand (aref arg 3) 0x10000))
-	  ;; Not a macro
-	  (setq stack (aref arg 3))
-	(format stream "[This is a macro definition]\n")
-	(setq stack (logand (aref arg 3) 0xffff)))))
-    (format stream "[Uses %d code bytes, %d constants, and %d stack slots]\n
-Disassembly:\n" (length code-string) (length consts) stack)
+      (when (zerop depth)
+	(format stream "Arguments: %S\nInteractive spec: %S\nDoc string: %S\n"
+		(aref arg 0) (aref arg 5) (aref arg 4))
+	(if (zerop (logand (aref arg 3) 0x10000))
+	    ;; Not a macro
+	    (setq stack (aref arg 3))
+	  (format stream "[This is a macro definition]\n")
+	  (setq stack (logand (aref arg 3) 0xffff)))))
+     (format stream "[Uses %d code bytes, %d constants, and %d stack slots]\n
+Disassembly:\n" (length code-string) (length consts) stack))
     (let
 	((i 0)
+	 (indent (make-string depth))
 	 c arg op)
       (while (< i (length code-string))
 	(setq c (aref code-string i))
-	(format stream "\n%d\t\t" i)
+	(format stream "\n%s%d\t\t" indent i)
 	(cond
 	 ((< c op-last-with-args)
 	  (setq op (logand c 0xf8))
@@ -119,11 +124,12 @@ Disassembly:\n" (length code-string) (length consts) stack)
 	   ((= op op-push)
 	    (let
 		((argobj (aref consts arg)))
-	      (if (and (consp argobj) (eq (car argobj) 'jade-byte-code))
+	      (if (or (and (consp argobj) (eq (car argobj) 'jade-byte-code))
+		      (bytecodep argobj))
 		  (progn
-		    (format stream "push\t[%d] %S\n<byte-code" arg argobj)
-		    (disassemble argobj stream)
-		    (write stream "\n>"))
+		    (format stream "push\t[%d] %S\n\n%sbytecode:"
+			    arg argobj indent)
+		    (disassemble argobj stream (1+ depth)))
 		(format stream "push\t[%d] %S" arg (aref consts arg)))))
 	   ((= op op-refq)
 	    (format stream "refq\t[%d] %S" arg (aref consts arg)))
