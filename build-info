@@ -14,12 +14,7 @@ repcommonexecdir="$7"
     || HOSTNAME=`hostname` \
     || HOSTNAME=unknown
 
-[ -n "$LOCALDOMAIN" ] \
-    || LOCALDOMAIN=`dnsdomainname` \
-    || LOCALDOMAIN=`domainname` \
-    || LOCALDOMAIN=unknown
-
-sys_name="$HOSTNAME.$LOCALDOMAIN"
+sys_name="$HOSTNAME"
 user_name="$LOGNAME"
 
 build_date="`date +'%a %b %e %Y'`"
