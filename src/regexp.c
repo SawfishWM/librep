@@ -25,8 +25,6 @@
 
 /*
  * CHANGED, 14-Jan-93, by J.Harper,
- * added #ifdef __STDC__ prototype sections so I can use registerized
- * arguments
  *
  * Changed regexec() to regexec2() and added eflags arg for REG_NOTBOL.
  *
@@ -38,111 +36,12 @@
 #undef min
 #endif
 #include "regexp.h"
+#include "regprog.h"
 #include "regmagic.h"
 
-#ifdef __STDC__
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
-#endif
-
-/*
- * The "internal use only" fields in regexp.h are present to pass info from
- * compile to execute that permits the execute phase to run lots faster on
- * simple cases.  They are:
- *
- * regstart	char that must begin a match; '\0' if none obvious reganch
- * is the match anchored (at beginning-of-line only)? regmust	string
- * (pointer into program) that match must include, or NULL regmlen
- * length of regmust string
- *
- * Regstart and reganch permit very fast decisions on suitable starting points
- * for a match, cutting down the work a lot.  Regmust permits fast rejection
- * of lines that cannot possibly match.	 The regmust tests are costly enough
- * that regcomp() supplies a regmust only if the r.e. contains something
- * potentially expensive (at present, the only such thing detected is * or +
- * at the start of the r.e., which can involve a lot of backup).  Regmlen is
- * supplied because the test in regexec() needs it and regcomp() is computing
- * it anyway.
- */
-
-/*
- * Structure for regexp "program".  This is essentially a linear encoding of
- * a nondeterministic finite-state machine (aka syntax charts or "railroad
- * normal form" in parsing technology).  Each node is an opcode plus a "next"
- * pointer, possibly plus an operand.  "Next" pointers of all nodes except
- * BRANCH implement concatenation; a "next" pointer with a BRANCH on both
- * ends of it is connecting two alternatives.	(Here we have one of the
- * subtle syntax dependencies:	an individual BRANCH (as opposed to a
- * collection of them) is never concatenated with anything because of
- * operator precedence.)  The operand of some types of node is a literal
- * string; for others, it is a node leading into a sub-FSM.  In particular,
- * the operand of a BRANCH node is the first node of the branch. (NB this is
- * *not* a tree structure:  the tail of the branch connects to the thing
- * following the set of BRANCHes.)  The opcodes are:
- */
-
-/* definition	number	opnd?	meaning */
-#define END	0		/* no	End of program. */
-#define BOL	1		/* no	Match "" at beginning of line. */
-#define EOL	2		/* no	Match "" at end of line. */
-#define ANY	3		/* no	Match any one character. */
-#define ANYOF	4		/* str	Match any character in this string. */
-#define ANYBUT	5		/* str	Match any character not in this
-				 * string. */
-#define BRANCH	6		/* node Match this alternative, or the
-				 * next... */
-#define BACK	7		/* no	Match "", "next" ptr points backward. */
-#define EXACTLY 8		/* str	Match this string. */
-#define NOTHING 9		/* no	Match empty string. */
-#define STAR	10		/* node Match this (simple) thing 0 or more
-				 * times. */
-#define PLUS	11		/* node Match this (simple) thing 1 or more
-				 * times. */
-#define OPEN	20		/* no	Mark this point in input as start of
-				 * #n. */
-/* OPEN+1 is number 1, etc. */
-#define CLOSE	30		/* no	Analogous to OPEN. */
-
-/*
- * Opcode notes:
- *
- * BRANCH	The set of branches constituting a single choice are hooked together
- * with their "next" pointers, since precedence prevents anything being
- * concatenated to any individual branch.  The "next" pointer of the last
- * BRANCH in a choice points to the thing following the whole choice.  This
- * is also where the final "next" pointer of each individual branch points;
- * each branch starts with the operand node of a BRANCH node.
- *
- * BACK		Normal "next" pointers all implicitly point forward; BACK exists to
- * make loop structures possible.
- *
- * STAR,PLUS	'?', and complex '*' and '+', are implemented as circular
- * BRANCH structures using BACK.  Simple cases (one character per match) are
- * implemented with STAR and PLUS for speed and to minimize recursive
- * plunges.
- *
- * OPEN,CLOSE	...are numbered at compile time.
- */
-
-/*
- * A node is one char of opcode followed by two chars of "next" pointer.
- * "Next" pointers are stored as two 8-bit pieces, high order first.  The
- * value is a positive offset from the opcode of the node containing it. An
- * operand, if any, simply follows the node.  (Note that much of the code
- * generation knows about this implicit relationship.)
- *
- * Using two bytes for the "next" pointer is vast overkill for most things, but
- * allows patterns to get big without disasters.
- */
-#define OP(p)	(*(p))
-#define NEXT(p) (((*((p)+1)&0377)<<8) + (*((p)+2)&0377))
-#define OPERAND(p)	((p) + 3)
-
-/*
- * See regmagic.h for one further detail of program structure.
- */
-
 
 /*
  * Utility definitions.
@@ -177,39 +76,21 @@ static long	regsize;	/* Code size. */
 /*
  * Forward declarations for regcomp()'s friends. 
  */
-#ifndef STATIC
-#define STATIC	static
-#endif
-#ifdef __STDC__
-STATIC char    *reg(int, int *);
-STATIC char    *regbranch(int *);
-STATIC char    *regpiece(int *);
-STATIC char    *regatom(int *);
-STATIC char    *regnode(char);
-STATIC char    *regnext(char *);
-STATIC void	regc(char);
-STATIC void	reginsert(char, char *);
-STATIC void	regtail(char *, char *);
-STATIC void	regoptail(char *, char *);
+static char    *reg(int, int *);
+static char    *regbranch(int *);
+static char    *regpiece(int *);
+static char    *regatom(int *);
+static char    *regnode(char);
+static char    *regnext(char *);
+static void	regc(char);
+static void	reginsert(char, char *);
+static void	regtail(char *, char *);
+static void	regoptail(char *, char *);
 extern void	regerror(char *);
 #ifdef STRCSPN
 int		strcspn(char *, char *);
 #endif /* STRCSPN */
-#else
-STATIC char    *reg();
-STATIC char    *regbranch();
-STATIC char    *regpiece();
-STATIC char    *regatom();
-STATIC char    *regnode();
-STATIC char    *regnext();
-STATIC void	regc();
-STATIC void	reginsert();
-STATIC void	regtail();
-STATIC void	regoptail();
-#ifdef STRCSPN
-int		strcspn();
-#endif /* STRCSPN */
-#endif /* __STDC__ */
+
 /*
  * - regcomp - compile a regular expression into internal code
  *
@@ -225,7 +106,7 @@ int		strcspn();
  * Beware that the optimization-preparation code in here knows about some of the
  * structure of the compiled regexp.
  */
-regexp	       *
+regexp *
 regcomp(exp)
     char	   *exp;
 {
@@ -719,25 +600,15 @@ static char	regnocase;	/* Ignore case when string-matching. */
 /*
  * Forwards.
  */
-#ifdef __STDC__
-STATIC int	regtry(regexp *, char *);
-STATIC int	regmatch(char *);
-STATIC int	regrepeat(char *);
+static int	regtry(regexp *, char *);
+static int	regmatch(char *);
+static int	regrepeat(char *);
+
 #ifdef DEBUG
 int		regnarrate = 0;
 void		regdump(regexp *);
-STATIC char    *regprop(char *);
+static char    *regprop(char *);
 #endif /* DEBUG */
-#else
-STATIC int	regtry();
-STATIC int	regmatch();
-STATIC int	regrepeat();
-#ifdef DEBUG
-int		regnarrate = 0;
-void		regdump();
-STATIC char    *regprop();
-#endif /* DEBUG */
-#endif /* __STDC__ */
 
 
 /*
@@ -856,18 +727,19 @@ regtry(prog, string)
     register char **ep;
 
     reginput = string;
-    regstartp = prog->startp;
-    regendp = prog->endp;
+    regstartp = prog->matches.string.startp;
+    regendp = prog->matches.string.endp;
 
-    sp = prog->startp;
-    ep = prog->endp;
+    sp = prog->matches.string.startp;
+    ep = prog->matches.string.endp;
     for (i = NSUBEXP; i > 0; i--) {
 	*sp++ = NULL;
 	*ep++ = NULL;
     }
     if (regmatch(prog->program + 1)) {
-	prog->startp[0] = string;
-	prog->endp[0] = reginput;
+	regstartp[0] = string;
+	regendp[0] = reginput;
+	prog->lasttype = reg_string;
 	return (1);
     } else
 	return (0);
