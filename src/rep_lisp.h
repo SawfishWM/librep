@@ -390,7 +390,7 @@ typedef struct rep_string_struct {
 /* Define a variable V, containing a static string S. This must be cast
    to a repv via the rep_VAL() macro when using. */
 #define DEFSTRING(v, s)					\
-    rep_ALIGN_CELL(const static rep_string v) = {	\
+    rep_ALIGN_CELL(static const rep_string v) = {	\
 	((sizeof(s) - 1) << rep_STRING_LEN_SHIFT)	\
 	| rep_CELL_STATIC_BIT | rep_String,		\
 	(u_char *)s					\

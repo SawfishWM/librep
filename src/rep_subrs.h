@@ -696,4 +696,8 @@ extern repv Faccept_process_output(repv secs, repv msecs);
 
 #endif /* rep_HAVE_UNIX */
 
+/* in plugins */
+extern repv rep_dl_init (void);
+extern void rep_dl_kill (void);
+
 #endif /* REP_SUBRS_H */

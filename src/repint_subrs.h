@@ -65,7 +65,7 @@ extern repv Fcall_with_exception_handler (repv, repv);
 extern void rep_lispcmds_init(void);
 
 /* from lispmach.c */
-extern repv Qrun_byte_code;
+extern repv Qbytecode_error;
 extern repv Frun_byte_code(repv code, repv consts, repv stkreq);
 extern repv rep_apply_bytecode (repv subr, int nargs, repv *args);
 extern void rep_lispmach_init(void);
@@ -118,6 +118,7 @@ extern int rep_pre_symbols_init(void);
 extern void rep_symbols_init(void);
 extern int rep_allocated_funargs, rep_used_funargs;
 extern repv Freal_set (repv var, repv value);
+extern repv rep_bind_special (repv oldList, repv symbol, repv newVal);
 
 /* from tuples.c */
 extern int rep_allocated_tuples, rep_used_tuples;
