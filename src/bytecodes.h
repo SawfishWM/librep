@@ -245,6 +245,8 @@
 #define OP_TEST_SCM 0xc4
 #define OP_TEST_SCM_F 0xc5
 
+#define OP__DEFINE 0xc6
+
 
 /* Jump opcodes */
 

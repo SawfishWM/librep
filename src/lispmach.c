@@ -353,7 +353,7 @@ list_ref (repv list, int elt)
  &&TAG(OP_MAKE_CLOSURE), &&TAG(OP_UNBINDALL_0), &&TAG(OP_CLOSUREP), &&TAG(OP_POP_ALL),		\
 												\
  &&TAG(OP_FLUID_SET), &&TAG(OP_FLUID_BIND), &&TAG(OP_MEMQL), &&TAG(OP_NUM_EQ), /*C0*/		\
- &&TAG(OP_TEST_SCM), &&TAG(OP_TEST_SCM_F), &&TAG_DEFAULT, &&TAG_DEFAULT,			\
+ &&TAG(OP_TEST_SCM), &&TAG(OP_TEST_SCM_F), &&TAG(OP__DEFINE), &&TAG_DEFAULT,			\
  &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, /*C8*/				\
  &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT,					\
 												\
@@ -971,7 +971,7 @@ again:
 	END_INSN
 
 	BEGIN_INSN (OP_SET)
-	    CALL_2(Fset);
+	    CALL_2(Freal_set);
 	END_INSN
 
 	BEGIN_INSN (OP_FLUID_REF)
@@ -1876,6 +1876,12 @@ again:
 	    if (TOP == Qnil)
 		TOP = rep_scm_f;
 	    SAFE_NEXT;
+	END_INSN
+
+	BEGIN_INSN (OP__DEFINE)
+	    tmp = RET_POP;
+	    TOP = Fstructure_define (rep_structure, TOP, tmp);
+	    NEXT;
 	END_INSN
 
 	/* Jump instructions follow */
