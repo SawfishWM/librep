@@ -6,7 +6,7 @@
 
 @unnumberedsec 0.7
 
-@itemize
+@itemize @bullet
 
 @item Added @code{autoload-verbose} variable; set it to @code{nil} to
 turn off the messages when autoloading
