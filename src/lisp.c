@@ -2592,7 +2592,7 @@ ARGLIST had been evaluated or not before being put into the stack.
     total_frames = current_frame_id () + 1;
     i = 0;
 
-    for (i = 0; i < total_frames; i++)
+    for (i = total_frames - 1; i >= 0; i--)
     {
 	struct rep_Call *lc = stack_frame_ref (i);
 	repv function_name = Qnil;

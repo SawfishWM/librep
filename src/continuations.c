@@ -1613,7 +1613,7 @@ Returns true if the timeout was reached.
     thread_suspend (THREAD (th), timeout, 0, 0);
     no_timeout = THREAD (th)->exit_val;
     THREAD (th)->exit_val = rep_NULL;
-    return no_timeout != Qnil ? Qt : Qnil;
+    return no_timeout == Qnil ? Qt : Qnil;
 #else
     return rep_signal_arg_error (th, 1);
 #endif

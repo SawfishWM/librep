@@ -276,14 +276,17 @@ the same conventions as the template to the C library's strftime function.
 	int len = strftime(buf, sizeof(buf), rep_STR(format), loctime);
 	if(len > 0)
 	    return rep_string_dupn(buf, len);
+	else
+	    return rep_null_string ();
     }
     else
     {
 	char *str = ctime(&timestamp);
-	if(str)
-	    return(rep_string_dupn(str, strlen(str) - 1));
+	if(str != 0)
+	    return rep_string_dupn(str, strlen(str) - 1);
+	else
+	    return rep_null_string ();
     }
-    return rep_NULL;
 }
 
 DEFUN("time-later-p", Ftime_later_p, Stime_later_p, (repv t1, repv t2), rep_Subr2) /*

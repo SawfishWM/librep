@@ -1,3 +1,14 @@
+2001-08-13  John Harper  <jsh@pixelslut.com>
+
+	* continuations.c (Fthread_suspend): reversed test to check if
+	timeout occurred so it matches the documentation
+
+	* misc.c (Fcurrent_time_string): fixed returning rep_NULL in
+	some unusual cases
+
+	* lisp.c (Fbacktrace): print backtrace in top to bottom order,
+	not bottom to top
+
 2001-08-09  John Harper  <jsh@pixelslut.com>
 
 	* lisp.c (Ffuncall): use apply () instead of rep_funcall ()
