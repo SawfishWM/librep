@@ -101,29 +101,32 @@
     (if (assq name (fluid defuns))
 	(compiler-warning "Multiply defined function or macro: %s" name)
       (let
-	  ((required 0)
-	   (optional nil)
-	   (rest nil)
-	   (state 'required))
+	  ((count (vector 0 nil nil))	;required, optional, rest
+	   (state 0))
 	;; Scan the lambda-list for the number of required and optional
 	;; arguments, and whether there's a &rest clause
-	(while args
-	  (if (symbolp args)
-	      ;; (foo . bar)
-	      (setq rest t)
-	    (if (memq (car args) '(&optional &rest &aux))
-		(cond
-		 ((eq (car args) '&optional)
-		  (setq state 'optional)
-		  (setq optional 0))
-		 ((eq (car args) '&rest)
-		  (setq args nil)
-		  (setq rest t))
-		 ((eq (car args) '&aux)
-		  (setq args nil)))
-	      (set state (1+ (symbol-value state)))))
-	  (setq args (cdr args)))
-	(fluid-set defuns (cons (list name required optional rest)
+	(if (numberp args)
+	    (progn
+	      ;; decode numeric arg-spec
+	      (aset count 0 (logand args 0xfff))
+	      (aset count 1 (logand (ash args -12) 0xfff))
+	      (aset count 2 (not (zerop (ash args -24)))))
+	  (while args
+	    (if (symbolp args)
+		;; (foo . bar)
+		(aset count 2 t)
+	      (if (memq (car args) '(&optional &rest))
+		  (cond
+		   ((eq (car args) '&optional)
+		    (setq state 1)
+		    (aset count 1 0))
+		   ((eq (car args) '&rest)
+		    (setq args nil)
+		    (aset count 2 t)))
+		(aset count state (1+ (aref count state)))))
+	    (setq args (cdr args))))
+	(fluid-set defuns (cons (list name (aref count 0)
+				      (aref count 1) (aref count 2))
 				(fluid defuns))))))
 
   ;; Similar for variables
@@ -250,7 +253,7 @@
       (while args
 	(if (symbolp args)
 	    (setq vars (cons args vars))
-	  (unless (memq (car args) '(&optional &rest &aux))
+	  (unless (memq (car args) '(&optional &rest))
 	    (setq vars (cons (car args) vars))))
 	(setq args (cdr args)))
       (nreverse vars)))
