@@ -76,6 +76,7 @@ _PR VALUE sys_sit_for(u_long timeout_msecs);
 _PR VALUE sys_accept_input(u_long timeout_msecs, void *callback);
 _PR bool sys_poll_input(int fd);
 _PR void *sys_alloc(u_int length);
+_PR void *sys_realloc(void *ptr, u_int length);
 _PR void sys_print_allocations(void);
 _PR void pre_sys_init(void);
 _PR void sys_misc_init(void);
@@ -514,6 +515,48 @@ sys_alloc(u_int length)
 	    mem = ((char *)mem) + sizeof(struct alloc_data);
 	    x->next = allocations;
 	    allocations = x;
+	    x->size = length - sizeof(struct alloc_data);
+	    x->function = db_return_address();
+	}
+#endif
+    }
+    return mem;
+}
+
+void *
+sys_realloc(void *ptr, u_int length)
+{
+    void *mem;
+#ifdef DEBUG_SYS_ALLOC
+    length += sizeof(struct alloc_data);
+    ptr = (void *)(((char *)ptr) - sizeof(struct alloc_data));
+#endif
+    mem = realloc(ptr, length);
+    if(mem == 0)
+    {
+	/* Unsuccessful; flush the string allocation blocks before
+	   trying one last time.. */
+	sm_flush(&main_strmem);
+	mem = realloc(ptr, length);
+    }
+    if(mem != 0)
+    {
+	/* Check that the alignment promised actually occurs */
+	assert((((PTR_SIZED_INT)mem) & (MALLOC_ALIGNMENT - 1)) == 0);
+
+#ifdef DEBUG_SYS_ALLOC
+	{
+	    struct alloc_data *x = mem;
+	    if(allocations == ptr)
+		allocations = x;
+	    else
+	    {
+		struct alloc_data *p = allocations;
+		while(p->next != ptr)
+		    p = p->next;
+		p->next = x;
+	    }
+	    mem = ((char *)mem) + sizeof(struct alloc_data);
 	    x->size = length - sizeof(struct alloc_data);
 	    x->function = db_return_address();
 	}
