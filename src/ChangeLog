@@ -1,3 +1,10 @@
+Sat May 23 11:28:01 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* keys.h, keys.c: changed the definition of KEY (the
+	representation of a single binding) to (COMMAND . (CODE .
+	MODS)) instead of the old [CODE MODS COMMAND]. The cons cell
+	version uses less memory
+
 Fri May 22 10:13:26 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* keys.c (next_keymap_path): changed semantics slightly, now
