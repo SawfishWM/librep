@@ -29,6 +29,7 @@
 (load "modes")
 (load "edit")
 (load "rcs-hooks")
+(load "dired-hooks")
 
 (load "site-init" t)
 
