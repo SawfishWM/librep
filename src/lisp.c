@@ -64,6 +64,9 @@ DEFSYM(debug_error_entry, "debug-error-entry");
 
 _PR VALUE sym_quote, sym_lambda, sym_macro, sym_autoload, sym_function;
 DEFSYM(quote, "quote");
+DEFSYM(backquote, "backquote");
+DEFSYM(backquote_unquote, "backquote-unquote");
+DEFSYM(backquote_splice, "backquote-splice");
 DEFSYM(lambda, "lambda");
 DEFSYM(macro, "macro");
 DEFSYM(autoload, "autoload");
@@ -547,6 +550,8 @@ readl(VALUE strm, register int *c_p)
     {
 	switch(*c_p)
 	{
+	    VALUE form;
+
 	case EOF:
 	    return sym_nil;
 
@@ -569,19 +574,36 @@ readl(VALUE strm, register int *c_p)
 	case '\(':
 	    return read_list(strm, c_p);
 
-	case '\'':
+	case '\'': case '`': 
+	    /* 'X => (quote X)
+	       `X => (backquote X) */
+	    form = cmd_cons(*c_p == '\'' ? sym_quote : sym_backquote,
+			    cmd_cons(sym_nil, sym_nil));
+	    if((*c_p = stream_getc(strm)) == EOF)
+		goto eof;
+	    if((VCAR(VCDR(form)) = readl(strm, c_p)) != LISP_NULL)
+		return form;
+	    else
+		return LISP_NULL;
+
+	case ',':
+	    /* ,@X => (backquote-splice X)
+	       ,X  => (backquote-unquote X) */
+	    form = cmd_cons(sym_backquote_unquote, cmd_cons(sym_nil, sym_nil));
+	    switch((*c_p = stream_getc(strm)))
 	    {
-		/*
-		 * transmogrify 'X into (quote X)
-		 */
-		register VALUE form;
-		form = cmd_cons(sym_quote, cmd_cons(sym_nil, sym_nil));
+	    case EOF:
+		goto eof;
+
+	    case '@':
+		VCAR(form) = sym_backquote_splice;
 		if((*c_p = stream_getc(strm)) == EOF)
 		    goto eof;
-		else if((VCAR(VCDR(form)) = readl(strm, c_p)))
-		    return form;
-		return LISP_NULL;
 	    }
+	    if((VCAR(VCDR(form)) = readl(strm, c_p)) != LISP_NULL)
+		return form;
+	    else
+		return LISP_NULL;
 
 	case '[':
 	    return read_vector(strm, c_p);
@@ -1979,6 +2001,7 @@ void
 lisp_init(void)
 {
     INTERN(quote); INTERN(lambda); INTERN(macro); INTERN(defun);
+    INTERN(backquote); INTERN(backquote_unquote); INTERN(backquote_splice);
     INTERN(autoload); INTERN(function);
     INTERN(standard_input); INTERN(standard_output);
     INTERN(debug_entry); INTERN(debug_exit); INTERN(debug_error_entry);
