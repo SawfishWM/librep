@@ -18,6 +18,9 @@
    along with Jade; see the file COPYING.  If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
+#ifndef JADE_CONFIG_H
+#define JADE_CONFIG_H
+
 /* Define if you have X11 */
 #undef HAVE_X11
 
@@ -56,8 +59,7 @@
 #define PTR_SIZED_INT long int
 
 /* If you define this statically allocated Lisp strings will be
-   coded in GCC's asm statement to allow better code generation.
-   If this isn't set I don't think that dumping works (currently) */
+   coded in GCC's asm statement to allow better code generation. */
 #undef INLINE_STATIC_STRINGS
 
 /* Comment this out to get messages telling you when garbage collection
@@ -163,6 +165,9 @@
 /* Define if you have the strsignal function.  */
 #undef HAVE_STRSIGNAL
 
+/* Define if you have the realpath function.  */
+#undef HAVE_REALPATH
+
 /* Define if you have the stpcpy function.  */
 #undef HAVE_STPCPY
 
@@ -213,3 +218,5 @@
 
 /* Define if you have the socket library (-lsocket).  */
 #undef HAVE_LIBSOCKET
+
+#endif /* JADE_CONFIG_H */
