@@ -1,5 +1,9 @@
 Tue Apr 21 16:45:05 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* misc.c (cmd_sleep_for): new function, pauses for a specified
+	time length
+	* unix_main.c (sys_sleep_for): support for sleep-for
+
 	* buffers.c, streams.c (mark_prin, file_prin): wasn't calling
 	stream_puts correctly
 

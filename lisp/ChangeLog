@@ -1,5 +1,8 @@
 Tue Apr 21 11:48:59 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* cvs.jl (cvs-diff-backup, cvs-undo-modification): implemented
+	these commands
+
 	* compile.jl (compile-parse-errors, next-error): rewrote most
 	of these functions. Now tracks changes of directory while
 	compiling (see compile-{push,pop}-directory-regexp variables,
