@@ -1,3 +1,9 @@
+2002-09-21  John Harper  <jsh@unfactored.org>
+
+	* numbers.c (Finexact_to_exact, Fnumerator, Fdenominator):
+	rewrote these functions to work correctly without gmp, and to
+	be more logical
+
 2002-07-12  John Harper  <jsh@unfactored.org>
 
 	* unix_files.c (rep_expand_file_name): avoid referencing

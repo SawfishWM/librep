@@ -2583,6 +2583,32 @@ Returns an inexact (i.e. floating point) representation of X.
 	return rep_make_float (rep_get_float (arg), rep_TRUE);
 }
 
+static void
+rationalize (repv arg, double *numerator, double *denominator)
+{
+    double x, y;
+    int expt;
+ 
+    /* X/Y always equals the input value. Tactic is to iteratively
+       multiply both X and Y by 2 until X is an integer. We bound
+       the number of iterations to the size of the mantissa
+       by starting with the normalized value... */
+
+    x = frexp (rep_get_float (arg), &expt);
+    y = pow (2.0, -expt);
+
+    while (x - floor (x) > DBL_EPSILON)
+    {
+	x = x * 2.0;
+	y = y * 2.0;
+    }
+
+    if (numerator != NULL)
+	*numerator = x;
+    if (denominator != NULL)
+	*denominator = y;
+}
+
 DEFUN("inexact->exact", Finexact_to_exact,
       Sinexact_to_exact, (repv arg), rep_Subr1) /*
 ::doc:rep.lang.math#inexact->exact::
@@ -2597,42 +2623,22 @@ accuracy.
 	return arg;
     else
     {
-	double x;
-	repv y;
-	int expt;
+	double x, y;
 	rep_number_z *z;
 
-	/* X/Y always equals the input value. Tactic is to iteratively
-	   multiply both X and Y by 2 until X is an integer. We bound
-	   the number of iterations to the size of the mantissa
-	   by starting with the normalized value... */
-
-	x = frexp (rep_get_float (arg), &expt);
-	y = Fexpt (rep_MAKE_INT (2), rep_make_long_int (-expt));
-
-	while (x - floor (x) > DBL_EPSILON)
-	{
-	    x = x * 2.0;
-	    y = rep_number_mul (y, rep_MAKE_INT (2));
-	}
+	rationalize (arg, &x, &y);
 
 	z = make_number (rep_NUMBER_BIGNUM);
 #ifdef HAVE_GMP
-	mpz_init_set_d (z->z, x);
+	mpz_init_set_d (z->z, x / y);
 #else
-	if (x >= BIGNUM_MAX)
-	    z->z = BIGNUM_MAX;
-	else if (x <= BIGNUM_MIN)
-	    z->z = BIGNUM_MIN;
-	else
-	    z->z = (rep_long_long) x;
+	z->z = x / y;
 #endif
-
-	return rep_number_div (rep_VAL (z), y);
+	return maybe_demote (rep_VAL (z));
     }
 }
 
-DEFUN("numerator", Fnumerator, Snumerator, (repv x), rep_Subr1) /*
+DEFUN("numerator", Fnumerator, Snumerator, (repv arg), rep_Subr1) /*
 ::doc:rep.lang.math#numerator::
 numerator X
 
@@ -2640,30 +2646,28 @@ Return the numerator of rational number X.
 ::end:: */
 {
     rep_bool inexact = rep_FALSE;
-    rep_DECLARE1(x, rep_NUMERICP);
-    if (rep_INTP (x) || rep_NUMBER_BIGNUM_P (x))
-	return x;
-    else if (rep_NUMBER_FLOAT_P (x))
-    {
-	x = Finexact_to_exact (x);
-	inexact = rep_TRUE;
-    }
+    double x;
+
+    rep_DECLARE1(arg, rep_NUMERICP);
+
 #ifdef HAVE_GMP
     if (rep_NUMBER_RATIONAL_P (x))
     {
 	rep_number_z *z = make_number (rep_NUMBER_BIGNUM);
 	mpz_init_set (z->z, mpq_numref (rep_NUMBER(x,q)));
-	if (!inexact)
-	    return maybe_demote (rep_VAL (z));
-	else
-	    return rep_make_float (mpz_get_d (z->z), rep_TRUE);
+	return maybe_demote (rep_VAL (z));
     }
 #endif
-    else
-	return rep_signal_arg_error (x, 1);
+
+    if (rep_NUMBER_FLOAT_P (arg))
+	inexact = rep_TRUE;
+
+    rationalize (arg, &x, NULL);
+
+    return rep_make_float (x, inexact);
 }
 
-DEFUN("denominator", Fdenominator, Sdenominator, (repv x), rep_Subr1) /*
+DEFUN("denominator", Fdenominator, Sdenominator, (repv arg), rep_Subr1) /*
 ::doc:rep.lang.math#denominator::
 denominator X
 
@@ -2671,27 +2675,25 @@ Return the denominator of rational number X.
 ::end:: */
 {
     rep_bool inexact = rep_FALSE;
-    rep_DECLARE1(x, rep_NUMERICP);
-    if (rep_INTP (x) || rep_NUMBER_BIGNUM_P (x))
-	return rep_MAKE_INT (1);
-    else if (rep_NUMBER_FLOAT_P (x))
-    {
-	x = Finexact_to_exact (x);
-	inexact = rep_TRUE;
-    }
+    double y;
+
+    rep_DECLARE1(arg, rep_NUMERICP);
+
 #ifdef HAVE_GMP
     if (rep_NUMBER_RATIONAL_P (x))
     {
 	rep_number_z *z = make_number (rep_NUMBER_BIGNUM);
 	mpz_init_set (z->z, mpq_denref (rep_NUMBER(x,q)));
-	if (!inexact)
-	    return maybe_demote (rep_VAL (z));
-	else
-	    return rep_make_float (mpz_get_d (z->z), rep_TRUE);
+	return maybe_demote (rep_VAL (z));
     }
 #endif
-    else
-	return rep_signal_arg_error (x, 1);
+
+    if (rep_NUMBER_FLOAT_P (arg))
+	inexact = rep_TRUE;
+
+    rationalize (arg, NULL, &y);
+
+    return rep_make_float (y, inexact);
 }
 
 DEFUN("max", Fmax, Smax, (repv args), rep_SubrN) /*
