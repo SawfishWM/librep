@@ -171,6 +171,20 @@
   (put '%cond 'scheme-compile-fun (get 'cond 'rep-compile-fun))
   (put '%case 'scheme-compile-fun (get 'case 'rep-compile-fun))
 
+  (defun do-predicate (form)
+    (let* ((rep-fun (or (get (car form) 'scheme-compile-rep) (car form)))
+	   (rep-compiler (get rep-fun 'rep-compile-fun)))
+      (rep-compiler (cons rep-fun (cdr form)))))
+
+  (defun compile-predicate (form)
+    (do-predicate form)
+    (emit-insn (bytecode test-scm)))
+
+  (defun compile-nil-predicate (form)
+    (do-predicate form)
+    (emit-insn (bytecode test-scm-f)))
+
+  ;; set properties of scheme functions that are pseudonyms of rep fns
   (mapc (lambda (cell)
 	  (if (symbolp cell)
 	      (put cell 'scheme-compile-fun (get cell 'rep-compile-fun))
@@ -189,4 +203,44 @@
 	  - + * remainder modulo quotient max min floor ceiling
 	  truncate round exp log sin cos tan sqrt expt
 	  (string-copy . copy-sequence)
-	  (vector-copy . copy-sequence))))
+	  (vector-copy . copy-sequence)))
+
+  ;; set properties of scheme predicates that are just rep fns with
+  ;; booleans mapped from rep->scheme
+  (mapc (lambda (cell)
+	  (if (symbolp cell)
+	      (put cell 'scheme-compile-fun compile-predicate)
+	    (put (car cell) 'scheme-compile-fun compile-predicate)
+	    (put (car cell) 'scheme-compile-rep (cdr cell))))
+	'((eqv? . eql)
+	  (eq? . eq)
+	  (equal? . equal)
+	  (pair? . consp)
+	  (null? . null)
+	  (list? . listp)
+	  (symbol? . symbolp)
+	  (number? . numberp)
+	  = < > <= >=
+	  (zero? . zerop)
+	  (char=? . =)
+	  (char<? . <)
+	  (char>? . >)
+	  (char<=? . <=)
+	  (char>=? . >=)
+	  (string? . stringp)
+	  (string=? . =)
+	  (string<? . <)
+	  (string>? . >)
+	  (string<=? . <=)
+	  (string>=? . >=)
+	  (vector? . vectorp)
+	  (procedure? . functionp)))
+
+  ;; set properties of scheme predicates that are just rep fns with
+  ;; nil mapped to #f
+  (mapc (lambda (cell)
+	  (if (symbolp cell)
+	      (put cell 'scheme-compile-fun compile-nil-predicate)
+	    (put (car cell) 'scheme-compile-fun compile-nil-predicate)
+	    (put (car cell) 'scheme-compile-rep (cdr cell))))
+	'(memq memv member assq assoc)))
