@@ -1524,6 +1524,19 @@ ie,
     return rep_signal_missing_arg(1);
 }
 
+static inline repv
+load_file_exists_p (repv name)
+{
+    repv tem = Ffile_readable_p (name);
+    if (tem && tem != Qnil)
+    {
+	tem = Ffile_directory_p (name);
+	if (tem)
+	    return (tem == Qnil) ? Qt : Qnil;
+    }
+    return tem;
+}
+
 DEFUN_INT("load", Fload, Sload, (repv file, repv noerr_p, repv nopath_p, repv nosuf_p), rep_Subr4, "fLisp file to load:") /*
 ::doc:Sload::
 load FILE [NO-rep_ERROR-P] [NO-PATH-P] [NO-SUFFIX-P]
@@ -1605,7 +1618,7 @@ research:
 		else
 #endif
 		    try = rep_concat3(rep_STR(dir), rep_STR(file), suffixes[i]);
-		tem = Ffile_exists_p(try);
+		tem = load_file_exists_p (try);
 		if(!tem)
 		    goto path_error;
 		if(!rep_NILP(tem))
@@ -1629,7 +1642,7 @@ research:
 	    /* Try without a suffix */
 	    repv tem;
 	    try = rep_concat2(rep_STR(dir), rep_STR(file));
-	    tem = Ffile_exists_p(try);
+	    tem = load_file_exists_p (try);
 	    if(!tem)
 		goto path_error;
 	    if(!rep_NILP(tem))
