@@ -71,22 +71,37 @@
 
 (defmacro define-scan-body (body)
   `(mapcar (lambda (f)
-	     (define-scan-form (macroexpand f macro-environment))) ,body))
+	     (define-scan-form f)) ,body))
 
 ;; this needs to handle all special forms
 (defun define-scan-form (form)
   (case (car form)
-    ((let let*)
-     (list (car form)
-	   (mapcar (lambda (lst)
-		     (if (consp lst)
-			 (cons (car lst) (define-scan-body (cdr lst)))
-		       lst))
-		   (nth 1 form))
-	   (define-scan-internals (nthcdr 2 form))))
+    ((let let* letrec)
+     (let*
+	 ((type (car form))
+	  fun values body)
+       (setq form (cdr form))
+       (when (and (eq type 'let) (symbolp (car form)))
+	 (setq fun (car form))
+	 (setq form (cdr form)))
+       (setq values (mapcar (lambda (lst)
+			      (if (consp lst)
+				  (cons (car lst) (define-scan-body (cdr lst)))
+				lst))
+			    (car form)))
+       (setq body (define-scan-internals (cdr form)))
+       (if fun
+	   (list type fun values body)
+	 (list type values body))))
 
     ((setq setq-default)
-     (list (car form) (nth 1 form) (define-scan-form (nth 2 form))))
+     (let loop ((rest (cdr form))
+		(out nil))
+       (if rest
+	   (loop (cddr rest)
+		 (cons (list (car rest)
+			     (define-scan-form (cadr rest))) out))
+	 (cons (car form) (apply nconc (nreverse out))))))
 
     ((cond)
      (cons 'cond (mapcar (lambda (clause)
@@ -102,8 +117,8 @@
     ((condition-case)
      (list* 'condition-case (nth 1 form) (define-scan-body (nthcdr 2 form))))
 
-    ((while if function and or catch unwind-protect
-      progn prog1 prog2 save-environment with-object)
+    ((while catch unwind-protect progn prog1 prog2
+      save-environment with-object)
      (cons (car form) (define-scan-body (cdr form))))
 
     ((quote)
@@ -121,6 +136,7 @@
 	    (nthcdr 3 form)))
 
     (t
+     (setq form (macroexpand form macro-environment))
      (if (consp form)
 	 (define-scan-body form)
        form))))
