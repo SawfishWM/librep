@@ -77,7 +77,7 @@ Vectors work just like lists.  Nested backquotes are permitted."
 		 (t
 		  (list 'apply '(function vector) (cdr n))))))))
    ((atom s)
-    (cons 0 (if (or (null s) (eq s t) (not (symbolp s)))
+    (cons 0 (if (not (symbolp s))
 		s
 	      (list 'quote s))))
    ((eq (car s) 'backquote-unquote)
@@ -139,17 +139,23 @@ Vectors work just like lists.  Nested backquotes are permitted."
 ;; and decides between append, list, list*, and cons depending
 ;; on which tags are in the list.
 
+;; this is just used to unwrap possibly quoted constants
+(defun backquote-eval (form)
+  (if (eq (car form) 'quote)
+      (cadr form)
+    form))
+
 (defun backquote-listify (lst old-tail)
   (let ((heads nil) (tail (cdr old-tail)) (list-tail lst) (item nil))
     (if (= (car old-tail) 0)
-	(setq tail (eval tail)
+	(setq tail (backquote-eval tail)
 	      old-tail nil))
     (while (consp list-tail)
       (setq item (car list-tail))
       (setq list-tail (cdr list-tail))
       (if (or heads old-tail (/= (car item) 0))
 	  (setq heads (cons (cdr item) heads))
-	(setq tail (cons (eval (cdr item)) tail))))
+	(setq tail (cons (backquote-eval (cdr item)) tail))))
     (cond
      (tail
       (if (null old-tail)
