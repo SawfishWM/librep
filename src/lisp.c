@@ -971,8 +971,8 @@ VALUE
 funcall(VALUE fun, VALUE arglist, bool eval_args)
 {
     int type;
-    VALUE result = LISP_NULL, origfun = fun;
-    GC_root gc_origfun, gc_arglist;
+    VALUE result = LISP_NULL;
+    struct Lisp_Call lc;
 
     TEST_INT;
     if(INT_P || !curr_vw)
@@ -992,8 +992,13 @@ funcall(VALUE fun, VALUE arglist, bool eval_args)
 	return cmd_signal(sym_error, LIST_1(VAL(&max_depth)));
     }
 
-    PUSHGC(gc_origfun, origfun);
-    PUSHGC(gc_arglist, arglist);
+    /* Note that by putting FUN and ARGLIST in the backtrace,
+       they're automagically protected from gc. */
+    lc.fun = fun;
+    lc.args = arglist;
+    lc.args_evalled_p = eval_args ? sym_nil : sym_t;
+    lc.next = lisp_call_stack;
+    lisp_call_stack = &lc;
 
     if((data_after_gc >= gc_threshold) && !gc_inhibit)
 	cmd_garbage_collect(sym_t);
@@ -1102,13 +1107,6 @@ again:
 	car = VCAR(fun);
 	if(car == sym_lambda)
 	{
-	    struct Lisp_Call lc;
-	    lc.next = lisp_call_stack;
-	    lc.fun = origfun;
-	    lc.args = arglist;
-	    lc.args_evalled_p = eval_args ? sym_nil : sym_t;
-	    lisp_call_stack = &lc;
-
 	    /* eval_lambda() expanded inline. */
 	    if(CONSP(VCDR(fun)))
 	    {
@@ -1126,14 +1124,15 @@ again:
 		else
 		    result = LISP_NULL;
 	    }
-	    lisp_call_stack = lc.next;
 	}
 	else if(car == sym_autoload)
 	{
-	    car = load_autoload(origfun, fun, FALSE);
+	    /* lc.fun contains the original function description,
+	       i.e. usually a symbol */
+	    car = load_autoload(lc.fun, fun, FALSE);
 	    if(car)
 	    {
-		fun = origfun;
+		fun = lc.fun;
 		goto again;
 	    }
 	}
@@ -1144,16 +1143,9 @@ again:
     case V_Compiled:
 	{
 	    VALUE boundlist;
-	    struct Lisp_Call lc;
 
 	    if(COMPILED_MACRO_P(fun))
 		goto invalid;
-
-	    lc.next = lisp_call_stack;
-	    lc.fun = origfun;
-	    lc.args = arglist;
-	    lc.args_evalled_p = eval_args ? sym_nil : sym_t;
-	    lisp_call_stack = &lc;
 
 	    boundlist = bindlambdalist(COMPILED_LAMBDA(fun),
 				       arglist, eval_args);
@@ -1169,7 +1161,6 @@ again:
 	    }
 	    else
 		result = LISP_NULL;
-	    lisp_call_stack = lc.next;
 	    break;
 	}
 
@@ -1182,8 +1173,7 @@ again:
 	result = LISP_NULL;
 
 end:
-    POPGC; POPGC;
-
+    lisp_call_stack = lc.next;
     lisp_depth--;
     return result;
 }
