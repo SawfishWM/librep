@@ -1,3 +1,18 @@
+Mon Jun 22 09:22:53 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* read-mail.jl (rm-add-mailbox, rm-subtract-mailbox,
+	rm-replace-all-mailboxes): check for null mailbox argument
+	(rm-append-save-and-delete-file): new function
+	(rm-append-inbox): cleaned up. Also will append .newmail-FOO
+	files that it finds lying around from previous attempts
+
+	* rm-thread.jl (rm-thread-folder, rm-sort-folder): handle case
+	of an empty folder without signalling an error, just do very
+	little
+
+	* mail-headers.jl (mail-parse-date): correctly handle two-digit
+	years again
+
 Sun Jun 21 01:17:47 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* find-url.jl (find-url-ftp): implemented by rewriting the url

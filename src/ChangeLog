@@ -1,3 +1,19 @@
+Tue Jun 23 12:19:54 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_processes.c (check_for_zombies): before closing all
+	streams, check for any pending output
+	(read_from_one_fd): only check errno==EINTR when the result
+	from read is _less_ than zero (doh!)
+
+	* buffers.c (cmd_make_mark): ensure that all fields of the new
+	mark object are valid for when GC could occur
+
+Mon Jun 22 10:48:48 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* glyphs.c (make_message_glyphs): when outputting messages that
+	are longer than the window is wide, use more than the single
+	bottommost line (when the minibuffer view has > 1 row)
+
 Sun Jun 21 01:14:21 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_processes.c (run_process): the new method of detecting
