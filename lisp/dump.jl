@@ -149,7 +149,7 @@ the lisp-lib-directory with .jlc as its suffix."
 		(error "Dump: can't open %s" file-full-name))
 	      (unwind-protect
 		  (let
-		      (dump-non-constant-forms func)
+		      (dump-non-constant-forms func form)
 		    (condition-case nil
 			(while (setq form (read input-stream))
 			  (if (setq func (get (car form) 'dump-function))
