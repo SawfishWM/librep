@@ -60,6 +60,7 @@ extern rep_bool rep_single_step_flag;
 
 /* from lispcmds.c */
 extern rep_xsubr Slambda;
+extern repv Qload_filename;
 extern repv Fcall_with_exception_handler (repv, repv);
 extern void rep_lispcmds_init(void);
 
