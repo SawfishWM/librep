@@ -244,7 +244,6 @@ rep_open_dl_library(repv file_name)
 		&& *feature_sym != 0 && rep_SYMBOLP(*feature_sym))
 	    {
 		x->feature_sym = *feature_sym;
-		Fprovide (*feature_sym);
 	    }
 	    else
 		x->feature_sym = Qnil;
@@ -261,6 +260,9 @@ rep_open_dl_library(repv file_name)
 
 	    x->next = dl_list;
 	    dl_list = x;
+
+	    if (x->feature_sym != Qnil)
+		rep_call_lisp1 (Qprovide, x->feature_sym);
 	}
     }
     return x;
