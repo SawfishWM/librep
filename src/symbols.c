@@ -1340,6 +1340,18 @@ Return t is `set-const-variable' has been called on SYMBOL.
     return(Qnil);
 }
 
+DEFUN("make-variable-special", Fmake_variable_special,
+      Smake_variable_special, (repv sym), rep_Subr1)
+{
+    int spec;
+    rep_DECLARE1(sym, rep_SYMBOLP);
+    spec = search_special_environment (sym);
+    if (spec == 0)
+	return Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
+    rep_SYM(sym)->car |= rep_SF_SPECIAL;
+    return sym;
+}
+
 DEFUN("special-variable-p", Fspecial_variable_p, Sspecial_variable_p,
       (repv sym), rep_Subr1) /*
 ::doc:special-variable-p::
@@ -1457,6 +1469,7 @@ rep_symbols_init(void)
     rep_ADD_SUBR(Sapropos);
     rep_ADD_SUBR(Sset_const_variable);
     rep_ADD_SUBR(Sconst_variable_p);
+    rep_ADD_SUBR(Smake_variable_special);
     rep_ADD_SUBR(Sspecial_variable_p);
     rep_ADD_SUBR_INT(Strace);
     rep_ADD_SUBR_INT(Suntrace);
