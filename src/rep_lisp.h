@@ -220,8 +220,13 @@ typedef struct {
 
 /* Structure of cons allocation blocks */
 typedef struct rep_cons_block_struct {
-    struct rep_cons_block_struct *next;
-    rep_ALIGN_CELL(rep_cons cons[rep_CONSBLK_SIZE]);
+    union {
+	struct rep_cons_block_struct *p;
+	/* ensure that the following cons cell is aligned to at
+	   least sizeof (rep_cons) (for the dcache) */
+	rep_cons dummy;
+    } next;
+    rep_cons cons[rep_CONSBLK_SIZE];
 } rep_cons_block;
 
 #define rep_CONSP(v)	(rep_CELLP(v) && rep_CELL_CONS_P(v))
@@ -589,6 +594,9 @@ typedef struct rep_funarg_struct {
     repv fh_env;			/* file handlers */
 } rep_funarg;
 
+/* Is this closure allowed to execute byte-code? */
+#define rep_FF_NO_BYTE_CODE	(1 << rep_CELL8_TYPE_BITS)
+
 #define rep_FUNARG(v) ((rep_funarg *)rep_PTR(v))
 #define rep_FUNARGP(v) (rep_CELL8_TYPEP(v, rep_Funarg))
 
@@ -598,6 +606,10 @@ typedef struct rep_funarg_struct {
     do {						\
 	rep_env = rep_FUNARG(f)->env;			\
 	rep_special_env = rep_FUNARG(f)->special_env;	\
+	if (!(rep_FUNARG(f)->car & rep_FF_NO_BYTE_CODE)) \
+	    rep_bytecode_interpreter = Fjade_byte_code; \
+	else						\
+	    rep_bytecode_interpreter = 0;		\
 	rep_fh_env = rep_FUNARG(f)->fh_env;		\
     } while (0)
 
@@ -606,6 +618,7 @@ typedef struct rep_funarg_struct {
 	rep_env = Qt;				\
 	rep_special_env = Fcons (Qnil, Qt);	\
 	rep_fh_env = Qt;			\
+	rep_bytecode_interpreter = Fjade_byte_code; \
     } while (0)
 
 
@@ -785,6 +798,7 @@ struct rep_Call {
     repv saved_env;
     repv saved_special_env;
     repv saved_fh_env;
+    repv (*saved_bytecode)(repv, repv, repv);
 };
 
 #define rep_PUSH_CALL(lc)		\
@@ -792,6 +806,7 @@ struct rep_Call {
 	(lc).saved_env = rep_env;	\
 	(lc).saved_special_env = rep_special_env; \
 	(lc).saved_fh_env = rep_fh_env;	\
+	(lc).saved_bytecode = rep_bytecode_interpreter; \
 	(lc).next = rep_call_stack;	\
 	rep_call_stack = &(lc);		\
     } while (0)
@@ -801,6 +816,7 @@ struct rep_Call {
 	rep_env = (lc).saved_env;	\
 	rep_special_env = (lc).saved_special_env; \
 	rep_fh_env = (lc).saved_fh_env;	\
+	rep_bytecode_interpreter = (lc).saved_bytecode; \
 	rep_call_stack = (lc).next;	\
     } while (0)
 
