@@ -1695,6 +1695,7 @@ path_error:
 
 	/* Loading succeeded. Look for an applicable item in
 	   the after-load-alist. */
+    again:
 	tem = cmd_symbol_value(sym_after_load_alist, sym_t);
 	if(tem != LISP_NULL && CONSP(tem))
 	{
@@ -1705,8 +1706,12 @@ path_error:
 		cmd_set(sym_after_load_alist,
 			cmd_delq(tem, cmd_symbol_value
 				 (sym_after_load_alist, sym_t)));
+
 		/* Then evaluate it */
 		cmd_progn(VCDR(tem));
+
+		/* Try for another entry */
+		goto again;
 	    }
 	}
 	POPGC;
