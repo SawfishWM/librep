@@ -311,14 +311,13 @@ is one of these that form is compiled.")
 		(progn
 		  ;; Pass 2. The actual compile
 		  (format dst-file
-			  ";;; Source file: %s
-;;; Compiled by %s@%s on %s
-;;; Jade %d.%d
+			  ";; Source file: %s
+;; Compiled by %s@%s on %s
+;; %s
 
 (validate-byte-code %d %d %d %d)\n\n"
 			  file-name (user-login-name) (system-name)
-			  (current-time-string) (major-version-number)
-			  (minor-version-number)
+			  (current-time-string) (version-and-build-string)
 			  bytecode-major bytecode-minor
 			  (major-version-number) (minor-version-number))
 		  (condition-case nil
