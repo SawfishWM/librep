@@ -51,6 +51,7 @@ _PR VALUE copy_list(VALUE);
 _PR VALUE handle_var_int(VALUE, int *);
 _PR VALUE handle_var_long_int(VALUE, long *);
 
+_PR bool compare_error(VALUE error, VALUE handler);
 _PR void handle_error(VALUE, VALUE);
 _PR VALUE signal_arg_error(VALUE, int);
 _PR VALUE signal_missing_arg(int argnum);
@@ -1761,11 +1762,11 @@ DEFUN("signal", cmd_signal, subr_signal, (VALUE error, VALUE data), V_Subr2, DOC
 signal ERROR-SYMBOL DATA
 
 Signal that an error has happened. ERROR-SYMBOL is the name of a symbol
-classifying the type of error, it should have a property `error-message' (a
-string) with a short description of the error message.
+classifying the type of error, it should have a property `error-message'
+(a string) with a short description of the error message.
 DATA is a list of objects which are relevant to the error -- they will
 be made available to any error-handler or printed by the default error
--handler.
+handler.
 ::end:: */
 {
     VALUE tmp, errlist;
@@ -1800,46 +1801,82 @@ be made available to any error-handler or printed by the default error
     return LISP_NULL;
 }
 
-_PR VALUE cmd_error_protect(VALUE args);
-DEFUN("error-protect", cmd_error_protect, subr_error_protect, (VALUE args), V_SF, DOC_error_protect) /*
-::doc:error_protect::
-error-protect FORM HANDLERS...
+/* For an error ERROR (the cdr of throw_value), if it matches the error
+   handler HANDLER (the car of the handler list), return TRUE. */
+bool
+compare_error(VALUE error, VALUE handler)
+{
+    if(CONSP(error))
+    {
+	VALUE error_sym = VCAR(error);
+	if(SYMBOLP(handler) && (error_sym == handler || handler == sym_error))
+	    return TRUE;
+	else if(CONSP(handler))
+	{
+	    handler = cmd_memq(error_sym, handler);
+	    return handler != LISP_NULL && !NILP(handler);
+	}
+    }
+    return FALSE;
+}
+
+_PR VALUE cmd_condition_case(VALUE args);
+DEFUN("condition-case", cmd_condition_case, subr_condition_case, (VALUE args), V_SF, DOC_condition_case) /*
+::doc:condition_case::
+condition-case VAR FORM HANDLERS...
 
 Evaluates FORM with error-handlers in place, if no errors occur return the
 value returned by FORM, else the value of whichever handler's body was
 evaluated.
-Each HANDLER is a list looking like `(ERROR-SYMBOL BODY...)'. If an error
-of type ERROR-SYMBOL occurs BODY is evaluated with the symbol `error-info'
-temporarily set to `(ERROR-SYMBOL . DATA)' (these were the arguments given to
-the `signal' which caused the error).
+
+Each HANDLER is a list of `(ERROR BODY...)'. ERROR defines which types of
+errors the handler catches, either a symbol or a list of symbols. The
+special symbol `error' matches all types of errors.
+
+If VAR is non-nil it's a symbol whose values is bound to
+`(ERROR-SYMBOL . DATA)' while the handler is evaluated (these are the
+arguments given to `signal' when the error was raised).
 ::end:: */
 {
-    VALUE res;
+    VALUE var, res = LISP_NULL;
     GC_root gc_args;
     if(!CONSP(args))
-	return(cmd_signal(sym_bad_arg, list_2(sym_nil, MAKE_INT(1))));
+	return signal_missing_arg(1);
     PUSHGC(gc_args, args);
-    if(!(res = cmd_eval(VCAR(args))) && throw_value
-       && (VCAR(throw_value) == sym_error))
+    var = VCAR(args);
+    args = VCDR(args);
+    if(!CONSP(args))
+	return sym_nil;
+    res = cmd_eval(VCAR(args));
+    args = VCDR(args);
+    if(res == LISP_NULL && throw_value != LISP_NULL
+       && (VCAR(throw_value) == sym_error) && CONSP(VCDR(throw_value)))
     {
 	/* an error.  */
-	VALUE errorsym = VCAR(VCDR(throw_value)), handlers = VCDR(args);
-	while(CONSP(handlers) && CONSP(VCAR(handlers)))
+	VALUE error = VCDR(throw_value);
+	while(CONSP(args) && CONSP(VCAR(args)))
 	{
-	    VALUE handler = VCAR(handlers);
-	    if((VCAR(handler) == errorsym) || (VCAR(handler) == sym_error))
+	    VALUE handler = VCAR(args);
+	    if(compare_error(error, VCAR(handler)))
 	    {
 		VALUE bindlist = sym_nil;
 		GC_root gc_bindlist;
-		bindlist = bind_symbol(sym_nil, sym_error_info, VCDR(throw_value));
+		if(SYMBOLP(var) && !NILP(var))
+		{
+		    bindlist = bind_symbol(sym_nil, var,
+					   VCDR(throw_value));
+		    PUSHGC(gc_bindlist, bindlist);
+		}
 		throw_value = LISP_NULL;
-		PUSHGC(gc_bindlist, bindlist);
 		res = cmd_progn(VCDR(handler));
-		POPGC;
-		unbind_symbols(bindlist);
+		if(SYMBOLP(var) && !NILP(var))
+		{
+		    POPGC;
+		    unbind_symbols(bindlist);
+		}
 		break;
 	    }
-	    handlers = VCDR(handlers);
+	    args = VCDR(args);
 	    TEST_INT;
 	    if(INT_P)
 	    {
@@ -1972,7 +2009,7 @@ lisp_init(void)
     ADD_SUBR(subr_add_doc_string);
     ADD_SUBR(subr_debug_on_error);
     ADD_SUBR(subr_signal);
-    ADD_SUBR(subr_error_protect);
+    ADD_SUBR(subr_condition_case);
     ADD_SUBR(subr_backtrace);
     ADD_SUBR(subr_max_lisp_depth);
 
