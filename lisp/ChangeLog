@@ -1,3 +1,8 @@
+2002-02-27  John Harper  <jsh@pixelslut.com>
+
+	* rep/net/rpc.jl (make-proxy): use a table of weak references
+	to cache rpc proxies
+
 2002-02-09  John Harper  <jsh@unfactored.org>
 
 	* rep/util/repl.jl (do-readline): new function to avoid loading

@@ -350,30 +350,45 @@ becomes invalid."
   ;; magic object used to get information from proxies
   (define proxy-token (cons))
 
-  ;; XXX shouldn't keep consing new proxies..
+  ;; table mapping GLOBAL-ID -> PROXY-WEAK-REF
+  (define proxy-table (make-table string-hash string=))
+
   (define (make-proxy server port servant-id)
     (let ((global-id (make-global-id server port servant-id)))
-      (lambda args
-	(if (eq (car args) proxy-token)
-	    ;; when called like this, do special things
-	    (case (cadr args)
-	      ((global-id) global-id)
 
-	      ((servant-id) servant-id)
+      (define (proxy)
+	(lambda args
+	  (if (eq (car args) proxy-token)
+	      ;; when called like this, do special things
+	      (case (cadr args)
+		((global-id) global-id)
 
-	      ((oneway)
-	       ;; async request - no result required
-	       (oneway-method-call
-		(server-socket server port) servant-id (cddr args)))
+		((servant-id) servant-id)
 
-	      ((async)
-	       (asynchronous-method-call
-		(server-socket server port)
-		(caddr args) servant-id (cdddr args))))
+		((oneway)
+		 ;; async request - no result required
+		 (oneway-method-call
+		  (server-socket server port) servant-id (cddr args)))
 
-	  ;; otherwise, just forward to the server
-	  (synchronous-method-call
-	   (server-socket server port) servant-id args)))))
+		((async)
+		 (asynchronous-method-call
+		  (server-socket server port)
+		  (caddr args) servant-id (cdddr args))))
+
+	    ;; otherwise, just forward to the server
+	    (synchronous-method-call
+	     (server-socket server port) servant-id args))))
+
+      ;; Avoid consing a new proxy each time..
+      (let ((ref (table-ref proxy-table global-id)))
+	(if ref
+	    (or (weak-ref ref)
+		(let ((p (proxy)))
+		  (weak-ref-set ref p)
+		  p))
+	  (let ((p (proxy)))
+	    (table-set proxy-table global-id (make-weak-ref p))
+	    p)))))
 
   (define (async-rpc-call proxy #!key callback . args)
     "Call the rpc proxy function PROXY with arguments ARGS. It will be called
