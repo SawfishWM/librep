@@ -47,7 +47,7 @@ accessed on specific hosts.")
    ((filep (car args))
     ;; A previously opened file handle. The backend should have stashed
     ;; it's handler function in the car of the file's handler-data
-    (funcall (car (handler-data (car args))) nil op args))
+    (funcall (car (file-handler-data (car args))) nil op args))
    ((eq op 'file-name-absolute-p))	;remote files are absolute?
    ((eq op 'local-file-name)
     ;; can't get a local file name
@@ -130,7 +130,7 @@ accessed on specific hosts.")
 	((local-name (if (eq op 'copy-to-local-fs)
 			 (car args)
 		       (make-temp-name))))
-      (remote-rcp-command (remote-rcp-filename split) local-name)
+      (remote-rcp-command (remote-rcp-filename split-name) local-name)
       (when (memq op '(read-file-contents insert-file-contents))
 	(unwind-protect
 	    (funcall op local-name)
@@ -145,7 +145,7 @@ accessed on specific hosts.")
       (when (eq op 'write-buffer-contents)
 	(apply op local-name (cdr args)))
       (unwind-protect
-	  (remote-rcp-command local-name (remote-rcp-filename split))
+	  (remote-rcp-command local-name (remote-rcp-filename split-name))
 	(when (eq op 'write-buffer-contents)
 	  (delete-file local-name)))
       t))
