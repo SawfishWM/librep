@@ -1,5 +1,8 @@
 2003-07-26  John Harper  <jsh@unfactored.org>
 
+	* ffi.c: bug fixes; implemented code to compare types and
+	interfaces
+
 	* ffi.c: tweaks, added functions to give lisp code low-level
 	access to memory structures
 

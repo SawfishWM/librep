@@ -115,8 +115,7 @@ struct rep_ffi_alias_struct {
 struct rep_ffi_struct_struct {
     rep_ffi_type super;
     ffi_type type;
-    repv fields;
-    int n_elements;
+    unsigned int n_elements;
     unsigned int *element_ids;
     ffi_type *elements[1];
 };
@@ -127,7 +126,7 @@ struct rep_ffi_struct_struct {
 struct rep_ffi_interface_struct {
     ffi_cif cif;
     ffi_type *ret_type;
-    int n_args;
+    unsigned int n_args;
     ffi_type **arg_types;
     size_t args_size;
     unsigned int ret;
@@ -151,13 +150,72 @@ static rep_ffi_interface **ffi_interfaces;
 static rep_bool
 ffi_types_equal_p (const rep_ffi_type *a, const rep_ffi_type *b)
 {
-    return rep_FALSE;			/* FIXME: */
+    if (a->type != NULL && a->type == b->type)
+	return rep_TRUE;
+    if (a->subtype != b->subtype)
+	return rep_FALSE;
+
+    switch (a->subtype)
+    {
+    case rep_FFI_PRIMITIVE:
+	return (a->type->type == b->type->type
+		&& a->type->size == b->type->size
+		&& a->type->alignment == b->type->alignment);
+
+    case rep_FFI_STRUCT: {
+	const rep_ffi_struct *sa, *sb;
+	unsigned int i;
+
+	sa = (rep_ffi_struct *) a;
+	sb = (rep_ffi_struct *) b;
+
+	if (sa->n_elements != sb->n_elements)
+	    return rep_FALSE;
+
+	for (i = 0; i < sa->n_elements; i++)
+	{
+	    if (sa->element_ids[i] != sb->element_ids[i])
+		return rep_FALSE;
+	}
+
+	return rep_TRUE;
+    }
+
+    case rep_FFI_ALIAS: {
+	const rep_ffi_alias *aa, *ab;
+
+	aa = (rep_ffi_alias *) a;
+	ab = (rep_ffi_alias *) b;
+
+	return (aa->base == ab->base
+		&& aa->predicate == ab->predicate
+		&& aa->conv_in == ab->conv_in
+		&& aa->conv_out == ab->conv_out);
+    }
+
+    default:
+	return rep_FALSE;
+    }
 }
 
 static rep_bool
 ffi_interfaces_equal_p (const rep_ffi_interface *a, const rep_ffi_interface *b)
 {
-    return rep_FALSE;			/* FIXME: */
+    unsigned int i;
+
+    if (a->n_args != b->n_args
+	|| a->args_size != b->args_size || a->ret != b->ret)
+    {
+	return rep_FALSE;
+    }
+
+    for (i = 0; i < a->n_args; i++)
+    {
+	if (a->args[i] != b->args[i])
+	    return rep_FALSE;
+    }
+
+    return rep_TRUE;
 }
 
 static unsigned int
@@ -472,20 +530,35 @@ DEFUN ("ffi-struct", Fffi_struct, Sffi_struct, (repv fields), rep_Subr1)
     unsigned int i, n;
     rep_ffi_struct *s;
 
-    rep_DECLARE (1, fields, rep_VECTORP (fields));
+    if (rep_VECTORP (fields))
+	n = rep_VECT_LEN (fields);
+    else if (rep_CONSP (fields))
+	n = rep_list_length (fields);
+    else
+	return rep_signal_arg_error (fields, 1);
 
-    n = rep_VECT_LEN (fields);
     s = rep_alloc (SIZEOF_REP_FFI_STRUCT (n) + sizeof (unsigned int) * n);
+    s->super.type = &s->type;
+    s->super.subtype = rep_FFI_STRUCT;
+
     s->element_ids = (void *) ((char *) s + SIZEOF_REP_FFI_STRUCT (n));
 
     for (i = 0; i < n; i++)
     {
-	repv x = rep_VECTI (fields, i);
+	repv x;
+ 
+	if (rep_VECTORP (fields))
+	    x = rep_VECTI (fields, i);
+	else if (rep_CONSP (fields)) {
+	    x = rep_CAR (fields);
+	    fields = rep_CDR (fields);
+	} else
+	    x = rep_NULL;
 
-	if (!rep_VALID_TYPE_P (x))
+	if (x == rep_NULL || !rep_VALID_TYPE_P (x))
 	{
 	    rep_free (s);
-	    return rep_signal_arg_error (fields, 1);
+	    return rep_signal_arg_error (x, 1);
 	}
 
 	s->element_ids[i] = rep_INT (x);
@@ -493,11 +566,19 @@ DEFUN ("ffi-struct", Fffi_struct, Sffi_struct, (repv fields), rep_Subr1)
     }
     s->elements[n] = NULL;
 
-    s->super.subtype = rep_FFI_STRUCT;
-    s->fields = fields;
     s->n_elements = n;
-    s->type.size = s->type.alignment = 0;
     s->type.elements = s->elements;
+    s->type.size = s->type.alignment = 0;
+
+    /* We should leave size and alignment as zero and let libffi initialize
+       them. But that doesn't for me, need the size known at all times. */
+
+    for (i = 0; i < s->n_elements; i++)
+    {
+	s->type.size = ALIGN (s->type.size, s->elements[i]->alignment);
+	s->type.size += s->elements[i]->size;
+	s->type.alignment = MAX (s->type.alignment, s->elements[i]->alignment);
+    }
 
     return rep_MAKE_INT (ffi_alloc_type (&s->super));
 }
