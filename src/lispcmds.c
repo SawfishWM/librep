@@ -158,7 +158,9 @@ DEFUN("defvar", cmd_defvar, subr_defvar, (VALUE args), V_SF, DOC_defvar) /*
 defvar NAME DEFAULT-VALUE [DOC-STRING]
 
 Define a variable called NAME whose standard value is DEFAULT-
-VALUE. If NAME is already bound to a value it is left as it is.
+VALUE. If NAME is already bound to a value (that's not an autoload
+definition) it is left as it is.
+
 If the symbol NAME is marked buffer-local the *default value* of the
 variable will be set (if necessary) not the local value.
 ::end:: */
@@ -175,17 +177,20 @@ variable will be set (if necessary) not the local value.
 	POPGC;
 	if(!val)
 	    return LISP_NULL;
-	if(NILP(tmp))
+	if(!NILP(tmp))
 	{
-	    if(!cmd_set_default(sym, val))
-		return LISP_NULL;
+	    /* Variable is bound, see if it's an autoload defn to overwrite. */
+	    if(CONSP(VSYM(sym)->value)
+	       && VCAR(VSYM(sym)->value) == sym_autoload)
+		tmp = sym_nil;
 	}
-	if(CONSP(VCDR(VCDR(args))))
-	{
-	    if(!cmd_put(sym, sym_variable_documentation, VCAR(VCDR(VCDR(args)))))
-		return LISP_NULL;
-	}
-	return(sym);
+	if(NILP(tmp) && !cmd_set_default(sym, val))
+	    return LISP_NULL;
+	if(CONSP(VCDR(VCDR(args)))
+	   && !cmd_put(sym, sym_variable_documentation,
+		       VCAR(VCDR(VCDR(args)))))
+	    return LISP_NULL;
+	return sym;
     }
     else
 	return signal_missing_arg(CONSP(args) ? 2 : 1);
@@ -2403,10 +2408,11 @@ Returns the name (a string) associated with SUBR.
 _PR VALUE cmd_call_hook(VALUE hook, VALUE arg_list, VALUE type);
 DEFUN("call-hook", cmd_call_hook, subr_call_hook, (VALUE hook, VALUE arg_list, VALUE type), V_Subr3, DOC_call_hook) /*
 ::doc:call_hook::
-call-hook HOOK-SYMBOL ARG-LIST [TYPE]
+call-hook HOOK ARG-LIST [TYPE]
 
-Call the hook named HOOK-SYMBOL, passing all functions the arguments in the
-list ARG-LIST.
+Call the hook named by the symbol HOOK, passing all functions the arguments
+in the list ARG-LIST. Note that HOOK may also be the actual list of functions
+to call.
 
 TYPE defines how the return values of each function in the hook are
 treated. If TYPE is nil they are ignored, if TYPE is the symbol `and'
@@ -2419,11 +2425,14 @@ returned.
 {
     GC_root gc_hook, gc_arg_list, gc_type;
     VALUE res = sym_nil;
-    DECLARE1(hook, SYMBOLP);
     DECLARE2(arg_list, LISTP);
-    hook = cmd_symbol_value(hook, sym_t);
-    if(VOIDP(hook) || NILP(hook))
-	return sym_nil;
+    if(!LISTP(hook))
+    {
+	DECLARE1(hook, SYMBOLP);
+	hook = cmd_symbol_value(hook, sym_t);
+	if(VOIDP(hook) || NILP(hook))
+	    return sym_nil;
+    }
     PUSHGC(gc_hook, hook);
     PUSHGC(gc_arg_list, arg_list);
     PUSHGC(gc_type, type);
