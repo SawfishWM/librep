@@ -173,80 +173,6 @@ value is,
     return Ffset(name, Fmake_closure (args)) ? name : rep_NULL;
 }
 
-DEFUN("defvar", Fdefvar, Sdefvar, (repv args), rep_SF) /*
-::doc:Sdefvar::
-defvar NAME DEFAULT-VALUE [DOC-STRING]
-
-Define a variable called NAME whose standard value is DEFAULT-
-VALUE. If NAME is already bound to a value (that's not an autoload
-definition) it is left as it is.
-
-If the symbol NAME is marked buffer-local the *default value* of the
-variable will be set (if necessary) not the local value.
-::end:: */
-{
-    if(rep_CONSP(args) && rep_CONSP(rep_CDR(args)))
-    {
-	rep_GC_root gc_args;
-	repv sym = rep_CAR(args), val;
-	repv tmp = Fdefault_boundp(sym);
-	if(!tmp)
-	    return rep_NULL;
-	rep_PUSHGC(gc_args, args);
-	val = Feval(rep_CAR(rep_CDR(args)));
-	rep_POPGC;
-	if(!val)
-	    return rep_NULL;
-	if(!rep_NILP(tmp))
-	{
-	    /* Variable is bound, see if it's an autoload defn to overwrite. */
-	    if(rep_CONSP(rep_SYM(sym)->value)
-	       && rep_CAR(rep_SYM(sym)->value) == Qautoload)
-		tmp = Qnil;
-	}
-	rep_SYM(sym)->car |= rep_SF_SPECIAL;
-	if(rep_NILP(tmp) || (rep_SYM(sym)->car & rep_SF_WEAK))
-	{
-	    if (!Fset_default(sym, val))
-		return rep_NULL;
-	    if (rep_CDR(rep_special_env) == Qt
-		&& (rep_SYM(sym)->car & rep_SF_WEAK))
-	    {
-		/* defvar'ing a weak variable from an unrestricted
-		   environment removes the weak status, but marks
-		   it as `was weak, but now strong'. This prevents
-		   exploits such as:
-
-			[restricted special environment]
-			(setq special-var "/bin/rm")
-
-			[unrestricted environment]
-			(defvar special-var "ls")
-
-			[back in restricted environment]
-			(setq special-var "/bin/rm")
-			   --> error
-
-		   Setting the variable the first time (since it's
-		   unbound) adds it to the restricted environment,
-		   but defvar'ing effectively removes it */
-
-		rep_SYM(sym)->car &= ~rep_SF_WEAK;
-		rep_SYM(sym)->car |= rep_SF_WEAK_MOD;
-	    }
-	}
-	if(rep_CONSP(rep_CDR(rep_CDR(args))))
-	{
-	    if (!Fput(sym, Qvariable_documentation,
-		      rep_CAR(rep_CDR(rep_CDR(args)))))
-		return rep_NULL;
-	}
-	return sym;
-    }
-    else
-	return rep_signal_missing_arg(rep_CONSP(args) ? 2 : 1);
-}
-
 DEFSTRING(const_bound, "Constant already bound");
 
 DEFUN("defconst", Fdefconst, Sdefconst, (repv args), rep_SF) /*
@@ -2699,7 +2625,6 @@ rep_lispcmds_init(void)
     rep_ADD_SUBR(Sfunction);
     rep_ADD_SUBR(Sdefmacro);
     rep_ADD_SUBR(Sdefun);
-    rep_ADD_SUBR(Sdefvar);
     rep_ADD_SUBR(Sdefconst);
     rep_ADD_SUBR(Scar);
     rep_ADD_SUBR(Scdr);
