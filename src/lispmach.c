@@ -154,13 +154,14 @@ search_special_bindings (repv sym)
     return env != Qnil ? rep_CAR(env) : env;
 }
 
-static inline void
-repv_memset (repv *s, repv c, int count)
-{
-    register int i;
-    for (i = 0; i < count; i++)
-	*s++ = c;
-}
+/* Zero out N lisp pointers starting from address S */
+#define repv_bzero(s, n)		\
+    do {				\
+	register repv *s__ = (s);	\
+	register int n__ = (n);		\
+	while (n__-- > 0)		\
+	    *s__++ = 0;			\
+    } while (0)
 
 
 /* Lisp VM. */
@@ -534,7 +535,13 @@ vm (repv code, repv consts, int argc, repv *argv,
     stack = alloca (sizeof (repv) * (v_stkreq + 1));
     bindstack = alloca (sizeof (repv) * (b_stkreq + 1));
     slots = alloca (sizeof (repv) * (s_stkreq));
-    repv_memset (slots, 0, s_stkreq);
+    repv_bzero (slots, s_stkreq);
+
+    rep_PUSHGC(gc_code, code);
+    rep_PUSHGC(gc_consts, consts);
+    rep_PUSHGCN(gc_bindstack, bindstack, 0);
+    rep_PUSHGCN(gc_stack, stack + 1, 0);
+    rep_PUSHGCN(gc_slots, slots, s_stkreq);
 
     /* Jump to this label when tail-calling */
 again: {
@@ -558,12 +565,6 @@ again: {
     bindp = bindstack;
     impurity = 0;
     pc = rep_STR(code);
-
-    rep_PUSHGC(gc_code, code);
-    rep_PUSHGC(gc_consts, consts);
-    rep_PUSHGCN(gc_bindstack, bindstack, 0);
-    rep_PUSHGCN(gc_stack, stack + 1, 0);
-    rep_PUSHGCN(gc_slots, slots, s_stkreq);
 
     /* Start of the VM fetch-execute sequence. */
     {
@@ -711,11 +712,8 @@ again: {
 			{
 			    if (impurity != 0 || *pc != OP_RETURN)
 			    {
-				void *old, *new;
-				asm ("movl %%ebp, %0" : "=m" (old));
-				TOP = inline_apply_bytecode (tmp, arg, stackp+1);
-				asm ("movl %%ebp, %0" : "=m" (new));
-				assert (old == new);
+				TOP = inline_apply_bytecode (tmp, arg,
+							     stackp+1);
 			    }
 			    else
 			    {
@@ -772,13 +770,15 @@ again: {
 				{
 				    slots = alloca (sizeof (repv) * n_req_s);
 				    s_stkreq = n_req_s;
-				    repv_memset (slots, 0, s_stkreq);
+				    repv_bzero (slots, s_stkreq);
 				}
 				
 				code = rep_COMPILED_CODE (tmp);
 				consts = rep_COMPILED_CONSTANTS (tmp);
-				rep_POPGCN; rep_POPGCN; rep_POPGCN;
-				rep_POPGC; rep_POPGC;
+				gc_bindstack.first = bindstack;
+				gc_stack.first = stack + 1;
+				gc_slots.first = slots;
+				gc_slots.count = s_stkreq;
 				goto again;
 			    }
 			}
