@@ -78,8 +78,8 @@ VALUE throw_value;
 
 /* This cons cell is used for interrupts. We don't know if it's safe to
    call cmd_cons() (maybe in gc?) so this is always valid.  */
-_PR VALUE int_cell;
-VALUE int_cell;
+_PR VALUE int_cell, term_cell;
+VALUE int_cell, term_cell;
 
 _PR VALUE sym_error, sym_error_message, sym_invalid_function;
 _PR VALUE sym_void_function, sym_void_value, sym_bad_arg, sym_invalid_read_syntax;
@@ -88,7 +88,7 @@ _PR VALUE sym_invalid_macro, sym_invalid_autoload, sym_no_catcher;
 _PR VALUE sym_buffer_read_only, sym_bad_event_desc, sym_file_error;
 _PR VALUE sym_invalid_stream, sym_setting_constant, sym_process_error;
 _PR VALUE sym_invalid_area, sym_no_memory, sym_user_interrupt, sym_arith_error;
-_PR VALUE sym_window_error, sym_invalid_pos;
+_PR VALUE sym_window_error, sym_invalid_pos, sym_term_interrupt;
 
 VALUE sym_error, sym_error_message, sym_invalid_function,
     sym_void_function, sym_void_value, sym_bad_arg, sym_invalid_read_syntax,
@@ -97,7 +97,7 @@ VALUE sym_error, sym_error_message, sym_invalid_function,
     sym_buffer_read_only, sym_bad_event_desc, sym_file_error,
     sym_invalid_stream, sym_setting_constant, sym_process_error,
     sym_invalid_area, sym_no_memory, sym_user_interrupt, sym_arith_error,
-    sym_window_error, sym_invalid_pos;
+    sym_window_error, sym_invalid_pos, sym_term_interrupt;
 
 #ifdef MINSTACK
 _PR VALUE sym_stack_error;
@@ -1884,11 +1884,13 @@ lisp_init(void)
     cmd_put(sym_window_error, sym_error_message, MKSTR("Window error"));
     INTERN(sym_invalid_pos, "invalid-pos");
     cmd_put(sym_invalid_pos, sym_error_message, MKSTR("Invalid position"));
-    
+    INTERN(sym_term_interrupt, "term-interrupt");
     INTERN(sym_error_info, "error-info");
 
     int_cell = cmd_cons(sym_user_interrupt, sym_nil);
     mark_static(&int_cell);
+    term_cell = cmd_cons(sym_term_interrupt, sym_nil);
+    mark_static(&term_cell);
 
     INTERN(sym_print_escape_newlines, "print-escape-newlines");
     INTERN(sym_print_length, "print-length");
