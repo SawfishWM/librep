@@ -139,7 +139,6 @@ DEFSYM(_meta, "%meta");
 DEFSYM(rep, "rep");
 DEFSYM(_specials, "%specials");
 DEFSYM(_user_structure_, "*user-structure*");
-DEFSYM(_root_structure_, "*root-structure*");
 DEFSYM(rep_structures, "rep.structures");
 DEFSYM(rep_lang_interpreter, "rep.lang.interpreter");
 DEFSYM(rep_vm_interpreter, "rep.vm.interpreter");
@@ -1088,7 +1087,7 @@ attempt to load it.
 	   fall back to the default structure */
 
 	rep_structure = rep_default_structure;
-	tem = Fsymbol_value (Q_root_structure_, Qt);
+	tem = Fsymbol_value (Q_user_structure_, Qt);
 	if (!rep_VOIDP (tem))
 	{
 	    tem = Fget_structure (tem);
@@ -1699,7 +1698,6 @@ rep_structures_init (void)
     rep_INTERN (rep);
     rep_INTERN (_specials);
     rep_INTERN_SPECIAL (_user_structure_);
-    rep_INTERN_SPECIAL (_root_structure_);
     rep_INTERN (rep_structures);
     rep_INTERN (rep_lang_interpreter);
     rep_INTERN (rep_vm_interpreter);
