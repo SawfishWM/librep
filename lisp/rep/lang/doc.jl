@@ -33,6 +33,7 @@
 
 ;;;###autoload
 (defun apropos-function (regexp &optional all-functions)
+  (interactive "sApropos functions:\nP")
   (format standard-output "Apropos %s `%s':\n\n"
 	  (if all-functions "function" "command") regexp)
   (apropos-output (apropos regexp (if (or all-functions
@@ -44,6 +45,7 @@
 
 ;;;###autoload
 (defun apropos-variable (regexp)
+  (interactive "sApropos variables:")
   (format standard-output "Apropos variable `%s':\n" regexp)
   (apropos-output (apropos regexp boundp) nil))
 
@@ -90,6 +92,7 @@
   
 ;;;###autoload
 (defun describe-function (fun)
+  (interactive "aFunction:")
   "Display the documentation of a function, macro or special-form."
   (let
       ((doc (documentation fun)))
@@ -105,6 +108,7 @@
 
 ;;;###autoload
 (defun describe-variable (var)
+  (interactive "vVariable:")
   (let
       ((doc (documentation var)))
     (describe-variable-1 var)
@@ -131,13 +135,13 @@
 	  (when (stringp doc)
 	    (throw 'exit doc))))
       ;; Then for doc strings in the databases
-      (require 'sdbm)
+      (require 'gdbm)
       (mapc (lambda (file)
-	      (setq dbm (sdbm-open file 'read))
+	      (setq dbm (gdbm-open file 'read))
 	      (when dbm
 		(unwind-protect
-		    (setq doc (sdbm-fetch dbm (symbol-name symbol)))
-		  (sdbm-close dbm))
+		    (setq doc (gdbm-fetch dbm (symbol-name symbol)))
+		  (gdbm-close dbm))
 		(when doc
 		  (throw 'exit doc))))
 	    documentation-files))))
@@ -151,8 +155,8 @@
 ;;;###autoload
 (defun add-documentation (symbol string)
   "Adds a documentation string STRING to the file of such strings."
-  (require 'sdbm)
+  (require 'gdbm)
   (let
-      ((dbm (sdbm-open documentation-file 'append)))
-    (sdbm-store dbm (symbol-name symbol) string 'replace)
-    (sdbm-close dbm)))
+      ((dbm (gdbm-open documentation-file 'append)))
+    (gdbm-store dbm (symbol-name symbol) string 'replace)
+    (gdbm-close dbm)))
