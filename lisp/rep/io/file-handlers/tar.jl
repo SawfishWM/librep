@@ -38,6 +38,12 @@
 (define-structure rep.io.file-handlers.tar ()
 
     (open rep
+	  rep.io.streams
+	  rep.io.files
+	  rep.io.file-handlers
+	  rep.io.processes
+	  rep.regexp
+	  rep.system
 	  rep.util.date)
 
 

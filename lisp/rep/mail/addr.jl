@@ -20,7 +20,9 @@
 
 (define-structure rep.mail.addr ()
 
-    (open rep)
+    (open rep
+	  rep.regexp
+	  rep.system)
 
   (define-structure-alias mailaddr rep.mail.addr)
 

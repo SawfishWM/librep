@@ -62,6 +62,7 @@
 	    define-record-discloser)
 
     (open rep
+	  rep.io.streams
 	  rep.data.datums)
 
   (define-structure-alias records rep.data.records)

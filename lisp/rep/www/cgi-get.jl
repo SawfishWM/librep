@@ -25,7 +25,9 @@
 
     (export cgi-get-params)
 
-    (open rep)
+    (open rep
+	  rep.system
+	  rep.regexp)
 
   (define-structure-alias cgi-get rep.www.cgi-get)
 

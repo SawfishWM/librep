@@ -43,6 +43,7 @@
 	    assemble-assembly-to-form assemble-assembly-to-subr)
 
     (open rep
+	  rep.io.streams
 	  rep.lang.doc
 	  rep.data.records
 	  rep.vm.compiler.utils

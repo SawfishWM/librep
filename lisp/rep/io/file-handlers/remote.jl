@@ -24,6 +24,8 @@
 (define-structure rep.io.file-handlers.remote ()
 
     (open rep
+	  rep.io.files
+	  rep.io.file-handlers
 	  rep.io.file-handlers.remote.utils)
 
 ;;; Configuration

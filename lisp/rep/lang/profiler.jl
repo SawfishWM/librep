@@ -28,6 +28,7 @@
 	    profile-interval)
 
     (open rep
+	  rep.io.streams
 	  rep.lang.record-profile
 	  rep.data.symbol-table)
 

@@ -28,7 +28,10 @@
 	    remote-join-filename
 	    remote-register-file-handle)
 
-    (open rep)
+    (open rep
+	  rep.system
+	  rep.regexp
+	  rep.io.files)
 
   (defvar remote-host-user-alist nil
     "Alist of (HOST-REGEXP . USER-NAME) matching host names to usernames.

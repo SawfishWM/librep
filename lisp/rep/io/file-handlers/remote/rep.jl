@@ -28,6 +28,11 @@
 	    remote-rep-empty-cache)
 
     (open rep
+	  rep.regexp
+	  rep.system
+	  rep.io.streams
+	  rep.io.processes
+	  rep.io.files
 	  rep.io.file-handlers.remote.utils)
 
   (define-structure-alias remote-rep rep.io.file-handlers.remote.rep)

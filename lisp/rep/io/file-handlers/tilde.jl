@@ -23,7 +23,11 @@
 
 (define-structure rep.io.file-handlers.tilde ()
 
-    (open rep)
+    (open rep
+	  rep.regexp
+	  rep.system
+	  rep.io.files
+	  rep.io.file-handlers)
 
   (defun tilde-expand (file-name)
     (if (string-looking-at "~([^/]*)/?" file-name)

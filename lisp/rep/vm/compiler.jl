@@ -37,6 +37,10 @@
 
     (open rep
 	  rep.structures
+	  rep.system
+	  rep.io.streams
+	  rep.io.files
+	  rep.regexp
 	  rep.vm.compiler.basic
 	  rep.vm.compiler.bindings
 	  rep.vm.compiler.modules

@@ -34,7 +34,9 @@
 	    date-vec-timezone
 	    date-vec-epoch-time)
 
-    (open rep)
+    (open rep
+	  rep.system
+	  rep.regexp)
 
   (define-structure-alias date rep.util.date)
 

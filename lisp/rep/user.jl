@@ -23,7 +23,12 @@
 
 (define-structure user ()
 
-    ((open rep)
+    ((open rep
+	   rep.regexp
+	   rep.system
+	   rep.io.files
+	   rep.io.streams
+	   rep.io.processes)
      (set-binds))
 
   (setq *user-structure* 'user)

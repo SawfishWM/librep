@@ -28,7 +28,11 @@
 	    register scan scan-list scan-file
 	    output-c-file output-pot-file)
 
-    (open rep)
+    (open rep
+	  rep.io.files
+	  rep.io.streams
+	  rep.regexp
+	  rep.system)
 
   (define current-file (make-fluid))
   (define current-module (make-fluid))

@@ -26,7 +26,8 @@
     (export fetch-url
 	    fetch-url-async)
 
-    (open rep)
+    (open rep
+	  rep.io.processes)
 
   (defvar *wget-program* "wget"
     "Location of `wget' program.")

@@ -32,7 +32,11 @@
 	    ispell-add-word-for-session
 	    ispell-save-dictionary)
 
-    (open rep)
+    (open rep
+	  rep.regexp
+	  rep.io.streams
+	  rep.io.processes
+	  rep.system)
 
   (defvar *ispell-program* "ispell"
     "Filename of program used to start ispell(1).")

@@ -29,6 +29,7 @@
 	    compile-tail-call)
 
     (open rep
+	  rep.io.streams
 	  rep.vm.compiler.utils
 	  rep.vm.compiler.basic
 	  rep.vm.compiler.modules

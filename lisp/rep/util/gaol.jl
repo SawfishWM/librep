@@ -35,6 +35,11 @@
 	    gaol-add-special)
 
     (open rep
+	  rep.io.streams
+	  rep.io.files
+	  rep.io.file-handlers
+	  rep.regexp
+	  rep.system
 	  rep.data.datums
 	  rep.structures)
 

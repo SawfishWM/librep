@@ -32,7 +32,9 @@
     (export quote-url
 	    unquote-url)
 
-    (open rep)
+    (open rep
+	  rep.io.streams
+	  rep.regexp)
 
   (defconst url-meta-re "[^a-zA-Z0-9$_.!~*'(),-]"
     "A regexp matching a single character that is reserved in the URL spec.
