@@ -413,13 +413,15 @@ is non-nil in which case it is added at the end."
   "Returns t if the function FUN is stored in the hook called HOOK-SYMBOL."
   (and (boundp hook-symbol) (memq fun (symbol-value hook-symbol))))
 
-(defun eval-after-load (library form &aux tem)
+(defun eval-after-load (library form)
   "Arrange for FORM to be evaluated immediately after the library of Lisp code
 LIBRARY has been read by the `load' function. Note that LIBRARY must exactly
 match the FILE argument to `load'."
-  (if (setq tem (assoc library after-load-alist))
-      (rplacd tem (cons form (cdr tem)))
-    (setq after-load-alist (cons (cons library (list form)) after-load-alist))))
+  (let ((tem (assoc library after-load-alist)))
+    (if tem
+	(rplacd tem (cons form (cdr tem)))
+      (setq after-load-alist (cons (cons library (list form))
+				   after-load-alist)))))
 
 
 ;; loading / features
