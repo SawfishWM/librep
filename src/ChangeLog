@@ -1,3 +1,8 @@
+Wed Apr 29 09:48:37 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* undo.c (cmd_undo): when clearing the modified status, set
+	tx_LastSaveChanges as well as tx_ProperSaveChanges
+
 Tue Apr 28 15:57:54 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* Makefile.in: added files.o to list of dependencies

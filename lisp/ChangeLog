@@ -1,3 +1,20 @@
+Wed Apr 29 09:39:40 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* read-mail.jl (rm-summary-format-alist): new conversions `b',
+	`n' and `N'.
+	(rm-status-format): format string for part of status line
+	(read-mail-folder): don't expand folder name so much
+	(rm-fix-status-info): cache status line formatted text
+	(rm-invalidate-status-cache): for above
+
+	* info.jl (info-read-dir): use insert-file instead of
+	read-file-into-buffer. This doesn't set the buffer's file-name.
+	Also set the file-name to nil, and the buffer as unmodified.
+	(info-prompt): rename list-fun to info-list-fun since it's a
+	dynamic variable
+	(info-list-menu-items): search from the restriction start, not
+	the cursor position
+
 Tue Apr 28 16:05:44 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* read-mail.jl: use the new buffer-status-id variable to
