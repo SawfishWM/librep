@@ -468,13 +468,8 @@ SYMBOL the buffer-local value in the current buffer is set. Returns VALUE.
     if(VSYM(sym)->car & SF_BUFFER_LOCAL)
     {
 	TX *tx = curr_vw->vw_Tx;
-	VALUE tmp;
-	if((tmp = cmd_assq(sym, tx->tx_GlobalExtent->locals)) && CONSP(tmp))
-	{
-	    /* A buffer-local value exists, modify it. */
-	    VCDR(tmp) = val;
-	    return(val);
-	}
+	if(buffer_set_if_bound(sym, val))
+	    return val;
 	else if(VSYM(sym)->car & SF_SET_BUFFER_LOCAL)
 	{
 	    /* Create a new buffer-local value */
