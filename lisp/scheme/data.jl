@@ -153,8 +153,8 @@
   (define even? (make-predicate evenp))
 
   (define (/ . args)
-    (cond ((cdr args) (apply (structure-ref rep /) args))
-	  (t ((structure-ref rep /) 1 (car args)))))
+    (cond ((cdr args) (apply rep#/ args))
+	  (t (rep#/ 1 (car args)))))
 
   ;; XXX rep's gcd and lcm only take two parameters..
   
@@ -240,7 +240,7 @@
   (define (string->list string)
     (let loop ((i (1- (length string)))
 	       (out nil))
-      (if ((structure-ref rep >=) i 0)
+      (if (rep#>= i 0)
 	  (loop (1- i) (cons (aref string i) out))
 	out)))
 
@@ -250,7 +250,7 @@
 
   (define (string-fill! string char)
     (let loop ((i (1- (length string))))
-      (cond (((structure-ref rep >=) i 0)
+      (cond ((rep#>= i 0)
 	     (aset string i char)
 	     (loop (1- i))))))
 
@@ -265,7 +265,7 @@
   (define (vector->list vect)
     (let loop ((i (1- (length vect)))
 	       (out nil))
-      (if ((structure-ref rep >=) i 0)
+      (if (rep#>= i 0)
 	  (loop (1- i) (cons (aref vect i) out))
 	out)))
 
@@ -274,6 +274,6 @@
 
   (define (vector-fill! vect char)
     (let loop ((i (1- (length vect))))
-      (cond (((structure-ref rep >=) i 0)
+      (cond ((rep#>= i 0)
 	     (aset vect i char)
 	     (loop (1- i)))))))
