@@ -1,56 +1,61 @@
-;;;; dump.jl -- dumping of Lisp forms to assembler code
-;;;  Copyright (C) 1998 John Harper <john@dcs.warwick.ac.uk>
-;;;  $Id$
+;; dump.jl -- dumping of Lisp forms to C code
+;;  $Id$
 
-;;; This file is part of Jade.
+;;  Copyright (C) 1998,1999 John Harper <john@dcs.warwick.ac.uk>
 
-;;; Jade is free software; you can redistribute it and/or modify it
-;;; under the terms of the GNU General Public License as published by
-;;; the Free Software Foundation; either version 2, or (at your option)
-;;; any later version.
+;; This file is part of librep.
 
-;;; Jade is distributed in the hope that it will be useful, but
-;;; WITHOUT ANY WARRANTY; without even the implied warranty of
-;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-;;; GNU General Public License for more details.
+;; librep is free software; you can redistribute it and/or modify it
+;; under the terms of the GNU General Public License as published by
+;; the Free Software Foundation; either version 2, or (at your option)
+;; any later version.
 
-;;; You should have received a copy of the GNU General Public License
-;;; along with Jade; see the file COPYING.  If not, write to
-;;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
+;; librep is distributed in the hope that it will be useful, but
+;; WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with librep; see the file COPYING.  If not, write to
+;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 (provide 'dump)
 
-;;; Commentary:
+;; Commentary:
 
-;;; Lisp modules generally consist almost wholly of constant
-;;; definitions, that is, definitions whose effect can be known upon
-;;; static analysis. For example, the defun special form always sets
-;;; the function cell of its first argument to the specified function,
-;;; both name and definition are static.
+;; Lisp modules generally consist almost wholly of constant
+;; definitions, that is, definitions whose effect can be known upon
+;; static analysis. For example, the defun special form always sets the
+;; function cell of its first argument to the specified function, both
+;; name and definition are static.
 
-;;; These constant definitions can therefore be moved out of the Lisp
-;;; file and into the text segment of the program binary. In general,
-;;; only non-constant forms are left in the Lisp file, it can be loaded
-;;; as normal with exactly the same effect.
+;; These constant definitions can therefore be moved out of the Lisp
+;; file and into the text segment of the program binary. In general,
+;; only non-constant forms are left in the Lisp file, it can be loaded
+;; as normal with exactly the same effect.
 
-;;; The function dump-lisp-forms scans a file of (compiled) Lisp code
-;;; for the constant definitions, resolving them into the different
-;;; types of constant (cons, vectors, symbols, bytecodes, etc), along
-;;; with a unique label for each object. For compound objects the
-;;; sub-objects are treated in the same manner, and the reference to
-;;; the sub-object is replaced by its label, thereby creating a kind
-;;; of dependency, or more accurately, reference graph.
+;; The function dump-lisp-forms scans a file of (compiled) Lisp code
+;; for the constant definitions, resolving them into the different
+;; types of constant (cons, vectors, symbols, bytecodes, etc), along
+;; with a unique label for each object. For compound objects the
+;; sub-objects are treated in the same manner, and the reference to the
+;; sub-object is replaced by its label, thereby creating a kind of
+;; dependency, or more accurately, reference graph.
 
-;;; By outputting the collected information as assembler code, the constant
-;;; objects can be generated in the text segment of the binary, with very
-;;; little modification needed to the Lisp system itself.
+;; By outputting the collected information as C code, the constant
+;; objects can be generated in the text segment of the binary, with
+;; very little modification needed to the Lisp system itself.
 
-;;; Currently, the following forms are recognised as [possibly] containing
-;;; static definitions: defun, defsubst, defmacro, defvar, defconst,
-;;; make-variable-buffer-local, put.
+;; Currently, the following forms are recognised as [possibly]
+;; containing static definitions: defun, defsubst, defmacro, defvar,
+;; defconst, put, require, provide.
 
-;;; Note that the structure of the main Lisp data types (integers, cons
-;;; cells, symbols and vectors) is _hard_coded_ at the end of this file.
+;; Note that the data-layout of the main Lisp data types (integers,
+;; cons cells, symbols and vectors) is hard coded at the end of this
+;; file.
+
+;; [ I think this "dumping" is usually called "freezing"? if you
+;; reinvent something you accidentally give it a new name.. :-) ]
 
 
 ;; Configuration
@@ -62,26 +67,6 @@ for the entire set of dumped files.")
 (defvar dump-verbosely-file "dump.out"
   "File for verbose output.")
 
-(defvar dump-section-alist '((symbol . data)
-			     (string . text)
-			     (cons . text)
-			     (vector . text)
-			     (bytecode . text))
-  "List of (TYPE . TEXT-OR-DATA). Specifies which section constant objects
-go in, the (read-only) text segment, or the (read-write) data segment.
-Don't touch this unless you know what you're doing!")
-
-(defvar dump-asm-format '((value . "\t.long %s\n")
-			  (align . "\t.align %s\n")
-			  (label . "%s:\n")
-			  (string . "\t.asciz %S\n")
-			  (text . "\t.text\n")
-			  (data . "\t.data\n")
-			  (global . "\t.globl %s\n")
-			  (comment . "/* %s */\n"))
-  "List of (TAG . FORMAT-STRING) specifying the syntax of the target
-assembler's various pseudo-operations.")
-
 ;; Special vars
 (defvar dump-non-constant-forms nil)
 (defvar dump-string-constants nil)
@@ -89,16 +74,18 @@ assembler's various pseudo-operations.")
 (defvar dump-symbol-constants nil)
 (defvar dump-vector-constants nil)
 (defvar dump-bytecode-constants nil)
+(defvar dump-funarg-constants nil)
+(defvar dump-feature-constants nil)
 
 
 ;; Top level entrypoints
 
-;; Call Jade something like:
-;;
-;;	jade -l dump -f dump-batch [OPTIONS...] SRCS... -q
-;;
+;; Call something like:
+
+;;	rep --batch dump -f dump-batch [OPTIONS...] SRCS... -q
+
 ;; where OPTIONS may be any of:
-;;
+
 ;;	-o OUTPUT-FILE			Specify the output file
 
 (defun dump-batch ()
@@ -117,90 +104,83 @@ assembler's various pseudo-operations.")
     (format (stdout-file) "Dumping %S to %S\n" files output)
     (dump files output)))
 
+(defun find-lisp-file (filename)
+  (catch 'out
+    (mapc (lambda (dir)
+	    (let
+		((full (expand-file-name (concat filename ".jlc") dir)))
+	      (when (file-exists-p full)
+		(throw 'out full)))) load-path)
+    (error "Can't find file: %s\n" filename)))
+
 (defun dump (file-list output-file)
-  "Dump each compiled Lisp file named in FILE-LIST, to the assembler
-file OUTPUT-FILE. Note that each input file will be loaded from
-the lisp-lib-directory with .jlc as its suffix."
+  "Dump each compiled Lisp file named in FILE-LIST, to the C file OUTPUT-FILE.
+Note that each input file will be loaded from the lisp-lib-directory with
+.jlc as its suffix."
   (let
       (dump-vector-constants
        dump-string-constants
        dump-symbol-constants
        dump-cons-constants
        dump-bytecode-constants
-       output-stream input-stream
+       dump-funarg-constants
+       dump-non-constant-forms
+       dump-feature-constants
+       standard-output input-stream
        file-full-name
        (list-head file-list))
-    (when (setq output-stream (open-file output-file 'write))
+    (when (setq standard-output (open-file output-file 'write))
       (unwind-protect
 	  (progn
-	    (dump-output-comment output-stream output-file)
-	    (dump-output-comment
-	     output-stream (format nil "From: %S" file-list))
+	    (dump-output-comment output-file)
+	    (dump-output-comment (format nil "From: %S" file-list))
 	    ;; Ensure that `nil' gets added as the first symbol, note that
 	    ;; since the lists are consed up bottom first, this means that
-	    ;; it's actually the last entry in assembler code for the
-	    ;; generated symbols
+	    ;; it's actually the last entry in C code for the symbols
 	    (dump-add-constant nil)
+	    (dump-add-constant t)
 	    (while (consp list-head)
-	      (setq file-full-name (expand-file-name
-				    (concat (car list-head) ".jlc")
-				    lisp-lib-directory))
+	      (setq file-full-name (find-lisp-file (car list-head)))
 	      (unless (setq input-stream (open-file file-full-name 'read))
 		(error "Dump: can't open %s" file-full-name))
 	      (unwind-protect
 		  (let
-		      (dump-non-constant-forms func form)
+		      (func form)
 		    (condition-case nil
 			(while (setq form (read input-stream))
 			  (if (setq func (get (car form) 'dump-function))
-			      (funcall func form)
+			      (func form)
 			    (dump-add-non-constant form)))
-		      (end-of-stream))
-		    (setq dump-non-constant-forms
-			  (nreverse dump-non-constant-forms))
-		    (dump-output-non-consts file-full-name
-					    (expand-file-name
-					     (concat (car list-head) ".jld")
-					     lisp-lib-directory)))
+		      (end-of-stream)))
 		(close-file input-stream))
 	      (setq list-head (cdr list-head)))
-	    ;; Set the variable dumped-lisp-libraries to the list of
-	    ;; files (less directory and suffix) that were dumped.
-	    (dump-add-state (dump-add-constant 'dumped-lisp-libraries)
-			    'value
-			    (dump-get-label
-			     (dump-add-constant (copy-sequence file-list))))
+
+	    ;; Output the features variable
+	    (dump-defvar `(defvar features
+			    ',(copy-sequence dump-feature-constants)))
+
+	    ;; reverse list of forms to evaluate
+	    (setq dump-non-constant-forms
+		  (cons 'progn (nreverse dump-non-constant-forms)))
+	    (setq dump-non-constant-forms
+		  (dump-get-label (dump-add-constant dump-non-constant-forms)))
+
 	    ;; For all symbols with a plist property, add it as a constant
 	    (dump-fix-plists dump-symbol-constants)
-	    ;; Generate the assembler code
-	    (dump-output-assembler output-stream)
+
+	    ;; Generate the C code
+	    (dump-output-code)
 	    (when dump-verbosely
 	      ;; And the debugging output
 	      (dump-output-readably file-list)))
-	(close-file output-stream)))))
+	(close-file standard-output)))))
 
 ;; Output a LIST of objects to STREAM. Each object printed will be
 ;; preceded by INDENT (default is two spaces)
-(defun dump-output-list (list stream &optional indent)
-  (while (consp list)
-    (format stream "\n%s%S" (or indent "  ") (car list))
-    (setq list (cdr list))))
-
-;; Output the list of non-constant forms in free variable
-;; dump-non-constant-forms to FILE-NAME. INPUT-FILE is the
-;; name of the file they came from
-(defun dump-output-non-consts (input-file file-name)
-  (let
-      ((file (open-file file-name 'write)))
-    (when file
-      (unwind-protect
-	  (progn
-	    (format file ";; Dumped version of %s\n;; Dumped on %s by %s@%s\n"
-		    input-file (current-time-string)
-		    (user-login-name) (system-name))
-	    (dump-output-list dump-non-constant-forms file "")
-	    (write file "\n"))
-	(close-file file)))))
+(defun dump-output-list (lst stream &optional indent)
+  (while (consp lst)
+    (format stream "\n%s%S" (or indent "  ") (car lst))
+    (setq lst (cdr lst))))
 
 ;; Dump all dump-X-constants lists to the file dump-verbosely-file. The
 ;; definitions came from the list of files INPUT-FILES
@@ -212,6 +192,8 @@ the lisp-lib-directory with .jlc as its suffix."
       (unwind-protect
 	  (progn
 	    (format file ";; Dump output from %S" input-files)
+	    (write file "\n\n;; Features\n")
+	    (dump-output-list dump-feature-constants file)
 	    (write file "\n\n;; String constants\n")
 	    (dump-output-list dump-string-constants file)
 	    (write file "\n\n;; Cons constants\n")
@@ -222,6 +204,10 @@ the lisp-lib-directory with .jlc as its suffix."
 	    (dump-output-list dump-vector-constants file)
 	    (write file "\n\n;; Bytecode constants\n")
 	    (dump-output-list dump-bytecode-constants file)
+	    (write file "\n\n;; Funarg constants\n")
+	    (dump-output-list dump-funarg-constants file)
+	    (write file "\n\n;; Non constant forms\n")
+	    (dump-output-list dump-non-constant-forms file)
 	    (write file "\n\n;; End\n"))
 	(close-file file)))))
 	  
@@ -250,7 +236,7 @@ the lisp-lib-directory with .jlc as its suffix."
 ;; returns the pair itself if it exists
 (defun dump-has-state-p (cell tag)
   (when (> (length cell) 2)
-    (assoc tag (nthcdr 2 cell))))  
+    (assoc tag (nthcdr 2 cell))))
 
 ;; Add a pair (TAG . VALUE) to be associated with CELL
 (defun dump-add-state (cell tag value &aux pair)
@@ -303,7 +289,7 @@ the lisp-lib-directory with .jlc as its suffix."
 	(rplacd object (dump-get-label (dump-add-constant (cdr object)))))))
 
     ;; Get the (OBJECT LABEL STATE...) cell that represents this
-    ;; object. The LABEL will be used in the resulting assembler/C code
+    ;; object. The LABEL will be used in the resulting C code
     ;; as the start of the object. This is done after resolving inner
     ;; constants so that we can reuse objects.
     ;; Any extra state needing to be recorded is appended after the
@@ -333,7 +319,7 @@ the lisp-lib-directory with .jlc as its suffix."
 	(vectorp form) (bytecodep form)
 	(eq form t) (eq form nil)))
    ((consp form)
-    (memq (car form) '(quote function)))
+    (eq (car form) 'quote))
    ;; What other constant forms have I missed..?
    (t
     nil)))
@@ -347,7 +333,7 @@ the lisp-lib-directory with .jlc as its suffix."
     ;; Self-evaluating types
     form)
    ((consp form)
-    ;; only quote or function
+    ;; only quote
     (nth 1 form))))
 
 ;; Return the label or integer that is the constant value of FORM (given
@@ -358,13 +344,29 @@ the lisp-lib-directory with .jlc as its suffix."
       form
     (dump-get-label (dump-add-constant form))))
 
+(defun dump-add-funarg (fun name)
+  (let*
+      ((env (dump-add-constant t))
+       (special-env (dump-add-constant (cons nil t)))
+       (fh-env (dump-add-constant t))
+       (object (vector (dump-get-label (dump-add-constant fun))
+		       (dump-get-label (dump-add-constant name))
+		       (dump-get-label env)
+		       (dump-get-label special-env)
+		       (dump-get-label fh-env)))
+       (cell (assoc object dump-funarg-constants)))
+    (unless cell
+      (setq cell (dump-new-cell object))
+      (setq dump-funarg-constants (cons cell dump-funarg-constants)))
+    cell))
+
 ;; For all symbol cells in LIST that have a plist property, add its value
 ;; as a constant
-(defun dump-fix-plists (list)
+(defun dump-fix-plists (lst)
   (mapc (lambda (x &aux plist)
 	  (when (setq plist (dump-has-state-p x 'plist))
 	    (rplacd plist (dump-get-label (dump-add-constant (cdr plist))))))
-	list))
+	lst))
 
 
 ;; Handlers for supported top-level forms
@@ -375,7 +377,10 @@ the lisp-lib-directory with .jlc as its suffix."
        (func (nth 2 form)))
     (when (consp func)
       (setq func (cons 'lambda (nthcdr 2 form))))
-    (dump-add-state sym 'function (dump-get-label (dump-add-constant func)))))
+    (dump-add-state sym 'value (dump-get-label
+				(dump-add-funarg func (symbol-name
+						       (nth 1 form)))))
+    (dump-add-state sym 'defined t)))
 
 (defun dump-defsubst (form)
   (let
@@ -383,16 +388,25 @@ the lisp-lib-directory with .jlc as its suffix."
        (func (nth 2 form)))
     (when (consp func)
       (setq func (cons 'lambda (nthcdr 2 form))))
-    (dump-add-state sym 'function (dump-get-label (dump-add-constant func)))
-    (dump-state-put sym 'compile-fun 'comp-compile-inline-function)))  
+    (dump-add-state sym 'value (dump-get-label
+				(dump-add-funarg func (symbol-name
+						       (nth 1 form)))))
+    (dump-add-state sym 'defined t)
+    (dump-state-put sym 'compile-inline t)))
 
 (defun dump-defmacro (form)
   (let
       ((sym (dump-add-constant (nth 1 form)))
-       (func (nth 2 form)))
+       (func (nth 2 form))
+       funarg)
     (when (consp func)
-      (setq func (cons 'macro (cons 'lambda (nthcdr 2 func)))))
-    (dump-add-state sym 'function (dump-get-label (dump-add-constant func)))))
+      (setq func (cons 'lambda (nthcdr 2 func))))
+    (setq funarg (dump-get-label (dump-add-funarg
+				  func (symbol-name (nth 1 form)))))
+    (setq func (dump-add-constant (cons 'macro nil)))
+    (rplacd (dump-get-object func) funarg)
+    (dump-add-state sym 'value (dump-get-label func))
+    (dump-add-state sym 'defined t)))
 
 (defun dump-defvar (form)
   (let
@@ -402,8 +416,10 @@ the lisp-lib-directory with .jlc as its suffix."
 	(dump-add-non-constant form)
       (setq sym (dump-add-constant sym))
       (dump-add-state sym 'value (dump-constant-value value))
+      (dump-add-state sym 'defined t)
+      (dump-add-state sym 'special t)
       (when (nth 3 form)
-	(dump-state-put sym 'variable-documentation (nth 3 form))))))
+	(dump-state-put sym 'documentation (nth 3 form))))))
 
 (defun dump-defconst (form)
   (let
@@ -413,17 +429,11 @@ the lisp-lib-directory with .jlc as its suffix."
 	(dump-add-non-constant form)
       (setq sym (dump-add-constant sym))
       (dump-add-state sym 'value (dump-constant-value value))
+      (dump-add-state sym 'defined t)
+      (dump-add-state sym 'special t)
       (dump-add-state sym 'constant t)
       (when (nth 3 form)
-	(dump-state-put sym 'variable-documentation (nth 3 form))))))
-
-(defun dump-make-variable-buffer-local (form)
-  (let
-      ((sym (nth 1 form)))
-    (if (not (dump-constant-p sym))
-	(dump-add-non-constant form)
-      (setq sym (dump-add-constant (dump-get-constant sym)))
-      (dump-add-state sym 'buffer-local t))))
+	(dump-state-put sym 'documentation (nth 3 form))))))
 
 (defun dump-put (form)
   (let
@@ -438,174 +448,237 @@ the lisp-lib-directory with .jlc as its suffix."
       (dump-state-put sym (dump-get-constant prop)
 		      (dump-get-constant value)))))
 
-(put 'defun 'dump-function 'dump-defun)
-(put 'defsubst 'dump-function 'dump-defsubst)
-(put 'defmacro 'dump-function 'dump-defmacro)
-(put 'defvar 'dump-function 'dump-defvar)
-(put 'defconst 'dump-function 'dump-defconst)
-(put 'make-variable-buffer-local 'dump-function
-     'dump-make-variable-buffer-local)
-(put 'put 'dump-function 'dump-put)
+(defun dump-provide (form)
+  (if (dump-constant-p (nth 1 form))
+      (let
+	  ((const (dump-get-constant (nth 1 form))))
+	(unless (memq const dump-feature-constants)
+	  (setq dump-feature-constants (cons const dump-feature-constants))))
+    (dump-add-non-constant form)))
+
+(defun dump-require (form)
+  (if (dump-constant-p (nth 1 form))
+      (let
+	  ((const (dump-get-constant (nth 1 form))))
+	(unless (memq const dump-feature-constants)
+	  (dump-add-non-constant form)))
+    (dump-add-non-constant form)))
+
+(put 'defun 'dump-function dump-defun)
+(put 'defsubst 'dump-function dump-defsubst)
+(put 'defmacro 'dump-function dump-defmacro)
+(put 'defvar 'dump-function dump-defvar)
+(put 'defconst 'dump-function dump-defconst)
+(put 'put 'dump-function dump-put)
+(put 'provide 'dump-function dump-provide)
+(put 'require 'dump-function dump-require)
 
 
-;; Assembler output
+;; Code output
 
-;; Output to STREAM the assembler op TAG, using arguments ARGS
-(defmacro dump-output (stream tag &rest args)
-  (cons 'format
-	(cons 'stream
-	      (cons (list 'cdr (list 'assq tag 'dump-asm-format)) args))))
+;; We make the gruesome assumption that sizeof(void*) == sizeof(repv).
+;; (This is checked for validity at run-time.) It seems that compilers
+;; don't think pointers are constants, and so won't put them in the
+;; read-only section of the library. repv's (which are integers) don't
+;; have that problem..
 
-;; Output a comment TEXT to STREAM
-(defun dump-output-comment (stream text)
-  (dump-output stream 'comment text))
+(defmacro @ (&rest args)
+  (list* 'format 'standard-output args))
 
-;; Output a directive to align to the next cell boundary
-(defmacro dump-output-align-cell (stream)
-  (list 'dump-output stream ''align 4))
+(defun dump-output-structs ()
+  (@ "\ntypedef struct {\n")
+  (@ "  repv car;\n")
+  (@ "  repv next;\n")
+  (@ "  repv data;\n")
+  (@ "} const_rep_string;\n")
+  (@ "\ntypedef struct {\n")
+  (@ "  repv car;\n")
+  (@ "  repv next;\n")
+  (@ "  repv fun;\n")
+  (@ "  repv name;\n")
+  (@ "  repv env;\n")
+  (@ "  repv special_env;\n")
+  (@ "  repv fh_env;\n")
+  (@ "} const_rep_funarg;\n"))
 
-;; Output a long value representing constant VALUE (i.e. a label or
-;; an integer)
-(defmacro dump-output-object (stream value)
-  (list 'dump-output stream ''value (list 'if (list 'integerp value)
-					  (list 'logior (list 'lsh value 2) 2)
-					  value)))
+(defun dump-output-object (obj)
+  (cond ((integerp obj)
+	 (format nil "%d" (logior (lsh obj 2) 2)))
+	(obj
+	 (format nil "rep_VAL(&%s)" obj))
+	(t
+	 "rep_NULL")))
 
-;; Return the section that an object of TYPE should be put in, either text
-;; or data
-(defmacro dump-get-section (type)
-  (list 'cdr (list 'assq type 'dump-section-alist)))
+;; Output a comment TEXT
+(defun dump-output-comment (text)
+  (@ "/* %s */\n" text))
 
-;; Output to STREAM all string cells in the list HEAD
-(defun dump-output-strings (stream head)
-  (let
-      (obj)
-    (write stream "\n")
-    (dump-output stream (dump-get-section 'string))
-    (dump-output-align-cell stream)
-    (dump-output stream 'global "dumped_strings_start")
-    (dump-output stream 'label "dumped_strings_start")
-    (while (consp head)
-      (dump-output stream 'label (dump-get-label (car head)))
-      (setq obj (dump-get-object (car head)))
-      (dump-output stream 'value (logior (lsh (length obj) 8) 0x45))
-      (dump-output stream 'value 0)
-      (let
-	  ((data-label (gensym)))
-	(dump-output stream 'value data-label)
-	(dump-output stream 'label data-label)
-	(dump-output stream 'string obj))
-      (dump-output-align-cell stream)
-      (setq head (cdr head)))
-    (dump-output stream 'global "dumped_strings_end")
-    (dump-output stream 'label "dumped_strings_end")))
+(defun dump-output-string-protos (head)
+  (@ "\n")
+  (mapc (lambda (cell)
+	  (@ "extern const rep_string %s;\n" (dump-get-label cell))) head))
+
+;; Output all string cells in the list HEAD
+(defun dump-output-strings (head)
+  (@ "\n\f\n/* Constant strings */\n\n")
+  (mapc (lambda (cell)
+	  (let
+	      ((string (dump-get-object cell))
+	       (label (dump-get-label cell)))
+	    (@ "const u_char %s_data[] = %S;\n" label string)
+	    (@ "const const_rep_string %s = {\n" label)
+	    (@ "  0x%x,\n" (logior (lsh (length string) 8) 0x45))
+	    (@ "  0,\n")
+	    (@ "  rep_VAL(%s_data)\n" label)
+	    (@ "};\n\n"))) head))
     
-;; Output to STREAM all cons cells in the list HEAD
-(defun dump-output-cons (stream head)
-  (let
-      (obj)
-    (write stream "\n")
-    (dump-output stream (dump-get-section 'cons))
-    (dump-output-align-cell stream)
-    (dump-output stream 'global "dumped_cons_start")
-    (dump-output stream 'label "dumped_cons_start")
-    (while (consp head)
-      (dump-output stream 'label (dump-get-label (car head)))
-      (setq obj (dump-get-object (car head)))
-      (dump-output-object stream (car obj))
-      (dump-output-object stream (cdr obj))
-      (setq head (cdr head)))
-    (dump-output stream 'global "dumped_cons_end")
-    (dump-output stream 'label "dumped_cons_end")))
+(defun dump-output-cons-protos (head)
+  (@ "\n")
+  (mapc (lambda (cell)
+	  (@ "extern const rep_cons %s;\n" (dump-get-label cell))) head))
 
-;; Output to STREAM all symbol cells in the list HEAD
-(defun dump-output-symbols (stream head)
-  (let
-      (cell tem)
-    (write stream "\n")
-    (dump-output stream (dump-get-section 'symbol))
-    (dump-output-align-cell stream)
-    (dump-output stream 'global "dumped_symbols_start")
-    (dump-output stream 'label "dumped_symbols_start")
-    (while (consp head)
-      (dump-output stream 'label (dump-get-label (car head)))
-      (setq cell (car head))
-      (dump-output stream 'value
-		   (logior (if (dump-get-state cell 'constant) 0x100 0)
-			   (if (dump-get-state cell 'buffer-local) 0x600 0)
-			   0x41))
-      (dump-output stream 'value 0)
-      (dump-output stream 'value (dump-get-state cell 'name))
-      (if (dump-has-state-p cell 'value)
-	  (dump-output-object stream (dump-get-state cell 'value))
-	(dump-output stream 'value 0))
-      (if (dump-has-state-p cell 'function)
-	  (dump-output-object stream (dump-get-state cell 'function))
-	(dump-output stream 'value 0))
-      (if (dump-has-state-p cell 'plist)
-	  (dump-output-object stream (dump-get-state cell 'plist))
-	(dump-output stream 'value 0))
-      (setq head (cdr head)))
-    (dump-output stream 'global "dumped_symbols_end")
-    (dump-output stream 'label "dumped_symbols_end")))
+;; Output all cons cells in the list HEAD
+(defun dump-output-cons (head)
+  (@ "\n\f\n/* Constant cons cells */\n\n")
+  (mapc (lambda (cell)
+	  (let
+	      ((pair (dump-get-object cell))
+	       (label (dump-get-label cell)))
+	    (@ "const rep_cons %s = {\n" label)
+	    (@ "  %s, %s\n"
+	       (dump-output-object (car pair)) (dump-output-object (cdr pair)))
+	    (@ "};\n"))) head))
 
-;; Output to STREAM all vector cells in the list HEAD, TYPE should be
-;; either vector or bytecode
-(defun dump-output-vectors (stream head type)
-  (let
-      ((type-value (if (eq type 'vector) 0x43 0x47))
-       (type-start (if (eq type 'vector)
-		       "dumped_vectors_start"
-		     "dumped_bytecode_start"))
-       (type-end (if (eq type 'vector)
-		     "dumped_vectors_end"
-		   "dumped_bytecode_end"))
-       obj i len)
-    (write stream "\n")
-    (dump-output stream (dump-get-section type))
-    (dump-output-align-cell stream)
-    (dump-output stream 'global type-start)
-    (dump-output stream 'label type-start)
-    (while (consp head)
-      (dump-output stream 'label (dump-get-label (car head)))
-      (setq obj (dump-get-object (car head))
-	    len (length obj)
-	    i 0)
-      (dump-output stream 'value (logior (lsh len 8) type-value))
-      (dump-output stream 'value 0)
-      (while (< i len)
-	(dump-output-object stream (aref obj i))
-	(setq i (1+ i)))
-      (setq head (cdr head)))
-    (dump-output stream 'global type-end)
-    (dump-output stream 'label type-end)))
+(defun dump-output-symbol-protos (head)
+  (@ "\n")
+  (mapc (lambda (cell)
+	  (@ "extern rep_symbol %s;\n" (dump-get-label cell))) head))
 
-;; Output all assembler code to STREAM
-(defun dump-output-assembler (stream)
+;; Output all symbol cells in the list HEAD
+(defun dump-output-symbols (head)
+  (@ "\n\f\n/* Symbols */\n\n")
+  (mapc (lambda (cell)
+	  (let*
+	      ((symbol (dump-get-object cell))
+	       (label (dump-get-label cell))
+	       (is-constant (dump-get-state cell 'constant))
+	       (is-defined (dump-get-state cell 'defined))
+	       (is-special (dump-get-state cell 'special))
+	       (name (dump-get-state cell 'name))
+	       (value (dump-get-state cell 'value))
+	       (plist (dump-get-state cell 'plist)))
+	    (@ "/* %s */\n" symbol)
+	    (@ "rep_symbol %s = {\n" label)
+	    (@ "  0x%x,\n" (logior 0x41
+				   (if is-constant (lsh 1 (+ 8 0)) 0)
+				   (if is-defined  (lsh 1 (+ 8 7)) 0)
+				   (if is-special  (lsh 1 (+ 8 4)) 0)))
+	    (@ "  0,\n")
+	    (@ "  %s,\n" (dump-output-object name))
+	    (@ "  %s,\n" (dump-output-object value))
+	    (@ "  %s\n" (dump-output-object plist))
+	    (@ "};\n\n"))) head))
+
+(let*
+    ((done nil)
+
+     (output-struct
+      (lambda (size)
+	(unless (memq size done)
+	  (@ "struct rep_vector_%d {\n" size)
+	  (@ "  repv car; repv next; repv array[%d];\n" size)
+	  (@ "};\n")
+	  (setq done (cons size done))))))
+
+  (defun dump-output-vector-protos (head)
+    (@ "\n")
+    (mapc (lambda (cell)
+	    (let
+		((len (length (dump-get-object cell))))
+	      (output-struct len)
+	      (@ "extern const struct rep_vector_%d %s;\n"
+		 len (dump-get-label cell)))) head))
+
+  ;; Output to vector cells in the list HEAD, TYPE should be vector or bytecode
+  (defun dump-output-vectors (head type)
+    (let
+	((type-value (if (eq type 'vector) 0x43 0x47)))
+      (@ "\n\f\n/* Constant %ss */\n\n" type)
+      (mapc (lambda (cell)
+	      (let
+		  ((vec (dump-get-object cell))
+		   (label (dump-get-label cell))
+		   (i 0))
+		(output-struct (length vec))
+		(@ "const struct rep_vector_%d %s = {\n"
+		   (length vec) label)
+		(@ "  0x%x,\n" (logior (lsh (length vec) 8) type-value))
+		(@ "  0,\n")
+		(@ "  {\n")
+		(while (< i (length vec))
+		  (@ "    %s%s\n" (dump-output-object (aref vec i))
+		     (if (/= i (1- (length vec))) "," ""))
+		  (setq i (1+ i)))
+		(@ "  }\n};\n\n"))) head))))
+
+(defun dump-output-funarg-protos (head)
+  (@ "\n")
+  (mapc (lambda (cell)
+	  (@ "extern const const_rep_funarg %s;\n"
+	     (dump-get-label cell))) head))
+
+(defun dump-output-funargs (head)
+  (@ "\n\f\n/* Constant funargs */\n\n")
+  (mapc (lambda (cell)
+	  (let
+	      ((funarg (dump-get-object cell))
+	       (label (dump-get-label cell)))
+	    (@ "const const_rep_funarg %s = {\n" label)
+	    (@ "  0x5f, 0,\n")
+	    (@ "  rep_VAL(&%s),\n" (aref funarg 0))
+	    (@ "  rep_VAL(&%s),\n" (aref funarg 1))
+	    (@ "  rep_VAL(&%s),\n" (aref funarg 2))
+	    (@ "  rep_VAL(&%s),\n" (aref funarg 3))
+	    (@ "  rep_VAL(&%s)\n" (aref funarg 4))
+	    (@ "};\n\n"))) head))
+
+;; Output all code
+(defun dump-output-code ()
   (let
       ((print-escape t))
-    ;; Prelude
-    (write stream "\n\n")
-    (dump-output stream 'text)
-    (dump-output stream 'global "dumped_text_start")
-    (dump-output stream 'label "dumped_text_start")
-    (dump-output stream 'data)
-    (dump-output stream 'global "dumped_data_start")
-    (dump-output stream 'label "dumped_data_start")
-    (write stream "\n\n")
+
+    (@ "\n#include <rep.h>\n#include <assert.h>\n")
+
+    (dump-output-structs)
+
+    ;;(dump-output-string-protos dump-string-constants)
+    (dump-output-cons-protos dump-cons-constants)
+    (dump-output-symbol-protos dump-symbol-constants)
+    (dump-output-vector-protos dump-vector-constants)
+    (dump-output-vector-protos dump-bytecode-constants)
+    (dump-output-funarg-protos dump-funarg-constants)
 
     ;; Data itself
-    (dump-output-strings stream dump-string-constants)
-    (dump-output-cons stream dump-cons-constants)
-    (dump-output-symbols stream dump-symbol-constants)
-    (dump-output-vectors stream dump-vector-constants 'vector)
-    (dump-output-vectors stream dump-bytecode-constants 'bytecode)
+    (dump-output-strings dump-string-constants)
+    (dump-output-cons dump-cons-constants)
+    (dump-output-symbols dump-symbol-constants)
+    (dump-output-vectors dump-vector-constants 'vector)
+    (dump-output-vectors dump-bytecode-constants 'bytecode)
+    (dump-output-funargs dump-funarg-constants)
 
-    ;; Postlude?
-    (write stream "\n\n")
-    (dump-output stream 'text)
-    (dump-output stream 'global "dumped_text_end")
-    (dump-output stream 'label "dumped_text_end")
-    (dump-output stream 'data)
-    (dump-output stream 'global "dumped_data_end")
-    (dump-output stream 'label "dumped_data_end")))
+    (@ "\f\n/* Initialisation */\n\n")
+    (@ "repv\nrep_dl_init (void)\n{\n")
+    (@ "  assert (sizeof (repv) == sizeof (void *));\n")
+    (@ "  assert (sizeof (const_rep_string) == sizeof (rep_string));\n")
+    (@ "  assert (sizeof (const_rep_funarg) == sizeof (rep_funarg));\n\n")
+    (@ "  rep_dumped_cons_start = (rep_cons *) &%s;\n"
+       (dump-get-label (car dump-cons-constants)))
+    (@ "  rep_dumped_cons_end = (rep_cons *) (&%s)+1;\n"
+       (dump-get-label (last dump-cons-constants)))
+    (@ "  rep_dumped_symbols_start = (rep_symbol *) &%s;\n"
+       (dump-get-label (car dump-symbol-constants)))
+    (@ "  rep_dumped_symbols_end = (rep_symbol *) (&%s)+1;\n"
+       (dump-get-label (last dump-symbol-constants)))
+    (@ "  rep_dumped_non_constants = rep_VAL(&%s);\n" dump-non-constant-forms)
+    (@ "  return Qt;\n")
+    (@ "}\n")))
