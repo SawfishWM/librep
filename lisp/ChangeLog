@@ -1,3 +1,8 @@
+2000-01-14  John Harper  <john@dcs.warwick.ac.uk>
+
+	* gaol.jl: removed redefinition of make-timer, added it to list
+	of safe functions (since we are a lisp-1)
+
 2000-01-12  John Harper  <john@dcs.warwick.ac.uk>
 
 	* memoize.jl (memoize-function): wrap a function with a cache

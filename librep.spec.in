@@ -50,6 +50,7 @@ gzip -9nf $RPM_BUILD_ROOT%{_prefix}/info/librep*
 rm -rf $RPM_BUILD_ROOT
 
 %files
+%defattr(-,root,root)
 %doc NEWS README THANKS etc/TODO
 %{_prefix}/bin/rep
 %{_prefix}/bin/rep-remote
@@ -62,6 +63,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_prefix}/info/librep*
 
 %files devel
+%defattr(-,root,root)
 %{_prefix}/bin/rep-config
 %{_prefix}/bin/rep-xgettext
 %{_prefix}/bin/repdoc
