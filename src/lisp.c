@@ -2592,8 +2592,6 @@ too small (you get errors in normal use) set it to something larger.
     return rep_handle_var_int(val, &rep_max_lisp_depth);
 }
 
-DEFSYM(rep_lang_interpreter, "rep.lang.interpreter");
-
 void
 rep_lisp_init(void)
 {
@@ -2690,7 +2688,6 @@ rep_lisp_init(void)
     rep_INTERN(require);
 
     /* Allow the bootstrap code to work.. */
-    rep_INTERN (rep_lang_interpreter);
     rep_STRUCTURE (rep_default_structure)->imports
 	= Fcons (Qrep_lang_interpreter,
 		 rep_STRUCTURE (rep_default_structure)->imports);

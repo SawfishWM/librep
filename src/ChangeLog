@@ -1,3 +1,9 @@
+2001-06-12  John Harper  <jsh@pixelslut.com>
+
+	* repint_subrs.h, lisp.c: don't declare Qrep_lang_interpreter
+	in lisp.c as well as in structures.c. Instead add declarations
+	for all values declared in structures.c
+
 2001-06-08  John Harper  <jsh@pixelslut.com>
 
 	* lispmach.h: disable mc68000 register assignments - I've had

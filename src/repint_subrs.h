@@ -99,6 +99,9 @@ extern void rep_streams_init(void);
 
 /* from structures.c */
 extern repv rep_default_structure, rep_specials_structure;
+extern repv Qfeatures, Q_structures, Q_meta, Qrep, Q_specials,
+    Q_user_structure, Qrep_structures, Qrep_lang_interpreter,
+    Qrep_vm_interpreter, Qexternal, Qinternal;
 extern rep_struct_node *rep_search_imports (rep_struct *s, repv var);
 extern repv Fmake_structure (repv, repv, repv, repv);
 extern repv F_structure_ref (repv, repv);
