@@ -327,7 +327,7 @@ enum rep_message {
     rep_restore_message,
     rep_redisplay_message
 };
-void (*rep_message_fun)(enum rep_message fn, ...);
+extern void (*rep_message_fun)(enum rep_message fn, ...);
 
 /* from misc.c */
 extern u_char *rep_str_dupn(const u_char *old, int len);

@@ -1,3 +1,8 @@
+2001-02-20  John Harper  <jsh@eazel.com>
+
+	* rep_subrs.h (rep_message_fun): declared using extern (patch
+	from albert chin <china@thewrittenword.com>)
+
 2001-02-19  John Harper  <jsh@eazel.com>
 
 	* lispmach.h: fixed comment
