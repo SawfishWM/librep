@@ -91,6 +91,8 @@ General programming tasks:
 
  + do something with the define-value ugliness?
 
+ + fall back to .jl if .jlc fails with byte-code error
+
  - move the gtk-independent parts of the rep-gtk glue generator and
    support code to librep
 

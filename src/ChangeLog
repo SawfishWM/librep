@@ -1,5 +1,8 @@
 2000-07-05  John Harper  <john@dcs.warwick.ac.uk>
 
+	* repint.h: allocate cons cells in blocks of 8k instead of 4k
+	(16 instead of 8 on 64-bit)
+
 	* lispcmds.c (Fload): _only ever_ try without a suffix if the
 	NO-SUFFIX option is t. This avoids picking up un-suffixed files
 	by mistake (e.g. from the current directory)

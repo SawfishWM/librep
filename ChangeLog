@@ -1,3 +1,10 @@
+2000-07-06  John Harper  <john@dcs.warwick.ac.uk>
+
+	* Makefile.in, lisp/Makefile.in, man/Makefile.in,
+	src/Makefile.in: updated to partially build in a separate
+	directory. This still doesn't work for Lisp sources (adapted
+	from Martin Pottendorfer <pottendo@utanet.at>)
+
 2000-06-29  John Harper  <john@dcs.warwick.ac.uk>
 
 	* Makefile.in: added repexecdir to installdirs target (for DOC)
