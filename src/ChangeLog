@@ -1,3 +1,7 @@
+1999-10-03  John Harper  <john@dcs.warwick.ac.uk>
+
+	* version 0.6.2
+
 1999-10-01  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep_lisp.h: remove rep_ALIGN macro, since it's only used
