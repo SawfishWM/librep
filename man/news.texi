@@ -52,6 +52,10 @@ old module names will still work for the time being
 @code{rep.io.file-handlers} modules. These need to be imported
 explicitly
 
+@item Doc strings are now indexed by module name as well as symbol
+name. The @code{define} macro now takes a doc string as its optional
+third parameter
+
 @item Record constructors may include all lambda-list keywords (e.g.
 keywords and/or default values)
 
@@ -92,6 +96,9 @@ is prepended to @code{rep-load-path}
 
 @item @code{(/ @var{x}) @result{} (/ 1 @var{x})}
 
+@item Extra string-manipulation functions: @code{string-replace},
+@code{string-split} (in the @code{rep.regexp} module)
+
 @item @code{#f} and @code{#t} are now primitive symbols, not special
 objects
 
@@ -108,7 +115,7 @@ deprecated, use @samp{#x123} and @samp{#o123} instead
 @code{unscheme}, @code{rep.data.objects}, @code{rep.www.quote-url},
 @code{rep.www.fetch-url}, @code{rep.util.ispell},
 @code{rep.util.base64}, @code{rep.util.autoloader},
-@code{rep.io.sockets}, @code{rep.util.time}
+@code{rep.io.sockets}, @code{rep.util.time}, @code{rep.net.domain-name}
 
 @item Bug fixes, including:
 
