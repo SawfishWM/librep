@@ -22,7 +22,7 @@
 #define BYTECODES_H
 
 #define BYTECODE_MAJOR_VERSION 9
-#define BYTECODE_MINOR_VERSION 0
+#define BYTECODE_MINOR_VERSION 1
 
 /* Number of bits encoded in each extra opcode forming the argument. */
 #define ARG_SHIFT    8
@@ -120,8 +120,8 @@
 #define OP_LAND 0x5f			/* push (logand pop[1] pop[2]) */
 #define OP_EQUAL 0x60			/* push (equal pop[1] pop[2]) */
 #define OP_EQ 0x61			/* push (eq pop[1] pop[2]) */
-#define OP_UNUSED1 0x62
-#define OP_UNUSED2 0x63
+#define OP_STRUCT_REF 0x62		/* push (structure-ref pop[1] pop[2])*/
+#define OP_SCM_TEST 0x63
 #define OP_GT 0x64			/* push (> pop[1] pop[2]) */
 #define OP_GE 0x65			/* push (>= pop[1] pop[2]) */
 #define OP_LT 0x66			/* push (< pop[1] pop[2]) */
