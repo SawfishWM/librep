@@ -529,7 +529,7 @@ rep_readl(repv strm, register int *c_p)
 	    rep_GC_root gc_form;
 
 	case EOF:
-	    return Qnil;
+	    goto eof;
 
 	case ' ':
 	case '\t':
