@@ -1,3 +1,18 @@
+2000-03-13  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compiler.jl (compile-file): only expand macros if the form
+	wouldn't be compiled anyway
+	(comp-trans-if, comp-trans-and, comp-trans-or): deleted
+	(comp-compile-let): deleted
+
+	* lisp.jl (let, let*): now defined as macros, `let' supports
+	Scheme's named lets for iteration
+	(if, and, or, function): defined as macros
+
+	* define.jl: only expand macros when absolutely necessary;
+	handle named lets; handle multi-action setq and setq-default
+	forms
+
 2000-03-12  John Harper  <john@dcs.warwick.ac.uk>
 
 	* version 0.11.1

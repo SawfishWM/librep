@@ -185,7 +185,6 @@ extern repv Feval(repv);
 extern repv Fprogn(repv);
 extern repv Fbreak(void);
 extern repv Fstep(repv);
-extern repv Fmacroexpand(repv, repv);
 extern repv Fsignal(repv error, repv data);
 extern repv Fcondition_case(repv args);
 extern repv Fbacktrace(repv strm);
@@ -243,9 +242,6 @@ extern repv Fprog1(repv);
 extern repv Fprog2(repv);
 extern repv Fwhile(repv);
 extern repv Fcond(repv);
-extern repv Fif(repv args);
-extern repv Fand(repv);
-extern repv For(repv);
 extern repv Fapply(repv);
 extern repv Fload(repv file, repv noerr_p, repv nopath_p,
 		  repv nosuf_p, repv in_env);
@@ -289,6 +285,9 @@ extern repv Qbytecode_error, Qjade_byte_code;
 extern repv Fjade_byte_code(repv code, repv consts, repv stkreq, repv frame);
 extern repv Fvalidate_byte_code(repv bc_major, repv bc_minor);
 extern repv Fmake_byte_code_subr(repv args);
+
+/* from macros.c */
+extern repv Fmacroexpand(repv, repv);
 
 /* from main.c */
 extern void rep_init(char *prog_name, int *argc, char ***argv,
@@ -482,8 +481,6 @@ extern repv Fsymbolp(repv);
 extern repv Fsetq(repv);
 extern repv Fsetq_default(repv);
 extern repv Fmakunbound(repv);
-extern repv Flet(repv);
-extern repv Fletstar(repv);
 extern repv Fget(repv, repv);
 extern repv Fput(repv, repv, repv);
 extern repv Fapropos(repv, repv, repv);

@@ -58,6 +58,11 @@ extern void rep_lispmach_kill(void);
 /* from main.c */
 extern char *rep_stack_bottom;
 
+/* from macros.c */
+extern void rep_macros_before_gc (void);
+extern void rep_macros_clear_history (void);
+extern void rep_macros_init (void);
+
 /* from misc.c */
 #ifndef HAVE_STPCPY
 extern char *stpcpy(char *, const char *);
