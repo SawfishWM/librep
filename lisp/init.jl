@@ -84,13 +84,12 @@ are hard-coded into the byte-code."
 	(list* 'define-value (list 'quote symbol) args)
 	(list 'make-binding-immutable (list 'quote symbol))))
 
-(defmacro defsubst (&rest decl)
+(defmacro defsubst (symbol . body)
   "Defines a function that will be compiled inline to any functions that
 call it. Otherwise exactly the same as defun."
   ;; These actions are also hard-coded into dump.jl
-  (list 'prog1
-	(cons 'defun decl)
-	(list 'put (list 'quote (car decl)) ''compile-inline t)))
+  `(prog1 (defun ,symbol ,@body)
+     (put ',symbol 'compile-inline ',(cons 'lambda body))))
 
 (defmacro function (arg)
   "#'ARG
@@ -234,8 +233,13 @@ Evaluate FORM1 discarding its result, then evaluate FORM2 followed by
 
   (list 'progn (car args) (cons 'prog1 (cdr args))))
 
+;; hide compiler declarations
+(defmacro declare ())
+
 
 ;; structure (modules) syntax
+
+(declare (in-module rep))
 
 (%make-structure nil nil nil '%interfaces)
 
@@ -295,6 +299,8 @@ Evaluate FORM1 discarding its result, then evaluate FORM2 followed by
   (%structure-set meta-struct '%open-structures %open-structures)
   (%structure-set meta-struct 'access structure-access)
   (%structure-set meta-struct '%access-structures %access-structures))
+
+(setq *root-structure* 'rep)
 
 
 ;; Function to allow easy creation of autoload stubs
