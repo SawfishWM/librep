@@ -1,3 +1,7 @@
+1999-09-19  John Harper  <john@dcs.warwick.ac.uk>
+
+	* version 0.6.1
+
 1999-09-17  John Harper  <john@dcs.warwick.ac.uk>
 
 	* realpath.c: bracketed function definition by #ifndef
