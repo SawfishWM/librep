@@ -87,3 +87,18 @@ each pair of results, insert SEPARATOR. Return the resulting string."
 		   (apply concat (nreverse frags))
 		 (loop (1+ i) (cons (fun (elt sequence i))
 				    (cons separator frags))))))))))
+
+;;;###autololad
+(defun string-replace (regexp template string)
+  "Return the string created by replacing all matches of REGEXP in STRING
+with the result of expanding TEMPLATE using the `expand-last-match'
+function."
+  (let loop ((point 0)
+	     (out '()))
+    (if (string-match regexp string point)
+	(loop (match-end)
+	      (cons (expand-last-match template)
+		    (cons (substring string point (match-start)) out)))
+      (if (null out)
+	  string
+	(apply concat (nreverse (cons (substring string point) out)))))))
