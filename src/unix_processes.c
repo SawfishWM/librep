@@ -213,7 +213,7 @@ proc_notification(void)
 {
     if(!notify_chain)
 	return(FALSE);
-    while(notify_chain != NULL)
+    while(notify_chain != NULL && !INT_P)
     {
 	struct Proc *pr = notify_chain;
 	notify_chain = pr->pr_NotifyNext;
