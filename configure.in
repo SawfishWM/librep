@@ -222,21 +222,11 @@ fi
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
+AC_C_INLINE
 AC_TYPE_OFF_T
 AC_TYPE_PID_T
 AC_TYPE_SIZE_T
 AC_TYPE_SIGNAL
-
-dnl `inline' seems to be broken on irix cc
-if test "${GCC}" != "yes"; then
-  case ${host_os} in
-    irix*)
-      AC_MSG_WARN([disabling function inlining])
-      AC_DEFINE(inline,) ;;
-    *)
-      AC_C_INLINE ;;
-  esac
-fi
 
 dnl Checks for library functions.
 AC_FUNC_ALLOCA
