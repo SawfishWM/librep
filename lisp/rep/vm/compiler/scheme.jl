@@ -88,7 +88,7 @@
 	       (t (compiler-error "Invalid define statement" form)))))
 
       ((begin)
-       (setq form (cons 'begin (mapcar pass-1 (cdr form)))))
+       (setq form (cons 'begin (mapcar pass-1 (cdr form))))))
 
     form)
 
