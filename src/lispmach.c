@@ -1226,45 +1226,52 @@ Return an object that can be used as the function value of a symbol.
 ::end:: */
 {
     int len = list_length(args);
-    VALUE obj;
+    VALUE obj[6], vec;
+    int used;
 
     if(len < COMPILED_MIN_SLOTS)
 	return signal_missing_arg(len + 1);
     
-    obj = cmd_make_vector(MAKE_INT(MIN(len, 6)), sym_nil);
-    if(obj != LISP_NULL)
-    {
-	VCOMPILED(obj)->car = ((VCOMPILED(obj)->car & ~CELL8_TYPE_MASK)
-			       | V_Compiled);
-	if(!LISTP(VCAR(args)))
-	    return signal_arg_error(VCAR(args), 1);
-	VVECTI(obj, 0) = VCAR(args); args = VCDR(args);
-	if(!STRINGP(VCAR(args)))
-	    return signal_arg_error(VCAR(args), 2);
-	VVECTI(obj, 1) = VCAR(args); args = VCDR(args);
-	if(!VECTORP(VCAR(args)))
-	    return signal_arg_error(VCAR(args), 3);
-	VVECTI(obj, 2) = VCAR(args); args = VCDR(args);
-	if(!INTP(VCAR(args)))
-	    return signal_arg_error(VCAR(args), 4);
-	VVECTI(obj, 3) = VCAR(args); args = VCDR(args);
+    if(!LISTP(VCAR(args)))
+	return signal_arg_error(VCAR(args), 1);
+    obj[0] = VCAR(args); args = VCDR(args);
+    if(!STRINGP(VCAR(args)))
+	return signal_arg_error(VCAR(args), 2);
+    obj[1] = VCAR(args); args = VCDR(args);
+    if(!VECTORP(VCAR(args)))
+	return signal_arg_error(VCAR(args), 3);
+    obj[2] = VCAR(args); args = VCDR(args);
+    if(!INTP(VCAR(args)))
+	return signal_arg_error(VCAR(args), 4);
+    obj[3] = VCAR(args); args = VCDR(args);
+    used = 4;
 
+    if(CONSP(args))
+    {
+	obj[used++] = VCAR(args); args = VCDR(args);
 	if(CONSP(args))
 	{
-	    VVECTI(obj, 4) = VCAR(args); args = VCDR(args);
-	    if(CONSP(args))
-	    {
-		VVECTI(obj, 5) = VCAR(args); args = VCDR(args);
-		if(CONSP(args) && !NILP(VCAR(args)))
-		{
-		    VVECTI(obj, 3) = MAKE_INT(VINT(VVECTI(obj, 3)) | 0x10000);
-		}
-	    }
+	    obj[used++] = VCAR(args); args = VCDR(args);
+	    if(CONSP(args) && !NILP(VCAR(args)))
+		obj[3] = MAKE_INT(VINT(obj[3]) | 0x10000);
+	    if(NILP(obj[used - 1]))
+		used--;
 	}
+	if(used == 5 && NILP(obj[used - 1]))
+	    used--;
     }
-    return obj;
+
+    vec = cmd_make_vector(MAKE_INT(used), sym_nil);
+    if(vec != LISP_NULL)
+    {
+	int i;
+	VCOMPILED(vec)->car = ((VCOMPILED(vec)->car & ~CELL8_TYPE_MASK)
+			       | V_Compiled);
+	for(i = 0; i < used; i++)
+	    VVECTI(vec, i) = obj[i];
+    }
+    return vec;
 }
-			     
 
 void
 lispmach_init(void)
