@@ -1,5 +1,10 @@
 2000-06-22  John Harper  <john@dcs.warwick.ac.uk>
 
+	* lisp.c (read_symbol): don't treat `0/...' as symbols
+
+	* numbers.c (rep_parse_number): [rational case] don't modify
+	the input string, error out if divide-by-zero
+
 	* version 0.12.2
 
 	* lisp.c (read_symbol): if first character is a non-symbol

@@ -7,24 +7,10 @@ Bugs are marked !, things that should be done soon are marked +,
 and more long-term ideas are marked -
 
 
-Before release
-==============
-
- ! 0/N reads as symbol
-
- ! scheme define/lambda doesn't splice begin forms
-
- + do something with the define-value ugliness?
-
- + decide whether to have hierarchical modules
-
-   (recent acm toplas paper by Matthias Blume about this in ML)
-
- + document in manual: current-utime, new read syntaxes
-
-
 Outstanding bugs
 ================
+
+ ! scheme define/lambda doesn't splice begin forms
 
  ! the scheme module fails some of the guile test.scm cases
 
@@ -91,9 +77,17 @@ Outstanding bugs
 		    (set var print)
 		    (loop foo)))
 
+ + document in manual: current-utime, new read syntaxes
+
 
 General programming tasks:
 ==========================
+
+ + do something with the define-value ugliness?
+
+ - decide whether to have hierarchical modules
+
+   (recent acm toplas paper by Matthias Blume about this in ML)
 
  - add defadvice (port from elisp? other implementations?)
 
@@ -144,6 +138,16 @@ General programming tasks:
    Only do this for _heavily_ used bytecode subrs. Measure this by
    adding an extra vector slot, and counting the number of vm
    iterations
+
+   Another option is to generate direct-threaded code from the bytecode
+   (and cache it). I have an attempt at this but it needs either (1) an
+   extra pass to detect labels, or (2) to maintain a strict mapping
+   between bytecode addresses and direct-code addresses
+
+   There's an interesting paper about automatically generating meta
+   instructions to suit individual instruction sequences, PLDI 98 or
+   something (check citeseer for it). Applied with reasonable success
+   to Caml interpreter
 
  - Optimize compilation of case statements
 
