@@ -577,6 +577,7 @@ again:
 	BEGIN_INSN_WITH_ARG (OP_CALL)
 	    struct rep_Call lc;
 	    rep_bool was_closed;
+	    repv (*bc_apply) (repv, int, repv *);
 
 	    /* args are still available above the top of the stack,
 	       this just makes things a bit easier. */
@@ -705,9 +706,14 @@ again:
 		break;
 
 	    case rep_Compiled:
-		if (was_closed && rep_bytecode_interpreter != 0)
+		bc_apply = rep_STRUCTURE (rep_structure)->apply_bytecode;
+		if (was_closed && bc_apply != 0)
 		{
-		    if (impurity != 0 || *pc != OP_RETURN)
+		    if (bc_apply != rep_apply_bytecode)
+		    {
+			TOP = bc_apply (tmp, arg, stackp+1);
+		    }
+		    else if (impurity != 0 || *pc != OP_RETURN)
 		    {
 			TOP = APPLY (tmp, arg, stackp+1);
 		    }
@@ -1974,6 +1980,13 @@ DEFUN("run-byte-code", Frun_byte_code, Srun_byte_code,
       (repv code, repv consts, repv stkreq), rep_Subr3)
 {
     int v_stkreq, b_stkreq;
+
+    if (rep_STRUCTUREP (code))
+    {
+	/* install ourselves in this structure */
+	rep_STRUCTURE (code)->apply_bytecode = rep_apply_bytecode;
+	return Qt;
+    }
 
     rep_DECLARE3(stkreq, rep_INTP);
 
