@@ -244,7 +244,7 @@ that files which shouldn't be compiled aren't."
 	(when tmp
 	  (rplaca tmp nil)
 	  (rplacd tmp nil))
-	(list 'fset (list 'quote (nth 1 form))
+	(list 'defun (nth 1 form)
 	      (comp-compile-lambda (cons 'lambda (nthcdr 2 form))))))
      ((eq fun 'defmacro)
       (let
@@ -254,7 +254,7 @@ that files which shouldn't be compiled aren't."
 	(if tmp
 	    (rplacd tmp code)
 	  (comp-error "Compiled macro wasn't in environment" (nth 1 form)))
-	(list 'fset (list 'quote (nth 1 form)) code)))
+	(list 'defmacro (nth 1 form) code)))
      ((eq fun 'defconst)
       (let
 	  ((value (eval (nth 2 form)))
