@@ -2065,6 +2065,22 @@ repv Fthrow (repv tag, repv value) {
 DEFSTRING(jl, ".jl");
 DEFSTRING(jlc, ".jlc");
 
+static void
+add_path (const char *env, repv var)
+{
+    repv list = Qnil;
+    char *ptr = getenv (env);
+    while (ptr != 0 && *ptr != 0)
+    {
+	char *end = strchr (ptr, ':');
+	list = Fcons (end ? rep_string_dupn (ptr, end - ptr)
+		      : rep_string_dup (ptr), list);
+	ptr = end ? end + 1 : 0;
+    }
+    Fset (var, Fnconc (rep_list_2 (Fnreverse (list),
+				   Fsymbol_value (var, Qt))));
+}
+
 void
 rep_lispcmds_init(void)
 {
@@ -2198,27 +2214,15 @@ rep_lispcmds_init(void)
 	  Fcons (Fsymbol_value (Qdocumentation_file, Qt), Qnil));
 
     rep_INTERN_SPECIAL(load_path);
-    Fset (Qload_path, rep_list_3(Fsymbol_value (Qlisp_lib_directory, Qt),
-				 Fsymbol_value (Qsite_lisp_directory, Qt),
-				 rep_VAL(&dot)));
+    Fset (Qload_path, Fcons (Fsymbol_value (Qlisp_lib_directory, Qt),
+			     Fcons (Fsymbol_value (Qsite_lisp_directory, Qt),
+				    Fcons (rep_VAL(&dot), Qnil))));
+    add_path ("REP_LOAD_PATH", Qload_path);
 
     rep_INTERN_SPECIAL(dl_load_path);
-    Fset (Qdl_load_path, Qnil);
-    {
-	char *ptr = getenv("LD_LIBRARY_PATH");
-	while (ptr != 0 && *ptr != 0)
-	{
-	    char *end = strchr(ptr, ':');
-	    Fset (Qdl_load_path,
-		  Fcons(end ? rep_string_dupn(ptr, end - ptr)
-			: rep_string_dup(ptr), Fsymbol_value (Qdl_load_path, Qt)));
-	    ptr = end ? end + 1 : 0;
-	}
-    }
-    Fset (Qdl_load_path,
-	  Fcons (Fsymbol_value (Qexec_directory, Qt),
-		 Fcons (rep_VAL (&common_exec),
-			Fnreverse(Fsymbol_value (Qdl_load_path, Qt)))));
+    Fset (Qdl_load_path, Fcons (Fsymbol_value (Qexec_directory, Qt),
+				Fcons (rep_VAL (&common_exec), Qnil)));
+    add_path ("REP_DL_LOAD_PATH", Qdl_load_path);
 
     rep_INTERN_SPECIAL(after_load_alist);
     Fset (Qafter_load_alist, Qnil);
