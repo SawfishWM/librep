@@ -425,7 +425,7 @@ the lisp-lib-dir with .jlc as its suffix."
 	(dump-add-non-constant form)
       (setq sym (dump-add-constant (dump-get-constant sym)))
       (dump-state-put sym (dump-get-constant prop)
-		      (dump-constant-value value)))))
+		      (dump-get-constant value)))))
 
 (put 'defun 'dump-function 'dump-defun)
 (put 'defmacro 'dump-function 'dump-defmacro)
