@@ -1,3 +1,16 @@
+2000-10-11  John Harper  <john@dcs.warwick.ac.uk>
+
+	* install-aliases: add extra-paranoid quoting
+
+	* configure.in: new option --enable-full-name-terminator (sets
+	existing preprocessor symbol FULL_NAME_TERMINATOR)
+
+2000-10-06  John Harper  <john@dcs.warwick.ac.uk>
+
+	* install-aliases: try to rename libFOO.* as well as FOO.*. On
+	some systems libtool creates module libraries with a `lib'
+	prefix
+
 2000-09-29  John Harper  <john@dcs.warwick.ac.uk>
 
 	* librep.spec.in: override infodir in `make install' command

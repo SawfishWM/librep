@@ -1,3 +1,9 @@
+2000-10-06  John Harper  <john@dcs.warwick.ac.uk>
+
+	* Makefile.in (check-dl): a target to check that each plugin
+	.la file contains a non-null `dlname=' entry. (Which would
+	prevent rep being able to load the library)
+
 2000-09-28  John Harper  <john@dcs.warwick.ac.uk>
 
 	* version 0.13.1

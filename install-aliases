@@ -11,12 +11,11 @@ dry_run=no
 copy_la_file () {
   la_src="$1"; la_dest="$2"; shift 2
 
-  line=`grep '^dlname=' "$la_src"`
-  old_stem=`echo "$la_src" | sed -e 's|^.*\/\([^/]*\)\.[^/]*$|\1|'`
-  new_stem=`echo "$la_dest" | sed -e 's|^.*\/\([^/]*\)\.[^/]*$|\1|'`
-  new_line=`echo "$line" | sed -e "s/${old_stem}/${new_stem}/"`
+  old_stem=`echo "$la_src" | sed -e 's|^.*/\([^/]*\)\.[^/]*$|\1|'`
+  new_stem=`echo "$la_dest" | sed -e 's|^.*/\([^/]*\)\.[^/]*$|\1|'`
 
-  sed -e 's/^'"$line"'$/'"$new_line"'/' < "$la_src" > "$la_dest"
+  sed -e '/^dlname=/ s/^'"${old_stem}"'$/'"${new_stem}"'/' \
+      < "$la_src" > "$la_dest"
 }
 
 # return the outermost directory of the filename
@@ -56,7 +55,7 @@ strip_common_prefix () {
 
 # turns `FOO/BAR/BAZ' into `FOO/BAR/libBAZ'
 lib_prefixed () {
-  echo "$1" | sed -e 's/\([^/]*\)$/lib\1/'
+  echo "$1" | sed -e 's|\([^/]*\)$|lib\1|'
 }
 
 dosome () {

@@ -124,6 +124,10 @@ General programming tasks:
  - move the gtk-independent parts of the rep-gtk glue generator and
    support code to librep
 
+   [ I've rewritten the glue-code generator in an oo style so that it
+   can be easily extended. Need to rewrite the runtime support. Will do
+   this in time for GTK 2.0 ]
+
  - add defadvice (port from elisp? other implementations?)
 
  - Compiler could annotate output files with their dependences
