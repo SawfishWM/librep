@@ -36,9 +36,14 @@
 #define DOC_FILE_SUFFIX "/" VERSID "/DOC"
 
 /* These are related to the definition of sys_alloc() in unix_main.c */
-#define sys_free(p) do { if(p != 0) free(p); } while(0)
+#ifndef DEBUG_SYS_ALLOC
+# define sys_free(p) do { if(p != 0) free(p); } while(0)
+# define sys_memory_kill()
+#else
+  extern void sys_free(void *p);
+# define sys_memory_kill() sys_print_allocations()
+#endif
 #define sys_memory_init() (1)
-#define sys_memory_kill()
 
 /* For the client/server stuff. */
 #define JADE_SOCK_NAME ".Jade_rendezvous"
