@@ -932,7 +932,7 @@ rep_number_mul (repv x, repv y)
     out = promote_dup (&x, &y);
     switch (rep_NUMERIC_TYPE (out))
     {
-	rep_long_long int tot;
+	rep_long_long tot;
 
     case rep_NUMBER_INT:
 	tot = ((rep_long_long) rep_INT (x)) * ((rep_long_long) rep_INT (y));
