@@ -36,7 +36,7 @@
 	  rep.vm.compiler.bindings)
 
   (define inline-depth (make-fluid 0))		;depth of lambda-inlining
-  (defconst max-inline-depth 8)
+  (defconst max-inline-depth 64)
 
   (defun push-inline-args (lambda-list args #!optional pushed-args-already tester)
     (let
