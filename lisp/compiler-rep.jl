@@ -198,7 +198,7 @@
 
       ((defconst)
        (let
-	   ((value (eval (nth 2 form)))
+	   ((value (nth 2 form))
 	    (doc (nth 3 form)))
 	 (when (and *compiler-write-docs* (stringp doc))
 	   (add-documentation (nth 1 form) doc)
