@@ -308,7 +308,10 @@ is one of these that form is compiled.")
 	    (end-of-stream))
 	(close-file src-file))
       (when (and (setq src-file (open-file file-name 'read))
-		 (setq dst-file (open-file (concat file-name ?c) 'write)))
+		 (setq dst-file (open-file (concat file-name
+						   (if (string-match
+							"\\.jl$" file-name)
+						       ?c ".jlc")) 'write)))
 	(condition-case error-info
 	    (unwind-protect
 		(progn
@@ -327,6 +330,7 @@ is one of these that form is compiled.")
 		  (condition-case nil
 		      (while t
 			(when (setq form (read src-file))
+			  (setq form (macroexpand form comp-macro-env))
 			  (cond
 			   ((memq (car form) '(defun defmacro defvar
 						defconst defsubst require
