@@ -1,3 +1,9 @@
+2000-09-19  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep.jl, rep/user.jl, rep/io/files.jl,
+	rep/vm/compiler/modules.jl: *root-structure* is now replaced by
+	*user-structure*
+
 2000-09-18  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep/vm/compiler/modules.jl (current-module): this now
