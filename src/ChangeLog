@@ -1,3 +1,9 @@
+1999-11-16  John Harper  <john@dcs.warwick.ac.uk>
+
+	* streams.c (Fformat): support the `n$' prefix for i18n, i.e.
+	doing (format nil "%2$s, %1$s" "hello" "world") gives "world,
+	hello"
+
 1999-11-15  John Harper  <john@dcs.warwick.ac.uk>
 
 	* repint_subrs.h, rep_subrs.h (rep_call_stack): now in rep_subrs.h
