@@ -134,7 +134,7 @@ extern int rep_structure_type;
 
 #define rep_SPECIAL_ENV   (rep_STRUCTURE(rep_structure)->special_env)
 
-#define rep_STRUCT_HASH(x,n) (((x) >> 4) % (n))
+#define rep_STRUCT_HASH(x,n) (((x) >> 3) % (n))
 
 
 /* binding tracking */
