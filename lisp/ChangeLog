@@ -1,3 +1,8 @@
+1999-05-27  John Harper  <john@dcs.warwick.ac.uk>
+
+	* cgi-get.jl (cgi-get-params): new file, process the
+	QUERY_STRING from a CGI get command
+
 1999-05-15  John Harper  <john@dcs.warwick.ac.uk>
 
 	* date.jl (date-day-of-week): new function, given

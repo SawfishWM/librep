@@ -1,3 +1,16 @@
+1999-05-29  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispcmds.c (rep_lispcmds_init): add a null string to the end
+	of the load-path (i.e. the current directory)
+
+	* lisp.c (rep_load_autoload): only display messages if not in
+	batch-mode
+
+1999-05-26  John Harper  <john@dcs.warwick.ac.uk>
+
+	* repsdbm.c (Fsdbm_open): call local-file-name on the file
+	parameter
+
 1999-05-15  John Harper  <john@dcs.warwick.ac.uk>
 
 	* added `#define _GNU_SOURCE' at the top of all source files. This
