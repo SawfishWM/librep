@@ -82,8 +82,7 @@ usage(char *prog_name, void (*sys_usage)(void))
 where OPTIONS may include:\n\
     --init FILE		use FILE instead of `init.jl' to boot from\n\
     --batch		don't open any windows; process args and exit\n\
-    --interp		don't load compiled Lisp files\n\
-    --warn-shadowing	warn about redefining functions through binding\n",
+    --interp		don't load compiled Lisp files\n",
 	   stderr);
     if (sys_usage != 0)
 	(*sys_usage)();
@@ -98,7 +97,7 @@ rep_bool
 rep_get_option (char *option, repv *argp)
 {
     int optlen = strlen(option);
-    repv tem = rep_SYM(Qcommand_line_args)->value;
+    repv tem = Fsymbol_value (Qcommand_line_args, Qt);
     while (!rep_INTERRUPTP && rep_CONSP(tem) && rep_STRINGP(rep_CAR(tem)))
     {
 	if (strncmp (option, rep_STR(rep_CAR(tem)), optlen) == 0)
@@ -106,8 +105,8 @@ rep_get_option (char *option, repv *argp)
 	    repv opt = rep_CAR(tem), cdr = rep_CDR(tem);
 	    if (rep_STR(opt)[optlen] == '=' || rep_STR(opt)[optlen] == 0)
 	    {
-		rep_SYM(Qcommand_line_args)->value
-		    = Fdelq (opt, rep_SYM(Qcommand_line_args)->value);
+		Fset (Qcommand_line_args,
+		      Fdelq (opt, Fsymbol_value (Qcommand_line_args, Qt)));
 		if (argp != 0)
 		{
 		    if (rep_STR(opt)[optlen] == '=')
@@ -118,8 +117,8 @@ rep_get_option (char *option, repv *argp)
 		    else if (rep_CONSP(cdr) && rep_STRINGP(rep_CAR(cdr)))
 		    {
 			*argp = rep_CAR(cdr);
-			rep_SYM(Qcommand_line_args)->value
-			    = Fdelq (*argp, rep_SYM(Qcommand_line_args)->value);
+			Fset (Qcommand_line_args,
+			      Fdelq (*argp, Fsymbol_value(Qcommand_line_args, Qt)));
 			return rep_TRUE;
 		    }
 		    else
@@ -177,18 +176,16 @@ get_main_options(char *prog_name, int *argc_p,
 	argc--;
 	argv++;
     }
-    rep_SYM(Qcommand_line_args)->value = head;
+    Fset (Qcommand_line_args, head);
     *argc_p = argc;
     *argv_p = argv;
 
     if (rep_get_option ("--init", &opt))
 	init_script = opt;
     if (rep_get_option("--batch", 0))
-	rep_SYM(Qbatch_mode)->value = Qt;
+	Fset (Qbatch_mode, Qt);
     if (rep_get_option("--interp", 0))
-	rep_SYM(Qinterpreted_mode)->value = Qt;
-    if (rep_get_option("--warn-shadowing", 0))
-	rep_warn_shadowing = rep_TRUE;
+	Fset (Qinterpreted_mode, Qt);
     if (rep_get_option("--help", 0) || rep_get_option ("-?", 0))
     {
 	usage(prog_name, sys_usage);
@@ -255,7 +252,7 @@ rep_init_from_dump(char *prog_name, int *argc, char ***argv,
 	if (sys_symbols != 0)
 	    (*sys_symbols)();
 
-	rep_SYM(Qprogram_name)->value = rep_string_dup (prog_name);
+	Fset (Qprogram_name, rep_string_dup (prog_name));
 
 	if(get_main_options(prog_name, argc, argv, sys_usage))
 	    return;
@@ -480,14 +477,14 @@ rep_main_init(void)
     rep_INTERN_SPECIAL(command_line_args);
     rep_INTERN_SPECIAL(idle_hook);
     rep_INTERN_SPECIAL(batch_mode);
-    rep_SYM(Qbatch_mode)->value = Qnil;
+    Fset (Qbatch_mode, Qnil);
     rep_INTERN_SPECIAL(interpreted_mode);
-    rep_SYM(Qinterpreted_mode)->value = Qnil;
+    Fset (Qinterpreted_mode, Qnil);
     rep_ADD_SUBR(Sget_command_line_option);
     rep_INTERN_SPECIAL(program_name);
     rep_INTERN_SPECIAL(error_mode);
-    rep_SYM(Qerror_mode)->value = Qnil;
+    Fset (Qerror_mode, Qnil);
     rep_INTERN_SPECIAL(interrupt_mode);
-    rep_SYM(Qinterrupt_mode)->value = Qnil;
+    Fset (Qinterrupt_mode, Qnil);
     rep_INTERN_SPECIAL(before_exit_hook);
 }
