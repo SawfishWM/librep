@@ -141,7 +141,7 @@ General programming tasks:
 
    The current (July 2000) list of special forms is:
 
-   cond defvar lambda progn quote setq
+   cond %define defvar lambda progn quote setq
 
  - most subrs can't be called tail recursively (apply is special-cased)
 
