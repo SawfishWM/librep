@@ -46,6 +46,9 @@
 /* Define if <dlfcn.h> is available */
 #undef HAVE_DLFCN_H
 
+/* Define if names to dlsym () require underscore prefix */
+#undef DLSYM_NEED_USCORE
+
 /* Define if <dl.h> is available */
 #undef HAVE_DL_H
 
