@@ -144,9 +144,9 @@ their position in that file.")
 (defvar comp-macro-env '())		;alist of (NAME . MACRO-DEF)
 (defvar comp-const-env '())		;alist of (NAME . CONST-DEF)
 (defvar comp-inline-env '())		;alist of (NAME . FUNCTION-VALUE)
-(defvar comp-defuns t)			;alist of (NAME REQ OPT RESTP)
+(defvar comp-defuns nil)		;alist of (NAME REQ OPT RESTP)
 					; for all functions/macros in the file
-(defvar comp-defvars t)			;all variables declared at top-level
+(defvar comp-defvars nil)		;all variables declared at top-level
 (defvar comp-bindings '())		;list of currently bound variables
 (defvar comp-current-file nil)		;the file being compiled
 (defvar comp-current-fun nil)		;the function being compiled
@@ -185,44 +185,41 @@ their position in that file.")
 ;; Note that there's a function or macro NAME with lambda-list ARGS
 ;; in the current file
 (defun comp-remember-fun (name args)
-  (unless (eq comp-defuns t)
-    (if (assq name comp-defuns)
-	(comp-warning "Multiply defined function or macro: %s" name)
-      (let
-	  ((required 0)
-	   (optional nil)
-	   (rest nil)
-	   (state 'required))
-	;; Scan the lambda-list for the number of required and optional
-	;; arguments, and whether there's a &rest clause
-	(while args
-	  (if (memq (car args) '(&optional &rest &aux))
-	      (cond
-	       ((eq (car args) '&optional)
-		(setq state 'optional
-		      optional 0
-		      args (cdr args)))
-	       ((eq (car args) '&rest)
-		(setq args nil
-		      rest t))
-	       ((eq (car args) '&aux)
-		(setq args nil)))
-	    (set state (1+ (symbol-value state)))
-	    (setq args (cdr args))))
-	(setq comp-defuns (cons (list name required optional rest)
-				comp-defuns))))))
+  (if (assq name comp-defuns)
+      (comp-warning "Multiply defined function or macro: %s" name)
+    (let
+	((required 0)
+	 (optional nil)
+	 (rest nil)
+	 (state 'required))
+      ;; Scan the lambda-list for the number of required and optional
+      ;; arguments, and whether there's a &rest clause
+      (while args
+	(if (memq (car args) '(&optional &rest &aux))
+	    (cond
+	     ((eq (car args) '&optional)
+	      (setq state 'optional
+		    optional 0
+		    args (cdr args)))
+	     ((eq (car args) '&rest)
+	      (setq args nil
+		    rest t))
+	     ((eq (car args) '&aux)
+	      (setq args nil)))
+	  (set state (1+ (symbol-value state)))
+	  (setq args (cdr args))))
+      (setq comp-defuns (cons (list name required optional rest)
+			      comp-defuns)))))
 
 ;; Similar for variables
 (defun comp-remember-var (name)
-  (unless (eq comp-defvars t)
-    (if (memq name comp-defvars)
-	(comp-warning "Multiply defined variable: %s" name)
-      (setq comp-defvars (cons name comp-defvars)))))
+  (if (memq name comp-defvars)
+      (comp-warning "Multiply defined variable: %s" name)
+    (setq comp-defvars (cons name comp-defvars))))
 
 ;; Test that a reference to variable NAME appears valid
 (defun comp-test-varref (name)
-  (when (and (not (eq comp-defvars t))
-	     (null (memq name comp-defvars))
+  (when (and (null (memq name comp-defvars))
 	     (null (memq name comp-bindings))
 	     (not (boundp name)))
     (comp-warning "Reference to undeclared free variable: %s" name)))
@@ -473,7 +470,13 @@ that files which shouldn't be compiled aren't."
        (comp-max-stack 0)
        comp-output
        (comp-output-pc 0))
-    (comp-compile-form form)
+    (if comp-current-file
+	(comp-compile-form form)
+      ;; Setup comp-defuns and comp-defvars if compile-file hasn't already
+      (let
+	  ((comp-defuns '())
+	   (comp-defvars '()))
+	(comp-compile-form form)))
     (when comp-output
       (list 'jade-byte-code (comp-make-code-string) (comp-make-const-vec)
 	    comp-max-stack))))
@@ -1190,6 +1193,20 @@ that files which shouldn't be compiled aren't."
        form (cdr form)))
     (comp-write-op op-list count)
     (comp-dec-stack (1- count))))
+
+(put 'funcall 'compile-fun 'comp-compile-funcall)
+(defun comp-compile-funcall (form)
+  (let
+      ((fun (nth 1 form))
+       (args (nthcdr 2 form))
+       (arg-count 0))
+    (comp-compile-form fun)
+    (while args
+      (comp-compile-form (car args))
+      (setq args (cdr args)
+	    arg-count (1+ arg-count)))
+    (comp-write-op op-call arg-count)
+    (comp-dec-stack arg-count)))
 
 ;; Handles (with-X X FORMS...)
 (defun comp-compile-with-form (form)
