@@ -95,7 +95,7 @@ static int
 pos_putc(TX *tx, VALUE *pos, int c)
 {
     int rc = EOF;
-    if(!read_only(tx) && pad_pos(tx, *pos))
+    if(pad_pos(tx, *pos))
     {
 	u_char tmps[2];
 	VALUE end;
@@ -114,7 +114,7 @@ pos_putc(TX *tx, VALUE *pos, int c)
 static int
 pos_puts(TX *tx, VALUE *pos, u_char *buf, int bufLen)
 {
-    if(!read_only(tx) && pad_pos(tx, *pos))
+    if(pad_pos(tx, *pos))
     {
 	VALUE end = insert_string(tx, buf, bufLen, *pos);
 	if(end != LISP_NULL)

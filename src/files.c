@@ -1002,6 +1002,7 @@ object to be used. Also removes any restriction on BUFFER.
 	}
 	else
 	    clear_line_list(tx);
+	reset_global_extent(tx);
 
 	if(!FILEP(file))
 	    fclose(fh);

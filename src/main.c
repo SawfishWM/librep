@@ -167,6 +167,8 @@ inner_main(int argc, char **argv)
     commands_init();
     edit_init();
     find_init();
+    extent_init();
+    faces_init();
     glyphs_init();
     keys_init();
     main_init();

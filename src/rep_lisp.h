@@ -218,6 +218,9 @@ typedef struct lisp_cons_block {
 #define V_Mark		0x25
 #define V_File		0x27
 #define V_GlyphTable	0x29
+#define V_Extent	0x2b
+#define V_Face		0x2d
+#define V_Color		0x2f
 #define V_Cell16	0x3f		/* reserved, not yet used */
 #define V_MAX		0x40		/* nothing from here on */
 
@@ -604,13 +607,19 @@ typedef struct {
 #define VWIN(v)		((WIN *)VPTR(v))
 #define VVIEW(v)	((VW *)VPTR(v))
 #define VGLYPHTAB(v)	((glyph_table_t *)VPTR(v))
-	
+#define VEXTENT(v)	((Lisp_Extent *)VPTR(v))	
+#define VFACE(v)	((Lisp_Face *)VPTR(v))	
+#define VCOLOR(v)	((Lisp_Color *)VPTR(v))	
+
 #define BUFFERP(v)	VCELL8_TYPEP(v, V_Buffer)
 #define MARKP(v)	VCELL8_TYPEP(v, V_Mark)
 #define PROCESSP(v)	VCELL8_TYPEP(v, V_Process)
 #define WINDOWP(v)	(VCELL8_TYPEP(v, V_Window) && VWIN(v)->w_Window)
 #define VIEWP(v)	(VCELL8_TYPEP(v, V_View) && VVIEW(v)->vw_Win)
 #define GLYPHTABP(v)	VCELL8_TYPEP(v, V_GlyphTable)
+#define EXTENTP(v)	VCELL8_TYPEP(v, V_Extent)
+#define FACEP(v)	VCELL8_TYPEP(v, V_Face)
+#define COLORP(v)	VCELL8_TYPEP(v, V_Color)
 #define VOIDP(v)	VCELL8_TYPEP(v, V_Void)
 
 /* Building lists */

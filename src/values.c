@@ -112,6 +112,12 @@ Lisp_Type_Data data_types[V_MAX] = {
     DT_NULL,
     { ptr_cmp, glyphtable_prin, glyphtable_prin,
       glyphtable_sweep, "glyph-table" },
+    DT_NULL,
+    { ptr_cmp, extent_prin, extent_prin, extent_sweep, "extent" },
+    DT_NULL,
+    { ptr_cmp, face_prin, face_prin, face_sweep, "face" },
+    DT_NULL,
+    { ptr_cmp, color_prin, color_prin, color_sweep, "color" },
 };
 
 
@@ -705,7 +711,6 @@ again:
 	MARKVAL(VTX(val)->tx_MinorModeNameList);
 	MARKVAL(VTX(val)->tx_MinorModeNameString);
 	MARKVAL(VTX(val)->tx_StatusId);
-	MARKVAL(VTX(val)->tx_GlyphTable);
 	MARKVAL(VTX(val)->tx_UndoList);
 	MARKVAL(VTX(val)->tx_ToUndoList);
 	MARKVAL(VTX(val)->tx_UndoneList);
@@ -713,9 +718,7 @@ again:
 	MARKVAL(VTX(val)->tx_SavedWPos);
 	MARKVAL(VTX(val)->tx_SavedBlockPos[0]);
 	MARKVAL(VTX(val)->tx_SavedBlockPos[1]);
-	val = VTX(val)->tx_LocalVariables;
-	if(val && !INTP(val) && !GC_MARKEDP(val) && !NILP(val))
-	    goto again;
+	mark_extent(VTX(val)->tx_GlobalExtent);
 	break;
 
     case V_Window:
@@ -779,6 +782,28 @@ again:
 	/* FALL THROUGH */
     case V_GlyphTable:
 	GC_SET_CELL(val);
+	break;
+
+    case V_Extent:
+	GC_SET_CELL(val);
+	MARKVAL(VAL(VEXTENT(val)->frag_next));
+	MARKVAL(VAL(VEXTENT(val)->frag_pred));
+	MARKVAL(VEXTENT(val)->locals);
+	val = VEXTENT(val)->plist;
+	if(val != 0 && !GC_MARKEDP(val) && !NILP(val))
+	    goto again;
+	break;
+
+    case V_Face:
+	GC_SET_CELL(val);
+	MARKVAL(VFACE(val)->name);
+	MARKVAL(VFACE(val)->foreground);
+	MARKVAL(VFACE(val)->background);
+	break;
+
+    case V_Color:
+	GC_SET_CELL(val);
+	MARKVAL(VCOLOR(val)->name);
 	break;
 
     case V_Var:
