@@ -209,6 +209,8 @@ rep_init_from_dump(char *prog_name, int *argc, char ***argv,
 		   void (*sys_symbols)(void), void (*sys_usage)(void),
 		   char *dump_file)
 {
+    char dummy;
+
     if(sizeof(rep_PTR_SIZED_INT) < sizeof(void *))
     {
 	fputs("sizeof(rep_PTR_SIZED_INT) < sizeof(void *); aborting\n",
@@ -241,6 +243,8 @@ rep_init_from_dump(char *prog_name, int *argc, char ***argv,
 	rep_streams_init();
 	rep_files_init();
 	rep_sys_os_init();
+	rep_stack_bottom = &dummy;
+	rep_continuations_init ();
 
 	if (sys_symbols != 0)
 	    (*sys_symbols)();
@@ -273,6 +277,7 @@ rep_load_environment (repv file)
 void
 rep_kill(void)
 {
+    rep_continuations_kill ();
     rep_sys_os_kill();
     rep_find_kill();
     rep_files_kill();
