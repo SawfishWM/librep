@@ -5,6 +5,12 @@ Fri Apr 24 11:35:03 1998  John Harper  <john@dcs.warwick.ac.uk>
 	(proc_notification): when calling functions, now pass the
 	process as the sole argument
 
+	* unix_processes.c (mark_active_processes): function to mark
+	any processes that are currently active
+	* values.c (cmd_garbage_collect): call mark_active_processes
+	when HAVE_SUBPROCESSES is defined. This stops executing
+	processes with no references from disappearing
+
 Wed Apr 22 17:21:07 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* views.c (make_view): try to initialise the vw_BufferList
