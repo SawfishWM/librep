@@ -34,6 +34,7 @@ contents of the prompt will be masked out whilst being entered."
 	  (let
 	      ((string (read-line standard-input)))
 	    (when (string-match "\n$" string)
-	      (setq string (substring string 0 (match-end))))
+	      (setq string (substring string 0 (match-start))))
+	    (write standard-error ?\n)
 	    string))
       (system "stty echo"))))
