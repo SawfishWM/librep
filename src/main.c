@@ -198,6 +198,16 @@ void
 rep_init(char *prog_name, int *argc, char ***argv,
 	 void (*sys_symbols)(void), void (*sys_usage)(void))
 {
+    char *dump_file = getenv ("REPDUMPFILE");
+    rep_init_from_dump (prog_name, argc, argv,
+			sys_symbols, sys_usage, dump_file);
+}
+
+void
+rep_init_from_dump(char *prog_name, int *argc, char ***argv,
+		   void (*sys_symbols)(void), void (*sys_usage)(void),
+		   char *dump_file)
+{
     if(sizeof(rep_PTR_SIZED_INT) < sizeof(void *))
     {
 	fputs("sizeof(rep_PTR_SIZED_INT) < sizeof(void *); aborting\n",
@@ -214,11 +224,10 @@ rep_init(char *prog_name, int *argc, char ***argv,
     rep_pre_sys_os_init();
     if(rep_pre_symbols_init())
     {
-#ifdef rep_DUMPED
-	/* Must initialise dumped out symbols before interning _any_
-	   symbols by hand. */
-	rep_dumped_init();
-#endif
+	char *tem = getenv ("REPUNDUMPED");
+	if (dump_file && (!tem || atoi(tem) == 0))
+	    rep_dumped_init (dump_file);
+
 	rep_symbols_init();
 
 	rep_values_init();
@@ -238,35 +247,26 @@ rep_init(char *prog_name, int *argc, char ***argv,
 	rep_SYM(Qprogram_name)->value = rep_string_dup (prog_name);
 
 	if(get_main_options(prog_name, argc, argv, sys_usage))
-	{
-	    repv res = Fload(init_script, Qnil, Qnil, Qnil, Qnil);
-	    if (res != rep_NULL)
-		return;
-	}
+	    return;
     }
-
-    if(rep_throw_value && rep_CAR(rep_throw_value) == Qerror)
-    {
-	/* If quitting due to an error, print the error cell if
-	   at all possible. */
-	repv stream = Fstderr_file();
-	repv old_tv = rep_throw_value;
-	rep_GC_root gc_old_tv;
-	rep_PUSHGC(gc_old_tv, old_tv);
-	rep_throw_value = rep_NULL;
-	if(stream && rep_FILEP(stream))
-	{
-	    fputs("error--> ", stderr);
-	    Fprin1(rep_CDR(old_tv), stream);
-	    fputc('\n', stderr);
-	}
-	else
-	    fputs("rep: error in initialisation\n", stderr);
-	rep_throw_value = old_tv;
-	rep_POPGC;
-    }
-
     exit (10);
+}
+
+/* Should be called sometime after calling rep_init*. It will load
+   the standard init script, plus FILE if non-nil. Returns the
+   result of the last form evaluated. */
+repv
+rep_load_environment (repv file)
+{
+    repv res = Qnil;
+    if (rep_dumped_non_constants != rep_NULL)
+	res = Feval (rep_dumped_non_constants);
+    if (res != rep_NULL)
+	res = Fload (init_script, Qnil, Qnil, Qnil, Qnil);
+    if (res != rep_NULL && rep_STRINGP(file))
+	res = Fload (file, Qnil, Qnil, Qnil, Qnil);
+
+    return res;
 }
 
 void
@@ -388,6 +388,35 @@ rep_handle_input_exception(repv *result_p)
 	return rep_TRUE;
     }
     return rep_FALSE;
+}
+
+/* should be called before exiting (for any reason). returns the value
+   that should be returned by the process */
+int
+rep_top_level_exit (void)
+{
+    repv throw = rep_throw_value;
+    rep_throw_value = rep_NULL;
+    if(throw && rep_CAR(throw) == Qerror)
+    {
+	/* If quitting due to an error, print the error cell if
+	   at all possible. */
+	repv stream = Fstderr_file();
+	if(stream && rep_FILEP(stream))
+	{
+	    fputs("error--> ", stderr);
+	    Fprin1(rep_CDR(throw), stream);
+	    fputc('\n', stderr);
+	}
+	else
+	    fputs("error in initialisation\n", stderr);
+	return 10;
+    }
+
+    if (throw && rep_CAR (throw) == Qquit && rep_INTP (rep_CDR(throw)))
+	return (rep_INT (rep_CDR(throw)));
+
+    return 0;
 }
 
 DEFUN_INT("recursive-edit", Frecursive_edit, Srecursive_edit, (void), rep_Subr0, "") /*
