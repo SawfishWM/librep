@@ -459,7 +459,7 @@ set-variable-environment ENV
 	    {
 		tem = rep_CDR (tem);
 		if (rep_CELL8_TYPEP (tem, rep_Subr3))
-		    rep_bytecode_interpreter = rep_SUBR3FUN (tem);
+		    rep_bytecode_interpreter = rep_SUBR4FUN (tem);
 		else
 		    rep_bytecode_interpreter = 0;
 	    }
@@ -567,16 +567,19 @@ rep_bind_symbol(repv oldList, repv symbol, repv newVal)
     }
     else
     {
-	/* lexical binding (this code also in lispmach.c:OP_BIND) */
+	/* lexical binding (this code also in lispmach.c:OP_BIND,
+	    and lisp.c:local_bind_symbol) */
 	rep_env = Fcons (Fcons (symbol, newVal), rep_env);
 	return Fcons (symbol, oldList);
     }
 }
 
-/* Undoes what the above function does.  */
-void
+/* Undoes what the above function does. Returns the number of special
+   bindings undone. */
+int
 rep_unbind_symbols(repv oldList)
 {
+    int specials = 0;
     while(rep_CONSP(oldList))
     {
 	repv tmp = rep_CAR(oldList);
@@ -584,6 +587,7 @@ rep_unbind_symbols(repv oldList)
 	{
 	    /* dynamic binding */
 	    Fset_default(rep_CAR(tmp), rep_CDR(tmp));
+	    specials++;
 	}
 	else
 	{
@@ -592,6 +596,7 @@ rep_unbind_symbols(repv oldList)
 	}
 	oldList = rep_CDR(oldList);
     }
+    return specials;
 }
 
 
@@ -1080,7 +1085,7 @@ as being special, this status is removed.
 DEFSTRING(no_symbol, "No symbol to bind to in let");
 
 static repv
-do_let (repv args, repv (*bind)(repv, repv, repv), void (*unbind)(repv))
+do_let (repv args, repv (*bind)(repv, repv, repv), int (*unbind)(repv))
 {
     repv tmp, *store, oldvals, res = rep_NULL;
     int numsyms = 0;
@@ -1155,7 +1160,7 @@ end:
 }
 
 static repv
-do_letstar (repv args, repv (*bind)(repv, repv, repv), void (*unbind)(repv))
+do_letstar (repv args, repv (*bind)(repv, repv, repv), int (*unbind)(repv))
 {
     repv binds, res = rep_NULL;
     repv oldvals = Qnil;
