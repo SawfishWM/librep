@@ -284,7 +284,8 @@ extern int rep_recurse_depth;
 extern rep_bool (*rep_on_idle_fun)(int since_last);
 extern repv Qidle_hook;
 extern void (*rep_on_termination_fun)(void);
-extern repv Qexit, Qquit, Qtop_level, Qcommand_line_args, Qbatch_mode;
+extern repv Qexit, Qquit, Qtop_level, Qcommand_line_args;
+extern repv Qbatch_mode, Qinterpreted_mode;
 extern repv Frecursive_edit(void);
 extern repv Frecursion_depth(void);
 

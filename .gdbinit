@@ -2,10 +2,12 @@
 
 # prints $$ to standard output
 define v
-set print_val(cmd_stdout_file(), $), stream_putc(cmd_stdout_file(), '\n')
+call rep_print_val(Fstdout_file(), $)
+call rep_stream_putc(Fstdout_file(), '\n')
 end
 
 # prints the lisp backtrace
 define lbt
-set cmd_backtrace(cmd_stdout_file()), stream_putc(cmd_stdout_file(), '\n')
+call Fbacktrace(Fstdout_file())
+call rep_stream_putc(Fstdout_file(), '\n')
 end
