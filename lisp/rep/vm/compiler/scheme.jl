@@ -252,7 +252,7 @@
 	  length
 	  (string-length . length)
 	  (vector-length . length)
-	  - + * remainder modulo quotient max min floor ceiling
+	  - + * / remainder modulo quotient max min floor ceiling
 	  truncate round exp log sin cos tan sqrt expt
 	  (string-copy . copy-sequence)
 	  (vector-copy . copy-sequence)))
