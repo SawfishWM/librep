@@ -1,3 +1,17 @@
+1998-10-20  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rm-mime.jl (rm-mime-display-markers): command to redisplay
+	the current message with markers for _all_ MIME parts, bound to
+	"D" in read-mail mode
+
+	* keymap.jl (lazy-bind-keys): macro to bind keys in a package
+	that has possibly not been loaded
+
+1998-10-19  John Harper  <john@dcs.warwick.ac.uk>
+
+	* ispell.jl (ispell-strip-word): fixed for words consisting of
+	a root and nothing else
+
 1998-10-14  John Harper  <john@dcs.warwick.ac.uk>
 
 	* read-mail.jl (rm-get-address-name): new function
