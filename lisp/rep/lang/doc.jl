@@ -98,7 +98,8 @@ NAME is true, then it should be the symbol that is associated with VALUE."
 
   (defun doc-file-set (key value)
     (require 'rep.io.db.gdbm)
-    (let ((db (gdbm-open documentation-file 'append)))
+    ;; XXX I'm not convinced that turning off locking is wise..
+    (let ((db (gdbm-open documentation-file 'append nil '(no-lock))))
       (when db
 	(unwind-protect
 	    (gdbm-store db key value 'replace)
