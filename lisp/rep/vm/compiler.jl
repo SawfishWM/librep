@@ -1060,6 +1060,8 @@ that files which shouldn't be compiled aren't."
       (lst)
     (setq form (cdr form))
     (while form
+      (unless (consp (cdr form))
+	(comp-error "Odd number of args to setq-default"))
       (setq lst (cons `(set-default ',(car form) ,(nth 1 form)) lst))
       (setq form (nthcdr 2 form)))
     (cons 'progn (nreverse lst))))
@@ -1070,6 +1072,8 @@ that files which shouldn't be compiled aren't."
       (lst)
     (setq form (cdr form))
     (while form
+      (unless (consp (cdr form))
+	(comp-error "Odd number of args to setq"))
       (setq lst (cons `(set ',(car form) ,(nth 1 form)) lst))
       (setq form (nthcdr 2 form)))
     (cons 'progn (nreverse lst))))
