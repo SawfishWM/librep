@@ -44,8 +44,11 @@ accessed on specific hosts.")
   (cond
    ((filep (car args))
     ;; A previously opened file handle. The backend should have stashed
-    ;; it's handler function in the car of the file's handler-data
-    (funcall (car (file-handler-data (car args))) nil op args))
+    ;; it's handler function in the first slot the file's handler-data
+    ;; (a vector)
+    (let
+	((split (remote-split-filename (file-binding (car args)))))
+      (funcall (aref (file-handler-data (car args)) 0) split op args)))
    ((eq op 'file-name-absolute-p))	;remote files are absolute?
    ((eq op 'local-file-name)
     ;; can't get a local file name
