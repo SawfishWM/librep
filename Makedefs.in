@@ -50,6 +50,7 @@ LIBS=@LIBS@
 LIBOBJS=@LIBOBJS@ @ALLOCA@
 X11LIBS=@X_PRE_LIBS@ -lX11 @X_LIBS@ @X_EXTRA_LIBS@
 dynsuffix=@dynamic_file_suffix@
+XCPPFLAGS=-DJADE '-DJADE_DIR="$(jadedir)"' '-DJADE_EXEC_DIR="$(jadeexecdir)"'
 
 INSTALL=@INSTALL@
 INSTALL_DATA=@INSTALL_DATA@
@@ -66,18 +67,16 @@ endif
 .PHONY: clean realclean install
 
 %.o : %.c
-	$(CC) -c $(CPPFLAGS) $(CFLAGS) -DJADE \
-	  '-DJADE_DIR="$(jadedir)"' '-DJADE_EXEC_DIR="$(jadeexecdir)"' \
-	  -o $@ $<
+	$(CC) -c $(CPPFLAGS) $(XCPPFLAGS) $(CFLAGS) -o $@ $<
 
 % : %.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -DJADE \
-	  '-DJADE_DIR="$(jadedir)"' '-DJADE_EXEC_DIR="$(jadeexecdir)"' \
-	  -o $@ $< $(LIBS)
+	$(CC) $(CPPFLAGS) $(XCPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LIBS)
 
 %.$(dynsuffix) : %.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(DL_CFLAGS) -DJADE -DJADE_DL -o $@ $<
+	$(CC) $(CPPFLAGS) $(XCPPFLAGS) $(CFLAGS) $(DL_CFLAGS) \
+	 -DJADE_DL -o $@ $<
 
 # This rule builds dependancy files from C source files.
 .%.d : %.c
-	$(SHELL) -ec '$(CC) -MM $(CPPFLAGS) $< | sed '\''s/$*\.o/& .$*\.d/g'\'' > $@'
+	$(SHELL) -ec '$(CC) -MM $(CPPFLAGS) $(XCPPFLAGS) $< \
+	| sed '\''s/$*\.o/& .$*\.d/g'\'' > $@'

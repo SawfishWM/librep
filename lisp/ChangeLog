@@ -1,3 +1,19 @@
+1999-01-19  John Harper  <john@dcs.warwick.ac.uk>
+
+	* html-display.jl (html-display): new function, a mode to tie
+	find-url and html-decode to form a basic web-browser
+
+	* find-url.jl (find-url-http): new function, uses wget to
+	download the url, then if it's html data, html-display to view
+	it
+
+	* html-decode.jl: many bug fixes, implemented most list tags
+
+1999-01-18  John Harper  <john@dcs.warwick.ac.uk>
+
+	* html-decode.jl (html-decode): initial version of this module,
+	a basic HTML to editor-buffer translator
+
 1999-01-14  John Harper  <john@dcs.warwick.ac.uk>
 
 	* mime-decode.jl (mime-display-part): use name of attachment

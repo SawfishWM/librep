@@ -237,4 +237,6 @@
 (autoload 'ispell-add-word-to-dictionary "ispell" t)
 (autoload 'ispell-add-word-for-session "ispell" t)
 (autoload 'next-event "keymap")
+(autoload 'html-decode "html-decode")
+(autoload 'html-display "html-display" t)
 ;;; ::autoload-end::
