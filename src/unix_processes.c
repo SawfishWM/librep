@@ -1700,13 +1700,14 @@ Note that output includes notification of process termination.
 ::end:: */
 {
     VALUE result = sym_t;
-    if(!got_sigchld)
+    /* Only wait for output if nothing already waiting. */
+    if(!got_sigchld && !notify_chain)
     {
 	result = sys_accept_input((INTP(secs) ? VINT(secs) * 1000 : 0)
 				  + (INTP(msecs) ? VINT(msecs) : 0),
 				  read_from_process);
     }
-    if(got_sigchld)
+    if(got_sigchld || notify_chain)
     {
 	result = sym_nil;
 	proc_periodically();
