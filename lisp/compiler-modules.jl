@@ -44,7 +44,7 @@
 
   ;; return t if the module called STRUCT exports a variable called VAR
   (defun module-exports-p (struct var)
-    (memq var (%structure-interface (%intern-structure struct))))
+    (and (symbolp var) (%structure-exports-p (%intern-structure struct) var)))
 
   (defun structure-ref-p (arg)
     (and (eq (car arg) 'structure-ref)
@@ -236,7 +236,7 @@
 	 (var (nth 2 form)))
       (or (memq struct comp-accessed-modules)
 	  (comp-error "Referencing non-accessible structure" struct))
-      (or (memq var (%structure-interface (%intern-structure struct)))
+      (or (module-exports-p struct var)
 	  (comp-error "Referencing non-exported variable" struct var))
       (comp-compile-constant struct)
       (comp-compile-constant var)

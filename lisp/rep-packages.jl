@@ -77,11 +77,11 @@
   (export %make-interface %parse-interface %make-structure
 	  %structure-ref %structure-bound-p %structure-set
 	  %external-structure-ref
-	  %structure-name %structure-interface %structure-imports
-	  %structure-accessible %set-interface %get-structure
-	  %intern-structure %open-structures %access-structures
-	  %current-structure %structurep %eval-in-structure
-	  %structure-walk))
+	  %structure-name %structure-interface %structure-exports-p
+	  %structure-imports %structure-accessible %set-interface
+	  %get-structure %intern-structure %open-structures
+	  %access-structures %current-structure %structurep
+	  %eval-in-structure %structure-walk))
 
 (define-interface rep-data
   (export cons car cdr list list* make-list append nconc rplaca rplacd
@@ -125,7 +125,7 @@
 	  prin1-to-string read-from-string))
 
 (define-interface rep-continuations
-  (export call-cc call-with-current-continuation continuation-callable-p
+  (export call/cc call-with-current-continuation continuation-callable-p
 	  call-with-object call-with-dynamic-root call-with-barrier
 	  make-thread thread-yield thread-delete thread-suspend
 	  thread-wake threadp thread-suspended-p thread-exited-p
