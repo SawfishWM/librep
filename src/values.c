@@ -858,6 +858,7 @@ last garbage-collection is greater than `garbage-threshold'.
 
     /* This seems an ideal time to reclaim any general strings... */
     sm_flush(&main_strmem);
+    flush_all_buffers();
 
 #ifndef NO_GC_MSG
     cmd_message(VAL(&gc_done), sym_t);
@@ -887,8 +888,8 @@ last garbage-collection is greater than `garbage-threshold'.
 void
 values_init(void)
 {
-    lisp_strmem.sm_UseMallocChain = TRUE;
     sm_init(&lisp_strmem);
+    lisp_strmem.sm_UseMallocChain = TRUE;
 }
 
 void
