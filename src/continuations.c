@@ -237,7 +237,7 @@ struct rep_thread_struct {
     rep_thread *next, *pred;
     repv name;
     rep_continuation *cont;
-    repv env, special_env, fh_env, structure;
+    repv env, special_env, structure;
     repv (*bytecode)(repv, repv, repv, repv);
     int lock;
     struct timeval run_at;
@@ -747,7 +747,6 @@ thread_save_environ (rep_thread *t)
 {
     t->env = rep_env;
     t->special_env = rep_special_env;
-    t->fh_env = rep_fh_env;
     t->structure = rep_structure;
     t->bytecode = rep_bytecode_interpreter;
 }
@@ -757,7 +756,6 @@ thread_load_environ (rep_thread *t)
 {
     rep_env = t->env;
     rep_special_env = t->special_env;
-    rep_fh_env = t->fh_env;
     rep_structure = t->structure;
     rep_bytecode_interpreter = t->bytecode;
 }
@@ -1241,7 +1239,6 @@ mark_thread (repv obj)
     rep_MARKVAL (rep_VAL (THREAD (obj)->cont));
     rep_MARKVAL (THREAD (obj)->env);
     rep_MARKVAL (THREAD (obj)->special_env);
-    rep_MARKVAL (THREAD (obj)->fh_env);
     rep_MARKVAL (THREAD (obj)->structure);
     rep_MARKVAL (THREAD (obj)->name);
 }

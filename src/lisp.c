@@ -1256,7 +1256,6 @@ rep_load_autoload(repv funarg)
 	    rep_FUNARG(funarg)->name = rep_FUNARG(tmp)->name;
 	    rep_FUNARG(funarg)->env = rep_FUNARG(tmp)->env;
 	    rep_FUNARG(funarg)->special_env = rep_FUNARG(tmp)->special_env;
-	    rep_FUNARG(funarg)->fh_env = rep_FUNARG(tmp)->fh_env;
 	    rep_FUNARG(funarg)->structure = rep_FUNARG(tmp)->structure;
 	}
 	else
@@ -2256,7 +2255,7 @@ DEFUN("debug-frame-environment", Fdebug_frame_environment,
     {
 	return rep_list_4 (fp->saved_env,
 			   fp->saved_special_env,
-			   fp->saved_fh_env,
+			   rep_get_fh_env (),
 			   fp->saved_structure);
     }
     else

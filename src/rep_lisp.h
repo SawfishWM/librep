@@ -565,12 +565,10 @@ typedef struct {
 
 typedef struct rep_funarg_struct {
     repv car;
-    struct rep_funarg_struct *next;
     repv fun;
     repv name;
     repv env;
     repv special_env;
-    repv fh_env;			/* file handlers */
     repv structure;
 } rep_funarg;
 
@@ -590,7 +588,6 @@ typedef struct rep_funarg_struct {
 	    rep_bytecode_interpreter = Fjade_byte_code; \
 	else						\
 	    rep_bytecode_interpreter = 0;		\
-	rep_fh_env = rep_FUNARG(f)->fh_env;		\
 	rep_structure = rep_FUNARG(f)->structure;	\
     } while (0)
 
@@ -598,7 +595,6 @@ typedef struct rep_funarg_struct {
     do {					\
 	rep_env = Qt;				\
 	rep_special_env = Fcons (Qnil, Qt);	\
-	rep_fh_env = Qt;			\
 	rep_structure = rep_default_structure;	\
 	rep_bytecode_interpreter = Fjade_byte_code; \
     } while (0)
@@ -779,7 +775,6 @@ struct rep_Call {
     repv args_evalled_p;
     repv saved_env;
     repv saved_special_env;
-    repv saved_fh_env;
     repv saved_structure;
     repv (*saved_bytecode)(repv, repv, repv, repv);
 };
@@ -788,7 +783,6 @@ struct rep_Call {
     do {				\
 	(lc).saved_env = rep_env;	\
 	(lc).saved_special_env = rep_special_env; \
-	(lc).saved_fh_env = rep_fh_env;	\
 	(lc).saved_structure = rep_structure; \
 	(lc).saved_bytecode = rep_bytecode_interpreter; \
 	(lc).next = rep_call_stack;	\
@@ -799,7 +793,6 @@ struct rep_Call {
     do {				\
 	rep_env = (lc).saved_env;	\
 	rep_special_env = (lc).saved_special_env; \
-	rep_fh_env = (lc).saved_fh_env;	\
 	rep_structure = (lc).saved_structure; \
 	rep_bytecode_interpreter = (lc).saved_bytecode; \
 	rep_call_stack = (lc).next;	\
