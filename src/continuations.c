@@ -888,20 +888,20 @@ again:
 	else
 	{
 	    rep_thread *b = root_barrier->susp_head;
-	    struct timeval now, then;
+	    struct timeval now;
 	    gettimeofday (&now, 0);
-	    then.tv_sec = b->run_at.tv_sec - now.tv_sec;
-	    then.tv_usec = b->run_at.tv_usec - now.tv_usec;
-	    while (then.tv_usec < 0)
-	    {
-		then.tv_usec += 1000000;
-		then.tv_sec--;
-	    }
 	    DB (("no more threads, sleeping..\n"));
-	    if (TV_LATER_P (&then, &now))
+	    if (TV_LATER_P (&b->run_at, &now))
 	    {
-		rep_sleep_for (then.tv_sec - now.tv_sec,
-			       (then.tv_usec - now.tv_usec) / 1000);
+		struct timeval delta;
+		delta.tv_sec = b->run_at.tv_sec - now.tv_sec;
+		delta.tv_usec = b->run_at.tv_usec - now.tv_usec;
+		while (delta.tv_usec < 0)
+		{
+		    delta.tv_usec += 1000000;
+		    delta.tv_sec--;
+		}
+		rep_sleep_for (delta.tv_sec, delta.tv_usec / 1000);
 	    }
 	    DB (("..waking thread %p\n", b));
 	    thread_wake (b);
