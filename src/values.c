@@ -113,7 +113,7 @@ Lisp_Type_Data data_types[V_MAX] = {
     { ptr_cmp, glyphtable_prin, glyphtable_prin,
       glyphtable_sweep, "glyph-table" },
     DT_NULL,
-    { ptr_cmp, extent_prin, extent_prin, extent_sweep, "extent" },
+    { extent_cmp, extent_prin, extent_prin, extent_sweep, "extent" },
     DT_NULL,
     { ptr_cmp, face_prin, face_prin, face_sweep, "face" },
     DT_NULL,
