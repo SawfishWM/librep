@@ -7,14 +7,14 @@
 
 #define NSUBEXP  10
 
-#ifdef BUILD_JADE
-#include "../jade.h"
-#include "../jade_protos.h"
+#ifdef JADE
+#include "jade.h"
+#include "jade_protos.h"
 #endif
 
 typedef enum regtype {
     reg_string = 0,
-#ifdef BUILD_JADE
+#ifdef JADE
     reg_tx
 #endif
 } regtype;
@@ -24,7 +24,7 @@ typedef union regsubs {
 	char *startp[NSUBEXP];
 	char *endp[NSUBEXP];
     } string;
-#ifdef BUILD_JADE
+#ifdef JADE
     struct {
 	VALUE startp[NSUBEXP];
 	VALUE endp[NSUBEXP];
@@ -58,7 +58,7 @@ extern void regsub(int, regsubs *, char *, char *, void *);
 extern int regsublen(int, regsubs *, char *, void *);
 extern void regerror(char *);
 
-#ifdef BUILD_JADE
+#ifdef JADE
 extern int regexec_tx(regexp *prog, TX *tx, VALUE start, int eflags);
 extern int regexec_reverse_tx(regexp *prog, TX *tx, VALUE start, int eflags);
 extern int regmatch_tx(regexp *prog, TX *tx, VALUE start, int eflags);

@@ -64,7 +64,7 @@ regsub(lasttype, matches, source, dest, data)
 	regerror("NULL parm to regsub");
 	return;
     }
-#ifdef BUILD_JADE
+#ifdef JADE
     if ((lasttype == reg_string && !STRINGP(VAL(data)))
 	|| (lasttype == reg_tx && !BUFFERP(VAL(data))))
     {
@@ -105,7 +105,7 @@ regsub(lasttype, matches, source, dest, data)
 		    }
 		}
 	    }
-#ifdef BUILD_JADE
+#ifdef JADE
 	    else if(lasttype == reg_tx)
 	    {
 		TX *tx = data;
@@ -148,7 +148,7 @@ regsublen(lasttype, matches, source, data)
 	regerror("NULL parm to regsublen");
 	return(0);
     }
-#ifdef BUILD_JADE
+#ifdef JADE
     if ((lasttype == reg_string && !STRINGP(VAL(data)))
 	|| (lasttype == reg_tx && !BUFFERP(VAL(data))))
     {
@@ -179,7 +179,7 @@ regsublen(lasttype, matches, source, data)
 			      - matches->string.startp[no];
 		}
 	    }
-#ifdef BUILD_JADE
+#ifdef JADE
 	    else if(lasttype == reg_tx)
 	    {
 		TX *tx = data;
