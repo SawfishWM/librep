@@ -305,8 +305,7 @@ rep_unix_set_fd_cloexec(int fd)
 static int
 wait_for_input(fd_set *inputs, u_long timeout_msecs)
 {
-    struct timeval timeout;
-    int ready;
+    int ready = -1;
 
     if(input_pending_count > 0)
     {
@@ -334,14 +333,31 @@ wait_for_input(fd_set *inputs, u_long timeout_msecs)
 	}
     }
 
-    timeout.tv_sec = timeout_msecs / 1000;
-    timeout.tv_usec = (timeout_msecs % 1000) * 1000;
+    /* Break the timeout into one-section chunks, then check for
+       interrupt between each call to select. */
+    do {
+	struct timeval timeout;
+	u_long this_timeout_msecs = MIN (timeout_msecs,
+					 rep_input_timeout_secs * 1000);
+	timeout.tv_sec = this_timeout_msecs / 1000;
+	timeout.tv_usec = (this_timeout_msecs % 1000) * 1000;
 
-    /* Don't want select() to restart after a SIGCHLD; there may be
-       a notification to dispatch.  */
-    rep_sigchld_restart(rep_FALSE);
-    ready = select(FD_SETSIZE, inputs, NULL, NULL, &timeout);
-    rep_sigchld_restart(rep_TRUE);
+	/* Dont test for interrupts before the first call to select() */
+	if (ready == 0)
+	{
+	    rep_TEST_INT_SLOW;
+	    if (rep_INTERRUPTP)
+		break;
+	}
+
+	/* Don't want select() to restart after a SIGCHLD;
+	   there may be a notification to dispatch.  */
+	rep_sigchld_restart(rep_FALSE);
+	ready = select(FD_SETSIZE, inputs, NULL, NULL, &timeout);
+	rep_sigchld_restart(rep_TRUE);
+
+	timeout_msecs -= this_timeout_msecs;
+    } while (ready == 0 && timeout_msecs > 0);
 
     return ready;
 }
