@@ -577,9 +577,10 @@ remove_binding (rep_struct *s, repv var)
 /* Scan for a binding of symbol VAR under structure S, or return null. This
    also searches the exports of any structures that S has opened */
 static rep_struct_node *
-lookup_recursively (repv name, repv var)
+lookup_recursively (repv s, repv var)
 {
-    repv s = Fget_structure (name);
+    if (rep_SYMBOLP (s))
+	s = Fget_structure (s);
     if (s && rep_STRUCTUREP (s)
 	&& !(rep_STRUCTURE (s)->car & rep_STF_EXCLUSION))
     {
@@ -1117,8 +1118,10 @@ named in the list STRUCT-NAMES.
 	repv tem = Fmemq (rep_CAR (args), dst->imports);
 	if (tem == Qnil)
 	{
-	    repv s = Fintern_structure (rep_CAR (args));
-	    if (s == rep_NULL || !rep_STRUCTUREP (s))
+	    repv s = rep_CAR (args);
+	    if (rep_SYMBOLP (s))
+		s = Fintern_structure (s);
+	    if (!s || !rep_STRUCTUREP (s))
 	    {
 		ret = Fsignal (Qerror, rep_list_2 (rep_VAL (&no_struct),
 						   rep_CAR (args)));
