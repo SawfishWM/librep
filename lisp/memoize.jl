@@ -19,6 +19,7 @@
 ;; along with librep; see the file COPYING.  If not, write to
 ;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
+(require 'tables)
 (provide 'memoize)
 
 (defun memoize-function (fun)
@@ -31,16 +32,10 @@ FUN may not be, or be defined as, an autoload definition."
       ((memoize
 	(lambda (f)
 	  (let
-	      ;; XXX need a hash table here..
-	      (cache)
+	      ((cache (make-table equal-hash equal)))
 	    (lambda (&rest args)
-	      (let
-		  ((cell (assoc args cache)))
-		(if cell
-		    (cdr cell)
-		  (setq cell (cons args (apply f args)))
-		  (setq cache (cons cell cache))
-		  (cdr cell))))))))
+	      (or (table-ref cache args)
+		  (table-set cache args (apply f args))))))))
     (cond ((functionp fun)
 	   (memoize fun))
 	  ((symbolp fun)
