@@ -49,19 +49,7 @@ char *alloca ();
 
 /* #define GC_MONITOR_STK */
 
-#define rep_CONSBLK_SIZE	510		/* ~4k */
 #define rep_STRINGBLK_SIZE	510		/* ~4k */
-
-/* Structure of cons allocation blocks */
-typedef struct rep_cons_block_struct {
-    union {
-	struct rep_cons_block_struct *p;
-	/* ensure that the following cons cell is aligned to at
-	   least sizeof (rep_cons) (for the dcache) */
-	rep_cons dummy;
-    } next;
-    rep_cons cons[rep_CONSBLK_SIZE];
-} rep_cons_block;
 
 /* Structure of string header allocation blocks */
 typedef struct rep_string_block_struct {
@@ -467,9 +455,36 @@ rep_unbox_pointer (repv v)
 
 /* Cons */
 
-static rep_cons_block *cons_block_chain;
-static rep_cons *cons_freelist;
-static int allocated_cons, used_cons;
+rep_cons_block *rep_cons_block_chain;
+rep_cons *rep_cons_freelist;
+int rep_allocated_cons, rep_used_cons;
+
+inline rep_cons *
+rep_allocate_cons (void)
+{
+    rep_cons *cn;
+    cn = rep_cons_freelist;
+    if(cn == NULL)
+    {
+	rep_cons_block *cb;
+	cb = rep_alloc(sizeof(rep_cons_block));
+	if(cb != NULL)
+	{
+	    int i;
+	    rep_allocated_cons += rep_CONSBLK_SIZE;
+	    cb->next.p = rep_cons_block_chain;
+	    rep_cons_block_chain = cb;
+	    for(i = 0; i < (rep_CONSBLK_SIZE - 1); i++)
+		cb->cons[i].cdr = rep_CONS_VAL(&cb->cons[i + 1]);
+	    cb->cons[i].cdr = 0;
+	    rep_cons_freelist = cb->cons;
+	}
+	else
+	    return rep_mem_error();
+	cn = rep_cons_freelist;
+    }
+    return cn;
+}
 
 DEFUN("cons", Fcons, Scons, (repv car, repv cdr), rep_Subr2) /*
 ::doc:cons::
@@ -478,31 +493,11 @@ cons CAR CDR
 Returns a new cons-cell with car CAR and cdr CDR.
 ::end:: */
 {
-    rep_cons *cn;
-    cn = cons_freelist;
-    if(cn == NULL)
-    {
-	rep_cons_block *cb;
-	cb = rep_alloc(sizeof(rep_cons_block));
-	if(cb != NULL)
-	{
-	    int i;
-	    allocated_cons += rep_CONSBLK_SIZE;
-	    cb->next.p = cons_block_chain;
-	    cons_block_chain = cb;
-	    for(i = 0; i < (rep_CONSBLK_SIZE - 1); i++)
-		cb->cons[i].cdr = rep_CONS_VAL(&cb->cons[i + 1]);
-	    cb->cons[i].cdr = 0;
-	    cons_freelist = cb->cons;
-	}
-	else
-	    return rep_mem_error();
-	cn = cons_freelist;
-    }
-    cons_freelist = rep_CONS(cn->cdr);
+    rep_cons *cn = rep_allocate_cons ();
+    rep_cons_freelist = rep_CONS (cn->cdr);
     cn->car = car;
     cn->cdr = cdr;
-    used_cons++;
+    rep_used_cons++;
     rep_data_after_gc += sizeof(rep_cons);
     return rep_CONS_VAL(cn);
 }
@@ -510,9 +505,9 @@ Returns a new cons-cell with car CAR and cdr CDR.
 void
 rep_cons_free(repv cn)
 {
-    rep_CDR(cn) = rep_CONS_VAL(cons_freelist);
-    cons_freelist = rep_CONS(cn);
-    used_cons--;
+    rep_CDR(cn) = rep_CONS_VAL(rep_cons_freelist);
+    rep_cons_freelist = rep_CONS(cn);
+    rep_used_cons--;
 }
 
 static void
@@ -521,7 +516,7 @@ cons_sweep(void)
     rep_cons_block *cb;
     rep_cons *tem_freelist = 0;
     int tem_used = 0;
-    for (cb = cons_block_chain; cb != 0; cb = cb->next.p)
+    for (cb = rep_cons_block_chain; cb != 0; cb = cb->next.p)
     {
 	register rep_cons *this = cb->cons;
 	rep_cons *last = cb->cons + rep_CONSBLK_SIZE;
@@ -540,8 +535,8 @@ cons_sweep(void)
 	    this++;
 	}
     }
-    cons_freelist = tem_freelist;
-    used_cons = tem_used;
+    rep_cons_freelist = tem_freelist;
+    rep_used_cons = tem_used;
 }
 
 static int
@@ -1045,8 +1040,8 @@ last garbage-collection is greater than `garbage-threshold'.
 
     if(stats != Qnil)
     {
-	return rep_list_5(Fcons(rep_MAKE_INT(used_cons),
-				rep_MAKE_INT(allocated_cons - used_cons)),
+	return rep_list_5(Fcons(rep_MAKE_INT(rep_used_cons),
+				rep_MAKE_INT(rep_allocated_cons - rep_used_cons)),
 			  Fcons(rep_MAKE_INT(rep_used_tuples),
 				rep_MAKE_INT(rep_allocated_tuples
 					     - rep_used_tuples)),
@@ -1115,7 +1110,7 @@ rep_values_init(void)
 void
 rep_values_kill(void)
 {
-    rep_cons_block *cb = cons_block_chain;
+    rep_cons_block *cb = rep_cons_block_chain;
     rep_vector *v = vector_chain;
     rep_string_block *s = string_block_chain;
     while(cb != NULL)
@@ -1142,7 +1137,7 @@ rep_values_kill(void)
 	rep_free(s);
 	s = nxt;
     }
-    cons_block_chain = NULL;
+    rep_cons_block_chain = NULL;
     vector_chain = NULL;
     string_block_chain = NULL;
 }
