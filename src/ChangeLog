@@ -1,3 +1,9 @@
+Sat May 16 13:51:54 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_files.c, ../config.h.in: remove definition and use of
+	HAVE_REALPATH since we provide an implementation for when libc
+	doesn't
+
 Tue May 12 16:35:42 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* x11_keys.c (translate_mods): extra arg SUBST-META controlling
