@@ -1,3 +1,12 @@
+1999-11-25  John Harper  <john@dcs.warwick.ac.uk>
+
+	* tilde.jl, tar-file-handler.jl, sort.jl, rep.jl,
+	remote-rep.jl, remote-rcp.jl, remote-ftp.jl, lisp.jl,
+	lisp-doc.jl, gaol.jl, environ.jl, dump.jl, disassembler.jl,
+	debug.jl, compiler.jl, compiler-opt.jl, cgi-get.jl,
+	bytecodes.jl, backquote.jl, autoload.jl: updated for single
+	namespace and scheme-like function semantics
+
 1999-11-21  John Harper  <john@dcs.warwick.ac.uk>
 
 	* version 0.8

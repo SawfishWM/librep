@@ -11,9 +11,45 @@
 @item Default scoping is now lexical, only variables declared using
 @code{defvar} are dynamically scoped.
 
-This also means that lambda expressions are no longer functions, they
-have to be enclosed with a lexical environment (using @code{function}
-or @code{make-closure})
+@item There is now only a single namespace for symbols (excepting
+property lists), this means that the @code{fset},
+@code{symbol-function} and @code{fboundp} functions have been removed
+
+This allows all elements in procedure-call forms to be evaluated
+equally (as in scheme), so things like:
+
+@lisp
+((if t + -) 1 2)
+@end lisp
+
+@noindent
+now work. Related to this, function names (i.e. symbols and lambda
+expressions) are no longer dereferenced by any operations taking
+functions as arguments. Only built-in subroutines and closures are
+considered functions.
+
+This means that where before you'd write something like:
+
+@lisp
+(mapcar '+ '(1 2 3))
+@end lisp
+
+@noindent
+this is now illegal; the @code{+} function must be evaluated:
+
+@lisp
+(mapcar + '(1 2 3))
+@end lisp
+
+@item @code{lambda} is now a special form evaluating to a closure (as
+in scheme); this means that the following are exactly equivalent:
+
+@lisp
+(lambda (x) x) @equiv{} (function (lambda (x) x)) @equiv{} #'(lambda (x) x)
+@end lisp
+
+An alternative method of enclosing a lambda expression is to use the
+@code{make-closure} function.
 
 @item @code{gaol} module providing semi-safe environment for untrusted
 code to evaluate in

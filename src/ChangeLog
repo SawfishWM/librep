@@ -1,6 +1,19 @@
-1999-11-21  John Harper  <john@dcs.warwick.ac.uk>
+1999-11-25  John Harper  <john@dcs.warwick.ac.uk>
 
-	* version 0.8
+	* values.c, unix_dl.c, timers.c, symbols.c, rep_subrs.h,
+	rep_lisp.h, rep.c, rep-xgettext.jl, main.c, lispmach.c,
+	lispcmds.c, lisp.c, files.c, bytecodes.h:
+
+	More big changes: unified the value/function namespaces,
+	evaluate the function argument of list forms as normal, don't
+	allow function names in place of actual functions (subrs or
+	closures), lambda is now a special form evaluating to a closure
+
+	In case you hadn't noticed, this is very scheme-like; the
+	reason is that gaolled code can escape through naming functions
+	that it can't call itself
+
+1999-11-21  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lispcmds.c (Ffunctionp, Fmacrop, Fspecial_form_p,
 	Fsubr_name): use Fsymbol_function for dereferencing the symbol,
