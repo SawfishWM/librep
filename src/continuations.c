@@ -246,7 +246,6 @@ struct rep_thread_struct {
     repv name;
     rep_continuation *cont;
     repv env, structure;
-    repv (*bytecode)(repv, int, repv *);
     int lock;
     struct timeval run_at;
     rep_bool (*poll)(rep_thread *t, repv arg);
@@ -756,7 +755,6 @@ thread_save_environ (rep_thread *t)
 {
     t->env = rep_env;
     t->structure = rep_structure;
-    t->bytecode = rep_bytecode_interpreter;
 }
 
 static inline void
@@ -764,7 +762,6 @@ thread_load_environ (rep_thread *t)
 {
     rep_env = t->env;
     rep_structure = t->structure;
-    rep_bytecode_interpreter = t->bytecode;
 }
 
 static void
