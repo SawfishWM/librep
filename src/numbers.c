@@ -1860,29 +1860,6 @@ pointer).
     return rep_INTP (arg) ? Qt : Qnil;
 }
 
-DEFUN("rationalp", Frationalp, Srationalp, (repv arg), rep_Subr1) /*
-::doc:rationalp::
-rationalp ARG
-
-Return t if ARG is a rational number.
-::end:: */
-{
-    return (rep_INTP (arg)
-	    || (rep_NUMBERP (arg)
-		&& (rep_NUMBER_BIGNUM_P (arg)
-		    || rep_NUMBER_RATIONAL_P (arg)))) ? Qt : Qnil;
-}
-
-DEFUN("realp", Frealp, Srealp, (repv arg), rep_Subr1) /*
-::doc:realp::
-realp ARG
-
-Return t if ARG is a real number.
-::end:: */
-{
-    return rep_NUMERICP (arg) ? Qt : Qnil;
-}
-
 DEFUN("exactp", Fexactp, Sexactp, (repv arg), rep_Subr1) /*
 ::doc:exactp::
 exactp ARG
@@ -1890,17 +1867,8 @@ exactp ARG
 Return t if ARG is an exact number.
 ::end:: */
 {
-    return Frationalp (arg);
-}
-
-DEFUN("inexactp", Finexactp, Sinexactp, (repv arg), rep_Subr1) /*
-::doc:inexactp::
-inexactp ARG
-
-Return t if ARG is an inexact number.
-::end:: */
-{
-    return Fexactp (arg) == Qnil ? Qt : Qnil;
+    return (rep_INTP (arg)
+	    || (rep_NUMBERP (arg) && !rep_NUMBER_FLOAT_P (arg))) ? Qt : Qnil;
 }
 
 DEFUN("exact->inexact", Fexact_to_inexact,
@@ -2042,10 +2010,7 @@ rep_numbers_init (void)
     rep_ADD_SUBR(Snumberp);
     rep_ADD_SUBR(Sintegerp);
     rep_ADD_SUBR(Sfixnump);
-    rep_ADD_SUBR(Srationalp);
-    rep_ADD_SUBR(Srealp);
     rep_ADD_SUBR(Sexactp);
-    rep_ADD_SUBR(Sinexactp);
     rep_ADD_SUBR(Sexact_to_inexact);
     rep_ADD_SUBR(Sinexact_to_exact);
     rep_ADD_SUBR(Snumerator);
