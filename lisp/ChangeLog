@@ -1,3 +1,20 @@
+Sat Jun 20 16:15:41 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rm-restrict.jl (rm-apply-rule): new function, allows a rule
+	to be applied to a single specified message
+
+	* rm-thread.jl (rm-sort-folder): allow sort keys to specify
+	order of sorting. Misc. other fixes
+	* read-mail.jl (rm-install-messages): if a sort key is defined
+	for the folder, use it
+
+	* rm-output.jl (rm-auto-archive-alist, rm-auto-archive-folder,
+	rm-archive-folder): support for saving messages by matching
+	rules, both interactively, and pre-defined
+	* read-mail.jl, rm-summary.jl: bind "a" to rm-archive-folder
+	and "A" to rm-auto-archive-folder. Change binding of
+	rm-sort-folder to "G"
+
 Fri Jun 19 16:51:54 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* remote-ftp.jl (remote-ftp-output-filter): only display hash

@@ -101,6 +101,8 @@
 (autoload 'rm-reply "rm-misc" t)
 (autoload 'rm-followup "rm-misc" t)
 (autoload 'rm-output "rm-output" t)
+(autoload 'rm-auto-archive-folder "rm-output" t)
+(autoload 'rm-archive-folder "rm-output" t)
 (autoload 'mail-yank-original "rm-misc" t)
 (autoload 'rm-forward "rm-misc" t)
 (autoload 'rm-burst-message "rm-misc" t)
@@ -174,6 +176,7 @@
 (bind-keys ctrl-x-keymap "c" '(next-keymap-path '(cvs-keymap)))
 (autoload 'html-style-add-style "html-style")
 (autoload 'rm-filter-by-rule "rm-restrict")
+(autoload 'rm-apply-rule "rm-restrict")
 (autoload 'rm-prompt-for-rule "rm-restrict")
 (autoload 'rm-defrule "rm-restrict" t)
 (autoload 'sh-mode "sh-mode" t)
@@ -184,4 +187,6 @@
 (autoload 'remote-ftp-add-passwd "remote-ftp" t)
 (put 'rcp 'remote-backend 'remote-rcp-handler)
 (autoload 'remote-rcp-handler "remote-rcp")
+(autoload 'define-rule "rm-restrict" t)
+(autoload 'rm-archive-folder "rm-output" t)
 ;;; ::autoload-end::
