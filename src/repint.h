@@ -121,4 +121,13 @@ extern int rep_structure_type;
 
 #define rep_SPECIAL_ENV   (rep_STRUCTURE(rep_structure)->special_env)
 
+
+/* binding tracking */
+
+#define rep_MARK_LEX_BINDING(x)		(x + (1 << rep_VALUE_INT_SHIFT))
+#define rep_MARK_SPEC_BINDING(x)	(x + (1 << (16 + rep_VALUE_INT_SHIFT)))
+#define rep_LEX_BINDINGS(x)		(rep_INT(x) & 0xffff)
+#define rep_SPEC_BINDINGS(x)		(rep_INT(x) >> 16)
+#define rep_NEW_FRAME			rep_MAKE_INT(0)
+
 #endif /* REPINT_H */

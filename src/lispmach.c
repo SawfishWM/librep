@@ -70,10 +70,8 @@ static u_long byte_code_usage[256];
 
 /* Unbind one level of the BIND-STACK and return the new head of the stack.
    Each item in the BIND-STACK may be one of:
-	(t . FORM)
-		unwind-protect FORM to always evaluate
-	(INTEGER . INTEGER)
-		car special and cdr lexical bindings
+	INTEGER
+		variable binding frame
 	(error . (PC . STACK-DEPTH))
 		not unbound here; install exception handler at PC
 
@@ -81,20 +79,14 @@ static u_long byte_code_usage[256];
 static inline int
 inline_unbind_object(repv item)
 {
+    if(rep_INTP(item))
+    {
+	/* A set of symbol bindings (let or let*). */
+	return rep_unbind_symbols(item);
+    }
     if(rep_CONSP(item))
     {
-	if(rep_CAR(item) == Qt)
-	{
-	    /* unwind-protect protection forms. */
-	    Feval(rep_CDR(item));
-	    return 1;
-	}
-	else if(rep_INTP(rep_CAR(item)))
-	{
-	    /* A set of symbol bindings (let or let*). */
-	    return rep_unbind_symbols(item);
-	}
-	else if (rep_CAR(item) == Qerror)
+	if (rep_CAR(item) == Qerror)
 	    return 0;
 	else
 	{
@@ -161,13 +153,6 @@ snap_environment (int count)
     while (count-- > 0)
 	ptr = rep_CDR(ptr);
     return rep_CAR(ptr);
-}
-
-/* The number of special variables bound by FRAME */
-static inline int
-bound_specials (repv frame)
-{
-    return rep_INT (rep_CAR (frame));
 }
 
 static repv
@@ -296,7 +281,7 @@ again:
 
     stackp = stackbase - 1;
     bindstack = Fcons (frame, Qnil);
-    impurity = bound_specials (frame);
+    impurity = rep_SPEC_BINDINGS (frame);
     rep_PUSHGC(gc_code, code);
     rep_PUSHGC(gc_consts, consts);
     rep_PUSHGC(gc_bindstack, bindstack);
@@ -606,7 +591,8 @@ again:
 	    tmp = rep_VECT(consts)->array[arg];
 	    tmp2 = RET_POP;
 	    rep_env = Fcons (Fcons (tmp, tmp2), rep_env);
-	    rep_CDAR(bindstack) = rep_MAKE_INT(rep_INT(rep_CDAR(bindstack))+1);
+	    rep_CAR(bindstack) = (rep_CAR(bindstack)
+				  + (1 << rep_VALUE_INT_SHIFT));
 	    goto fetch;
 
 	CASE_OP_ARG(OP_BINDSPEC)
@@ -615,7 +601,8 @@ again:
 	    /* assuming non-restricted environment */
 	    rep_special_bindings = Fcons (Fcons (tmp, tmp2),
 					  rep_special_bindings);
-	    rep_CAAR(bindstack) = rep_MAKE_INT(rep_INT(rep_CAAR(bindstack))+1);
+	    rep_CAR(bindstack) = (rep_CAR(bindstack)
+				  + (1 << (16 + rep_VALUE_INT_SHIFT)));
 	    impurity++;
 	    goto fetch;
 
@@ -657,8 +644,7 @@ again:
 	    break;
 
 	case OP_INIT_BIND:
-	    bindstack = Fcons(Fcons (rep_MAKE_INT(0), rep_MAKE_INT(0)),
-			      bindstack);
+	    bindstack = Fcons(rep_NEW_FRAME, bindstack);
 	    goto fetch;
 
 	case OP_UNBIND:
@@ -995,7 +981,7 @@ again:
 	case OP_UNBINDALL:
 	    gc_stackbase.count = STK_USE;
 	    bindstack = unbind_all_but_one (bindstack);
-	    impurity = bound_specials (rep_CAR(bindstack));
+	    impurity = rep_SPEC_BINDINGS (rep_CAR(bindstack));
 	    break;
 
 	case OP_BOUNDP:

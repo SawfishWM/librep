@@ -549,7 +549,7 @@ repv
 rep_bind_symbol(repv oldList, repv symbol, repv newVal)
 {
     if (oldList == Qnil)
-	oldList = Fcons (rep_MAKE_INT(0), rep_MAKE_INT(0));
+	oldList = rep_NEW_FRAME;
 
     if (rep_SYM(symbol)->car & rep_SF_SPECIAL)
     {
@@ -558,7 +558,7 @@ rep_bind_symbol(repv oldList, repv symbol, repv newVal)
 	{
 	    rep_special_bindings = Fcons (Fcons (symbol, newVal),
 					  rep_special_bindings);
-	    rep_CAR(oldList) = rep_MAKE_INT(rep_INT(rep_CAR(oldList)) + 1);
+	    oldList = rep_MARK_SPEC_BINDING (oldList);
 	}
 	else
 	    Fsignal (Qvoid_value, rep_LIST_1(symbol));
@@ -567,7 +567,7 @@ rep_bind_symbol(repv oldList, repv symbol, repv newVal)
     {
 	/* lexical binding (also in lispmach.c:OP_BIND) */
 	rep_env = Fcons (Fcons (symbol, newVal), rep_env);
-	rep_CDR(oldList) = rep_MAKE_INT(rep_INT(rep_CDR(oldList)) + 1);
+	oldList = rep_MARK_LEX_BINDING (oldList);
     }
     return oldList;
 }
@@ -580,26 +580,28 @@ rep_unbind_symbols(repv oldList)
     if (oldList != Qnil)
     {
 	register repv tem;
+	int lexicals, specials;
 	int i;
 
-	assert (rep_CONSP(oldList));
-	assert (rep_INTP(rep_CAR(oldList)));
-	assert (rep_INTP(rep_CDR(oldList)));
+	assert (rep_INTP(oldList));
+
+	lexicals = rep_LEX_BINDINGS (oldList);
+	specials = rep_SPEC_BINDINGS (oldList);
 
 	tem = rep_env;
-	for (i = rep_INT (rep_CDR (oldList)); i > 0; i--)
+	for (i = lexicals; i > 0; i--)
 	    tem = rep_CDR (tem);
 	rep_env = tem;
 
 	tem = rep_special_bindings;
-	for (i = rep_INT (rep_CAR (oldList)); i > 0; i--)
+	for (i = specials; i > 0; i--)
 	    tem = rep_CDR (tem);
 	rep_special_bindings = tem;
 
 	assert (rep_special_bindings != rep_void_value);
 	assert (rep_env != rep_void_value);
 
-	return rep_INT (rep_CAR (oldList));
+	return specials;
     }
     else
 	return 0;
