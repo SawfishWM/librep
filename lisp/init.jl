@@ -499,41 +499,36 @@ string INPUT."
 
 ;; cons accessors
 
-(defun caar (x)
-  (car (car x)))
+(defun caar (x) (car (car x)))
+(defun cdar (x) (cdr (car x)))
+(defun cadr (x) (car (cdr x)))
+(defun cddr (x) (cdr (cdr x)))
 
-(defun cdar (x)
-  (cdr (car x)))
+(defun caaar (x) (car (caar x)))
+(defun cdaar (x) (cdr (caar x)))
+(defun cadar (x) (car (cdar x)))
+(defun cddar (x) (cdr (cdar x)))
+(defun caadr (x) (car (cadr x)))
+(defun cdadr (x) (cdr (cadr x)))
+(defun caddr (x) (car (cddr x)))
+(defun cdddr (x) (cdr (cddr x)))
 
-(defun cadr (x)
-  (car (cdr x)))
-
-(defun cddr (x)
-  (cdr (cdr x)))
-
-(defun caaar (x)
-  (car (car (car x))))
-
-(defun cdaar (x)
-  (cdr (car (car x))))
-
-(defun cadar (x)
-  (car (cdr (car x))))
-
-(defun cddar (x)
-  (cdr (cdr (car x))))
-
-(defun caadr (x)
-  (car (car (cdr x))))
-
-(defun cdadr (x)
-  (cdr (car (cdr x))))
-
-(defun caddr (x)
-  (car (cdr (cdr x))))
-
-(defun cdddr (x)
-  (cdr (cdr (cdr x))))
+(defun caaaar (x) (caar (caar x)))
+(defun cadaar (x) (cadr (caar x)))
+(defun caadar (x) (caar (cdar x)))
+(defun caddar (x) (cadr (cdar x)))
+(defun caaadr (x) (caar (cadr x)))
+(defun cadadr (x) (cadr (cadr x)))
+(defun caaddr (x) (caar (cddr x)))
+(defun cadddr (x) (cadr (cddr x)))
+(defun cdaaar (x) (cdar (caar x)))
+(defun cddaar (x) (cddr (caar x)))
+(defun cdadar (x) (cdar (cdar x)))
+(defun cdddar (x) (cddr (cdar x)))
+(defun cdaadr (x) (cdar (cadr x)))
+(defun cddadr (x) (cddr (cadr x)))
+(defun cdaddr (x) (cdar (cddr x)))
+(defun cddddr (x) (cddr (cddr x)))
 
 
 ;; some scheme compatibility functions

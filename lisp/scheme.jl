@@ -46,8 +46,13 @@
 			  not eqv? eq? equal? boolean?
 
 			  pair? cons car cdr set-car! set-cdr!
-			  caar cadr cdar cddr caaar caadr cadar
-			  caddr cdaar cdadr cddar cdddr
+			  caar cadr cdar cddr
+			  caaar caadr cadar caddr
+			  cdaar cdadr cddar cdddr
+			  caaaar caaadr caadar caaddr
+			  cadaar cadadr caddar cadddr
+			  cdaaar cdaadr cdadar cdaddr
+			  cddaar cddadr cdddar cddddr
 
 			  null? list? list length append reverse
 			  list-tail list-ref memq memv member

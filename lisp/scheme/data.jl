@@ -25,8 +25,13 @@
     (export not eqv? eq? equal? boolean?
 
 	    pair? cons car cdr set-car! set-cdr!
-	    caar cadr cdar cddr caaar caadr cadar
-	    caddr cdaar cdadr cddar cdddr
+	    caar cadr cdar cddr
+	    caaar caadr cadar caddr
+	    cdaar cdadr cddar cdddr
+	    caaaar caaadr caadar caaddr
+	    cadaar cadadr caddar cadddr
+	    cdaaar cdaadr cdadar cdaddr
+	    cddaar cddadr cdddar cddddr
 
 	    null? list? list length append reverse
 	    list-tail list-ref memq memv member
@@ -93,11 +98,43 @@
   (define set-car! rplaca)
   (define set-cdr! rplacd)
 
+  (define (caar x) (car (car x)))
+  (define (cdar x) (cdr (car x)))
+  (define (cadr x) (car (cdr x)))
+  (define (cddr x) (cdr (cdr x)))
+  
+  (define (caaar x) (car (caar x)))
+  (define (cdaar x) (cdr (caar x)))
+  (define (cadar x) (car (cdar x)))
+  (define (cddar x) (cdr (cdar x)))
+  (define (caadr x) (car (cadr x)))
+  (define (cdadr x) (cdr (cadr x)))
+  (define (caddr x) (car (cddr x)))
+  (define (cdddr x) (cdr (cddr x)))
+  
+  (define (caaaar x) (caar (caar x)))
+  (define (cadaar x) (cadr (caar x)))
+  (define (caadar x) (caar (cdar x)))
+  (define (caddar x) (cadr (cdar x)))
+  (define (caaadr x) (caar (cadr x)))
+  (define (cadadr x) (cadr (cadr x)))
+  (define (caaddr x) (caar (cddr x)))
+  (define (cadddr x) (cadr (cddr x)))
+  (define (cdaaar x) (cdar (caar x)))
+  (define (cddaar x) (cddr (caar x)))
+  (define (cdadar x) (cdar (cdar x)))
+  (define (cdddar x) (cddr (cdar x)))
+  (define (cdaadr x) (cdar (cadr x)))
+  (define (cddadr x) (cddr (cadr x)))
+  (define (cdaddr x) (cdar (cddr x)))
+  (define (cddddr x) (cddr (cddr x)))
+
 ;;; lists
 
   (define null? (make-predicate null))
   (define list? (make-predicate listp))
 
+  ;; XXX return nil if I > (length LST)
   (define (list-tail lst i) (nthcdr i lst))
   (define (list-ref lst i) (nth i lst))
 
