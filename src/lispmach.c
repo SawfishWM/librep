@@ -452,12 +452,12 @@ again:
 
 	    default:
 		tmp2 = Qnil;
-		POPN(-arg);
-		while(arg--)
-		    tmp2 = Fcons(RET_POP, tmp2);
-		lc.args = tmp2;
 		if (rep_CONSP(tmp))
 		{
+		    POPN(-arg);
+		    while (arg--)
+			tmp2 = Fcons (RET_POP, tmp2);
+		    lc.args = tmp2;
 		    if(was_closed && rep_CAR(tmp) == Qlambda)
 			TOP = rep_eval_lambda(tmp, tmp2, rep_FALSE, rep_FALSE);
 		    else if(rep_CAR(tmp) == Qautoload)
@@ -481,9 +481,8 @@ again:
 
 		    if (impurity != 0 || *pc != OP_RETURN)
 		    {
-			bindings = (rep_bind_lambda_list
-				    (rep_COMPILED_LAMBDA(tmp),
-				     tmp2, rep_FALSE, rep_FALSE));
+			bindings = (rep_bind_lambda_list_1
+				    (rep_COMPILED_LAMBDA(tmp), stackp+1, arg));
 			if(bindings != rep_NULL)
 			{
 			    TOP = (rep_bytecode_interpreter
@@ -507,9 +506,8 @@ again:
 			   bindings; these were unbound when switching
 			   environments.. */
 
-			bindings = (rep_bind_lambda_list
-				    (rep_COMPILED_LAMBDA(tmp),
-				     tmp2, rep_FALSE, rep_FALSE));
+			bindings = (rep_bind_lambda_list_1
+				    (rep_COMPILED_LAMBDA(tmp), stackp+1, arg));
 			if(bindings != rep_NULL)
 			{
 			    int o_req_s, o_req_b;
