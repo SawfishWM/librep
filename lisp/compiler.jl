@@ -141,7 +141,8 @@ their position in that file.")
 (defvar comp-output-pc 0)		;INDEX of next byte
 
 ;; Compilation "environment"
-(defvar comp-macro-env '())		;alist of (NAME . MACRO-DEF)
+(defvar comp-macro-env			;alist of (NAME . MACRO-DEF)
+  '((eval-when-compile . (lambda (x) (eval x)))))
 (defvar comp-const-env '())		;alist of (NAME . CONST-DEF)
 (defvar comp-inline-env '())		;alist of (NAME . FUNCTION-VALUE)
 (defvar comp-defuns nil)		;alist of (NAME REQ OPT RESTP)
@@ -268,7 +269,7 @@ is one of these that form is compiled.")
   (interactive "fLisp file to compile:")
   (let
       ((comp-current-file file-name)
-       (comp-macro-env '())
+       (comp-macro-env comp-macro-env)
        (comp-const-env '())
        (comp-inline-env '())
        (comp-defuns '())
@@ -333,8 +334,7 @@ is one of these that form is compiled.")
 			  (setq form (macroexpand form comp-macro-env))
 			  (cond
 			   ((memq (car form) '(defun defmacro defvar
-						defconst defsubst require
-						eval-when-compile))
+						defconst defsubst require))
 			    (setq form (comp-compile-top-form form)))
 			   ((memq (car form) comp-top-level-compiled)
 			    ;; Compile this form
@@ -479,8 +479,6 @@ that files which shouldn't be compiled aren't."
      ((eq fun 'require)
       (eval form)
       form)
-     ((eq fun 'eval-when-compile)
-      (eval (nth 1 form)))
      (t
       (comp-error "Shouldn't have got here!")))))
 
@@ -773,10 +771,6 @@ that files which shouldn't be compiled aren't."
 
 ;; Source code transformations. These are basically macros that are only
 ;; used at compile-time.
-
-(put 'eval-when-compile 'compile-transform 'comp-trans-eval-when-compile)
-(defun comp-trans-eval-when-compile (form)
-  (eval (nth 1 form)))
 
 (put 'if 'compile-transform 'comp-trans-if)
 (defun comp-trans-if (form)
