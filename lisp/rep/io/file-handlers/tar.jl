@@ -89,6 +89,7 @@
   (unless tarfh-gnu-tar-version
     (tarfh-check-tar-program))
   ;; XXX handle non-local files by copying
+  ;; XXX but then again, that's a bad idea in gaolled code..
   (setq tar-file (local-file-name tar-file))
   (let*
       ((process (make-process output))

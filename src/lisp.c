@@ -2045,9 +2045,7 @@ too small (you get errors in normal use) set it to something larger.
 void
 rep_lisp_init(void)
 {
-    rep_env = Qnil;
-    rep_fenv = Qt;
-    rep_special_env = Fcons (Qnil, Qt);
+    rep_USE_DEFAULT_ENV;
     rep_mark_static (&rep_env);
     rep_mark_static (&rep_fenv);
     rep_mark_static (&rep_special_env);
