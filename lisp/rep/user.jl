@@ -71,7 +71,8 @@ where OPTIONS are any of:
 			 implies --batch mode)
 
     --batch		batch mode: process options and exit
-    --interp		interpreted mode: don't load compile Lisp files
+    --interp		interpreted mode: don't load compiled Lisp files
+    --debug		start in the debugger (implies --interp)
 
     --call FUNCTION	call the Lisp function FUNCTION
     --f FUNCTION
@@ -124,7 +125,7 @@ where OPTIONS are any of:
        (default-error-handler (car error-data) (cdr error-data)))))
   
   ;; Use all arguments which are left.
-  (if (get-command-line-option "--rep-debug")
+  (if (get-command-line-option "--debug")
       (progn
 	(require 'rep.lang.debugger)
 	(call-with-lexical-origins

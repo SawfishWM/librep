@@ -144,7 +144,7 @@
   (define (server-socket server port)
     (or (table-ref socket-cache (cons server port))
 	(open-server server port)
-	(error ("No connection with server %s:%d" server port))))
+	(error "No connection with server %s:%d" server port)))
 
   (define (register-rpc-server socket #!key closable)
     "Add the connection SOCKET to the table of known rpc connections. If

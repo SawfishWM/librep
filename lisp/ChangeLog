@@ -1,3 +1,12 @@
+2001-08-09  John Harper  <jsh@pixelslut.com>
+
+	* rep/net/rpc.jl: one minor bug fix
+
+2001-08-08  John Harper  <jsh@pixelslut.com>
+
+	* rep/user.jl, rep/lang/debugger.jl: renamed --rep-debug as
+	--debug and --rep-emacs-debugger as --emacs-debug
+
 2001-08-07  John Harper  <jsh@pixelslut.com>
 
 	* rep/lang/define.jl (define-scan-body): only return new list

@@ -33,7 +33,7 @@
 	  rep.io.files
 	  rep.io.readline)
 
-  (define emit-emacs-tokens (get-command-line-option "--rep-emacs-debugger"))
+  (define emit-emacs-tokens (get-command-line-option "--emacs-debug"))
 
 ;;; the form stopped on
 
