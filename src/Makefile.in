@@ -60,7 +60,7 @@ else
 endif
 
 COMMON_SRCS =	buffers.c commands.c debug-buffer.c edit.c editcommands.c \
-		find.c glyphs.c housekeeping.c io.c keys.c lisp.c \
+		files.c find.c glyphs.c housekeeping.c keys.c lisp.c \
 		lispcmds.c lispmach.c main.c misc.c movement.c redisplay.c \
 		regexp.c regjade.c regsub.c streams.c stringmem.c \
 		symbols.c undo.c values.c views.c windows.c
@@ -70,7 +70,7 @@ COMMON_HDRS =	jade.h edit.h lisp.h value.h keys.h stringmem.h \
 X11_SRCS =	x11_keys.c x11_main.c x11_misc.c x11_windows.c
 X11_HDRS =	x11_defs.h x11_windowsys.h
 
-UNIX_SRCS =	lists.c unix_main.c unix_processes.c unix_memory.c \
+UNIX_SRCS =	lists.c unix_files.c unix_main.c unix_processes.c \
 		unix_server.c
 UNIX_HDRS =	unix_defs.h
 
@@ -118,7 +118,7 @@ all : jade jadeclient
 jade : jade_protos.h doc-strings.h $(OBJS)
 	$(CC) $(LDFLAGS) -o jade $(OBJS) $(JADE_LIBS)
 else
-all : jaded jadeclient
+all : jaded
 
 jaded : jade_protos.h doc-strings.h $(OBJS)
 	$(CC) $(LDFLAGS) -o jaded $(OBJS) $(JADE_LIBS)
