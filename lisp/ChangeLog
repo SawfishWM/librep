@@ -1,3 +1,31 @@
+Wed Jun 10 08:49:52 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* isearch.jl: many changes. Now uses the minibuffer, highlights
+	the current match, and doesn't use a recursive edit
+
+	* remote.jl: initial attempt at providing remote file access.
+	Currently just a framework and a pathetic example of using rcp
+	to implement a backend
+
+	* cvs.jl (cvs-buffer, cvs-output-buffer): deleted, now we
+	create buffers as required
+	(cvs-buffer, cvs-output-buffer): new functions, find or create
+	the two buffers used by cvs-mode
+	(cvs-default-directory): working directory, needed since there
+	may or may not be a *cvs* buffer
+
+	* shell.jl (shell-mode-kill): uses kill-all-local-variables to
+	clean up after itself
+
+	* gdb.jl: install our own callback function that does some
+	cleanup at process exit. Allows *gdb* to be reclaimed. Also set
+	buffer-status-id to a meaningful string
+
+	* buffers.jl (default-directory): set its permanent-local
+	property
+
+	* rm-misc.jl (rm-forward): fix post-send actions
+
 Mon Jun  8 09:50:29 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* fill.jl (fill-area): another attempt at fixing this function,
