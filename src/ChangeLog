@@ -1,3 +1,10 @@
+2001-07-15  John Harper  <jsh@pixelslut.com>
+
+	* rep_lisp.h: only do the `#define Qnil &rep_eol_datum'
+	shortcut if __APPLE__ isn't defined, since it doesn't seem to
+	work with Mac OS X (for at least some versions of the
+	toolchain)
+
 2001-07-02  John Harper  <jsh@pixelslut.com>
 
 	* version 0.14

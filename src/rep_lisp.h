@@ -888,7 +888,10 @@ extern repv Qnil;
 # ifdef rep_DEFINE_QNIL
     repv Qnil = rep_VAL (&rep_eol_datum);
 # endif
-# define Qnil rep_VAL(&rep_eol_datum)
+  /* OS X has problems with this */
+# ifndef __APPLE__
+#  define Qnil rep_VAL(&rep_eol_datum)
+# endif
 #endif
 
 
