@@ -220,7 +220,7 @@ new list which is returned.
     repv *resend = &res;
     while(rep_CONSP(args))
     {
-	if(!rep_LISTP(rep_CAR(args)))
+	if(!rep_LISTP(rep_CAR(args)) && rep_CDR (args) != Qnil)
 	    return rep_signal_arg_error(rep_CAR(args), i);
 	if(rep_CONSP(rep_CAR(args)) && rep_CONSP(rep_CDR(args)))
 	{
