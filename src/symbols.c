@@ -582,6 +582,20 @@ rep_call_with_closure (repv closure, repv (*fun)(repv arg), repv arg)
 
 /* Symbol binding */
 
+repv
+rep_bind_special (repv oldList, repv symbol, repv newVal)
+{
+    if (inlined_search_special_environment (symbol))
+    {
+	rep_special_bindings = Fcons (Fcons (symbol, newVal),
+				      rep_special_bindings);
+	oldList = rep_MARK_SPEC_BINDING (oldList);
+    }
+    else
+	Fsignal (Qvoid_value, rep_LIST_1(symbol));
+    return oldList;
+}
+
 /* This give SYMBOL a new value, saving the old one onto the front of
    the list OLDLIST. OLDLIST is structured like (NSPECIALS . NLEXICALS)
    Returns the new version of OLDLIST.   */
@@ -594,14 +608,7 @@ rep_bind_symbol(repv oldList, repv symbol, repv newVal)
     if (rep_SYM(symbol)->car & rep_SF_SPECIAL)
     {
 	/* special binding */
-	if (inlined_search_special_environment (symbol))
-	{
-	    rep_special_bindings = Fcons (Fcons (symbol, newVal),
-					  rep_special_bindings);
-	    oldList = rep_MARK_SPEC_BINDING (oldList);
-	}
-	else
-	    Fsignal (Qvoid_value, rep_LIST_1(symbol));
+	oldList = rep_bind_special (oldList, symbol, newVal);
     }
     else
     {
