@@ -13,6 +13,7 @@ Source: ftp://ftp.dcs.warwick.ac.uk/people/John.Harper/librep/librep-%{ver}.tar.
 URL: http://www.dcs.warwick.ac.uk/~john/sw/librep.html
 Packager: John Harper <john@dcs.warwick.ac.uk>
 Buildroot: /var/tmp/%{nam}-root
+BuildPrereq: gmp-devel gdbm-devel readline-devel
 PreReq: /sbin/install-info
 
 %description
