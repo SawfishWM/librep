@@ -424,7 +424,7 @@ with the current time of day.
 }
 
 DEFUN("translate-string", Ftranslate_string, Stranslate_string, (repv string, repv table), rep_Subr2) /*
-::doc:Stranslate-string:
+::doc:translate-string:
 translate-string STRING TRANSLATION-TABLE
 
 Applies the TRANSLATION-TABLE to each character in the string STRING.

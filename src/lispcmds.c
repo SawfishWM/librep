@@ -2442,7 +2442,7 @@ of whatever was changed. Return the value of the last FORM evaluated.
 }
 
 DEFUN("featurep", Ffeaturep, Sfeaturep, (repv feature), rep_Subr1) /*
-::doc:Sfeaturep::
+::doc:featurep::
 featurep FEATURE
 
 Return non-nil if feature FEATURE has already been loaded.
@@ -2458,7 +2458,7 @@ Return non-nil if feature FEATURE has already been loaded.
 }
 
 DEFUN("provide", Fprovide, Sprovide, (repv feature), rep_Subr1) /*
-::doc:Sprovide::
+::doc:provide::
 provide FEATURE
 
 Show that the feature FEATURE (a symbol) has been loaded.
@@ -2480,7 +2480,7 @@ Show that the feature FEATURE (a symbol) has been loaded.
 
 DEFUN_INT("require", Frequire, Srequire, (repv feature, repv file), rep_Subr2,
 	  "SFeature to load:") /*
-::doc:Srequire::
+::doc:require::
 require FEATURE [FILE]
 
 If FEATURE (a symbol) has not already been loaded, load it. The file
