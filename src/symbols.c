@@ -143,39 +143,57 @@ symbol_princ(repv strm, repv obj)
 static void
 symbol_print(repv strm, repv obj)
 {
-    u_char *s = rep_STR(rep_SYM(obj)->name);
-    u_char c;
-    rep_bool all_digits = isdigit (*s);
+    /* output a maximum of 2n chars for a symbol name of length n */
+    u_char *buf = alloca (rep_STRING_LEN (rep_SYM (obj)->name) * 2);
+    register u_char *out = buf;
+    register u_char *s;
 
-    while((c = *s++))
+    s = rep_STR (rep_SYM (obj)->name);
+    switch (*s++)
     {
-	switch(c)
+    case '0': case '1': case '2': case '3': case '4':
+    case '5': case '6': case '7': case '8': case '9':
+    case '-': case '+': case '.':
+
+    pass1:
+	switch (*s++)
 	{
+	case 0:
+	    *out++ = '\\';
+	    break;
+
+	case '0': case '1': case '2': case '3': case '4':
+	case '5': case '6': case '7': case '8': case '9':
+	case '/': case '.':
+	    goto pass1;
+	}
+    }
+
+    s = rep_STR (rep_SYM (obj)->name);
+    while (1)
+    {
+	u_char c = *s++;
+	switch (c)
+	{
+	case 0:
+	    goto out;
+
 	case ' ': case '\t': case '\n': case '\f':
 	case '(': case ')': case '[': case ']':
 	case '\'': case '"': case ';': case '\\':
-	case '|': case '#':
-	    rep_stream_putc(strm, (int)'\\');
-	    all_digits = rep_FALSE;
-	    break;
-
-	case '.': case '/': case 'e': case 'E':
-	    if (all_digits)
-	    {
-		rep_stream_putc (strm, (int) '\\');
-		all_digits = rep_FALSE;
-	    }
+	case '|': case '#': case ',': case '`':
+	    *out++ = '\\';
 	    break;
 
 	default:
-	    if (!isdigit (c))
-		all_digits = rep_FALSE;
-	    if(iscntrl(c))
-		rep_stream_putc(strm, (int)'\\');
+	    if (iscntrl (c))
+		*out++ = '\\';
 	    break;
 	}
-	rep_stream_putc(strm, (int)c);
+	*out++ = c;
     }
+out:
+    rep_stream_puts (strm, buf, out - buf, rep_FALSE);
 }
 
 void
