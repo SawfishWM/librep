@@ -39,4 +39,13 @@ function."
 	  string
 	(apply concat (nreverse (cons (substring string point) out)))))))
 
-(export-bindings '(string-replace))
+(defun string-split (string regexp)
+  "Return a list of substrings of STRING, each delimited by REGEXP."
+  (let loop ((point 0)
+	     (parts '()))
+    (if (string-match regexp string point)
+	(loop (match-end)
+	      (cons (substring string point (match-start)) parts))
+      (nreverse (cons (substring string point) parts)))))
+
+(export-bindings '(string-replace string-split))
