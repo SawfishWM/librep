@@ -358,7 +358,6 @@ is one of these that form is compiled.")
 					   (cons 'lambda (nthcdr 2 form))))
 				    comp-macro-env)))
 		       ((eq (car form) 'defsubst)
-			(comp-remember-fun (nth 1 form) (nth 2 form))
 			(setq comp-inline-env
 			      (cons (cons (nth 1 form)
 					  (cons 'lambda (nthcdr 2 form)))
@@ -1384,6 +1383,7 @@ that files which shouldn't be compiled aren't."
 (put 'save-environment 'compile-fun comp-compile-save-environment)
 
 (defun comp-compile-defun (form)
+  (comp-remember-fun (nth 1 form) (nth 2 form))
   (comp-compile-constant (nth 1 form))
   (comp-write-op op-dup)
   (comp-inc-stack)
@@ -1395,6 +1395,7 @@ that files which shouldn't be compiled aren't."
 (put 'defun 'compile-fun comp-compile-defun)
 
 (defun comp-compile-defmacro (form)
+  (comp-remember-fun (nth 1 form) (nth 2 form))
   (comp-compile-constant (nth 1 form))
   (comp-write-op op-dup)
   (comp-inc-stack)
