@@ -146,6 +146,7 @@ extern repv Qterm_interrupt;
 extern repv Qstack_error;
 extern repv Qprint_escape, Qprint_length, Qprint_level, Qnewlines;
 extern repv rep_env, rep_fenv, rep_special_env;
+extern repv (*rep_bytecode_interpreter)(repv code, repv consts, repv stack);
 extern struct rep_Call *rep_call_stack;
 extern int rep_test_int_counter;
 extern int rep_test_int_period;
