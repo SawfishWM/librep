@@ -1525,6 +1525,7 @@ path_error:
 	rep_PUSH_CALL(lc);
 	rep_env = Qnil;
 
+	result = Qnil;
 	c = rep_stream_getc(stream);
 	while((c != EOF) && (tem = rep_readl(stream, &c)))
 	{
