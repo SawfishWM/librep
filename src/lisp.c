@@ -1735,7 +1735,7 @@ Calls FUNCTION with arguments ARGS... and returns the result.
     if(!rep_CONSP(args))
 	return rep_signal_missing_arg(1);
     else
-	return rep_funcall(rep_CAR(args), rep_CDR(args), rep_FALSE);
+	return apply(rep_CAR(args), rep_CDR(args), Qnil);
 }
 
 DEFUN("apply", Fapply, Sapply, (repv args), rep_SubrN) /*

@@ -145,10 +145,14 @@ get_main_options(char *prog_name, int *argc_p, char ***argv_p)
 
     if (rep_get_option("--batch", 0))
 	Fset (Qbatch_mode, Qt);
+
     if (rep_get_option("--interp", 0))
+    {
 	Fset (Qinterpreted_mode, Qt);
-    if (rep_get_option("--line-numbers", 0))
+
+	/* XXX somewhat non-related, but.. */
 	rep_record_origins = rep_TRUE;
+    }
 
     return rep_TRUE;
 }
