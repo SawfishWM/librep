@@ -162,6 +162,9 @@
 /* Define if you have the setitimer() function */
 #define HAVE_SETITIMER
 
+/* Define if you have the dladdr() function */
+#define HAVE_DLADDR
+
 /* Define if you have the <dirent.h> header file.  */
 #undef HAVE_DIRENT_H
 
