@@ -1021,6 +1021,7 @@ last garbage-collection is greater than `garbage-threshold'.
 
     /* Finished marking, start sweeping. */
 
+    rep_sweep_tuples ();
     for(i = 0; i < TYPE_HASH_SIZE; i++)
     {
 	rep_type *t = data_types[i];
@@ -1046,9 +1047,9 @@ last garbage-collection is greater than `garbage-threshold'.
     {
 	return rep_list_5(Fcons(rep_MAKE_INT(used_cons),
 				rep_MAKE_INT(allocated_cons - used_cons)),
-			  Fcons(rep_MAKE_INT(rep_used_symbols),
-				rep_MAKE_INT(rep_allocated_symbols
-					     - rep_used_symbols)),
+			  Fcons(rep_MAKE_INT(rep_used_tuples),
+				rep_MAKE_INT(rep_allocated_tuples
+					     - rep_used_tuples)),
 			  rep_list_3(rep_MAKE_INT(used_strings),
 				     rep_MAKE_INT(allocated_strings),
 				     rep_MAKE_INT(allocated_string_bytes)),
