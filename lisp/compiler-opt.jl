@@ -296,6 +296,12 @@
 	  (comp-peep-del-0-1)
 	  (setq keep-going t))
 
+	 ;; unbind; return --> return
+	 ((and (eq (car insn0) op-unbind)
+	       (eq (car insn1) op-return))
+	  (comp-peep-del-0)
+	  (setq keep-going t))
+
 	 ;; <varref> X; dup... ; <varref> X --> <varref> X; dup...; dup
 	 ((and (memq (car insn0) comp-varref-insns)
 	       (eq (car insn1) op-dup))
@@ -341,6 +347,16 @@
 	       (setq tem (car (cdr tem)))
 	       (eq (car tem) op-jmp))
 	  (rplacd insn0 (cdr tem))
+	  (setq keep-going t))
+
+	 ;; jmp X; ... X: return --> return; ... X: return
+	 ((and (eq (car insn0) op-jmp)
+	       (setq tem (or (memq (cdr insn0) (cdr code-string))
+			     (error "Can't find jump destination")))
+	       (setq tem (car (cdr tem)))
+	       (eq (car tem) op-return))
+	  (rplaca insn0 op-return)
+	  (rplacd insn0 nil)
 	  (setq keep-going t))
 
 	 ;; {jnp,jtp} X; ... X: <cond. jmp> Y --> whatever
