@@ -1,3 +1,11 @@
+2000-05-22  John Harper  <john@dcs.warwick.ac.uk>
+
+	* numbers.c (Fstring_to_number): return Qnil if the string
+	couldn't be parsed (not rep_NULL!)
+
+	* lispcmds.c (Fappend): last arg may be a non-list now, to form
+	an improper output list
+
 2000-05-21  John Harper  <john@dcs.warwick.ac.uk>
 
 	* values.c (cons_sweep): don't update global variables each

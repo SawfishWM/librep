@@ -69,7 +69,7 @@
 			  tan asin acos atan sqrt expt exact->inexact
 			  inexact->exact string->number number->string
 
-			  char=? char<? char>? char<=? char>=?
+			  char? char=? char<? char>? char<=? char>=?
 			  char-ci=? char-ci<? char-ci>? char-ci<=?
 			  char-ci>=? char-alphabetic? char-numeric?
 			  char-whitespace? char-upper-case?

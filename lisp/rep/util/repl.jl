@@ -100,7 +100,7 @@
      (lambda (file . args)
        (%eval-in-structure `(,load ,file ,@args)
 			   (%intern-structure *repl-in-struct*))))
-(put 'load-file 'repl-help "FILENAME")
+(put 'load-file 'repl-help "\"FILENAME\"")
 
 (put 'open 'repl-command
      (lambda structs

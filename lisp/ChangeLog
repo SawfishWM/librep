@@ -1,3 +1,19 @@
+2000-05-22  John Harper  <john@dcs.warwick.ac.uk>
+
+	* scheme-syntax.jl (cond): now expands into an `if' chain, this
+	is to enable simple handling of `(TEST => FUNCTION)' syntax
+	(case): remember to add the key to the expansion
+
+	* scheme-misc.jl (close-input-port, close-output-port): detect
+	and ignore files that have already been closed
+
+	* scheme-data.jl (char?): defined and exported
+	(complex?): always returns #t not #f
+	(string->number): defined using make-nil-predicate
+
+	* memoize.jl (memoize-function): renamed as `memoize' and
+	removed the code to work on symbol values
+
 2000-05-17  John Harper  <john@dcs.warwick.ac.uk>
 
 	* debug.jl: added `up' and `down' commands; catch errors during

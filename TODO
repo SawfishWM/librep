@@ -10,6 +10,8 @@ and more long-term ideas are marked -
 Outstanding bugs
 ================
 
+ ! make with-fluids use open barriers
+
  ! document in manual: records, queues, datums, (declare ..)
 
  ! scheme define/lambda doesn't splice begin forms
