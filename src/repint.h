@@ -117,17 +117,20 @@ struct rep_struct_struct {
        environment, or Qt to denote all specials. */
     repv special_env;
 
-    /* If set, currently recursively searching this module for a binding */
-    u_int exclusion : 1;
-
-    /* If set, all (local) bindings are exported by default. */
-    u_int export_all : 1;
+    /* Bytecode interpreter to use when calling functions defined here */
+    repv (*apply_bytecode) (repv subr, int nargs, repv *args);
 };
 
 extern int rep_structure_type;
 
 #define rep_STRUCTUREP(v) rep_CELL16_TYPEP(v, rep_structure_type)
 #define rep_STRUCTURE(v)  ((rep_struct *) rep_PTR(v))
+
+/* If set, currently recursively searching this module for a binding */
+#define rep_STF_EXCLUSION	(1 << (rep_CELL16_TYPE_BITS + 0))
+
+/* If set, all (local) bindings are exported by default. */
+#define rep_STF_EXPORT_ALL	(1 << (rep_CELL16_TYPE_BITS + 1))
 
 #define rep_SPECIAL_ENV   (rep_STRUCTURE(rep_structure)->special_env)
 
@@ -145,10 +148,6 @@ extern int rep_structure_type;
 #define rep_USE_FUNARG(f)				\
     do {						\
 	rep_env = rep_FUNARG(f)->env;			\
-	if (!(rep_FUNARG(f)->car & rep_FF_NO_BYTE_CODE)) \
-	    rep_bytecode_interpreter = rep_apply_bytecode; \
-	else						\
-	    rep_bytecode_interpreter = 0;		\
 	rep_structure = rep_FUNARG(f)->structure;	\
     } while (0)
 
@@ -156,7 +155,6 @@ extern int rep_structure_type;
     do {					\
 	rep_env = Qnil;				\
 	rep_structure = rep_default_structure;	\
-	rep_bytecode_interpreter = rep_apply_bytecode; \
     } while (0)
 
 
@@ -171,14 +169,12 @@ struct rep_Call {
     repv args_evalled_p;
     repv saved_env;
     repv saved_structure;
-    repv (*saved_bytecode)(repv, int, repv *);
 };
 
 #define rep_PUSH_CALL(lc)		\
     do {				\
 	(lc).saved_env = rep_env;	\
 	(lc).saved_structure = rep_structure; \
-	(lc).saved_bytecode = rep_bytecode_interpreter; \
 	(lc).next = rep_call_stack;	\
 	rep_call_stack = &(lc);		\
     } while (0)
@@ -187,7 +183,6 @@ struct rep_Call {
     do {				\
 	rep_env = (lc).saved_env;	\
 	rep_structure = (lc).saved_structure; \
-	rep_bytecode_interpreter = (lc).saved_bytecode; \
 	rep_call_stack = (lc).next;	\
     } while (0)
 
