@@ -74,8 +74,6 @@ static u_long byte_code_usage[256];
 		unwind-protect FORM to always evaluate
 	(INTEGER . INTEGER)
 		car special and cdr lexical bindings
-	FUNARG
-		instantiate this closure
 	(error . (PC . STACK-DEPTH))
 		not unbound here; install exception handler at PC
 
@@ -105,11 +103,6 @@ inline_unbind_object(repv item)
 		t->unbind(item);
 	    return 1;
 	}
-    }
-    else if (rep_FUNARGP(item))
-    {
-	rep_USE_FUNARG(item);
-	return 1;
     }
     else
     {
@@ -1316,11 +1309,6 @@ again:
 	    else
 		TOP = Qnil;
 	    goto fetch;
-
-	case OP_BINDENV:
-	    bindstack = Fcons (Fmake_closure (Qnil, Qnil), bindstack);
-	    impurity++;
-	    break;
 
 	case OP_POP_ALL:
 	    stackp = stackbase - 1;

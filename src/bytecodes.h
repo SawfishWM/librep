@@ -229,8 +229,7 @@
 #define OP_MAKE_CLOSURE 0xbc		/* push (make-closure pop[1] pop[2]) */
 #define OP_UNBINDALL_0 0xbd
 #define OP_CLOSUREP 0xbe		/* push (closurep pop[1]) */
-#define OP_BINDENV 0xbf
-#define OP_POP_ALL 0xc0
+#define OP_POP_ALL 0xbf
 
 
 /* Jump opcodes */
