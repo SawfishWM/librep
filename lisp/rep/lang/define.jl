@@ -116,7 +116,7 @@
      (let ((body (nthcdr 2 form))
 	   (header nil))
        ;; skip doc strings and interactive decls..
-       (while (or (stringp body) (eq (caar body) 'interactive))
+       (while (or (stringp (car body)) (eq (caar body) 'interactive))
 	 (setq header (cons (car body) header))
 	 (setq body (cdr body)))
        `(lambda ,(cadr form)
