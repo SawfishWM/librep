@@ -1,3 +1,9 @@
+2001-10-01  John Harper  <jsh@unfactored.org>
+
+	* version 0.15
+
+	* numbers.c: also check for HAVE_GMP_RANDINIT
+
 2001-09-23  John Harper  <jsh@unfactored.org>
 
 	* numbers.c, misc.c (Frandom): moved to numbers.c. When gmp is

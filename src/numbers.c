@@ -2797,22 +2797,7 @@ in base 10.
 
 /* Random number generation */
 
-/* Try to work out how many bits of randomness rand() will give.. */
-#ifdef HAVE_LRAND48
-# define RAND_BITS 31
-# define rand lrand48
-# define srand srand48
-#else
-# if RAND_MAX == 32768
-#  define RAND_BITS 15
-# elif RAND_MAX == 2147483647
-#  define RAND_BITS 31
-# else
-#  define RAND_BITS 63
-# endif
-#endif
-
-#ifdef HAVE_GMP
+#if defined (HAVE_GMP) && defined (HAVE_GMP_RANDINIT)
 
 static gmp_randstate_t random_state;
 
@@ -2854,6 +2839,22 @@ random_new (repv limit_)
 }
 
 #else /* HAVE_GMP */
+
+/* Try to work out how many bits of randomness rand() will give.. */
+#ifdef HAVE_LRAND48
+# define RAND_BITS 31
+# define rand lrand48
+# define srand srand48
+#else
+# if RAND_MAX == 32768
+#  define RAND_BITS 15
+# elif RAND_MAX == 2147483647
+#  define RAND_BITS 31
+# else
+#  define RAND_BITS 63
+# endif
+#endif
+
 static void
 random_seed (u_long seed)
 {
@@ -2893,6 +2894,7 @@ random_new (repv limit_)
 
     return rep_make_long_int (val);
 }
+
 #endif /* !HAVE_GMP */
 
 DEFUN("random", Frandom, Srandom, (repv arg), rep_Subr1) /*
