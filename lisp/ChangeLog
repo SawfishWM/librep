@@ -1,5 +1,7 @@
 Fri Jun  5 10:21:32 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* rm-restrict.jl (rm-rule-symbol): made into a macro
+
 	* compiler.jl (compile-file): ensure that the output file ends
 	in .jlc; expand all top level uses of macros. Also change how
 	eval-when-compile works (a default macro definition for it)
