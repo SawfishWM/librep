@@ -609,6 +609,19 @@ typedef struct rep_funarg_struct {
     } while (0)
 
 
+/* Guardians */
+
+typedef struct rep_guardian_struct {
+    repv car;
+    struct rep_guardian_struct *next;
+    repv accessible;
+    repv inaccessible;
+} rep_guardian;
+
+#define rep_GUARDIAN(v)		((rep_guardian *) rep_PTR(v))
+#define rep_GUARDIANP(v)	rep_CELL16_TYPEP(v, rep_guardian_type)
+
+
 /* Other definitions */
 
 /* Macros for other types */
