@@ -1,3 +1,12 @@
+2000-05-26  John Harper  <john@dcs.warwick.ac.uk>
+
+	* repint.h (POS, ABS): new macros
+
+	* numbers.c (rep_parse_number): better error checking
+	(rep_integer_foldl): new function, checks for INTEGERP args
+	(rep_integer_gcd): new function
+	(Fgcd): generalised to any number of arguments
+
 2000-05-25  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lisp.c (rep_bind_lambda_list_1): now takes a BINDER arg, a

@@ -83,21 +83,17 @@ Outstanding bugs
 General programming tasks:
 ==========================
 
+ - add regression tests
+
  - scheme compilation is worse than rep compilation
 
    should be able to make this a lot better, maybe not as good as rep
    code (since the vm primitives are designed for that), but still a
    lot better..
 
+   [ it's better now, but still room for improvement ]
+
  - the gc sucks
-
-   raising garbage-threshold to 200k helps, but gc still takes about
-   25% of cpu time for the gtk-glue.c build time
-
-   the current gc has a tradeoff between mark time and sweep time,
-   raising the threshold decreases cumulative mark time, but increases
-   sweep time. Increasing the threshold to 400k still reduces the
-   overall time, but only by about 4% over the 200k value
 
    is it possible to add a good (generational?) gc?
 
@@ -131,15 +127,6 @@ General programming tasks:
    1. handle constant keys
 
    2. optimize the search
-
- - Eliminate lexically-bound symbols from compiled code?
-
-   currently the symbols are only used when the binding is created; all
-   access is done through lexical addressing.
-
-   lexical leaf procedures (i.e. those without any `enclose' or
-   `make-closure' instructions) don't need to include symbols, since
-   there's no way they could be needed
 
  - Sandboxed bytecode interpreter
 

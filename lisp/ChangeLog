@@ -1,3 +1,22 @@
+2000-05-26  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compiler-src.jl (coalesce-constants, mash-constants): new
+	functions, in preparation for more constant optimizations
+
+	* lisp-doc.jl (describe-lambda-list): new function
+
+	* compiler-scheme.jl: list? no longer == listp
+
+	* compiler-basic.jl (compile-lambda): add the argument spec to
+	the front of any doc string
+
+	* scheme-data.jl (boolean?): fixed
+	(list?): no longer equivalent to rep's listp, scheme standard
+	says this must only return #t if its last cdr is the empty list
+	(string-ci>?): fixed
+
+	* init.jl (lcm): handle 0...N args
+
 2000-05-25  John Harper  <john@dcs.warwick.ac.uk>
 
 	* compiler-basic.jl (compile-lambda-spec): if the spec contains
