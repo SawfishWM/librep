@@ -1,3 +1,13 @@
+Mon Apr 20 00:20:06 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* cvs.jl (cvs-summary-mode): defined this function to provide
+	the mode's documentation
+	(cvs-command-get-files): in the summary buffer, when no files
+	are marked, select prefix-arg files, not just one
+
+	* find-url.jl (find-url-alist): deleted the http: method since
+	it's covered by the default action
+
 Sun Apr 19 15:30:07 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* cvs.jl, autoload.jl: a rudimentary CVS mode, inspired by
