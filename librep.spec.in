@@ -68,12 +68,13 @@ rm -rf $RPM_BUILD_ROOT
 %{_prefix}/libexec/rep/%{_host}/rules.mk
 %{_prefix}/share/aclocal/rep.m4
 
-%post
-ldconfig
+%post -p /sbin/ldconfig
 
-%postun
-ldconfig
+%postun -p /sbin/ldconfig
 
 %changelog
+* Wed Nov 10 1999 Michael K. Johnson <johnsonm@redhat.com>
+- post{,un} use -p
+
 * Mon Sep 13 1999 Aron Griffis <agriffis@bigfoot.com>
 - 0.5 spec file update: added buildroot
