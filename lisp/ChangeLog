@@ -1,5 +1,9 @@
 Wed May  6 16:23:46 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* rcs.jl, rcs-hooks.jl, dired.jl, dired-hooks.jl: use autoload
+	mechanism to load -hooks files, rcs-mode also autoloads its
+	main keymap
+
 	* cvs.jl (cvs-keymap): now autoloaded
 
 	* lisp.jl (autoload-variable): new function
