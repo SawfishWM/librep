@@ -597,6 +597,7 @@ typedef struct rep_funarg_struct {
     repv env;
     repv fenv;
     repv special_env;
+    repv fh_env;			/* file handlers */
 } rep_funarg;
 
 #define rep_FUNARG(v) ((rep_funarg *)rep_PTR(v))
@@ -607,6 +608,15 @@ typedef struct rep_funarg_struct {
 	rep_env = rep_FUNARG(f)->env;			\
 	rep_fenv = rep_FUNARG(f)->fenv;			\
 	rep_special_env = rep_FUNARG(f)->special_env;	\
+	rep_fh_env = rep_FUNARG(f)->fh_env;		\
+    } while (0)
+
+#define rep_USE_DEFAULT_ENV			\
+    do {					\
+	rep_env = Qnil;				\
+	rep_fenv = Qt;				\
+	rep_special_env = Fcons (Qnil, Qt);	\
+	rep_fh_env = Qt;			\
     } while (0)
 
 
@@ -739,6 +749,7 @@ struct rep_Call {
     repv args_evalled_p;
     repv saved_env, saved_fenv;
     repv saved_special_env;
+    repv saved_fh_env;
 };
 
 #define rep_PUSH_CALL(lc)		\
@@ -746,6 +757,7 @@ struct rep_Call {
 	(lc).saved_env = rep_env;	\
 	(lc).saved_special_env = rep_special_env; \
 	(lc).saved_fenv = rep_fenv;	\
+	(lc).saved_fh_env = rep_fh_env;	\
 	(lc).next = rep_call_stack;	\
 	rep_call_stack = &(lc);		\
     } while (0)
@@ -755,6 +767,7 @@ struct rep_Call {
 	rep_env = (lc).saved_env;	\
 	rep_special_env = (lc).saved_special_env; \
 	rep_fenv = (lc).saved_fenv;	\
+	rep_fh_env = (lc).saved_fh_env;	\
 	rep_call_stack = (lc).next;	\
     } while (0)
 
