@@ -287,30 +287,30 @@ DEFUN("rplaca", Frplaca, Srplaca, (repv cons, repv car), rep_Subr2) /*
 ::doc:rplaca::
 rplaca CONS-CELL NEW-CAR
 
-Sets the value of the car slot in CONS-CELL to NEW-CAR. Returns the new
-value.
+Sets the value of the car slot in CONS-CELL to NEW-CAR.
+Returns the CONS-CELL.
 ::end:: */
 {
     rep_DECLARE1(cons, rep_CONSP);
     if(!rep_CONS_WRITABLE_P(cons))
 	return Fsignal(Qsetting_constant, rep_LIST_1(cons));
     rep_CAR(cons) = car;
-    return(car);
+    return(cons);
 }
 
 DEFUN("rplacd", Frplacd, Srplacd, (repv cons, repv cdr), rep_Subr2) /*
 ::doc:rplacd::
 rplacd CONS-CELL NEW-CDR
 
-Sets the value of the cdr slot in CONS-CELL to NEW-CAR. Returns the new
-value.
+Sets the value of the cdr slot in CONS-CELL to NEW-CDR.
+Returns the CONS-CELL.
 ::end:: */
 {
     rep_DECLARE1(cons, rep_CONSP);
     if(!rep_CONS_WRITABLE_P(cons))
 	return Fsignal(Qsetting_constant, rep_LIST_1(cons));
     rep_CDR(cons) = cdr;
-    return(cdr);
+    return(cons);
 }
 
 DEFUN("reverse", Freverse, Sreverse, (repv head), rep_Subr1) /*
