@@ -1,4 +1,11 @@
+1999-09-08  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep.jl: don't overwrite the definition of recursive-edit, it
+	may be useful when using gtk
+
 1999-08-27  John Harper  <john@dcs.warwick.ac.uk>
+
+	* version 0.4
 
 	* dump.jl: changed for new string data layout
 

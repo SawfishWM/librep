@@ -1,4 +1,11 @@
+1999-09-08  John Harper  <john@dcs.warwick.ac.uk>
+
+	* files.c (Fset_input_handler): new function, allows async
+	input on a file handle
+
 1999-08-30  John Harper  <john@dcs.warwick.ac.uk>
+
+	* version 0.4
 
 	* unix_main.c (usr_signal_handler): now invoked by USR2 as well
 	as USR1. USR2 prints all debug buffers to stderr
