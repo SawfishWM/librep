@@ -78,28 +78,30 @@ rep_mark_tuple (repv t)
 void
 rep_sweep_tuples (void)
 {
-    rep_tuple_block *sb = tuple_block_chain;
-    tuple_freelist = NULL;
-    rep_used_tuples = 0;
-    while (sb != 0)
+    rep_tuple_block *sb;
+    rep_tuple *tem_freelist = 0;
+    int tem_used = 0;
+    for (sb = tuple_block_chain; sb != 0; sb = sb->next)
     {
-	int i;
-	rep_tuple_block *nxt = sb->next;
-	for (i = 0; i < rep_TUPLEBLK_SIZE; i++)
+	rep_tuple *this = sb->tuples;
+	rep_tuple *last = &(sb->tuples[rep_TUPLEBLK_SIZE]);
+	while (this < last)
 	{
-	    if (!rep_GC_CELL_MARKEDP (rep_VAL (&sb->tuples[i])))
+	    if (!rep_GC_CELL_MARKEDP (rep_VAL (this)))
 	    {
-		sb->tuples[i].a = rep_VAL (tuple_freelist);
-		tuple_freelist = &sb->tuples[i];
+		this->a = rep_VAL (tem_freelist);
+		tem_freelist = this;
 	    }
 	    else
 	    {
-		rep_GC_CLR_CELL (rep_VAL (&sb->tuples[i]));
-		rep_used_tuples++;
+		rep_GC_CLR_CELL (rep_VAL (this));
+		tem_used++;
 	    }
+	    this++;
 	}
-	sb = nxt;
     }
+    tuple_freelist = tem_freelist;
+    rep_used_tuples = tem_used;
 }
 
 void
