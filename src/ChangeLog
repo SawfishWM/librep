@@ -1,3 +1,38 @@
+2000-04-18  John Harper  <john@dcs.warwick.ac.uk>
+
+	More work to reduce VM consing, increases performance
+	noticeably:
+
+	* lisp.c (rep_bind_lambda_list_1): the inner core of
+	rep_bind_lambda_list in a separate function, takes an array of
+	values to bind to variables
+
+	* lispmach.c: when calling compiled functions use
+	rep_bind_lambda_list_1 to avoid consing a list of arguments
+
+	* lispmach.c: the binding stack is now a vector allocated on
+	the C stack (like the value stack), this reduces the amount
+	consing done by the VM. The maximum size of the binding stack
+	is stored in the upper 16 bits of the STKREQ argument
+
+	* lispcmds.c (Fload): never return an unitialized result value
+
+	* rep_lisp.h (rep_COMPILED_STACK): don't unbox this
+
+2000-04-17  John Harper  <john@dcs.warwick.ac.uk>
+
+	* symbols.c, repint.h, lispmach.c: track number of variable
+	bindings in frame using a single integer, not a pair (limits
+	number of bindings in each frame to 2^16)
+
+	* structures.c (F_name_structure): flush the ref cache
+
+	* streams.c (Fstreamp): deleted
+	(Fpeek_char, Finput_stream_p, Foutput_stream_p): added
+
+	* lisp.c (F_load_autoload): lisp function for loading autoload
+	stubs
+
 2000-04-15  John Harper  <john@dcs.warwick.ac.uk>
 
 	* structures.c (F_eval_in_structure): set rep_env to Qnil while

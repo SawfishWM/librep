@@ -1,3 +1,22 @@
+2000-04-18  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compiler.jl, compiler-vars.jl, compiler-utils.jl,
+	compiler-rep.jl, compiler-inline.jl: track the maximum depth of
+	the binding stack while compiling forms, then embed this into
+	the `stack' property of byte code forms/subrs
+
+	* disassembler.jl: groks the new layout of the `stack' arg
+
+2000-04-17  John Harper  <john@dcs.warwick.ac.uk>
+
+	* scheme-misc.jl (input-port?, output-port?, peek-char):
+	implemented properly now
+
+	* init.jl (streamp): in lisp now
+
+	* compiler-modules.jl (compiler-symbol-value): this now
+	recognizes autoload values, loading them before returning
+
 2000-04-16  John Harper  <john@dcs.warwick.ac.uk>
 
 	* scheme-syntax.jl (lambda): now scans out leading internal
