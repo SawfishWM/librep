@@ -193,6 +193,8 @@ DEFUN("equal-hash", Fequal_hash, Sequal_hash, (repv x, repv n_), rep_Subr2)
 	return Fsymbol_hash (x);
     else if (rep_INTP (x))
 	return rep_MAKE_INT (TRUNC (rep_INT (x)));
+    else if (rep_NUMBERP (x))
+	return rep_MAKE_INT (TRUNC (rep_get_long_uint (x)));
     else
 	return rep_MAKE_INT (rep_TYPE (x) * 255);
 }
