@@ -732,7 +732,7 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 					NULL, &timeout);
 			sigchld_restart(TRUE);
 
-			TEST_INT;
+			TEST_INT_SLOW;
 			if(INT_P)
 			{
 			    int signal;
@@ -749,6 +749,8 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 				signal = SIGKILL;
 			    }
 			    signal_process(pr, signal, TRUE);
+			    if(throw_value == int_cell)
+				throw_value = 0;
 			}
 
 			if(number > 0)
