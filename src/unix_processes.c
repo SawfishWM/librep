@@ -1527,17 +1527,24 @@ Returns the return-value of the last process to be run on PROCESS, or nil if:
 
 DEFUN("process-id", Fprocess_id, Sprocess_id, (repv proc), rep_Subr1) /*
 ::doc:Sprocess-id::
-process-id PROCESS
+process-id [PROCESS]
 
 If PROCESS is running or stopped, return the process-identifier associated
 with it (ie, its pid).
+
+If PROCESS is nil, return the process id of the Lisp interpreter.
 ::end:: */
 {
-    repv res = Qnil;
-    rep_DECLARE1(proc, PROCESSP);
-    if(PR_ACTIVE_P(VPROC(proc)))
-	res = rep_MAKE_INT(VPROC(proc)->pr_Pid);
-    return(res);
+    if (proc == Qnil)
+	return rep_MAKE_INT(getpid ());
+    else
+    {
+	repv res = Qnil;
+	rep_DECLARE1(proc, PROCESSP);
+	if(PR_ACTIVE_P(VPROC(proc)))
+	    res = rep_MAKE_INT(VPROC(proc)->pr_Pid);
+	return(res);
+    }
 }
 
 DEFUN("process-running-p", Fprocess_running_p, Sprocess_running_p, (repv proc), rep_Subr1) /*
