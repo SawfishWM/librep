@@ -7,16 +7,24 @@ Bugs are marked !, things that should be done soon are marked +,
 and more long-term ideas are marked -
 
 
+Before release
+==============
+
+ ! scheme define/lambda doesn't splice begin forms
+
+ + decide whether to have hierarchical modules
+
+   (recent acm toplas paper by Matthias Blume about this in ML)
+
+ + document in manual: records, queues, datums, (declare ..)
+
+   also, document `do' and update `while'
+
+
 Outstanding bugs
 ================
 
  ! the scheme module fails some of the guile test.scm cases
-
- ! document in manual: records, queues, datums, (declare ..)
-
-   also, document `do' and update `while'
-
- ! scheme define/lambda doesn't splice begin forms
 
  ! can't do numerator/denominator of flonums
 

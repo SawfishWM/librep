@@ -1,3 +1,21 @@
+2000-06-01  John Harper  <john@dcs.warwick.ac.uk>
+
+	* backquote.jl (backquote-listify): don't call `eval' to
+	unquote constants, use a special purpose backquote-eval to
+	avoid security breaches
+
+	* scheme-syntax-funs.jl: new file, defines expand-FOO functions
+	for each non-trivial Scheme syntax form. Since nothing is
+	redefined here, doing this removes the need for the gratuitous
+	rep# and hand-expanded macros
+	* scheme-syntax.jl: most macros just call expand-FOO
+
+	* init.jl (make-guardian): use a rest argument in the returned
+	closure so that `(G nil)' can be distinguished from `(G)'
+
+	* init.jl (call-after-load): new function, eval-after-load just
+	calls this now
+
 2000-05-31  John Harper  <john@dcs.warwick.ac.uk>
 
 	* init.jl (with-object): new macro, uses call-with-object

@@ -59,6 +59,7 @@ extern void rep_lisp_init(void);
 extern rep_bool rep_single_step_flag;
 
 /* from lispcmds.c */
+extern rep_xsubr Slambda;
 extern void rep_lispcmds_init(void);
 
 /* from lispmach.c */

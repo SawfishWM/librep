@@ -452,7 +452,9 @@ match the FILE argument to `load'."
   "Arrange for FORM to be evaluated immediately after the library of Lisp code
 LIBRARY has been read by the `load' function. Note that LIBRARY must exactly
 match the FILE argument to `load'."
-  (call-after-load library (lambda () (eval form *root-structure*))))
+  (call-after-load library (lambda ()
+			     (eval form (%intern-structure
+					 *root-structure*)))))
 
 
 ;; loading

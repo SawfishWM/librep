@@ -18,6 +18,8 @@
 # along with Jade; see the file COPYING.  If not, write to
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
+ETAGS:= etags
+
 top_builddir=.
 
 ALL_SUBDIRS = intl src lisp man
@@ -92,8 +94,35 @@ realclean :
 	rm -f config.cache config.h config.log config.status Makefile libtool
 	rm -f *~ NEWS DOC TAGS build.h rules.mk librep.spec
 
+tags: TAGS
+#
+# Use separate and explicit expressions rather than "(def.*" to avoid
+# grabbing:
+# ./lisp/rep.jl:54:       (default-error-handler (car error-data) [...]
+# ./lisp/define.jl:146:  (define-scan-internals body))
+#
 TAGS :
-	etags --language=c `find . -name '*.[ch]' -print` \
-	      --language=lisp `find . -name '*.jl' -print`
+	-rm -f $@
+	set -e;								      \
+	c_files=`find . -name '*.[hc]' -print`;				      \
+	rep_files=`find . -name '*.jl' -print`;				      \
+	${ETAGS} --language=c $$c_files					      \
+	  --language=none						      \
+	   --regex='/[ \t]*DEFSTRING[ \t]*([ \t]*\([^ \t,]+\)/\1/'	      \
+	   --regex='/[ \t]*DEFSYM[ \t]*([ \t]*\([^ \t,]+\)/Q\1/'	      \
+	   --regex='/[ \t]*DEFSYM[ \t]*([ \t]*[^ \t,]+[ \t,]+"\([^"]+\)/\1/'  \
+	   --regex='/[ \t]*DEFUN\(_INT\)?[ \t]*([ \t]*"\([^"]+\)/\2/'	      \
+		$$c_files						      \
+	  --language=lisp $$rep_files					      \
+	  --language=none						      \
+	   --regex='/[ \t]+([ \t]*defun[ \t]+(?[ \t]*\([^ \t)]+\)/\1/'	      \
+	   --regex='/[ \t]+([ \t]*define[ \t]+(?[ \t]*\([^ \t)]+\)/\1/'	      \
+	   --regex='/[ \t]+([ \t]*defmacro[ \t]+(?[ \t]*\([^ \t)]+\)/\1/'     \
+	   --regex='/[ \t]+([ \t]*defsubst[ \t]+(?[ \t]*\([^ \t)]+\)/\1/'     \
+	   --regex='/[ \t]+([ \t]*defconst[ \t]+(?[ \t]*\([^ \t)]+\)/\1/'     \
+	   --regex='/[ \t]+([ \t]*defvar[ \t]+(?[ \t]*\([^ \t)]+\)/\1/'	      \
+	   --regex="/[ \t]+([ \t]*define-file-handler[ \t]+'\([^ \t)]+\)/\1/" \
+	   --regex="/[ \t]+([ \t]*define-datum-printer[ \t]+'\([^ \t)]+\)/\1/"\
+		$$rep_files
 
-.PHONY: install uninstall tar nobak clean realclean TAGS
+.PHONY: install uninstall tar nobak clean realclean TAGS tags

@@ -1,3 +1,11 @@
+2000-06-01  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.c (eval): only handle ((lambda ..) ..) forms inline if
+	Qlambda is still bound to #<subr lambda>
+
+	* lispcmds.c (Fload): Qafter_load_alist now contains thunks,
+	not forms
+
 2000-05-31  John Harper  <john@dcs.warwick.ac.uk>
 
 	* bytecodes.h, lispmach.c (OP_BINDOBJ): flushed

@@ -1,0 +1,6 @@
+2000-05-31  Karl M. Hegbloom  <karlheg@debian.org>
+
+	* Makefile.in (TAGS): Use --regex to grab DEFSTRING, DEFSYM,
+	DEFUN, and DEFUN_INT information also.
+	(TAGS tags): add lowercase target name for lazy typists.
+

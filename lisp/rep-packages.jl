@@ -167,7 +167,7 @@
 	  time-later-p sleep-for sit-for user-login-name user-full-name
 	  user-home-directory system-name message system pwd-prompt
 	  call-hook add-hook remove-hook
-	  in-hook-p eval-after-load getenv setenv unsetenv
+	  in-hook-p call-after-load eval-after-load getenv setenv unsetenv
 	  operating-system rep-version rep-interface-id rep-build-id))
 
 (define-interface rep-process
