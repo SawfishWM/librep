@@ -43,21 +43,82 @@ call it. Otherwise exactly the same as defun."
 	(cons 'defun decl)
 	(list 'put (list 'quote (car decl)) ''compile-inline t)))
 
-
-;; Mutually recursive binding
+(defmacro function (arg)
+  (if (symbolp arg)
+      arg
+    (list 'make-closure arg)))
 
-(defmacro letrec (bindings &rest body)
-  (let
-      ((vars (mapcar (lambda (x)
-		       (if (consp x) (car x) x)) bindings))
-       (setters (mapcar (lambda (x)
-			  (if (consp x)
-			      (cons 'setq x)
-			    (list 'setq x nil))) bindings)))
-    `(let ,vars ,@setters ,@body)))
-    
 
-;; Convenient conditional macros, defined using cond
+;; Binding syntax
+
+(defmacro let args
+  "let [VAR] (BINDINGS...) BODY...
+
+Binds temporary values to symbols while BODY is being evaluated.
+
+Each of the BINDINGS is either a list `(SYMBOL FORMS...)' in which case
+the variable SYMBOL is bound to the result of evaluating `(progn FORMS...)',
+or a single symbol, in which case it is bound to the value `nil'.
+
+If VAR is given, then the symbol VAR is bound to a function whose
+formal parameters are the same as the variables bound by the `let'
+form. Thus the execution of BODY... may be repeated by invoking VAR."
+
+  ((lambda (fun vars values)
+     (cond ((symbolp (car args))
+	    ;; named let
+	    (setq fun (car args))
+	    (setq args (cdr args))))
+     (setq vars (mapcar (lambda (x)
+			  (if (consp x)
+			      (car x)
+			    x)) (car args)))
+     (setq values (mapcar (lambda (x)
+			    (if (consp x)
+				(cons 'progn (cdr x))
+			      nil)) (car args)))
+     (cond (fun
+	    ;; use the progn so the compiler notices the inner letrec
+	    ;; (else it will get macroexpanded away too soon)
+	    (list 'progn
+		  (list 'letrec
+			(list (list fun (list* 'lambda vars (cdr args))))
+			(cons fun values))))
+	   (t (cons (list* 'lambda vars (cdr args)) values))))
+   nil nil nil))
+
+(defmacro let* args
+  "let (BINDINGS...) BODY...
+
+Similar to `let' except that the BINDINGS are installed as their values
+are computed, in the order they are written."
+
+  (let loop ((rest (reverse (car args)))
+	     (body (cons 'progn (cdr args))))
+    (cond ((null rest) body)
+	  (t (loop (cdr rest) (list 'let (list (car rest)) body))))))
+
+(defmacro letrec (bindings . body)
+  "Similar to `let' and `let*' except that the values of the BINDINGS
+are evaluated such that all of the bound variables are in the scope.
+This means that `letrec' may be used to define mutually recursive
+functions."
+
+  ((lambda (vars setters)
+     (list* 'let vars (nconc setters body)))
+   (mapcar (lambda (x)
+	     (cond ((consp x) (car x))
+		   (t x))) bindings)
+   (mapcar (lambda (x)
+	     (cond ((consp x) (cons 'setq x))
+		   (t (list 'setq x nil)))) bindings)))
+
+
+;; Conditional syntax
+
+(defmacro if (condition then &rest else)
+  (cond (else (list 'cond (list condition then) (cons t else)))
+	(t (list 'cond (list condition then)))))
 
 (defmacro when (condition &rest forms)
   "Evaluates CONDITION, if it is non-nil an implicit progn is performed
@@ -68,6 +129,17 @@ with FORMS."
   "Evaluates CONDITION, if it is nil an implicit progn is performed with
 FORMS."
   (list 'if (list 'not condition) (cons 'progn forms)))
+
+(defmacro or args
+  (cons 'cond (mapcar list args)))
+
+(defmacro and args
+  (let loop ((rest (nreverse args))
+	     (body nil))
+    (cond ((null rest) body)
+	  (t (loop (cdr rest) (if body 
+				  (list 'cond (list (car rest) body))
+				(car rest)))))))
 
 
 ;; Function to allow easy creation of autoload stubs
