@@ -71,7 +71,7 @@
       (swap . #x47)			;swap top two values on stack
       (pop . #x48)			;pops the stack
 
-      (nil . #x49)			;pushes nil
+      (nil . #x49)			;pushes ()
       (t . #x4a)			;pushes t
       (cons . #x4b)
       (car . #x4c)
@@ -206,6 +206,8 @@
       (test-scm . #xc4)
       (test-scm-f . #xc5)
 
+      (%define . #xc6)
+
       (last-before-jmps . #xf7)
 
 ;;; All jmps take two-byte arguments
@@ -253,7 +255,7 @@
      0   0   0   0   0   0   0   0
      -1  0   0   0   0   0   0   0	;#xb0
      0   -1  0   -1  -1  0   0   nil
-     -1  -2  -1  -1  0   0   nil nil	;#xc0
+     -1  -2  -1  -1  0   0   -1  nil	;#xc0
      nil nil nil nil nil nil nil nil
      -1  nil nil nil nil nil nil nil	;#xd0
      -1  nil nil nil nil nil nil nil

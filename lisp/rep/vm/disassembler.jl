@@ -41,7 +41,7 @@
      "refn" nil nil nil nil nil nil nil
      "ref" "set" "fluid-ref" "enclose"
      "init-bind" "unbind" "dup" "swap"	; #x40
-     "pop" "push\tnil" "push\tt" "cons"
+     "pop" "push\t()" "push\tt" "cons"
      "car" "cdr" "rplaca" "rplacd"
      "nth" "nthcdr" "aset" "aref"
      "length" "bind" "add" "neg" "sub"	; #x50
@@ -69,7 +69,8 @@
      "log" "sin" "cos" "tan"		; #xb0
      "sqrt" "expt" "swap2" "mod"
      "make-closure" "unbindall-0" "closurep" "pop-all"
-     "fluid-set" "fluid-bind" "memql" "num-eq" "test-scm" "test-scm-f" nil nil	; #xc0
+     "fluid-set" "fluid-bind" "memql" "num-eq"
+     "test-scm" "test-scm-f" "%define" nil	; #xc0
      nil nil nil nil nil nil nil nil
      nil nil nil nil nil nil nil nil	; #xd0
      nil nil nil nil nil nil nil nil
