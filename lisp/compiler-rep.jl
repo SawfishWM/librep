@@ -557,10 +557,10 @@
 		     ;; >1 possible case
 		     (progn
 		       (compile-constant cases)
-		       (emit-insn (bytecode memq)))
-		   ;; only one case, use eq
+		       (emit-insn (bytecode memql)))
+		   ;; only one case, use eql
 		   (compile-constant (car cases))
-		   (emit-insn (bytecode eq)))
+		   (emit-insn (bytecode eql)))
 		 (decrement-stack)
 		 (emit-jmp-insn (bytecode jn) next-label)
 		 (decrement-stack))
@@ -975,7 +975,7 @@
     (put 'eq 'rep-compile-fun compile-2-args)
     (put 'eq 'rep-compile-opcode (bytecode eq))
     (put '= 'rep-compile-fun compile-transitive-relation)
-    (put '= 'rep-compile-opcode (bytecode equal))
+    (put '= 'rep-compile-opcode (bytecode num-eq))
     (put '> 'rep-compile-fun compile-transitive-relation)
     (put '> 'rep-compile-opcode (bytecode gt))
     (put '< 'rep-compile-fun compile-transitive-relation)
