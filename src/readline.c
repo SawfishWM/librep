@@ -43,7 +43,9 @@ completion_generator (char *word, int state)
 	repv fun = Fsymbol_value (Qrl_completion_generator, Qt);
 	if (Ffunctionp (fun) != Qnil)
 	{
-	    completions = rep_call_lisp1 (fun, rep_string_dup (word));
+	    completions = (rep_call_with_barrier
+			   (Ffuncall, rep_list_2 (fun, rep_string_dup (word)),
+			    rep_TRUE, 0, 0, 0));
 	}
 	else
 	{
