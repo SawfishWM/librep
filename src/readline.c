@@ -191,11 +191,10 @@ DEFUN("readline", Freadline, Sreadline, (repv prompt_), rep_Subr1)
 
 /* DL hooks */
 
-rep_xsubr *rep_dl_subrs[] = { &Sreadline, 0 };
-
 repv
 rep_dl_init(void)
 {
+    rep_ADD_SUBR(Sreadline);
     rep_INTERN(readline);
     rep_INTERN_SPECIAL(rl_completion_generator);
     rep_INTERN(boundp);

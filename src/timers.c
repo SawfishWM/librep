@@ -355,8 +355,6 @@ timer_print (repv stream, repv arg)
 
 /* DL hooks */
 
-rep_xsubr *rep_dl_subrs[] = { &Smake_timer, &Sdelete_timer, &Sset_timer, 0 };
-
 repv
 rep_dl_init (void)
 {
@@ -371,6 +369,11 @@ rep_dl_init (void)
     sigemptyset (&alrm_sigset);
     sigaddset (&alrm_sigset, SIGALRM);
     rep_sig_restart (SIGALRM, rep_TRUE);
+
+    rep_ADD_SUBR(Smake_timer);
+    rep_ADD_SUBR(Sdelete_timer);
+    rep_ADD_SUBR(Sset_timer);
+
     rep_INTERN (timers);
     return Qtimers;
 }

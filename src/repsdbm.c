@@ -246,11 +246,6 @@ dbm_compare (repv v1, repv v2)
     return (v1 == v2) ? 0 : 1;
 }
 
-rep_xsubr *rep_dl_subrs[] = { &Ssdbm_open, &Ssdbm_close, &Ssdbm_fetch,
-			      &Ssdbm_store, &Ssdbm_delete, &Ssdbm_firstkey,
-			      &Ssdbm_nextkey, &Ssdbm_rdonly, &Ssdbm_error,
-			      &Ssdbmp, 0 };
-
 repv
 rep_dl_init (void)
 {
@@ -258,6 +253,17 @@ rep_dl_init (void)
 				      dbm_print, dbm_print,
 				      dbm_sweep, dbm_mark,
 				      0, 0, 0, 0, 0, 0, 0);
+    rep_ADD_SUBR(Ssdbm_open);
+    rep_ADD_SUBR(Ssdbm_close);
+    rep_ADD_SUBR(Ssdbm_fetch);
+    rep_ADD_SUBR(Ssdbm_store);
+    rep_ADD_SUBR(Ssdbm_delete);
+    rep_ADD_SUBR(Ssdbm_firstkey);
+    rep_ADD_SUBR(Ssdbm_nextkey);
+    rep_ADD_SUBR(Ssdbm_rdonly);
+    rep_ADD_SUBR(Ssdbm_error);
+    rep_ADD_SUBR(Ssdbmp);
+
     rep_INTERN (sdbm);
     rep_INTERN (insert);
     rep_INTERN (replace);
