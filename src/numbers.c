@@ -592,11 +592,47 @@ rep_get_float (repv in)
     return 0.0;
 }
 
-static int
-number_cmp(repv v1, repv v2)
+/* this ignores exactness */
+int
+rep_compare_numbers (repv v1, repv v2)
 {
     if(!rep_NUMERICP(v1) || !rep_NUMERICP(v2))
 	return 1;
+    promote (&v1, &v2);
+    switch (rep_NUMERIC_TYPE (v1))
+    {
+	double d;
+
+    case rep_NUMBER_INT:
+	return rep_INT(v1) - rep_INT(v2);
+
+    case rep_NUMBER_BIGNUM:
+	return mpz_cmp (rep_NUMBER(v1,z), rep_NUMBER(v2,z));
+
+    case rep_NUMBER_RATIONAL:
+	return mpq_cmp (rep_NUMBER(v1,q), rep_NUMBER(v2,q));
+
+    case rep_NUMBER_FLOAT:
+	d = rep_NUMBER(v1,f) - rep_NUMBER(v2,f);
+	return (d < 0) ? -1 : (d > 0) ? +1 : 0;
+    }
+    return 1;
+}
+
+/* this includes exactness in the comparison */
+static int
+number_cmp (repv v1, repv v2)
+{
+    int i1, i2;
+
+    if(!rep_NUMERICP(v1) || !rep_NUMERICP(v2))
+	return 1;
+
+    i1 = rep_NUMBER_INEXACT_P (v1);
+    i2 = rep_NUMBER_INEXACT_P (v2);
+    if ((i1 && !i2) || (!i1 && i2))
+	return 1;
+
     promote (&v1, &v2);
     switch (rep_NUMERIC_TYPE (v1))
     {
@@ -1131,6 +1167,36 @@ rep_number_logand (repv x, repv y)
     return out;
 }
 
+repv
+rep_number_max (repv x, repv y)
+{
+    repv max;
+    if (rep_NUMBERP (x) || rep_NUMBERP (y))
+    {
+	max = (rep_compare_numbers (x, y) >= 0) ? x : y;
+	if (rep_NUMBER_INEXACT_P (x) || rep_NUMBER_INEXACT_P (y))
+	    max = Fexact_to_inexact (max);
+    }
+    else
+	max = (rep_value_cmp(x, y) >= 0) ? x : y;
+    return max;
+}
+
+repv
+rep_number_min (repv x, repv y)
+{
+    repv min;
+    if (rep_NUMBERP (x) || rep_NUMBERP (y))
+    {
+	min = (rep_compare_numbers (x, y) <= 0) ? x : y;
+	if (rep_NUMBER_INEXACT_P (x) || rep_NUMBER_INEXACT_P (y))
+	    min = Fexact_to_inexact (min);
+    }
+    else
+	min = (rep_value_cmp(x, y) <= 0) ? x : y;
+    return min;
+}
+
 DEFUN("+", Fplus, Splus, (repv args), rep_SubrN) /*
 ::doc:+::
 + NUMBERS...
@@ -1350,7 +1416,12 @@ DEFUN("eql", Feql, Seql, (repv arg1, repv arg2), rep_Subr2) /*
 eql ARG1 ARG2
 
 Similar to `eq' except that numbers with the same value will always be
-considered `eql' (this may or may not be the case with `eq').
+considered `eql' (this may or may not be the case with `eq'). Note
+however that exact and inexact versions of the same number are not
+considered the same value.
+
+As a rule of thumb, if two values print the same, they will be
+considered `eql'.
 ::end:: */
 {
     if(rep_NUMERICP (arg1) && rep_NUMERICP (arg2))
@@ -1966,6 +2037,30 @@ Return the denominator of rational number X.
 	return rep_signal_arg_error (x, 1);
 }
 
+DEFUN("max", Fmax, Smax, (repv args), rep_SubrN) /*
+::doc:max::
+max ARGS...
+
+Returns the greatest of its arguments. There must be at least two
+arguments. When comparing numbers, any inexact arguments cause the
+result to be inexact.
+::end:: */
+{
+    return rep_number_foldl (args, rep_number_max);
+}
+
+DEFUN("min", Fmin, Smin, (repv args), rep_SubrN) /*
+::doc:min::
+min ARGS...
+
+Returns the smallest of its arguments. There must be at least two
+arguments. When comparing numbers, any inexact arguments cause the
+result to be inexact.
+::end:: */
+{
+    return rep_number_foldl (args, rep_number_min);
+}
+
 
 /* init */
 
@@ -2028,4 +2123,6 @@ rep_numbers_init (void)
     rep_ADD_SUBR(Sinexact_to_exact);
     rep_ADD_SUBR(Snumerator);
     rep_ADD_SUBR(Sdenominator);
+    rep_ADD_SUBR(Smax);
+    rep_ADD_SUBR(Smin);
 }
