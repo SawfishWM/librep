@@ -684,6 +684,8 @@ Signals an error if no such binding exists.
 
     /* XXX caching here? */
     tem = Fmemq (name, rep_STRUCTURE (rep_structure)->accessible);
+    if (tem == Qnil)
+	tem = Fmemq (name, rep_STRUCTURE (rep_structure)->imports);
     if (tem && tem != Qnil)
     {
 	rep_struct_node *n = lookup_recursively (name, var);
