@@ -1,3 +1,18 @@
+2000-07-05  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispcmds.c (Fload): _only ever_ try without a suffix if the
+	NO-SUFFIX option is t. This avoids picking up un-suffixed files
+	by mistake (e.g. from the current directory)
+
+2000-07-04  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep_lisp.h (rep_INTERN_SPECIAL): call Fmake_variable_special
+	() on the symbol so that it gets any default value the user has
+	given it [this is compatible with previous library versions]
+
+	* symbols.c (search_special_environment): inline this when
+	rep_SPECIAL_ENV == Qt
+
 2000-07-03  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep-config.sh: source `../libtool --config' then use the

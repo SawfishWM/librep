@@ -1,3 +1,7 @@
+2000-07-05  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep.jl: load-all "autoload" not "autoload.jl"
+
 2000-07-03  John Harper  <john@dcs.warwick.ac.uk>
 
 	* gaol.jl (gaol-safe-functions): added define-value

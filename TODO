@@ -10,6 +10,8 @@ and more long-term ideas are marked -
 Outstanding bugs
 ================
 
+ ! requiring a dl module with a req_requires line opens those as well
+
  ! (read-from-string "((a)") doesn't terminate?
 
  ! scheme define/lambda doesn't splice begin forms
