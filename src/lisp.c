@@ -461,13 +461,17 @@ read_symbol(repv strm, int *c_p)
 			   this char's an 'x' it's hexadecimal. */
 			switch (c)
 			{
+			    static rep_bool dep_hex, dep_octal;
+
 			case 'x': case 'X':
+			    rep_deprecated (&dep_hex, "`0xNN' hexadecimal read syntax");
 			    radix = 16;
 			    nfirst = i + 1;
 			    break;
 
 			case '0': case '1': case '2': case '3':
 			case '4': case '5': case '6': case '7':
+			    rep_deprecated (&dep_octal, "`0NN' octal read syntax");
 			    radix = 8;
 			    nfirst = i;
 			    break;
