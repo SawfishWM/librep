@@ -99,8 +99,8 @@ AC_CHECK_HEADERS(fcntl.h sys/ioctl.h sys/time.h sys/utsname.h unistd.h siginfo.h
 dnl Check for GNU MP library and header files
 GMP_LIBS="-lm"
 AC_ARG_WITH(gmp,
- [  --with-gmp		  Use GMP for bignum/rational numbers
-  --without-gmp		  Don't use GMP], [], [with_gmp=maybe])
+ [  --without-gmp		  Don't use GMP for bignum/rational numbers],
+ [], [with_gmp=maybe])
 
 if test "$with_gmp" != "no"; then
   AC_ARG_WITH(gmp-prefix, [  --with-gmp-prefix=DIR   path to GMP],

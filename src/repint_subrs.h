@@ -72,6 +72,7 @@ extern void rep_lispmach_kill(void);
 
 /* from main.c */
 extern char *rep_stack_bottom;
+extern void rep_deprecated (rep_bool *seen, const char *desc);
 
 /* from macros.c */
 extern void rep_macros_before_gc (void);
