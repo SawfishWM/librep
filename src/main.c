@@ -192,9 +192,11 @@ inner_main(int argc, char **argv)
 	windows_kill();
 	views_kill();
 	buffers_kill();
+	find_kill();
 	glyphs_kill();
 	streams_kill();
     }
+    db_kill();
     return(rc);
 }
 
