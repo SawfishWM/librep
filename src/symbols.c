@@ -1065,16 +1065,10 @@ Returns t if ARG is a symbol.
 
 DEFUN("setq", Fsetq, Ssetq, (repv args, repv tail_posn), rep_SF) /*
 ::doc:setq::
-setq { SYMBOL FORM }...
+setq [SYMBOL FORM] ...
 
 Sets the value of each SYMBOL to the value of its corresponding FORM
-evaluated, returns the value of the last evaluation. ie,
-  (setq x 1 y (symbol-name 'nil))
-   => "nil"
-  x
-   => 1
-  y
-   => "nil"
+evaluated, returns the value of the last evaluation.
 ::end:: */
 {
     repv res = Qnil;
@@ -1098,11 +1092,11 @@ end:
 
 DEFUN ("%define", F_define, S_define, (repv form,  repv tail_posn), rep_SF) /*
 ::doc:%define::
-%define VAR VALUE
+%define SYMBOL FORM
 
-Set the value of the binding of symbol VAR in the current structure to
-VALUE. If no such binding exists, one will be created. (Bindings of
-opened structures are never changed.)
+Evaluate FORM, then create a top-level binding of SYMBOL whose value is
+the result of the evaluation. If such a binding already exists, it will
+be overwritten.
 ::end:: */
 {
     repv var, value;
