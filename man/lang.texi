@@ -335,9 +335,9 @@ Serial data sinks and sources. These may include files, functions, and
 processes. @xref{Streams}.
 
 @item Void
-The empty type, only used in symbols to represent an unset function or
-variable value. Note that this is not the same as @code{nil}, which is
-the empty list, or false truth value.
+The empty type, only used in symbols to represent an undefined value.
+Note that this is not the same as @code{nil}, which is the empty list,
+or false truth value.
 @end table
 
 
@@ -398,7 +398,6 @@ A cons cell is written in what is known as @dfn{dotted pair notation},
 an opening left-parenthesis, followed by the read syntax of the first
 object, followed by a dot, then the second object, and finally a
 closing right-parenthesis. For example:
-parentheses,
 
 @lisp
 ("car" . "cdr")
@@ -2308,8 +2307,8 @@ only one location, the symbol, this is quite safe).
 
 @defun get symbol property
 This function searches the property list of the symbol @var{symbol} for
-a property @code{eq} to @var{property}. If such a property is found it
-is returned, else the value @code{nil} is returned.
+a property @code{equal} to @var{property}. If such a property is found
+it is returned, else the value @code{nil} is returned.
 
 @lisp
 (get 'if 'lisp-indent)
@@ -2321,10 +2320,10 @@ is returned, else the value @code{nil} is returned.
 @end defun
 
 @defun put symbol property new-value
-@code{put} sets the value of the property @var{property} to @var{new-value}
-in the property list of the symbol @var{symbol}. If there is an
-existing value for this property it is overwritten. The value returned
-is @var{new-value}.
+@code{put} sets the value of the property @var{property} to
+@var{new-value} in the property list of the symbol @var{symbol}. If
+there is an existing value for this property (using @code{equal} to
+compare keys) it is overwritten. The value returned is @var{new-value}.
 
 @lisp
 (put 'foo 'prop 200)

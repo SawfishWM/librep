@@ -1,3 +1,8 @@
+2000-01-27  John Harper  <john@dcs.warwick.ac.uk>
+
+	* symbols.c (Fget, Fput): properties don't have to be symbols
+	now, use `equal' comparisons as in scheme
+
 2000-01-25  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_main.c (interrupt_signal_handler,
