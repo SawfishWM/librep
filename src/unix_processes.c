@@ -746,7 +746,7 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 		break;
 	    }
 	}
-	else
+	else if(throw_value == LISP_NULL)
 	    cmd_signal(sym_process_error, LIST_1(lookup_errno()));
     }
     else
