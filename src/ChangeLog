@@ -1,3 +1,8 @@
+1999-02-17  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_processes.c (check_for_zombies): always check for
+	zombies, even if we received no SIGCHLD
+
 1999-02-12  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_files.c (sys_canonical_file_name): preserve the trailing
