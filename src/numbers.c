@@ -2077,6 +2077,7 @@ number is parsed from that base, otherwise base 10 is assumed.
     int type = 0;
     int sign = 1;
     u_char *ptr;
+    repv ret;
 
     rep_DECLARE1 (string, rep_STRINGP);
     if (radix == Qnil)
@@ -2101,9 +2102,13 @@ number is parsed from that base, otherwise base 10 is assumed.
 	    type = rep_NUMBER_FLOAT;
     }
 
-    return rep_parse_number (ptr, rep_STRING_LEN (string)
-			     - (ptr - rep_STR (string)),
-			     rep_INT (radix), sign, type);
+    ret = rep_parse_number (ptr, rep_STRING_LEN (string)
+			    - (ptr - rep_STR (string)),
+			    rep_INT (radix), sign, type);
+    if (ret == rep_NULL)
+	ret = Qnil;
+
+    return ret;
 }
 
 DEFUN("number->string", Fnumber_to_string,
