@@ -41,6 +41,8 @@
 (defvar tarfh-gnu-tar-program "tar"
   "Location of GNU tar program.")
 
+(defvar tarfh-alternative-gnu-tar-programs '("gtar"))
+
 ;; Initialised to the current tar version
 (defvar tarfh-gnu-tar-version nil)
 
@@ -68,15 +70,20 @@
 ;; Interface to tar program
 
 (defun tarfh-check-tar-program ()
-  (let*
-      ((output (make-string-output-stream))
-       (process (make-process output)))
-    (when (zerop (call-process process nil tarfh-gnu-tar-program "--version"))
-      (setq output (get-output-stream-string output))
-      (when (string-looking-at "^tar \\(GNU tar\\)\\s*(.*?)\\s*\n" output)
-	(setq tarfh-gnu-tar-version (expand-last-match "\\1"))))
-    (unless tarfh-gnu-tar-version
-      (error "Can't find/execute GNU tar"))))
+  (catch 'out
+    (mapc #'(lambda (prog)
+	      (let*
+		  ((output (make-string-output-stream))
+		   (process (make-process output)))
+		(when (zerop (call-process process nil prog "--version"))
+		  (setq output (get-output-stream-string output))
+		  (when (string-looking-at
+			 "^tar \\(GNU tar\\)\\s*(.*?)\\s*\n" output)
+		    (setq tarfh-gnu-tar-program prog)
+		    (setq tarfh-gnu-tar-version (expand-last-match "\\1"))
+		    (throw 'out t)))))
+	  (cons tarfh-gnu-tar-program tarfh-alternative-gnu-tar-programs))
+    (error "Can't find/execute GNU tar")))
 
 (defun tarfh-call-tar (input-file output op tar-file &rest args)
   (unless tarfh-gnu-tar-version
