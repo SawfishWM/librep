@@ -458,7 +458,9 @@ save_stack (rep_continuation *c)
 
     FLUSH_REGISTER_WINDOWS;
 
-#if defined (__GNUC__) && !defined (BROKEN_ALPHA_GCC)
+    /* __builtin_frame_address doesn't give the right thing on athlon64 */
+
+#if defined (__GNUC__) && !defined (BROKEN_ALPHA_GCC) && !defined (__x86_64)
     c->stack_top = __builtin_frame_address (0);
 #else
     c->stack_top = (char *) &size;

@@ -2705,13 +2705,13 @@ ARGLIST had been evaluated or not before being put into the stack.
 		{
 		    char buf[256];
 #ifdef HAVE_SNPRINTF
-		    snprintf (buf, sizeof (buf), " at %s:%d",
+		    snprintf (buf, sizeof (buf), " at %s:%ld",
 			      rep_STR (rep_CAR (origin)),
-			      rep_INT (rep_CDR (origin)));
+			      (long) rep_INT (rep_CDR (origin)));
 #else
-		    sprintf (buf, " at %s:%d",
+		    sprintf (buf, " at %s:%ld",
 			     rep_STR (rep_CAR (origin)),
-			     rep_INT (rep_CDR (origin)));
+			     (long) rep_INT (rep_CDR (origin)));
 #endif
 		    rep_stream_puts (strm, buf, -1, rep_FALSE);
 		}

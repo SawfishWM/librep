@@ -451,7 +451,7 @@ subsequently call `close-socket' on the created client.
     struct sockaddr_in in_name;
     struct sockaddr_un un_name;
     void *addr;
-    size_t length;
+    socklen_t length;
     int new;
 
     rep_DECLARE (1, sock, ACTIVE_SOCKET_P (sock));
@@ -491,7 +491,7 @@ fill_in_address (rep_socket *s)
 	if (s->namespace == PF_INET)
 	{
 	    struct sockaddr_in name;
-	    size_t length = sizeof (name);
+	    socklen_t length = sizeof (name);
 	    if (getsockname (s->sock, (struct sockaddr *) &name, &length) == 0)
 	    {
 		if (name.sin_addr.s_addr == INADDR_ANY)
@@ -532,7 +532,7 @@ fill_in_peer_address (rep_socket *s)
 	if (s->namespace == PF_INET)
 	{
 	    struct sockaddr_in name;
-	    size_t length = sizeof (name);
+	    socklen_t length = sizeof (name);
 	    if (getpeername (s->sock, (struct sockaddr *) &name, &length) == 0)
 	    {
 		char *addr = inet_ntoa (name.sin_addr);

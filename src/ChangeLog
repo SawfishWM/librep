@@ -1,3 +1,14 @@
+2005-01-19  John Harper  <jsh@unfactored.org>
+
+	* continuations.c (save_stack): don't use __builtin_frame_address
+	on x86_64 architecture, it doesn't seem to give an address on the
+	stack
+
+	* lisp.c (Fbacktrace): fix long->int warning on 64 bit systems
+
+	* sockets.c: use socklen_t instead of size_t where appropriate,
+	fixes warnings on 64 bit systems
+
 2003-12-06  John Harper  <jsh@apple.com>
 
 	* librep.sym: added Fexport_binding to the list
