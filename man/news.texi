@@ -4,6 +4,23 @@
 @cindex News
 
 
+@heading 0.13.2
+
+@itemize @bullet
+
+@item Fix @code{define} so that it tracks bound variables and ignores
+shadowed keywords when traversing code
+
+@item Added checks to compilation process for the kind of missing
+shared-library problems that many people see
+
+@item Fixed the @code{install-aliases} shell script
+
+@item New configure option: @code{--enable-full-name-terminator}
+
+@end itemize
+
+
 @heading 0.13.1
 
 @itemize @bullet
