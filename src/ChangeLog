@@ -1,3 +1,8 @@
+1998-12-03  John Harper  <john@dcs.warwick.ac.uk>
+
+	* misc.c (cmd_user_full_name): if given a parameter, it's the
+	chosen name of the user
+
 1998-11-29  John Harper  <john@jsh.org>
 
 	* keys.c (overriding-local-keymap): new variable, when non-nil,

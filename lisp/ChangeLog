@@ -1,3 +1,8 @@
+1998-12-04  John Harper  <john@dcs.warwick.ac.uk>
+
+	* prompt.jl (prompt): only add result to prompt-history if it's
+	a string (amongst other things)
+
 1998-12-01  John Harper  <john@dcs.warwick.ac.uk>
 
 	* latin-1.jl (insert-latin-1-character): new function, entry of
