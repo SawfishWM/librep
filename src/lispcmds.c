@@ -1777,15 +1777,13 @@ Returns t if NUMBER1 and NUMBER2 are unequal.
 }
 
 #define APPLY_COMPARISON(op)				\
-    if(CONSP(args) && NUMBERP(VCAR(args)))		\
+    if(CONSP(args) && CONSP(VCDR(args)))		\
     {							\
 	VALUE pred = VCAR(args);			\
 	int i = 2;					\
 	args = VCDR(args);				\
 	while(CONSP(args))				\
 	{						\
-	    if(!NUMBERP(VCAR(args)))			\
-		return signal_arg_error(VCAR(args), i);	\
 	    if(!(value_cmp(pred, VCAR(args)) op 0))	\
 		return sym_nil;				\
 	    pred = VCAR(args);				\
@@ -1797,9 +1795,7 @@ Returns t if NUMBER1 and NUMBER2 are unequal.
 	}						\
 	return sym_t;					\
     }							\
-    return (CONSP(args)					\
-	    ? signal_arg_error(VCAR(args), 1)		\
-	    : signal_missing_arg(1));
+    return signal_missing_arg(CONSP(args) ? 2 : 1);					\
 
 _PR VALUE cmd_gtthan(VALUE);
 DEFUN(">", cmd_gtthan, subr_gtthan, (VALUE args), V_SubrN, DOC_gtthan) /*
