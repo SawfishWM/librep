@@ -49,6 +49,10 @@
   ;; Any unknown methods are passed off to BASE-OBJECT, or if that is
   ;; nil, an `unknown-method' error is signalled.
 
+  ;; Each object has the variable `self' bound to the closure
+  ;; representing itself. (In superclasses, `self' points to the
+  ;; subclass originally called into)
+
   ;; Example:
 
   ;; (define obj (object nil
@@ -73,23 +77,29 @@
 
   (defmacro object (base-object . methods)
     (let ((op (gensym))
-	  (args (gensym)))
-      `(lambda (,op . ,args)
-	 (case ,op
-	   ,@(mapcar (lambda (method)
-		       (cond ((consp (car method))
-			      ;; ((METHOD-NAME . PARAM-LIST) BODY...)
-			      `((,(caar method))
-				(let ,(make-let-bindings (cdar method) args)
-				  ,@(cdr method))))
-			     ((symbolp (car method))
-			      ;; (METHOD-NAME FUNCTION)
-			      `((,(car method))
-				(apply ,(cadr method) ,args)))))
-		     methods)
-	   (t (if ,base-object
-		  (apply ,base-object ,op ,args)
-		(signal 'unknown-method (list ,op))))))))
+	  (args (gensym))
+	  (self (gensym))
+	  (base (gensym)))
+      `(letrec ((,base ,base-object)
+		(,self
+		 (lambda (,op #!key (self ,self) . ,args)
+		   (case ,op
+		     ,@(mapcar (lambda (method)
+				 (cond ((consp (car method))
+					;; ((METHOD-NAME . PARAM-LIST) BODY...)
+					`((,(caar method))
+					  (let ,(make-let-bindings
+						 (cdar method) args)
+					    ,@(cdr method))))
+				       ((symbolp (car method))
+					;; (METHOD-NAME FUNCTION)
+					`((,(car method))
+					  (apply ,(cadr method) ,args)))))
+			       methods)
+		     (t (if ,base
+			    (apply ,base ,op #:self self ,args)
+			  (signal 'unknown-method (list ,op))))))))
+	 ,self)))
 
   (define objectp closurep)
 

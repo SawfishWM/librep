@@ -1,3 +1,30 @@
+2001-07-26  John Harper  <jsh@pixelslut.com>
+
+	* rep/util/repl.jl: don't print results that are #undefined
+
+	* rep/lang/interpreter.jl, rep/util/gaol.jl (define-value):
+	finally deleted
+
+	* rep/lang/interpreter.jl: export a self-referential binding of
+	#undefined
+
+	* rep/lang/error-helper.jl: new module -- given an error, try
+	to deduce what could have caused, and how the user can avoid it
+	in future. Currently only handles some void-value errors
+
+	* rep/lang/interpreter.jl (default-error-handler): call the
+	error-helper function
+
+	* rep/data/objects.jl: objects now have an implicit `self'
+	binding -- the object representing themself (or their derived
+	self). Also fixed a bug where the BASE-OBJECT parameter could
+	be evaluated zero or multiple times, instead of just once
+
+2001-07-22  John Harper  <jsh@pixelslut.com>
+
+	* rep/util/repl.jl: use the standard error handler, instead of
+	a cut-and-pasted version
+
 2001-07-17  John Harper  <jsh@pixelslut.com>
 
 	* rep/lang/interpreter.jl (letrec): allow right-hand-sides of

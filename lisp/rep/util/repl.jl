@@ -49,6 +49,7 @@
   (define (repl-eval form)
     (eval form (intern-structure (repl-struct (fluid current-repl)))))
 
+  ;; returns t if repl should run again
   (define (repl-iterate repl input)
     (setq input (concat (repl-pending repl) input))
     (repl-set-pending repl nil)
@@ -77,10 +78,13 @@
 				 (throw 'return
 					(and input
 					     (not (string= "" input))))))))
-		    (format standard-output "%S\n" (repl-eval form))))
+		    (let ((result (repl-eval form)))
+		      (unless (eq result #undefined)
+			(format standard-output "%S\n" result)))))
 		t)
 	    (error
-	     (error-handler (car data) (cdr data))))))))
+	     (default-error-handler (car data) (cdr data))
+	     t))))))
 
   (define (repl #!optional initial-structure)
     ;; returns t if repl should run again
@@ -130,13 +134,6 @@
   (define (repl-completions repl word)
     (let-fluids ((current-repl repl))
       (completion-generator word)))
-
-  (define (error-handler err data)
-    (write standard-error
-	   (format nil "\^G*** %s: %s\n"
-		   (or (get err 'error-message) err)
-		   (mapconcat (lambda (x)
-				(format nil "%s" x)) data ", "))))
 
 
 ;;; module utils

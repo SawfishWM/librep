@@ -59,7 +59,7 @@
       complete-string concat cond condition-case
       call-with-error-handlers cons consp copy-sequence copy-stream
       current-time current-time-string default-boundp default-value
-      defconst %define define define-value defmacro defsubst defun defvar
+      defconst %define define defmacro defsubst defun defvar
       delete delete-if delete-if-not delq digit-char-p do
       elt eq eql equal error eval eval-when-compile
       expand-last-match featurep filter fix-time

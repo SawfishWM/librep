@@ -39,7 +39,9 @@
 (make-binding-immutable '#F)
 (make-binding-immutable '#T)
 
-(export-bindings '(nil t #F #T))
+(%define #undefined '#undefined)
+
+(export-bindings '(nil t #F #T #undefined))
 
 
 ;; function syntax
@@ -298,14 +300,7 @@ string associated with VARIABLE."
      (defvar ,var nil ,doc)
      (setq ,var ,value)))
 
-;; XXX backwards compatibility crap
-(defmacro define-value (var-form value)
-  (if (eq (car var-form) 'quote)
-      ;; constant symbol
-      (list '%define (nth 1 var-form) value)
-    (error "define-value must take a constant variable")))
-
-(export-bindings '(setq-default define-special-variable define-value))
+(export-bindings '(setq-default define-special-variable))
 
 
 ;; Misc syntax
@@ -493,7 +488,9 @@ DATA)' while the handler is evaluated (these are the arguments given to
   (write t (format nil "*** %s: %s"
 		   (or (get err 'error-message) err)
 		   (mapconcat (lambda (x)
-				(format nil "%s" x)) data ", "))))
+				(format nil "%s" x)) data ", ")))
+  (open-structures '(rep.lang.error-helper))
+  (error-helper err data))
 
 (defvar error-handler-function default-error-handler)
 
