@@ -481,13 +481,14 @@
 		       (throw 'no t))
 
 		     ;; okay, let's go
-		     (reload-state)
-		     ;; XXX what if this clashes?
-		     (remember-function var (cadr value))
-		     (compile-lambda-inline value (cdr body)
-					    nil return-follows var)
-		     (forget-function var)
-		     nil)))
+		     (let-fluids ((silence-compiler t))
+		       (reload-state)
+		       ;; XXX what if this clashes?
+		       (remember-function var (cadr value))
+		       (compile-lambda-inline value (cdr body)
+					      nil return-follows var)
+		       (forget-function var)
+		       nil))))
 
 	   ;; no, keep on the usual track
 	   (compile-body (nthcdr 2 form) return-follows)

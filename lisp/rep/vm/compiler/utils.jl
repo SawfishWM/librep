@@ -30,6 +30,7 @@
 	    const-env inline-env
 	    defuns defvars defines
 	    output-stream
+	    silence-compiler
 	    compiler-error
 	    compiler-warning
 	    compiler-deprecated
@@ -73,6 +74,7 @@
 
   ;; also: shadowing
   (defvar *compiler-warnings* '(unused bindings parameters misc deprecated))
+  (define silence-compiler (make-fluid nil))
 
 
 ;;; Message output
@@ -115,17 +117,19 @@
 	    (t ""))))
 
   (defun compiler-message (fmt #!key form #!rest args)
-    (ensure-output-stream)
-    (unless (and (eq last-current-fun (fluid current-fun))
-		 (eq last-current-file (fluid current-file)))
-      (if (fluid current-fun)
-	  (format (fluid output-stream) "%sIn function `%s':\n"
-		  (file-prefix form) (fluid current-fun))
-	(format (fluid output-stream) "%sAt top-level:\n" (file-prefix form))))
-    (apply format (fluid output-stream)
-	   (concat "%s" fmt #\newline) (file-prefix form) args)
-    (setq last-current-fun (fluid current-fun))
-    (setq last-current-file (fluid current-file)))
+    (unless (fluid silence-compiler)
+      (ensure-output-stream)
+      (unless (and (eq last-current-fun (fluid current-fun))
+		   (eq last-current-file (fluid current-file)))
+	(if (fluid current-fun)
+	    (format (fluid output-stream) "%sIn function `%s':\n"
+		    (file-prefix form) (fluid current-fun))
+	  (format (fluid output-stream) "%sAt top-level:\n"
+		  (file-prefix form))))
+      (apply format (fluid output-stream)
+	     (concat "%s" fmt #\newline) (file-prefix form) args)
+      (setq last-current-fun (fluid current-fun))
+      (setq last-current-file (fluid current-file))))
 
   (put 'compile-error 'error-message "Compilation mishap")
   (defun compiler-error (fmt #!key form #!rest data)

@@ -1,5 +1,14 @@
 2001-08-13  John Harper  <jsh@pixelslut.com>
 
+	* rep/vm/compiler/rep.jl (compile-letrec): when compiling the
+	lambda for the second time, turn off all output (to avoid
+	repeating error messages)
+
+	* rep/vm/compiler/utils.jl (silence-compiler): new fluid
+	variable
+	(compiler-message): only print messages if silence-compiler is
+	false
+
 	* rep/threads/message-port.jl (message-fetch): rewrote wait
 	loop so it always tries once after condition-wait failed
 
