@@ -55,4 +55,6 @@
 (autoload 'gaol-replace-function "gaol")
 (autoload 'gaol-add-feature "gaol")
 (autoload 'gaol-add-special "gaol")
+(autoload 'gaol-add-file-handler "gaol")
+(autoload 'gaol-replace-file-handler "gaol")
 ;;; ::autoload-end::
