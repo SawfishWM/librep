@@ -19,6 +19,8 @@
 ;; along with librep; see the file COPYING.  If not, write to
 ;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
+(declare (in-module rep))
+
 (provide 'define)
 
 ;; Commentary:
@@ -76,6 +78,24 @@
 ;; this needs to handle all special forms
 (defun define-scan-form (form)
   (case (car form)
+    ((let let* letrec)
+     (let*
+	 ((type (car form))
+	  fun values body)
+       (setq form (cdr form))
+       (when (and (eq type 'let) (symbolp (car form)))
+	 (setq fun (car form))
+	 (setq form (cdr form)))
+       (setq values (mapcar (lambda (lst)
+			      (if (consp lst)
+				  (cons (car lst) (define-scan-body (cdr lst)))
+				lst))
+			    (car form)))
+       (setq body (define-scan-internals (cdr form)))
+       (if fun
+	   (list type fun values body)
+	 (list type values body))))
+
     ((setq)
      (let loop ((rest (cdr form))
 		(out nil))
