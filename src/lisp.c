@@ -785,7 +785,7 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 	    if((*c_p = rep_stream_getc(strm)) == EOF)
 	    {
 		rep_POPGC;
-		goto eof;
+		return Fsignal(Qpremature_end_of_stream, rep_LIST_1(strm));
 	    }
 	    rep_CADR(form) = readl(strm, c_p, Qpremature_end_of_stream);
 	    rep_POPGC;
@@ -803,14 +803,14 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 	    {
 	    case EOF:
 		rep_POPGC;
-		goto eof;
+		return Fsignal(Qpremature_end_of_stream, rep_LIST_1(strm));
 
 	    case '@':
 		rep_CAR(form) = Qbackquote_splice;
 		if((*c_p = rep_stream_getc(strm)) == EOF)
 		{
 		    rep_POPGC;
-		    goto eof;
+		    return Fsignal(Qpremature_end_of_stream, rep_LIST_1(strm));
 		}
 	    }
 	    rep_CADR(form) = readl(strm, c_p, Qpremature_end_of_stream);
@@ -832,10 +832,10 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 		switch(c = rep_stream_getc(strm))
 		{
 		case EOF:
-		    goto eof;
+		    return Fsignal(Qpremature_end_of_stream, rep_LIST_1(strm));
 		case '\\':
 		    if((*c_p = rep_stream_getc(strm)) == EOF)
-			goto eof;
+			return Fsignal(Qpremature_end_of_stream, rep_LIST_1(strm));
 		    else
 			return rep_MAKE_INT(rep_stream_read_esc(strm, c_p));
 		    break;
@@ -851,7 +851,7 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 		int c;
 
 	    case EOF:
-		goto eof;
+		return Fsignal(Qpremature_end_of_stream, rep_LIST_1(strm));
 
 	    case '\'':
 		form = Fcons(Qfunction, Fcons(Qnil, Qnil));
@@ -859,7 +859,7 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 		if((*c_p = rep_stream_getc(strm)) == EOF)
 		{
 		    rep_POPGC;
-		    goto eof;
+		    return Fsignal(Qpremature_end_of_stream, rep_LIST_1(strm));
 		}
 		rep_CADR(form) = readl(strm, c_p, Qpremature_end_of_stream);
 		rep_POPGC;
@@ -917,7 +917,7 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 
 		    c = rep_stream_getc (strm);
 		    if (c == EOF)
-			goto eof;
+			return Fsignal(Qpremature_end_of_stream, rep_LIST_1(strm));
 		    if (!isalpha (c))
 		    {
 			*c_p = rep_stream_getc (strm);
@@ -925,7 +925,7 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 		    }
 		    c2 = rep_stream_getc (strm);
 		    if (c2 == EOF)
-			goto eof;
+			return Fsignal(Qpremature_end_of_stream, rep_LIST_1(strm));
 		    if (!isalpha (c2))
 		    {
 			*c_p = c2;

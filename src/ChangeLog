@@ -1,3 +1,7 @@
+2000-11-27  John Harper  <jsh@eazel.com>
+
+	* lisp.c: fixes for previous [premature-]end-of-stream changes
+
 2000-11-24  John Harper  <jsh@eazel.com>
 
 	* lisp.c (Qpremature_end_of_stream): new error type. This is
