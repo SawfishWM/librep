@@ -545,11 +545,18 @@ of THUNK) each function will be called exactly once."
 into the compiled program. When interpreted, nil is returned."
   nil)
 
+;; Hide interactive decls
+(defmacro interactive ())
+
+(defun nop ()
+  "A do-nothing command."
+  (interactive))
+
 (autoload-macro 'define "rep/lang/define")
 (autoload-macro 'define-macro "rep/lang/define")
 (autoload-macro 'with-internal-definitions "rep/lang/define")
 
-(export-bindings '(error identity eval-when-compile eval
+(export-bindings '(error identity eval-when-compile nop interactive eval
 		   define define-macro with-internal-definitions))
 
 ;; do this last since declare is defined in this file

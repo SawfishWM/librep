@@ -52,19 +52,12 @@ is true in which case it is added at the end."
 
 ;;; misc
 
-(defun nop ()
-  "A do-nothing command."
-  (interactive))
-
-;; Hide interactive decls
-(defmacro interactive ())
-
 (autoload 'getenv "rep/system/environ")
 (autoload 'setenv "rep/system/environ")
 (autoload 'unsetenv "rep/system/environ")
 
 (autoload 'pwd-prompt "rep/system/pwd-prompt")
 
-(export-bindings '(nop interactive getenv setenv unsetenv
+(export-bindings '(getenv setenv unsetenv
 		   operating-system rep-version rep-interface-id
 		   rep-build-id pwd-prompt))
