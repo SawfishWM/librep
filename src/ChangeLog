@@ -1,3 +1,26 @@
+1999-08-28  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep.h.in: (rep_PTR_SIZED_INT_SUFFIX, rep_PTR_SIZED_INT_CONV):
+	new macros
+	(rep_PTR_SIZED_INT_BITS): now defined in terms of sizeof () and
+	CHAR_BIT instead of statically
+
+	* rep_lisp.h (rep_VALUE_CONST): new macro, uses
+	rep_PTR_SIZED_INT_SUFFIX to make a constant of the needed width
+	(rep_vector): define the data as a one-element array not a
+	zero-element array (for ansii-ness)
+
+	* misc.c (Frandom): don't use `#if' to decide how many random
+	samples to take, use normal `if' instead, since the parameters
+	are known at compile-time the compiler should eliminate
+	unneeded stuff
+
+	* main.c: don't check rep_PTR_SIZED_INT_BITS anymore since we
+	use sizeof to define it now
+
+	* lispmach.c, lisp.c: use rep_PTR_SIZED_INT_CONV when
+	printf-ing lisp integers
+
 1999-08-27  John Harper  <john@dcs.warwick.ac.uk>
 
 	* main.c (rep_init): changed some of the type consistency

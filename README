@@ -22,16 +22,23 @@ Notes
 =====
 
 If you're on a 64-bit architecture you may want to look at the
-`--with-value-type' and `--with-value-bits' configure options. For
-example on a machine with 64-bit pointers and longs, but only 32-bit
-ints the following could be done:
+`--with-value-type' configure option. This is an implicitly signed
+integer type (i.e. `int', `long', etc) that is wide enough to store an
+arbitrary pointer without losing any bits.
 
-	$ ./configure --with-value-type=long --with-value-bits=64
+It should be detected automatically by the configure script, but if not
+there are two most likely required settings:
 
-Alternatively, if both int and long are 32-bits, with 64-bit pointers
-and long long ints, then:
+ 1. For a machine with 64-bit pointers and longs, but only 32-bit ints
+    the following could be done:
 
-	$ ./configure --with-value-type="long long" --with-value-bits=64
+	$ ./configure --with-value-type=long
 
-If either of these options are set incorrectly a run-time assertion
-will be triggered when the interpreter is initialised.
+ 2. For a machine with both int and long 32-bits, but with 64-bit
+    pointers and long long ints, then:
+
+	$ ./configure --with-value-type="long long"
+
+If this option is set incorrectly (i.e. to an integer type that is too
+small) a run-time assertion will be triggered when the interpreter
+initialises itself.

@@ -8,8 +8,9 @@
 
 @itemize
 
-@item Added @samp{--with-value-type}, @samp{--with-value-bits} and
-@samp{--with-malloc-alignment} configure options
+@item Added @samp{--with-value-type}, and
+@samp{--with-malloc-alignment} configure options. Also added code to
+automatically detect the first of these options.
 
 @item Fixed some 64-bit problems
 
