@@ -1,3 +1,8 @@
+2001-04-09  John Harper  <jsh@eazel.com>
+
+	* configure.in: changed version string to 0.14-pre now there's
+	a 0.13.6 on a branch
+
 2001-03-26  John Harper  <jsh@eazel.com>
 
 	* Makefile.in, man/Makefile.in: added `check' targets
