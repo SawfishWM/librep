@@ -57,6 +57,7 @@ extern repv rep_copy_list(repv);
 extern rep_bool rep_compare_error(repv error, repv handler);
 extern void rep_lisp_init(void);
 extern rep_bool rep_single_step_flag;
+extern repv rep_call_lispn (repv fun, int argc, repv *argv);
 
 /* from lispcmds.c */
 extern rep_xsubr Slambda;
