@@ -79,7 +79,7 @@
   (define eq? (make-predicate eq))
   (define equal? (make-predicate equal))
 
-  (define boolean? (make-predicate (lambda (obj) (memq obj '(#f #t)))))
+  (define boolean? (make-predicate (lambda (obj) (rep#memq obj '(#f #t)))))
 
 ;;; pairs (cons cells)
 
@@ -132,7 +132,14 @@
 ;;; lists
 
   (define null? (make-predicate null))
-  (define list? (make-predicate listp))
+
+  (define (list? x)
+    (let loop ((slow x)
+	       (fast (rep#cdr x)))
+      (cond ((null slow) #t)
+	    ((rep#not (consp slow)) #f)
+	    ((eq slow fast) #f)
+	    (t (loop (rep#cdr slow) (rep#cddr fast))))))
 
   ;; XXX return nil if I > (length LST)
   (define (list-tail lst i) (nthcdr i lst))
@@ -187,8 +194,6 @@
     (cond ((cdr args) (apply rep#/ args))
 	  (t (rep#/ 1 (car args)))))
 
-  ;; XXX rep's gcd and lcm only take two parameters..
-  
   (define (rationalize x y)
     (error "rationalize is unimplemented"))
 
@@ -239,8 +244,8 @@
   (define string-ci<? (make-predicate string-lessp))
   (define string-ci>? (make-predicate
 		       (lambda args
-			 (or (apply string-equal args)
-			     (not (apply string-lessp args))))))
+			 (not (or (apply string-equal args)
+				  (apply string-lessp args))))))
   (define string-ci<=? (make-predicate
 			(lambda args
 			  (or (apply string-lessp args)
