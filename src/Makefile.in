@@ -50,7 +50,7 @@ librep.la : $(OBJS) $(LIBOBJS) $(ALLOCA)
 	  -o $@ $^ -rpath $(libdir)
 
 rep : $(REP_OBJS) $(EXTRA_LIBOBJS) librep.la
-	$(LIBTOOL) $(CC) $(CPPFLAGS) $(CFLAGS) -o $@ \
+	$(LIBTOOL) $(CC) -export-dynamic $(CPPFLAGS) $(CFLAGS) -o $@ \
 	  $(REP_OBJS) librep.la $(EXTRA_LIBOBJS) $(LIBS)
 
 rep-remote : rep-remote.c
@@ -96,7 +96,7 @@ repdoc : repdoc.o libxsdbm.la
 libtest-dl.la : test-dl.c
 
 libsdbm.la : $(SDBM_OBJS) repsdbm.lo
-	$(LIBTOOL) $(CC) $(LDFLAGS) -export-dynamic -o $@ \
+	$(LIBTOOL) $(CC) $(LDFLAGS) -module -o $@ \
 	 $(SDBM_OBJS) repsdbm.lo -rpath $(repexecdir)
 
 clean :
