@@ -1,3 +1,15 @@
+2001-12-21  John Harper  <jsh@unfactored.org>
+
+	* rep.c: call setlocale (LC_ALL, "") at startup. Patch from
+	Bruno Haible <haible@ilog.fr> (with some extra preprocessor
+	stuff)
+
+2001-12-18  John Harper  <jsh@unfactored.org>
+
+	* repgdbm.c (Fgdbm_delete): don't add one to the length of the
+	string when calculating dkey.dsize (none of the other functions
+	do)
+
 2001-12-17  John Harper  <jsh@unfactored.org>
 
 	* rep-config.sh, Makefile.in: added --lispdir option

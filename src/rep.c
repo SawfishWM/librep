@@ -11,6 +11,10 @@
 #include "build.h"
 #include <string.h>
 
+#ifdef HAVE_LOCALE_H
+# include <locale.h>
+#endif
+
 int
 main(int argc, char **argv)
 {
@@ -18,6 +22,10 @@ main(int argc, char **argv)
 
     char *prog_name = *argv++;
     argc--;
+
+#ifdef HAVE_SETLOCALE
+    setlocale (LC_ALL, "");
+#endif
 
     rep_init (prog_name, &argc, &argv, 0, 0);
 

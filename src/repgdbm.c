@@ -146,7 +146,7 @@ gdbm-delete DBM KEY
     rep_DECLARE1 (dbm, rep_DBMP);
     rep_DECLARE2 (key, rep_STRINGP);
     dkey.dptr = rep_STR (key);
-    dkey.dsize = rep_STRING_LEN (key) + 1;
+    dkey.dsize = rep_STRING_LEN (key);
     return gdbm_delete (rep_DBM(dbm)->dbm, dkey) == 0 ? Qt : Qnil;
 }
 
