@@ -406,7 +406,7 @@ sys_file_modes(VALUE file)
 {
     struct stat *st = stat_file(file);
     if(st != 0)
-	return MAKE_INT(st->st_mode);
+	return MAKE_INT(st->st_mode & 07777);
     else
 	return sym_nil;
 }
