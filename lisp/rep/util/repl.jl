@@ -146,9 +146,12 @@
      (structure-imports (get-structure name)))
 
   (define (locate-binding* name)
-    (locate-binding name (append (list (repl-struct (fluid current-repl)))
-				 (module-imports
-				  (repl-struct (fluid current-repl))))))
+    (if (structure-bound-p
+	 (get-structure (repl-struct (fluid current-repl))) name)
+	(repl-struct (fluid current-repl))
+      (locate-binding name (append (list (repl-struct (fluid current-repl)))
+				   (module-imports
+				    (repl-struct (fluid current-repl)))))))
 
 
 ;;; commands
