@@ -172,7 +172,7 @@
 
   ;; From LST, `(lambda (ARGS) [DOC-STRING] BODY ...)' returns a byte-code
   ;; vector
-  (defun compile-lambda (lst &optional name sequencer)
+  (defun compile-lambda (lst &optional name)
     (let
 	((args (nth 1 lst))
 	 (body (nthcdr 2 lst))
@@ -202,7 +202,8 @@
 			      (lambda-bindings nil))
 			   (note-bindings (reverse vars))
 			   (fluid-set lambda-bindings (fluid lex-bindings))
-			   (compile-form (cons (or sequencer 'progn) body))))
+			   (compile-form (cons (get-language-property
+						'compiler-sequencer) body))))
 	  (make-byte-code-subr args (nth 1 form) (nth 2 form) (nth 3 form)
 			       (and (not *compiler-write-docs*) doc)
 			       interactive))))))
