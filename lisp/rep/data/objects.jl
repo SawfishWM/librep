@@ -24,6 +24,7 @@
 (define-structure rep.data.objects
 
     (export object
+	    object-lambda
 	    objectp)
 
     (open rep)
@@ -75,32 +76,36 @@
 	    (t (loop (cdr rest) (1+ i)
 		     (cons `(,(car rest) (nth ,i ,args-var)) out))))))
 
+  (defmacro object-lambda (params . body)
+    (let ((self (gensym)))
+      `(letrec ((,self
+		 (lambda (,(car params) #!key (self ,self) ,@(cdr params))
+		   ,@body)))
+	   ,self)))
+
   (defmacro object (base-object . methods)
     (let ((op (gensym))
 	  (args (gensym))
-	  (self (gensym))
 	  (base (gensym)))
       `(let ((,base ,base-object))
-	 (letrec ((,self
-		  (lambda (,op #!key (self ,self) . ,args)
-		    (case ,op
-		      ,@(mapcar
-			 (lambda (method)
-			   (cond ((consp (car method))
-				  ;; ((METHOD-NAME . PARAM-LIST) BODY...)
-				  `((,(caar method))
-				    (let ,(make-let-bindings
-					   (cdar method) args)
-				      ,@(cdr method))))
-				 ((symbolp (car method))
-				  ;; (METHOD-NAME FUNCTION)
-				  `((,(car method))
-				    (apply ,(cadr method) ,args)))))
-			 methods)
-		      (t (if ,base
-			     (apply ,base ,op #:self self ,args)
-			   (signal 'unknown-method (list ,op))))))))
-	   ,self))))
+	 (object-lambda (,op . ,args)
+	   (case ,op
+	     ,@(mapcar
+		(lambda (method)
+		  (cond ((consp (car method))
+			 ;; ((METHOD-NAME . PARAM-LIST) BODY...)
+			 `((,(caar method))
+			   (let ,(make-let-bindings
+				  (cdar method) args)
+			     ,@(cdr method))))
+			((symbolp (car method))
+			 ;; (METHOD-NAME FUNCTION)
+			 `((,(car method))
+			   (apply ,(cadr method) ,args)))))
+		methods)
+	     (t (if ,base
+		    (apply ,base ,op #:self self ,args)
+		  (signal 'unknown-method (list ,op)))))))))
 
   (define objectp closurep)
 

@@ -1,3 +1,9 @@
+2002-03-03  John Harper  <jsh@pixelslut.com>
+
+	* rep/data/objects.jl: added an object-lambda macro that's
+	useful when the body of the object (i.e. the method switch)
+	needs to be implemented by hand
+
 2002-02-27  John Harper  <jsh@pixelslut.com>
 
 	* rep/net/rpc.jl (make-proxy): use a table of weak references
