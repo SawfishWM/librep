@@ -1,5 +1,8 @@
 2000-02-04  John Harper  <john@dcs.warwick.ac.uk>
 
+	* tables.c (table_mark): remember to mark hash_fun and
+	compare_fun
+
 	* tables.c (Fequal_hash): improved this to break off at a
 	certain depth of recursion, not to resort to eq hashing for
 	unknown types (use their type code instead), and don't use XOR
