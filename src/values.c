@@ -53,10 +53,9 @@ _PR VALUE list_3(VALUE, VALUE, VALUE);
 _PR VALUE list_4(VALUE, VALUE, VALUE, VALUE);
 _PR VALUE list_5(VALUE, VALUE, VALUE, VALUE, VALUE);
 _PR VALUE make_vector(int);
-_PR VALUE make_lpos(POS *);
-_PR VALUE make_lpos2(long, long);
-_PR int lpos_cmp(VALUE, VALUE);
-_PR void lpos_prin(VALUE, VALUE);
+_PR VALUE make_pos(long, long);
+_PR int pos_cmp(VALUE, VALUE);
+_PR void pos_prin(VALUE, VALUE);
 _PR int vector_cmp(VALUE, VALUE);
 
 _PR void mark_static(VALUE *);
@@ -74,7 +73,7 @@ ValClass ValueClasses[] = {
     { vector_cmp, lisp_prin, lisp_prin, MKSTR("vector") },
     { symbol_cmp, symbol_princ, symbol_print, MKSTR("symbol") },
     { mark_cmp, mark_prin, mark_prin, MKSTR("mark") },
-    { lpos_cmp, lpos_prin, lpos_prin, MKSTR("pos") },
+    { pos_cmp, pos_prin, pos_prin, MKSTR("pos") },
     { ptr_cmp, lisp_prin, lisp_prin, MKSTR("var") },
     { ptr_cmp, lisp_prin, lisp_prin, MKSTR("subr-0") },
     { ptr_cmp, lisp_prin, lisp_prin, MKSTR("subr-1") },
@@ -527,66 +526,50 @@ vector_cmp(VALUE v1, VALUE v2)
     return(rc);
 }
 
-static LPosBlk *lpos_block_chain;
-static LPos *lpos_free_list;
-static int used_lpos, allocated_lpos;
+static PosBlk *pos_block_chain;
+static Pos *pos_free_list;
+static int used_pos, allocated_pos;
 
 VALUE
-make_lpos(POS *pos)
+make_pos(long col, long row)
 {
-    LPos *lp = lpos_free_list;
-    if(!lp)
+    Pos *p = pos_free_list;
+    if(!p)
     {
-	LPosBlk *lb = mycalloc(sizeof(LPosBlk));
-	if(lb)
+	PosBlk *pb = mycalloc(sizeof(PosBlk));
+	if(pb)
 	{
 	    int i;
-	    allocated_lpos += LPOSBLK_SIZE;
-	    lb->lb_Next = lpos_block_chain;
-	    lpos_block_chain = lb;
-	    for(i = 0; i < (LPOSBLK_SIZE - 1); i++)
-		lb->lb_Pos[i].lp_Next = &lb->lb_Pos[i + 1];
-	    lb->lb_Pos[i].lp_Next = lpos_free_list;
-	    lpos_free_list = lb->lb_Pos;
+	    allocated_pos += POSBLK_SIZE;
+	    pb->pb_Next = pos_block_chain;
+	    pos_block_chain = pb;
+	    for(i = 0; i < (POSBLK_SIZE - 1); i++)
+		pb->pb_Pos[i].p_Next = &pb->pb_Pos[i + 1];
+	    pb->pb_Pos[i].p_Next = pos_free_list;
+	    pos_free_list = pb->pb_Pos;
 	}
-	lp = lpos_free_list;
+	p = pos_free_list;
     }
-    lpos_free_list = lp->lp_Next;
-    lp->lp_Data.type = V_Pos;
-    if(pos)
-	lp->lp_Data.pos = *pos;
-    used_lpos++;
-    data_after_gc += sizeof(LPos);
-    return(VAL(lp));
-}
-
-VALUE
-make_lpos2(long x, long y)
-{
-    POS tmp;
-    tmp.pos_Col = x;
-    tmp.pos_Line = y;
-    return(make_lpos(&tmp));
+    pos_free_list = p->p_Next;
+    p->p_Data.type = V_Pos;
+    VCOL(p) = col;
+    VROW(p) = row;
+    used_pos++;
+    data_after_gc += sizeof(Pos);
+    return VAL(p);
 }
 
 _PR VALUE cmd_pos(VALUE, VALUE);
 DEFUN("pos", cmd_pos, subr_pos, (VALUE x, VALUE y), V_Subr2, DOC_pos) /*
 ::doc:pos::
-pos X Y
+pos COLUMN ROW
 
-Returns a new position object with coordinates (X , Y).
+Returns a new position object with coordinates (COLUMN , ROW).
 ::end:: */
 {
-    POS tmp;
-    if(NUMBERP(x))
-	tmp.pos_Col = VNUM(x);
-    else
-	tmp.pos_Col = curr_vw->vw_CursorPos.pos_Col;
-    if(NUMBERP(y))
-	tmp.pos_Line = VNUM(y);
-    else
-	tmp.pos_Line = curr_vw->vw_CursorPos.pos_Line;
-    return(make_lpos(&tmp));
+    long col = NUMBERP(x) ? VNUM(x) : VCOL(curr_vw->vw_CursorPos);
+    long row = NUMBERP(y) ? VNUM(y) : VROW(curr_vw->vw_CursorPos);
+    return make_pos(col ,row);
 }
 
 _PR VALUE cmd_copy_pos(VALUE pos);
@@ -598,52 +581,53 @@ Returns a new copy of POS.
 ::end:: */
 {
     DECLARE1(pos, POSP);
-    return(make_lpos(&VPOS(pos)));
+    return make_pos(VCOL(pos), VROW(pos));
 }
 
 void
-lpos_prin(VALUE strm, VALUE obj)
+pos_prin(VALUE strm, VALUE obj)
 {
     u_char tbuf[32];
-    sprintf(tbuf, "#<pos %ld %ld>", VPOS(obj).pos_Col, VPOS(obj).pos_Line);
+    sprintf(tbuf, "#<pos %ld %ld>", VCOL(obj), VROW(obj));
     stream_puts(strm, tbuf, -1, FALSE);
 }
 
 static void
-lpos_sweep(void)
+pos_sweep(void)
 {
-    LPosBlk *lb = lpos_block_chain;
-    lpos_free_list = NULL;
-    used_lpos = 0;
-    while(lb)
+    PosBlk *pb = pos_block_chain;
+    pos_free_list = NULL;
+    used_pos = 0;
+    while(pb)
     {
 	int i;
-	LPosBlk *nxt = lb->lb_Next;
-	for(i = 0; i < LPOSBLK_SIZE; i++)
+	PosBlk *nxt = pb->pb_Next;
+	for(i = 0; i < POSBLK_SIZE; i++)
 	{
-	    if(!GC_MARKEDP(VAL(&lb->lb_Pos[i])))
+	    if(!GC_MARKEDP(VAL(&pb->pb_Pos[i])))
 	    {
-		lb->lb_Pos[i].lp_Next = lpos_free_list;
-		lpos_free_list = &lb->lb_Pos[i];
+		pb->pb_Pos[i].p_Next = pos_free_list;
+		pos_free_list = &pb->pb_Pos[i];
 	    }
 	    else
 	    {
-		GC_CLR(VAL(&lb->lb_Pos[i]));
-		used_lpos++;
+		GC_CLR(VAL(&pb->pb_Pos[i]));
+		used_pos++;
 	    }
 	}
-	lb = nxt;
+	pb = nxt;
     }
 }
 
 int
-lpos_cmp(VALUE v1, VALUE v2)
+pos_cmp(VALUE v1, VALUE v2)
 {
     int rc = 1;
     if(VTYPE(v2) == VTYPE(v1))
     {
-	if(!(rc = VPOS(v1).pos_Line - VPOS(v2).pos_Line))
-	    rc = VPOS(v1).pos_Col - VPOS(v2).pos_Col;
+	rc = VROW(v1) - VROW(v2);
+	if(rc == 0)
+	    rc = VCOL(v1) - VCOL(v2);
     }
     return(rc);
 }
@@ -762,6 +746,12 @@ again:
 	MARKVAL(VTX(val)->tx_UndoList);
 	MARKVAL(VTX(val)->tx_ToUndoList);
 	MARKVAL(VTX(val)->tx_UndoneList);
+	MARKVAL(VTX(val)->tx_ModStart);
+	MARKVAL(VTX(val)->tx_ModEnd);
+	MARKVAL(VTX(val)->tx_SavedCPos);
+	MARKVAL(VTX(val)->tx_SavedWPos);
+	MARKVAL(VTX(val)->tx_SavedBlockPos[0]);
+	MARKVAL(VTX(val)->tx_SavedBlockPos[1]);
 	val = VTX(val)->tx_LocalVariables;
 	if(!GC_MARKEDP(val) && !NILP(val))
 	    goto again;
@@ -782,6 +772,14 @@ again:
 	GC_SET(val);
 	MARKVAL(VAL(VVIEW(val)->vw_Tx));
 	MARKVAL(VVIEW(val)->vw_BufferList);
+	MARKVAL(VVIEW(val)->vw_CursorPos);
+	MARKVAL(VVIEW(val)->vw_LastCursorPos);
+	MARKVAL(VVIEW(val)->vw_DisplayOrigin);
+	MARKVAL(VVIEW(val)->vw_LastDisplayOrigin);
+	MARKVAL(VVIEW(val)->vw_BlockS);
+	MARKVAL(VVIEW(val)->vw_BlockE);
+	MARKVAL(VVIEW(val)->vw_LastBlockS);
+	MARKVAL(VVIEW(val)->vw_LastBlockE);
 	val = VAL(VVIEW(val)->vw_NextView);
 	if(val != 0 && !GC_MARKEDP(val) && !NILP(val))
 	    goto again;
@@ -891,11 +889,6 @@ last garbage-collection is greater than `garbage-threshold'.
     if(gc_inhibit)
 	return(sym_nil);
 
-#ifdef HAVE_SUBPROCESSES
-    /* Make sure nothing plays with process structs while gc'ing  */
-    protect_procs();
-#endif
-
 #ifndef NO_GC_MSG
     old_log_msgs = log_messages;
     log_messages = FALSE;
@@ -942,11 +935,13 @@ last garbage-collection is greater than `garbage-threshold'.
 	lc = lc->lc_Next;
     }
 
+    mark_regexp_data();
+
     string_sweep();
     number_sweep();
     cons_sweep();
     vector_sweep();
-    lpos_sweep();
+    pos_sweep();
     symbol_sweep();
     file_sweep();
     buffer_sweep();
@@ -960,11 +955,6 @@ last garbage-collection is greater than `garbage-threshold'.
 
     /* This seems an ideal time to reclaim any general strings... */
     sm_flush(&main_strmem);
-
-#ifdef HAVE_SUBPROCESSES
-    /* put SIGCHLD back to normal */
-    unprotect_procs();
-#endif
 
 #ifndef NO_GC_MSG
     cmd_message(MKSTR("Garbage collecting...done."), sym_t);
@@ -987,8 +977,8 @@ last garbage-collection is greater than `garbage-threshold'.
 			       make_number(allocated_numbers-used_numbers-1)),
 		      cmd_cons(make_number(used_symbols),
 			       make_number(allocated_symbols - used_symbols)),
-		      cmd_cons(make_number(used_lpos),
-			       make_number(allocated_lpos - used_lpos)),
+		      cmd_cons(make_number(used_pos),
+			       make_number(allocated_pos - used_pos)),
 		      make_number(used_vector_slots)));
     }
     return(sym_t);
@@ -1026,7 +1016,7 @@ values_kill(void)
     ConsBlk *cb = cons_block_chain;
     NumberBlk *nb = number_block_chain;
     Vector *v = vector_chain;
-    LPosBlk *lb = lpos_block_chain;
+    PosBlk *pb = pos_block_chain;
     while(cb)
     {
 	ConsBlk *nxt = cb->cb_Next;
@@ -1045,15 +1035,15 @@ values_kill(void)
 	myfree(v);
 	v = nxt;
     }
-    while(lb)
+    while(pb)
     {
-	LPosBlk *nxt = lb->lb_Next;
-	myfree(lb);
-	lb = nxt;
+	PosBlk *nxt = pb->pb_Next;
+	myfree(pb);
+	pb = nxt;
     }
     cons_block_chain = NULL;
     number_block_chain = NULL;
     vector_chain = NULL;
-    lpos_block_chain = NULL;
+    pos_block_chain = NULL;
     sm_kill(&lisp_strmem);
 }
