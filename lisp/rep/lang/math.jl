@@ -66,9 +66,9 @@
       1
     (quotient (apply * (mapcar abs args)) (apply gcd args))))
 
-(define-value '% remainder)
-(define-value 'modulo mod)
-(define-value 'lsh ash)
+(%define % remainder)
+(%define modulo mod)
+(%define lsh ash)
 
 ;; exports
 

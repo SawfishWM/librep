@@ -148,7 +148,7 @@
 			       (if (eq (caadr body) 'progn)
 				   (cons (car body) (cdadr body))
 				 body)))
-      `(define-value ',(car def) ,(cdr def)))))
+      `(%define ,(car def) ,(cdr def)))))
 
 ;;;###autoload
 (defmacro define-macro (&rest args)

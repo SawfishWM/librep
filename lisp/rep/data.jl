@@ -39,8 +39,8 @@ string INPUT."
 (defun setcdr (cell x) (rplacd cell x) x)
 
 ;; Some function pseudonyms
-(define-value 'string= equal)
-(define-value 'string< <)
+(%define string= equal)
+(%define string< <)
 
 (defun member-if (fun lst)
   (cond ((null lst) '())
