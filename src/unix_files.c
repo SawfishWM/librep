@@ -55,6 +55,14 @@
 # define PATH_MAX 256
 #endif
 
+#ifndef S_ISLNK
+#define S_ISLNK(mode)  (((mode) & S_IFMT) == S_IFLNK)
+#endif
+
+#ifndef S_ISSOCK
+#define S_ISSOCK(mode)  (((mode) & S_IFMT) == S_IFSOCK)
+#endif
+
 
 /* Support functions */
 

@@ -178,7 +178,9 @@ is t, all matching ignores character case.
 	if(rep_STRINGP(arg))
 	{
 	    u_char *tmp = rep_STR(arg);
-	    if((rep_NILP(fold) ? strncmp : strncasecmp)(orig, tmp, origlen) == 0)
+	    if((rep_NILP(fold)
+		? strncmp (orig, tmp, origlen)
+		: strncasecmp (orig, tmp, origlen)) == 0)
 	    {
 		if(match)
 		{

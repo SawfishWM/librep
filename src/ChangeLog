@@ -1,3 +1,15 @@
+2001-09-14  John Harper  <jsh@unfactored.org>
+
+	Integrated patch from Tom Bates <Tom.Bates@compaq.com> to fix
+	some bugs on mips-compaq-nonstopux architecture:
+
+	* unix_files.c, rep-remote.c, realpath.c: if S_ISLINK or
+	S_ISSOCK macros aren't defined, define them in terms of
+	S_IFLNK and S_IFSOCK
+
+	* misc.c (Fcomplete_string): don't assume strcmp () and strncmp
+	() have exactly the same type or are functions
+
 2001-09-11  John Harper  <jsh@pixelslut.com>
 
 	* rep_subrs.h, repint_subrs.h: made rep_undefined_value public

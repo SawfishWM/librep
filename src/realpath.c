@@ -52,6 +52,14 @@ char *alloca ();
 #include <sys/param.h>
 #include <sys/stat.h>
 
+#ifndef S_ISLNK
+#define S_ISLNK(mode)  (((mode) & S_IFMT) == S_IFLNK)
+#endif
+
+#ifndef S_ISSOCK
+#define S_ISSOCK(mode)  (((mode) & S_IFMT) == S_IFSOCK)
+#endif
+
 /* Return the canonical absolute name of file NAME.  A canonical name
    does not contain any `.', `..' components nor any repeated path
    separators ('/') or symlinks.  All path components must exist.  If
