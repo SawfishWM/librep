@@ -1317,7 +1317,7 @@ rep_funcall(repv fun, repv arglist, rep_bool eval_args)
     rep_PUSH_CALL (lc);
 
     if(rep_data_after_gc >= rep_gc_threshold)
-	Fgarbage_collect(Qt);
+	Fgarbage_collect (Qnil);
 
 again:
     if (rep_FUNARGP(fun))
@@ -1609,7 +1609,7 @@ Evaluates FORM and returns its value.
     {
 	rep_GC_root gc_obj;
 	rep_PUSHGC(gc_obj, obj);
-	Fgarbage_collect(Qt);
+	Fgarbage_collect (Qnil);
 	rep_POPGC;
     }
 

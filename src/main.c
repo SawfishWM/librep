@@ -340,7 +340,7 @@ rep_on_idle(long since_last_event)
 	res = rep_TRUE;
     else if(rep_data_after_gc > rep_idle_gc_threshold)
 	/* nothing was saved so try a GC */
-	Fgarbage_collect(Qt);
+	Fgarbage_collect (Qnil);
     else if(!called_hook && depth == 1)
     {
 	repv hook = Fsymbol_value(Qidle_hook, Qt);
