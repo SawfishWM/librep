@@ -265,7 +265,7 @@
 	       (setq point (length output)))
 	      ((string-match remote-rep-signature output point)
 	       (aset session remote-rep-protocol
-		     (read-from-string (expand-last-match "\\1")))
+		     (string->number (expand-last-match "\\1")))
 	       (setq point (match-end)))
 	      ((= (aref output point) ?\001)
 	       ;; success

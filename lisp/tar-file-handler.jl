@@ -155,8 +155,8 @@
 	((mode-string (substring string (match-start 1) (match-end 1)))
 	 (user (substring string (match-start 2) (match-end 2)))
 	 (group (substring string (match-start 3) (match-end 3)))
-	 (size (read-from-string (substring string
-					    (match-start 4) (match-end 4))))
+	 (size (string->number (substring
+				string (match-start 4) (match-end 4))))
 	 (modtime (substring string (match-start 5) (match-end 5)))
 	 (name (substring string (match-start 6) (match-end 6)))
 	 symlink file-name)

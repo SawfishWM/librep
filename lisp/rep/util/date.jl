@@ -93,13 +93,13 @@ character in the string. This will parse dates in RFC-822 mail messages."
 	  (let*
 	      ((start (match-start 1))
 	       (end (match-end 1))
-	       (value (read-from-string (substring string start end))))
+	       (value (string->number (substring string start end))))
 	    ;; Could be year or day of month
 	    (if (or (>= day 0) (> (- end start) 2))
 		;; Assume year
 		(if (= (- end start) 2)
 		    ;; two-digit year
-		    (setq year (+ (* 100 (read-from-string
+		    (setq year (+ (* 100 (string->number
 					  date-two-digit-year-prefix)) value))
 		  (setq year value))
 	      (setq day value))
@@ -110,14 +110,14 @@ character in the string. This will parse dates in RFC-822 mail messages."
 	   string point)
 	  ;; Time spec.
 	  (setq point (match-end))
-	  (setq hour (read-from-string (substring string (match-start 1)
-						  (match-end 1)))
-		minute (read-from-string (substring string (match-start 2)
-						    (match-end 2)))
+	  (setq hour (string->number (substring string (match-start 1)
+						(match-end 1)))
+		minute (string->number (substring string (match-start 2)
+						  (match-end 2)))
 		second (if (equal (match-start 3) (match-end 3))
 			   0
-			 (read-from-string (substring string (1+ (match-start 3))
-						      (match-end 3))))
+			 (string->number (substring string (1+ (match-start 3))
+						    (match-end 3))))
 		timezone (if (equal (match-start 4) (match-end 4))
 			     "UT"
 			   (substring string (match-start 4) (match-end 4))))
@@ -126,11 +126,11 @@ character in the string. This will parse dates in RFC-822 mail messages."
 	    ;; Try +-HHMM
 	    (if (string-looking-at "[+-]([0-9][0-9])([0-9][0-9])" timezone)
 		(setq timezone (* (if (= (aref timezone 0) ?+) 1 -1)
-				  (+ (* 60 (read-from-string
+				  (+ (* 60 (string->number
 					    (substring timezone
 						       (match-start 1)
 						       (match-end 1))))
-				     (read-from-string
+				     (string->number
 				      (substring timezone
 						 (match-start 2)
 						 (match-end 2))))))
@@ -156,10 +156,10 @@ character in the string. This will parse dates in RFC-822 mail messages."
 	   "[\t ]*([0-9][0-9][0-9][0-9])-([0-9][0-9])-([0-9][0-9])[\t ]*"
 	   string point)
 	  ;; ISO 8601 calendar date YYYY-MM-DD
-	  (setq year (read-from-string (expand-last-match "\\1")))
-	  (setq month (read-from-string (expand-last-match "\\2")))
+	  (setq year (string->number (expand-last-match "\\1")))
+	  (setq month (string->number (expand-last-match "\\2")))
 	  (setq month-abbrev (car (rassq month date-month-alist)))
-	  (setq day (read-from-string (expand-last-match "\\3")))
+	  (setq day (string->number (expand-last-match "\\3")))
 	  ;; XXX day of week calculation
 	  (setq point (match-end)))
 	 
@@ -168,13 +168,13 @@ character in the string. This will parse dates in RFC-822 mail messages."
 	  (setq point (length string)))))
       
       (when (< year 0)
-	(setq year (read-from-string (current-time-string nil "%Y"))))
+	(setq year (string->number (current-time-string nil "%Y"))))
       
       (when (< month 0)
-	(setq month (read-from-string (current-time-string nil "%m"))))
+	(setq month (string->number (current-time-string nil "%m"))))
       
       (when (< day 0)
-	(setq day (read-from-string (current-time-string nil "%d"))))
+	(setq day (string->number (current-time-string nil "%d"))))
       
       ;; Use Gauss' algorithm (?) to find seconds since 1970
       ;; This subroutine is copied from my VMM operating system,

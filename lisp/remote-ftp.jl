@@ -491,12 +491,12 @@ file types.")
   (when (string-looking-at remote-ftp-ls-l-regexp string point)
     (let
 	((mode-string (substring string (match-start 1) (match-end 1)))
-	 (nlinks (read-from-string (substring string
-					      (match-start 2) (match-end 2))))
+	 (nlinks (string->number (substring
+				  string (match-start 2) (match-end 2))))
 	 (user (substring string (match-start 3) (match-end 3)))
 	 (group (substring string (match-start 4) (match-end 4)))
-	 (size (read-from-string (substring string
-					    (match-start 5) (match-end 5))))
+	 (size (string->number (substring
+				string (match-start 5) (match-end 5))))
 	 (modtime (substring string (match-start 6) (match-end 6)))
 	 (name (substring string (match-start 7) (match-end 7)))
 	 symlink)
