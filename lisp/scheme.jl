@@ -106,7 +106,7 @@
 
 			  ;; exported local kludges
 			  %cond %case %setq %while %progn %test %lambda
-			  backquote list*)
+			  backquote list* %load-suffixes)
   ((access rep)
    (open scheme-utils
 	 scheme-syntax
