@@ -25,14 +25,14 @@ AC_CONFIG_HEADER(config.h src/rep.h)
 AC_CONFIG_AUX_DIR(etc)
 
 dnl Release versioning info
-version="0.12.2"
+version="0.12.3"
 
 dnl libtool versioning info: `CURRENT:REVISION:AGE'. CURRENT is the
 dnl current interface id, REVISION is the version number of this
 dnl implementation, AGE defines the first interface id also supported
 dnl (i.e. all interfaces between CURRENT-AGE and CURRENT are supported)
 libcurrent=9
-librevision=2
+librevision=3
 libage=0
 libversion="$libcurrent:$librevision:$libage"
 
