@@ -1,3 +1,20 @@
+2000-01-03  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compiler.jl (comp-compile-defun, comp-compile-defmacro):
+	remember the functions being defined
+
+1999-12-31  John Harper  <john@dcs.warwick.ac.uk>
+
+	* tilde.jl: added provide decl
+
+	* lisp.jl (featurep, provide, require): removed (in C again)
+	(autoload): a function again
+
+	* init.jl: require libraries instead of loading (in case
+	they've been dumped)
+
+	* dump.jl: updated for lisp-1 rep with closures
+
 1999-12-22  John Harper  <john@dcs.warwick.ac.uk>
 
 	* compiler.jl (comp-trans-setq, comp-trans-setq-default):

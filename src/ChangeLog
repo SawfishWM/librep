@@ -1,7 +1,32 @@
+1999-12-31  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_dl.c: use stdio method of signalling errors when things
+	haven't been initialised yet; also read Qdl_load_reloc_now
+	safely
+
+	* rep_lisp.h, symbols.c, values.c: some tweaks for new dumping
+	regime
+
+	* rep.c: use rep_load_environment () and rep_top_level_exit ()
+
+	* main.c (rep_init_from_dump): new function, as rep_init but
+	with a file of dumped definitions
+	(rep_load_environment): new function, called with a single arg,
+	the script to load (after loading init.jl) to boot the system
+	(rep_top_level_exit): new function, returns the value that the
+	process should return when it exits
+
+	* lispcmds.c (Ffeaturep, Fprovide, Frequire): in C again
+
+1999-12-23  Ceri Storey  <cez@nomorespam.freeserve.co.uk>
+
+	* readline.c (init_bouncing_parens, find_matching_paren,
+	match_paren): steal parentheses bouncing code from guile
+
 1999-12-21  John Harper  <john@dcs.warwick.ac.uk>
 
 	* regexp.c (regmatch): fix typo in non-greedy operator match
-	(from Matt Kraai <kraai@ghs.com>
+	(from Matt Kraai <kraai@ghs.com>)
 
 	* lispcmds.c (Fif): make (if t) => nil, not nil
 
