@@ -21,10 +21,10 @@ functions.
 * Variables::                   Symbols represent named variables
 * Functions::                   The building blocks of Lisp programs
 * Macros::                      User-defined control structures
-* Definitions::			Block-structured definitions
+* Definitions::                 Block-structured definitions
 * Modules::                     Scoping for "global" definitions
 * Control Structures::          Conditionals, loops, etc@dots{}
-* Threads::			Multi-threaded programs
+* Threads::                     Multi-threaded programs
 * Loading::                     Programs are stored in files
 * Compiled Lisp::               Making programs run faster
 
@@ -32,27 +32,27 @@ functions.
 * Queues::                      FIFO queue type
 * Records::                     Defining structured data types
 * Hash Tables::                 Efficient table lookups
-* Guardians::			Protecting objects from GC
+* Guardians::                   Protecting objects from GC
 * Streams::                     Data sinks and sources; character streams
 * Hooks::                       Hooks promote extensibility
 * Files::                       Manipulating files in the filing system
 * Processes::                   launch and control subprocesses when
                                  running under Unix
 
-* Regular Expressions::		Matching regular expressions
-* Time and Date::		Manipulating time and date
-* i18n::			Internationalisation
+* Regular Expressions::         Matching regular expressions
+* Time and Date::               Manipulating time and date
+* i18n::                        Internationalisation
 
 * System Information::          Getting details about the host
 * User Information::            The name of the user
 * Environment Variables::       Reading and writing the environment
 * String Functions::            Misc string manipulation
 * Sleeping::                    Waiting for a period of time
-* Beeping::			Making a ding! sound
+* Beeping::                     Making a ding! sound
 * Messages::                    Writing to the console
-* Command Line Options::	Retrieving command line arguments
-* Shell Commands::		Executing shell commands
-* Timers::			Asynchronous timers
+* Command Line Options::        Retrieving command line arguments
+* Shell Commands::              Executing shell commands
+* Timers::                      Asynchronous timers
 
 * Debugging::                   How to debug Lisp programs
 * Tips::                        General ideas for @code{librep} programming
@@ -495,10 +495,10 @@ hence modifying one object would alter the other. The following Lisp
 fragments may illustrate this,
 
 @lisp
-(eq "foo" "foo")	;the objects are distinct
+(eq "foo" "foo")        ;the objects are distinct
     @result{} ()
 
-(eq t t)		;the same object -- the symbol @code{t}
+(eq t t)                ;the same object -- the symbol @code{t}
     @result{} t
 @end lisp
 
@@ -3039,10 +3039,10 @@ defined with @code{letrec}. For example, a local factorial function
 
 @lisp
 (letrec ((fact
-	  (lambda (n)
-	    (if (= n 1)
-		1
-	      (* n (fact (1- n)))))))
+          (lambda (n)
+            (if (= n 1)
+                1
+              (* n (fact (1- n)))))))
   (fact 10))
 @end lisp
 
@@ -3230,8 +3230,17 @@ foo
 @cindex Defining variables
 @cindex Variables, defining
 
-The special forms @code{defvar} and @code{defconst} allow you to define
-the global variables that will be used by a program.
+The special forms @code{define}, @code{defvar} and @code{defconst}
+allow you to define the global variables that will be used by a
+program.
+
+@defmac define variable form
+Defines a lexically scoped global variable called @var{variable}. It
+will have the result of evaluating @var{form} assigned to it.
+
+Note that the @code{define} special form may also be used to declare
+block-structured functions, @ref{Definitions}.
+@end defmac
 
 @defspec defvar variable form [doc-string]
 This special form defines a special (i.e. dynamically scoped) variable,
@@ -3268,16 +3277,6 @@ for the constant.
     @result{} the-answer
 @end lisp
 @end defmac
-
-Another way of defining global variables is to use the @code{define}
-macro (@pxref{Definitions}). The following example defines a global
-variable @code{foo} with value @code{42}. This is similar to both
-@code{defvar} and @code{defconst} except that the defined variable
-binding is both lexically scoped and mutable.
-
-@example
-(define foo 42)
-@end example
 
 
 @node Fluid Variables, , Defining Variables, Variables
@@ -3849,7 +3848,7 @@ Returns true if @var{arg} is a macro object.
 
 @menu
 * Defining Macros::             Macros are defined like functions
-* Backquoting::			Creating macros from templates
+* Backquoting::                 Creating macros from templates
 * Macro Expansion::             How macros are used by the evaluator
 * Compiling Macros::            The compiler expands macros at compile-
                                   time.
@@ -4029,8 +4028,10 @@ file).
 
 
 @node Definitions, Modules, Macros, The language
-@section Definitions
-@cindex Definitions
+@section Block-Structured Definitions
+@cindex Block structured definitions
+@cindex Definitions, block structured
+@cindex Functions, block structured
 
 Previous sections of this document have described several special forms
 and macros for defining top-level functions and variables.
@@ -4068,17 +4069,17 @@ containing scope. For example:
 
 @lisp
 (define (foo x)
-  (define (bar x)
+  (define (bar)
     (* x 42))
-  (1+ (bar x)))
+  (1+ (bar)))
 @end lisp
 
 @noindent
 This defines a top-level function called @code{foo}; but this also
 contains an inner function named @code{bar}, that is only accessible
-within @code{foo}. @footnote{In this example, there is no need to pass
-the value of @code{x} into @code{bar}, since the binding of @code{x} is
-already within the scope of @code{bar}.}
+within @code{foo}. Since @code{bar} is defined inside @code{foo}, and
+librep uses lexical scope by default, the variable @code{x} defined by
+@code{foo} may also be accessed by @code{bar}.
 
 @defmac define name form
 @defmacx define (name . args) body-forms@dots{}
@@ -4091,6 +4092,12 @@ specified by @var{args}. The body of the function is defined by the
 @var{body-forms}. The body forms have any macros expanded, and are
 scanned for internal definitions (at the start of the body of
 @code{let}, @code{let*}, @code{lambda} special forms)
+@end defmac
+
+@defmac define-macro name form
+@defmacx define-macro (name . args) body-forms@dots{}
+Similar to @code{define}, except that it creates a macro definition
+(@pxref{Macros}).
 @end defmac
 
 @defmac with-internal-definitions body-forms
@@ -4345,7 +4352,7 @@ used to evaluate a list of forms in left to right order.
 * Conditional Structures::      Making decisions based on truth values
 * Looping Structures::          `while' loops
 * Non-Local Exits::             Exiting from several levels of evaluation
-* Continuations::		Capturing the call stack
+* Continuations::               Capturing the call stack
 @end menu
 
 
@@ -5597,7 +5604,7 @@ interpreted version.
 
 @menu
 * Compilation Functions::       How to compile Lisp programs
-* Compiler Declarations::	Hinting to the compiler
+* Compiler Declarations::       Hinting to the compiler
 * Compilation Tips::            Getting the most out of the compiler
 * Disassembly::                 Examining compiled functions
 @end menu
@@ -5983,25 +5990,25 @@ Disassembly of #<closure fib>:
 
 21 bytes, 1 constants, and (5,0,1) stack slots
 
-0		required-arg            ;requires a single parameter
-1		dup
-2		slot-set #0             ;store it in register 0 (r0)
-3		pushi	2
-4		le
-5		jn	10              ;unless r0 <= 2, goto 10
-8		pushi	1
-9		return                  ;else, return 1
-10		refg	[0] fib
-11		slot-ref #0
-12		dec
-13		call	#1              ;push result of (fib (1- n))
-14		refg	[0] fib
-15		slot-ref #0
-16		pushi	2
-17		sub
-18		call	#1              ;push (fib (- n 2))
-19		add
-20		return                  ;return the sum of the two calls
+0    required-arg       ;requires a single parameter
+1    dup
+2    slot-set #0        ;store it in register 0 (r0)
+3    pushi 2
+4    le
+5    jn 10              ;unless r0 <= 2, goto 10
+8    pushi 1
+9    return             ;else, return 1
+10   refg [0] fib
+11   slot-ref #0
+12   dec
+13   call #1            ;push result of (fib (1- n))
+14   refg [0] fib
+15   slot-ref #0
+16   pushi 2
+17   sub
+18   call #1            ;push (fib (- n 2))
+19   add
+20   return             ;return the sum of the two calls
 @end example
 
 
@@ -6382,9 +6389,6 @@ until it has parsed a whole object. This stream could be a file, a
 function, or even a string; the @code{read} function does not need to
 differentiate.
 
-Unless otherwise stated, all functions and variables described in the
-following sections are exported by the @code{rep.io.streams} module.
-
 @defun streamp arg
 Return true if @var{arg} is a stream.
 @end defun
@@ -6402,7 +6406,7 @@ Return true if @var{arg} is an output stream.
 * Output Streams::              Types of output stream
 * Input Functions::             Functions to read from streams
 * Output Functions::            How to output to a stream
-* Formatted Output::		Output by template
+* Formatted Output::            Output by template
 @end menu
 
 
@@ -6931,9 +6935,9 @@ following sections are exported by the @code{rep.io.files} module.
 * File Information::            Predicates on files
 * Manipulating Files::          Deleting, renaming and copying files
 * Manipulating Directories::    Accessing directories
-* Manipulating Symlinks::	Handling symbolic links
-* File Handlers::		Extending the file name-space
-* Remote Files::		Accessing remote files
+* Manipulating Symlinks::       Handling symbolic links
+* File Handlers::               Extending the file name-space
+* Remote Files::                Accessing remote files
 @end menu
 
 
@@ -8409,8 +8413,8 @@ This section describes how time and date values are handled in
 
 @menu
 * Timestamps::                  Internal representation of time
-* Formatting Dates::		Creating strings from timestamps
-* Parsing Dates::		Reading textual dates
+* Formatting Dates::            Creating strings from timestamps
+* Parsing Dates::               Reading textual dates
 @end menu
 
 

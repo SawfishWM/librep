@@ -105,6 +105,7 @@ extern repv Fexternal_structure_ref (repv, repv);
 extern repv Fintern_structure (repv);
 extern repv Fget_structure (repv);
 extern repv rep_get_initial_special_value (repv sym);
+extern repv rep_documentation_property (repv structure);
 extern void rep_pre_structures_init (void);
 extern void rep_structures_init (void);
 
