@@ -1,3 +1,9 @@
+2000-11-12  John Harper  <jsh@eazel.com>
+
+	* rep/util/repl.jl (completion-generator): pass this function
+	as an argument to `readline' (i.e. don't call it
+	rl-completion-generator)
+
 2000-10-23  John Harper  <jsh@eazel.com>
 
 	* version 0.13.2
