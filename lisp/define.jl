@@ -117,8 +117,7 @@
     ((condition-case)
      (list* 'condition-case (nth 1 form) (define-scan-body (nthcdr 2 form))))
 
-    ((while catch unwind-protect progn prog1 prog2
-      save-environment with-object)
+    ((while catch unwind-protect progn prog1 save-environment with-object)
      (cons (car form) (define-scan-body (cdr form))))
 
     ((quote)
