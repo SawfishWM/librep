@@ -109,7 +109,7 @@
 (put 'load-file 'repl-command
      (lambda files
        (mapc (lambda (f)
-	       (repl-eval `(,load ,f))))))
+	       (repl-eval `(,load ,f))) files)))
 (put 'load-file 'repl-help "\"FILENAME\" ...")
 
 (put 'open 'repl-command
