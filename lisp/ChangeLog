@@ -1,5 +1,8 @@
 2000-07-12  John Harper  <john@dcs.warwick.ac.uk>
 
+	* define.jl (define-scan-form): don't expand let-fluids forms
+	since compiler handles them specially
+
 	* version 0.12.3
 
 2000-07-11  John Harper  <john@dcs.warwick.ac.uk>
