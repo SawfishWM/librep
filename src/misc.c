@@ -257,6 +257,24 @@ Pause for SECONDS (plus the optional MILLISECOND component) length of time.
     return sym_t;
 }
 
+_PR VALUE cmd_sit_for(VALUE secs, VALUE msecs);
+DEFUN("sit-for", cmd_sit_for, subr_sit_for, (VALUE secs, VALUE msecs),
+      V_Subr2, DOC_sit_for) /*
+::doc:sit_for::
+sit-for [SECONDS] [MILLISECONDS]
+
+Wait for input to arrive and be processed. No more than SECONDS seconds plus
+MILLISECONDS milliseconds will be waited. If at the end of this time no
+input has arrived, return t. Otherwise return nil if input was found.
+
+If neither SECONDS nor MILLISECONDS is defined the command will return
+immediately, using a null timeout.
+::end:: */
+{
+    return sys_sit_for(((INTP(secs) ? VINT(secs) : 0) * 1000)
+		       + (INTP(msecs) ? VINT(msecs) : 0));
+}
+
 _PR VALUE cmd_user_login_name(void);
 DEFUN("user-login-name", cmd_user_login_name, subr_user_login_name, (void), V_Subr0, DOC_user_login_name) /*
 ::doc:user_login_name::
@@ -373,6 +391,7 @@ misc_init(void)
     ADD_SUBR(subr_current_time_string);
     ADD_SUBR(subr_time_later_p);
     ADD_SUBR(subr_sleep_for);
+    ADD_SUBR(subr_sit_for);
 
     ADD_SUBR(subr_user_login_name);
     ADD_SUBR(subr_user_full_name);
