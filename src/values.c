@@ -875,6 +875,11 @@ last garbage-collection is greater than `garbage-threshold'.
 	win = win->w_Next;
     }
 
+#ifdef HAVE_SUBPROCESSES
+    /* Same goes for active subprocesses */
+    mark_active_processes();
+#endif
+
 #ifdef HAVE_AMIGA
     /* Mark the strings in the menu strip.  */
     ami_mark_menus();
