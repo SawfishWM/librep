@@ -108,12 +108,6 @@
 			    (car form) 'compiler-handler-property)))
 	    (fun form return-follows))
 
-	   ;; Is it a function to be inlined?
-	   ;; XXX broken for module system
-	   ((and (symbolp (car form)) (get (car form) 'compile-inline))
-	    (test-function-call (car form) (length (cdr form)))
-	    (compile-inline-function form))
-
 	   (t
 	    ;; Expand macros
 	    (test-function-call (car form) (length (cdr form)))
@@ -129,7 +123,7 @@
 		;; An inline lambda expression
 		(compile-lambda-inline (car form) (cdr form)
 				       nil return-follows))
-	       ((and (symbolp fun) (assq fun (fluid inline-env)))
+	       ((and (symbolp fun) (cdr (assq fun (fluid inline-env))))
 		;; A call to a function that should be open-coded
 		(compile-lambda-inline (cdr (assq fun (fluid inline-env)))
 				       (cdr form) nil return-follows))
