@@ -1,3 +1,25 @@
+1998-10-15  John Harper  <john@dcs.warwick.ac.uk>
+
+	* jade.h: describe the three preprocessor symbols noted below,
+	only DB_RESOLVE_SYMBOLS is set by default
+
+	* debug-buffer.c (db_print_backtrace): print symbols instead of
+	addresses when DB_RESOLVE_SYMBOLS is defined
+	(db_return_address): new function, try to return the return
+	address of the calling function
+
+	* unix_main.c: when DEBUG_SYS_ALLOC is defined, record all
+	outstanding memory allocations. On exit, print any that are
+	still unfreed. Also define a function unix-print-allocations
+	that does the same thing
+	(fatal_error_handler): print the C backtrace
+
+	* unix_dl.c (find_c_symbol): function to look up the name of
+	the closest symbol preceding a specified address
+
+	* edit.h, edit.c, buffers.c: only give each buffer it's own
+	allocation pool if STRINGPOOL_PER_BUFFER is defined
+
 1998-10-13  John Harper  <john@dcs.warwick.ac.uk>
 
 	* streams.c (cmd_format): recognize the %X format (doh!)

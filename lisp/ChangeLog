@@ -1,3 +1,7 @@
+1998-10-14  John Harper  <john@dcs.warwick.ac.uk>
+
+	* read-mail.jl (rm-get-address-name): new function
+
 1998-10-13  John Harper  <john@dcs.warwick.ac.uk>
 
 	* mime-quoted-printable.jl (mime-encode-quoted-printable):
