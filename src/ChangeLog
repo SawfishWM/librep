@@ -1,5 +1,8 @@
 2001-09-15  John Harper  <jsh@unfactored.org>
 
+	* continuations.c: allocate continuation and thread typecodes
+	lazily (when they're first needed)
+
 	* numbers.c (promote_to): don't canonicalize the created
 	rational, since it's denominator is known to be 1 (suggested by
 	Kevin Ryde <user42@zip.com.au>)

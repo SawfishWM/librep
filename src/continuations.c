@@ -229,14 +229,14 @@ struct rep_continuation_struct {
 };
 
 #define rep_CONTIN(v)	((rep_continuation *)rep_PTR(v))
-#define rep_CONTINP(v)	rep_CELL16_TYPEP(v, rep_continuation_type)
+#define rep_CONTINP(v)	rep_CELL16_TYPEP(v, continuation_type ())
 
 #define CF_INVALID	(1 << rep_CELL16_TYPE_BITS)
 
 #define CONTIN_MAX_SLOP 4096
 
-/* the cell16 typecode allocated for continuation objects */
-static int rep_continuation_type;
+/* returns the cell16 typecode allocated for continuation objects */
+static int continuation_type (void);
 
 /* list of all allocated continuations */
 static rep_continuation *continuations;
@@ -255,14 +255,14 @@ struct rep_thread_struct {
     repv exit_val;
 };
 
-#define XTHREADP(v)	rep_CELL16_TYPEP(v, rep_thread_type)
+#define XTHREADP(v)	rep_CELL16_TYPEP(v, thread_type ())
 #define THREADP(v)	(XTHREADP (v) && !(THREAD (v)->car & TF_EXITED))
 #define THREAD(v)	((rep_thread *) rep_PTR (v))
 
 #define TF_EXITED	(1 << (rep_CELL16_TYPE_BITS + 0))
 #define TF_SUSPENDED	(1 << (rep_CELL16_TYPE_BITS + 1))
 
-static int rep_thread_type;
+static int thread_type (void);
 static rep_thread *threads;
 
 #define TV_LATER_P(t1, t2)			\
@@ -657,7 +657,7 @@ primitive_call_cc (repv (*callback)(rep_continuation *, void *), void *data,
 	c->stack_copy = 0;
     }
 
-    c->car = rep_continuation_type;
+    c->car = continuation_type ();
     
     if (setjmp (c->jmpbuf))
     {
@@ -993,7 +993,7 @@ new_thread (repv name)
     rep_thread *t = rep_ALLOC_CELL (sizeof (rep_thread));
     rep_data_after_gc += sizeof (rep_thread);
     memset (t, 0, sizeof (rep_thread));
-    t->car = rep_thread_type;
+    t->car = thread_type ();
     t->name = name;
     t->poll = 0;
     t->poll_arg = 0;
@@ -1298,6 +1298,22 @@ print_cont (repv stream, repv obj)
     rep_stream_puts (stream, "#<continuation>", -1, rep_FALSE);
 }
 
+static int
+continuation_type (void)
+{
+    static int type;
+
+    if (type == 0)
+    {
+	type = rep_register_new_type ("continuation",
+				      rep_ptr_cmp, print_cont, print_cont, 
+				      sweep_cont, mark_cont, mark_all,
+				      0, 0, 0, 0, 0, 0);
+    }
+
+    return type;
+}
+
 static void
 mark_thread (repv obj)
 {
@@ -1338,6 +1354,22 @@ print_thread (repv stream, repv obj)
 	rep_stream_puts (stream, rep_STR (THREAD (obj)->name), -1, rep_FALSE);
     }
     rep_stream_putc (stream, '>');
+}
+
+static int
+thread_type (void)
+{
+    static int type;
+
+    if (type == 0)
+    {
+	type = rep_register_new_type ("thread", rep_ptr_cmp,
+				      print_thread, print_thread, 
+				      sweep_thread, mark_thread,
+				      0, 0, 0, 0, 0, 0, 0);
+    }
+
+    return type;
 }
 
 #else /* WITH_CONTINUATIONS */
@@ -1843,15 +1875,6 @@ rep_continuations_init (void)
     repv tem = rep_push_structure ("rep.lang.interpreter");
 
 #ifdef WITH_CONTINUATIONS
-    rep_continuation_type = rep_register_new_type ("continuation",
-						   rep_ptr_cmp,
-						   print_cont, print_cont, 
-						   sweep_cont, mark_cont,
-						   mark_all, 0, 0, 0, 0, 0, 0);
-    rep_thread_type = rep_register_new_type ("thread", rep_ptr_cmp,
-					     print_thread, print_thread, 
-					     sweep_thread, mark_thread,
-					     0, 0, 0, 0, 0, 0, 0);
     exit_barrier_cell = Fcons (Qnil, Qnil);
     rep_mark_static (&exit_barrier_cell);
     rep_INTERN(continuation);
