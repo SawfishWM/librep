@@ -44,6 +44,7 @@ DEFSYM(quit, "quit");
 DEFSYM(top_level, "top-level");
 DEFSYM(command_line_args, "command-line-args");
 DEFSYM(batch_mode, "batch-mode");
+DEFSYM(interpreted_mode, "interpreted-mode");
 
 #ifndef INIT_SCRIPT
 # define INIT_SCRIPT "init"
@@ -65,7 +66,8 @@ usage(char *prog_name, void (*sys_usage)(void))
     fputs ("\nREP-OPTIONS include:\n"
 	   "    --init FILE  use FILE instead of `init.jl' to boot from\n"
 	   "    -v           print version/revision details\n"
-	   "    --batch       don't open any windows; process args and exit\n",
+	   "    --batch      don't open any windows; process args and exit\n"
+	   "    --interp     don't load compiled Lisp files\n",
 	   stderr);
 
     if (sys_usage != 0)
@@ -102,6 +104,8 @@ get_main_options(char *prog_name, int *argc_p,
 	}
 	else if(!strcmp("--batch", *argv))
 	    rep_SYM(Qbatch_mode)->value = Qt;
+	else if(!strcmp("--interp", *argv))
+	    rep_SYM(Qinterpreted_mode)->value = Qt;
 	else if(!strcmp("-?", *argv) || !strcmp("--help", *argv))
 	{
 	    usage(prog_name, sys_usage);
@@ -345,4 +349,6 @@ rep_main_init(void)
     rep_INTERN(idle_hook);
     rep_INTERN(batch_mode);
     rep_SYM(Qbatch_mode)->value = Qnil;
+    rep_INTERN(interpreted_mode);
+    rep_SYM(Qinterpreted_mode)->value = Qnil;
 }
