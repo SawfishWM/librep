@@ -45,14 +45,14 @@ DL_DSTS = rep/io/db/sdbm.la rep/io/timers.la rep/i18n/gettext.la \
 	  rep/lang/record-profile.la rep/vm/safe-interpreter.la
 DL_DIRS = rep rep/io rep/io/db rep/i18n rep/data rep/lang rep/vm
 
-REP_SRCS =	rep.c
-REP_OBJS =	$(REP_SRCS:.c=.o)
+REP_SRCS = rep.c
+REP_OBJS = $(REP_SRCS:.c=.o)
 
 INTL_OBJS_yes=../intl/*.lo
 INTL_OBJS_no=
 INTL_OBJS=$(INTL_OBJS_@USE_INCLUDED_LIBINTL@)
 
-all : librep.la $(DL_OBJS) rep rep-config rep-remote rep-xgettext
+all : librep.la $(DL_OBJS) rep rep-config rep-remote rep-xgettext .libexec
 
 librep.la : $(OBJS) $(LIBOBJS) $(ALLOCA)
 	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -version-info $(libversion) \
