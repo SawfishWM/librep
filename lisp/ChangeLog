@@ -1,5 +1,8 @@
 1998-10-13  John Harper  <john@dcs.warwick.ac.uk>
 
+	* mime-quoted-printable.jl (mime-encode-quoted-printable):
+	implemented this function
+
 	* modes.jl (mode-line-format): add a `%m' as the first
 	character
 

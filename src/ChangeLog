@@ -1,5 +1,7 @@
 1998-10-13  John Harper  <john@dcs.warwick.ac.uk>
 
+	* streams.c (cmd_format): recognize the %X format (doh!)
+
 	* views.c (format_mode_string): added `%m' format, represents
 	the state of the marked block
 
