@@ -97,6 +97,9 @@ Buffer-local variable absolutely defining the directory to which all files
 accessed in the buffer are resolved from (unless they're absolute.) 
 ::end:: */
 
+/* file-handler environment, (SYMBOL . FUNCTION) or Qt */
+repv rep_fh_env;
+
 /* List of all allocated file objects */
 static rep_file *file_list;
 
@@ -274,6 +277,7 @@ rep_call_file_handler(repv handler, int op, repv sym, int nargs, ...)
     repv res;
     int i;
     va_list args;
+    struct rep_Call lc;
 
     va_start(args, nargs);
     for(i = 0; i < nargs; i++)
@@ -284,6 +288,23 @@ rep_call_file_handler(repv handler, int op, repv sym, int nargs, ...)
     va_end(args);
     arg_list = Fcons(sym, arg_list);
 
+    lc.fun = Qnil;
+    lc.args = Qnil;
+    lc.args_evalled_p = Qnil;
+    rep_PUSH_CALL(lc);
+
+    if (rep_fh_env != Qt && rep_SYMBOLP(handler))
+    {
+	repv tem = Fassq (handler, rep_fh_env);
+	if (tem && rep_CONSP(tem))
+	{
+	    if (rep_CDR(tem) == Qt)
+		rep_USE_DEFAULT_ENV;
+	    else if (rep_FUNARGP(rep_CDR(tem)))
+		handler = rep_CDR(tem);
+	}
+    }
+
     rep_push_regexp_data(&matches);
     op_data.next = blocked_ops[op];
     blocked_ops[op] = &op_data;
@@ -293,6 +314,7 @@ rep_call_file_handler(repv handler, int op, repv sym, int nargs, ...)
     blocked_ops[op] = op_data.next;
     rep_pop_regexp_data();
 
+    rep_POP_CALL(lc);
     return res;
 }
 
@@ -1536,6 +1558,20 @@ Returns the name of a unique file in the local filing system.
 	return rep_signal_file_error(rep_VAL(&no_temp));
 }
 
+DEFUN("set-file-handler-environment", Fset_file_handler_environment,
+      Sset_file_handler_environment, (repv env), rep_Subr1) /*
+::doc:Sset-file-handler-environment::
+set-file-handler-environment ENV
+::end:: */
+{
+    if (rep_call_stack != 0)
+    {
+	if (rep_LISTP (env))
+	    rep_call_stack->saved_fh_env = env;
+    }
+    return Qt;
+}
+
 
 /* init */
 
@@ -1639,12 +1675,16 @@ rep_files_init(void)
     rep_ADD_SUBR(Sstdout_file);
     rep_ADD_SUBR(Sstderr_file);
     rep_ADD_SUBR(Smake_temp_name);
+    rep_ADD_SUBR(Sset_file_handler_environment);
 
     /* Initialise the type information. */
     rep_file_type = rep_register_new_type("file", rep_ptr_cmp,
 					  file_prin, file_prin, file_sweep,
 					  file_mark, mark_input_handlers,
 					  0, 0, 0, 0, 0, 0);
+
+    rep_fh_env = Qt;
+    rep_mark_static (&rep_fh_env);
 }
 
 void
