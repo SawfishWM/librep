@@ -1,5 +1,17 @@
 Sun May 24 10:24:16 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* edit.h (WIN): new field w_DisplayedName; the string currently
+	displayed as the name of this window (the current buffer's
+	status id string)
+	* values.c (mark_value): mark w_DisplayedName
+	* redisplay.c (cmd_redisplay): if a window's current buffer's
+	status id is different to its displayed name, reset it
+	* x11_windows.c (sys_set_win_name): new function, set the name
+	of a window
+
+	* x11_windows.c (sys_new_window): fix size_hints structure, set
+	icon name to `jade', don't bother setting window name
+
 	* x11_main.c: added a `-rv' option to give proper reverse video
 	(get_resources): capitalise resource names when we search under
 	"Jade" (I'm sure this is incorrect, but who knows). Also added

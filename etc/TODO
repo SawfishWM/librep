@@ -104,6 +104,10 @@ General programming tasks:
    restriction mechanisms to select the actual list of messages to be
    viewed.
 
+   Alternatively, we could remove the need for folders completely
+   (and the lame mbox format) by using some kind of database of
+   messages. This would open up a whole new set of questions..
+
  - Allow jadeclient to communicate inter-host.
 
    What security mechanisms should I use? Xauth is one obvious
