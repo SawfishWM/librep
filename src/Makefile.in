@@ -53,7 +53,7 @@ INTL_OBJS_yes=../intl/*.lo
 INTL_OBJS_no=
 INTL_OBJS=$(INTL_OBJS_@USE_INCLUDED_LIBINTL@)
 
-all : librep.la $(DL_OBJS) rep rep-config rep-remote rep-xgettext .libexec
+all : librep.la $(DL_OBJS) check-dl rep rep-config rep-remote rep-xgettext .libexec
 
 librep.la : $(OBJS) $(LIBOBJS) $(ALLOCA)
 	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -version-info $(libversion) \
@@ -73,6 +73,18 @@ rep-xgettext : rep-xgettext.jl rep .libexec
 	$(COMPILE_ENV) $(rep_prog) --batch -l rep.vm.compiler \
 	  -f compile-batch $< \
 	&& mv $<c $@ && chmod +x $@
+
+check-dl :
+	@set -e; for f in $(DL_OBJS); do \
+	  if grep "dlname=''" $$f >/dev/null; then \
+	    echo; echo "** Error: $$f has no associated shared library;"; \
+	    deps=`grep '^dependency_libs=' $$f \
+	      | sed -e "s/.*='\(.*\)'.*/\1/" \
+	      | sed -e "s/-l//g"`; \
+	    echo "** You may be missing a shared library from: $$deps"; echo; \
+	    exit 1; \
+	  fi; \
+	done
 
 install : all installdirs
 	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) librep.la $(DESTDIR)${libdir}
