@@ -166,7 +166,7 @@ static int lisp_depth, max_lisp_depth = 500;
 int rep_test_int_counter = 0;
 
 /* Limit before calling test_int_fun() */
-int rep_test_int_period = 100000;
+int rep_test_int_period = 1000;
 
 /* Function to test asynchronously for interrupts. If it detects an
    interrupt, it should set `rep_throw_value' to `rep_int_cell' */
