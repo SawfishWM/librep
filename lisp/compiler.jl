@@ -716,7 +716,7 @@ that files which shouldn't be compiled aren't."
        (body (nthcdr 2 list))
        doc interactive form)
     (when (stringp (car body))
-      (setq doc (nth 2 list))
+      (setq doc (car body))
       (setq body (cdr body)))
     (when (eq (car (car body)) 'interactive)
       ;; If we have (interactive), set the interactive spec to t
