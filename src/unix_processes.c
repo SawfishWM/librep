@@ -33,20 +33,11 @@
 #include <unistd.h>
 #include <termios.h>
 #include <fcntl.h>
+#include <string.h>
 
-_PR void protect_procs(void);
-_PR void unprotect_procs(void);
-_PR bool proc_notification(void);
-static void check_for_zombies(void);
-_PR void proc_on_idle(void);
-static void read_from_process(int);
-_PR int	 write_to_process(VALUE, u_char *, int);
-_PR void proc_mark(VALUE);
-_PR void proc_sweep(void);
-_PR void proc_prin(VALUE, VALUE);
-_PR void sigchld_restart(bool);
-_PR void proc_init(void);
-_PR void proc_kill(void);
+#ifdef NEED_MEMORY_H
+# include <memory.h>
+#endif
 
 static struct sigaction chld_sigact;
 static sigset_t chld_sigset;
@@ -60,9 +51,11 @@ struct Proc
     struct Proc *pr_NotifyNext;
     pid_t	pr_Pid;
     /* pr_Stdin is where we write, pr_Stdout where we read, they may be the
-       same.  */
-    int		pr_Stdin, pr_Stdout;
-    VALUE	pr_OutputStream;
+       same.  pr_Stderr is only used with pipes--it may be a separate
+       connection to the stderr stream of the process. At all other times
+       it will be equal to pr_Stdout. */
+    int		pr_Stdin, pr_Stdout, pr_Stderr;
+    VALUE	pr_OutputStream, pr_ErrorStream;
     int		pr_ExitStatus;
     VALUE	pr_NotifyFun;
     VALUE	pr_Prog;
@@ -105,6 +98,23 @@ static int process_run_count;
 static int process_mutex = -1;
 static bool got_sigchld;
 
+_PR void protect_procs(void);
+_PR void unprotect_procs(void);
+_PR bool proc_notification(void);
+static void check_for_zombies(void);
+_PR void proc_on_idle(void);
+static void read_from_one_fd(struct Proc *pr, int fd);
+static void read_from_process(int);
+_PR int	 write_to_process(VALUE, u_char *, int);
+_PR void proc_mark(VALUE);
+_PR void proc_sweep(void);
+_PR void proc_prin(VALUE, VALUE);
+_PR void sigchld_restart(bool);
+_PR void proc_init(void);
+_PR void proc_kill(void);
+
+
+
 INLINE void
 protect_procs(void)
 {
@@ -121,6 +131,24 @@ unprotect_procs(void)
 	check_for_zombies();
     }
     process_mutex--;
+}
+
+INLINE void
+register_input_fd(int fd)
+{
+#ifdef HAVE_X11
+    FD_SET(fd, &x11_fd_read_set);
+    x11_fd_read_action[fd] = read_from_process;
+#endif
+}
+
+INLINE void
+deregister_input_fd(int fd)
+{
+#ifdef HAVE_X11
+    FD_CLR(fd, &x11_fd_read_set);
+    x11_fd_read_action[fd] = NULL;
+#endif
 }
 
 /* PR's NotifyFun will be called when possible. This function is safe
@@ -188,13 +216,25 @@ check_for_zombies(void)
 		pr->pr_ExitStatus = status;
 		process_run_count--;
 		/* It seems that I can't just nuke the pty once the child's
-		   dead -- there can be data pending on it still. So, I set
-		   pr_Status to an in-between value and hope to get an eof
-		   over pr_Stdin RSN  */
-		if((pr->pr_Stdout != 0) || (pr->pr_Stdin != 0))
+		   dead -- there can be data pending on it still. So, try
+		   to read as much as possible, then nuke em. */
+		if(pr->pr_Stdout != 0 || pr->pr_Stderr != 0)
+		{
 		    pr->pr_Status = PR_EXITED;
+		    /* read_from_one_fd() will handle all cleanup
+		       if at all possible */
+		    if(pr->pr_Stdout != 0)
+			read_from_one_fd(pr, pr->pr_Stdout);
+		    if(pr->pr_Stderr != 0)
+			read_from_one_fd(pr, pr->pr_Stderr);
+		}
 		else
 		{
+		    if(pr->pr_Stdin != 0)
+		    {
+			close(pr->pr_Stdin);
+			pr->pr_Stdin = 0;
+		    }
 		    /* No file handles open so just die */
 		    pr->pr_Status = PR_DEAD;
 		    queue_notify(pr);
@@ -218,15 +258,17 @@ proc_on_idle(void)
 	       for output to get through. Mark it as dead. */
 	    if(pr->pr_Stdout)
 	    {
-#ifdef HAVE_X11
-		FD_CLR(pr->pr_Stdout, &x11_fd_read_set);
-		x11_fd_read_action[pr->pr_Stdout] = NULL;
-#endif
+		deregister_input_fd(pr->pr_Stdout);
 		close(pr->pr_Stdout);
-		if(pr->pr_Stdin && (pr->pr_Stdin != pr->pr_Stdout))
-		    close(pr->pr_Stdin);
-		pr->pr_Stdout = pr->pr_Stdin = 0;
 	    }
+	    if(pr->pr_Stderr && pr->pr_Stderr != pr->pr_Stdout)
+	    {
+		deregister_input_fd(pr->pr_Stderr);
+		close(pr->pr_Stderr);
+	    }
+	    if(pr->pr_Stdin && (pr->pr_Stdin != pr->pr_Stdout))
+		close(pr->pr_Stdin);
+	    pr->pr_Stdout = pr->pr_Stdin = pr->pr_Stderr = 0;
 	    pr->pr_Status = PR_DEAD;
 	    queue_notify(pr);
 	}
@@ -243,6 +285,60 @@ sigchld_handler(int sig)
 	got_sigchld = TRUE;
 }
 
+/* Read data from FD out of PROC. If necessary it will handle
+   clean up and notification. */
+static void
+read_from_one_fd(struct Proc *pr, int fd)
+{
+    VALUE stream = ((fd != pr->pr_Stdout)
+		    ? pr->pr_ErrorStream : pr->pr_OutputStream);
+    u_char buf[1025];
+    int actual;
+    cursor(curr_vw, CURS_OFF);
+    do {
+	if((actual = read(fd, buf, 1024)) > 0)
+	{
+	    buf[actual] = 0;
+	    if(!NILP(stream))
+		stream_puts(stream, buf, actual, FALSE);
+	}
+    } while((actual > 0) || (errno == EINTR));
+
+    if((actual <= 0) && (errno != EWOULDBLOCK) && (errno != EAGAIN))
+    {
+	/* We assume EOF  */
+
+	deregister_input_fd(fd);
+	close(fd);
+
+	/* Could be either pr_Stdout or pr_Stderr */
+	if(fd != pr->pr_Stdout)
+	    pr->pr_Stderr = 0;
+	else
+	{
+	    if(pr->pr_Stdin && (pr->pr_Stdin == pr->pr_Stdout))
+		pr->pr_Stdin = 0;
+	    if(pr->pr_Stderr && (pr->pr_Stderr == pr->pr_Stdout))
+		pr->pr_Stderr = 0;
+	    pr->pr_Stdout = 0;
+	}
+
+	/* This means that the process has already exited and we were
+	   just waiting for the dregs of its output.  */
+	if(pr->pr_Status < 0 && pr->pr_Stdout == 0 && pr->pr_Stderr == 0)
+	{
+	    if(pr->pr_Stdin != 0)
+	    {
+		close(pr->pr_Stdin);
+		pr->pr_Stdin = 0;
+	    }
+	    pr->pr_Status = PR_DEAD;
+	    queue_notify(pr);
+	}
+    }
+    cursor(curr_vw, CURS_ON);
+}
+
 static void
 read_from_process(int fd)
 {
@@ -251,45 +347,12 @@ read_from_process(int fd)
     pr = process_chain;
     while(pr)
     {
-	if((pr->pr_Status != PR_DEAD) && (pr->pr_Stdout == fd))
-	    break;
-	pr = pr->pr_Next;
-    }
-    if(pr)
-    {
-	u_char buf[1025];
-	int actual;
-	cursor(curr_vw, CURS_OFF);
-	do {
-	    if((actual = read(fd, buf, 1024)) > 0)
-	    {
-		buf[actual] = 0;
-		if(!NILP(pr->pr_OutputStream))
-		    stream_puts(pr->pr_OutputStream, buf, actual, FALSE);
-	    }
-	} while((actual > 0) || (errno == EINTR));
-
-	if((actual <= 0) && (errno != EWOULDBLOCK) && (errno != EAGAIN))
+	if(pr->pr_Status != PR_DEAD
+	   && (pr->pr_Stdout == fd || pr->pr_Stderr == fd))
 	{
-	    /* We assume EOF  */
-#ifdef HAVE_X11
-	    FD_CLR(pr->pr_Stdout, &x11_fd_read_set);
-	    x11_fd_read_action[pr->pr_Stdout] = NULL;
-#endif
-	    close(pr->pr_Stdout);
-	    if(pr->pr_Stdin && (pr->pr_Stdin != pr->pr_Stdout))
-		close(pr->pr_Stdin);
-	    pr->pr_Stdout = pr->pr_Stdin = 0;
-
-	    /* This means that the process has already exited and we were
-	       just waiting for the dregs of its output.  */
-	    if(pr->pr_Status < 0)
-	    {
-		pr->pr_Status = PR_DEAD;
-		queue_notify(pr);
-	    }
+	    read_from_one_fd(pr, fd);
 	}
-	cursor(curr_vw, CURS_ON);
+	pr = pr->pr_Next;
     }
     unprotect_procs();
 }
@@ -376,11 +439,13 @@ kill_process(struct Proc *pr)
 	}
 	if(pr->pr_Stdout)
 	{
-#ifdef HAVE_X11
-	    FD_CLR(pr->pr_Stdout, &x11_fd_read_set);
-	    x11_fd_read_action[pr->pr_Stdout] = NULL;
-#endif
+	    deregister_input_fd(pr->pr_Stdout);
 	    close(pr->pr_Stdout);
+	}
+	if(pr->pr_Stderr && pr->pr_Stderr != pr->pr_Stdout)
+	{
+	    deregister_input_fd(pr->pr_Stderr);
+	    close(pr->pr_Stderr);
 	}
 	if(pr->pr_Stdin && (pr->pr_Stdin != pr->pr_Stdout))
 	    close(pr->pr_Stdin);
@@ -429,26 +494,43 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
     {
 	bool usepty = PR_CONN_PTY_P(pr);
 	char slavenam[32];
-	int stdin_fds[2], stdout_fds[2]; /* only used for pipes */
+	int stdin_fds[2], stdout_fds[2], stderr_fds[2]; /* only for pipes */
 	pr->pr_ExitStatus = -1;
 
-	if(sync_input != NULL)
+	if(sync_input != NULL || !usepty)
 	{
 	    usepty = FALSE;
 	    pr->pr_ConnType = sym_pipe;
 	    if(pipe(stdout_fds) == 0)
 	    {
-		stdin_fds[0] = open(sync_input, O_RDONLY);
-		if(stdin_fds[0] < 0)
+		if(pipe(stderr_fds) == 0)
 		{
-		    pr->pr_Stdin = 0;
-		    close(stdout_fds[0]);
-		    close(stdout_fds[1]);
+		    if(sync_input)
+		    {
+			stdin_fds[0] = open(sync_input, O_RDONLY);
+			if(stdin_fds[0] >= 0)
+			    pr->pr_Stdin = stdin_fds[0]; /* fake */
+		    }
+		    else
+		    {
+			if(pipe(stdin_fds) == 0)
+			    pr->pr_Stdin = stdin_fds[1];
+		    }
+		    if(pr->pr_Stdin != 0)
+		    {
+			pr->pr_Stdout = stdout_fds[0];
+			pr->pr_Stderr = stderr_fds[0];
+		    }
+		    else
+		    {
+			close(stderr_fds[0]);
+			close(stderr_fds[1]);
+		    }
 		}
 		else
 		{
-		    pr->pr_Stdin = stdin_fds[0];	/* fake */
-		    pr->pr_Stdout = stdout_fds[0];
+		    close(stdout_fds[0]);
+		    close(stdout_fds[1]);
 		}
 	    }
 	}
@@ -456,22 +538,7 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 	{
 	    pr->pr_Stdin = get_pty(slavenam);
 	    pr->pr_Stdout = pr->pr_Stdin;
-	}
-	else
-	{
-	    if(pipe(stdin_fds) == 0)
-	    {
-		if(pipe(stdout_fds) == 0)
-		{
-		    pr->pr_Stdin = stdin_fds[1];
-		    pr->pr_Stdout = stdout_fds[0];
-		}
-		else
-		{
-		    close(stdin_fds[0]);
-		    close(stdin_fds[1]);
-		}
-	    }
+	    pr->pr_Stderr = pr->pr_Stdin;
 	}
 	if(pr->pr_Stdin)
 	{
@@ -529,9 +596,11 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 			close(stdin_fds[1]);
 
 		    dup2(stdout_fds[1], 1);
-		    dup2(stdout_fds[1], 2);
+		    dup2(stderr_fds[1], 2);
 		    close(stdout_fds[0]);
 		    close(stdout_fds[1]);
+		    close(stderr_fds[0]);
+		    close(stderr_fds[1]);
 		}
 		if(STRINGP(pr->pr_Dir) && (STRING_LEN(pr->pr_Dir) > 0))
 		    chdir(VSTR(pr->pr_Dir));
@@ -547,6 +616,7 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 		{
 		    close(stdin_fds[0]);
 		    close(stdout_fds[1]);
+		    close(stderr_fds[1]);
 		}
 		if(sync_input == NULL)
 		{
@@ -564,10 +634,12 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 		    fcntl(pr->pr_Stdin, F_SETFD, 1);
 		    fcntl(pr->pr_Stdout, F_SETFD, 1);
 		    fcntl(pr->pr_Stdout, F_SETFL, O_NONBLOCK);
-#ifdef HAVE_X11
-		    FD_SET(pr->pr_Stdout, &x11_fd_read_set);
-		    x11_fd_read_action[pr->pr_Stdout] = read_from_process;
-#endif
+		    register_input_fd(pr->pr_Stdout);
+		    if(pr->pr_Stderr != pr->pr_Stdout)
+		    {
+			fcntl(pr->pr_Stderr, F_SETFL, O_NONBLOCK);
+			register_input_fd(pr->pr_Stderr);
+		    }
 		    process_run_count++;
 		}
 		else
@@ -575,22 +647,58 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 		    /* Run synchronously.  */
 		    u_char buf[1025];
 		    int actual;
+		    fd_set inputs;
+		    bool done_out = FALSE, done_err = FALSE;
+		    FD_ZERO(&inputs);
+		    FD_SET(pr->pr_Stdout, &inputs);
+		    FD_SET(pr->pr_Stderr, &inputs);
 		    pr->pr_Stdin = 0;
-		    do {
-			actual = read(pr->pr_Stdout, buf, 1024);
-			if(actual > 0)
+		    fcntl(pr->pr_Stdout, F_SETFL, O_NONBLOCK);
+		    fcntl(pr->pr_Stderr, F_SETFL, O_NONBLOCK);
+		    while(!done_out || !done_err)
+		    {
+			fd_set copy = inputs;
+			int number = select(FD_SETSIZE, &copy, NULL,
+					    NULL, NULL);
+			if(number > 0)
 			{
-			    buf[actual] = 0;
-			    if(!NILP(pr->pr_OutputStream))
+			    if(FD_ISSET(pr->pr_Stdout, &copy))
 			    {
-				stream_puts(pr->pr_OutputStream, buf,
-					    actual, FALSE);
+				actual = read(pr->pr_Stdout, buf, 1024);
+				if(actual > 0)
+				{
+				    buf[actual] = 0;
+				    if(!NILP(pr->pr_OutputStream))
+				    {
+					stream_puts(pr->pr_OutputStream, buf,
+						    actual, FALSE);
+				    }
+				}
+				else if(errno != EINTR)
+				    done_out = TRUE;
+			    }
+			    if(FD_ISSET(pr->pr_Stderr, &copy))
+			    {
+				actual = read(pr->pr_Stderr, buf, 1024);
+				if(actual > 0)
+				{
+				    buf[actual] = 0;
+				    if(!NILP(pr->pr_ErrorStream))
+				    {
+					stream_puts(pr->pr_ErrorStream, buf,
+						    actual, FALSE);
+				    }
+				}
+				else if(errno != EINTR)
+				    done_err = TRUE;
 			    }
 			}
-		    } while((actual > 0) || (errno == EINTR));
+		    }
 		    waitpid(pr->pr_Pid, &pr->pr_ExitStatus, 0);
 		    close(pr->pr_Stdout);
+		    close(pr->pr_Stderr);
 		    pr->pr_Stdout = 0;
+		    pr->pr_Stderr = 0;
 		    pr->pr_Status = PR_DEAD;
 		    queue_notify(pr);
 		}
@@ -612,6 +720,7 @@ void
 proc_mark(VALUE pr)
 {
     MARKVAL(VPROC(pr)->pr_OutputStream);
+    MARKVAL(VPROC(pr)->pr_ErrorStream);
     MARKVAL(VPROC(pr)->pr_NotifyFun);
     MARKVAL(VPROC(pr)->pr_Prog);
     MARKVAL(VPROC(pr)->pr_Args);
@@ -691,13 +800,12 @@ _PR VALUE cmd_make_process(VALUE stream, VALUE fun, VALUE dir, VALUE prog, VALUE
 DEFUN("make-process", cmd_make_process, subr_make_process, (VALUE stream, VALUE fun, VALUE dir, VALUE prog, VALUE args), V_Subr5, DOC_make_process) /*
 ::doc:make_process::
 make-process [OUTPUT-STREAM] [FUN] [DIR] [PROGRAM] [ARGS]
-<UNIX-ONLY>
 
 Creates a new process-object, OUTPUT-STREAM is where all output from this
-process goes, FUN is a function to call each time the process running
-on this object changes state. DIR is the process' current directory,
-PROGRAM the filename of the program to run and ARGS a list of arguments
-passed to the process.
+process goes, both stdout and stderr, FUN is a function to call each time
+the process running on this object changes state. DIR is the process'
+current directory, PROGRAM the filename of the program to run and ARGS a
+list of arguments passed to the process.
 
 Any of the arguments may be unspecified, in which case they can be set
 either by the functions provided or by the function called to create the
@@ -716,6 +824,7 @@ actual running process.
 	pr->pr_Stdin = pr->pr_Stdout = 0;
 	pr->pr_ExitStatus = -1;
 	pr->pr_OutputStream = stream;
+	pr->pr_ErrorStream = stream;
 	pr->pr_NotifyFun = fun;
 	pr->pr_Prog = prog;
 	pr->pr_Args = args;
@@ -730,7 +839,6 @@ _PR VALUE cmd_start_process(VALUE arg_list);
 DEFUN("start-process", cmd_start_process, subr_start_process, (VALUE arg_list), V_SubrN, DOC_start_process) /*
 ::doc:start_process::
 start-process [PROCESS] [PROGRAM] [ARGS...]
-<UNIX-ONLY>
 
 Starts a process running on process-object PROCESS. The child-process runs
 asynchronously with the editor. If PROCESS is unspecified the make-process
@@ -810,7 +918,6 @@ _PR VALUE cmd_call_process(VALUE arg_list);
 DEFUN("call-process", cmd_call_process, subr_call_process, (VALUE arg_list), V_SubrN, DOC_call_process) /*
 ::doc:call_process::
 call-process [PROCESS] [IN-FILE] [PROGRAM] [ARGS...]
-<UNIX-ONLY>
 
 Starts a process running on process-object PROCESS. Waits for the child to
 exit, then returns the exit-value of the child. If PROCESS is unspecified
@@ -976,7 +1083,6 @@ _PR VALUE cmd_signal_process(VALUE proc, VALUE sig, VALUE grp);
 DEFUN("signal-process", cmd_signal_process, subr_signal_process, (VALUE proc, VALUE sig, VALUE grp), V_Subr3, DOC_signal_process) /*
 ::doc:signal_process::
 signal-process PROCESS SIGNAL [SIGNAL-GROUP]
-<UNIX-ONLY>
 
 If PROCESS is running asynchronously then send signal number SIGNAL to it.
 
@@ -1003,7 +1109,6 @@ _PR VALUE cmd_interrupt_process(VALUE proc, VALUE grp);
 DEFUN("interrupt-process", cmd_interrupt_process, subr_interrupt_process, (VALUE proc, VALUE grp), V_Subr2, DOC_interrupt_process) /*
 ::doc:interrupt_process::
 interrupt-process PROCESS [SIGNAL-GROUP]
-<UNIX-ONLY>
 
 Do (signal-process PROCESS SIGINT SIGNAL-GROUP) or equivalent.
 ::end:: */
@@ -1015,7 +1120,6 @@ _PR VALUE cmd_kill_process(VALUE proc, VALUE grp);
 DEFUN("kill-process", cmd_kill_process, subr_kill_process, (VALUE proc, VALUE grp), V_Subr2, DOC_kill_process) /*
 ::doc:kill_process::
 kill-process PROCESS [SIGNAL-GROUP]
-<UNIX-ONLY>
 
 Do (signal-process PROCESS SIGKILL SIGNAL-GROUP) or equivalent.
 ::end:: */
@@ -1027,7 +1131,6 @@ _PR VALUE cmd_stop_process(VALUE proc, VALUE grp);
 DEFUN("stop-process", cmd_stop_process, subr_stop_process, (VALUE proc, VALUE grp), V_Subr2, DOC_stop_process) /*
 ::doc:stop_process::
 stop-process PROCESS [SIGNAL-GROUP]
-<UNIX-ONLY>
 
 Suspends execution of PROCESS, see `continue-process'. If SIGNAL-GROUP is
 non-nil also suspends the processes in the process group of PROCESS.
@@ -1040,7 +1143,6 @@ _PR VALUE cmd_continue_process(VALUE proc, VALUE grp);
 DEFUN("continue-process", cmd_continue_process, subr_continue_process, (VALUE proc, VALUE grp), V_Subr2, DOC_continue_process) /*
 ::doc:continue_process::
 continue-process PROCESS [SIGNAL-GROUP]
-<UNIX-ONLY>
 
 Restarts PROCESS after it has been stopped (via `stop-process'). If
 SIGNAL-GROUP is non-nil also continues the processes in the process group of
@@ -1069,7 +1171,6 @@ _PR VALUE cmd_process_exit_status(VALUE proc);
 DEFUN("process-exit-status", cmd_process_exit_status, subr_process_exit_status, (VALUE proc), V_Subr1, DOC_process_exit_status) /*
 ::doc:process_exit_status::
 process-exit-status PROCESS
-<UNIX-ONLY>
 
 Returns the unprocessed exit-status of the last process to be run on the
 process-object PROCESS. If PROCESS is currently running, return nil.
@@ -1091,7 +1192,6 @@ _PR VALUE cmd_process_exit_value(VALUE proc);
 DEFUN("process-exit-value", cmd_process_exit_value, subr_process_exit_value, (VALUE proc), V_Subr1, DOC_process_exit_value) /*
 ::doc:process_exit_value::
 process-exit-value PROCESS
-<UNIX-ONLY>
 
 Returns the return-value of the last process to be run on PROCESS, or nil if:
   a) no process has run on PROCESS
@@ -1112,7 +1212,6 @@ _PR VALUE cmd_process_id(VALUE proc);
 DEFUN("process-id", cmd_process_id, subr_process_id, (VALUE proc), V_Subr1, DOC_process_id) /*
 ::doc:process_id::
 process-id PROCESS
-<UNIX-ONLY>
 
 If PROCESS is running, return the process-identifier associated with it
 (ie, its pid).
@@ -1131,7 +1230,6 @@ _PR VALUE cmd_process_running_p(VALUE proc);
 DEFUN("process-running-p", cmd_process_running_p, subr_process_running_p, (VALUE proc), V_Subr1, DOC_process_running_p) /*
 ::doc:process_running_p::
 process-running-p PROCESS
-<UNIX-ONLY>
 
 Return t if PROCESS is running.
 ::end:: */
@@ -1151,7 +1249,6 @@ _PR VALUE cmd_process_stopped_p(VALUE proc);
 DEFUN("process-stopped-p", cmd_process_stopped_p, subr_process_stopped_p, (VALUE proc), V_Subr1, DOC_process_stopped_p) /*
 ::doc:process_stopped_p::
 process-stopped-p PROCESS
-<UNIX-ONLY>
 
 Return t if PROCESS has been stopped.
 ::end:: */
@@ -1171,7 +1268,6 @@ _PR VALUE cmd_process_in_use_p(VALUE proc);
 DEFUN("process-in-use-p", cmd_process_in_use_p, subr_process_in_use_p, (VALUE proc), V_Subr1, DOC_process_in_use_p) /*
 ::doc:process_in_use_p::
 process-in-use-p PROCESS
-<UNIX-ONLY>
 
 Similar to `process-running-p' except that this returns t even when the
 process has stopped, or has exited but the pty connected to `PROCESS' is still
@@ -1193,7 +1289,6 @@ _PR VALUE cmd_processp(VALUE arg);
 DEFUN("processp", cmd_processp, subr_processp, (VALUE arg), V_Subr1, DOC_process_p) /*
 ::doc:process_p::
 processp ARG
-<UNIX-ONLY>
 
 Return t is ARG is a process-object.
 ::end:: */
@@ -1207,7 +1302,6 @@ _PR VALUE cmd_process_prog(VALUE proc);
 DEFUN("process-prog", cmd_process_prog, subr_process_prog, (VALUE proc), V_Subr1, DOC_process_prog) /*
 ::doc:process_prog::
 process-prog PROCESS
-<UNIX-ONLY>
 
 Return the name of the program in PROCESS.
 ::end:: */
@@ -1224,7 +1318,6 @@ _PR VALUE cmd_set_process_prog(VALUE proc, VALUE prog);
 DEFUN("set-process-prog", cmd_set_process_prog, subr_set_process_prog, (VALUE proc, VALUE prog), V_Subr2, DOC_set_process_prog) /*
 ::doc:set_process_prog::
 set-process-prog PROCESS PROGRAM
-<UNIX-ONLY>
 
 Sets the name of the program to run on PROCESS to FILE.
 ::end:: */
@@ -1241,7 +1334,6 @@ _PR VALUE cmd_process_args(VALUE proc);
 DEFUN("process-args", cmd_process_args, subr_process_args, (VALUE proc), V_Subr1, DOC_process_args) /*
 ::doc:process_args::
 process-args PROCESS
-<UNIX-ONLY>
 
 Return the list of arguments to PROCESS.
 ::end:: */
@@ -1258,7 +1350,6 @@ _PR VALUE cmd_set_process_args(VALUE proc, VALUE args);
 DEFUN("set-process-args", cmd_set_process_args, subr_set_process_args, (VALUE proc, VALUE args), V_Subr2, DOC_set_process_args) /*
 ::doc:set_process_args::
 set-process-args PROCESS ARG-LIST
-<UNIX-ONLY>
 
 Set the arguments to PROCESS.
 ::end:: */
@@ -1276,7 +1367,6 @@ _PR VALUE cmd_process_output_stream(VALUE proc);
 DEFUN("process-output-stream", cmd_process_output_stream, subr_process_output_stream, (VALUE proc), V_Subr1, DOC_process_output_stream) /*
 ::doc:process_output_stream::
 process-output-stream PROCESS
-<UNIX-ONLY>
 
 Return the stream to which all output from PROCESS is sent.
 ::end:: */
@@ -1293,9 +1383,8 @@ _PR VALUE cmd_set_process_output_stream(VALUE proc, VALUE stream);
 DEFUN("set-process-output-stream", cmd_set_process_output_stream, subr_set_process_output_stream, (VALUE proc, VALUE stream), V_Subr2, DOC_set_process_output_stream) /*
 ::doc:set_process_output_stream::
 set-process-output-stream PROCESS STREAM
-<UNIX-ONLY>
 
-Set the output-stream of PROCESS to STREAM.
+Set the output-stream of PROCESS to STREAM. nil means discard all output.
 ::end:: */
 {
     DECLARE1(proc, PROCESSP);
@@ -1305,11 +1394,41 @@ Set the output-stream of PROCESS to STREAM.
     return(stream);
 }
 
+_PR VALUE cmd_process_error_stream(VALUE proc);
+DEFUN("process-error-stream", cmd_process_error_stream, subr_process_error_stream, (VALUE proc), V_Subr1, DOC_process_error_stream) /*
+::doc:process_error_stream::
+process-error-stream PROCESS
+
+Return the stream to which all standard-error output from PROCESS is sent.
+::end:: */
+{
+    VALUE res;
+    DECLARE1(proc, PROCESSP);
+    protect_procs();
+    res = VPROC(proc)->pr_ErrorStream;
+    unprotect_procs();
+    return(res);
+}
+
+_PR VALUE cmd_set_process_error_stream(VALUE proc, VALUE stream);
+DEFUN("set-process-error-stream", cmd_set_process_error_stream, subr_set_process_error_stream, (VALUE proc, VALUE stream), V_Subr2, DOC_set_process_error_stream) /*
+::doc:set_process_error_stream::
+set-process-error-stream PROCESS STREAM
+
+Set the error-stream of PROCESS to STREAM. nil means discard all output.
+::end:: */
+{
+    DECLARE1(proc, PROCESSP);
+    protect_procs();
+    VPROC(proc)->pr_ErrorStream = stream;
+    unprotect_procs();
+    return(stream);
+}
+
 _PR VALUE cmd_process_function(VALUE proc);
 DEFUN("process-function", cmd_process_function, subr_process_function, (VALUE proc), V_Subr1, DOC_process_function) /*
 ::doc:process_function::
 process-function PROCESS
-<UNIX-ONLY>
 
 Return the function which is called when PROCESS changes state (i.e. it
 exits or is stopped).
@@ -1327,7 +1446,6 @@ _PR VALUE cmd_set_process_function(VALUE proc, VALUE fn);
 DEFUN("set-process-function", cmd_set_process_function, subr_set_process_function, (VALUE proc, VALUE fn), V_Subr2, DOC_set_process_function) /*
 ::doc:set_process_function::
 set-process-function PROCESS FUNCTION
-<UNIX-ONLY>
 
 Set the function which is called when PROCESS changes state to FUNCTION.
 ::end:: */
@@ -1343,7 +1461,6 @@ _PR VALUE cmd_process_dir(VALUE proc);
 DEFUN("process-dir", cmd_process_dir, subr_process_dir, (VALUE proc), V_Subr1, DOC_process_dir) /*
 ::doc:process_dir::
 process-dir PROCESS
-<UNIX-ONLY>
 
 Return the name of the directory which becomes the working directory of
 PROCESS when it is started.
@@ -1361,7 +1478,6 @@ _PR VALUE cmd_set_process_dir(VALUE proc, VALUE dir);
 DEFUN("set-process-dir", cmd_set_process_dir, subr_set_process_dir, (VALUE proc, VALUE dir), V_Subr2, DOC_set_process_dir) /*
 ::doc:set_process_dir::
 set-process-dir PROCESS DIR
-<UNIX-ONLY>
 
 Set the directory of PROCESS to DIR.
 ::end:: */
@@ -1377,7 +1493,6 @@ _PR VALUE cmd_process_connection_type(VALUE proc);
 DEFUN("process-connection-type", cmd_process_connection_type, subr_process_connection_type, (VALUE proc), V_Subr1, DOC_process_connection_type) /*
 ::doc:process_connection_type::
 process-connection-type PROCESS
-<UNIX-ONLY>
 
 Returns a symbol defining the type of stream (i.e. pipe or pty) used to
 connect PROCESS with its physical process.
@@ -1395,7 +1510,6 @@ _PR VALUE cmd_set_process_connection_type(VALUE proc, VALUE type);
 DEFUN("set-process-connection-type", cmd_set_process_connection_type, subr_set_process_connection_type, (VALUE proc, VALUE type), V_Subr2, DOC_set_process_connection_type) /*
 ::doc:set_process_connection_type::
 set-process-connection-type PROCESS TYPE
-<UNIX-ONLY>
 
 Define how PROCESS communicates with it's child process, TYPE can be one of
 the following symbols,
@@ -1489,6 +1603,8 @@ proc_init(void)
     ADD_SUBR(subr_set_process_args);
     ADD_SUBR(subr_process_output_stream);
     ADD_SUBR(subr_set_process_output_stream);
+    ADD_SUBR(subr_process_error_stream);
+    ADD_SUBR(subr_set_process_error_stream);
     ADD_SUBR(subr_process_function);
     ADD_SUBR(subr_set_process_function);
     ADD_SUBR(subr_process_dir);
