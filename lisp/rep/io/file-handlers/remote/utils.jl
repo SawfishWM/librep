@@ -24,7 +24,7 @@
 (define-structure remote-utils (export remote-get-user
 				       remote-split-filename
 				       remote-join-filename
-				       remote-register-file-handler)
+				       remote-register-file-handle)
   (open rep)
 
   (defvar remote-host-user-alist nil
