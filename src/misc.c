@@ -534,7 +534,7 @@ Returns the lower-case equivalent of CHAR.
     return rep_MAKE_INT(tolower(rep_INT(ch)));
 }
 
-DEFUN("system", Fsystem, Ssystem, (repv command), rep_Subr1) /*
+DEFUN_INT("system", Fsystem, Ssystem, (repv command), rep_Subr1, "sShell command:") /*
 ::doc:system::
 system SHELL-COMMAND
 
@@ -600,7 +600,7 @@ rep_misc_init(void)
     rep_ADD_SUBR(Sspace_char_p);
     rep_ADD_SUBR(Schar_upcase);
     rep_ADD_SUBR(Schar_downcase);
-    rep_ADD_SUBR(Ssystem);
+    rep_ADD_SUBR_INT(Ssystem);
 
     rep_INTERN_SPECIAL(upcase_table);
     rep_SYM(Qupcase_table)->value = rep_make_string(257);
