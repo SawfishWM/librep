@@ -1,3 +1,8 @@
+1999-10-27  John Harper  <john@dcs.warwick.ac.uk>
+
+	* dlmalloc.c: fix sbrk () declaration on FreeBSD (from Yukihiro
+	Nakai <nakai@internetsolutions.co.jp>)
+
 1999-10-24  John Harper  <john@dcs.warwick.ac.uk>
 
 	* version 0.7
