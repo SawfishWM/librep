@@ -23,7 +23,8 @@
 
 (define-structure scheme.syntax-funs
 
-    (export expand-lambda
+    (export parse-define
+	    expand-lambda
 	    expand-if
 	    expand-set!
 	    expand-cond
