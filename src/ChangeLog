@@ -1,3 +1,10 @@
+2000-01-07  John Harper  <john@dcs.warwick.ac.uk>
+
+	* symbols.c (Fdefvar): allow symbols to be re-defvar'd from
+	restricted environments, but only if it was originally defvar'd
+	from a restricted environment. Also, only set the value if it's
+	unbound, or weak, but not weak-mod, and we're unrestricted
+
 1999-12-31  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_dl.c: use stdio method of signalling errors when things
