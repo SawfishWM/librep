@@ -852,6 +852,7 @@ fetch:
 	    break;
 
 	case OP_SIGNAL:
+	    gc_stackbase.count = STK_USE;
 	    CALL_2(cmd_signal);
 
 	case OP_REVERSE:
@@ -876,9 +877,11 @@ fetch:
 	    CALL_1(cmd_last);
 
 	case OP_MAPCAR:
+	    gc_stackbase.count = STK_USE;
 	    CALL_2(cmd_mapcar);
 
 	case OP_MAPC:
+	    gc_stackbase.count = STK_USE;
 	    CALL_2(cmd_mapc);
 
 	case OP_MEMBER:
@@ -894,9 +897,11 @@ fetch:
 	    CALL_2(cmd_delq);
 
 	case OP_DELETE_IF:
+	    gc_stackbase.count = STK_USE;
 	    CALL_2(cmd_delete_if);
 
 	case OP_DELETE_IF_NOT:
+	    gc_stackbase.count = STK_USE;
 	    CALL_2(cmd_delete_if_not);
 
 	case OP_COPY_SEQUENCE:
@@ -935,6 +940,7 @@ fetch:
 	    break;
 
 	case OP_FILTER:
+	    gc_stackbase.count = STK_USE;
 	    CALL_2(cmd_filter);
 
 	case OP_MACROP:
