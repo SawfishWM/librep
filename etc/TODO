@@ -10,8 +10,6 @@ and more long-term ideas are marked -
 Outstanding bugs
 ================
 
- ! --disable-static doesn't work since a static libxsdbm is required
-
  ! Putting a breakpoint in a .jaderc file doesn't work correctly; the
    debugger is entered, but the commands don't work
 

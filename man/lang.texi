@@ -3309,8 +3309,10 @@ Of course, it is much more powerful than the other constructs, so this
 often outweighs the slight inefficiency.
 
 Also note that currently no attempt is made to save or restore the
-dynamic state of the Lisp system---dynamic bindings are not removed, or
-rebound, and @code{unwind-protect} forms are not evaluated.
+dynamic state of the Lisp system, apart from variable bindings (both
+lexical and special). This means that any @code{unwind-protect},
+@code{condition-case}, @code{catch}, or @code{with-object} forms that
+are active when invoking a continuation are all ignored.
 
 It is also likely that some uses of @code{call/cc} may crash the
 system; most parts of the lisp interpreter itself should handle being

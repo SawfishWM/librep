@@ -1,3 +1,8 @@
+2000-02-03  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compiler.jl (compile-file): write a newline character at the
+	end of the output file
+
 2000-02-01  John Harper  <john@dcs.warwick.ac.uk>
 
 	* memoize.jl (memoize-function): use `equal' hash-tables to
