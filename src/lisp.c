@@ -89,7 +89,7 @@ DEFSYM(error_message, "error-message");
 DEFSYM(invalid_function, "invalid-function");
 DEFSTRING(err_invalid_function, "Invalid function");
 DEFSYM(void_value, "void-value");
-DEFSTRING(err_void_value, "Symbol value is void");
+DEFSTRING(err_void_value, "Unbound variable");
 DEFSYM(bad_arg, "bad-arg");
 DEFSTRING(err_bad_arg, "Bad argument");
 DEFSYM(invalid_read_syntax, "invalid-read-syntax");
