@@ -448,14 +448,14 @@ make_bytecode_frame (repv spec, int nargs, repv *args)
 	{
 	    repv tem = Qnil;
 	    for (i = nargs - 1; i >= max_args; i--)
-		tem = Fcons (args[i], tem);
-	    env = Fcons (tem, env);
+		tem = inline_Fcons (args[i], tem);
+	    env = inline_Fcons (tem, env);
 	}
 
 	for (i = max_args - 1; i >= min_args; i--)
-	    env = Fcons (i < nargs ? args[i] : Qnil, env);
+	    env = inline_Fcons (i < nargs ? args[i] : Qnil, env);
 	for (i = min_args - 1; i >= 0; i--)
-	    env = Fcons (args[i], env);
+	    env = inline_Fcons (args[i], env);
 
 	rep_env = env;
 	return rep_MAKE_INT (max_args + (rest_arg ? 1 : 0));
@@ -686,7 +686,7 @@ again:
 		tmp2 = Qnil;
 		POPN(-arg); /* reclaim my args */
 		while(arg--)
-		    tmp2 = Fcons(RET_POP, tmp2);
+		    tmp2 = inline_Fcons(RET_POP, tmp2);
 		lc.args = tmp2;
 		TOP = rep_SUBRNFUN(tmp)(tmp2);
 		break;
@@ -817,14 +817,14 @@ again:
 	BEGIN_INSN_WITH_ARG (OP_LIST)
 	    tmp = Qnil;
 	    while(arg--)
-		tmp = Fcons(RET_POP, tmp);
+		tmp = inline_Fcons(RET_POP, tmp);
 	    PUSH(tmp);
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_BIND)
 	    tmp2 = RET_POP;
-	    rep_env = Fcons (tmp2, rep_env);
+	    rep_env = inline_Fcons (tmp2, rep_env);
 	    BIND_TOP = rep_MARK_LEX_BINDING (BIND_TOP);
 	    SAFE_NEXT;
 	END_INSN
@@ -954,7 +954,7 @@ again:
 	END_INSN
 
 	BEGIN_INSN (OP_CONS)
-	    CALL_2(Fcons);
+	    CALL_2(inline_Fcons);
 	END_INSN
 
 	BEGIN_INSN (OP_CAR)
