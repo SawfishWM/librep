@@ -71,4 +71,4 @@
   ;; Fix the initial default-directory; replacing $HOME by ~ if possible
   (when (string-looking-at (concat (quote-regexp (user-home-directory))
 				   "?(.*)$") default-directory)
-    (setq default-directory (expand-last-match "~/\\1"))))
+    (setq-default default-directory (expand-last-match "~/\\1"))))
