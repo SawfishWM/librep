@@ -4,6 +4,15 @@
 @cindex News
 
 
+@section 0.3
+
+@itemize @bullet
+
+@item New compiler command line option @samp{--write-docs}
+
+@end itemize
+
+
 @section 0.2
 
 @itemize @bullet

@@ -1,3 +1,9 @@
+1999-08-17  John Harper  <john@dcs.warwick.ac.uk>
+
+	* values.c (Fgarbage_collect): defining DEBUG_GC and setting
+	debug_gc = 1 enables code to print the current backtrace at
+	each garbage collection
+
 1999-08-16  John Harper  <john@dcs.warwick.ac.uk>
 
 	* version 0.2

@@ -1,3 +1,11 @@
+1999-08-21  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compiler.jl (compile-batch): new command line option
+	`--write-docs'
+	(comp-compile-top-form): remember any declared variables that
+	haven't already registered, change the error on finding an
+	unregistered constant to a warning
+
 1999-08-16  John Harper  <john@dcs.warwick.ac.uk>
 
 	* version 0.2
