@@ -20,6 +20,7 @@
 
 (message "Initialising; wait..." t)
 
+;; Load standard libraries
 (load "lisp")
 (load "backquote")
 (load "tilde")
@@ -28,8 +29,6 @@
 (load "buffers")
 (load "modes")
 (load "edit")
-(load "rcs-hooks")
-(load "dired-hooks")
 
 ;; Install all autoload hooks. This is done last so that it works
 ;; when dumped. We load autoload.jl to ensure that we don't get a
