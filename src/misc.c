@@ -409,72 +409,6 @@ next complete redisplay, unless DISPLAY-NOW is non-nil.
     return string;
 }
 
-/* Try to work out how many bits of randomness rand() will give.. */
-#ifdef HAVE_LRAND48
-# define RAND_BITS 31
-# define rand lrand48
-# define srand srand48
-#else
-# if RAND_MAX == 32768
-#  define RAND_BITS 15
-# elif RAND_MAX == 2147483647
-#  define RAND_BITS 31
-# else
-#  define RAND_BITS 63
-# endif
-#endif
-
-DEFUN("random", Frandom, Srandom, (repv arg), rep_Subr1) /*
-::doc:rep.lang.math#random::
-random [LIMIT]
-
-Produce a pseudo-random number between zero and LIMIT (or the largest positive
-integer representable). If LIMIT is the symbol `t' the generator is seeded
-with the current time of day.
-::end:: */
-{
-    long limit, divisor, val;
-    if(arg == Qt)
-    {
-	srand(time(0));
-	return Qt;
-    }
-
-    rep_DECLARE1_OPT (arg, rep_INTP);
-    if(rep_INTP(arg))
-    {
-	limit = rep_INT(arg);
-	if (limit <= 0)
-	    limit = rep_LISP_MAX_INT;
-    }
-    else
-	limit = rep_LISP_MAX_INT;
-
-    divisor = rep_LISP_MAX_INT / limit;
-    do {
-	val = rand();
-	if (rep_LISP_INT_BITS-1 > RAND_BITS)
-	{
-	    val = (val << RAND_BITS) | rand();
-	    if (rep_LISP_INT_BITS-1 > 2*RAND_BITS)
-	    {
-		val = (val << RAND_BITS) | rand();
-		if (rep_LISP_INT_BITS-1 > 3*RAND_BITS)
-		{
-		    val = (val << RAND_BITS) | rand();
-		    if (rep_LISP_INT_BITS-1 > 4*RAND_BITS)
-			val = (val << RAND_BITS) | rand();
-		}
-	    }
-	}
-	/* Ensure VAL is positive (assumes twos-complement) */
-	val &= ~(~rep_VALUE_CONST(0) << (rep_LISP_INT_BITS-1));
-	val /= divisor;
-    } while(val >= limit);
-
-    return rep_MAKE_INT(val);
-}
-
 DEFUN("translate-string", Ftranslate_string, Stranslate_string, (repv string, repv table), rep_Subr2) /*
 ::doc:rep.data#translate-string:
 translate-string STRING TRANSLATION-TABLE
@@ -737,9 +671,5 @@ rep_misc_init(void)
 	rep_INTERN(flatten_table);
 	Fset (Qflatten_table, flatten);
     }
-    rep_pop_structure (tem);
-
-    tem = rep_push_structure ("rep.lang.math");
-    rep_ADD_SUBR(Srandom);
     rep_pop_structure (tem);
 }

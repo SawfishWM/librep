@@ -1,3 +1,11 @@
+2001-09-23  John Harper  <jsh@unfactored.org>
+
+	* numbers.c, misc.c (Frandom): moved to numbers.c. When gmp is
+	present, always use gmp random integer functions. They should
+	give `good' results for limits up to at least 128 bits, then
+	they start concatenating multiple random values to get their
+	result
+
 2001-09-15  John Harper  <jsh@unfactored.org>
 
 	* continuations.c: allocate continuation and thread typecodes

@@ -46,6 +46,7 @@ char *alloca ();
 #include <ctype.h>
 #include <limits.h>
 #include <errno.h>
+#include <time.h>
 
 #ifdef HAVE_LOCALE_H
 # include <locale.h>
@@ -2794,6 +2795,129 @@ in base 10.
 }
 
 
+/* Random number generation */
+
+/* Try to work out how many bits of randomness rand() will give.. */
+#ifdef HAVE_LRAND48
+# define RAND_BITS 31
+# define rand lrand48
+# define srand srand48
+#else
+# if RAND_MAX == 32768
+#  define RAND_BITS 15
+# elif RAND_MAX == 2147483647
+#  define RAND_BITS 31
+# else
+#  define RAND_BITS 63
+# endif
+#endif
+
+#ifdef HAVE_GMP
+
+static gmp_randstate_t random_state;
+
+static void
+ensure_random_state (void)
+{
+    static rep_bool initialized;
+
+    if (!initialized)
+    {
+	/* Generate the best random numbers up to 128 bits, the
+	   maximum allowed by gmp */
+	gmp_randinit (random_state, GMP_RAND_ALG_DEFAULT, 128);
+
+	/* Initialize to a known seed */
+	gmp_randseed_ui (random_state, 0);
+
+	initialized = rep_TRUE;
+    }
+}
+
+static void
+random_seed (u_long seed)
+{
+    ensure_random_state ();
+    gmp_randseed_ui (random_state, seed);
+}
+
+static repv
+random_new (repv limit_)
+{
+    rep_number_z *z = make_number (rep_NUMBER_BIGNUM);
+    repv limit = promote_to (limit_, rep_NUMBER_BIGNUM);
+
+    ensure_random_state ();
+    mpz_urandomm (z->z, random_state, rep_NUMBER (limit, z));
+
+    return maybe_demote (rep_VAL (z));
+}
+
+#else /* HAVE_GMP */
+static void
+random_seed (u_long seed)
+{
+    srand (seed);
+}
+
+static repv
+random_new (repv limit_)
+{
+    u_long limit = rep_get_long_uint (limit_);
+    u_long divisor = rep_LISP_MAX_INT / limit;
+    u_long val;
+    do {
+	val = rand ();
+	if (rep_LISP_INT_BITS-1 > RAND_BITS)
+	{
+	    val = (val << RAND_BITS) | rand ();
+	    if (rep_LISP_INT_BITS-1 > 2*RAND_BITS)
+	    {
+		val = (val << RAND_BITS) | rand ();
+		if (rep_LISP_INT_BITS-1 > 3*RAND_BITS)
+		{
+		    val = (val << RAND_BITS) | rand ();
+		    if (rep_LISP_INT_BITS-1 > 4*RAND_BITS)
+			val = (val << RAND_BITS) | rand ();
+		}
+	    }
+	}
+	/* Ensure VAL is positive (assumes twos-complement) */
+	val &= ~(~rep_VALUE_CONST(0) << (rep_LISP_INT_BITS - 1));
+	val /= divisor;
+    } while (val >= limit);
+
+    return rep_make_long_int (val);
+}
+#endif /* !HAVE_GMP */
+
+DEFUN("random", Frandom, Srandom, (repv arg), rep_Subr1) /*
+::doc:rep.lang.math#random::
+random [LIMIT]
+
+Produce a pseudo-random number between zero and LIMIT (or the largest
+positive integer representable). If LIMIT is the symbol `t' the
+generator is seeded with the current time of day.
+::end:: */
+{
+    repv limit;
+
+    if (arg == Qt)
+    {
+	random_seed (time (0));
+	return Qt;
+    }
+
+    rep_DECLARE1_OPT (arg, rep_INTEGERP);
+    if (rep_INTEGERP (arg))
+	limit = arg;
+    else
+	limit = rep_MAKE_INT (rep_LISP_MAX_INT);
+
+    return random_new (limit);
+}
+
+
 /* init */
 
 void
@@ -2861,6 +2985,7 @@ rep_numbers_init (void)
     rep_ADD_SUBR(Smin);
     rep_ADD_SUBR(Sstring_to_number);
     rep_ADD_SUBR(Snumber_to_string);
+    rep_ADD_SUBR(Srandom);
     rep_pop_structure (tem);
 
     tem = rep_push_structure ("rep.data");
