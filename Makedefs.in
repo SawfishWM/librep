@@ -44,8 +44,6 @@ replispdir=@replispdir@
 repexecdir=@repexecdir@
 repcommonexecdir=@repcommonexecdir@
 repdocfile=@repdocfile@
-dumped_lisp_files=@dumped_lisp_files@
-enable_dumped=@opt_enable_dumped@
 
 CC=@CC@
 LIBTOOL=@LIBTOOL@

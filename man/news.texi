@@ -4,6 +4,20 @@
 @cindex News
 
 
+@section 0.4
+
+@itemize
+
+@item Added @samp{--with-value-type}, @samp{--with-value-bits} and
+@samp{--with-malloc-alignment} configure options
+
+@item Fixed some 64-bit problems
+
+@item Removed the difference between static and dynamic strings
+
+@end itemize
+
+
 @section 0.3
 
 @itemize @bullet

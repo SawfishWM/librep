@@ -1,3 +1,21 @@
+1999-08-27  John Harper  <john@dcs.warwick.ac.uk>
+
+	* main.c (rep_init): changed some of the type consistency
+	checking done on initialisation -- just check that the values
+	are within the correct bounds, not that they exactly match the
+	size of void *
+
+	* unix_dl.c (rep_find_c_symbol): check for HAVE_DLADDR
+
+	* rep_lisp.h: changed string type layout -- removed the inline
+	static string option since it's a hack, but more importantly,
+	since it defines the library's interface, and shouldn't change
+
+	* rep_lisp.h, files.c, misc.c: changed some instances of `1 <<
+	X' to `1L << X' for when sizeof(int) < sizeof(long)
+	* values.c (rep_make_string, rep_string_dupn): changed `length'
+	arg from int to long
+
 1999-08-22  John Harper  <john@dcs.warwick.ac.uk>
 
 	* version 0.3

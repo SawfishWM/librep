@@ -17,7 +17,21 @@ To compile this you'll need GNU make and (currently) GCC. Basically,
 just do `./configure ; make ; make install'. If you're building from
 the CVS sources, execute `aclocal ; autoconf' first.
 
-Please send any success or failure reports to the email address above.
 
-        John
+Notes
+=====
 
+If you're on a 64-bit architecture you may want to look at the
+`--with-value-type' and `--with-value-bits' configure options. For
+example on a machine with 64-bit pointers and longs, but only 32-bit
+ints the following could be done:
+
+	$ ./configure --with-value-type=long --with-value-bits=64
+
+Alternatively, if both int and long are 32-bits, with 64-bit pointers
+and long long ints, then:
+
+	$ ./configure --with-value-type="long long" --with-value-bits=64
+
+If either of these options are set incorrectly a run-time assertion
+will be triggered when the interpreter is initialised.

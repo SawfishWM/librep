@@ -1,3 +1,7 @@
+1999-08-27  John Harper  <john@dcs.warwick.ac.uk>
+
+	* dump.jl: changed for new string data layout
+
 1999-08-22  John Harper  <john@dcs.warwick.ac.uk>
 
 	* version 0.3
