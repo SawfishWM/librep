@@ -41,8 +41,8 @@
 	    
 	    load)
 
-  (open rep scheme-utils)
-  (access rep)
+  ((open rep scheme-utils)
+   (access rep))
 
 ;;; control features
 

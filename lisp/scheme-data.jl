@@ -62,8 +62,8 @@
 	    vector-ref vector-set! vector->list
 	    list->vector vector-fill!)
 
-  (open rep scheme-utils)
-  (access rep)
+  ((open rep scheme-utils)
+   (access rep))
 
 ;;; equivalence
 

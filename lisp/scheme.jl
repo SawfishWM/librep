@@ -104,11 +104,11 @@
 			  ;; exported local kludges
 			  %cond %case %setq %while %progn %test
 			  backquote list*)
-  (access rep)
-  (open scheme-utils
-	scheme-syntax
-	scheme-data
-	scheme-misc)
+  ((access rep)
+   (open scheme-utils
+	 scheme-syntax
+	 scheme-data
+	 scheme-misc))
 
   (rep#setq %cond rep#cond)
   (rep#setq %case rep#case)

@@ -28,8 +28,8 @@
 (define-structure scheme-syntax (export quote lambda if set! cond case
 					and or let let* letrec begin do
 					delay define)
-  (open rep scheme-utils)
-  (access rep)
+  ((open rep scheme-utils)
+   (access rep))
 
 ;;; syntax
 
