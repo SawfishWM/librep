@@ -570,7 +570,7 @@ again:
 	    POPN(arg);
 	    tmp = TOP;
 	    lc.fun = tmp;
-	    lc.args = Qnil;
+	    lc.args = rep_void_value;
 	    lc.args_evalled_p = Qt;
 	    rep_PUSH_CALL (lc);
 	    SYNC_GC;
