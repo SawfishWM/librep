@@ -1,5 +1,10 @@
 Wed Apr 29 09:39:40 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* maildefs.jl (mail-summary-lines): renamed as
+	mail-summary-percent, now defines the percentage of the window,
+	not the number of lines
+	* read-mail.jl (rm-configure-views): changed for above switch
+
 	* read-mail.jl (rm-summary-format-alist): new conversions `b',
 	`n' and `N'.
 	(rm-status-format): format string for part of status line

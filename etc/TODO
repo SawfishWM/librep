@@ -12,8 +12,7 @@ Last modified: April 7, 1998
 Outstanding bugs
 ================
 
- ! need to unify last-save-time and buffer-file-modtime variables
-   (aren't they the same thing?)
+ ! There needs to be a separate Meta-lookup for each display
 
  ! How does the return function work with open-coded functions? Not
    very well probably..
@@ -48,8 +47,6 @@ General programming tasks:
 
  + Add a `batch' mode--don't open any windows, evaluate all command
    line arguments, then exit
-
- + Lots of work needs to be done to print.jl
 
  + Move all of lisp/ into lisp-src/ then build into lisp/
 

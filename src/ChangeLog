@@ -1,5 +1,8 @@
 Wed Apr 29 09:48:37 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* debug-buffer.c, redisplay.c: change malloc/free for
+	sys_alloc/sys_free
+
 	* undo.c (cmd_undo): when clearing the modified status, set
 	tx_LastSaveChanges as well as tx_ProperSaveChanges
 
