@@ -1,3 +1,19 @@
+2002-04-14  John Harper  <jsh@unfactored.org>
+
+	* rep/data/queues.jl: rewritten so that enqueuing is O(1) not
+	O(n)
+
+2002-04-13  John Harper  <jsh@unfactored.org>
+
+	* rep/threads/proxy.jl: new module, untested, written a long
+	time ago and never used
+
+	* rep/lang/profiler.jl: don't use the "interval" when printing
+	results, it's totally bogus..
+
+	* rep/user.jl (parse-options): in --debug mode, break on failed
+	checks, etc
+
 2002-03-30  John Harper  <jsh@unfactored.org>
 
 	* rep/net/rpc.jl: more reliable/predictable error handling.

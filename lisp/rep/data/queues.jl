@@ -44,33 +44,61 @@
 				  (declare (unused q))
 				  (write stream "#<queue>")))
 
+  ;; Each queue is (TAIL . HEAD). HEAD is the list of items, TAIL
+  ;; points to the last cell in HEAD, or the empty list.
+
   (define (make-queue)
-    (make-datum '() type-id))
+    (make-datum (cons) type-id))
 
   (define (enqueue q x)
-    (datum-set q type-id (nconc (datum-ref q type-id) (list x))))
+    (let ((cell (datum-ref q type-id))
+	  (new (list x)))
+      (if (null (cdr cell))
+	  ;; empty queue
+	  (progn
+	    (rplacd cell new)
+	    (rplaca cell new))
+	;; tail pointer is set
+	(rplacd (car cell) new)
+	(rplaca cell new))))
 
   (define (dequeue q)
-    (let ((data (datum-ref q type-id)))
-      (if (null data)
+    (let ((cell (datum-ref q type-id)))
+      (if (null (cdr cell))
 	  (error "Can't dequeue from empty queue")
-	(datum-set q type-id (cdr data))
-	(car data))))
+	(prog1 (car (cdr cell))
+	  (if (not (eq (car cell) (cdr cell)))
+	      ;; at least one element left
+	      (rplacd cell (cdr (cdr cell)))
+	    ;; queue needs to be empty now
+	    (rplacd cell '())
+	    (rplaca cell '()))))))
 
   (define (queue-empty-p q)
-    (null (datum-ref q type-id)))
+    (null (cdr (datum-ref q type-id))))
 
   (define (queuep q)
     (has-type-p q type-id))
 
   (define (queue->list q)
-    (datum-ref q type-id))
+    (cdr (datum-ref q type-id)))
 
   (define (queue-length q)
     (length (queue->list q)))
 
   (define (delete-from-queue q x)
-    (datum-set q type-id (delq x (datum-ref q type-id))))
+    (let ((cell (datum-ref q type-id)))
+      (let loop ((ptr cell))
+	(if (null (cdr ptr))
+	    ;; avoid pointing tail to itself..
+	    (if (null (cdr cell))
+		(rplaca cell '())
+	      (rplaca cell ptr))
+	  (if (eq (cadr ptr) x)
+	      (progn
+		(rplacd ptr (cddr ptr))
+		(loop ptr))
+	    (loop (cdr ptr)))))))
 
 ;;; tests
 

@@ -136,7 +136,8 @@ where OPTIONS are any of:
 				  premature-end-of-stream invalid-lambda-list
 				  invalid-macro invalid-autoload no-catcher
 				  file-error invalid-stream setting-constant
-				  process-error arith-error))
+				  process-error arith-error
+				  assertion-failed check-failed test-failed))
 	   (break)
 	   (parse-options))))
     (parse-options))
