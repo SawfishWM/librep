@@ -47,7 +47,7 @@
    "pushi\t%d" "pushi\t%d" nil nil nil nil nil nil	 ; 0xa0
    nil nil nil nil nil nil nil nil
    "bindobj" nil nil nil nil nil nil nil	 ; 0xb0
-   nil nil "swap2" "mod" nil nil nil nil
+   nil nil "swap2" "mod" "make-closure" "fbind" "closurep" "bindenv"
    nil nil nil nil nil nil nil nil	 ; 0xc0
    nil nil nil nil nil nil nil nil
    nil nil nil nil nil nil nil nil	 ; 0xd0
@@ -81,7 +81,9 @@
       (if (symbolp arg)
 	  (progn
 	    (format stream "Disassembly of function %s:\n\n" arg)
-	    (setq arg (symbol-function arg)))
+	    (setq arg (symbol-function arg))
+	    (when (closurep arg)
+	      (setq arg (closure-function arg))))
 	(format stream "Disassembly of form %S:\n\n" arg)))
     (cond
      ((and (consp arg) (eq (car arg) 'jade-byte-code))

@@ -45,7 +45,7 @@
 ;;; stack needed is calculated by the compiler.
 
 ;; Instruction set version
-(defconst bytecode-major 6)
+(defconst bytecode-major 7)
 (defconst bytecode-minor 0)
 
 ;; Opcodes
@@ -165,6 +165,11 @@
 (defconst op-swap2 0xba)
 (defconst op-mod 0xbb)
 
+(defconst op-make-closure 0xbc)
+(defconst op-fbind 0xbd)
+(defconst op-closurep 0xbe)
+(defconst op-bindenv 0xbf)
+
 (defconst op-last-before-jmps 0xf7)
 
 ;; All jmps take two-byte arguments
@@ -219,8 +224,8 @@
    0   0   +1  +1  +1  +1  +1  +1
    +1  +1 nil nil nil nil nil nil	;0xa0
    nil nil nil nil nil nil nil nil
-   -1  -1  0   0   0   0   -1  0	;0xb0
-   -1  0   0   -1  -1  0   nil nil
+   -1  nil nil nil nil nil nil nil	;0xb0
+   nil nil  0  -1   0  -2   0   0
    nil nil nil nil nil nil nil nil	;0xc0
    nil nil nil nil nil nil nil nil
    nil nil nil nil nil nil nil nil	;0xd0
@@ -253,7 +258,7 @@
 	 op-land op-num-eq op-num-noteq op-gt op-ge op-lt op-le op-inc
 	 op-dec op-lsh op-fboundp op-boundp op-get op-reverse op-assoc
 	 op-assq op-rassoc op-rassq op-last op-copy-sequence op-lxor
-	 op-max op-min op-mod
+	 op-max op-min op-mod op-make-closure
 	 comp-varref-free-insns))
 
 ;; list of all conditional jumps
