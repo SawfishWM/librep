@@ -24,6 +24,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <assert.h>
 
 _PR int buffer_strpbrk(TX *tx, Pos *pos, const char *chars);
 _PR int buffer_reverse_strpbrk(TX *tx, Pos *pos, const char *chars);
@@ -343,10 +344,13 @@ static regexp *
 compile_regexp(VALUE re)
 {
     struct cached_regexp **x = &cached_regexps;
-    int re_len = STRING_LEN(re);
+    int re_len;
+    assert(STRINGP(re));
+    re_len = STRING_LEN(re);
     while(*x != 0)
     {
 	VALUE saved_re = (*x)->regexp;
+	assert(STRINGP(saved_re));
 	if(saved_re == re
 	   || (STRING_LEN(saved_re) == re_len
 	       && memcmp(VSTR(saved_re), VSTR(re), re_len) == 0))
@@ -394,25 +398,26 @@ static void
 mark_cached_regexps(void)
 {
     u_long total = 0;
-    struct cached_regexp *x = cached_regexps;
+    struct cached_regexp *x = cached_regexps, *xp = 0;
     while(x != 0 && total < regexp_cache_limit)
     {
+	assert(STRINGP(x->regexp));
 	MARKVAL(x->regexp);
 	total += sizeof(struct cached_regexp) + x->compiled->regsize;
+	xp = x;
 	x = x->next;
     }
-    if(x != 0)
+    if(xp != 0)
     {
 	/* Free all following regexps */
-	struct cached_regexp *tem = x->next;
-	x->next = 0;
-	x = tem;
+	x = xp->next;
+	xp->next = 0;
 	while(x != 0)
 	{
-	    tem = x->next;
+	    xp = x->next;
 	    free(x->compiled);
 	    str_free(x);
-	    x = tem;
+	    x = xp;
 	}
     }
 }
