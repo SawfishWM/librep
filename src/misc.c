@@ -367,6 +367,21 @@ Jade was built.
     return VAL(&build_id_string);
 }
 
+/* Try to work out how many bits of randomness rand() will give.. */
+#ifdef HAVE_LRAND48
+# define RAND_BITS 31
+# define rand lrand48
+# define srand srand48
+#else
+# if RAND_MAX == 32768
+#  define RAND_BITS 15
+# elif RAND_MAX == 2147483647
+#  define RAND_BITS 31
+# else
+#  define RAND_BITS 63
+# endif
+#endif
+
 _PR VALUE cmd_random(VALUE arg);
 DEFUN("random", cmd_random, subr_random, (VALUE arg), V_Subr1, DOC_random) /*
 ::doc:random::
@@ -377,7 +392,7 @@ integer representable). If LIMIT is the symbol `t' the generator is seeded
 with the current time of day.
 ::end:: */
 {
-    u_long limit, divisor, val;
+    long limit, divisor, val;
     if(arg == sym_t)
     {
 	srand(time(0));
@@ -388,10 +403,22 @@ with the current time of day.
 	limit = VINT(arg);
     else
 	limit = LISP_MAX_INT;
-    divisor = MAX(1, RAND_MAX / limit);
+    divisor = LISP_MAX_INT / limit;
     do {
-	/* XXX: what if RAND_MAX < limit, we're fucked */
-	val = rand() / divisor;
+	val = rand();
+#if LISP_INT_BITS > RAND_BITS
+	val = (val << RAND_BITS) | rand();
+# if LISP_INT_BITS > 2*RAND_BITS
+	val = (val << RAND_BITS) | rand();
+#  if LISP_INT_BITS > 3*RAND_BITS
+	val = (val << RAND_BITS) | rand();
+#   if LISP_INT_BITS > 4*RAND_BITS
+	val = (val << RAND_BITS) | rand();
+#   endif
+#  endif
+# endif
+#endif
+	val /= divisor;
     } while(val >= limit);
 
     return MAKE_INT(val);
