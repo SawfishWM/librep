@@ -49,6 +49,63 @@ static int macro_hits, macro_misses;
 
 DEFSYM(macro_environment, "macro-environment");
 
+static inline repv
+symbol_value_in_structure (repv structure, repv sym)
+{
+    repv old = rep_structure, value;
+    rep_structure = structure;
+    value = Fsymbol_value (sym, Qt);
+    rep_structure = old;
+    return value;
+}
+
+DEFUN("macroexpand-1", Fmacroexpand_1, Smacroexpand_1,
+      (repv form, repv env), rep_Subr2) /*
+::doc:macroexpand::
+macroexpand FORM [ENVIRONMENT]
+
+If FORM is a macro call, expand it once and return the resulting form.
+
+If ENVIRONMENT is specified it is a function to call to do the actual
+expansion. Any macro expanders recursively calling macroexpand should
+pass the value of the `macro-environment' variable to this parameter.
+::end:: */
+{
+    rep_GC_root gc_bindings;
+    repv car, bindings;
+
+    if (!rep_CONSP (form))
+	return form;
+
+    if (env != Qnil && Ffunctionp (env) != Qnil)
+	return rep_call_lisp1 (env, form);
+
+    car = rep_CAR(form);
+    if(rep_SYMBOLP(car))
+    {
+	if (rep_STRUCTUREP (env))
+	    /* deref the symbol in the module that it appeared in.. */
+	    car = symbol_value_in_structure (env, car);
+	else
+	    car = Fsymbol_value (car, Qt);
+	if (!rep_CONSP(car) || rep_CAR(car) != Qmacro)
+	    return form;
+	car = rep_CDR(car);
+    }
+    else if (rep_CONSP(car) && rep_CAR(car) == Qmacro)
+	car = rep_CDR(car);
+
+    if (Ffunctionp(car) == Qnil)
+	return form;
+
+    bindings = rep_bind_symbol (Qnil, Qmacro_environment, rep_structure);
+    rep_PUSHGC(gc_bindings, bindings);
+    form = rep_funcall (car, rep_CDR(form), rep_FALSE);
+    rep_POPGC;
+    rep_unbind_symbols (bindings);
+    return form;
+}
+
 DEFUN("macroexpand", Fmacroexpand, Smacroexpand,
       (repv form, repv env), rep_Subr2) /*
 ::doc:macroexpand::
@@ -61,14 +118,11 @@ expansion. Any macro expanders recursively calling macroexpand should
 pass the value of the `macro-environment' variable to this parameter.
 ::end:: */
 {
-    repv input = form, car, bindings, ptr;
-    rep_GC_root gc_input, gc_form, gc_car, gc_bindings;
+    repv input = form, pred, ptr;
+    rep_GC_root gc_input;
 
     if (!rep_CONSP (form))
 	return form;
-
-    if (env != Qnil)
-	return rep_call_lisp1 (env, form);
 
     /* Search the history */
     ptr = history[HIST_HASH_FN(form)];
@@ -84,32 +138,15 @@ pass the value of the `macro-environment' variable to this parameter.
     macro_misses++;
 
     rep_PUSHGC(gc_input, input);
-    rep_PUSHGC(gc_form, form);
-    rep_PUSHGC(gc_car, car);
-top:
-    car = rep_CAR(form);
-    if(rep_SYMBOLP(car))
+    pred = form;
+    while (1)
     {
-	car = Fsymbol_value (car, Qt);
-	if (!rep_CONSP(car) || rep_CAR(car) != Qmacro)
-	    goto end;
-	car = rep_CDR(car);
+	form = Fmacroexpand_1 (pred, env);
+	if (form == rep_NULL || form == pred)
+	    break;
+	pred = form;
     }
-    else if (rep_CONSP(car) && rep_CAR(car) == Qmacro)
-	car = rep_CDR(car);
-
-    if (Ffunctionp(car) == Qnil)
-	goto end;
-
-    bindings = rep_bind_symbol (Qnil, Qmacro_environment, Qnil);
-    rep_PUSHGC(gc_bindings, bindings);
-    form = rep_funcall (car, rep_CDR(form), rep_FALSE);
     rep_POPGC;
-    rep_unbind_symbols (bindings);
-    if (form != rep_NULL && rep_CONSP (form))
-	goto top;
-end:
-    rep_POPGC; rep_POPGC; rep_POPGC;
 
     if (form != rep_NULL)
     {
@@ -139,6 +176,7 @@ void
 rep_macros_init (void)
 {
     rep_ADD_SUBR(Smacroexpand);
+    rep_ADD_SUBR(Smacroexpand_1);
     rep_INTERN_SPECIAL(macro_environment);
     Fset (Qmacro_environment, Qnil);
     rep_macros_clear_history ();
