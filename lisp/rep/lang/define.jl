@@ -25,7 +25,8 @@
 
 ;; This is a half-hearted attempt at supporting scheme-like block-
 ;; structured definitions. It scans inner defines from within outer
-;; defines, but it _doesn't_ scan inner defines from let, etc..
+;; defines, but it _doesn't_ scan inner defines from let, etc.. (see
+;; the provided lambda* macro that does this for lambda)
 
 ;; It would be hard to change this since let, etc, are all special
 ;; forms, and therefore handled specially by the compiler (except for
@@ -67,4 +68,9 @@
 (defmacro define (&rest args)
   (let
       ((def (define-parse args)))
-    (list 'define-value (list 'quote (car def)) (cdr def))))
+    (if (eq (cadr def) 'lambda)
+	(list 'defun (car def) (caddr def) (car (cdddr def)))
+      (list 'define-value (list 'quote (car def)) (cdr def)))))
+
+(defmacro lambda* (spec &rest body)
+  `(lambda ,spec ,(define-scan-internals body)))
