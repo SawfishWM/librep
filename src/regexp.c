@@ -710,6 +710,27 @@ regexec2(prog, string, eflags)
 }
 
 /*
+ * - regmatch_string - match a regexp against the string STRING.
+ *   No searching
+ */
+int
+regmatch_string(prog, string, eflags)
+    register regexp *prog;
+    char *string;
+    int eflags;
+{
+    /* Check for REG_NOCASE, means ignore case in string matches.  */
+    regnocase = ((eflags & REG_NOCASE) != 0);
+
+    /* Mark beginning of line for ^ . */
+    /* jsh -- if REG_NOTBOL is set then set regbol to something absurd
+       to guarantee ^ doesn't match */
+    regbol = (eflags & REG_NOTBOL) ? "" : string;
+
+    return regtry(prog, string);
+}
+
+/*
  * - regtry - try match at specific point
  */
 static int			/* 0 failure, 1 success */
