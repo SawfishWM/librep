@@ -1,3 +1,8 @@
+1999-01-29  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_processes.c (run_process): clean up better when fork
+	fails
+
 1999-01-27  John Harper  <john@dcs.warwick.ac.uk>
 
 	* views.c (cmd_with_view): fix bug when switching windows as
