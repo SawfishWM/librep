@@ -1,3 +1,21 @@
+1998-07-01  John Harper  <john@dcs.warwick.ac.uk>
+
+	* find.c (mark_cached_regexps): fixed bug in chopping the list
+	one element too late
+
+Tue Jun 30 00:08:36 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* edit.h (enum Glyph_Attrs): added new _Rect variants of the
+	four standard attributes. These are used to display `ghosted'
+	cursors when the window is out of focus
+	* glyphs.c, redisplay.c, x11_main.c, x11_windowsys.h: changes
+	to support the above attributes
+
+Sun Jun 28 16:05:45 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* windows.c (cmd_make_window): make a copy of the current
+	window's buffer-list with copy-sequence; don't use it twice
+
 Sat Jun 27 18:21:30 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* find.c (compile_regexp): when searching the cache, before

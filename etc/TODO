@@ -69,6 +69,17 @@ General programming tasks:
 
  + Make swap-del-bs a runtime option, not compile time
 
+ - Demand load buffer contents
+
+   If a buffer is unmodified, and hasn't been used for <some arbitrary
+   time>, there's no reason to keep its contents in memory. The buffer
+   isn't thrown out, just its contents. If at some point in the future
+   the contents need to be accessed, they can be reloaded (with all
+   other state preserved)
+
+   Of course, this is just a coarse-grained virtual memory thing. It
+   could be quite helpful though, with little impact on the user
+
  - Extend the online help
 
    `C-h m' is the general `context sensitive' help binding. This should

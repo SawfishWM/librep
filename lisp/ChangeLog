@@ -1,3 +1,22 @@
+1998-07-01  John Harper  <john@dcs.warwick.ac.uk>
+
+	* modes.jl (defun-at-point): check for null mode-defun-header
+
+	* add-log.jl (change-log-date-format,
+	change-log-date-match-format): new variables, controls how the
+	dates in ChangeLog separators are constructed and compared
+
+Mon Jun 29 09:55:55 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* cvs.jl (cvs-add-change-log-entries): new function, adds
+	empty change log entries for all selected files
+
+	* add-log.jl (add-change-log-entry): added two optional args
+	FILE-LIST and FUNCTION-LIST. These define the header of the
+	inserted entry. When called interactively they default to the
+	basename of the current file, and the name of the current
+	function definition
+
 Thu Jun 25 00:50:35 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* loadkeys.jl: use find-matching-bracket as a command, not
