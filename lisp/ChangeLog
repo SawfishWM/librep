@@ -1,3 +1,9 @@
+Wed May 20 17:34:48 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* buffer-summary.jl: removed bs-buffer variable, now find or
+	create *buffers* buffer dynamically. This helps garbage
+	collection
+
 Sun May 17 19:51:41 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rm-misc.jl (rm-forward): new method of deleting trailing
