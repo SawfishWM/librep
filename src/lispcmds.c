@@ -1673,7 +1673,14 @@ path_error:
 
 #ifdef HAVE_DYNAMIC_LOADING
     if(trying_dl)
-	return rep_open_dl_library(name) ? Qt : rep_NULL;
+    {
+	void *handle;
+	rep_PUSHGC(gc_file, file);
+	handle = rep_open_dl_library(name);
+	rep_POPGC;
+	if (handle == 0)
+	    return rep_NULL;
+    }
     else
 #endif
     {
@@ -1732,10 +1739,15 @@ path_error:
 	rep_POPGC; rep_POPGC;
 	rep_unbind_symbols (bindings);
 	Fclose_file (stream);
+	rep_POPGC;
+    }
 
-	/* Loading succeeded. Look for an applicable item in
-	   the after-load-alist. */
-    again:
+    /* Loading succeeded. Look for an applicable item in
+       the after-load-alist. */
+    rep_PUSHGC (gc_file, file);
+    {
+	repv tem;
+again:
 	tem = Fsymbol_value(Qafter_load_alist, Qt);
 	if(tem != rep_NULL && rep_CONSP(tem))
 	{
@@ -1744,9 +1756,8 @@ path_error:
 	    {
 		/* Delete this entry */
 		Fset(Qafter_load_alist,
-			Fdelq(tem, Fsymbol_value
-				 (Qafter_load_alist, Qt)));
-
+		     Fdelq(tem, Fsymbol_value (Qafter_load_alist, Qt)));
+	    
 		/* Then evaluate it */
 		Fprogn(rep_CDR(tem));
 
@@ -1754,10 +1765,10 @@ path_error:
 		goto again;
 	    }
 	}
-	rep_POPGC;
-
-	return Qt;
     }
+    rep_POPGC;
+
+    return Qt;
 }
 
 /*
