@@ -668,6 +668,33 @@ from the matched ELT, ie,
     return(Qnil);
 }
 
+DEFUN("memql", Fmemql, Smemql, (repv elt, repv list), rep_Subr2) /*
+::doc:memql::
+memql ELT LIST
+
+If ELT is a member of list LIST then return the tail of the list starting
+from the matched ELT. `memql' uses `eql' to compare list items.
+::end:: */
+{
+    rep_DECLARE2 (list, rep_LISTP);
+    while (rep_CONSP (list))
+    {
+	if (elt == rep_CAR (list))
+	    return list;
+	else
+	{
+	    repv tem = Feql (elt, rep_CAR (list));
+	    if (tem && tem != Qnil)
+		return list;
+	}
+	list = rep_CDR (list);
+	rep_TEST_INT;
+	if (rep_INTERRUPTP)
+	    return rep_NULL;
+    }
+    return Qnil;
+}
+
 DEFUN("delete", Fdelete, Sdelete, (repv elt, repv list), rep_Subr2) /*
 ::doc:delete::
 delete ELT LIST
@@ -1721,9 +1748,15 @@ Returns t if STRING1 is `less' than STRING2, ignoring case.
 	args = rep_CDR(args);				\
 	while(rep_CONSP(args))				\
 	{						\
-	    if(!(rep_value_cmp(pred, rep_CAR(args)) op 0)) \
+	    int sign;					\
+	    repv tem = rep_CAR (args);			\
+	    if (rep_NUMBERP (pred) || rep_NUMBERP (tem)) \
+		sign = rep_compare_numbers (pred, tem);	\
+	    else					\
+		sign = rep_value_cmp(pred, tem);	\
+	    if(!(sign op 0)) 				\
 		return Qnil;				\
-	    pred = rep_CAR(args);			\
+	    pred = tem;					\
 	    args = rep_CDR(args);			\
 	    i++;					\
 	    rep_TEST_INT;				\
@@ -1739,7 +1772,8 @@ DEFUN("=", Fnum_eq, Snum_eq, (repv args), rep_SubrN) /*
 = ARG1 ARG2 [ARG3 ...]
 
 Returns t if each value is the same as every other value. (Using
-`equal' to compare values.)
+`equal' to compare values, except for numbers, where exactness is
+ignored.)
 ::end:: */
 {
     APPLY_COMPARISON(==)
@@ -1750,7 +1784,8 @@ DEFUN("/=", Fnum_noteq, Snum_noteq, (repv args), rep_SubrN) /*
 /= ARG1 ARG2 ...
 
 Returns t if each value is different from every other value. (Using
-`equal' to compare values.)
+`equal' to compare values, except for numbers, where exactness is
+ignored.)
 ::end:: */
 {
     repv ret = Fnum_eq (args);
@@ -1803,56 +1838,6 @@ limited to numbers, it can do strings, positions, marks, etc as well.
 ::end:: */
 {
     APPLY_COMPARISON(<=)
-}
-
-DEFUN("max", Fmax, Smax, (repv args), rep_SubrN) /*
-::doc:max::
-max ARGS...
-
-Returns the greatest of its arguments. There must be at least two
-arguments.
-::end:: */
-{
-    repv max;
-    if(!rep_CONSP(args) || !rep_CONSP(rep_CDR(args)))
-	return rep_signal_missing_arg(rep_CONSP(args) ? 2 : 1);
-    max = rep_CAR(args);
-    args = rep_CDR(args);
-    while(rep_CONSP(args))
-    {
-	repv tem = rep_CAR(args);
-	args = rep_CDR(args);
-	max = (rep_value_cmp(max, tem) >= 0) ? max : tem;
-	rep_TEST_INT;
-	if(rep_INTERRUPTP)
-	    return rep_NULL;
-    }
-    return max;
-}
-
-DEFUN("min", Fmin, Smin, (repv args), rep_SubrN) /*
-::doc:min::
-min ARGS...
-
-Returns the smallest of its arguments. There must be at least two
-arguments.
-::end:: */
-{
-    repv min;
-    if(!rep_CONSP(args) || !rep_CONSP(rep_CDR(args)))
-	return rep_signal_missing_arg(rep_CONSP(args) ? 2 : 1);
-    min = rep_CAR(args);
-    args = rep_CDR(args);
-    while(rep_CONSP(args))
-    {
-	repv tem = rep_CAR(args);
-	args = rep_CDR(args);
-	min = (rep_value_cmp(min, tem) <= 0) ? min : tem;
-	rep_TEST_INT;
-	if(rep_INTERRUPTP)
-	    return rep_NULL;
-    }
-    return min;
 }
 
 DEFUN("null", Fnull, Snull, (repv arg), rep_Subr1) /*
@@ -2240,6 +2225,7 @@ rep_lispcmds_init(void)
     rep_ADD_SUBR(Sfilter);
     rep_ADD_SUBR(Smember);
     rep_ADD_SUBR(Smemq);
+    rep_ADD_SUBR(Smemql);
     rep_ADD_SUBR(Sdelete);
     rep_ADD_SUBR(Sdelq);
     rep_ADD_SUBR(Sdelete_if);
@@ -2273,8 +2259,6 @@ rep_lispcmds_init(void)
     rep_ADD_SUBR(Sgethan);
     rep_ADD_SUBR(Sltthan);
     rep_ADD_SUBR(Slethan);
-    rep_ADD_SUBR(Smax);
-    rep_ADD_SUBR(Smin);
     rep_ADD_SUBR(Snull);
     rep_ADD_SUBR(Satom);
     rep_ADD_SUBR(Sconsp);
