@@ -158,6 +158,11 @@ _PR VALUE debug_on_error, sym_error_info;
 VALUE debug_on_error;
 DEFSYM(error_info, "error-info");
 
+DEFSYM(debug_macros, "debug-macros"); /*
+::doc:debug_macros::
+When nil, the debugger isn't entered while expanding macro definitions.
+::end:: */
+
 _PR VALUE sym_print_escape_newlines, sym_print_length, sym_print_level;
 DEFSYM(print_escape_newlines, "print-escape-newlines");
 DEFSYM(print_length, "print-length");
@@ -977,8 +982,20 @@ do_subr:
 		    funcobj = VCDR(funcobj);
 		    if(CONSP(funcobj) && (VCAR(funcobj) == sym_lambda))
 		    {
-			VALUE form = eval_lambda(funcobj, arglist, FALSE);
-			if(form)
+			VALUE form;
+			if(single_step_flag
+			   && (form = cmd_symbol_value(sym_debug_macros, sym_t))
+			   && NILP(form))
+			{
+			    /* Debugging macros gets tedious; don't
+			       bother when debug-macros is nil. */
+			    single_step_flag = FALSE;
+			    form = eval_lambda(funcobj, arglist, FALSE);
+			    single_step_flag = TRUE;
+			}
+			else
+			    form = eval_lambda(funcobj, arglist, FALSE);
+			if(form != LISP_NULL)
 			    result = cmd_eval(form);
 		    }
 		    else
@@ -1991,6 +2008,10 @@ lisp_init(void)
     INTERN(invalid_pos); ERROR(invalid_pos);
     INTERN(term_interrupt);
     INTERN(error_info);
+
+    INTERN(debug_macros);
+    DOC(debug_macros);
+    VSYM(sym_debug_macros)->value = sym_nil;
 
     int_cell = cmd_cons(sym_user_interrupt, sym_nil);
     mark_static(&int_cell);
