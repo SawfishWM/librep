@@ -345,12 +345,14 @@
 	(compile-form-1 '%make-structure)
 	(compile-form-1 `(%parse-interface ',sig))
 	(if header
-	    (compile-lambda-constant `(lambda () ,@header))
+	    (progn
+	      (compile-constant `(lambda () ,@header))
+	      (emit-insn '(enclose)))
 	  (compile-constant nil))
 	(if body
 	    ;; compile non-top-level structure bodies, so that
 	    ;; they can access the active bindings
-	    (compile-lambda-constant (compile-lambda `(lambda () ,@body)))
+	    (compile-lambda-constant `(lambda () ,@body))
 	  (compile-constant nil))
 	(when name
 	  (compile-constant name))
