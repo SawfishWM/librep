@@ -184,8 +184,6 @@ as it could be if lexical scoping was used.
 
 
 @node News, Invocation, Introduction, Top
-@chapter News
-@cindex News
 
 @include news.texi
 
