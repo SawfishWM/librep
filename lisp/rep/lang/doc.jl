@@ -60,16 +60,13 @@
 NAME is true, then it should be the symbol that is associated with VALUE."
     (let*
 	((type (cond
-		((special-form-p value)
-		 "Special Form")
+		((special-form-p value) "Special Form")
 		((macrop value)
 		 ;; macros are stored as `(macro . FUNCTION)'
 		 (setq value (cdr value))
 		 "Macro")
-		((subrp value)
-		 "Built-in Function")
-		((closurep value)
-		 "Function")
+		((subrp value) "Native Function")
+		((closurep value) "Function")
 		(t "Variable"))))
       (when (closurep value)
 	(unless structure
