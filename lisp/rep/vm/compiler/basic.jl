@@ -136,7 +136,7 @@ their position in that file.")
 	   (lambda-label tem))))
 
   ;; Compile one form so that its value ends up on the stack when interpreted
-  (defun compile-form-1 (form &optional return-follows in-tail-slot)
+  (defun compile-form-1 (form #!optional return-follows in-tail-slot)
     (cond
      ((eq form '())
       (emit-insn '(push ()))
@@ -147,10 +147,11 @@ their position in that file.")
 
      ((symbolp form)
       ;; A variable reference
-      (let
-	  (val)
+      (let (val)
 	(test-variable-ref form)
 	(cond
+	 ((keywordp form)
+	  (compile-constant form))
 	 ((setq val (assq form (fluid const-env)))
 	  ;; A constant from this file
 	  (compile-constant (cdr val)))
@@ -228,7 +229,7 @@ their position in that file.")
 
   ;; Compile a list of forms, the last form's evaluated value is left on
   ;; the stack. If the list is empty nil is pushed.
-  (defun compile-body (body &optional return-follows name)
+  (defun compile-body (body #!optional return-follows name)
     (if (null body)
 	(progn
 	  (emit-insn '(push ()))
@@ -261,7 +262,7 @@ their position in that file.")
       asm))
 
   ;; returns (ASM MAX-STACK MAX-B-STACK)
-  (define (compile-form-to-asm form &optional start-label)
+  (define (compile-form-to-asm form #!optional start-label)
     (call-with-initial-env
      (lambda ()
        ;; Do the high-level compilation
@@ -290,18 +291,29 @@ their position in that file.")
 	     (increment-stack)
 	     (loop '() nil (cons rest vars)))
 	    (t (case (car rest)
-		 ((&optional) (loop (cdr rest) 'optional vars))
-		 ((&rest) (loop (cdr rest) 'rest vars))
+		 ((#!optional) (loop (cdr rest) 'optional vars))
+		 ((#!key) (loop (cdr rest) 'key vars))
+		 ((#!rest) (loop (cdr rest) 'rest vars))
+		 ((&optional)
+		  (compiler-deprecated '&optional "&optional in lambda list")
+		  (loop (cdr rest) 'optional vars))
+		 ((&rest)
+		  (compiler-deprecated '&rest "&rest in lambda list")
+		  (loop (cdr rest) 'rest vars))
 		 (t (test-variable-bind (car rest))
+		    (when (eq state 'key)
+		      (compile-constant (make-keyword (car rest)))
+		      (decrement-stack))
 		    (emit-insn (case state
 				 ((required) '(required-arg))
 				 ((optional) '(optional-arg))
+				 ((key) '(keyword-arg))
 				 ((rest) '(rest-arg))))
 		    (increment-stack)
 		    (loop (cdr rest) state (cons (car rest) vars))))))))
 
   ;; From LST, `(lambda (ARGS) BODY ...)' returns an assembly code object
-  (defun compile-lambda-to-asm (lst &optional name)
+  (defun compile-lambda-to-asm (lst #!optional name)
     (let ((args (nth 1 lst))
 	  (body (nthcdr 2 lst)))
       (call-with-initial-env
@@ -336,7 +348,7 @@ their position in that file.")
 	       (ash (assembly-max-b-stack asm) 10)
 	       (ash (assembly-slots asm) 20)))))
 
-  (define (assemble-assembly-to-subr asm &optional doc interactive)
+  (define (assemble-assembly-to-subr asm #!optional doc interactive)
     (optimize-assembly asm)
     (let ((object-code (assemble (assembly-code asm)))) ;(CODE . CONSTS)
       (make-byte-code-subr (car object-code) (cdr object-code)
@@ -358,7 +370,7 @@ their position in that file.")
 
   ;; From LST, `(lambda (ARGS) [DOC-STRING] BODY ...)' returns a byte-code
   ;; vector
-  (defun compile-lambda (lst &optional name)
+  (defun compile-lambda (lst #!optional name)
     (let ((args (nth 1 lst))
 	  (body (nthcdr 2 lst))
 	  doc interactive)
@@ -381,7 +393,7 @@ their position in that file.")
 	(allocate-bindings asm)
 	(assemble-assembly-to-subr asm doc interactive))))
 
-  (defun compile-lambda-constant (lst &optional name)
+  (defun compile-lambda-constant (lst #!optional name)
     (let ((args (nth 1 lst))
 	  (body (nthcdr 2 lst))
 	  doc interactive)
