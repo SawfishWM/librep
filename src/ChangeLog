@@ -1,5 +1,9 @@
 2001-06-08  John Harper  <jsh@pixelslut.com>
 
+	* lispmach.h: disable mc68000 register assignments - I've had
+	one report of them causing the vm to crash while building the
+	compiler
+
 	* unix_processes.c (run_process): open and initialize the slave
 	side of the pty connection _before_ forking (instead of in the
 	child process). This avoids a race condition where the master

@@ -460,9 +460,11 @@ list_ref (repv list, int elt)
 #define SP_REG asm("%r17")
 #define SLOTS_REG asm("%r16")
 #endif
+#if 0					/* this seems to be broken */
 #ifdef __mc68000__
 #define PC_REG asm("a5")
 #define SP_REG asm("a4")
+#endif
 #endif
 #ifdef __arm__
 #define PC_REG asm("r9")
