@@ -75,7 +75,7 @@ usage(char *prog_name, void (*sys_usage)(void))
 {
     fprintf(stderr, "usage: %s [OPTIONS...]\n", prog_name);
     fputs ("\
-where OPTIONS may include:
+where OPTIONS may include:\n\
     --init FILE		use FILE instead of `init.jl' to boot from\n\
     --batch		don't open any windows; process args and exit\n\
     --interp		don't load compiled Lisp files\n\
