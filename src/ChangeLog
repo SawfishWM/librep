@@ -1,3 +1,11 @@
+1999-12-19  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_dl.c (rep_open_dl_library): protect `file_name' against
+	gc while calling load_requires ()
+
+	* lispcmds.c (Fload): scan after-load-alist when loading dl
+	objects, as well as lisp files
+
 1999-12-17  John Harper  <john@dcs.warwick.ac.uk>
 
 	* symbols.c (Fdefine_value): new function, a combination of set
