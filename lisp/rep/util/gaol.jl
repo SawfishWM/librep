@@ -41,7 +41,7 @@
       copy-sequence copy-stream current-time current-time-string
       default-boundp default-value defconst define defmacro defsubst
       defun defvar delete delete-if delete-if-not delete-timer delq
-      digit-char-p documentation elt eq eql equal error eval
+      digit-char-p documentation elt eq eql equal error
       eval-when-compile expand-last-match featurep filter fix-time flet
       fmakunbound format funcall function functionp garbage-collect
       gensym get get-output-stream-string getenv identity if integerp
