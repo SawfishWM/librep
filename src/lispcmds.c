@@ -1315,7 +1315,7 @@ undefined.
 	    repv ptr = rep_CAAR(args);
 	    while (rep_CONSP(ptr))
 	    {
-		if (rep_CAR(ptr) == key)
+		if (Feql (key, rep_CAR(ptr)) != Qnil)
 		    return Fprogn (rep_CDAR(args));
 		ptr = rep_CDR(ptr);
 		rep_TEST_INT;
