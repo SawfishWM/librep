@@ -65,7 +65,8 @@ message queue for threads
 base of the logarithm
 
 @item Use gmp to generate random numbers when possible (if at least
-version 3 of gmp is found)
+version 3 of gmp is found) [disabled in librep 0.15.1 -- gmp seems to
+be buggy?]
 
 @item The @code{string-replace} function may now be given a function as
 its @var{template} parameter
