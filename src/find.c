@@ -81,10 +81,13 @@ that character classes are still case-significant.
 	res = curr_vw->vw_CursorPos;
     if(!BUFFERP(tx))
 	tx = VAL(curr_vw->vw_Tx);
-    check_pos(VTX(tx), &res);
-    if(findnext(VTX(tx), VSTR(re), &res, !NILP(nocase_p)))
-	return(make_lpos(&res));
-    return(sym_nil);
+    if(check_pos(VTX(tx), &res))
+    {
+	if(findnext(VTX(tx), VSTR(re), &res, !NILP(nocase_p)))
+	    return(make_lpos(&res));
+	return(sym_nil);
+    }
+    return NULL;
 }
 
 _PR VALUE cmd_find_prev_regexp(VALUE re, VALUE pos, VALUE tx, VALUE nocase_p);
@@ -107,10 +110,13 @@ that character classes are still case-significant.
 	res = curr_vw->vw_CursorPos;
     if(!BUFFERP(tx))
 	tx = VAL(curr_vw->vw_Tx);
-    check_pos(VTX(tx), &res);
-    if(findprev(VTX(tx), VSTR(re), &res, !NILP(nocase_p)))
-	return(make_lpos(&res));
-    return(sym_nil);
+    if(check_pos(VTX(tx), &res))
+    {
+	if(findprev(VTX(tx), VSTR(re), &res, !NILP(nocase_p)))
+	    return(make_lpos(&res));
+	return(sym_nil);
+    }
+    return NULL;
 }
 
 _PR VALUE cmd_find_next_string(VALUE str, VALUE pos, VALUE tx);
@@ -130,10 +136,13 @@ with STRING. Returns the position of the next match or nil.
 	res = curr_vw->vw_CursorPos;
     if(!BUFFERP(tx))
 	tx = VAL(curr_vw->vw_Tx);
-    check_pos(VTX(tx), &res);
-    if(findstrnext(VTX(tx), VSTR(str), &res))
-	return(make_lpos(&res));
-    return(sym_nil);
+    if(check_pos(VTX(tx), &res))
+    {
+	if(findstrnext(VTX(tx), VSTR(str), &res))
+	    return(make_lpos(&res));
+	return(sym_nil);
+    }
+    return NULL;
 }
 
 _PR VALUE cmd_find_prev_string(VALUE str, VALUE pos, VALUE tx);
@@ -153,10 +162,13 @@ with STRING. Returns the position of the next match or nil.
 	res = curr_vw->vw_CursorPos;
     if(!BUFFERP(tx))
 	tx = VAL(curr_vw->vw_Tx);
-    check_pos(VTX(tx), &res);
-    if(findstrprev(VTX(tx), VSTR(str), &res))
-	return(make_lpos(&res));
-    return(sym_nil);
+    if(check_pos(VTX(tx), &res))
+    {
+	if(findstrprev(VTX(tx), VSTR(str), &res))
+	    return(make_lpos(&res));
+	return(sym_nil);
+    }
+    return NULL;
 }
 
 _PR VALUE cmd_find_next_char(VALUE ch, VALUE pos, VALUE tx);
@@ -176,10 +188,13 @@ with CHAR. Returns the position of the next match or nil.
 	res = curr_vw->vw_CursorPos;
     if(!BUFFERP(tx))
 	tx = VAL(curr_vw->vw_Tx);
-    check_pos(VTX(tx), &res);
-    if(findcharnext(VTX(tx), VCHAR(ch), &res))
-	return(make_lpos(&res));
-    return(sym_nil);
+    if(check_pos(VTX(tx), &res))
+    {
+	if(findcharnext(VTX(tx), VCHAR(ch), &res))
+	    return(make_lpos(&res));
+	return(sym_nil);
+    }
+    return NULL;
 }
 
 _PR VALUE cmd_find_prev_char(VALUE ch, VALUE pos, VALUE tx);
@@ -199,10 +214,13 @@ with CHAR. Returns the position of the next match or nil.
 	res = curr_vw->vw_CursorPos;
     if(!BUFFERP(tx))
 	tx = VAL(curr_vw->vw_Tx);
-    check_pos(VTX(tx), &res);
-    if(findcharprev(VTX(tx), VCHAR(ch), &res))
-	return(make_lpos(&res));
-    return(sym_nil);
+    if(check_pos(VTX(tx), &res))
+    {
+	if(findcharprev(VTX(tx), VCHAR(ch), &res))
+	    return(make_lpos(&res));
+	return(sym_nil);
+    }
+    return NULL;
 }
 
 _PR VALUE cmd_replace_regexp(VALUE re, VALUE tplt, VALUE pos, VALUE tx, VALUE nocase_p);
@@ -228,11 +246,14 @@ that character classes are still case-significant.
 	res = curr_vw->vw_CursorPos;
     if(!BUFFERP(tx))
 	tx = VAL(curr_vw->vw_Tx);
-    check_pos(VTX(tx), &res);
-    if(!read_only(VTX(tx)) && replaceit(VTX(tx), VSTR(re), VSTR(tplt),
-				       &res, !NILP(nocase_p)))
-	return(make_lpos(&res));
-    return(sym_nil);
+    if(check_pos(VTX(tx), &res))
+    {
+	if(!read_only(VTX(tx)) && replaceit(VTX(tx), VSTR(re), VSTR(tplt),
+					    &res, !NILP(nocase_p)))
+	    return(make_lpos(&res));
+	return(sym_nil);
+    }
+    return NULL;
 }
 
 _PR VALUE cmd_replace_string(VALUE orig, VALUE new, VALUE pos, VALUE tx);
@@ -253,10 +274,14 @@ string NEW.
 	res = curr_vw->vw_CursorPos;
     if(!BUFFERP(tx))
 	tx = VAL(curr_vw->vw_Tx);
-    check_pos(VTX(tx), &res);
-    if(!read_only(VTX(tx)) && replaceitstr(VTX(tx), VSTR(orig), VSTR(new), &res))
-	return(make_lpos(&res));
-    return(sym_nil);
+    if(check_pos(VTX(tx), &res))
+    {
+	if(!read_only(VTX(tx))
+	   && replaceitstr(VTX(tx), VSTR(orig), VSTR(new), &res))
+	    return(make_lpos(&res));
+	return(sym_nil);
+    }
+    return NULL;
 }
 
 _PR VALUE cmd_regexp_expand(VALUE re, VALUE match, VALUE tplt, VALUE nocase_p);
