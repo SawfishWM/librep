@@ -578,6 +578,7 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 		    register_input_fd(pr->pr_Stdout, read_from_process);
 		    if(pr->pr_Stderr != pr->pr_Stdout)
 		    {
+			fcntl(pr->pr_Stderr, F_SETFD, 1);
 			fcntl(pr->pr_Stderr, F_SETFL, O_NONBLOCK);
 			register_input_fd(pr->pr_Stderr, read_from_process);
 		    }
@@ -615,10 +616,10 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 			    switch(++interrupt_count)
 			    {
 			    case 1:
-				signal = SIGTERM;
+				signal = SIGINT;
 				break;
 			    case 2:
-				signal = SIGHUP;
+				signal = SIGTERM;
 				break;
 			    default:
 				signal = SIGKILL;
