@@ -73,7 +73,8 @@
       capitalize-string
       make-table make-weak-table string-hash symbol-hash eq-hash
       equal-hash tablep table-ref table-set table-unset table-walk
-      downcase-table flatten-table upcase-table operating-system rep-version))
+      downcase-table flatten-table upcase-table operating-system rep-version
+      call-with-catch call-with-unwind-protect call-with-error-handlers))
 
   ;; alist mapping functions to their safe versions
   (define gaol-redefined-functions)

@@ -57,6 +57,7 @@
 	  if when unless or and setq-default define-value do prog2
 	  make-autoload autoload autoload-macro load-all
 	  eval-when-compile dynamic-wind make-guardian
+	  call-with-catch call-with-unwind-protect call-with-error-handlers
 
 	  ;; backquote.jl
 	  backquote
