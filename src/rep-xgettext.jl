@@ -22,6 +22,7 @@ exec rep "$0" "$@"
 ;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 (defvar *current-file* nil)
+(defvar *found-strings* nil)		;list of (STRING FILES...)
 
 (defun parse (filename)
   (let
@@ -107,19 +108,34 @@ exec rep "$0" "$@"
 	     (scan-list (nthcdr 2 form))))
 
 	  ((consp form)
-	   (scan-list (cdr form))))))
+	   (scan-list form)))))
 
 (defun output (string)
-  (format standard-output "#: %s\n" *current-file*)
-  (let*
-      ((print-escape 'newlines)
-       (out (format nil "%S" string))
-       (point 0))
-    (while (and (< point (length out)) (string-match "\\\\n" out point))
-      (setq out (concat (substring out 0 (match-start)) "\\n\"\n\""
-			(substring out (match-end))))
-      (setq point (+ (match-end) 3)))
-    (format standard-output "msgid %s\nmsgstr \"\"\n\n" out)))
+  (let
+      ((cell (assoc string *found-strings*)))
+    (if cell
+	(unless (assoc *current-file* (cdr cell))
+	  (rplacd cell (cons *current-file* (cdr cell))))
+      (setq *found-strings* (cons (list string *current-file*)
+				  *found-strings*)))))
+
+(defun output-all ()
+  (mapc (lambda (x)
+	  (let ((string (car x))
+		(files (cdr x)))
+	    (mapc (lambda (f)
+		    (format standard-output "#: %s\n" f)) files)
+	    (let*
+		((print-escape 'newlines)
+		 (out (format nil "%S" string))
+		 (point 0))
+	      (while (and (< point (length out))
+			  (string-match "\\\\n" out point))
+		(setq out (concat (substring out 0 (match-start)) "\\n\"\n\""
+				  (substring out (match-end))))
+		(setq point (+ (match-end) 3)))
+	      (format standard-output "msgid %s\nmsgstr \"\"\n\n" out))))
+	(nreverse *found-strings*)))
 
 
 ;; entry point
@@ -147,6 +163,7 @@ msgstr \"\"
       ((file (car command-line-args)))
     (setq command-line-args (cdr command-line-args))
     (parse file)))
+(output-all)
 
 ;; Local variables:
 ;; major-mode: lisp-mode
