@@ -217,7 +217,6 @@
 	  (equal? . equal)
 	  (pair? . consp)
 	  (null? . null)
-	  (list? . listp)
 	  (symbol? . symbolp)
 	  (number? . numberp)
 	  = < > <= >=
