@@ -222,6 +222,12 @@ DEFUN("make-timer", Fmake_timer, Smake_timer,
       (repv fun, repv secs, repv msecs), rep_Subr3) /*
 ::doc:Smake-timer::
 make-timer FUNCTION [SECONDS] [MILLISECONDS]
+
+Create and return a new one-shot timer object. After SECONDS*1000 +
+MILLISECONDS milliseconds FUNCTION will be called.
+
+Note that the timer will only fire _once_, use the `set-timer' function
+to re-enable it.
 ::end:: */
 {
     Lisp_Timer *t = rep_ALLOC_CELL (sizeof (Lisp_Timer));
@@ -238,6 +244,10 @@ make-timer FUNCTION [SECONDS] [MILLISECONDS]
 DEFUN("delete-timer", Fdelete_timer, Sdelete_timer, (repv timer), rep_Subr1) /*
 ::doc:Sdelete-timer::
 delete-timer TIMER
+
+Prevent the one-shot timer TIMER from firing (i.e. calling the function
+associated with it). If the timer has already fired, this function has
+no effect.
 ::end:: */
 {
     rep_DECLARE1(timer, TIMERP);
@@ -249,6 +259,10 @@ DEFUN("set-timer", Fset_timer, Sset_timer,
       (repv timer, repv secs, repv msecs), rep_Subr3) /*
 ::doc:Sset-timer::
 set-timer TIMER [SECONDS] [MILLISECONDS]
+
+Restart the one-shot timer TIMER. If SECONDS and/or MILLISECONDS is
+defined the period after which it fires will be reset to the specified
+duration. Otherwise, the existing values are preserved.
 ::end:: */
 {
     rep_DECLARE1(timer, TIMERP);
