@@ -1,3 +1,10 @@
+1998-10-24  John Harper  <john@dcs.warwick.ac.uk>
+
+	* completion.jl (completion-setup-view): when not creating a
+	new view, ensure that the view chosen isn't currently selected
+
+	* ispell.jl (ispell-strip-word): try again to fix this function
+
 1998-10-23  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rm-mail-dir.jl (rm-mail-dir-scan-messages,

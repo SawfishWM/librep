@@ -1,3 +1,16 @@
+1998-10-24  John Harper  <john@dcs.warwick.ac.uk>
+
+	* Makefile.in: use the JADE_LIBOBJS variable, extra objects for
+	the jade[d] binary
+
+	* edit.c: switch on definition USE_R_ALLOC for whether or not
+	to use the relocating allocator for line arrays
+
+	* ralloc.c: in non-emacs section, include <config.h> when
+	HAVE_CONFIG_H is defined
+
+	* unix_main.c (sys_realloc): new function
+
 1998-10-23  John Harper  <john@dcs.warwick.ac.uk>
 
 	* edit.c: use GNU malloc's r_alloc relocating allocator for the

@@ -241,9 +241,6 @@
 /* Define if you have the socket library (-lsocket).  */
 #undef HAVE_LIBSOCKET
 
-/* Define if using GNU malloc */
-#undef GNU_MALLOC
-
 /* Define if using Doug Lea's malloc */
 #undef DOUG_LEA_MALLOC
 

@@ -67,7 +67,8 @@ General programming tasks:
    Also store things like message id of last message sent/received to
    this person (all message id's ever sent/received?), what else..?
 
- + Make swap-del-bs a runtime option, not compile time
+ + Make swap-del-bs a runtime option, not compile time (or just get rid
+   of it altogether?)
 
  - Mail reader extensions
 
@@ -133,8 +134,6 @@ General programming tasks:
 
  - Implement an HTML-view mode that renders HTML in one buffer into
    another buffer for viewing
-
- - Support for composing MIME messages
 
  - Make the compiler optimise its output
 
