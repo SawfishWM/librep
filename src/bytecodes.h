@@ -21,8 +21,8 @@
 #ifndef BYTECODES_H
 #define BYTECODES_H
 
-#define BYTECODE_MAJOR_VERSION 3
-#define BYTECODE_MINOR_VERSION 1
+#define BYTECODE_MAJOR_VERSION 4
+#define BYTECODE_MINOR_VERSION 0
 
 /* Number of bits encoded in each extra opcode forming the argument. */
 #define ARG_SHIFT    8
@@ -70,9 +70,9 @@
 /* Opcodes without arguments. */
 
 #define OP_REF 0x40			/* push (symbol-value pop) */
-#define OP_SET 0x41			/* push (set pop[1] pop[2]) */
+#define OP_SET 0x41			/* call-2 set */
 #define OP_FREF 0x42			/* push (symbol-function pop) */
-#define OP_FSET 0x43			/* (fset pop[1] pop[2]) */
+#define OP_FSET 0x43			/* call-2 fset */
 #define OP_INIT_BIND 0x44		/* new-binding-set */
 #define OP_UNBIND 0x45			/* rewind-binding-set */
 #define OP_DUP	0x46			/* push stk[0] */

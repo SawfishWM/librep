@@ -36,6 +36,9 @@ char *alloca ();
 # endif
 #endif
 
+/* Define this to get a list of byte-code/frequency of use */
+#undef BYTE_CODE_HISTOGRAM
+
 #include "jade.h"
 #include <lib/jade_protos.h>
 #include "bytecodes.h"
@@ -43,11 +46,16 @@ char *alloca ();
 #include <assert.h>
 
 _PR void lispmach_init(void);
+_PR void lispmach_kill(void);
 
 _PR VALUE sym_bytecode_error;
 DEFSYM(bytecode_error, "bytecode-error");
 DEFSTRING(err_bytecode_error, "Invalid byte code version");
 DEFSTRING(unknown_op, "Unknown lisp opcode");
+
+#ifdef BYTE_CODE_HISTOGRAM
+static u_long byte_code_usage[256];
+#endif
 
 /* Unbind one level of the BIND-STACK and return the new head of the stack.
    Each item in the BIND-STACK may be one of:
@@ -150,10 +158,10 @@ unbind_one_level(VALUE bind_stack)
 #define CASE_OP_ARG(op)							\
 	case op+7:							\
 	    arg = FETCH2; goto CONCAT(op_, op);				\
-	case op+6:							\
-	    arg = FETCH; goto CONCAT(op_, op);				\
 	case op: case op+1: case op+2: case op+3: case op+4: case op+5:	\
-	    arg = c - op;						\
+	    arg = c - op; goto CONCAT(op_, op);				\
+	case op+6:							\
+	    arg = FETCH;						\
 	CONCAT(op_, op):
 
 _PR VALUE cmd_jade_byte_code(VALUE code, VALUE consts, VALUE stkreq);
@@ -199,6 +207,9 @@ of byte code. See the functions `compile-file', `compile-directory' and
 fetch:
     while((c = FETCH) != 0)
     {
+#ifdef BYTE_CODE_HISTOGRAM
+	byte_code_usage[c]++;
+#endif
 	switch(c)
 	{
 	    u_short arg;
@@ -433,10 +444,7 @@ fetch:
 	    goto error;
 
 	case OP_SET:
-	    tmp = RET_POP;
-	    if((TOP = cmd_set(tmp, TOP)))
-		break;
-	    goto error;
+	    CALL_2(cmd_set);
 
 	case OP_FREF:
 	    if((TOP = cmd_symbol_function(TOP, sym_nil)))
@@ -444,10 +452,7 @@ fetch:
 	    goto error;
 
 	case OP_FSET:
-	    tmp = RET_POP;
-	    if(cmd_fset(tmp, RET_POP))
-		break;
-	    goto error;
+	    CALL_2(cmd_fset);
 
 	case OP_INIT_BIND:
 	    bindstack = cmd_cons(sym_nil, bindstack);
@@ -1280,4 +1285,15 @@ lispmach_init(void)
     ADD_SUBR(subr_validate_byte_code);
     ADD_SUBR(subr_make_byte_code_subr);
     INTERN(bytecode_error); ERROR(bytecode_error);
+}
+
+void
+lispmach_kill(void)
+{
+#ifdef BYTE_CODE_HISTOGRAM
+    int i;
+    fprintf(stderr, "\nByte code usages:\n");
+    for(i = 0; i < 256; i++)
+	fprintf(stderr, "\t%3d %ld\n", i, byte_code_usage[i]);
+#endif
 }
