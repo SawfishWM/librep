@@ -34,7 +34,8 @@
 	 (unless (and input (not (string= "" input)))
 	   (throw 'quit 0)))
 	(error
-	 (format standard-output "error--> %S\n" data))))))
+	 (format standard-output "error--> %S\n" data)
+	 (setq input nil))))))
 
 (fset 'recursive-edit (symbol-function 'rep))
 
