@@ -107,6 +107,15 @@ AC_CHECK_LIB(gmp, mpz_init,
 LIBS=$saved_LIBS
 AC_CHECK_HEADER(gmp.h, [], [AC_MSG_ERROR([Can't find gmp.h])])
 
+dnl Check for GNU DBM library and header files
+saved_LIBS=$LIBS
+AC_CHECK_LIB(gdbm, gdbm_open,
+	     [GDBM_LIBS="-lgdbm"
+	      AC_SUBST(GDBM_LIBS)],
+	     [AC_MSG_ERROR([Can't find libgdbm])])
+LIBS=$saved_LIBS
+AC_CHECK_HEADER(gdbm.h, [], [AC_MSG_ERROR([Can't find gdbm.h])])
+
 dnl Check for Doug Lea's malloc in libc, otherwise compile dlmalloc.c
 doug_lea_malloc=yes
 AC_CHECK_FUNC(malloc_get_state, , doug_lea_malloc=no)
