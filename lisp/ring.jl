@@ -27,6 +27,7 @@
 			       ring-append
 			       ring-ref
 			       ring-replace
+			       ring->list
 			       add-to-ring
 			       get-from-ring
 			       set-ring-head)
@@ -103,6 +104,14 @@ If RING contains no items, add OBJECT as the first."
     (if (zerop (ring-size ring))
 	(add-to-ring ring object)
       (set-item ring (mod (1- (get-pos ring)) (ring-capacity ring)) object)))
+
+  (define (ring->list ring)
+    "Return the elements in ring buffer RING as a list, newest to oldest."
+    (let ((size (ring-size ring))
+	  (contents '()))
+      (do ((i 0 (1+ i)))
+	  ((= i size) (nreverse contents))
+	(setq contents (cons (ring-ref ring i) contents)))))
 
 ;;; compatibility api
 
