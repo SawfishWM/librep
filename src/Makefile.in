@@ -94,7 +94,7 @@ re :
    This way when a doc-string is changed in a source file you should delete
    the doc-strings.h file to force it to be rebuilt.  */
 doc-strings.h : makedoc
-	./makedoc DOC.bare doc-strings.h $(ALL_SRCS)
+	./makedoc DOC.bare doc-strings.h $(SRCS)
 	cp DOC.bare ../DOC
 
 stripproto : stripproto.o
