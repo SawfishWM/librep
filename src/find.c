@@ -143,7 +143,7 @@ buffer_strchr(TX *tx, POS *pos, char c)
     }
     else
     {
-	while(pos->pos_Line <= tx->tx_LogicalEnd)
+	while(pos->pos_Line < tx->tx_LogicalEnd)
 	{
 	    u_char *match = strchr(line->ln_Line + pos->pos_Col, c);
 	    if(match)
