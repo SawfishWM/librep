@@ -1,3 +1,9 @@
+2001-10-11  John Harper  <jsh@unfactored.org>
+
+	* rep/lang/interpreter.jl (default-error-handler): catch and
+	ignore errors that happen in the error handler (to avoid a
+	possible infinite loop..)
+
 2001-10-01  John Harper  <jsh@unfactored.org>
 
 	* version 0.15

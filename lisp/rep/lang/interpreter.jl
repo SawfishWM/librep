@@ -484,15 +484,21 @@ DATA)' while the handler is evaluated (these are the arguments given to
 
 ;; default error handler
 (defun default-error-handler (err data)
-  (beep)
-  (write t (format nil "*** %s: %s"
-		   (or (get err 'error-message) err)
-		   (mapconcat (lambda (x)
-				(format nil "%s" x)) data ", ")))
-  ;; XXX ugh.. so kludgey..
-  (open-structures '(rep.lang.error-helper))
-  (declare (bound error-helper))
-  (error-helper err data))
+  (call-with-exception-handler
+   (lambda ()
+     (beep)
+     (write t (format nil "*** %s: %s"
+		      (or (get err 'error-message) err)
+		      (mapconcat (lambda (x)
+				   (format nil "%s" x)) data ", ")))
+     ;; XXX ugh.. so kludgey..
+     (open-structures '(rep.lang.error-helper))
+     (declare (bound error-helper))
+     (error-helper err data))
+   (lambda (ex)
+     ;; really don't want to have errors happening in here..
+     (unless (eq (car ex) 'error)
+       (raise-exception ex)))))
 
 (defvar error-handler-function default-error-handler)
 
