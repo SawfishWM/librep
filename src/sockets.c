@@ -86,8 +86,7 @@ make_socket_ (int sock_fd, int namespace, int style)
     s->sock = sock_fd;
     s->namespace = namespace;
     s->style = style;
-    s->addr = Qnil;
-    s->port = Qnil;
+    s->addr = s->port = Qnil;
     s->sentinel = s->stream = Qnil;
 
     s->next = socket_list;
@@ -104,7 +103,7 @@ static rep_socket *
 make_socket (int namespace, int style)
 {
     int sock_fd = socket (namespace, style, 0);
-    if (sock_fd != 0)
+    if (sock_fd != -1)
 	return make_socket_ (sock_fd, namespace, style);
     else
 	return 0;
@@ -113,7 +112,7 @@ make_socket (int namespace, int style)
 static void
 shutdown_socket (rep_socket *s)
 {
-    if (s->sock != 0)
+    if (s->sock >= 0)
     {
 	close (s->sock);
 	rep_deregister_input_fd (s->sock);
@@ -121,7 +120,7 @@ shutdown_socket (rep_socket *s)
 
     DB (("shutdown socket fd %d\n", s->sock));
 
-    s->sock = 0;
+    s->sock = -1;
     s->car &= ~IS_ACTIVE;
 }
 
@@ -166,9 +165,9 @@ client_socket_output (int fd)
 	    if (s->stream != Qnil)
 		rep_stream_puts (s->stream, buf, actual, rep_FALSE);
 	}
-    } while((actual > 0) || (actual < 0 && errno == EINTR));
+    } while (actual > 0 || (actual < 0 && errno == EINTR));
 
-    if ((actual <= 0) && (errno != EWOULDBLOCK) && (errno != EAGAIN))
+    if (actual == 0 || (actual < 0 && errno != EWOULDBLOCK && errno != EAGAIN))
     {
 	/* assume EOF  */
 
@@ -241,9 +240,25 @@ make_local_socket (repv addr, rep_socket *(maker)(int, int, void *, size_t),
     struct sockaddr_un name;
     size_t length;
     rep_socket *s;
+    rep_GC_root gc_addr, gc_stream, gc_sentinel;
+    repv local;
+
+    rep_PUSHGC (gc_addr, addr);
+    rep_PUSHGC (gc_stream, stream);
+    rep_PUSHGC (gc_sentinel, sentinel);
+    local = Flocal_file_name (addr);
+    rep_POPGC; rep_POPGC; rep_POPGC;
+
+    if (local == rep_NULL)
+	return rep_NULL;
+    if (!rep_STRINGP (local))
+    {
+	DEFSTRING (err, "Not a local file");
+	return Fsignal (Qfile_error, rep_list_2 (rep_VAL (&err), addr));
+    }
 
     name.sun_family = AF_LOCAL;
-    strncpy (name.sun_path, rep_STR (addr), sizeof (name.sun_path));
+    strncpy (name.sun_path, rep_STR (local), sizeof (name.sun_path));
 
     length = (offsetof (struct sockaddr_un, sun_path)
 	      + strlen (name.sun_path) + 1);
