@@ -1,3 +1,14 @@
+1999-03-18  John Harper  <john@dcs.warwick.ac.uk>
+
+	* repsdbm.c (rep_dl_init): return Qt
+
+	* lisp.c (rep_test_int_period): this was a about factor of 100
+	too large
+
+	* unix_main.c (wait_for_input): break the timeout period into a
+	series of second-long timeouts, with a check for an interrupt
+	occurring between each call to select
+
 1999-03-17  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep.c (main): test for (throw 'quit RC) when exiting
