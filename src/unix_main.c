@@ -76,6 +76,7 @@ _PR VALUE sys_sit_for(u_long timeout_msecs);
 _PR VALUE sys_accept_input(u_long timeout_msecs, void *callback);
 _PR bool sys_poll_input(int fd);
 _PR void *sys_alloc(u_int length);
+_PR void sys_print_allocations(void);
 _PR void pre_sys_init(void);
 _PR void sys_misc_init(void);
 
@@ -475,22 +476,99 @@ sys_poll_input(int fd)
 
 /* Memory allocation; sys_free() is a macro in unix_defs.h */
 
+#ifdef DEBUG_SYS_ALLOC
+
+struct alloc_data {
+    struct alloc_data *next;
+    size_t size;
+    void *function;
+    char data[0] CONCAT(ALIGN_, MALLOC_ALIGNMENT);
+};
+
+static struct alloc_data *allocations;
+#endif
+
 void *
 sys_alloc(u_int length)
 {
-    void *mem = malloc(length);
-    if(mem)
+    void *mem;
+#ifdef DEBUG_SYS_ALLOC
+    length += sizeof(struct alloc_data);
+#endif
+    mem = malloc(length);
+    if(mem == 0)
+    {
+	/* Unsuccessful; flush the string allocation blocks before
+	   trying one last time.. */
+	sm_flush(&main_strmem);
+	mem = malloc(length);
+    }
+    if(mem != 0)
     {
 	/* Check that the alignment promised actually occurs */
 	assert((((PTR_SIZED_INT)mem) & (MALLOC_ALIGNMENT - 1)) == 0);
-	return mem;
-    }
 
-    /* Unsuccessful; flush the string allocation blocks before
-       trying one last time.. */
-    sm_flush(&main_strmem);
-    return malloc(length);
+#ifdef DEBUG_SYS_ALLOC
+	{
+	    struct alloc_data *x = mem;
+	    mem = ((char *)mem) + sizeof(struct alloc_data);
+	    x->next = allocations;
+	    allocations = x;
+	    x->size = length - sizeof(struct alloc_data);
+	    x->function = db_return_address();
+	}
+#endif
+    }
+    return mem;
 }
+
+#ifdef DEBUG_SYS_ALLOC
+void
+sys_free(void *ptr)
+{
+    struct alloc_data *x = (struct alloc_data *)(((char *)ptr) - sizeof(struct alloc_data));
+    struct alloc_data **p = &allocations;
+    while(*p != 0 && (*p) != x)
+	p = &((*p)->next);
+    assert(*p != 0);
+    (*p) = x->next;
+    free(x);
+}
+
+void
+sys_print_allocations(void)
+{
+    if(allocations != 0)
+    {
+	struct alloc_data *x = allocations;
+	fprintf(stderr, "\n\nOutstanding allocations:\n\n");
+	while(x != 0)
+	{
+	    char *sname;
+	    void *saddr;
+	    fprintf(stderr, "\t(%p, %d)", x->data, x->size);
+	    if(find_c_symbol(x->function, &sname, &saddr))
+		fprintf(stderr, "\t\t<%s+%d>", sname, x->function - saddr);
+	    fprintf(stderr, "\n");
+	    x = x->next;
+	}
+    }
+}
+
+_PR VALUE cmd_unix_print_allocations(void);
+DEFUN("unix-print-allocations", cmd_unix_print_allocations,
+      subr_unix_print_allocations, (void), V_Subr0,
+      DOC_unix_print_allocations) /*
+::doc:unix_print_allocations::
+unix-print-allocations
+
+Output a list of all allocated memory blocks to standard error.
+::end:: */
+{
+    sys_print_allocations();
+    return sym_t;
+}
+#endif
 
 
 /* Standard signal handlers */
@@ -519,6 +597,9 @@ fatal_signal_handler(int sig)
     fprintf(stderr, "jade: received fatal signal: %d\n", sig);
 # endif
 #endif
+
+    /* Save the C backtrace */
+    db_print_backtrace(common_db, "fatal_signal_handler");
 
     /* Output all debug buffers */
     db_spew_all();
@@ -617,4 +698,8 @@ sys_misc_init(void)
     while(*ptr != 0)
 	env = cmd_cons(string_dup(*ptr++), env);
     VSYM(sym_process_environment)->value = env;
+
+#ifdef DEBUG_SYS_ALLOC
+    ADD_SUBR(subr_unix_print_allocations);
+#endif
 }
