@@ -1,5 +1,12 @@
 2000-01-19  John Harper  <john@dcs.warwick.ac.uk>
 
+	* lisp.c (rep_handle_error): if error-handler-function is
+	defined and functionp, then call it, otherwise handle the error
+	locally
+
+	* rep.h.in: define rep_INTERFACE to the current library
+	interface version
+
 	* lisp.c (rep_handle_error): for errors with >3 data values,
 	print as a list
 
