@@ -102,7 +102,7 @@ uninstall :
 	  rm $(DESTDIR)$(includedir)/$$i; \
 	done
 	
-rep-config : rep-config.sh
+rep-config : rep-config.sh Makefile
 	$(SHELL) $< "${prefix}" "${libdir}" "${version}" \
 	  "${LDFLAGS} ${LIBS} ${GMP_LIBS}" "${repcommonexecdir}">$@
 	chmod +x $@
@@ -125,10 +125,6 @@ gettext.la : gettext.lo
 readline.la : readline.lo
 	$(LIBTOOL) $(CC) $(LDFLAGS) -avoid-version -module -o $@ \
 	 $^ $(READLINE_LIBS) -rpath $(repexecdir)
-
-callcc.la : continuations.lo
-	$(LIBTOOL) $(CC) $(LDFLAGS) -avoid-version -module -o $@ \
-	 $^ -rpath $(repexecdir)
 
 clean :
 	rm -f *~ *.o *.lo *.la build.h
