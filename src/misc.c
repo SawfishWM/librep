@@ -193,6 +193,17 @@ number of seconds since the start of the day (universal time).
     return rep_MAKE_TIME(time);
 }
 
+DEFUN("current-utime", Fcurrent_utime, Scurrent_utime, (void), rep_Subr0) /*
+::doc:current-utime::
+current-utime
+
+Return the current time in microseconds.
+::end:: */
+{
+    rep_long_long time = rep_utime ();
+    return rep_make_longlong_int (time);
+}
+
 DEFUN("fix-time", Ffix_time, Sfix_time, (repv time), rep_Subr1) /*
 ::doc:fix-time::
 fix-time TIMESTAMP
@@ -579,6 +590,7 @@ rep_misc_init(void)
     rep_ADD_SUBR_INT(Sbeep);
     rep_ADD_SUBR(Scomplete_string);
     rep_ADD_SUBR(Scurrent_time);
+    rep_ADD_SUBR(Scurrent_utime);
     rep_ADD_SUBR(Sfix_time);
     rep_ADD_SUBR(Scurrent_time_string);
     rep_ADD_SUBR(Stime_later_p);
