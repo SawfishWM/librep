@@ -27,6 +27,10 @@
 		   rep.io.files
 		   rep.io.streams))
 
+(setq nil '())
+(setq t 't)
+(make-binding-immutable 'nil)
+(make-binding-immutable 't)
 (export-bindings '(nil t))
 
 
@@ -112,14 +116,14 @@ Binds temporary values to symbols while BODY is being evaluated.
 
 Each of the BINDINGS is either a list `(SYMBOL FORMS...)' in which case
 the variable SYMBOL is bound to the result of evaluating `(progn FORMS...)',
-or a single symbol, in which case it is bound to the value `nil'.
+or a single symbol, in which case it is bound to the false value.
 
 If VAR is given, then the symbol VAR is bound to a function whose
 formal parameters are the same as the variables bound by the `let'
 form. Thus the execution of BODY... may be repeated by invoking VAR."
 
   ((lambda (fun vars values)
-     (cond ((cond ((car args) (symbolp (car args))))	;and expanded
+     (cond ((symbolp (car args))
 	    ;; named let
 	    (setq fun (car args))
 	    (setq args (cdr args))))
@@ -182,10 +186,10 @@ not the variables containing the fluids."
 ;; Conditional syntax
 
 (defmacro if (condition then &rest else)
-  "First the CONDITION form is evaluated, if it returns `t' (not `nil') the
-TRUE-FORM is evaluated and its result returned. Otherwise the result of an
-implicit progn on the ELSE forms is returned. If there are no ELSE forms
-`nil' is returned."
+  "First the CONDITION form is evaluated, if it returns true the
+TRUE-FORM is evaluated and its result returned. Otherwise the result of
+an implicit progn on the ELSE forms is returned. If there are no ELSE
+forms the false value is returned."
   (cond (else (list 'cond (list condition then) (cons t else)))
 	(t (list 'cond (list condition then)))))
 
@@ -194,7 +198,7 @@ implicit progn on the ELSE forms is returned. If there are no ELSE forms
 ITEM matching (using `eql') the result of evaluating KEY (only
 evaluated once), then evaluate the associated FORMS in a `progn'. The
 final clause may have the form `(t FORMS...)', which always matches KEY
-if no other CLAUSE has already. Returns `nil' if no clause matches.
+if no other CLAUSE has already. Returns false if no clause matches.
 
 If any of the ITEMS appear more than once, then the behaviour is
 undefined."
@@ -216,7 +220,7 @@ undefined."
 	      (cons 'cond (nreverse body)))))))
 
 (defmacro when (condition &rest forms)
-  "Evaluates CONDITION, if it is non-nil an implicit progn is performed
+  "Evaluates CONDITION, if it is true an implicit progn is performed
 with FORMS."
   (list 'if condition (cons 'progn forms)))
 
@@ -226,23 +230,24 @@ FORMS."
   (list 'if (list 'not condition) (cons 'progn forms)))
 
 (defmacro or args
-  "The first of the ARGS is evaluated, if it is non-`nil' its value is the
-value of the `or' form and no more arguments are evaluated. Otherwise this
-step is repeated for the next member of ARGS.
+  "The first of the ARGS is evaluated, if it is true its value is the value
+of the `or' form and no more arguments are evaluated. Otherwise this step
+is repeated for the next member of ARGS.
 
-If all of the ARGS have been evaluated and none have a non-`nil' value
-`nil' is the value of the `or' form.
+If all of the ARGS have been evaluated and none have a true value
+`()' is the value of the `or' form.
 
-If there are no ARGS `nil' is returned."
+If there are no ARGS the false value is returned."
   (if (null args)
       'nil
     (cons 'cond (mapcar list args))))
 
 (defmacro and args
-  "The first of the ARGS is evaluated. If it is `nil' no more of the
-ARGS are evaluated and `nil' is the value of the `and' statement.
+  "The first of the ARGS is evaluated. If it is false no more of the
+ARGS are evaluated and the `and' statement evaluates to false.
+
 Otherwise the next member of ARGS is evaluated and its value tested. If
-none of the ARGS are `nil' the computed value of the last member of ARGS
+none of the ARGS are false the computed value of the last member of ARGS
 is returned from the `and' form."
   (if (null args)
       't
@@ -306,14 +311,14 @@ value of the binding is computed. An alternative form is `(VARIABLE
 INIT)', in this case the value of the binding does not change across
 loop iterations.
 
-Each iteration begins by evaluating TEST, if the result is `nil', then
+Each iteration begins by evaluating TEST, if the result is false, then
 the BODY... expressions are evaluated, and the variables bound to new
 locations initialized to the results of evaluating the associated STEP
 forms.
 
-If the result of evaluating TEST is non-`nil' then the EXPR... forms
-are evaluated, and the `do' construct returns the value of the last
-EXPR form evaluated.
+If the result of evaluating TEST is true then the EXPR... forms are
+evaluated, and the `do' construct returns the value of the last EXPR
+form evaluated.
 
 (do ((vec (make-vector 5))
      (i 0 (1+ i)))
@@ -335,12 +340,12 @@ EXPR form evaluated.
   "while CONDITION BODY...
 
 `while' is an imperative looping construct. CONDITION is evaluated, if
-it produces a non-nil value, then the sequence of BODY... forms are
+it produces a true value, then the sequence of BODY... forms are
 evaluated using an implicit `progn' statement, and control passes back
 to the beginning of the while form.
 
-When the VALUE of CONDITION is the symbol `nil', the while statement is
-exited, returning an undefined value."
+When the VALUE of CONDITION is false, the while statement is exited,
+returning an undefined value."
 
   ((lambda (tem)
      (list 'let tem '()
@@ -454,14 +459,16 @@ Each HANDLER is a list of `(ERROR BODY...)'. ERROR defines which types
 of errors the handler catches, either a symbol or a list of symbols.
 The special symbol `error' matches all types of errors.
 
-If VAR is non-nil it's a symbol whose values is bound to `(ERROR-SYMBOL
-. DATA)' while the handler is evaluated (these are the arguments given
-to `signal' when the error was raised)."
+If VAR is true it's a symbol whose values is bound to `(ERROR-SYMBOL .
+DATA)' while the handler is evaluated (these are the arguments given to
+`signal' when the error was raised)."
   (list* 'call-with-error-handlers
 	 (list 'lambda '() form)
 	 (mapcar (lambda (h)
 		   (list 'cons (list 'quote (car h))
-			 (list* 'lambda (and var (list var)) (cdr h))))
+			 (list* 'lambda (and (symbolp var)
+					     (not (eq var 'nil))
+					     (list var)) (cdr h))))
 		 handlers)))
 
 ;; default error handler
