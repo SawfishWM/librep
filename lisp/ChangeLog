@@ -1,3 +1,22 @@
+1998-10-12  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rcs-hooks.jl (rcs-file-p): test if the file is a directory
+	first
+
+	* dired.jl (dired-create-directory): new command, bound to `+'
+	(dired-execute-end): test whether the delete item is a file or
+	a directory, then call delete-file or delete-directory
+	appropriately
+
+	* remote-ftp.jl (remote-ftp-handler): handle make-directory and
+	delete-directory
+	* tilde.jl (tilde-file-handler): handle make-directory and
+	delete-directory
+
+	* buffers.jl (kill-buffer): delete the buffer from the
+	buffer-list even in minibuffer views now (for example, isearch
+	uses with this variable)
+
 1998-10-11  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rm-misc.jl (rm-reply): uses the rm-get-msg-header function

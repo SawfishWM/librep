@@ -1,3 +1,22 @@
+1998-10-12  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_files.c (sys_file_modes_as_string): use stat_file
+	directly instead of calling sys_file_modes which masks out all
+	but the permission bits
+
+	* unix_files.c (sys_delete_file): use `unlink' instead of
+	`remove'. This means it won't allow the deletion of directories
+	(sys_make_directory, sys_delete_directory): new functions 
+
+	* files.c (cmd_make_directory, cmd_delete_directory): new
+	functions, both have file-handler names associated with them
+
+	* files.c (read_file_into_tx): don't store the average line
+	length of the previous file read. Instead, defer predicting the
+	expected number of lines until N lines of the new file have
+	been read. This seems to drastically reduce the memory needed
+	to read large files
+
 1998-10-10  John Harper  <john@dcs.warwick.ac.uk>
 
 	* misc.c (cmd_random): new function
