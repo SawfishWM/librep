@@ -45,6 +45,8 @@ _PR VALUE funcall(VALUE fun, VALUE arglist, bool eval_args);
 _PR VALUE call_lisp0(VALUE);
 _PR VALUE call_lisp1(VALUE, VALUE);
 _PR VALUE call_lisp2(VALUE, VALUE, VALUE);
+_PR VALUE call_lisp3(VALUE, VALUE, VALUE, VALUE);
+_PR VALUE call_lisp4(VALUE, VALUE, VALUE, VALUE, VALUE);
 
 _PR void lisp_prin(VALUE, VALUE);
 _PR void string_princ(VALUE, VALUE);
@@ -210,8 +212,6 @@ _PR struct Lisp_Call *lisp_call_stack;
 struct Lisp_Call *lisp_call_stack;
 
 static int lisp_depth, max_lisp_depth = 500;
-
-DEFSTRING(doc_file, DOC_FILE);
 
 
 /* Reading */
@@ -952,6 +952,9 @@ load_autoload(VALUE fun, VALUE aload_def)
 
 DEFSTRING(max_depth, "max-lisp-depth exceeded, possible infinite recursion?");
 
+/* Applies ARGLIST to FUN. If EVAL-ARGS is true, all arguments will be
+   evaluated first. Note that both FUN and ARGLIST are gc-protected
+   for the duration of this function. */
 VALUE
 funcall(VALUE fun, VALUE arglist, bool eval_args)
 {
@@ -977,11 +980,12 @@ funcall(VALUE fun, VALUE arglist, bool eval_args)
 	return cmd_signal(sym_error, LIST_1(VAL(&max_depth)));
     }
 
+    PUSHGC(gc_origfun, origfun);
+    PUSHGC(gc_arglist, arglist);
+
     if((data_after_gc >= gc_threshold) && !gc_inhibit)
 	cmd_garbage_collect(sym_t);
 
-    PUSHGC(gc_origfun, origfun);
-    PUSHGC(gc_arglist, arglist);
 again:
     if(SYMBOLP(fun))
     {
@@ -1414,6 +1418,18 @@ call_lisp2(VALUE function, VALUE arg1, VALUE arg2)
     return funcall(function, LIST_2(arg1, arg2), FALSE);
 }
 
+VALUE
+call_lisp3(VALUE function, VALUE arg1, VALUE arg2, VALUE arg3)
+{
+    return funcall(function, LIST_3(arg1, arg2, arg3), FALSE);
+}
+
+VALUE
+call_lisp4(VALUE function, VALUE arg1, VALUE arg2, VALUE arg3, VALUE arg4)
+{
+    return funcall(function, LIST_4(arg1, arg2, arg3, arg4), FALSE);
+}
+
 void
 lisp_prin(VALUE strm, VALUE obj)
 {
@@ -1770,49 +1786,6 @@ end:
     return form;
 }
 
-_PR VALUE cmd_get_doc_string(VALUE idx);
-DEFUN("get-doc-string", cmd_get_doc_string, subr_get_doc_string, (VALUE idx), V_Subr1, DOC_get_doc_string) /*
-::doc:get_doc_string::
-get-doc-string INDEX
-
-Returns the document-string number INDEX.
-::end:: */
-{
-    DECLARE1(idx, INTP);
-    return cmd_read_file_from_to(VAL(&doc_file), idx, MAKE_INT((int)'\f'));
-}
-
-DEFSTRING(no_open_doc, "Can't open doc-file");
-DEFSTRING(no_append_doc, "Can't append to doc-file");
-
-_PR VALUE cmd_add_doc_string(VALUE str);
-DEFUN("add-doc-string", cmd_add_doc_string, subr_add_doc_string, (VALUE str), V_Subr1, DOC_add_doc_string) /*
-::doc:add_doc_string::
-add-doc-string STRING
-
-Appends STRING to the end of the doc-file and returns the index position of
-it's first character (a number).
-::end:: */
-{
-    FILE *docs;
-    DECLARE1(str, STRINGP);
-    docs = fopen(DOC_FILE, "a");
-    if(docs)
-    {
-	int len = STRING_LEN(str);
-	VALUE idx = MAKE_INT(ftell(docs));
-	if(fwrite(VSTR(str), 1, len, docs) != len)
-	{
-	    return cmd_signal(sym_file_error, LIST_1(VAL(&no_append_doc)));
-	}
-	putc('\f', docs);
-	fclose(docs);
-	return idx;
-    }
-    return cmd_signal(sym_file_error,
-		      list_2(VAL(&no_open_doc), VAL(&doc_file)));
-}
-
 _PR VALUE cmd_signal(VALUE error, VALUE data);
 DEFUN("signal", cmd_signal, subr_signal, (VALUE error, VALUE data), V_Subr2, DOC_signal) /*
 ::doc:signal::
@@ -2063,8 +2036,6 @@ lisp_init(void)
     ADD_SUBR(subr_break);
     ADD_SUBR_INT(subr_step);
     ADD_SUBR(subr_macroexpand);
-    ADD_SUBR(subr_get_doc_string);
-    ADD_SUBR(subr_add_doc_string);
     ADD_SUBR(subr_signal);
     ADD_SUBR(subr_condition_case);
     ADD_SUBR(subr_backtrace);
