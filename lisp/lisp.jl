@@ -199,6 +199,10 @@ it causes ARG to be compiled as a lambda expression. This macro is also
 available as the reader shortcut #', i.e. #'foo == (function foo)."
   (list 'quote arg))
 
+(defun file-name= (name1 name2)
+  "Returns t when NAME1 and NAME2 both name the same file."
+  (string= (canonical-file-name name1) (canonical-file-name name2)))
+
 
 ;; Macros for handling positions
 
