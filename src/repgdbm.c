@@ -29,18 +29,23 @@ static rep_dbm *dbm_chain;
 
 DEFSYM(insert, "insert");
 DEFSYM(replace, "replace");
+DEFSYM(no_lock, "no-lock");
 
-DEFUN("gdbm-open", Fgdbm_open, Sgdbm_open, (repv file, repv flags, repv mode),
-      rep_Subr3) /*
+DEFUN("gdbm-open", Fgdbm_open, Sgdbm_open,
+      (repv file, repv type, repv mode, repv flags), rep_Subr4) /*
 ::doc:gdbm-open::
-gdbm-open PATH ACCESS-TYPE [MODE]
+gdbm-open PATH ACCESS-TYPE [MODE] [FLAGS]
 ::end:: */
 {
-    int uflags, umode;
+    int uflags = 0, umode;
     rep_dbm *dbm;
-    rep_GC_root gc_flags, gc_mode;
+    rep_GC_root gc_type, gc_mode;
 
-    rep_PUSHGC(gc_flags, flags);
+    /* only flag currently is `no-lock' */
+    if (rep_CONSP (flags) && rep_CAR (flags) == Qno_lock)
+	uflags |= GDBM_NOLOCK;
+
+    rep_PUSHGC(gc_type, type);
     rep_PUSHGC(gc_mode, mode);
     file = Flocal_file_name (file);
     rep_POPGC; rep_POPGC;
@@ -48,10 +53,10 @@ gdbm-open PATH ACCESS-TYPE [MODE]
     if (!file)
 	return file;
     rep_DECLARE1(file, rep_STRINGP);
-    rep_DECLARE2(flags, rep_SYMBOLP);
+    rep_DECLARE2(type, rep_SYMBOLP);
 
-    uflags = (flags == Qwrite ? GDBM_NEWDB
-	      : flags == Qappend ? GDBM_WRCREAT : GDBM_READER);
+    uflags |= (type == Qwrite ? GDBM_NEWDB
+	       : type == Qappend ? GDBM_WRCREAT : GDBM_READER);
     umode = rep_INTP(mode) ? rep_INT(mode) : 0666;
     dbm = rep_ALLOC_CELL (sizeof (rep_dbm));
     if (dbm == 0)
@@ -59,7 +64,7 @@ gdbm-open PATH ACCESS-TYPE [MODE]
     rep_data_after_gc += sizeof (rep_dbm);
     dbm->car = dbm_type;
     dbm->path = file;
-    dbm->access = flags;
+    dbm->access = type;
     dbm->mode = rep_MAKE_INT(umode);
     dbm->dbm = gdbm_open (rep_STR(file), 0, uflags, umode, 0);
     if (dbm->dbm != 0)
@@ -240,6 +245,7 @@ rep_dl_init (void)
 				      0, 0, 0, 0, 0, 0, 0);
     rep_INTERN (insert);
     rep_INTERN (replace);
+    rep_INTERN (no_lock);
 
     tem = rep_push_structure ("gdbm");
     rep_ADD_SUBR(Sgdbm_open);
