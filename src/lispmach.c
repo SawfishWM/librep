@@ -970,6 +970,15 @@ of byte code. See the functions `compile-file', `compile-directory' and
 	    case OP_MOD:
 		CALL_2(cmd_mod);
 
+	    case OP_POS:
+		CALL_2(cmd_pos);
+
+	    case OP_POSP:
+		TOP = (POSP(TOP) ? sym_t : sym_nil);
+		break;
+
+	    /* Jump instructions follow */
+
 	    case OP_JN:
 		if(NILP(RET_POP))
 		    goto do_jmp;

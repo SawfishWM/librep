@@ -22,7 +22,7 @@
 #define BYTECODES_H
 
 #define BYTECODE_MAJOR_VERSION 2
-#define BYTECODE_MINOR_VERSION 3
+#define BYTECODE_MINOR_VERSION 4
 
 /* Number of bits encoded in each extra opcode forming the argument. */
 #define ARG_SHIFT    8
@@ -178,6 +178,9 @@
 /* new 21-11-97 */
 #define OP_MOD 0xbb			/* push (mod pop[1] pop[2]) */
 
+/* new 20-12-97 */
+#define OP_POS 0xbc			/* call-2 pos */
+#define OP_POSP 0xbd			/* call-1 posp */
 
 #define OP_LAST_BEFORE_JMPS 0xf8
 
