@@ -15,9 +15,9 @@ you'd expect (never demotes an inexact number to an exact number).
 Tries to follow the Scheme numeric system as much as possible
 
 @item Supports @dfn{guardian} objects through the @code{make-guardian}
-function. These are a clean mechanism for allowing the programmer to
-control when arbitrary lisp objects are finally deallocated. Also
-added a new hook: @code{after-gc-hook}
+function (as described in Dybvig's paper). These are a clean mechanism
+for allowing the programmer to control when arbitrary lisp objects are
+finally deallocated. Also added a new hook: @code{after-gc-hook}
 
 @item The default error handler can now be redefined. If the variable
 @code{error-handler-function} contains a function then it will be
@@ -46,6 +46,9 @@ inner definitions
 @item The @code{tables} plugin implements hash tables, with extensible
 hashing and comparison methods; supports both strongly and weakly keyed
 tables
+
+@item Included a GDBM binding; DOC files are now stored in GDBM files
+(SDBM has limits on datum sizes)
 
 @item @code{put} and @code{get} functions now use @code{equal} to
 compare property names

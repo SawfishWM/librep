@@ -64,4 +64,10 @@
 (autoload-macro 'define "define")
 (autoload-macro 'with-internal-definitions "define")
 (autoload-macro 'with-threads-blocked "threads")
+(autoload 'string-upper-case-p "string-util")
+(autoload 'string-lower-case-p "string-util")
+(autoload 'string-capitalized-p "string-util")
+(autoload 'string-upcase "string-util")
+(autoload 'string-downcase "string-util")
+(autoload 'capitalize-string "string-util")
 ;;; ::autoload-end::

@@ -23,7 +23,7 @@ for standalone scripts.
 
 Originally inspired by Emacs Lisp, the language dialect combines many
 of the elisp features while trying to remove some of the main
-deficiencies, with features from Common Lisp.
+deficiencies, with features from Common Lisp and Scheme.
 
 %package devel
 Summary: librep include files and link libraries
@@ -48,12 +48,15 @@ make install \
 gzip -9nf $RPM_BUILD_ROOT%{_prefix}/info/librep*
 
 %post
+/sbin/ldconfig
 /sbin/install-info /usr/info/librep.info.gz /usr/info/dir
 
 %preun
 if [ "$1" = 0 ]; then
     /sbin/install-info --delete /usr/info/librep.info.gz /usr/info/dir
 fi
+
+%postun -p /sbin/ldconfig
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -64,11 +67,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_prefix}/bin/rep
 %{_prefix}/bin/rep-remote
 %{_prefix}/lib/librep.so.*
-%{_prefix}/share/rep/%{ver}/lisp/*.jl
-%{_prefix}/share/rep/%{ver}/lisp/*.jlc
-%{_prefix}/share/rep/%{ver}/DOC.*
-%{_prefix}/libexec/rep/%{ver}/%{_host}/*.so
-%{_prefix}/libexec/rep/%{ver}/%{_host}/*.la
+%{_prefix}/share/rep/%{ver}
+%{_prefix}/libexec/rep/%{ver}/%{_host}
 %{_prefix}/info/librep*
 
 %files devel
@@ -82,10 +82,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_prefix}/libexec/rep/%{_host}/libtool
 %{_prefix}/libexec/rep/%{_host}/rules.mk
 %{_prefix}/share/aclocal/rep.m4
-
-%post -p /sbin/ldconfig
-
-%postun -p /sbin/ldconfig
 
 %changelog
 * Wed Nov 10 1999 Michael K. Johnson <johnsonm@redhat.com>

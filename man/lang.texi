@@ -2591,8 +2591,12 @@ generated from the @emph{contents} of the object.
 
 A @dfn{guardian} is a lisp object used to control when other data
 objects are recycled by the garbage collector (@pxref{Garbage
-Collection}). The usual behaviour of the gc is to recycle objects as
-soon as they have no remaining references.
+Collection}).@footnote{Guardians were first described in a paper by R.
+Kent Dybvig, Carl Bruggeman, and David Eby: @cite{"Guardians in a
+Generation-Based Garbage Collector", ACM SIGPLAN Conference on
+Programming Language Design and Implementation, June 1993.}} The usual
+behaviour of the collector is to recycle objects as soon as they have
+no remaining references.
 
 Guardians allow the programmer to detect when a specified object would
 be freed by the garbage collector, and to implement their own

@@ -29,6 +29,8 @@ Outstanding bugs
 
  ! non-fixnum numbers can't be dumped
 
+ ! `random' only accepts its range as a fixnum
+
 
 General programming tasks:
 ==========================
@@ -47,6 +49,9 @@ General programming tasks:
 
    basically, it needs to work out when primitives have been redefined,
    so as not to use the built-in compilers/transformations for them
+
+   It would probably be easier to just add a module system (the
+   scheme48 system looks good..)
 
  - Optimize compilation of case statements
 
