@@ -1,3 +1,26 @@
+1999-01-14  John Harper  <john@dcs.warwick.ac.uk>
+
+	* mime-decode.jl (mime-display-part): use name of attachment
+	(if given) as name of buffer
+	(mime-decode-buffer): fix nil-decoder decoding
+
+	* send-mail.jl (mail-setup): when putting an address in the BCC
+	header for the mail-self-blind option, use user-mail-address,
+	not (user-login-name)
+
+	* mail-headers.jl (mail-compare-addresses): new function,
+	compare two mail addresses
+
+	* rm-misc.jl (rm-reply): when following-up a message, only put
+	those address in the CC header that aren't in the To or BCC
+	headers
+
+	* mime-decode.jl (mime-decode): don't display parts whose
+	bodies contain zero lines
+	(mime-decode-insert-stub, mime-save-part): look in content-type
+	param lists for file name, as well as in content-disposition
+	(though content-disposition takes precedence)
+
 1999-01-13  John Harper  <john@dcs.warwick.ac.uk>
 
 	* keymap.jl (active-keymaps): dereference symbols in the list
