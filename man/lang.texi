@@ -3010,7 +3010,7 @@ structure is the computed value of the @var{first} form.
 @end lisp
 @end defspec
 
-@defspec prog2 first second forms@dots{}
+@defmac prog2 first second forms@dots{}
 This is similar to @code{prog1} except that the evaluation of its
 @var{second} form is returned.
 
@@ -3021,7 +3021,7 @@ performs an implicit progn on the remaining arguments.
 (prog2 'one (+ 1 1) "three")
     @result{} 2
 @end lisp
-@end defspec
+@end defmac
 
 
 @node Conditional Structures, Looping Structures, Sequencing Structures, Control Structures
@@ -3036,7 +3036,7 @@ associated list of forms evaluated. Theoretically this is the only
 conditional special form necessary---all others can be implemented as
 macros.
 
-@defspec if condition true-form else-forms@dots{}
+@defmac if condition true-form else-forms@dots{}
 The @code{if} construct is the nearest thing in Lisp to the @dfn{if-then-else}
 construct found in most programming languages.
 
@@ -3054,7 +3054,7 @@ ignored---it is not evaluated.
   "`if' is not a special form")
     @result{} "`if' is a special form"
 @end lisp
-@end defspec
+@end defmac
 
 @defmac when condition true-forms@dots{}
 @var{condition} is evaluated, if it is @code{t} the result of an
@@ -3179,7 +3179,7 @@ Here is an example use of @code{case}:
 
 
 
-@defspec or forms@dots{}
+@defmac or forms@dots{}
 The first of the @var{forms} is evaluated, if it is non-@code{nil} its
 value is the value of the @code{or} form and no more of @code{forms}
 are evaluated. Otherwise this step is repeated for the next member of
@@ -3194,9 +3194,9 @@ If there are no @var{forms} @code{nil} is returned.
 (or nil 1 nil (beep))           ;@code{(beep)} won't be evaluated
     @result{} 1
 @end lisp
-@end defspec
+@end defmac
 
-@defspec and forms@dots{}
+@defmac and forms@dots{}
 The first of the @var{forms} is evaluated. If it is @code{nil} no more
 of the @var{forms} are evaluated and @code{nil} is the value of
 the @code{and} statement. Otherwise the next member of @var{forms} is
@@ -3211,7 +3211,7 @@ returned from the @code{and} form.
 (and 1 2 3)                     ;All forms are evaluated
     @result{} 3
 @end lisp
-@end defspec
+@end defmac
 
 @defun not object
 This function inverts the truth value of its argument. If @var{object}
@@ -3689,7 +3689,7 @@ Apart from function applications there are two special forms which
 perform variable binding (i.e. creating local variables), @code{let}
 and @code{let*}.
 
-@defspec let bindings body-forms@dots{}
+@defmac let bindings body-forms@dots{}
 @code{let} creates new variable bindings as specified by the
 @var{bindings} argument, then evaluates the @var{body-forms} in order.
 The bindings are then removed, returning all variables to their state
@@ -3733,9 +3733,9 @@ example:
 Although @code{foo} is given a new binding this is not actually done
 until all the new values have been computed, hence @code{bar} is
 bound to the @emph{old} value of @code{foo}. 
-@end defspec
+@end defmac
 
-@defspec let* bindings body-forms@dots{}
+@defmac let* bindings body-forms@dots{}
 This special form is exactly the same as @code{let} except for one
 important difference: the new bindings are installed @emph{as they are
 computed}.
@@ -3756,7 +3756,7 @@ last example in the @code{let} documentation (above),
 @noindent
 By the time the new value of @code{bar} is computed the new binding of
 @code{foo} is already active.
-@end defspec
+@end defmac
 
 @defmac letrec bindings body-forms@dots{}
 @code{letrec} is similar to @code{let} and @code{let*}, with the
@@ -5864,12 +5864,12 @@ Returns @code{t} if @var{arg} is a byte-code subroutine.
 It is often useful to be able to cause certain forms in your programs
 to be evaluated only when the program is being compiled.
 
-@defspec eval-when-compile form
+@defmac eval-when-compile form
 This form tells the system that @var{form} should only be evaluated
 when the containing code is being compiled. When interpreted it always
 returns @code{nil}, when compiled it returns the value of evaluating
 @var{form}.
-@end defspec
+@end defmac
 
 
 @node Compilation Tips, Disassembly, Evaluating at Compile Time, Compiled Lisp
@@ -8110,6 +8110,31 @@ Returns t if @var{string-2} matches the beginning of @var{string-1}.
 (string-head-eq "foo" "foobar")
     @result{} nil
 @end lisp
+@end defun
+
+@defun string-upper-case-p string
+Return @code{t} if @var{string} contains no lower case characters.
+@end defun
+
+@defun string-lower-case-p string
+Return @code{t} if @var{string} contains no upper case characters.
+@end defun
+
+@defun string-capitalized-p string
+Return @code{t} if the first character of @var{string} is upper case.
+@end defun
+
+@defun string-upcase string
+Return a new string, an upper case copy of @var{string}.
+@end defun
+
+@defun string-downcase string
+Return a new string, a lower case copy of @var{string}.
+@end defun
+
+@defun capitalize-string string
+Return a new string, a copy of @var{string} with the first character in
+upper case.
 @end defun
 
 

@@ -1,5 +1,13 @@
 2000-03-14  John Harper  <john@dcs.warwick.ac.uk>
 
+	* lisp.c (rep_readl): some work to accept standard CL and
+	Scheme syntax -- recognize `#| ... |#' block comments; read
+	characters as #\X or #\WORD for WORD in: space, newline,
+	backspace, tab, linefeed, return, page, rubout; read vectors as
+	`#(...)'
+
+	* lispcmds.c (Fprog2): deleted, now a macro
+
 	* lispcmds.c (Funwind_protect): noted in doc string that
 	behaviour in conjunction with call/cc is undefined
 

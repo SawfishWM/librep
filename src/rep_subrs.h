@@ -239,7 +239,6 @@ extern repv Flength(repv);
 extern repv Fcopy_sequence(repv);
 extern repv Felt(repv, repv);
 extern repv Fprog1(repv);
-extern repv Fprog2(repv);
 extern repv Fwhile(repv);
 extern repv Fcond(repv);
 extern repv Fapply(repv);

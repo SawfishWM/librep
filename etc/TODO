@@ -50,7 +50,7 @@ General programming tasks:
    The current (14-3-99) list of special forms is:
 
    case catch cond condition-case defconst defmacro defun defvar lambda
-   prog1 prog2 progn quote setq unwind-protect while with-object
+   prog1 progn quote setq unwind-protect while with-object
 
  - eliminate tail calls in interpreted code
 

@@ -1,5 +1,8 @@
 2000-03-14  John Harper  <john@dcs.warwick.ac.uk>
 
+	* lisp.jl (prog2): now a macro
+	* compiler.jl (comp-compile-prog2): deleted
+
 	* lisp.jl (setq-default): now a macro
 	* compiler.jl (comp-trans-setq-default): deleted
 
