@@ -308,7 +308,8 @@
   (put 'structure-ref 'rep-compile-fun compile-structure-ref)
 
   (defun compile-declare (form)
-    (note-declaration (cdr form)))
+    (note-declaration (cdr form))
+    (compile-constant nil))
   (put 'declare 'rep-compile-fun compile-declare)
 
   (defun compile-quote (form)
