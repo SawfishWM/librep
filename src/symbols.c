@@ -1067,33 +1067,6 @@ end:
     return(res);
 }
 
-DEFUN("setq-default", Fsetq_default, Ssetq_default, (repv args), rep_SF) /*
-::doc:setq-default::
-setq-default { SYMBOL FORM }...
-
-Sets the default value of each SYMBOL to the value of its corresponding
-FORM evaluated, returns the value of the last evaluation. See also setq.
-::end:: */
-{
-    repv res = Qnil;
-    rep_GC_root gc_args;
-    rep_PUSHGC(gc_args, args);
-    while(rep_CONSP(args) && rep_CONSP(rep_CDR(args)) && rep_SYMBOLP(rep_CAR(args)))
-    {
-	if(!(res = Feval(rep_CAR(rep_CDR(args)))))
-	    goto end;
-	if(!Fset_default(rep_CAR(args), res))
-	{
-	    res = rep_NULL;
-	    goto end;
-	}
-	args = rep_CDR(rep_CDR(args));
-    }
-end:
-    rep_POPGC;
-    return(res);
-}
-
 DEFUN("makunbound", Fmakunbound, Smakunbound, (repv sym), rep_Subr1) /*
 ::doc:makunbound::
 makunbound SYMBOL
@@ -1379,7 +1352,6 @@ rep_symbols_init(void)
     rep_ADD_SUBR(Sgensym);
     rep_ADD_SUBR(Ssymbolp);
     rep_ADD_SUBR(Ssetq);
-    rep_ADD_SUBR(Ssetq_default);
     rep_ADD_SUBR(Smakunbound);
     rep_ADD_SUBR(Sget);
     rep_ADD_SUBR(Sput);
