@@ -261,6 +261,8 @@
 #define OP_OPTIONAL_ARG 0xca
 #define OP_REST_ARG 0xcb
 
+#define OP_NOT_ZERO_P 0xcc
+
 
 /* Jump opcodes */
 

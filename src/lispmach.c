@@ -385,8 +385,8 @@ list_ref (repv list, int elt)
 												\
  &&TAG(OP_FLUID_SET), &&TAG(OP_FLUID_BIND), &&TAG(OP_MEMQL), &&TAG(OP_NUM_EQ), /*C0*/		\
  &&TAG(OP_TEST_SCM), &&TAG(OP_TEST_SCM_F), &&TAG(OP__DEFINE), &&TAG(OP_SPEC_BIND),		\
- &&TAG(OP_SET), &&TAG(OP_REQUIRED_ARG), &&TAG(OP_OPTIONAL_ARG), &&TAG(OP_REST_ARG), /*C8*/				\
- &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT,					\
+ &&TAG(OP_SET), &&TAG(OP_REQUIRED_ARG), &&TAG(OP_OPTIONAL_ARG), &&TAG(OP_REST_ARG), /*C8*/	\
+ &&TAG(OP_NOT_ZERO_P), &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT,				\
 												\
  &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, /*D0*/	\
  &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT,		\
@@ -1398,6 +1398,20 @@ again: {
 		SAFE_NEXT;
 	    }
 	    TOP = Fzerop (tmp);
+	    NEXT;
+	END_INSN
+
+	BEGIN_INSN (OP_NOT_ZERO_P)
+	    tmp = TOP;
+	    if (rep_INTP (tmp))
+	    {
+		TOP = (tmp != rep_MAKE_INT (0)) ? Qt : Qnil;
+		SAFE_NEXT;
+	    }
+	    tmp = Fzerop (tmp);
+	    if (tmp != rep_NULL)
+		tmp = (tmp == Qnil) ? Qt : Qnil;
+	    TOP = tmp;
 	    NEXT;
 	END_INSN
 
