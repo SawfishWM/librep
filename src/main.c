@@ -64,6 +64,7 @@ DEFSYM(interpreted_mode, "interpreted-mode");
 DEFSYM(program_name, "program-name");
 DEFSYM(error_mode, "error-mode");
 DEFSYM(interrupt_mode, "interrupt-mode");
+DEFSYM(before_exit_hook, "before-exit-hook");
 
 DEFSTRING(definit, "init");
 static repv init_script = rep_VAL(&definit);
@@ -395,6 +396,7 @@ rep_handle_input_exception(repv *result_p)
 int
 rep_top_level_exit (void)
 {
+    rep_GC_root gc_throw;
     repv throw = rep_throw_value;
     rep_throw_value = rep_NULL;
     if(throw && rep_CAR(throw) == Qerror)
@@ -412,6 +414,11 @@ rep_top_level_exit (void)
 	    fputs("error in initialisation\n", stderr);
 	return 10;
     }
+
+    rep_PUSHGC(gc_throw, throw);
+    Fcall_hook (Qbefore_exit_hook, Qnil, Qnil);
+    rep_throw_value = rep_NULL;
+    rep_POPGC;
 
     if (throw && rep_CAR (throw) == Qquit && rep_INTP (rep_CDR(throw)))
 	return (rep_INT (rep_CDR(throw)));
@@ -472,4 +479,5 @@ rep_main_init(void)
     rep_SYM(Qerror_mode)->value = Qnil;
     rep_INTERN_SPECIAL(interrupt_mode);
     rep_SYM(Qinterrupt_mode)->value = Qnil;
+    rep_INTERN_SPECIAL(before_exit_hook);
 }
