@@ -1,3 +1,10 @@
+1998-10-18  John Harper  <john@dcs.warwick.ac.uk>
+
+	* debug-buffer.c: on linux, undef DB_RESOLVE_SYMBOLS for the
+	time being--it crashes on my system (egcs-1.1/glibc-2.0.6)
+	(db_print_backtrace): changed output format, only look for at
+	most eight frames, and workaround for a egcs/linux bug
+
 1998-10-15  John Harper  <john@dcs.warwick.ac.uk>
 
 	* jade.h: describe the three preprocessor symbols noted below,
