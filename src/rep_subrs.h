@@ -282,10 +282,16 @@ extern repv Fmake_byte_code_subr(repv args);
 /* from main.c */
 extern void rep_init(char *prog_name, int *argc, char ***argv,
 		     void (*sys_symbols)(void), void (*sys_usage)(void));
+extern void rep_init_from_dump(char *prog_name, int *argc, char ***argv,
+			       void (*sys_symbols)(void),
+			       void (*sys_usage)(void),
+			       char *dump_file);
+extern repv rep_load_environment (repv file);
 extern void rep_kill(void);
 extern rep_bool rep_get_option (char *option, repv *argp);
 extern rep_bool rep_on_idle(long since_last_event);
 extern rep_bool rep_handle_input_exception(repv *result_p);
+extern int rep_top_level_exit (void);
 extern void *rep_common_db;
 extern int rep_recurse_depth;
 extern rep_bool (*rep_on_idle_fun)(int since_last);
@@ -415,6 +421,9 @@ extern repv Funtrace(repv sym);
 extern repv Vobarray(repv val);
 
 /* from values.c */
+extern rep_cons *rep_dumped_cons_start, *rep_dumped_cons_end;
+extern rep_symbol *rep_dumped_symbols_start, *rep_dumped_symbols_end;
+extern repv rep_dumped_non_constants;
 extern void rep_register_type(u_int code, char *name,
 			      int (*compare)(repv, repv),
 			      void (*princ)(repv, repv),
