@@ -1,5 +1,8 @@
 Sun May 24 13:18:54 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* read-mail.jl (rm-move-forwards, rm-move-backwards): changed
+	from macros to functions; also they reuse all cons cells
+
 	* rm-thread.jl: initial attempt at message threading, needs a
 	lot of work
 
