@@ -21,7 +21,7 @@ dnl  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 AC_REVISION($Revision$)
 
 AC_INIT(src/rep_subrs.h)
-AC_CONFIG_HEADER(config.h src/rep.h)
+AC_CONFIG_HEADER(config.h src/rep_config.h)
 
 dnl Release versioning info
 version="0.13-pre"
