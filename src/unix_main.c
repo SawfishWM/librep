@@ -730,13 +730,25 @@ termination_signal_handler(int sig)
     signal(sig, termination_signal_handler);
 }
 
-/* Invoked by SIGUSR1 */
+/* Invoked by SIGUSR1 or SIGUSR2 */
 static RETSIGTYPE
-usr1_signal_handler (int sig)
+usr_signal_handler (int sig)
 {
-    fprintf(stderr, "\n\nLisp backtrace:");
-    Fbacktrace(Fstderr_file());
-    fputs("\n\n\n", stderr);
+    switch (sig)
+    {
+    case SIGUSR1:
+	fprintf(stderr, "\n\nLisp backtrace:");
+	Fbacktrace(Fstderr_file());
+	fputs("\n\n\n", stderr);
+	break;
+
+    case SIGUSR2:
+	fprintf (stderr, "\n\nDebug buffers:\n");
+	rep_db_spew_all ();
+	fputc ('\n', stderr);
+	break;
+    }
+    signal (sig, usr_signal_handler);
 }    
 
 
@@ -802,7 +814,10 @@ rep_pre_sys_os_init(void)
 #endif
 
 #ifdef SIGUSR1
-    signal(SIGUSR1, usr1_signal_handler);
+    signal(SIGUSR1, usr_signal_handler);
+#endif
+#ifdef SIGUSR2
+    signal(SIGUSR2, usr_signal_handler);
 #endif
 }
 
