@@ -1,5 +1,13 @@
 2003-07-26  John Harper  <jsh@unfactored.org>
 
+	* ffi.c: tweaks, added functions to give lisp code low-level
+	access to memory structures
+
+	* unix_dl.c (rep_lookup_dl_symbol): passing an out of bounds
+	value as index means use RTLD_GLOBAL
+
+2003-07-26  John Harper  <jsh@unfactored.org>
+
 	* unix_dl.c, structures.c, repint_subrs.h, ffi.c, fake-libexec,
 	Makefile.in: added rep.ffi module for calling native functions
 	from lisp. Barely tested, incomplete, requires libffi from gcc

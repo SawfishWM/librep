@@ -453,10 +453,11 @@ rep_open_dl_library(repv file_name)
 void *
 rep_lookup_dl_symbol (int idx, const char *name)
 {
-    if (idx < 0 || idx > n_dl_libs)
-	return NULL;
+    void *handle;
 
-    return x_dlsym (dl_libs[idx].handle, name);
+    handle = (idx >= 0 && idx < n_dl_libs) ? dl_libs[idx].handle : RTLD_DEFAULT;
+
+    return x_dlsym (handle, name);
 }
 
 void

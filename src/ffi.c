@@ -20,6 +20,49 @@
    along with librep; see the file COPYING.  If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
+/* Commentary:
+
+   (ffi-struct [MEMBER-TYPES ...]) -> TYPE
+     -- creates a new structure type
+
+   (ffi-interface RET-TYPE (PARAM-TYPES ...)) -> INTERFACE
+     -- creates a new ffi function signature
+
+   (ffi-type BASE-TYPE [PREDICATE] [TYPE->BASE] [BASE->TYPE]) -> TYPE
+     -- creates a new type alias
+
+   (ffi-apply INTERFACE FN-POINTER ARG-LIST) -> RET-VALUE
+     -- calls a function and returns its result
+
+   Apply works by walking the list of arguments converting everything
+   into native or structure types. It calls the function then converts
+   any returned value back to lisp data.
+
+   Question: how to handle `out' parameters? E.g.
+
+	void foo (int a, int *out_b) { *out_b = a + 1 }
+
+   one possibility is to recognize `(out TYPE)' as meaning, allocate
+   space for one of TYPE on the stack, pass its address to the
+   function, then return the converted value (somehow)
+
+   but then how do you handle arrays? E.g.
+
+	void foo (int n, int values[]) {...}
+
+   Perhaps just provide some primitives:
+
+	(ffi-new TYPE #!optional (COUNT 1)) -> POINTER
+	(ffi-delete TYPE POINTER)
+
+	(ffi-address-of TYPE POINTER INDEX) -> POINTER'
+
+	(ffi-set! TYPE POINTER VALUE)
+	(ffi-get TYPE POINTER) -> VALUE
+
+   this should be enough to allow everything to be handled by higher
+   level code. */
+
 #include "repint.h"
 
 #include <stddef.h>
@@ -33,7 +76,15 @@
 
 #ifdef HAVE_LIBFFI
 
-#if SIZEOF_VOID_P != SIZEOF_LONG && SIZEOF_VOID_P != SIZEOF_LONG_LONG
+#if SIZEOF_VOID_P == SIZEOF_LONG
+# define rep_make_pointer(p) rep_make_long_uint ((unsigned long) p)
+# define rep_get_pointer(x)  (void *) rep_get_long_uint (x)
+# define rep_pointerp(x)     rep_INTEGERP (x)
+#elif SIZEOF_VOID_P != SIZEOF_LONG_LONG
+# define rep_make_pointer(p) rep_make_longlong_int ((unsigned long long) p)
+# define rep_get_pointer(x)  (void *) rep_get_longlong_int (x)
+# define rep_pointerp(x)     rep_INTEGERP (x)
+#else
 # error "weird pointer size"
 #endif
 
@@ -235,11 +286,7 @@ rep_ffi_marshal (unsigned int type_id, repv value, char *ptr)
 	    return ptr + sizeof (int64_t);
 
 	case FFI_TYPE_POINTER:
-#if SIZEOF_VOID_P == SIZEOF_LONG
-	    *(void **)ptr = (void *) rep_get_long_int (value);
-#elif SIZEOF_VOID_P == SIZEOF_LONG_LONG
-	    *(void **)ptr = (void *) rep_get_longlong_int (value);
-#endif
+	    *(void **)ptr = rep_get_pointer (value);
 	    return ptr + sizeof (void *);
 
 	case FFI_TYPE_STRUCT:		/* FIXME: */
@@ -367,12 +414,7 @@ rep_ffi_demarshal (unsigned int type_id, char *ptr, repv *value)
 	    return ptr + sizeof (int64_t);
 
 	case FFI_TYPE_POINTER:
-#if SIZEOF_VOID_P == SIZEOF_LONG
-	    *value = rep_make_long_int ((unsigned long) *(void **)ptr);
-#else
-	    *value = rep_make_long_long_int ((unsigned long long)
-					     *(void **)ptr);
-#endif
+	    *value = rep_make_pointer (*(void **)ptr);
 	    return ptr + sizeof (void *);
 
 	case FFI_TYPE_STRUCT:		/* FIXME: */
@@ -563,14 +605,10 @@ DEFUN ("ffi-apply", Fffi_apply, Sffi_apply,
     rep_GC_root gc_args;
 
     rep_DECLARE (1, iface_id, rep_VALID_INTERFACE_P (iface_id));
-    rep_DECLARE (2, ptr, rep_INTEGERP (ptr));
+    rep_DECLARE (2, ptr, rep_pointerp (ptr));
 
     iface = ffi_interfaces[rep_INT (iface_id)];
-#if SIZEOF_VOID_P == SIZEOF_LONG
-    function_ptr = (void *) rep_get_long_int (ptr);
-#else
-    function_ptr = (void *) rep_get_longlong_int (ptr);
-#endif
+    function_ptr = rep_get_pointer (ptr);
 
     if (function_ptr != NULL)
     {
@@ -616,12 +654,106 @@ DEFUN ("ffi-apply", Fffi_apply, Sffi_apply,
 	ffi_call (&iface->cif, function_ptr, ret_data, values);
 
 	if (ret_data != NULL)
-	    rep_ffi_demarshal (iface->ret, ret_data, &ret_value);
+	{
+	    if (rep_ffi_demarshal (iface->ret, ret_data, &ret_value) == NULL)
+		return rep_NULL;
+	}
 
 	return ret_value;
     }
 
     return rep_signal_arg_error (ptr, 2);
+}
+
+DEFUN ("ffi-new", Fffi_new, Sffi_new, (repv type_id, repv count), rep_Subr2)
+{
+    rep_ffi_type *type;
+    void *ptr;
+
+    rep_DECLARE1 (type_id, rep_VALID_TYPE_P);
+    if (count != Qnil)
+	rep_DECLARE2 (count, rep_INTP);
+    else
+	count = rep_MAKE_INT (1);
+
+    type = ffi_types[rep_INT (type_id)];
+    ptr = rep_alloc (type->type->size * rep_INT (count));
+    
+    return rep_make_pointer (ptr);
+}
+
+DEFUN ("ffi-delete", Fffi_delete, Sffi_delete,
+       (repv type_id, repv addr), rep_Subr2)
+{
+    rep_DECLARE1 (type_id, rep_VALID_TYPE_P);
+    rep_DECLARE2 (addr, rep_pointerp);
+
+    rep_free (rep_get_pointer (addr));
+
+    return rep_undefined_value;
+}
+
+DEFUN ("ffi-address-of", Fffi_address_of, Sffi_address_of,
+       (repv type_id, repv addr, repv idx), rep_Subr3)
+{
+    rep_ffi_type *type;
+    char *ptr;
+    int i;
+
+    rep_DECLARE1 (type_id, rep_VALID_TYPE_P);
+    rep_DECLARE2 (addr, rep_pointerp);
+    rep_DECLARE (3, idx, rep_INTP (idx) && rep_INT (idx) >= 0);
+
+    type = ffi_types[rep_INT (type_id)];
+    ptr = rep_get_pointer (addr);
+
+    for (i = rep_INT (idx); i > 0; i--)
+    {
+	ptr = (void *) ALIGN (ptr, type->type->alignment);
+	ptr += type->type->size;
+    }
+
+    return rep_make_pointer (ptr);
+}
+
+DEFUN ("ffi-set!", Fffi_set_, Sffi_set_,
+       (repv type_id, repv addr, repv value), rep_Subr4)
+{
+    rep_ffi_type *type;
+    char *ptr;
+
+    rep_DECLARE1 (type_id, rep_VALID_TYPE_P);
+    rep_DECLARE2 (addr, rep_pointerp);
+
+    type = ffi_types[rep_INT (type_id)];
+    ptr = rep_get_pointer (addr);
+
+    ptr = (void *) ALIGN (ptr, type->type->alignment);
+
+    if (rep_ffi_marshal (rep_INT (type_id), value, ptr) == NULL)
+	return rep_NULL;
+
+    return rep_undefined_value;
+}
+
+DEFUN ("ffi-get", Fffi_get, Sffi_get, (repv type_id, repv addr), rep_Subr2)
+{
+    rep_ffi_type *type;
+    char *ptr;
+    repv value;
+
+    rep_DECLARE1 (type_id, rep_VALID_TYPE_P);
+    rep_DECLARE2 (addr, rep_pointerp);
+
+    type = ffi_types[rep_INT (type_id)];
+    ptr = rep_get_pointer (addr);
+
+    ptr = (void *) ALIGN (ptr, type->type->alignment);
+
+    if (rep_ffi_demarshal (rep_INT (type_id), ptr, &value) == NULL)
+	return rep_NULL;
+
+    return value;
 }
 
 #else /* HAVE_LIBFFI */
@@ -656,6 +788,34 @@ DEFUN ("ffi-apply", Fffi_apply, Sffi_apply,
     return no_libffi_error ();
 }
 
+DEFUN ("ffi-new", Fffi_new, Sffi_new, (repv type_id, repv count), rep_Subr2)
+{
+    return no_libffi_error ();
+}
+
+DEFUN ("ffi-delete", Fffi_delete, Sffi_delete,
+       (repv type_id, repv addr), rep_Subr2)
+{
+    return no_libffi_error ();
+}
+
+DEFUN ("ffi-address-of", Fffi_address_of, Sffi_address_of,
+       (repv type_id, repv addr, repv idx), rep_Subr3)
+{
+    return no_libffi_error ();
+}
+
+DEFUN ("ffi-set!", Fffi_set_, Sffi_set_,
+       (repv type_id, repv addr, repv value), rep_Subr4)
+{
+    return no_libffi_error ();
+}
+
+DEFUN ("ffi-get", Fffi_get, Sffi_get, (repv type_id, repv addr), rep_Subr2)
+{
+    return no_libffi_error ();
+}
+
 #endif /* HAVE_LIBFFI */
 
 DEFUN ("ffi-load-library", Fffi_load_library,
@@ -680,16 +840,15 @@ DEFUN ("ffi-lookup-symbol", Fffi_lookup_symbol,
 {
     void *ptr;
 
-    rep_DECLARE (1, handle, rep_INTP (handle));
+    if (handle != Qnil)
+	rep_DECLARE (1, handle, rep_INTP (handle));
     rep_DECLARE (2, name, rep_STRINGP (name));
 
-    ptr = rep_lookup_dl_symbol (rep_INT (handle), rep_STR (name));
+    /* anything outside the range of valid handles means RTLD_DEFAULT. */
+    ptr = rep_lookup_dl_symbol (handle != Qnil ? rep_INT (handle) : -1,
+				rep_STR (name));
 
-#if SIZEOF_VOID_P == SIZEOF_LONG
-    return ptr != NULL ? rep_make_long_int ((long) ptr) : Qnil;
-#else
-    return ptr != NULL ? rep_make_longlong_int ((rep_long_long) ptr) : Qnil;
-#endif
+    return ptr != NULL ? rep_make_pointer (ptr) : Qnil;
 }
 
 
@@ -776,8 +935,15 @@ rep_dl_init (void)
     rep_ADD_SUBR (Sffi_type);
     rep_ADD_SUBR (Sffi_interface);
     rep_ADD_SUBR (Sffi_apply);
+
     rep_ADD_SUBR (Sffi_load_library);
     rep_ADD_SUBR (Sffi_lookup_symbol);
+
+    rep_ADD_SUBR (Sffi_new);
+    rep_ADD_SUBR (Sffi_delete);
+    rep_ADD_SUBR (Sffi_address_of);
+    rep_ADD_SUBR (Sffi_set_);
+    rep_ADD_SUBR (Sffi_get);
 
     return rep_pop_structure (tem);
 }
