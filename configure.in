@@ -204,6 +204,7 @@ AC_SUBST(READLINE_LIBS)
 dnl Check for dynamic loading
 AC_CHECK_HEADER(dlfcn.h, [AC_DEFINE(HAVE_DLFCN_H)])
 AC_CHECK_HEADER(dl.h, [AC_DEFINE(HAVE_DL_H)])
+AC_CHECK_HEADER(sys/dl.h, [AC_DEFINE(HAVE_SYS_DL_H)])
 dl_ok=no
 AC_CHECK_FUNC(dlopen, [AC_DEFINE(HAVE_DLOPEN) dl_ok=dl],
     AC_CHECK_LIB(dl, dlopen, [AC_DEFINE(HAVE_DLOPEN) dl_ok=dl]))

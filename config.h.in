@@ -52,6 +52,9 @@
 /* Define if <dl.h> is available */
 #undef HAVE_DL_H
 
+/* Define if <sys/dl.h> is available */
+#undef HAVE_SYS_DL_H
+
 /* Define if RTLD_GLOBAL is broken on Tru64 UNIX */
 #undef BROKEN_RTLD_GLOBAL
 

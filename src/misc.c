@@ -24,6 +24,7 @@
 #include "build.h"
 
 #include <string.h>
+#include <strings.h>		/* needed for strncasecmp () on UnixWare */
 #include <ctype.h>
 #include <stdlib.h>
 #include <time.h>

@@ -1,3 +1,8 @@
+2001-04-16  John Harper  <jsh@eazel.com>
+
+	* configure.in, config.h.in: check for <sys/dl.h> and define
+	HAVE_SYS_DL_H if present (needed on UnixWare)
+
 2001-04-09  John Harper  <jsh@eazel.com>
 
 	* configure.in: changed version string to 0.14-pre now there's

@@ -93,8 +93,12 @@ char *alloca ();
 #  define RTLD_GLOBAL 0
 # endif
 
-#elif defined (HAVE_DL_H)
-# include <dl.h>
+#elif defined (HAVE_DL_H) || defined (HAVE_SYS_DL_H)
+# if defined (HAVE_DL_H)
+#  include <dl.h>
+# else
+#  include <sys/dl.h>
+# endif
 # if ! defined (BIND_IMMEDIATE)
 #  define BIND_IMMEDIATE 0
 # endif

@@ -1,3 +1,11 @@
+2001-04-16  John Harper  <jsh@eazel.com>
+
+	* unix_dl.c: include <sys/dl.h> if HAVE_SYS_DL_H is defined and
+	HAVE_DL_H isn't (for UnixWare)
+
+	* misc.c: include <strings.h> (needed for strncasecmp () on
+	UnixWare)
+
 2001-04-05  John Harper  <jsh@eazel.com>
 
 	* numbers.c (INSTALL_LOCALE): fixed a really stupid bug in this
