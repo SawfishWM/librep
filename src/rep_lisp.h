@@ -90,8 +90,8 @@ typedef unsigned rep_PTR_SIZED_INT repv;
 
 /* Bounds of the integer type */
 #define rep_LISP_INT_BITS	(rep_VALUE_BITS - rep_VALUE_INT_SHIFT)
-#define rep_LISP_MAX_INT	((1 << (rep_LISP_INT_BITS - 1)) - 1)
-#define rep_LISP_MIN_INT	(-(1 << (rep_LISP_INT_BITS - 1)))
+#define rep_LISP_MAX_INT	((1L << (rep_LISP_INT_BITS - 1)) - 1)
+#define rep_LISP_MIN_INT	(-(1L << (rep_LISP_INT_BITS - 1)))
 
 /* Store anything needing >24 bits (future expansion and all that),
    in a cons cell, as one 24 bit, and one eight bit quantity. */
@@ -317,13 +317,6 @@ typedef struct rep_type_struct {
 
 /* Strings */
 
-/* If rep_INLINE_STATIC_STRINGS is defined we use some inline assembly
-   to create statically allocated rep_string constants that are
-   (almost) exactly the same as dynamically allocated strings. If
-   it's not defined static strings must differ froom dynamic strings
-   introducing extra overhead (the need to differentiate between
-   the two). */
-
 typedef struct rep_string_struct {
     /* Bits 0->7 are standard cell8 defines. Bits 8->31 store the length
        of the string.
@@ -332,26 +325,18 @@ typedef struct rep_string_struct {
        (thats about 16.7MB) */
     repv car;
     struct rep_string_struct *next;
+    u_char *data;
 
-    union {
-#ifndef rep_INLINE_STATIC_STRINGS
-	/* There's no way I can see to make a C compiler generate
-	   a variably sized string into a structure at compile-time..?
-	   Unless we know how to do this in assembler, put a pointer to
-	   the string instead.. */
-	u_char *rep_static_string;
-#endif
-	u_char dynamic_string[1];
-    } data;
+    /* in a dynamically allocated string, data follows */
 } rep_string;
 
 #define rep_STRING_LEN_SHIFT	8
 #define rep_MAX_STRING \
-    ((1 << (rep_VALUE_BITS - rep_STRING_LEN_SHIFT)) - 1)
+    ((1L << (rep_VALUE_BITS - rep_STRING_LEN_SHIFT)) - 1)
 
 /* The number of bytes that need to be allocated for a string cell
    containg X string bytes (including terminating zero). */
-#define rep_DSTRING_SIZE(x) 	(sizeof(repv) + sizeof(rep_string *) + (x))
+#define rep_DSTRING_SIZE(x) 	(sizeof(rep_string) + (x))
 
 #define rep_STRINGP(v)		rep_CELL8_TYPEP(v, rep_String)
 #define rep_STRING(v)		((rep_string *) rep_PTR(v))
@@ -364,52 +349,17 @@ typedef struct rep_string_struct {
    are made from C string-constants and usually in read-only storage. */
 #define rep_STRING_WRITABLE_P(s) (!rep_CELL_STATIC_P(s))
 
-#ifndef rep_INLINE_STATIC_STRINGS
-
-/* Structure for initialising statically allocated strings. */
-struct rep_static_string {
-    repv car;
-    rep_string *next;
-    u_char *data;
-};
-
 /* Define a variable V, containing a static string S. This must be cast
    to a repv via the rep_VAL() macro when using. */
-# define DEFSTRING(v, s) 					\
-    rep_ALIGN_CELL(static struct rep_static_string v)		\
-	= { ((sizeof(s) - 1) << rep_STRING_LEN_SHIFT)		\
+#define DEFSTRING(v, s) 				\
+    rep_ALIGN_CELL(static rep_string v)			\
+	= { ((sizeof(s) - 1) << rep_STRING_LEN_SHIFT)	\
 	    | rep_CELL_STATIC_BIT | rep_String, 0, s }
 
-# define rep_STR(v)	((rep_STRING(v)->car & rep_STRING_STATIC)	\
-			 ? rep_STRING(v)->data.rep_static_string		\
-			 : rep_VSTRING(v)->data.dynamic_string)
+#define rep_STR(v)	(rep_STRING(v)->data)
 
 /* Use this to get a newline into a DEFSTRING */
-# define rep_DS_NL "\n"
-
-#else /* rep_INLINE_STATIC_STRINGS */
-
-/* This macro will compile a DEFSTRING expression into exactly the
-   same form as the normal dynamically allocated string. The size/type,
-   followed immediately by the data itself.. */
-# define DEFSTRING(v, s)						\
-    extern rep_string v;						\
-    __asm__ (".align " rep_QUOTE(rep_CELL_ALIGNMENT) "\n"		\
-	     rep_QUOTE(v) ":\n"						\
-	     "\t.long (((2f-1f)-1) << "					\
-	     rep_QUOTE(rep_STRING_LEN_SHIFT) ") | " 			\
-	     rep_QUOTE(rep_CELL_STATIC_BIT) " | "			\
-	     rep_QUOTE(rep_String) "\n"					\
-	     "\t.long 0\n"						\
-	     "1:\t.asciz \"" s "\"\n2:\n")
-
-# define rep_STR(v)	(rep_STRING(v)->data.dynamic_string)
-
-/* Use this to get a newline into a DEFSTRING. Need this since we want
-   the assembler to expand the \n not the C compiler. */
-# define rep_DS_NL "\\n"
-
-#endif /* rep_INLINE_STATIC_STRINGS */
+#define rep_DS_NL "\n"
 
 
 /* Symbols */
