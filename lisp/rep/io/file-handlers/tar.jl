@@ -66,6 +66,9 @@
 ;; Cached tar listings
 (defvar tarfh-dir-cache nil)
 
+;; guards tarfh-created file handles
+(defvar tarfh-fh-guardian (make-guardian))
+
 
 ;; Interface to tar program
 
@@ -291,6 +294,15 @@
   (interactive)
   (setq tarfh-dir-cache nil))
 
+(defun tarfh-after-gc ()
+  (let
+      (fh)
+    (while (setq fh (tarfh-fh-guardian))
+      (when (file-binding fh)
+	(close-file fh)))))
+
+(add-hook 'after-gc-hook tarfh-after-gc)
+
 
 ;; file handler
 
@@ -393,6 +405,7 @@
 						(open-file local-file type)
 						'tar-file-handler))
 	  (set-file-handler-data local-fh local-file)
+	  (tarfh-fh-guardian local-fh)
 	  local-fh))
        ((eq op 'file-exists-p)
 	(or file (tarfh-directory-exists-p tarfile rel-file)))
