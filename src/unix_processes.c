@@ -220,8 +220,8 @@ check_for_zombies(void)
 			pr->pr_Status = PR_DEAD;
 			queue_notify(pr);
 		    }
+		    break;
 		}
-		break;
 	    }
 	    if(pr == 0)
 		abort();		/* Shouldn't happen. */
