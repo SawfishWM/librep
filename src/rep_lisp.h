@@ -890,6 +890,15 @@ struct rep_Call {
 
 /* Macros for interrupt handling */
 
+#define rep_MAY_YIELD						\
+    do {							\
+	if (rep_pending_thread_yield && rep_thread_lock == 0)	\
+	    Fthread_yield ();					\
+    } while (0)
+
+#define rep_FORBID rep_thread_lock++
+#define rep_PERMIT rep_thread_lock--
+
 /* rep_TEST_INT is called before testing rep_INTERRUPTP, if necessary the
    target operating system will define it to be something useful.
    There's also a variant rep_TEST_INT_SLOW that should be used by code that
@@ -901,6 +910,7 @@ struct rep_Call {
 	if(++rep_test_int_counter > rep_test_int_period) { 	\
 	    (*rep_test_int_fun)();				\
 	    rep_test_int_counter = 0;				\
+	    rep_pending_thread_yield = rep_TRUE;		\
 	}							\
     } while(0)
 
@@ -908,6 +918,8 @@ struct rep_Call {
     do {				\
 	(*rep_test_int_fun)();		\
 	rep_test_int_counter = 0;	\
+	if (!rep_INTERRUPTP)		\
+	    Fthread_yield ();		\
     } while(0)
 
 #else /* !rep_TEST_INT */
