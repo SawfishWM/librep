@@ -24,6 +24,7 @@
 (open-structures '(rep.lang.symbols
 		   rep.data
 		   rep.system
+		   rep.io.streams
 		   rep.io.files))
 
 (%define nil '())
