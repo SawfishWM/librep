@@ -50,7 +50,7 @@
 ;; Each thread is [thread NAME CONTINUATION]
 
 (defvar all-threads nil
-  "List of all created threads. The currently running thread is at the head
+  "List of all runnable threads. The currently running thread is at the head
 of the list, followed by the next-to-run thread, and so on.")
 
 (defvar current-thread nil
@@ -111,3 +111,49 @@ run."
 			     (list current-thread))))
   (when (and all-threads (not (eq (car all-threads) current-thread)))
     (thread-invoke)))
+
+
+;; semaphores
+
+;; Each semaphore is (semaphore [OWNING-THREAD [BLOCKED-THREADS...]])
+
+(defun make-semaphore ()
+  "Create and return a semaphore object. No thread will own the new semaphore."
+  (list 'semaphore))
+
+(defun semaphorep (arg)
+  "Return `t' if ARG is a semaphore object."
+  (eq (car arg) 'semaphore))
+
+(defun obtain-semaphore (sem)
+  "Obtain the semaphore SEM for the current thread. Will suspend the current
+thread until the semaphore is available."
+  (if (null (cdr sem))
+      (rplacd sem (list current-thread))
+    (rplacd sem (nconc (rplacd sem) (list current-thread)))
+    (setq all-threads (delq current-thread all-threads))
+    (thread-yield)))
+
+(defun maybe-obtain-semaphore (sem)
+  "Attempt to obtain semaphore SEM for the current thread without blocking.
+Returns `t' if able to obtain the semaphore, `nil' otherwise."
+  (if (cdr sem)
+      nil
+    (obtain-semaphore sem)
+    t))
+
+(defun release-semaphore (sem)
+  "Release the semaphore object SEM (which should have previously been obtained
+by the current thread). Returns `t' if the semaphore has no new owner."
+  (or (eq (cdr sem) current-thread)
+      (error "Not owner of semaphore: %S, %S" sem current-thread))
+  (let
+      ((cell (cdr sem)))
+    (rplacd sem (cdr cell))
+    (if (cdr sem)
+	(progn
+	  (rplaca cell (car sem))
+	  (rplacd cell nil)
+	  (setq all-threads (nconc all-threads cell))
+	  nil)
+      t)))
