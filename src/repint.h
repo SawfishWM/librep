@@ -90,4 +90,35 @@ struct blocked_op {
 
 extern struct blocked_op *rep_blocked_ops[op_MAX];
 
+
+/* module system */
+
+typedef struct rep_struct_node_struct rep_struct_node;
+
+/* structure encapsulating a single namespace */
+typedef struct rep_struct_struct rep_struct;
+struct rep_struct_struct {
+    repv car;
+    rep_struct *next;
+    repv name;
+    repv inherited;	/* exported symbols that have no local binding */
+    int total_buckets, total_bindings;
+    rep_struct_node **buckets;
+    repv imports;
+    repv accessible;
+
+    /* A list of the special variables that may be accessed in this
+       environment, or Qt to denote all specials. */
+    repv special_env;
+
+    u_int exclusion : 1;
+};
+
+extern int rep_structure_type;
+
+#define rep_STRUCTUREP(v) rep_CELL16_TYPEP(v, rep_structure_type)
+#define rep_STRUCTURE(v)  ((rep_struct *) rep_PTR(v))
+
+#define rep_SPECIAL_ENV   (rep_STRUCTURE(rep_structure)->special_env)
+
 #endif /* REPINT_H */
