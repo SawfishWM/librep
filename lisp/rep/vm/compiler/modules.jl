@@ -25,7 +25,8 @@
 
 (define-structure rep.vm.compiler.modules
 
-    (export macro-env
+    (export current-module
+	    macro-env
 	    variable-ref-p
 	    locate-variable
 	    compiler-symbol-value
