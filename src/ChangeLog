@@ -1,3 +1,20 @@
+Sun May 10 21:19:48 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* keys.c (ev_mod_meta): deleted, replaced by window-local meta
+	codes
+	* keys.h (EV_MOD_FAKE_META): renamed as EV_MOD_META; this is
+	now used internally, instead of its translation
+	* x11_keys.c (translate_mods): if the translated set of
+	modifiers includes the current window's meta mask, replace this
+	bit by EV_MOD_META
+	(sys_find_meta): renamed x11_find_meta, now takes a x11_display
+	structure as its argument. It finds the Meta modifier for a
+	particular display
+	* x11_main.c (x11_open_display): call x11_find_meta and set the
+	display's meta_mod field
+	* x11_windowsys.h (struct x11_display): added meta_mod field,
+	the Meta modifier for this display
+
 Wed May  6 12:49:17 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lisp.c (load_autoload): new parameter IS-VARIABLE for
