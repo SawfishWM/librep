@@ -44,4 +44,22 @@ AC_DEFUN(AM_PATH_REP,
   else
     AC_MSG_ERROR([can't find librep; is it installed?])
   fi
+
+  dnl scan for GNU msgfmt
+  AC_MSG_CHECKING(for GNU msgfmt)
+  REP_MSGFMT=
+  for p in `echo "$PATH" | sed -e 's/:/ /g'`; do
+    if test -x $p/msgfmt; then
+      if $p/msgfmt --version 2>&1 | grep GNU >/dev/null; then
+	REP_MSGFMT=$p/msgfmt
+      fi
+    fi
+  done
+  if test x$REP_MSGFMT != x; then
+    AC_MSG_RESULT($REP_MSGFMT)
+  else
+    AC_MSG_RESULT(unavailable, disabling i18n)
+    REP_MSGFMT=true
+  fi
+  AC_SUBST(REP_MSGFMT)
 ])
