@@ -770,17 +770,6 @@
       (decrement-b-stack))))
   (put 'condition-case 'rep-compile-fun compile-condition-case)
 
-  (defun compile-with-object (form)
-    (fluid-let ((lexically-pure nil))
-      (compile-form-1 (nth 1 form))
-      (emit-insn (bytecode bindobj))
-      (increment-b-stack)
-      (decrement-stack)
-      (compile-body (nthcdr 2 form))
-      (emit-insn (bytecode unbind))
-      (decrement-b-stack)))
-  (put 'with-object 'rep-compile-fun compile-with-object)
-
   (defun compile-list (form)
     (let
 	((count 0))
