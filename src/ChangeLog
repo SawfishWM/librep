@@ -1,5 +1,11 @@
 Sun Jun 21 01:14:21 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* unix_processes.c (run_process): the new method of detecting
+	when synchronous processes have exited still didn't work. Use
+	the simple option, only exit when EOF on oth streams is
+	received. This puts the onus on callers to redirect streams if
+	necessary
+
 	* unix_processes.c (cmd_call_process): ensure that the
 	INPUT-FILE parameter is a _local_ file name (signal an error if
 	it points to a remote file)
