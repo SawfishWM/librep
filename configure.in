@@ -119,8 +119,8 @@ if test "$with_gmp" != "no"; then
       found_gmp="header")
   if test "$found_gmp" = "yes"; then
     AC_DEFINE(HAVE_GMP)
-  elif test "$with_gmp" = "yes"; then
-    AC_MSG_ERROR([Can't find GMP $found_gmp])
+  elif test "$with_gmp" != "no"; then
+    AC_MSG_ERROR([Can't find GMP (--without-gmp for cut-down non-GMP build)])
   fi
 fi
 AC_SUBST(GMP_LIBS)
