@@ -101,6 +101,13 @@ AC_REPLACE_FUNCS(realpath)
 
 dnl Custom tests
 
+dnl FIXME: Currently only GNU CC can compile Jade (some uses of
+dnl FIXME: nested functions to aid debugging and laziness)
+if test "x${GCC}" != "xyes"; then
+  AC_MSG_ERROR([You currently need GNU CC to compile Jade.
+Send abusive email to john@dcs.warwick.ac.uk to get this fixed!]);
+fi
+
 dnl If using GCC and it doesn't look as though the cflags have been
 dnl set explicitly, add some warning options. Turn off implicit-int
 dnl warnings since the X11 includes on Solaris generate a lot of these
