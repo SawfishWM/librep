@@ -106,7 +106,9 @@ rep_open_dl_library(repv file_name)
 	{
 	    rep_xsubr **functions;
 	    repv (*init_func)(repv);
-	    void *handle = dlopen(dlname, RTLD_LAZY);
+	    void *handle = dlopen(dlname,
+				  rep_SYM(Qdl_load_reloc_now)->value == Qnil
+				  ? RTLD_LAZY : RTLD_NOW);
 	    if(handle == 0)
 	    {
 		char *err = dlerror();
