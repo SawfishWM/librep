@@ -159,6 +159,7 @@
 (autoload 'visit-tag-table "tags" t)
 (autoload 'find-tag "tags" t)
 (autoload 'dired "dired" t)
+(autoload 'dired-mode "dired")
 (load "dired-hooks")
 (autoload 'getenv "environ")
 (autoload 'setenv "environ")

@@ -1,3 +1,16 @@
+1998-09-06  John Harper  <john@dcs.warwick.ac.uk>
+
+	* buffers.jl (find-file): if the buffer's name would be null,
+	look for the name of the parent
+
+	* dired.jl (dired-mode): moved the main parts of `dired' to
+	this function. Calling `dired-mode' on a buffer whose
+	buffer-file-name points to a directory puts it into Dired mode
+	* dired-hooks.jl: use the read-, write-, and insert-file hooks
+	instead of the find-file-hook. This allows the buffer to be
+	reverted correctly. Inserting and writing to directories signal
+	errors
+
 1998-09-05  John Harper  <john@dcs.warwick.ac.uk>
 
 	* gzip.jl (gzip-write-file): fix stupid bug

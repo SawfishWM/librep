@@ -1,5 +1,11 @@
 1998-09-06  John Harper  <john@dcs.warwick.ac.uk>
 
+	* main.c (get_main_options): added `-batch' option
+	(inner_main): if in batch mode, exit after executing the
+	initialisation script
+	* x11_windows.c (sys_new_window): if in batch mode, don't map
+	the window
+
 	* x11_main.c (x11_open_display): call sys_recolor_cursor
 
 	* debug-buffer.c (db_print_frame): renamed as
