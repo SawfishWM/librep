@@ -2145,13 +2145,6 @@ arguments given to `signal' when the error was raised).
     return res;
 }
 
-DEFSTRING(unknown_err, "Unknown error");
-DEFSTRING(one_err_fmt, "%s");
-DEFSTRING(two_err_fmt, "%s: %s");
-DEFSTRING(three_err_fmt, "%s: %s, %s");
-DEFSTRING(four_err_fmt, "%s: %s, %s, %s");
-DEFSTRING(n_err_fmt, "%s: %s");
-
 void
 rep_handle_error(repv error, repv data)
 {
@@ -2169,29 +2162,7 @@ rep_handle_error(repv error, repv data)
     }
 
     Fbeep();
-    if(!(errstr = Fget(error, Qerror_message)) || !rep_STRINGP(errstr))
-	errstr = rep_VAL(&unknown_err);
-    switch(rep_list_length(data))
-    {
-
-    case 0:
-	Fformat(rep_list_3(Qt, rep_VAL(&one_err_fmt), errstr));
-	break;
-    case 1:
-	Fformat(rep_list_4(Qt, rep_VAL(&two_err_fmt), errstr, rep_CAR(data)));
-	break;
-    case 2:
-	Fformat(rep_list_5(Qt, rep_VAL(&three_err_fmt), errstr,
-			  rep_CAR(data), rep_CAR(rep_CDR(data))));
-	break;
-    case 3:
-	Fformat(Fcons(Qt, rep_list_5(rep_VAL(&four_err_fmt), errstr,
-					  rep_CAR(data), rep_CAR(rep_CDR(data)),
-					  rep_CAR(rep_CDR(rep_CDR(data))))));
-	break;
-    default:
-	Fformat(rep_list_4(Qt, rep_VAL(&n_err_fmt), errstr, data));
-    }
+    Fwrite (Qt, rep_string_dup ("some kind of error occurred"), Qnil);
 
 out:
     mutex--;
