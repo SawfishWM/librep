@@ -75,7 +75,9 @@
 	     command-line-args (cdr command-line-args))
        (load arg))
       ((equal "-q" arg)
-       (throw 'quit 0)))))
+       (throw 'quit 0))
+      (t
+       (message (format nil "Unknown option: %s" arg))))))
 
 (unless batch-mode
   (rep))
