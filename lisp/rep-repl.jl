@@ -71,12 +71,13 @@
 	     (setq input nil))))))))
 
 (defun rl-completion-generator (w)
-  (apropos w (lambda (x)
-	       (condition-case nil
-		   (progn
-		     (repl-eval x)
-		     t)
-		 (void-value nil)))))
+  (apropos (concat #\^ (quote-regexp w))
+	   (lambda (x)
+	     (condition-case nil
+		 (progn
+		   (repl-eval x)
+		   t)
+	       (void-value nil)))))
 
 (put 'in 'repl-command
      (lambda (struct &optional form)
