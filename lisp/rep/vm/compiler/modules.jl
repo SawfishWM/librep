@@ -180,6 +180,9 @@
 	    (setq form (apply (cdr def) (cdr form)))
 	  (setq def (compiler-symbol-value (car form)))
 	  (when (and (eq (car def) 'macro) (functionp (cdr def)))
+	    (when (and (closurep (cdr def))
+		       (eq (car (closure-function (cdr def))) 'autoload))
+	      (setq def (load-autoload (cdr def))))
 	    (setq form (apply (cdr def) (cdr form)))))))
     form)
 
