@@ -1,3 +1,7 @@
+2000-09-04  John Harper  <john@dcs.warwick.ac.uk>
+
+	* configure.in: version to 0.13pre1
+
 2000-09-01  John Harper  <john@dcs.warwick.ac.uk>
 
 	* librep.spec.in: added `Requires: gdbm >= 1.8' to avoid gdbm
