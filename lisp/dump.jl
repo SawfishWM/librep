@@ -241,15 +241,16 @@ Note that each input file will be loaded from the lisp-lib-directory with
     (assoc tag (nthcdr 2 cell))))
 
 ;; Add a pair (TAG . VALUE) to be associated with CELL
-(defun dump-add-state (cell tag value &aux pair)
-  (if (setq pair (assoc tag (nthcdr 2 cell)))
-      (rplacd pair value)
-    (rplacd (nthcdr 1 cell) (cons (cons tag value) (nthcdr 2 cell)))))
+(defun dump-add-state (cell tag value)
+  (let ((pair (assoc tag (nthcdr 2 cell))))
+    (if pair
+	(rplacd pair value)
+      (rplacd (nthcdr 1 cell) (cons (cons tag value) (nthcdr 2 cell))))))
 
 ;; Add a pair (PROP . VALUE) to the plist state of CELL. Currently this
 ;; doesn't handle PROP already being in the list, it just pushes another
 ;; pair on the head
-(defun dump-state-put (cell prop value &aux plist tem)
+(defun dump-state-put (cell prop value)
   (dump-add-state cell 'plist
 		  (cons prop (cons value (dump-get-state cell 'plist)))))
 
@@ -365,9 +366,11 @@ Note that each input file will be loaded from the lisp-lib-directory with
 ;; For all symbol cells in LIST that have a plist property, add its value
 ;; as a constant
 (defun dump-fix-plists (lst)
-  (mapc (lambda (x &aux plist)
-	  (when (setq plist (dump-has-state-p x 'plist))
-	    (rplacd plist (dump-get-label (dump-add-constant (cdr plist))))))
+  (mapc (lambda (x)
+	  (let ((plist (dump-has-state-p x 'plist)))
+	    (when plist
+	      (rplacd plist (dump-get-label
+			     (dump-add-constant (cdr plist)))))))
 	lst))
 
 
