@@ -45,6 +45,15 @@ repv rep_scm_t, rep_scm_f;
 
 /* type hooks */
 
+static int
+datum_cmp (repv d1, repv d2)
+{
+    if (DATUMP (d1) && DATUMP (d2) && DATUM_ID (d1) == DATUM_ID (d2))
+	return rep_value_cmp (DATUM_VALUE (d1), DATUM_VALUE (d2));
+    else
+	return 1;
+}
+
 static void
 datum_print (repv stream, repv arg)
 {
@@ -148,7 +157,8 @@ DEFUN ("%scheme-bool-printer", F_scheme_bool_printer,
 void
 rep_datums_init (void)
 {
-    datum_type = rep_register_new_type ("datum", 0, datum_print, datum_print,
+    datum_type = rep_register_new_type ("datum", datum_cmp,
+					datum_print, datum_print,
 					0, rep_mark_tuple,
 					0, 0, 0, 0, 0, 0, 0);
 
@@ -161,7 +171,7 @@ rep_datums_init (void)
     rep_mark_static (&printer_alist);
 
     rep_ADD_INTERNAL_SUBR (S_scheme_bool_printer);
-    rep_scm_t = Fmake_datum (Qnil, rep_VAL (&S_scheme_bool_printer));
+    rep_scm_t = Fmake_datum (Qt, rep_VAL (&S_scheme_bool_printer));
     rep_scm_f = Fmake_datum (Qnil, rep_VAL (&S_scheme_bool_printer));
     Fdefine_datum_printer (rep_VAL (&S_scheme_bool_printer),
 			   rep_VAL (&S_scheme_bool_printer));
