@@ -89,11 +89,11 @@
 (define-interface rep-data
   (export cons car cdr list list* make-list append nconc rplaca rplacd
 	  reverse nreverse assoc assq rassoc rassq nth nthcdr last
-	  mapcar mapc filter member memq delete delq delete-if delete-if-not
-	  vector make-vector arrayp aset aref make-string substring
-	  concat length copy-sequence elt not equal eq string-head-eq
-	  string-equal string-lessp = /= > >= < <= max min null atom
-	  consp listp stringp vectorp sequencep
+	  mapcar mapc filter member memq memql delete delq delete-if
+	  delete-if-not vector make-vector arrayp aset aref make-string
+	  substring concat length copy-sequence elt not equal eq
+	  string-head-eq string-equal string-lessp = /= > >= < <= max min
+	  null atom consp listp stringp vectorp sequencep
 	  garbage-collect garbage-threshold idle-garbage-threshold
 	  make-datum datum-ref datum-set has-type-p
 
