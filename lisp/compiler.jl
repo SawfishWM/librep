@@ -253,7 +253,7 @@ value when given the same inputs. Used when constant folding.")
     (comp-warning "Reference to undeclared free variable: %s" name)))
 
 ;; Test a call to NAME with NARGS arguments
-;; XXX scan comp-fun-bindings
+;; XXX functions in comp-fun-bindings aren't type-checked
 (defun comp-test-funcall (name nargs)
   (catch 'return
     (let
@@ -271,7 +271,8 @@ value when given the same inputs. Used when constant folding.")
 	  (comp-remember-fun name (nth 1 decl)))
 	(setq decl (assq name comp-defuns)))
       (if (null decl)
-	  (comp-warning "Call to undeclared function: %s" name)
+	  (unless (memq name comp-fun-bindings)
+	    (comp-warning "Call to undeclared function: %s" name))
 	(let
 	    ((required (nth 1 decl))
 	     (optional (nth 2 decl))
