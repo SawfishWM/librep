@@ -59,7 +59,6 @@ _PR VALUE sys_fully_qualify_file_name(VALUE);
 bool
 same_files(u_char *file1, u_char *file2)
 {
-    bool rc = FALSE;
     struct stat stat1, stat2;
     if(!stat(file1, &stat1))
     {
@@ -67,14 +66,45 @@ same_files(u_char *file1, u_char *file2)
 	{
 	    if((stat1.st_dev == stat2.st_dev)
 	       && (stat1.st_ino == stat2.st_ino))
-	    {
-		rc = TRUE;
-	    }
+		return TRUE;
+	    else
+		return FALSE;
 	}
     }
-    else
-	rc = !strcmp(file1, file2);
-    return(rc);
+    /* At least one of the files doesn't exist. Try to compare the
+       parent directories, and the basenames. */
+    {
+	u_char *fpart1 = strrchr(file1, '/');
+	u_char *fpart2 = strrchr(file2, '/');
+	if((fpart1 && !fpart2) || (!fpart1 && fpart2))
+	    /* Only one has a directory name. */
+	    return FALSE;
+	if(fpart1 && fpart2)
+	{
+	    /* Both have directories. */
+	    char buf[512];
+	    memcpy(buf, file1, fpart1 - file1);
+	    buf[fpart1 - file1] = 0;
+	    if(!stat(buf, &stat1))
+	    {
+		memcpy(buf, file2, fpart2 - file2);
+		buf[fpart2 - file2] = 0;
+		if(!stat(buf, &stat2))
+		{
+		    if((stat1.st_dev == stat2.st_dev)
+		       && (stat1.st_ino == stat2.st_ino)
+		       && (strcmp(fpart1 + 1, fpart2 + 1) == 0))
+			return TRUE;
+		}
+		else
+		    return FALSE;
+	    }
+	    else
+		return FALSE;
+	}
+    }
+    /* Last chance, just compare strings. */
+    return strcmp(file1, file2) == 0;
 }
 
 u_char *
@@ -445,6 +475,20 @@ Return the time (an integer) that FILE was last modified.
     return(make_number(file_mod_time(VSTR(file))));
 }
 
+_PR VALUE cmd_file_name_absolute_p(VALUE file);
+DEFUN("file-name-absolute-p", cmd_file_name_absolute_p, subr_file_name_absolute_p, (VALUE file), V_Subr1, DOC_file_name_absolute_p) /*
+::doc:file_name_absolute_p::
+file-name-absolute-p FILE-NAME
+
+Returns t if FILE-NAME is not specified relative to the current directory,
+i.e. it begins with a / or ~ under Unix.
+::end:: */
+{
+    DECLARE1(file, STRINGP);
+    return ((VSTR(file)[0] == '/') || (VSTR(file)[0] == '~'))
+	   ? sym_t : sym_nil;
+}
+
 _PR VALUE cmd_directory_files(VALUE dirname);
 DEFUN("directory-files", cmd_directory_files, subr_directory_files, (VALUE dirname), V_Subr1, DOC_directory_files) /*
 ::doc:directory_files::
@@ -760,6 +804,7 @@ sys_misc_init(void)
     ADD_SUBR(subr_file_modes);
     ADD_SUBR(subr_set_file_modes);
     ADD_SUBR(subr_file_modtime);
+    ADD_SUBR(subr_file_name_absolute_p);
     ADD_SUBR(subr_directory_files);
     ADD_SUBR(subr_user_login_name);
     ADD_SUBR(subr_user_full_name);
