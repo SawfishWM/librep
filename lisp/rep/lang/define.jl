@@ -19,9 +19,9 @@
 ;; along with librep; see the file COPYING.  If not, write to
 ;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-(declare (in-module rep))
+(declare (in-module rep.lang.interpreter))
 
-(provide 'define)
+(open-structures '(rep.lang.backquote))
 
 ;; Commentary:
 
@@ -56,7 +56,10 @@
 	       (mapcar (lambda (def)
 			 (list (car def) (cdr def))) (nreverse defs))
 	       (define-scan-body body))
-      (cons 'progn (define-scan-body body)))))
+      (let ((new-body (define-scan-body body)))
+	(if (null (cdr new-body))
+	    (car new-body)
+	  (cons 'progn new-body))))))
 
 (defmacro define-scan-body (body)
   `(mapcar (lambda (f)

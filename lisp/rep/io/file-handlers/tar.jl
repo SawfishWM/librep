@@ -33,9 +33,10 @@
 
 ;; It needs to use GNU tar (for the compression options)
 
-(define-structure tar-file-handler ()
+(define-structure rep.io.file-handlers.tar ()
 
-    (open rep date)
+    (open rep
+	  rep.util.date)
 
 
 ;; configuration
@@ -358,7 +359,9 @@
 	 (file-name-absolute-p (car args)))
 	((eq op 'local-file-name)
 	 nil)
-	((memq op '(expand-file-name file-name-nondirectory file-name-directory
+	((eq op 'expand-file-name)
+	 (expand-file-name (car args) ""))
+	((memq op '(file-name-nondirectory file-name-directory
 		    file-name-as-directory directory-file-name))
 	 (apply (symbol-value op) args))
 	((memq op '(write-buffer-contents delete-file delete-directory
@@ -477,6 +480,6 @@
 	(error "Unsupported TAR op: %s %s" op args)))))))
 
 ;;;###autoload (setq file-handler-alist (cons '("#tar\\b" . tar-file-handler) file-handler-alist))
-;;;###autoload (autoload-file-handler 'tar-file-handler 'tar-file-handler)
+;;;###autoload (autoload-file-handler 'tar-file-handler 'rep.io.file-handlers.tar)
 
 (define-file-handler 'tar-file-handler tar-file-handler))

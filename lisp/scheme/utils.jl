@@ -1,4 +1,4 @@
-#| scheme-syntax.jl -- misc functions
+#| utils.jl -- misc functions
 
    $Id$
 
@@ -21,10 +21,13 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure scheme-utils (export \#test
-				       make-predicate
-				       make-nil-predicate)
-  (open rep)
+(define-structure scheme.utils
+
+    (export \#test
+	    make-predicate
+	    make-nil-predicate)
+
+    (open rep)
 
   ;; given a scheme boolean, convert to a rep boolean
   (define (\#test value) (not (eq value #f)))

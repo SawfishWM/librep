@@ -1,4 +1,4 @@
-#| compiler-opt.jl -- low-level compiler optimisations
+#| opt.jl -- low-level compiler optimisations
 
    $Id$
 
@@ -24,13 +24,16 @@
 ;; Most of the optimisation patterns in the peephole optimiser were
 ;; lifted from jwz's byte-optimize.el (XEmacs)
 
-(define-structure compiler-opt (export peephole-optimizer
-				       constant-optimizer)
-  (open rep
-	compiler-lap
-	compiler-const
-	compiler-utils
-	bytecodes)
+(define-structure rep.vm.compiler.opt
+
+    (export peephole-optimizer
+	    constant-optimizer)
+
+    (open rep
+	  rep.vm.compiler.lap
+	  rep.vm.compiler.const
+	  rep.vm.compiler.utils
+	  rep.vm.bytecodes)
 
 
 ;; Peephole optimiser

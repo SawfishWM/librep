@@ -23,12 +23,19 @@
 ;;	matching files against regexp(s)
 ;;    - Fix all the kludges marked by XXX
 
-(define-structure remote-ftp (export remote-ftp-close-host
-				     remote-ftp-close-all
-				     remote-ftp-empty-cache
-				     remote-ftp-add-passwd)
-  (open rep remote-utils)
-  (require 'mailaddr)			;for user-mail-address
+(define-structure rep.io.file-handlers.remote.ftp
+
+    (export remote-ftp-close-host
+	    remote-ftp-close-all
+	    remote-ftp-empty-cache
+	    remote-ftp-add-passwd)
+
+    (open rep
+	  rep.io.file-handlers.remote.utils
+	  rep.util.date
+	  rep.mail.addr)
+
+  (define-structure-alias remote-ftp rep.io.file-handlers.remote.ftp)
 
 
 ;; Configuration:
@@ -515,7 +522,6 @@ file types.")
 
 (defun remote-ftp-file-get-modtime (file-struct)
   (when (stringp (aref file-struct remote-ftp-file-modtime))
-    (require 'date)
     (let
 	((date (parse-date (aref file-struct remote-ftp-file-modtime))))
       (when date
@@ -830,6 +836,6 @@ file types.")
 
 ;;;###autoload (put 'ftp 'remote-backend 'remote-ftp-handler)
 
-;;;###autoload (autoload-file-handler 'remote-ftp-handler 'remote-ftp)
+;;;###autoload (autoload-file-handler 'remote-ftp-handler 'rep.io.file-handlers.remote.ftp)
 
 (define-file-handler 'remote-ftp-handler remote-ftp-handler))

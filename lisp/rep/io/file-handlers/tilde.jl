@@ -21,8 +21,9 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure tilde (export)
-  (open rep)
+(define-structure rep.io.file-handlers.tilde ()
+
+    (open rep)
 
   (defun tilde-expand (file-name)
     (if (string-looking-at "~([^/]*)/?" file-name)
@@ -67,6 +68,14 @@
       ;; All functions which only have a single file name (their first
       ;; argument). Expand the tilde expression then re-call OP.
       (apply (symbol-value op) (tilde-expand (car args)) (cdr args)))
+     ((eq op 'copy-file-to-local-fs)
+      (apply copy-file (tilde-expand (car args)) (cdr args)))
+     ((eq op 'copy-file-from-local-fs)
+      ;; file to expand is second argument
+      (copy-file (car args) (tilde-expand (cadr args))))
+     ((eq op 'copy-file)
+      ;; both names need expanding
+      (copy-file (tilde-expand (car args)) (tilde-expand (cadr args))))
     (t
      ;; Anything else shouldn't have happened
      (error "Can't expand ~ in %s" (cons op args)))))

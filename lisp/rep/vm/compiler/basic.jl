@@ -1,4 +1,4 @@
-#| compiler-forms.jl -- basic compilation
+#| basic.jl -- basic compilation
 
    $Id$
 
@@ -21,27 +21,30 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure compiler-basic (export current-file
-					 current-fun
-					 lambda-name
-					 lambda-args
-					 lambda-bindings
-					 compile-form-1
-					 compile-body
-					 compile-lambda
-					 compile-form)
-  (open rep
-	lisp-doc
-	compiler-utils
-	compiler-bindings
-	compiler-modules
-	compiler-const
-	compiler-src
-	compiler-inline
-	compiler-lap
-	compiler-opt
-	compiler-asm
-	bytecodes)
+(define-structure rep.vm.compiler.basic
+
+    (export current-file
+	    current-fun
+	    lambda-name
+	    lambda-args
+	    lambda-bindings
+	    compile-form-1
+	    compile-body
+	    compile-lambda
+	    compile-form)
+
+    (open rep
+	  rep.lang.doc
+	  rep.vm.compiler.utils
+	  rep.vm.compiler.bindings
+	  rep.vm.compiler.modules
+	  rep.vm.compiler.const
+	  rep.vm.compiler.src
+	  rep.vm.compiler.inline
+	  rep.vm.compiler.lap
+	  rep.vm.compiler.opt
+	  rep.vm.compiler.asm
+	  rep.vm.bytecodes)
 
   (defvar *compiler-write-docs* nil
     "When t all doc-strings are appended to the doc file and replaced with
@@ -120,6 +123,7 @@ their position in that file.")
 
 	   (t
 	    ;; Expand macros
+	    (unless (listp (cdr form)) (break))
 	    (test-function-call (car form) (length (cdr form)))
 	    (if (not (eq (setq fun (compiler-macroexpand
 				    form macroexpand-pred)) form))

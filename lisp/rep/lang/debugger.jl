@@ -24,8 +24,11 @@
 ;; XXX extend this to support the structure inspection meta-commands
 ;; of the top-level repl
 
-(define-structure debug (export)
-    (open rep structure-internals readline)
+(define-structure rep.lang.debugger ()
+
+    (open rep
+	  rep.structures
+	  rep.io.readline)
 
 ;;; the form stopped on
 

@@ -17,20 +17,26 @@
 ;; along with librep; see the file COPYING.  If not, write to
 ;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-(define-structure gaol (export gaol-define
-			       gaol-define-special
-			       gaol-define-file-handler
-			       make-gaol
-			       gaol-eval
-			       gaol-load
-			       gaol-open
+(define-structure rep.util.gaol
 
-			       ;; obsolete
-			       gaol-rebuild-environment
-			       gaol-replace-function
-			       gaol-add-special)
+    (export gaol-define
+	    gaol-define-special
+	    gaol-define-file-handler
+	    make-gaol
+	    gaol-eval
+	    gaol-load
+	    gaol-open
 
-  (open rep structure-internals)
+	    ;; obsolete
+	    gaol-rebuild-environment
+	    gaol-replace-function
+	    gaol-add-special)
+
+    (open rep
+	  rep.data.datums
+	  rep.structures)
+
+  (define-structure-alias gaol rep.util.gaol)
 
 ;;; configuration/variables
 
@@ -57,7 +63,7 @@
       lognot logxor lower-case-p lsh macroexpand macrop
       make-closure make-list make-string make-string-input-stream
       make-string-output-stream make-symbol make-vector
-      makunbound mapc mapcar match-end match-start max member memq
+      makunbound mapc mapcar match-end match-start max member memq memql
       message min mod nconc nop not nreverse nth nthcdr null numberp or
       prin1 prin1-to-string princ print prog1 prog2 progn put quote
       quote-regexp random rassoc rassq read read-char read-chars

@@ -1,4 +1,4 @@
-#| scheme-syntax-funs.jl -- syntax expansion functions
+#| syntax-funs.jl -- syntax expansion functions
 
    $Id$
 
@@ -21,20 +21,23 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure scheme-syntax-funs (export expand-lambda
-					     expand-if
-					     expand-set!
-					     expand-cond
-					     expand-case
-					     expand-and
-					     expand-or
-					     expand-let
-					     expand-let*
-					     expand-letrec
-					     expand-do
-					     expand-delay
-					     expand-define)
-    (open rep scheme-utils)
+(define-structure scheme.syntax-funs
+
+    (export expand-lambda
+	    expand-if
+	    expand-set!
+	    expand-cond
+	    expand-case
+	    expand-and
+	    expand-or
+	    expand-let
+	    expand-let*
+	    expand-letrec
+	    expand-do
+	    expand-delay
+	    expand-define)
+
+    (open rep scheme.utils)
 
 ;;; syntax
 
@@ -83,11 +86,19 @@
 		  ,@(and rest `((cond ,@rest))))))))
 
   (define (expand-case key . clauses)
-    (list* '\#case key
-	   (mapcar (lambda (x)
-		     (if (eq (car x) 'else)
-			 `(t ,@(cdr x))
-		       x)) clauses)))
+    (let ((tem (gensym)))
+      (let loop ((body nil)
+		 (rest clauses))
+	(if rest
+	    (let ((this (car rest)))
+	      (loop (cons (cond ((eq (car this) 'else) `(else ,@(cdr this)))
+				((cdar this)
+				 `((memv ,tem ',(car this)) ,@(cdr this)))
+				(t `((eqv? ,tem ',(caar this)) ,@(cdr this))))
+			  body)
+		    (cdr rest)))
+	  `(let ((,tem ,key))
+	     (cond ,@(nreverse body)))))))
 
   (define (expand-or . args)
     (cond

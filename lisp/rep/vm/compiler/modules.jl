@@ -1,4 +1,4 @@
-#| compiler-modules.jl -- module handling for the compiler
+#| modules.jl -- module handling for the compiler
 
    $Id$
 
@@ -21,34 +21,37 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure compiler-modules (export macro-env
-					   variable-ref-p
-					   locate-variable
-					   compiler-symbol-value
-					   compiler-binding-from-rep-p
-					   compiler-binding-immutable-p
-					   get-procedure-handler
-					   get-language-property
-					   compiler-macroexpand
-					   compiler-macroexpand-1
-					   compile-module-body
-					   note-require
-					   note-macro-def
-					   compile-structure
-					   compile-define-structure
-					   compile-top-level-structure
-					   compile-top-level-define-structure
-					   compile-structure-ref
-					   compile-function
-					   compile-module)
-  (open rep
-	structure-internals
-	compiler-basic
-	compiler-bindings
-	compiler-const
-	compiler-utils
-	compiler-lap
-	bytecodes)
+(define-structure rep.vm.compiler.modules
+
+    (export macro-env
+	    variable-ref-p
+	    locate-variable
+	    compiler-symbol-value
+	    compiler-binding-from-rep-p
+	    compiler-binding-immutable-p
+	    get-procedure-handler
+	    get-language-property
+	    compiler-macroexpand
+	    compiler-macroexpand-1
+	    compile-module-body
+	    note-require
+	    note-macro-def
+	    compile-structure
+	    compile-define-structure
+	    compile-top-level-structure
+	    compile-top-level-define-structure
+	    compile-structure-ref
+	    compile-function
+	    compile-module)
+
+    (open rep
+	  rep.structures
+	  rep.vm.compiler.basic
+	  rep.vm.compiler.bindings
+	  rep.vm.compiler.const
+	  rep.vm.compiler.utils
+	  rep.vm.compiler.lap
+	  rep.vm.bytecodes)
 
   (define macro-env (make-fluid '()))		;alist of (NAME . MACRO-DEF)
   (define default-macro-env (make-fluid '()))
@@ -75,18 +78,18 @@
 
 ;;; functions
 
-  (define (get-structure name &optional non-fatal)
+  (define (find-structure name)
     (or (intern-structure name)
-	(if non-fatal nil (compiler-error "Unable to open module" name))))
+	(compiler-error "Unable to open module" name)))
 
   ;; return t if the module called STRUCT exports a variable called VAR
   (defun module-exports-p (struct var)
-    (and (symbolp var) (structure-exports-p (get-structure struct) var)))
+    (and (symbolp var) (structure-exports-p (find-structure struct) var)))
 
   ;; return t if ARG is a structure reference form
   (defun structure-ref-p (arg)
     (and (eq (car arg) 'structure-ref)
-	 (memq (locate-variable 'structure-ref) '(rep module-system))))
+	 (memq (locate-variable 'structure-ref) '(rep rep.module-system))))
 
   ;; return t if ARG refers to a variable
   (defun variable-ref-p (arg)
@@ -123,7 +126,7 @@
 	   (%structure-ref (fluid current-structure) var))
 	  (t
 	   (let* ((struct (locate-variable var))
-		  (module (and struct (get-structure struct))))
+		  (module (and struct (find-structure struct))))
 	     (and module
 		  (structure-bound-p module (variable-stem var))
 		  (%structure-ref module (variable-stem var)))))))
@@ -153,7 +156,7 @@
 	 (let
 	     ((struct (locate-variable var)))
 	   (and struct (binding-immutable-p (variable-stem var)
-					    (get-structure struct))))))
+					    (find-structure struct))))))
 
   (defun get-language-property (prop)
     (and (fluid current-language) (get (fluid current-language) prop)))
@@ -227,29 +230,34 @@
       body)))
 
   (defun note-require (feature)
-    (unless (memq feature (fluid open-modules))
-      (cond ((get-structure feature t)
+    (unless (or (memq feature (fluid open-modules))
+		(and (fluid current-structure)
+		     (eval `(featurep ',feature) (fluid current-structure))))
+      ;; XXX this is broken; there's no way to tell if we're trying
+      ;; XXX to load a module, or a bare file.
+      (cond ((intern-structure feature)
 	     (fluid-set open-modules (cons feature (fluid open-modules))))
 	    ((fluid current-structure)
-	     (unless (eval `(featurep ',feature) (fluid current-structure))
-	       (eval `(require ',feature) (fluid current-structure))
-	       (when (get-structure feature t)
-		 (fluid-set open-modules
-			    (cons feature (fluid open-modules))))))
+	     (eval `(require ',feature) (fluid current-structure))
+	     (when (get-structure feature)
+	       (fluid-set open-modules (cons feature (fluid open-modules)))))
 	    (t
 	     ;; XXX this doesn't work, no alternative..?
 	     (require feature)
-	     (when (get-structure feature t)
-	       (fluid-set open-modules (cons feature
-					     (fluid open-modules))))))))
+	     (when (get-structure feature)
+	       (fluid-set open-modules
+			  (cons feature (fluid open-modules))))))))
 
   ;; XXX enclose macro defs in the *root-structure*, this is different
   ;; to with interpreted code
   (defun note-macro-def (name body)
-    (fluid-set macro-env (cons (cons name
-				     (make-closure-in-structure
-				      body (get-structure *root-structure*)))
-			       (fluid macro-env))))
+    (fluid-set macro-env
+	       (cons (cons name
+			   (let ((closure (make-closure body)))
+			     (set-closure-structure
+			      closure (get-structure *root-structure*))
+			     closure))
+		     (fluid macro-env))))
 
   (defun call-with-module-declared (struct thunk)
     (let-fluids ((current-module (structure-name struct))
@@ -265,26 +273,18 @@
 	(thunk))))
 
   (defun find-language-module ()
-    ;; scan all opened modules, then scan any they import, ..
+    ;; scan all opened modules for a known language
     (catch 'out
-      (let ((tocheck (list (list (fluid current-module))
-			   (fluid open-modules))))
-	(while tocheck
-	  (mapc (lambda (struct)
-		  (if (get struct 'compiler-module)
-		      (progn
-			(intern-structure (get struct 'compiler-module))
-			(fluid-set current-language struct)
-			(throw 'out))
-		    (when (get-structure struct t)
-		      (setq tocheck (nconc tocheck
-					   (list (structure-imports
-						  (get-structure struct))))))))
-		(car tocheck))
-	  (setq tocheck (cdr tocheck)))
-	(compiler-warning
-	 "unknown language dialect for module" (fluid current-module)))))
-
+      (mapc (lambda (struct)
+	      (if (get struct 'compiler-module)
+		  (progn
+		    (or (intern-structure (get struct 'compiler-module))
+			(compiler-error "Can't load module"
+					(get struct 'compiler-module)))
+		    (fluid-set current-language struct)
+		    (throw 'out))))
+	    (fluid open-modules))
+      (fluid-set current-language 'no-lang)))
 
 
 ;;; declarations
@@ -313,7 +313,7 @@
 
   (defun compile-structure-def (name sig body &optional top-level)
     (let
-	((opened '(module-system))
+	((opened '(rep.module-system))
 	 (accessed '())
 	 (config (car body))
 	 header)
@@ -331,7 +331,7 @@
 		 (setq accessed (nconc (reverse (cdr clause)) accessed))
 		 (setq header (cons clause header)))))
 	    config)
-      (setq header (cons '(open module-system) (nreverse header)))
+      (setq header (cons '(open rep.module-system) (nreverse header)))
 
       (setq body (compile-module-body body name opened accessed))
 

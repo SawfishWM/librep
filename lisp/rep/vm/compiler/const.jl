@@ -1,4 +1,4 @@
-#| compiler-const.jl -- compiling constants
+#| const.jl -- compiling constants
 
    $Id$
 
@@ -21,15 +21,18 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure compiler-const (export make-constant-vector
-					 compile-constant
-					 add-constant
-					 constant-alist
-					 constant-index)
-  (open rep
-	compiler-lap
-	compiler-utils
-	bytecodes)
+(define-structure rep.vm.compiler.const
+
+    (export make-constant-vector
+	    compile-constant
+	    add-constant
+	    constant-alist
+	    constant-index)
+
+    (open rep
+	  rep.vm.compiler.lap
+	  rep.vm.compiler.utils
+	  rep.vm.bytecodes)
 
   (define constant-alist (make-fluid '()))	;list of (VALUE . INDEX)
   (define constant-index (make-fluid 0))	;next free constant id

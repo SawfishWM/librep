@@ -18,15 +18,20 @@
 ;;; along with Jade; see the file COPYING.  If not, write to
 ;;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-(define-structure lisp-doc (export describe-lambda-list
-				   describe-value
-				   doc-file-ref
-				   doc-file-set
-				   documentation
-				   document-var
-				   add-documentation
-				   add-documentation-params)
+(define-structure rep.lang.doc
+
+    (export describe-lambda-list
+	    describe-value
+	    doc-file-ref
+	    doc-file-set
+	    documentation
+	    document-var
+	    add-documentation
+	    add-documentation-params)
+
     (open rep)
+
+  (define-structure-alias lisp-doc rep.lang.doc)
 
   (defun describe-lambda-list (lambda-list)
     (let ((output (make-string-output-stream)))
@@ -80,7 +85,7 @@ NAME is non-nil, then it should be the symbol that is associated with VALUE."
 ;;; GDBM doc-file access
 
   (defun doc-file-ref (key)
-    (require 'gdbm)
+    (require 'rep.io.db.gdbm)
     (catch 'done
       (mapc (lambda (file)
 	      ;; turn off read-locking -- DOC files are normally
@@ -96,7 +101,7 @@ NAME is non-nil, then it should be the symbol that is associated with VALUE."
       nil))
 
   (defun doc-file-set (key value)
-    (require 'gdbm)
+    (require 'rep.io.db.gdbm)
     (let ((db (gdbm-open documentation-file 'append)))
       (when db
 	(unwind-protect

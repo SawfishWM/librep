@@ -46,15 +46,21 @@
 ;;   [<predicate-name>]
 ;;   (<field-tag> [<accessor-name> [<modifier-name>]])*)
 
-(define-structure records (export make-record-type
-				  record-constructor
-				  record-accessor
-				  record-modifier
-				  record-predicate
-				  record-printer
-				  define-record-type
-				  define-record-discloser)
-    (open rep)
+(define-structure rep.data.records
+
+    (export make-record-type
+	    record-constructor
+	    record-accessor
+	    record-modifier
+	    record-predicate
+	    record-printer
+	    define-record-type
+	    define-record-discloser)
+
+    (open rep
+	  rep.data.datums)
+
+  (define-structure-alias records rep.data.records)
 
 ;;; record type structures
 

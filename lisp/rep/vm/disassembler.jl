@@ -20,11 +20,14 @@
 ;; along with Jade; see the file COPYING.  If not, write to
 ;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-(define-structure disassembler
+(define-structure rep.vm.disassembler
 
     (export disassemble)
 
-    (open rep bytecodes)
+    (open rep
+	  rep.vm.bytecodes)
+
+  (define-structure-alias disassembler rep.vm.disassembler)
 
   ;; Lookup table of strings naming instructions
   (define disassembler-opcodes

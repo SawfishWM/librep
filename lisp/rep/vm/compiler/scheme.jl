@@ -1,4 +1,4 @@
-#| compiler-scheme.jl -- inliners for compiling Scheme code
+#| scheme.jl -- inliners for compiling Scheme code
 
    $Id$
 
@@ -23,19 +23,19 @@
 
 ;; XXX this is pretty much untested..
 
-(define-structure compiler-scheme (export)
+(define-structure rep.vm.compiler.scheme ()
 
-  (open rep
-	lisp-doc
-	compiler-modules
-	compiler-utils
-	compiler-basic
-	compiler-const
-	compiler-inline
-	compiler-lap
-	compiler-bindings
-	compiler-rep
-	bytecodes)
+    (open rep
+	  rep.lang.doc
+	  rep.vm.compiler.modules
+	  rep.vm.compiler.utils
+	  rep.vm.compiler.basic
+	  rep.vm.compiler.const
+	  rep.vm.compiler.inline
+	  rep.vm.compiler.lap
+	  rep.vm.compiler.bindings
+	  rep.vm.compiler.rep
+	  rep.vm.bytecodes)
 
   ;; List of side-effect-free functions. They should always return the
   ;; same value when given the same inputs. Used when constant folding.
@@ -146,9 +146,9 @@
 ;;; special compilers
 
   ;; module compilers from compiler-modules
-  (put 'structure 'rep-compile-fun compile-structure)
-  (put 'define-structure 'rep-compile-fun compile-define-structure)
-  (put 'structure-ref 'rep-compile-fun compile-structure-ref)
+  (put 'structure 'scheme-compile-fun compile-structure)
+  (put 'define-structure 'scheme-compile-fun compile-define-structure)
+  (put 'structure-ref 'scheme-compile-fun compile-structure-ref)
 
   (put 'quote 'scheme-compile-fun (get 'quote 'rep-compile-fun))
   (put '\#lambda 'scheme-compile-fun (get 'lambda 'rep-compile-fun))
@@ -178,7 +178,6 @@
   (put 'letrec 'scheme-compile-fun (get 'letrec 'rep-compile-fun))
 
   (put '\#cond 'scheme-compile-fun (get 'cond 'rep-compile-fun))
-  (put '\#case 'scheme-compile-fun (get 'case 'rep-compile-fun))
 
   (defun do-predicate (form)
     (let* ((rep-fun (or (get (car form) 'scheme-compile-rep) (car form)))

@@ -23,10 +23,13 @@
 
 ;; ugh! rep's macros really suck when used across module boundaries..
 
-(define-structure scheme-syntax (export quote lambda if set! cond case
-					and or let let* letrec begin do
-					delay define)
-    (open rep scheme-syntax-funs)
+(define-structure scheme.syntax
+
+    (export quote lambda if set! cond case
+	    and or let let* letrec begin do
+	    delay define)
+
+    (open rep scheme.syntax-funs)
 
 ;;; syntax
 

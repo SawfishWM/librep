@@ -1,4 +1,4 @@
-#| compiler-src.jl -- source code program transforms
+#| src.jl -- source code program transforms
 
    $Id$
 
@@ -21,16 +21,18 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure compiler-src (export coalesce-constants
-				       mash-constants
-				       source-code-transform)
+(define-structure rep.vm.compiler.src
 
-  (open rep
-	compiler-utils
-	compiler-modules
-	compiler-lap
-	compiler-bindings
-	bytecodes)
+    (export coalesce-constants
+	    mash-constants
+	    source-code-transform)
+
+    (open rep
+	  rep.vm.compiler.utils
+	  rep.vm.compiler.modules
+	  rep.vm.compiler.lap
+	  rep.vm.compiler.bindings
+	  rep.vm.bytecodes)
 
 ;;; Constant folding
 

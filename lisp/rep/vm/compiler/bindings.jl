@@ -1,4 +1,4 @@
-#| compiler-bindings.jl -- handling variable bindings
+#| bindings.jl -- handling variable bindings
 
    $Id$
 
@@ -21,25 +21,28 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure compiler-bindings (export spec-bindings lex-bindings
-					    lexically-pure
-					    spec-bound-p
-					    note-binding
-					    note-bindings
-					    binding-lexical-addr
-					    emit-binding
-					    emit-varset
-					    note-binding-modified
-					    binding-modified-p
-					    note-binding-captured
-					    binding-captured-p
-					    note-closure-made)
-  (open rep
-	compiler-utils
-	compiler-lap
-	compiler-basic
-	compiler-const
-	bytecodes)
+(define-structure rep.vm.compiler.bindings
+
+    (export spec-bindings lex-bindings
+	    lexically-pure
+	    spec-bound-p
+	    note-binding
+	    note-bindings
+	    binding-lexical-addr
+	    emit-binding
+	    emit-varset
+	    note-binding-modified
+	    binding-modified-p
+	    note-binding-captured
+	    binding-captured-p
+	    note-closure-made)
+
+    (open rep
+	  rep.vm.compiler.utils
+	  rep.vm.compiler.lap
+	  rep.vm.compiler.basic
+	  rep.vm.compiler.const
+	  rep.vm.bytecodes)
 
   (define spec-bindings (make-fluid '()))	;list of bound variables
   (define lex-bindings (make-fluid '()))	;alist of bound variables

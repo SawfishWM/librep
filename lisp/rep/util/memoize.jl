@@ -19,11 +19,16 @@
 ;; along with librep; see the file COPYING.  If not, write to
 ;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-(define-structure memoize (export memoize memoize-function)
+(define-structure rep.util.memoize
 
-    (open rep tables)
+    (export memoize memoize-function)
 
-  (defun memoize (f)
+    (open rep
+	  rep.data.tables)
+
+  (define-structure-alias memoize rep.util.memoize)
+
+  (define (memoize f)
     "Create and return a caching version of the function F. F may not be
 an autoload definition."
 
@@ -37,4 +42,4 @@ an autoload definition."
 	    (table-set cache args (apply f args))))))
 
   ;; backwards compatibility
-  (setq memoize-function memoize))
+  (define memoize-function memoize))

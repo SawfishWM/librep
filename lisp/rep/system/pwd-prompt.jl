@@ -1,22 +1,30 @@
-;;;; pwd-prompt.jl -- Prompt for a confidential answer (i.e. a password)
-;;;  Copyright (C) 1998 John Harper <john@dcs.warwick.ac.uk>
-;;;  $Id$
+#| pwd-prompt.jl -- Prompt for a confidential answer (i.e. a password)
 
-;;; This file is part of librep.
+   $Id$
 
-;;; librep is free software; you can redistribute it and/or modify it
-;;; under the terms of the GNU General Public License as published by
-;;; the Free Software Foundation; either version 2, or (at your option)
-;;; any later version.
+   Copyright (C) 1998, 2000 John Harper <john@dcs.warwick.ac.uk>
 
-;;; librep is distributed in the hope that it will be useful, but
-;;; WITHOUT ANY WARRANTY; without even the implied warranty of
-;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-;;; GNU General Public License for more details.
+   This file is part of librep.
 
-;;; You should have received a copy of the GNU General Public License
-;;; along with librep; see the file COPYING.  If not, write to
-;;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
+   librep is free software; you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2, or (at your option)
+   any later version.
+
+   librep is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with librep; see the file COPYING.  If not, write to
+   the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
+|#
+
+(declare (in-module rep.system))
+
+(open-structures '(rep.io.streams
+		   rep.regexp))
 
 ;;;###autoload
 (defun pwd-prompt (prompt)
@@ -27,12 +35,11 @@ contents of the prompt will be masked out whilst being entered."
 	(progn
 	  (write standard-error prompt)
 	  (unless (string-match "\s$" prompt)
-	    (write standard-error ? ))
+	    (write standard-error #\space ))
 	  (flush-file standard-error)
-	  (let
-	      ((string (read-line standard-input)))
+	  (let ((string (read-line standard-input)))
 	    (when (string-match "\n$" string)
 	      (setq string (substring string 0 (match-start))))
-	    (write standard-error ?\n)
+	    (write standard-error #\newline)
 	    string))
       (system "stty echo"))))

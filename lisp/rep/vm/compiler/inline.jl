@@ -1,4 +1,4 @@
-#| compiler-inline.jl -- function inlining
+#| inline.jl -- function inlining
 
    $Id$
 
@@ -21,15 +21,18 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure compiler-inline (export compile-lambda-inline
-					  compile-tail-call)
-  (open rep
-	compiler-utils
-	compiler-basic
-	compiler-modules
-	compiler-lap
-	compiler-bindings
-	bytecodes)
+(define-structure rep.vm.compiler.inline
+
+    (export compile-lambda-inline
+	    compile-tail-call)
+
+    (open rep
+	  rep.vm.compiler.utils
+	  rep.vm.compiler.basic
+	  rep.vm.compiler.modules
+	  rep.vm.compiler.lap
+	  rep.vm.compiler.bindings
+	  rep.vm.bytecodes)
 
   (define inline-depth (make-fluid 0))		;depth of lambda-inlining
   (defconst max-inline-depth 8)

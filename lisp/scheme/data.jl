@@ -1,4 +1,4 @@
-#| scheme-data.jl -- data type functions
+#| data.jl -- data type functions
 
    $Id$
 
@@ -21,7 +21,8 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure scheme-data
+(define-structure scheme.data
+
     (export not eqv? eq? equal? boolean?
 
 	    pair? cons car cdr set-car! set-cdr!
@@ -67,8 +68,8 @@
 	    vector-ref vector-set! vector->list
 	    list->vector vector-fill!)
 
-  ((open rep scheme-utils)
-   (access rep))
+    ((open rep scheme.utils)
+     (access rep))
 
 ;;; equivalence
 

@@ -19,7 +19,7 @@
 ;; along with librep; see the file COPYING.  If not, write to
 ;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-(define-structure mutex
+(define-structure rep.threads.mutex
 
     (export make-mutex
 	    mutexp
@@ -27,7 +27,11 @@
 	    maybe-obtain-mutex
 	    release-mutex)
 
-    (open rep)
+    (open rep
+	  rep.threads
+	  rep.threads.utils)
+
+  (define-structure-alias mutex rep.threads.mutex)
 
   ;; Each mutex is (mutex [OWNING-THREAD [BLOCKED-THREADS...]])
 
@@ -42,7 +46,7 @@
   (defun obtain-mutex (mtx)
     "Obtain the mutex MTX for the current thread. Will suspend the current
 thread until the mutex is available."
-    (with-threads-blocked
+    (without-interrupts
      (if (null (cdr mtx))
 	 (rplacd mtx (list (current-thread)))
        (rplacd mtx (nconc (cdr mtx) (list (current-thread))))
@@ -51,7 +55,7 @@ thread until the mutex is available."
   (defun maybe-obtain-mutex (mtx)
     "Attempt to obtain mutex MTX for the current thread without blocking.
 Returns `t' if able to obtain the mutex, `nil' otherwise."
-    (with-threads-blocked
+    (without-interrupts
      (if (cdr mtx)
 	 nil
        (obtain-mutex mtx)
@@ -62,7 +66,7 @@ Returns `t' if able to obtain the mutex, `nil' otherwise."
 by the current thread). Returns `t' if the mutex has no new owner."
     (or (eq (cadr mtx) (current-thread))
 	(error "Not owner of mutex: %S" mtx))
-    (with-threads-blocked
+    (without-interrupts
      (rplacd mtx (cddr mtx))
      (if (cdr mtx)
 	 (progn

@@ -21,11 +21,21 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure queues (export make-queue enqueue dequeue
-				 queue-empty-p queuep
-				 queue->list queue-length
-				 delete-from-queue)
-    (open rep)
+(define-structure rep.data.queues
+
+    (export make-queue
+	    enqueue
+	    dequeue
+	    queue-empty-p
+	    queuep
+	    queue->list
+	    queue-length
+	    delete-from-queue)
+
+    (open rep
+	  rep.data.datums)
+
+  (define-structure-alias queues rep.data.queues)
 
   (define type-id (cons))
 
@@ -59,4 +69,3 @@
 
   (define (delete-from-queue q x)
     (datum-set q type-id (delq x (datum-ref q type-id)))))
-	

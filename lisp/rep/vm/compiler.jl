@@ -21,41 +21,51 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure compiler (export compile-file
-				   compile-directory
-				   compile-lisp-lib
-				   compile-lib-batch
-				   compile-batch
-				   compile-compiler
-				   compile-function
-				   compile-form
-				   compile-module)
-  (open rep
-	compiler-basic
-	compiler-bindings
-	compiler-modules
-	bytecodes)
+(define-structure rep.vm.compiler
 
-  (define compiler-sources '(compiler
-			     compiler-asm
-			     compiler-basic
-			     compiler-bindings
-			     compiler-const
-			     compiler-inline
-			     compiler-lap
-			     compiler-modules
-			     compiler-opt
-			     compiler-rep
-			     compiler-src
-			     compiler-utils
-			     sort))
+    (export compile-file
+	    compile-directory
+	    compile-lisp-lib
+	    compile-lib-batch
+	    compile-batch
+	    compile-compiler
+	    compile-function
+	    compile-form
+	    compile-module)
+
+    (open rep
+	  rep.structures
+	  rep.vm.compiler.basic
+	  rep.vm.compiler.bindings
+	  rep.vm.compiler.modules
+	  rep.vm.bytecodes)
+
+  (define-structure-alias compiler rep.vm.compiler)
+
+  (define compiler-sources '(rep.vm.compiler
+			     rep.vm.compiler.asm
+			     rep.vm.compiler.basic
+			     rep.vm.compiler.bindings
+			     rep.vm.compiler.const
+			     rep.vm.compiler.inline
+			     rep.vm.compiler.lap
+			     rep.vm.compiler.modules
+			     rep.vm.compiler.opt
+			     rep.vm.compiler.rep
+			     rep.vm.compiler.src
+			     rep.vm.compiler.utils
+			     rep.data.sort))
 
   ;; regexp matching library files not to compile
-  (define lib-exclude-re "\\bautoload\\.jl$")
+  (define lib-exclude-re "\\bautoload\\.jl$|^CVS$")
 
   ;; map languages to compiler modules
-  (put 'rep 'compiler-module 'compiler-rep)
-  (put 'scheme 'compiler-module 'compiler-scheme)
+  (put 'rep 'compiler-module 'rep.vm.compiler.rep)
+  (put 'scheme 'compiler-module 'rep.vm.compiler.scheme)
+  (put 'no-lang 'compiler-module 'rep.vm.compiler.no-lang)
+
+  ;; since we default to rep langauge..
+  (intern-structure 'rep.vm.compiler.rep)
 
 
 #| Notes:
@@ -284,16 +294,16 @@ DIR-NAME are recursed into.
 EXCLUDE-RE may be a regexp matching files which shouldn't be compiled."
   (interactive "DDirectory of Lisp files to compile:\nP")
   (mapc (lambda (file)
-	  (cond ((and exclude-re (string-match exclude-re file)))
-		((eq (aref file 0) #\.))
-		((file-directory-p file)
-		 (compile-directory file force-p exclude-re))
-		((string-match "\\.jl$" file)
-		 (let* ((fullname (expand-file-name file dir-name))
-			(cfullname (concat fullname ?c)))
-		   (when (or (not (file-exists-p cfullname))
-			     (file-newer-than-file-p fullname cfullname))
-		     (compile-file fullname))))))
+	  (unless (or (and exclude-re (string-match exclude-re file))
+		      (eq (aref file 0) #\.))
+	    (let ((abs-file (expand-file-name file dir-name)))
+	      (cond ((file-directory-p abs-file)
+		     (compile-directory abs-file force-p exclude-re))
+		    ((string-match "\\.jl$" file)
+		     (let* ((c-name (concat abs-file ?c)))
+		   (when (or (not (file-exists-p c-name))
+			     (file-newer-than-file-p abs-file c-name))
+		     (compile-file abs-file))))))))
 	(directory-files dir-name))
   t)
 
@@ -333,8 +343,9 @@ that files which shouldn't be compiled aren't."
       ((*compiler-write-docs* t))
     (mapc (lambda (package)
 	    (let
-		((file (expand-file-name (concat (symbol-name package) ".jl")
-					 lisp-lib-directory)))
+		((file (expand-file-name
+			(concat (structure-file package) ".jl")
+			lisp-lib-directory)))
 	      (when (or (not (file-exists-p (concat file ?c)))
 			(file-newer-than-file-p file (concat file ?c)))
 		(compile-file file))))

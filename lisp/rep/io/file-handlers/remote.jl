@@ -21,9 +21,10 @@
     the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure remote (export)
+(define-structure rep.io.file-handlers.remote ()
 
-  (open rep remote-utils)
+    (open rep
+	  rep.io.file-handlers.remote.utils)
 
 ;;; Configuration
 
@@ -106,6 +107,6 @@ accessed on specific hosts.")
 
 ;;;###autoload (setq file-handler-alist (cons '("^/(([a-zA-Z0-9._-]+)@)?([a-zA-Z0-9._-]+):" . remote-file-handler) file-handler-alist))
 
-;;;###autoload (autoload-file-handler 'remote-file-handler 'remote)
+;;;###autoload (autoload-file-handler 'remote-file-handler 'rep.io.file-handlers.remote)
 
 )

@@ -1,4 +1,4 @@
-#| compiler-utils.jl -- 
+#| utils.jl -- 
 
    $Id$
 
@@ -21,35 +21,38 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure compiler-utils (export current-stack max-stack
-					 current-b-stack max-b-stack
-					 const-env inline-env
-					 defuns defvars defines
-					 output-stream
-					 compiler-message
-					 compiler-error
-					 compiler-warning
-					 remember-function
-					 remember-variable
-					 remember-lexical-variable
-					 test-variable-ref
-					 test-variable-bind
-					 test-function-call
-					 increment-stack
-					 decrement-stack
-					 increment-b-stack
-					 decrement-b-stack
-					 get-lambda-vars
-					 compiler-constant-p
-					 compiler-constant-value
-					 constant-function-p
-					 constant-function-value
-					 note-declaration)
-  (open rep
-	compiler-modules
-	compiler-bindings
-	compiler-basic
-	bytecodes)
+(define-structure rep.vm.compiler.utils
+
+    (export current-stack max-stack
+	    current-b-stack max-b-stack
+	    const-env inline-env
+	    defuns defvars defines
+	    output-stream
+	    compiler-message
+	    compiler-error
+	    compiler-warning
+	    remember-function
+	    remember-variable
+	    remember-lexical-variable
+	    test-variable-ref
+	    test-variable-bind
+	    test-function-call
+	    increment-stack
+	    decrement-stack
+	    increment-b-stack
+	    decrement-b-stack
+	    get-lambda-vars
+	    compiler-constant-p
+	    compiler-constant-value
+	    constant-function-p
+	    constant-function-value
+	    note-declaration)
+
+    (open rep
+	  rep.vm.compiler.modules
+	  rep.vm.compiler.bindings
+	  rep.vm.compiler.basic
+	  rep.vm.bytecodes)
 
   (define current-stack (make-fluid 0))		;current stack requirement
   (define max-stack (make-fluid 0))		;highest possible stack

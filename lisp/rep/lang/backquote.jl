@@ -38,9 +38,11 @@
 
 ;;; Code:
 
-(declare (in-module rep))
+(define-structure rep.lang.backquote
 
-(provide 'backquote)
+    (export backquote)
+
+    (open rep)
 
 (defmacro backquote (arg)
   "Argument STRUCTURE describes a template to build.
@@ -169,5 +171,7 @@ Vectors work just like lists.  Nested backquotes are permitted."
 		  (append heads (list tail))))
 	tail))
      (t (cons 'list heads)))))
+
+)
 
 ;; backquote.el ends here

@@ -1,4 +1,4 @@
-#| compiler-lap.jl -- intermediate code management
+#| lap.jl -- intermediate code management
 
    $Id$
 
@@ -21,16 +21,19 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure compiler-lap (export intermediate-code
-				       emit-insn
-				       make-label
-				       push-label-addr
-				       emit-jmp-insn
-				       fix-label
-				       get-start-label)
-  (open rep
-	compiler-utils
-	bytecodes)
+(define-structure rep.vm.compiler.lap
+
+    (export intermediate-code
+	    emit-insn
+	    make-label
+	    push-label-addr
+	    emit-jmp-insn
+	    fix-label
+	    get-start-label)
+
+    (open rep
+	  rep.vm.compiler.utils
+	  rep.vm.bytecodes)
 
   ;; list of (INSN . [ARG]), (TAG . REFS)
   (define intermediate-code (make-fluid '()))

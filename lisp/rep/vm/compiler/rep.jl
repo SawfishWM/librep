@@ -1,4 +1,4 @@
-#| compiler-rep.jl -- inliners for many rep language features
+#| rep.jl -- inliners for many rep language features
 
    $Id$
 
@@ -21,18 +21,18 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure compiler-rep (export)
+(define-structure rep.vm.compiler.rep ()
 
-  (open rep
-	lisp-doc
-	compiler-modules
-	compiler-utils
-	compiler-basic
-	compiler-const
-	compiler-inline
-	compiler-lap
-	compiler-bindings
-	bytecodes)
+    (open rep
+	  rep.lang.doc
+	  rep.vm.compiler.modules
+	  rep.vm.compiler.utils
+	  rep.vm.compiler.basic
+	  rep.vm.compiler.const
+	  rep.vm.compiler.inline
+	  rep.vm.compiler.lap
+	  rep.vm.compiler.bindings
+	  rep.vm.bytecodes)
 
   ;; List of side-effect-free functions. They should always return the
   ;; same value when given the same inputs. Used when constant folding.

@@ -1,4 +1,4 @@
-#| compiler-asm.jl -- assemble intermediate form to bytecodes
+#| asm.jl -- assemble intermediate form to bytecodes
 
    $Id$
 
@@ -21,11 +21,13 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure compiler-asm (export assemble-bytecodes)
+(define-structure rep.vm.compiler.asm
 
-  (open rep
-	compiler-utils
-	bytecodes)
+    (export assemble-bytecodes)
+
+    (open rep
+	  rep.vm.compiler.utils
+	  rep.vm.bytecodes)
 
   (define (assemble-bytecodes lap-code)
     (let

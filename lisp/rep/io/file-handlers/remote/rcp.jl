@@ -18,9 +18,10 @@
 ;;; along with Jade; see the file COPYING.  If not, write to
 ;;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-(define-structure remote-rcp (export)
+(define-structure rep.io.file-handlers.remote.rcp ()
 
-  (open rep remote-utils)
+    (open rep
+	  rep.io.file-handlers.remote.utils)
 
   ;; Notes:
 
@@ -100,6 +101,6 @@
 
 ;;;###autoload (put 'rcp 'remote-backend 'remote-rcp-handler)
 
-;;;###autoload (autoload-file-handler 'remote-rcp-handler 'remote-rcp)
+;;;###autoload (autoload-file-handler 'remote-rcp-handler 'rep.io.file-handelrs.remote.rcp)
 
 (define-file-handler 'remote-rcp-handler remote-rcp-handler))

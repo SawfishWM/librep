@@ -18,12 +18,16 @@
 ;;; along with Jade; see the file COPYING.  If not, write to
 ;;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-(provide 'mailaddr)
+(define-structure rep.mail.addr ()
 
-(defvar mail-domain-name (if (string-match "^([^.]+\\.)[^.]+" (system-name))
-			     (substring (system-name) (match-end 1))
-			   (system-name))
-  "Mail domainname of the local site.")
+    (open rep)
 
-(defvar user-mail-address (concat (user-login-name) ?\@ mail-domain-name)
-  "Address to put in From: headers of outgoing mail.")
+  (define-structure-alias mailaddr rep.mail.addr)
+
+  (defvar mail-domain-name (if (string-match "^([^.]+\\.)[^.]+" (system-name))
+			       (substring (system-name) (match-end 1))
+			     (system-name))
+    "Mail domainname of the local site.")
+
+  (defvar user-mail-address (concat (user-login-name) ?\@ mail-domain-name)
+    "Address to put in From: headers of outgoing mail."))

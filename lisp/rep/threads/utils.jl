@@ -19,13 +19,16 @@
 ;; along with librep; see the file COPYING.  If not, write to
 ;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-(declare (in-module rep))
+(define-structure rep.threads.utils
 
-;;;###autoload
-(defmacro with-threads-blocked (&rest forms)
-  "Evaluate `(progn FORMS)' with thread preemption disabled."
-  `(unwind-protect
-       (progn
-	 (thread-forbid)
-	 ,@forms)
-     (thread-permit)))
+    (export without-interrupts)
+
+    (open rep)
+
+  (defmacro without-interrupts forms
+    "Evaluate `(progn FORMS)' with thread preemption disabled."
+    `(unwind-protect
+	 (progn
+	   (thread-forbid)
+	   ,@forms)
+       (thread-permit))))

@@ -21,15 +21,18 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure bytecode-defs (export bytecode-major
-					bytecode-minor
-					bytecode
-					bytecode-alist
-					byte-max-1-byte-arg
-					byte-max-2-byte-arg
-					byte-max-3-byte-arg
-					byte-insn-stack-delta)
-  (open rep)
+(define-structure rep.vm.bytecode-defs
+
+    (export bytecode-major
+	    bytecode-minor
+	    bytecode
+	    bytecode-alist
+	    byte-max-1-byte-arg
+	    byte-max-2-byte-arg
+	    byte-max-3-byte-arg
+	    byte-insn-stack-delta)
+
+    (open rep)
 
   ;; Instruction set version
   (defconst bytecode-major 10)

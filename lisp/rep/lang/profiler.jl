@@ -21,13 +21,15 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure profiler (export call-in-profiler
-				   print-profile
-				   profile-interval)
+(define-structure rep.lang.profiler
+
+    (export call-in-profiler
+	    print-profile
+	    profile-interval)
 
     (open rep
-	  record-profile
-	  symbol-table)
+	  rep.lang.record-profile
+	  rep.data.symbol-table)
 
   (define (call-in-profiler thunk)
     (start-profiler)

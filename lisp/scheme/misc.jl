@@ -1,4 +1,4 @@
-#| scheme-misc.jl -- miscellaneous scheme support
+#| misc.jl -- miscellaneous scheme support
 
    $Id$
 
@@ -21,7 +21,7 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure scheme-misc
+(define-structure scheme.misc
 
     (export procedure? apply map for-each force
 	    \#make-promise call-with-current-continuation
@@ -40,8 +40,9 @@
 	    write display newline write-char
 	    load %load-suffixes)
 
-  ((open rep scheme-utils)
-   (access rep))
+  (open rep
+	scheme.utils
+	rep.data.datums)
 
 ;;; control features
 
@@ -160,4 +161,4 @@
 
 ;;; system interface
 
-  (setq %load-suffixes '(".scm" ".scmc")))
+  (define %load-suffixes '(".scm" . ".scmc")))

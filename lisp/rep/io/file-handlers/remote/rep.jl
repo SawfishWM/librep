@@ -18,11 +18,17 @@
 ;;; along with librep; see the file COPYING.  If not, write to
 ;;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-(define-structure remote-rep (export remote-rep-add-passwd
-				     remote-rep-close-host
-				     remote-rep-close-all
-				     remote-rep-empty-cache)
-  (open rep remote-utils)
+(define-structure rep.io.file-handlers.remote.rep
+
+    (export remote-rep-add-passwd
+	    remote-rep-close-host
+	    remote-rep-close-all
+	    remote-rep-empty-cache)
+
+    (open rep
+	  rep.io.file-handlers.remote.utils)
+
+  (define-structure-alias remote-rep rep.io.file-handlers.remote.rep)
 
 
 ;; Configuration
@@ -787,6 +793,6 @@
 
 ;;;###autoload (put 'rep 'remote-backend 'remote-rep-handler)
 
-;;;###autoload (autoload-file-handler 'remote-rep-handler 'remote-rep)
+;;;###autoload (autoload-file-handler 'remote-rep-handler 'rep.io.file-handlers.remote.rep)
 
 (define-file-handler 'remote-rep-handler remote-rep-handler))

@@ -31,12 +31,18 @@
 ;; to general code, hence these wrappers for making anonymous
 ;; structures
 
-(define-structure symbol-table (export make-symbol-table
-				       symbol-table-ref
-				       symbol-table-set
-				       symbol-table-boundp
-				       symbol-table-walk)
-    (open rep structure-internals)
+(define-structure rep.data.symbol-table
+
+    (export make-symbol-table
+	    symbol-table-ref
+	    symbol-table-set
+	    symbol-table-boundp
+	    symbol-table-walk)
+
+    (open rep
+	  rep.structures)
+
+  (define-structure-alias symbol-table rep.data.symbol-table)
 
   (define (make-symbol-table)
     (make-structure))
