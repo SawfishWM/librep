@@ -40,7 +40,7 @@
      "nth" "nthcdr" "aset" "aref"
      "length" "eval" "add" "neg" "sub"	; 0x50
      "mul" "div" "rem" "lnot" "not" "lor" "land"
-     "equal" "eq" "structure-ref" nil
+     "equal" "eq" "structure-ref" "scm-test"
      "gt" "ge" "lt" "le"		; 0x60
      "inc" "dec" "ash" "zerop" "null" "atom" "consp" "listp"
      "numberp" "stringp" "vectorp" "catch"
@@ -62,8 +62,8 @@
      "bindobj" "forbid" "permit" "exp"
      "log" "sin" "cos" "tan"		; 0xb0
      "sqrt" "expt" "swap2" "mod"
-     "make-closure" nil "closurep" "bindenv"
-     nil nil nil nil nil nil nil nil	; 0xc0
+     "make-closure" "unbindall-0" "closurep" "bindenv"
+     "pop-all" nil nil nil nil nil nil nil	; 0xc0
      nil nil nil nil nil nil nil nil
      nil nil nil nil nil nil nil nil	; 0xd0
      nil nil nil nil nil nil nil nil
