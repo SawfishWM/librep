@@ -21,6 +21,8 @@
 
 (provide 'dump)
 
+;; XXX don't use this, it doesn't grok the module system changes
+
 ;; Commentary:
 
 ;; Lisp modules generally consist almost wholly of constant

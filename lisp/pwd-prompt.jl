@@ -18,8 +18,6 @@
 ;;; along with librep; see the file COPYING.  If not, write to
 ;;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-(provide 'pwd-prompt)
-
 ;;;###autoload
 (defun pwd-prompt (prompt)
   "Prompt for a confidential string, with PROMPT as the title string. The
