@@ -1845,7 +1845,7 @@ Note that output includes notification of process termination.
     {
 	result = rep_accept_input((rep_INTP(secs) ? rep_INT(secs) * 1000 : 0)
 				  + (rep_INTP(msecs) ? rep_INT(msecs) : 0),
-				  read_from_process);
+				  (void *)&read_from_process);
     }
     if(got_sigchld || notify_chain)
     {

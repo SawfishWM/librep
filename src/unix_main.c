@@ -440,7 +440,7 @@ handle_input(fd_set *inputs, int ready, void *callback)
 	    if(FD_ISSET(i, inputs))
 	    {
 		ready--;
-		if(!callback || input_actions[i] == callback)
+		if(!callback || ((void *) input_actions[i]) == callback)
 		{
 		    if(FD_ISSET(i, &input_pending))
 		    {
@@ -538,7 +538,7 @@ rep_accept_input(u_long timeout_msecs, void *callback)
     FD_ZERO(&copy);
     for(i = 0; i < FD_SETSIZE; i++)
     {
-	if(FD_ISSET(i, &input_fdset) && input_actions[i] == callback)
+	if(FD_ISSET(i, &input_fdset) && ((void *)input_actions[i]) == callback)
 	    FD_SET(i, &copy);
     }
     ready = wait_for_input(&copy, timeout_msecs);

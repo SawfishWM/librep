@@ -359,7 +359,8 @@ typedef struct rep_string_struct {
 #define DEFSTRING(v, s) 				\
     rep_ALIGN_CELL(static rep_string v)			\
 	= { ((sizeof(s) - 1) << rep_STRING_LEN_SHIFT)	\
-	    | rep_CELL_STATIC_BIT | rep_String, 0, s }
+	    | rep_CELL_STATIC_BIT | rep_String, 0,	\
+	    (u_char *)s }
 
 #define rep_STR(v)	(rep_STRING(v)->data)
 
@@ -525,7 +526,7 @@ typedef struct {
 
 typedef struct {
     repv car;
-    void *fun;
+    repv (*fun)();
     repv name;
     repv int_spec;			/* put this in plist? (jade only) */
 } rep_xsubr;

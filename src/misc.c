@@ -92,7 +92,7 @@ stpcpy(register char *dst, register const char *src)
 u_char *
 rep_str_dupn(const u_char *old, int len)
 {
-    char *new = rep_alloc(len + 1);
+    u_char *new = rep_alloc(len + 1);
     if(new)
     {
 	memcpy(new, old, len);

@@ -547,7 +547,7 @@ rep_readl(repv strm, register int *c_p)
 		continue;
 	    }
 
-	case '\(':
+	case '(':
 	    return read_list(strm, c_p);
 
 	case '\'': case '`': 
@@ -1508,7 +1508,7 @@ rep_lisp_prin(repv strm, repv obj)
     case rep_Vector:
 	{
 	    int len = rep_VECT_LEN(obj);
-	    rep_stream_putc(strm, '\[');
+	    rep_stream_putc(strm, '[');
 	    for(j = 0; j < len; j++)
 	    {
 		if(rep_VECT(obj)->array[j])

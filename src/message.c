@@ -18,6 +18,8 @@
    along with Jade; see the file COPYING.	If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
+#define _GNU_SOURCE
+
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
@@ -72,6 +74,7 @@ default_message (enum rep_message fn, ...)
     case rep_reset_message: 		/* (void) */
     case rep_restore_message:		/* (u_char *msg, u_long len) */
     case rep_redisplay_message:		/* (void) */
+	break;
     }
 }
 

@@ -1,6 +1,8 @@
 /* rep.c -- read-eval-print front end
    $Id$ */
 
+#define _GNU_SOURCE
+
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif

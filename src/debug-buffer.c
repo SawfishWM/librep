@@ -159,7 +159,10 @@ rep_db_print_backtrace(void *_db, char *fun)
 	    char *name;
 	    void *addr;
 	    if(rep_find_c_symbol(stack[i], &name, &addr))
-		rep_db_printf(_db, "\t<%s+%d>\n", name, stack[i] - addr);
+	    {
+		rep_db_printf(_db, "\t<%s+%d>\n", name,
+			      ((char *)stack[i]) - ((char *)addr));
+	    }
 	    else
 		rep_db_printf(_db, "\t0x%08lx\n", stack[i]);
 	}
