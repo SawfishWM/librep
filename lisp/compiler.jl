@@ -325,7 +325,8 @@ is one of these that form is compiled.")
 			(when (setq form (read src-file))
 			  (cond
 			   ((memq (car form) '(defun defmacro defvar
-						defconst defsubst require))
+						defconst defsubst require
+						eval-when-compile))
 			    (setq form (comp-compile-top-form form)))
 			   ((memq (car form) comp-top-level-compiled)
 			    ;; Compile this form
@@ -467,6 +468,8 @@ that files which shouldn't be compiled aren't."
      ((eq fun 'require)
       (eval form)
       form)
+     ((eq fun 'eval-when-compile)
+      (eval (nth 1 form)))
      (t
       (comp-error "Shouldn't have got here!")))))
 
@@ -757,8 +760,12 @@ that files which shouldn't be compiled aren't."
 
 
 ;; Source code transformations. These are basically macros that are only
-;; used at compile-time; currently there aren't any..
-  
+;; used at compile-time.
+
+(put 'eval-when-compile 'comp-transform 'comp-trans-eval-when-compile)
+(defun comp-trans-eval-when-compile (form)
+  (eval (nth 1 form)))
+
 
 ;; Functions which compile non-standard functions (ie special-forms)
 

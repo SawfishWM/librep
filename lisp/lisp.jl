@@ -92,7 +92,8 @@ This is used by the `featurep', `provide' and `require' functions.")
   "If FEATURE (a symbol) has not already been loaded, load it. The file
 loaded is either FILE (if given), or the print name of FEATURE."
   (interactive "SFeature to load:")
-  (unless (member feature features)
+  (if (member feature features)
+      t
     (load (unless file (symbol-name feature)))))
 
 (defun provide (feature)
@@ -167,6 +168,11 @@ match the FILE argument to `load'."
 
 
 ;; Miscellanea
+
+(defmacro eval-when-compile (form)
+  "FORM is evaluated at compile-time *only*. The evaluated value is inserted
+into the compiled program. When interpreted, nil is returned."
+  nil)
 
 (defmacro prin1-to-string (arg)
   "Return a string representing ARG."
