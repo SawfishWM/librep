@@ -1,3 +1,10 @@
+1998-09-06  John Harper  <john@dcs.warwick.ac.uk>
+
+	* x11_main.c (x11_open_display): call sys_recolor_cursor
+
+	* debug-buffer.c (db_print_frame): renamed as
+	`db_print_backtrace', changed a few things
+
 1998-09-04  John Harper  <john@dcs.warwick.ac.uk>
 
 	* faces.c (mouse-cursor-face): new variable
