@@ -1592,13 +1592,8 @@ research:
 	if(!no_suffix_p)
 	{
 	    repv tem;
-	    int i;
-	    static char *suffixes[3] = { ".jl", ".jlc", ".jld" };
-#ifdef rep_DUMPED
-	    i = 2;
-#else
-	    i = 1;
-#endif
+	    static char *suffixes[3] = { ".jl", ".jlc" };
+	    int i = 1;
 #ifdef HAVE_DYNAMIC_LOADING
 	    if(trying_dl)
 		i = 0;
@@ -2676,6 +2671,64 @@ of whatever was changed. Return the value of the last FORM evaluated.
     return res;
 }
 
+DEFUN("featurep", Ffeaturep, Sfeaturep, (repv feature), rep_Subr1) /*
+::doc:Sfeaturep::
+featurep FEATURE
+
+Return non-nil if feature FEATURE has already been loaded.
+::end:: */
+{
+    repv value;
+    rep_DECLARE1 (feature, rep_SYMBOLP);
+    value = Fsymbol_value (Qfeatures, Qnil);
+    if (value != rep_NULL)
+	return Fmemq (feature, value);
+    else
+	return rep_NULL;
+}
+
+DEFUN("provide", Fprovide, Sprovide, (repv feature), rep_Subr1) /*
+::doc:Sprovide::
+provide FEATURE
+
+Show that the feature FEATURE (a symbol) has been loaded.
+::end:: */
+{
+    repv value;
+    rep_DECLARE1 (feature, rep_SYMBOLP);
+    value = Fsymbol_value (Qfeatures, Qnil);
+    if (value != rep_NULL)
+    {
+	repv tem = Fmemq (feature, value);
+	if (tem && tem == Qnil)
+	    Fset (Qfeatures, Fcons (feature, value));
+	return feature;
+    }
+    else
+	return rep_NULL;
+}
+
+DEFUN_INT("require", Frequire, Srequire, (repv feature, repv file), rep_Subr2,
+	  "SFeature to load:") /*
+::doc:Srequire::
+require FEATURE [FILE]
+
+If FEATURE (a symbol) has not already been loaded, load it. The file
+loaded is either FILE (if given), or the print name of FEATURE.
+::end:: */
+{
+    repv tem;
+    rep_DECLARE1 (feature, rep_SYMBOLP);
+    tem = Ffeaturep (feature);
+    if (tem && tem == Qnil)
+    {
+	if (!rep_STRINGP(file))
+	    file = rep_SYM(feature)->name;
+	return Fload (file, Qnil, Qnil, Qnil, Qnil);
+    }
+    return feature;
+}
+
 void
 rep_lispcmds_init(void)
 {
@@ -2782,10 +2835,14 @@ rep_lispcmds_init(void)
     rep_ADD_SUBR(Sthrow);
     rep_ADD_SUBR(Sunwind_protect);
     rep_ADD_SUBR(Swith_object);
+    rep_ADD_SUBR(Sfeaturep);
+    rep_ADD_SUBR(Sprovide);
+    rep_ADD_SUBR_INT(Srequire);
 
     rep_INTERN(provide);
     rep_INTERN_SPECIAL(features);
-    Fset (Qfeatures, Qnil);
+    if (Fboundp (Qfeatures) == Qnil)
+	Fset (Qfeatures, Qnil);
 
     rep_INTERN_SPECIAL(rep_directory);
     if(getenv("REPDIR") != 0)
