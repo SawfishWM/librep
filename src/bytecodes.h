@@ -22,7 +22,7 @@
 #define BYTECODES_H
 
 #define BYTECODE_MAJOR_VERSION 2
-#define BYTECODE_MINOR_VERSION 1
+#define BYTECODE_MINOR_VERSION 2
 
 /* Number of bits encoded in each extra opcode forming the argument. */
 #define ARG_SHIFT    8
@@ -97,7 +97,7 @@
 #define OP_SUB 0x58			/* push (- pop[1] pop[2]) */
 #define OP_MUL 0x59			/* push (* pop[1] pop[2]) */
 #define OP_DIV 0x5a			/* push (/ pop[1] pop[2]) */
-#define OP_MOD 0x5b			/* push (% pop[1] pop[2]) */
+#define OP_REM 0x5b			/* push (% pop[1] pop[2]) */
 #define OP_LNOT 0x5c			/* push (lognot pop[1]) */
 #define OP_NOT 0x5d			/* push (not pop[1]) */
 #define OP_LOR 0x5e			/* push (logior pop[1] pop[2]) */
@@ -174,6 +174,9 @@
 #define OP_CURRENT_VIEW 0xb9		/* call-1 current-view */
 #define OP_SWAP2 0xba			/* stk[0] = stk[1], stk[1] = stk[2],
 					   stk[2] = stk[0]. */
+
+/* new 21-11-97 */
+#define OP_MOD 0xbb			/* push (mod pop[1] pop[2]) */
 
 
 #define OP_LAST_BEFORE_JMPS 0xfa

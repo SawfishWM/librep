@@ -550,18 +550,8 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		    signal_arg_error(tmp, 1);
 		goto error;
 
-	    case OP_MOD:
-		tmp = RET_POP;
-		if(NUMBERP(tmp) && NUMBERP(TOP))
-		{
-		    TOP = make_number(VNUM(TOP) % VNUM(tmp));
-		    break;
-		}
-		if(NUMBERP(tmp))
-		    signal_arg_error(TOP, 2);
-		else
-		    signal_arg_error(tmp, 1);
-		goto error;
+	    case OP_REM:
+		CALL_2(cmd_remainder);
 
 	    case OP_LNOT:
 		if(NUMBERP(TOP))
@@ -973,6 +963,9 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		stackp[-1] = stackp[-2];
 		stackp[-2] = tmp;
 		break;
+
+	    case OP_MOD:
+		CALL_2(cmd_mod);
 
 	    case OP_JN:
 		if(NILP(RET_POP))
