@@ -2634,9 +2634,8 @@ rep_lispcmds_init(void)
 	  Fcons (Fsymbol_value (Qdocumentation_file, Qt), Qnil));
 
     rep_INTERN_SPECIAL(load_path);
-    Fset (Qload_path, rep_list_3(Fsymbol_value (Qlisp_lib_directory, Qt),
-				 Fsymbol_value (Qsite_lisp_directory, Qt),
-				 rep_null_string ()));
+    Fset (Qload_path, rep_list_2(Fsymbol_value (Qlisp_lib_directory, Qt),
+				 Fsymbol_value (Qsite_lisp_directory, Qt)));
 
     rep_INTERN_SPECIAL(dl_load_path);
     Fset (Qdl_load_path, Qnil);
