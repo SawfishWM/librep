@@ -352,7 +352,7 @@
 	   (cdr sig))
 
 	  ((eq (car sig) 'compound-interface)
-	   (apply 'append (mapcar parse-interface (cdr sig))))
+	   (apply append (mapcar parse-interface (cdr sig))))
 
 	  ((symbolp sig)
 	   (if (boundp sig)
