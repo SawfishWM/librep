@@ -68,7 +68,6 @@ struct Proc
 #define PR_STOPPED  2		/* waiting to be continued */
 #define PR_RUNNING  1		/* running merrily */
 #define PR_DEAD	    0		/* nothing happening on this obj */
-#define PR_EXITED  -1		/* process dead but no EOF from pty */
 
 /* Connection types, pty-echo is a pty with the ECHO bit set in c_lflag */
 static VALUE sym_pipe, sym_pty, sym_pty_echo;
@@ -101,9 +100,8 @@ static bool got_sigchld;
 _PR void protect_procs(void);
 _PR void unprotect_procs(void);
 _PR bool proc_notification(void);
-static void check_for_zombies(void);
-_PR void proc_on_idle(void);
-static void read_from_one_fd(struct Proc *pr, int fd);
+static void check_for_zombies(bool called_from_sighandler);
+static void read_from_one_fd(struct Proc *pr, int fd, bool cursor_on);
 static void read_from_process(int);
 _PR int	 write_to_process(VALUE, u_char *, int);
 _PR void proc_mark(VALUE);
@@ -128,9 +126,19 @@ unprotect_procs(void)
     {
 	/* Have to leave (process_mutex == 0) while looking for zombies.  */
 	got_sigchld = FALSE;
-	check_for_zombies();
+	check_for_zombies(FALSE);
     }
     process_mutex--;
+}
+
+/* What would happen if this was called in the middle of GC? */
+static void
+sigchld_handler(int sig)
+{
+    if(process_mutex < 0)
+	check_for_zombies(TRUE);
+    else
+	got_sigchld = TRUE;
 }
 
 static INLINE void
@@ -151,6 +159,24 @@ deregister_input_fd(int fd)
 #endif
 }
 
+static void
+close_proc_files(struct Proc *pr)
+{
+    if(pr->pr_Stdout)
+    {
+	deregister_input_fd(pr->pr_Stdout);
+	close(pr->pr_Stdout);
+    }
+    if(pr->pr_Stderr && pr->pr_Stderr != pr->pr_Stdout)
+    {
+	deregister_input_fd(pr->pr_Stderr);
+	close(pr->pr_Stderr);
+    }
+    if(pr->pr_Stdin && (pr->pr_Stdin != pr->pr_Stdout))
+	close(pr->pr_Stdin);
+    pr->pr_Stdout = pr->pr_Stdin = pr->pr_Stderr = 0;
+}
+    
 /* PR's NotifyFun will be called when possible. This function is safe
    to call from signal handlers.  */
 static void
@@ -184,15 +210,17 @@ proc_notification(void)
     return(TRUE);
 }
 
-/* Checks if any of my children are zombies, takes appropriate action. */
+/* Checks if any of my children are zombies, takes appropriate action.
+   When CALLED-FROM-SIGHANDLER is true, nothing dangerous will be done. */
 static void
-check_for_zombies(void)
+check_for_zombies(bool called_from_sighandler)
 {
     int status;
     pid_t pid;
     if(!process_run_count)
 	return;
-    while((pid = waitpid(-1, &status, WNOHANG | WUNTRACED)) > 0)
+    while((pid = waitpid(-1, &status, WNOHANG | WUNTRACED)) > 0
+	  || errno == EINTR)
     {
 	struct Proc *pr = process_chain;
 #ifdef DEBUG
@@ -213,88 +241,28 @@ check_for_zombies(void)
 	    }
 	    else
 	    {
+		/* Process is dead. */
 		pr->pr_ExitStatus = status;
 		process_run_count--;
-		/* It seems that I can't just nuke the pty once the child's
-		   dead -- there can be data pending on it still. So, try
-		   to read as much as possible, then nuke em. */
-		if(pr->pr_Stdout != 0 || pr->pr_Stderr != 0)
-		{
-		    pr->pr_Status = PR_EXITED;
-		    /* read_from_one_fd() will handle all cleanup
-		       if at all possible */
-		    if(pr->pr_Stdout != 0)
-			read_from_one_fd(pr, pr->pr_Stdout);
-		    if(pr->pr_Stderr != 0)
-			read_from_one_fd(pr, pr->pr_Stderr);
-		}
-		else
-		{
-		    if(pr->pr_Stdin != 0)
-		    {
-			close(pr->pr_Stdin);
-			pr->pr_Stdin = 0;
-		    }
-		    /* No file handles open so just die */
-		    pr->pr_Status = PR_DEAD;
-		    queue_notify(pr);
-		}
+		close_proc_files(pr);
+		pr->pr_Status = PR_DEAD;
+		queue_notify(pr);
 	    }
 	}
     }
-}
-
-/* Called from the eventloop when the editor is idle. */
-void
-proc_on_idle(void)
-{
-    struct Proc *pr;
-    protect_procs();
-    for(pr = process_chain; pr != 0; pr = pr->pr_Next)
-    {
-	if(pr->pr_Status == PR_EXITED)
-	{
-	    /* Found a dead-but-no-EOF process. It's had enough time
-	       for output to get through. Mark it as dead. */
-	    if(pr->pr_Stdout)
-	    {
-		deregister_input_fd(pr->pr_Stdout);
-		close(pr->pr_Stdout);
-	    }
-	    if(pr->pr_Stderr && pr->pr_Stderr != pr->pr_Stdout)
-	    {
-		deregister_input_fd(pr->pr_Stderr);
-		close(pr->pr_Stderr);
-	    }
-	    if(pr->pr_Stdin && (pr->pr_Stdin != pr->pr_Stdout))
-		close(pr->pr_Stdin);
-	    pr->pr_Stdout = pr->pr_Stdin = pr->pr_Stderr = 0;
-	    pr->pr_Status = PR_DEAD;
-	    queue_notify(pr);
-	}
-    }
-    unprotect_procs();
-}
-
-static void
-sigchld_handler(int sig)
-{
-    if(process_mutex < 0)
-	check_for_zombies();
-    else
-	got_sigchld = TRUE;
 }
 
 /* Read data from FD out of PROC. If necessary it will handle
    clean up and notification. */
 static void
-read_from_one_fd(struct Proc *pr, int fd)
+read_from_one_fd(struct Proc *pr, int fd, bool cursor_on)
 {
     VALUE stream = ((fd != pr->pr_Stdout)
 		    ? pr->pr_ErrorStream : pr->pr_OutputStream);
     u_char buf[1025];
     int actual;
-    cursor(curr_vw, CURS_OFF);
+    if(cursor_on)
+	cursor(curr_vw, CURS_OFF);
     do {
 	if((actual = read(fd, buf, 1024)) > 0)
 	{
@@ -322,21 +290,9 @@ read_from_one_fd(struct Proc *pr, int fd)
 		pr->pr_Stderr = 0;
 	    pr->pr_Stdout = 0;
 	}
-
-	/* This means that the process has already exited and we were
-	   just waiting for the dregs of its output.  */
-	if(pr->pr_Status < 0 && pr->pr_Stdout == 0 && pr->pr_Stderr == 0)
-	{
-	    if(pr->pr_Stdin != 0)
-	    {
-		close(pr->pr_Stdin);
-		pr->pr_Stdin = 0;
-	    }
-	    pr->pr_Status = PR_DEAD;
-	    queue_notify(pr);
-	}
     }
-    cursor(curr_vw, CURS_ON);
+    if(cursor_on)
+	cursor(curr_vw, CURS_ON);
 }
 
 static void
@@ -350,7 +306,7 @@ read_from_process(int fd)
 	if(pr->pr_Status != PR_DEAD
 	   && (pr->pr_Stdout == fd || pr->pr_Stderr == fd))
 	{
-	    read_from_one_fd(pr, fd);
+	    read_from_one_fd(pr, fd, TRUE);
 	}
 	pr = pr->pr_Next;
     }
@@ -437,18 +393,7 @@ kill_process(struct Proc *pr)
 	    waitpid(pr->pr_Pid, &pr->pr_ExitStatus, 0);
 	    process_run_count--;
 	}
-	if(pr->pr_Stdout)
-	{
-	    deregister_input_fd(pr->pr_Stdout);
-	    close(pr->pr_Stdout);
-	}
-	if(pr->pr_Stderr && pr->pr_Stderr != pr->pr_Stdout)
-	{
-	    deregister_input_fd(pr->pr_Stderr);
-	    close(pr->pr_Stderr);
-	}
-	if(pr->pr_Stdin && (pr->pr_Stdin != pr->pr_Stdout))
-	    close(pr->pr_Stdin);
+	close_proc_files(pr);
     }
     str_free(pr);
     unprotect_procs();
@@ -573,13 +518,15 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 		    st.c_iflag |= (ICRNL | IGNPAR | BRKINT | IXON);
 		    st.c_oflag &= ~OPOST;
 		    st.c_cflag &= ~CSIZE;
-		    st.c_cflag |= CREAD | CS8;
+		    st.c_cflag |= CREAD | CS8 | CLOCAL;
 		    st.c_lflag &= ~(ECHO | ECHOE | ECHOK | NOFLSH | TOSTOP);
 		    st.c_lflag |= ISIG;
 		    if(PR_CONN_PTY_ECHO_P(pr))
 			st.c_lflag |= ECHO;
+#if 0
 		    st.c_cc[VMIN] = 1;
 		    st.c_cc[VTIME] = 0;
+#endif
 		    /* Set some control codes to default values */
 		    st.c_cc[VINTR]  = '\003';	/* ^c */
 		    st.c_cc[VQUIT]  = '\034';	/* ^| */
@@ -824,13 +771,10 @@ proc_prin(VALUE strm, VALUE obj)
 	stream_puts(strm, VSTR(pr->pr_Prog), -1, TRUE);
 	break;
     case PR_DEAD:
-    case PR_EXITED:
 	if(pr->pr_ExitStatus != -1)
 	{
 	    sprintf(buf, " exited: 0x%x", pr->pr_ExitStatus);
 	    stream_puts(strm, buf, -1, FALSE);
-	    if(pr->pr_Status == PR_EXITED)
-		stream_puts(strm, " [waiting for eof]", -1, FALSE);
 	}
 	break;
     }
