@@ -1,3 +1,8 @@
+1998-08-14  John Harper  <john@dcs.warwick.ac.uk>
+
+	* completion.jl (completion-setup-view): if reusing an existing
+	view, make sure that one directly above the minibuffer is used
+
 1998-08-12  John Harper  <john@dcs.warwick.ac.uk>
 
 	* dired.jl (dired-find-file, dired-find-file-other-view,
