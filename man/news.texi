@@ -3,6 +3,17 @@
 @chapter News
 @cindex News
 
+
+@unnumberedsec 0.7
+
+@itemize
+
+@item Added @code{autoload-verbose} variable; set it to @code{nil} to
+turn off the messages when autoloading
+
+@end itemize
+
+
 @unnumberedsec 0.6.1
 
 No new features; minor portability tweaks and build changes. Fix bug of

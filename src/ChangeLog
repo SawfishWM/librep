@@ -1,5 +1,8 @@
 1999-09-20  John Harper  <john@dcs.warwick.ac.uk>
 
+	* lisp.c (Qautoload_verbose): only print autoloading messages
+	if this is non-nil (it is by default)
+
 	* version 0.6.1
 
 	* lispcmds.c (Fload): only try to load files if they're
