@@ -23,6 +23,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <assert.h>
 #include <limits.h>
 #include <sys/stat.h>
 #include <time.h>
@@ -30,29 +31,19 @@
 #include <netdb.h>
 #include <signal.h>
 
+/* I haven't had time to get this working satisfactorily yet.. */
+#define NO_ASYNC_INPUT
+
 #ifdef HAVE_FCNTL_H
 # include <fcntl.h>
 #endif
 
-#ifdef HAVE_UNISTD_H
-# include <unistd.h>
+#ifdef HAVE_SYS_TIME_H
+# include <sys/time.h>
 #endif
 
-#if HAVE_DIRENT_H
-# include <dirent.h>
-# define NAMLEN(dirent) strlen((dirent)->d_name)
-#else
-# define dirent direct
-# define NAMLEN(dirent) (dirent)->d_namlen
-# if HAVE_SYS_NDIR_H
-#  include <sys/ndir.h>
-# endif
-# if HAVE_SYS_DIR_H
-#  include <sys/dir.h>
-# endif
-# if HAVE_NDIR_H
-#  include <ndir.h>
-# endif
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
 #endif
 
 #ifdef HAVE_SYS_UTSNAME_H
@@ -70,570 +61,70 @@
   extern char **environ;
 #endif
 
-#ifndef PATH_MAX
-# define PATH_MAX 256
+#ifndef NO_ASYNC_INPUT
+# if defined(SIGIO) && !defined(O_ASYNC) && defined(FASYNC)
+#  define O_ASYNC FASYNC
+# endif
+#endif
+#ifndef FD_CLOEXEC
+# define FD_CLOEXEC 1
 #endif
 
-_PR bool file_exists(u_char *);
-_PR u_long file_mod_time(u_char *);
+_PR VALUE lookup_errno(void);
+_PR u_long sys_time(void);
+_PR VALUE sys_user_login_name(void);
+_PR VALUE sys_user_full_name(void);
+_PR VALUE sys_user_home_directory(VALUE user);
+_PR VALUE sys_system_name(void);
+
+_PR void sys_register_input_fd(int fd, void (*callback)(int fd));
+_PR void sys_deregister_input_fd(int fd);
+_PR void unix_set_fd_nonblocking(int fd);
+_PR void unix_set_fd_cloexec(int fd);
+_PR VALUE sys_event_loop(void);
+_PR void *sys_alloc(u_int length);
+_PR void pre_sys_init(void);
 _PR void sys_misc_init(void);
 
-_PR bool same_files(u_char *, u_char *);
-_PR u_char *file_part(u_char *);
-_PR VALUE file_name_as_directory(VALUE file);
-_PR VALUE directory_file_name(VALUE dir);
-_PR VALUE lookup_errno(void);
-_PR long sys_file_length(u_char *);
-_PR u_long sys_time(void);
-_PR int add_file_part(u_char *, const u_char *, int);
-_PR VALUE sys_expand_file_name(VALUE);
-_PR VALUE sys_fully_qualify_file_name(VALUE);
+/* Depending on whether SIGIO works or not, this may be set when
+   input is available on any of our input file handles. */
+_PR int unix_input_pending;
+int unix_input_pending;
 
-_PR void register_input_fd(int fd, void (*callback)(int fd));
-_PR void deregister_input_fd(int fd);
-_PR VALUE event_loop(void);
+
+/* Support functions */
 
-bool
-same_files(u_char *file1, u_char *file2)
-{
-    struct stat stat1, stat2;
-    if(!stat(file1, &stat1))
-    {
-	if(!stat(file2, &stat2))
-	{
-	    if((stat1.st_dev == stat2.st_dev)
-	       && (stat1.st_ino == stat2.st_ino))
-		return TRUE;
-	    else
-		return FALSE;
-	}
-    }
-    /* At least one of the files doesn't exist. Try to compare the
-       parent directories, and the basenames. */
-    {
-	u_char *fpart1 = strrchr(file1, '/');
-	u_char *fpart2 = strrchr(file2, '/');
-	if((fpart1 && !fpart2) || (!fpart1 && fpart2))
-	    /* Only one has a directory name. */
-	    return FALSE;
-	if(fpart1 && fpart2)
-	{
-	    /* Both have directories. */
-	    char buf[512];
-	    memcpy(buf, file1, fpart1 - file1);
-	    buf[fpart1 - file1] = 0;
-	    if(!stat(buf, &stat1))
-	    {
-		memcpy(buf, file2, fpart2 - file2);
-		buf[fpart2 - file2] = 0;
-		if(!stat(buf, &stat2))
-		{
-		    if((stat1.st_dev == stat2.st_dev)
-		       && (stat1.st_ino == stat2.st_ino)
-		       && (strcmp(fpart1 + 1, fpart2 + 1) == 0))
-			return TRUE;
-		}
-		else
-		    return FALSE;
-	    }
-	    else
-		return FALSE;
-	}
-    }
-    /* Last chance, just compare strings. */
-    return strcmp(file1, file2) == 0;
-}
-
-u_char *
-file_part(u_char *fname)
-{
-    u_char *tmp = strrchr(fname, '/');
-    if(tmp)
-	return(tmp + 1);
-    return(fname);
-}
-
-VALUE
-file_name_as_directory(VALUE file)
-{
-    int len = STRING_LEN(file);
-    VALUE new = string_dupn(VSTR(file), len + 1);
-    if(new && STRINGP(new))
-    {
-	VSTR(new)[len] = '/';
-	VSTR(new)[len+1] = 0;
-    }
-    return new;
-}
-
-DEFSTRING(dot, ".");
-
-VALUE
-directory_file_name(VALUE dir)
-{
-    int len = STRING_LEN(dir);
-    if(len == 0)
-	/* A null string. */
-	return VAL(&dot);
-    else
-	/* Chop the trailing "/" */
-	return string_dupn(VSTR(dir), len - 1);
-}
-
+#ifndef HAVE_STRERROR
+DEFSTRING(unknown_err, "Unknown system error");
+#endif
 VALUE
 lookup_errno(void)
 {
 #ifdef HAVE_STRERROR
-    return(string_dup(strerror(errno)));
+    return string_dup(strerror(errno));
 #else
     if(errno >= sys_nerr)
-        return(string_dup(sys_errlist[errno]));
+        return string_dup(sys_errlist[errno]);
     else
-        return(MKSTR("<error>"));
+        return VAL(&unknown_err);
 #endif
 }
-
-long
-sys_file_length(u_char *file)
-{
-    FILE *fh = fopen(file, "r");
-    long length = -1;
-    if(fh)
-    {
-	struct stat stat;
-	if(!fstat(fileno(fh), &stat) && S_ISREG(stat.st_mode))
-	    length = stat.st_size;
-	fclose(fh);
-    }
-    return length;
-}	
 
 u_long
 sys_time(void)
 {
-    return(time(NULL));
+    return time(0);
 }
 
-int
-add_file_part(u_char *buf, const u_char *part, int bufLen)
-{
-    int bufend = strlen(buf);
-    int partlen = strlen(part);
-    if((bufend > 0) && (buf[bufend-1] != '/') && (*part != '/'))
-    {
-	if(++bufend >= bufLen)
-	    return(FALSE);
-	buf[bufend-1] = '/';
-	buf[bufend] = 0;
-    }
-    if((bufend + partlen) >= bufLen)
-	return(FALSE);
-    strcpy(buf + bufend, part);
-    return(TRUE);
-}
-
-_PR VALUE cmd_delete_file(VALUE file);
-DEFUN_INT("delete-file", cmd_delete_file, subr_delete_file, (VALUE file), V_Subr1, DOC_delete_file, "fDelete file:") /*
-::doc:delete_file::
-delete-file FILE-NAME
-
-Attempts to delete the file called FILE-NAME.
-::end:: */
-{
-    DECLARE1(file, STRINGP);
-    if(!unlink(VSTR(file)))
-	return(sym_t);
-    return(signal_file_error(file));
-}
-
-_PR VALUE cmd_rename_file(VALUE src, VALUE dst);
-DEFUN_INT("rename-file", cmd_rename_file, subr_rename_file, (VALUE src, VALUE dst), V_Subr2, DOC_rename_file, "fRename file:" DS_NL "FRename file `%s' as:") /*
-::doc:rename_file::
-rename-file SRC DEST
-
-Tries to rename the file SRC as DEST, this doesn't work across filesystems, or
-if a file DEST already exists.
-::end:: */
-{
-    DECLARE1(src, STRINGP);
-    DECLARE2(dst, STRINGP);
-    if(!rename(VSTR(src), VSTR(dst)))
-	return(sym_t);
-    return(signal_file_error(list_2(src, dst)));
-}
-
-_PR VALUE cmd_copy_file(VALUE src, VALUE dst);
-DEFUN_INT("copy-file", cmd_copy_file, subr_copy_file, (VALUE src, VALUE dst), V_Subr2, DOC_copy_file, "fCopy file:" DS_NL "FCopy file `%s' to:") /*
-::doc:copy_file::
-copy-file SRC DEST
-
-Copies the file called SRC to the file DEST.
-::end:: */
-{
-    VALUE res = sym_t;
-    int srcf;
-    DECLARE1(src, STRINGP);
-    DECLARE2(dst, STRINGP);
-    srcf = open(VSTR(src), O_RDONLY);
-    if(srcf != -1)
-    {
-	int dstf = open(VSTR(dst), O_WRONLY | O_CREAT | O_TRUNC, 0666);
-	if(dstf != -1)
-	{
-	    struct stat statb;
-	    int rd;
-	    if(fstat(srcf, &statb) == 0)
-		chmod(VSTR(dst), statb.st_mode);
-	    do {
-		u_char buf[BUFSIZ];
-		int wr;
-		rd = read(srcf, buf, BUFSIZ);
-		if(rd < 0)
-		{
-		    res = signal_file_error(src);
-		    break;
-		}
-		wr = write(dstf, buf, rd);
-		if(wr != rd)
-		{
-		    res = signal_file_error(dst);
-		    break;
-		}
-	    } while(rd != 0);
-	    close(dstf);
-	}
-	else
-	    res = signal_file_error(dst);
-	close(srcf);
-    }
-    else
-	res = signal_file_error(src);
-    return(res);
-}
-
-_PR VALUE cmd_file_readable_p(VALUE file);
-DEFUN("file-readable-p", cmd_file_readable_p, subr_file_readable_p, (VALUE file), V_Subr1, DOC_file_readable_p) /*
-::doc:file_readable_p::
-file-readable-p FILE
-
-Returns t if FILE available for reading from.
-::end:: */
-{
-    DECLARE1(file, STRINGP);
-    if(!access(VSTR(file), R_OK))
-	return(sym_t);
-    return(sym_nil);
-}
-
-_PR VALUE cmd_file_writable_p(VALUE file);
-DEFUN("file-writable-p", cmd_file_writable_p, subr_file_writable_p, (VALUE file), V_Subr1, DOC_file_writeable_p) /*
-::doc:file_writeable_p::
-file-writable-p FILE
-
-Returns t if FILE available for writing to.
-::end:: */
-{
-    DECLARE1(file, STRINGP);
-    if(!access(VSTR(file), W_OK))
-	return(sym_t);
-    return(sym_nil);
-}
-
-_PR VALUE cmd_file_exists_p(VALUE file);
-DEFUN("file-exists-p", cmd_file_exists_p, subr_file_exists_p, (VALUE file), V_Subr1, DOC_file_exists_p) /*
-::doc:file_exists_p::
-file-exists-p FILE
-
-Returns t if FILE exists.
-::end:: */
-{
-    DECLARE1(file, STRINGP);
-    if(!access(VSTR(file), F_OK))
-	return(sym_t);
-    return(sym_nil);
-}
-bool
-file_exists(u_char *fileName)
-{
-    if(!access(fileName, F_OK))
-    {
-	struct stat statb;
-	if(!stat(fileName, &statb) && !S_ISDIR(statb.st_mode))
-	    return(TRUE);
-    }
-    return(FALSE);
-}
-
-_PR VALUE cmd_file_regular_p(VALUE file);
-DEFUN("file-regular-p", cmd_file_regular_p, subr_file_regular_p, (VALUE file), V_Subr1, DOC_file_regular_p) /*
-::doc:file_regular_p::
-file-regular-p FILE
-
-Returns t if FILE is a ``normal'' file, ie, not a directory, device, symbolic
-link, etc...
-::end:: */
-{
-    struct stat statb;
-    DECLARE1(file, STRINGP);
-    if(!stat(VSTR(file), &statb))
-    {
-	if(S_ISREG(statb.st_mode))
-	    return(sym_t);
-    }
-    return(sym_nil);
-}
-
-_PR VALUE cmd_file_directory_p(VALUE file);
-DEFUN("file-directory-p", cmd_file_directory_p, subr_file_directory_p, (VALUE file), V_Subr1, DOC_file_directory_p) /*
-::doc:file_directory_p::
-file-directory-p FILE
-
-Returns t if FILE is a directory.
-::end:: */
-{
-    struct stat statb;
-    DECLARE1(file, STRINGP);
-    if(!stat(VSTR(file), &statb))
-    {
-	if(S_ISDIR(statb.st_mode))
-	    return(sym_t);
-    }
-    return(sym_nil);
-}
-
-_PR VALUE cmd_file_symlink_p(VALUE file);
-DEFUN("file-symlink-p", cmd_file_symlink_p, subr_file_symlink_p, (VALUE file), V_Subr1, DOC_file_symlink_p) /*
-::doc:file_symlink_p::
-file-symlink-p FILE
-
-Returns t if FILE is a symbolic link to another file.
-::end:: */
-{
-    struct stat statb;
-    DECLARE1(file, STRINGP);
-    if(!lstat(VSTR(file), &statb))
-    {
-	if(S_ISLNK(statb.st_mode))
-	    return(sym_t);
-    }
-    return(sym_nil);
-}
-
-_PR VALUE cmd_file_owner_p(VALUE file);
-DEFUN("file-owner-p", cmd_file_owner_p, subr_file_owner_p, (VALUE file), V_Subr1, DOC_file_owner_p) /*
-::doc:file_owner_p::
-file-owner-p FILE
-
-Returns t if the ownership (uid & gid) of file FILE (a string) is the same
-as that of any files written by the editor.
-::end:: */
-{
-    struct stat statb;
-    DECLARE1(file, STRINGP);
-    if(!stat(VSTR(file), &statb))
-    {
-	if((statb.st_uid == geteuid()) && (statb.st_gid == getegid()))
-	    return(sym_t);
-    }
-    return(sym_nil);
-}
-
-_PR VALUE cmd_file_nlinks(VALUE file);
-DEFUN("file-nlinks", cmd_file_nlinks, subr_file_nlinks, (VALUE file), V_Subr1, DOC_file_nlinks) /*
-::doc:file_nlinks::
-file-nlinks FILE
-
-Returns the number of links pointing to the file called FILE. This will be
-one if FILE has only one name. Doesn't count symbolic links.
-::end:: */
-{
-    struct stat statb;
-    DECLARE1(file, STRINGP);
-    if(!stat(VSTR(file), &statb))
-	return(MAKE_INT(statb.st_nlink));
-    return(sym_nil);
-}
-
-_PR VALUE cmd_file_size(VALUE file);
-DEFUN("file-size", cmd_file_size, subr_file_size, (VALUE file), V_Subr1, DOC_file_size) /*
-::doc:file_size::
-file-size FILE
-
-Returns the size of the file named by the string FILE in bytes.
-::end:: */
-{
-    struct stat statb;
-    DECLARE1(file, STRINGP);
-    if(!stat(VSTR(file), &statb))
-	return(MAKE_INT(statb.st_size));
-    return(sym_nil);
-}
-
-_PR VALUE cmd_file_modes(VALUE file);
-DEFUN("file-modes", cmd_file_modes, subr_file_modes, (VALUE file), V_Subr1, DOC_file_modes) /*
-::doc:file_modes::
-file-modes FILE
-
-Return the access permissions of the file called FILE, an integer. Note that
-the format of this integer is not defined, it differs from system to system.
-::end:: */
-{
-    struct stat statb;
-    DECLARE1(file, STRINGP);
-    if(!stat(VSTR(file), &statb))
-	return(MAKE_INT(statb.st_mode));
-    return(sym_nil);
-}
-
-_PR VALUE cmd_set_file_modes(VALUE file, VALUE modes);
-DEFUN("set-file-modes", cmd_set_file_modes, subr_set_file_modes, (VALUE file, VALUE modes), V_Subr2, DOC_set_file_modes) /*
-::doc:set_file_modes::
-set-file-modes FILE MODES
-
-Sets the access permissions of FILE to MODES, an integer. The only real way
-you can get this integer is from `file-modes' since it changes from system
-to system.
-::end:: */
-{
-    DECLARE1(file, STRINGP);
-    DECLARE2(modes, INTP);
-    if(chmod(VSTR(file), VINT(modes)) == 0)
-	return(modes);
-    return(signal_file_error(file));
-}
-
-_PR VALUE cmd_file_modes_as_string(VALUE modes);
-DEFUN("file-modes-as-string", cmd_file_modes_as_string,
-      subr_file_modes_as_string, (VALUE modes), V_Subr1,
-      DOC_file_modes_as_string) /*
-::doc:file_modes_as_string::
-file-modes-as-string MODES
-
-Returns a ten character string describing the attributes represented by
-integer MODES (from the file-modes function).
-::end:: */
-{
-    VALUE string;
-    DECLARE1(modes, INTP);
-    string = cmd_make_string(MAKE_INT(10), MAKE_INT('-'));
-    if(string != LISP_NULL && STRINGP(string))
-    {
-	ulong perms = VINT(modes);
-	int i;
-	char c = '-';
-	if(S_ISDIR(perms))	    c = 'd';
-	else if(S_ISLNK(perms))	    c = 'l';
-	else if(S_ISBLK(perms))	    c = 'b';
-	else if(S_ISCHR(perms))	    c = 'c';
-	else if(S_ISFIFO(perms))    c = 'c';
-	else if(S_ISSOCK(perms))    c = '|';
-	VSTR(string)[0] = c;
-	for(i = 0; i < 3; i++)
-	{
-	    u_long xperms = perms >> ((2 - i) * 3);
-	    if(xperms & 4)
-		VSTR(string)[1+i*3] = 'r';
-	    if(xperms & 2)
-		VSTR(string)[2+i*3] = 'w';
-	    c = (xperms & 1) ? 'x' : 0;
-	    if(perms & (04000 >> i))
-	    {
-		static char extra_bits[3] = { 'S', 'S', 'T' };
-		c = extra_bits[i] | ((c & 0x20) ^ 0x20);
-	    }
-	    if(c != 0)
-		VSTR(string)[3+i*3] = c;
-	}
-    }
-    return string;
-}
-
-u_long
-file_mod_time(u_char *file)
-{
-    struct stat statb;
-    if(!stat(file, &statb))
-	return(statb.st_mtime);
-    return(0);
-}
-_PR VALUE cmd_file_modtime(VALUE file);
-DEFUN("file-modtime", cmd_file_modtime, subr_file_modtime, (VALUE file), V_Subr1, DOC_file_modtime) /*
-::doc:file_modtime::
-file-modtime FILE
-
-Return the time (a cons cell storing two integers, the low 24 bits, and the
-high bits) that FILE was last modified.
-::end:: */
-{
-    DECLARE1(file, STRINGP);
-    return(MAKE_LONG_INT(file_mod_time(VSTR(file))));
-}
-
-_PR VALUE cmd_file_name_absolute_p(VALUE file);
-DEFUN("file-name-absolute-p", cmd_file_name_absolute_p, subr_file_name_absolute_p, (VALUE file), V_Subr1, DOC_file_name_absolute_p) /*
-::doc:file_name_absolute_p::
-file-name-absolute-p FILE-NAME
-
-Returns t if FILE-NAME is not specified relative to the current directory,
-i.e. it begins with a / or ~ under Unix.
-::end:: */
-{
-    DECLARE1(file, STRINGP);
-    return ((VSTR(file)[0] == '/') || (VSTR(file)[0] == '~'))
-	   ? sym_t : sym_nil;
-}
-
-_PR VALUE cmd_directory_files(VALUE dirname);
-DEFUN("directory-files", cmd_directory_files, subr_directory_files, (VALUE dirname), V_Subr1, DOC_directory_files) /*
-::doc:directory_files::
-directory-files DIRECTORY
-
-Returns a list of the names of all files in directory DIRECTORY, directories
-in DIRECTORY have a `/' character appended to their name.
-::end:: */
-{
-    DIR *dir;
-    u_char *dname;
-    DECLARE1(dirname, STRINGP);
-    dname = VSTR(dirname);
-    if(*dname == 0)
-	dname = ".";
-    dir = opendir(dname);
-    if(dir)
-    {
-	VALUE list = sym_nil;
-	struct dirent *de;
-	while((de = readdir(dir)))
-	{
-	    VALUE name = string_dupn(de->d_name, NAMLEN(de));
-	    list = cmd_cons(name, list);
-	    if(name == LISP_NULL || list == LISP_NULL)
-	    {
-		mem_error();
-		closedir(dir);
-		return LISP_NULL;
-	    }
-	}
-	closedir(dir);
-	return list;
-    }
-    return cmd_signal(sym_file_error, list_2(lookup_errno(), dirname));
-}
-
-_PR VALUE cmd_user_login_name(void);
-DEFUN("user-login-name", cmd_user_login_name, subr_user_login_name, (void), V_Subr0, DOC_user_login_name) /*
-::doc:user_login_name::
-user-login-name
-
-Returns the login name of the user (a string).
-On the Amiga this is taken from the environment variable `USERNAME'.
-::end:: */
+VALUE
+sys_user_login_name(void)
 {
     /* Just look this up once, then use the saved copy.	 */
     static VALUE user_login_name;
     char *tmp;
     if(user_login_name)
-	return(user_login_name);
+	return user_login_name;
+
     if(!(tmp = getlogin()))
     {
 	struct passwd *pwd;
@@ -643,22 +134,17 @@ On the Amiga this is taken from the environment variable `USERNAME'.
     }
     user_login_name = string_dup(tmp);
     mark_static(&user_login_name);
-    return(user_login_name);
+    return user_login_name;
 }
 
-_PR VALUE cmd_user_full_name(void);
-DEFUN("user-full-name", cmd_user_full_name, subr_user_full_name, (void), V_Subr0, DOC_user_full_name) /*
-::doc:user_full_name::
-user-full-name
-
-Returns the real name of the user (a string).
-On the Amiga this is taken from the environment variable `REALNAME'.
-::end:: */
+VALUE
+sys_user_full_name(void)
 {
     struct passwd *pwd;
     static VALUE user_full_name;
     if(user_full_name)
-	return(user_full_name);
+	return user_full_name;
+
     if(!(pwd = getpwuid(geteuid())))
 	return LISP_NULL;
 #ifndef FULL_NAME_TERMINATOR
@@ -673,69 +159,69 @@ On the Amiga this is taken from the environment variable `REALNAME'.
     }
 #endif
     mark_static(&user_full_name);
-    return(user_full_name);
+    return user_full_name;
 }
 
-DEFSTRING(no_home, "Can't find your home directory");
-
-_PR VALUE cmd_user_home_directory(void);
-DEFUN("user-home-directory", cmd_user_home_directory, subr_user_home_directory, (void), V_Subr0, DOC_user_home_directory) /*
-::doc:user_home_directory::
-user-home-directory
-
-Returns the user's home directory (a string). It will be terminated by a slash
-(or whatever is appropriate) so that it can be glued together with a file name
-making a valid path name.
-
-The first place we look for the directory name is the `HOME' environment
-variable. If this doesn't exist we either use the `SYS:' assignment when
-on AmigaDOS or look in the /etc/passwd file if on Unix.
-::end:: */
+DEFSTRING(no_home, "Can't find home directory");
+VALUE
+sys_user_home_directory(VALUE user)
 {
     static VALUE user_home_directory;
-    if(user_home_directory)
-	return(user_home_directory);
+    if(NILP(user) && user_home_directory)
+	return user_home_directory;
     else
     {
-	char *src;
+	VALUE dir;
+	char *src = 0;
 	int len;
-	src = getenv("HOME");
-	if(!src)
+
+	if(NILP(user))
+	    src = getenv("HOME");
+
+	if(src == 0)
 	{
 	    struct passwd *pwd;
-	    pwd = getpwuid(geteuid());
-	    if(!pwd || !pwd->pw_dir)
-		return(cmd_signal(sym_error, LIST_1(VAL(&no_home))));
+	    if(NILP(user))
+		pwd = getpwuid(geteuid());
+	    else
+		pwd = getpwnam(VSTR(user));
+
+	    if(pwd == 0 || pwd->pw_dir == 0)
+		return cmd_signal(sym_error, LIST_2(VAL(&no_home), user));
+
 	    src = pwd->pw_dir;
 	}
+
 	len = strlen(src);
 	if(src[len] != '/')
 	{
-	    user_home_directory = string_dupn(src, len + 1);
-	    VSTR(user_home_directory)[len] = '/';
-	    VSTR(user_home_directory)[len+1] = 0;
+	    dir = string_dupn(src, len + 1);
+	    VSTR(dir)[len] = '/';
+	    VSTR(dir)[len+1] = 0;
 	}
 	else
-	    user_home_directory = string_dup(src);
-	mark_static(&user_home_directory);
-	return(user_home_directory);
+	    dir = string_dup(src);
+
+	if(NILP(user))
+	{
+	    user_home_directory = dir;
+	    mark_static(&user_home_directory);
+	}
+
+	return dir;
     }
 }
 
-_PR VALUE cmd_system_name(void);
-DEFUN("system-name", cmd_system_name, subr_system_name, (void), V_Subr0,  DOC_system_name) /*
-::doc:system_name::
-system-name
-
-Returns the name of the host which the editor is running on.
-On the Amiga this is taken from the environment variable `HOSTNAME'.
-::end:: */
+VALUE
+sys_system_name(void)
 {
     u_char buf[256];
     struct hostent *h;
+
     static VALUE system_name;
     if(system_name)
-	return(system_name);
+	return system_name;
+
 #ifdef HAVE_GETHOSTNAME
     if(gethostname(buf, 256))
 	return LISP_NULL;
@@ -764,134 +250,7 @@ On the Amiga this is taken from the environment variable `HOSTNAME'.
     else
 	system_name = string_dup(buf);
     mark_static(&system_name);
-    return(system_name);
-}
-
-_PR VALUE cmd_setenv(VALUE name, VALUE val);
-DEFUN("setenv", cmd_setenv, subr_setenv, (VALUE name, VALUE val), V_Subr2, DOC_setenv) /*
-::doc:setenv::
-setenv VARIABLE [VALUE]
-
-Sets the value of the environment variable called VARIABLE (a string) to
-the string VALUE. If VALUE is undefined or nil the variable is removed from
-the environment.
-::end:: */
-{
-    /* This function was adapted from the GNU libc putenv() function,
-       hopefully it's portable... 
-         It's main problem is that it doesn't know whether or not to
-       unallocate the strings making up the environment when they're
-       finished with.  */
-    char **ep;
-    int name_len;
-    DECLARE1(name, STRINGP);
-    name_len = STRING_LEN(name);
-    if(!STRINGP(val))
-    {
-	/* remove the variable NAME */
-	for(ep = environ; *ep != NULL; ep++)
-	{
-	    if((strncmp(VSTR(name), *ep, name_len) == 0)
-	       && ((*ep)[name_len] == '='))
-	    {
-		while(ep[1] != NULL)
-		{
-		    ep[0] = ep[1];
-		    ep++;
-		}
-		*ep = NULL;
-		return(sym_t);
-	    }
-	}
-	return(sym_nil);
-    }
-    else
-    {
-	/* setting NAME to VAL */
-	int size;
-	char *env_string = str_alloc(name_len + 1 + STRING_LEN(val));
-	if(!env_string)
-	    return(mem_error());
-	memcpy(env_string, VSTR(name), name_len);
-	env_string[name_len] = '=';
-	strcpy(env_string + name_len + 1, VSTR(val));
-	for(ep = environ, size = 0; *ep != NULL; ep++)
-	{
-	    if((strncmp(VSTR(name), *ep, name_len) == 0)
-	       && ((*ep)[name_len] == '='))
-		break;
-	    size++;
-	}
-	if(*ep == NULL)
-	{
-	    /* NAME not in list, create new entry */
-	    static char **last_environ = NULL;
-	    char **new_environ = str_alloc((size + 2) * sizeof(char *));
-	    if(!new_environ)
-		return(mem_error());
-	    memcpy(new_environ, environ, size * sizeof(char *));
-	    new_environ[size] = env_string;
-	    new_environ[size + 1] = NULL;
-	    if(last_environ != NULL)
-		str_free(last_environ);
-	    last_environ = environ = new_environ;
-	}
-	else
-	{
-	    /* adjust existing entry */
-	    *ep = env_string;
-	}
-	return(val);
-    }
-}
-
-DEFSTRING(cant_expand, "Can't expand");
-
-VALUE
-sys_expand_file_name(VALUE namev)
-{
-    u_char *name = VSTR(namev);
-    if(*name == '~')
-    {
-	VALUE home = cmd_user_home_directory();
-	if(!home || !STRINGP(home))
-	    return LISP_NULL;
-	switch(name[1])
-	{
-	case 0:
-	    return(home);
-	case '/':
-	    {
-		u_char buf[512];
-		strcpy(buf, VSTR(home));
-		if(!add_file_part(buf, name + 2, 512))
-		    return LISP_NULL;
-		return(string_dup(buf));
-	    }
-	default:
-	    return(cmd_signal(sym_file_error, list_2(VAL(&cant_expand), namev)));
-	}
-    }
-    return(namev);
-}
-
-VALUE
-sys_fully_qualify_file_name(VALUE name)
-{
-    u_char buf[PATH_MAX];
-    if(*VSTR(name) == '/')
-	/* starting from root. */
-	return(name);
-#ifdef HAVE_GETCWD
-    if(getcwd(buf, PATH_MAX) != NULL)
-#else
-    if(getwd(buf) != NULL)
-#endif
-    {
-	if(add_file_part(buf, VSTR(name), 512))
-	    return(string_dup(buf));
-    }
-    return LISP_NULL;
+    return system_name;
 }
 
 
@@ -909,31 +268,66 @@ static void (*input_actions[FD_SETSIZE])(int);
 static long idle_period;
 
 void
-register_input_fd(int fd, void (*callback)(int fd))
+sys_register_input_fd(int fd, void (*callback)(int fd))
 {
-    static bool initialised = FALSE;
-    if(!initialised)
-    {
-	/* This function will be called before the sys_misc_init()
-	   function is called. */
-	FD_ZERO(&input_fdset);
-	initialised = TRUE;
-    }
-
     FD_SET(fd, &input_fdset);
     input_actions[fd] = callback;
+
+    unix_set_fd_cloexec(fd);
+
+#ifndef NO_ASYNC_INPUT
+# if defined(SIGIO) && defined(O_ASYNC)
+    {
+	/* Enable async. input for this fd. */
+	int flags;
+	fcntl(fd, F_SETOWN, getpid());
+	flags = fcntl(fd, F_GETFL, 0);
+	if(flags != -1)
+	    fcntl(fd, F_SETFL, flags | O_ASYNC);
+    }
+# endif
+#endif
 }
 
 void
-deregister_input_fd(int fd)
+sys_deregister_input_fd(int fd)
 {
     FD_CLR(fd, &input_fdset);
     input_actions[fd] = NULL;
+
+#ifndef NO_ASYNC_INPUT
+# if defined(SIGIO) && defined(O_ASYNC)
+    {
+	/* Disable async. input */
+	int flags;
+	flags = fcntl(fd, F_GETFL, 0);
+	if(flags != -1)
+	    fcntl(fd, F_SETFL, flags & ~O_ASYNC);
+    }
+# endif
+#endif
+}
+
+void
+unix_set_fd_nonblocking(int fd)
+{
+    int flags = fcntl(fd, F_GETFL, 0);
+    if(flags != -1)
+	fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+}
+
+void
+unix_set_fd_cloexec(int fd)
+{
+    /* Set close on exec flag. */
+    int tem = fcntl(fd, F_GETFD, 0);
+    if(tem != -1)
+	fcntl(fd, F_SETFD, tem | FD_CLOEXEC);
 }
 
 /* The input handler loop. */
 VALUE
-event_loop(void)
+sys_event_loop(void)
 {
     VALUE result = sym_nil;
     recurse_depth++;
@@ -961,6 +355,12 @@ event_loop(void)
 
 #ifdef HAVE_SUBPROCESSES
 	sigchld_restart(TRUE);
+#endif
+
+#ifndef NO_ASYNC_INPUT
+	/* Is this the best place to set this? Should it be after
+	   reading all input..? */
+	unix_input_pending = 0;
 #endif
 
 	if(ready > 0)
@@ -1018,7 +418,39 @@ end:
 }
 
 
+/* Memory allocation; sys_free() is a macro in unix_defs.h */
+
+void *
+sys_alloc(u_int length)
+{
+    void *mem = malloc(length);
+    if(mem)
+    {
+	/* Check that the alignment promised actually occurs */
+	assert((((PTR_SIZED_INT)mem) & (MALLOC_ALIGNMENT - 1)) == 0);
+	return mem;
+    }
+
+    /* Unsuccessful; flush the string allocation blocks before
+       trying one last time.. */
+    sm_flush(&main_strmem);
+    return malloc(length);
+}
+
+
 /* Standard signal handlers */
+
+#ifndef NO_ASYNC_INPUT
+# ifdef SIGIO
+/* Invoked from SIGIO when input is pending. */
+static RETSIGTYPE
+sigio_handler(int sig)
+{
+    unix_input_pending = 1;
+    signal(sig, sigio_handler);
+}
+# endif
+#endif
 
 /* Invoked by any of the handlable error reporting signals */
 static RETSIGTYPE
@@ -1074,32 +506,13 @@ termination_signal_handler(int sig)
 
 /* Initialisation */
 
+/* This function is called _before_ almost anything else; but
+   most importantly, it's called before sys_init() (i.e. we
+   start opening displays) */
 void
-sys_misc_init(void)
+pre_sys_init(void)
 {
-    ADD_SUBR_INT(subr_delete_file);
-    ADD_SUBR_INT(subr_rename_file);
-    ADD_SUBR_INT(subr_copy_file);
-    ADD_SUBR(subr_file_readable_p);
-    ADD_SUBR(subr_file_writable_p);
-    ADD_SUBR(subr_file_exists_p);
-    ADD_SUBR(subr_file_regular_p);
-    ADD_SUBR(subr_file_directory_p);
-    ADD_SUBR(subr_file_symlink_p);
-    ADD_SUBR(subr_file_owner_p);
-    ADD_SUBR(subr_file_nlinks);
-    ADD_SUBR(subr_file_size);
-    ADD_SUBR(subr_file_modes);
-    ADD_SUBR(subr_set_file_modes);
-    ADD_SUBR(subr_file_modes_as_string);
-    ADD_SUBR(subr_file_modtime);
-    ADD_SUBR(subr_file_name_absolute_p);
-    ADD_SUBR(subr_directory_files);
-    ADD_SUBR(subr_user_login_name);
-    ADD_SUBR(subr_user_full_name);
-    ADD_SUBR(subr_user_home_directory);
-    ADD_SUBR(subr_system_name);
-    ADD_SUBR(subr_setenv);
+    FD_ZERO(&input_fdset);
 
     /* First the error signals */
 #ifdef SIGFPE
@@ -1142,4 +555,29 @@ sys_misc_init(void)
     if(signal(SIGHUP, termination_signal_handler) == SIG_IGN)
 	signal(SIGHUP, SIG_IGN);
 #endif
+
+#ifndef NO_ASYNC_INPUT
+    /* Also async IO signals */
+# ifdef SIGIO
+    signal(SIGIO, sigio_handler);
+# endif
+# ifdef SIGURG
+    signal(SIGURG, sigio_handler);
+# endif
+#endif
+}    
+
+/* More normal initialisation. */
+void
+sys_misc_init(void)
+{
+    VALUE env;
+    char **ptr;
+
+    /* Initialise process-environment variable */
+    env = sym_nil;
+    ptr = environ;
+    while(*ptr != 0)
+	env = cmd_cons(string_dup(*ptr++), env);
+    VSYM(sym_process_environment)->value = env;
 }
