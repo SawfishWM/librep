@@ -385,6 +385,7 @@
 
   (defun compile-module (struct)
     "Compiles all function bindings in the module named STRUCT."
+    (interactive "SModule name:")
     (let ((struct (%intern-structure struct)))
       (when struct
 	(%structure-walk (lambda (var value)
