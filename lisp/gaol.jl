@@ -91,7 +91,6 @@
 ;;; building the actual environments
 
   (define gaol-structure nil)
-  (define gaol-fh-env nil)
   (define gaol-needs-rebuilding t)
 
   ;; XXX should create a named gaol environment, then let all
@@ -114,15 +113,10 @@
 	(mapc (lambda (cell)
 		(%structure-set gaol-structure (car cell) (cdr cell)))
 	      gaol-redefined-functions)
+	(set-file-handler-environment fh-env gaol-structure)
 ;	(%set-interface gaol-structure
 ;			(nconc (mapcar car gaol-redefined-functions)
 ;			       gaol-safe-functions))
-	(if gaol-fh-env
-	    (progn
-	      ;; affect existing environment
-	      (rplaca gaol-fh-env (car fh-env))
-	      (rplacd gaol-fh-env (cdr fh-env)))
-	  (setq gaol-fh-env fh-env))
 	(setq gaol-needs-rebuilding nil))))
 
 
@@ -155,7 +149,6 @@
     (gaol-rebuild-environment)
     `(save-environment
       (set-special-environment ',gaol-safe-specials)
-      (set-file-handler-environment ',gaol-fh-env)
       (set-environment t)
       (%eval-in-structure ',form ',gaol-structure)))
 
