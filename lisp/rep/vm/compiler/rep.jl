@@ -1164,6 +1164,8 @@
     (put 'cddr 'rep-compile-opcode 'cddr)
     (put 'caddr 'rep-compile-fun compile-1-args)
     (put 'caddr 'rep-compile-opcode 'caddr)
+    (put 'cadddr 'rep-compile-fun compile-1-args)
+    (put 'cadddr 'rep-compile-opcode 'cadddr)
 
     (put 'floor 'rep-compile-fun compile-1-args)
     (put 'floor 'rep-compile-opcode 'floor)
