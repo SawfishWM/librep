@@ -43,7 +43,8 @@ make host_type=%{_target_platform}
 make install \
     host_type=%{_target_platform} \
     DESTDIR=$RPM_BUILD_ROOT \
-    aclocaldir=%{_datadir}/aclocal
+    aclocaldir=%{_datadir}/aclocal \
+    infodir=%{_infodir}
 gzip -9nf $RPM_BUILD_ROOT%{_infodir}/librep*
 
 %post
