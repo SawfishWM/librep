@@ -43,8 +43,8 @@ call it. Otherwise exactly the same as defun."
 (defmacro defface (name &optional documentation &rest forms)
   "Create a face called NAME, the Lisp FORMS are evaluated to initialise it.
 If the symbol NAME is already bound, only the documentation property is set."
-  `(when (prog1 (boundp ',name)
-	   (defvar ,name (make-face ,(symbol-name name)) ,documentation))
+  `(unless (prog1 (boundp ',name)
+	     (defvar ,name (make-face ,(symbol-name name)) ,documentation))
      ,@forms))
 
 
