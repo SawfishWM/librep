@@ -300,7 +300,7 @@ list_ref (repv list, int elt)
  &&TAG(OP_INIT_BIND), &&TAG(OP_UNBIND), &&TAG(OP_DUP), &&TAG(OP_SWAP),				\
  &&TAG(OP_POP), &&TAG(OP_NIL), &&TAG(OP_T), &&TAG(OP_CONS), /*48*/				\
  &&TAG(OP_CAR), &&TAG(OP_CDR), &&TAG(OP_RPLACA), &&TAG(OP_RPLACD),				\
- &&TAG(OP_NTH), &&TAG(OP_NTHCDR), &&TAG(OP_ASET), &&TAG(OP_AREF), /*50*/				\
+ &&TAG(OP_NTH), &&TAG(OP_NTHCDR), &&TAG(OP_ASET), &&TAG(OP_AREF), /*50*/			\
  &&TAG(OP_LENGTH), &&TAG(OP_EVAL), &&TAG(OP_ADD), &&TAG(OP_NEG),				\
  &&TAG(OP_SUB), &&TAG(OP_MUL), &&TAG(OP_DIV), &&TAG(OP_REM), /*58*/				\
  &&TAG(OP_LNOT), &&TAG(OP_NOT), &&TAG(OP_LOR), &&TAG(OP_LAND),					\
@@ -327,7 +327,7 @@ list_ref (repv list, int elt)
 												\
  &&TAG(OP_PUSHIWN), &&TAG(OP_PUSHIWP), &&TAG(OP_CAAR), &&TAG(OP_CADR), /*A0*/			\
  &&TAG(OP_CDAR), &&TAG(OP_CDDR), &&TAG(OP_CADDR), &&TAG(OP_CADDDR),				\
- &&TAG(OP_CADDDDR), &&TAG(OP_CADDDDDR), &&TAG(OP_CADDDDDDR), &&TAG(OP_CADDDDDDDR), /*A8*/		\
+ &&TAG(OP_CADDDDR), &&TAG(OP_CADDDDDR), &&TAG(OP_CADDDDDDR), &&TAG(OP_CADDDDDDDR), /*A8*/	\
  &&TAG(OP_FLOOR), &&TAG(OP_CEILING), &&TAG(OP_TRUNCATE), &&TAG(OP_ROUND),			\
 												\
  &&TAG(OP_BINDOBJ), &&TAG(OP_FORBID), &&TAG(OP_PERMIT), &&TAG(OP_EXP), /*B0*/			\
@@ -335,7 +335,7 @@ list_ref (repv list, int elt)
  &&TAG(OP_SQRT), &&TAG(OP_EXPT), &&TAG(OP_SWAP2), &&TAG(OP_MOD), /*B8*/				\
  &&TAG(OP_MAKE_CLOSURE), &&TAG(OP_UNBINDALL_0), &&TAG(OP_CLOSUREP), &&TAG(OP_POP_ALL),		\
 												\
- &&TAG(OP_FLUID_SET), &&TAG(OP_FLUID_BIND), &&TAG_DEFAULT, &&TAG_DEFAULT, /*C0*/			\
+ &&TAG(OP_FLUID_SET), &&TAG(OP_FLUID_BIND), &&TAG(OP_MEMQL), &&TAG(OP_NUM_EQ), /*C0*/		\
  &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT,					\
  &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, /*C8*/				\
  &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT,					\
@@ -1081,25 +1081,13 @@ again:
 
 	BEGIN_INSN (OP_EQUAL)
 	    tmp = RET_POP;
-	    tmp2 = TOP;
-	    if (rep_INTP (tmp) && rep_INTP (tmp2))
-	    {
-		TOP = (tmp2 == tmp) ? Qt : Qnil;
-		SAFE_NEXT;
-	    }
-	    if(!(rep_value_cmp(tmp2, tmp)))
-		TOP = Qt;
-	    else
-		TOP = Qnil;
+	    TOP = (rep_value_cmp(TOP, tmp) == 0) ? Qt : Qnil;
 	    NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_EQ)
 	    tmp = RET_POP;
-	    if(TOP == tmp)
-		TOP = Qt;
-	    else
-		TOP = Qnil;
+	    TOP = (TOP == tmp) ? Qt : Qnil;
 	    SAFE_NEXT;
 	END_INSN
 
@@ -1114,37 +1102,41 @@ again:
 
 	BEGIN_INSN (OP_GT)
 	    tmp = RET_POP;
-	    if(rep_value_cmp(TOP, tmp) > 0)
-		TOP = Qt;
+	    tmp2 = TOP;
+	    if (rep_NUMBERP (tmp2) || rep_NUMBERP (tmp))
+		TOP = (rep_compare_numbers (tmp2, tmp) > 0) ? Qt : Qnil;
 	    else
-		TOP = Qnil;
+		TOP = (rep_value_cmp (tmp2, tmp) > 0) ? Qt : Qnil;
 	    NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_GE)
 	    tmp = RET_POP;
-	    if(rep_value_cmp(TOP, tmp) >= 0)
-		TOP = Qt;
+	    tmp2 = TOP;
+	    if (rep_NUMBERP (tmp2) || rep_NUMBERP (tmp))
+		TOP = (rep_compare_numbers (tmp2, tmp) >= 0) ? Qt : Qnil;
 	    else
-		TOP = Qnil;
+		TOP = (rep_value_cmp (tmp2, tmp) >= 0) ? Qt : Qnil;
 	    NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_LT)
 	    tmp = RET_POP;
-	    if(rep_value_cmp(TOP, tmp) < 0)
-		TOP = Qt;
+	    tmp2 = TOP;
+	    if (rep_NUMBERP (tmp2) || rep_NUMBERP (tmp))
+		TOP = (rep_compare_numbers (tmp2, tmp) < 0) ? Qt : Qnil;
 	    else
-		TOP = Qnil;
+		TOP = (rep_value_cmp (tmp2, tmp) < 0) ? Qt : Qnil;
 	    NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_LE)
 	    tmp = RET_POP;
-	    if(rep_value_cmp(TOP, tmp) <= 0)
-		TOP = Qt;
+	    tmp2 = TOP;
+	    if (rep_NUMBERP (tmp2) || rep_NUMBERP (tmp))
+		TOP = (rep_compare_numbers (tmp2, tmp) <= 0) ? Qt : Qnil;
 	    else
-		TOP = Qnil;
+		TOP = (rep_value_cmp (tmp2, tmp) <= 0) ? Qt : Qnil;
 	    NEXT;
 	END_INSN
 
@@ -1439,17 +1431,11 @@ again:
 	END_INSN
 
 	BEGIN_INSN (OP_MAX)
-	    tmp = RET_POP;
-	    if(rep_value_cmp(tmp, TOP) > 0)
-		TOP = tmp;
-	    NEXT;
+	    CALL_2(rep_number_max);
 	END_INSN
 
 	BEGIN_INSN (OP_MIN)
-	    tmp = RET_POP;
-	    if(rep_value_cmp(tmp, TOP) < 0)
-		TOP = tmp;
-	    NEXT;
+	    CALL_2(rep_number_min);
 	END_INSN
 
 	BEGIN_INSN (OP_FILTER)
@@ -1688,6 +1674,25 @@ again:
 	    BIND_TOP = rep_MARK_SPEC_BINDING (BIND_TOP);
 	    impurity++;
 	    SAFE_NEXT;
+	END_INSN
+
+	BEGIN_INSN (OP_MEMQL)
+	    CALL_2(Fmemql);
+	END_INSN
+
+	BEGIN_INSN (OP_NUM_EQ)
+	    tmp = RET_POP;
+	    tmp2 = TOP;
+	    if (rep_INTP (tmp) && rep_INTP (tmp2))
+	    {
+		TOP = (tmp2 == tmp) ? Qt : Qnil;
+		SAFE_NEXT;
+	    }
+	    else if (rep_NUMBERP (tmp2) || rep_NUMBERP (tmp))
+		TOP = (rep_compare_numbers (tmp2, tmp) == 0) ? Qt : Qnil;
+	    else
+		TOP = (rep_value_cmp (tmp2, tmp) == 0) ? Qt : Qnil;
+	    NEXT;
 	END_INSN
 
 	/* Jump instructions follow */
