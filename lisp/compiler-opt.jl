@@ -161,6 +161,7 @@
 		   (eq (car insn1) op-refn)
 		   (eq (cdr insn1) 0)))
 	  (rplaca insn1 (car insn0))
+	  (rplacd insn1 (cdr insn0))
 	  (rplaca insn0 op-dup)
 	  (rplacd insn0 nil)
 	  ;; this might require extra stack space
