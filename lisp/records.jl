@@ -26,25 +26,24 @@
 ;; This was inspired by the Scheme48 record interface (surprise,
 ;; surprise!). You do something like:
 
-;; (define-record-type pare :pare
+;; (define-record-type :pare
 ;;   (kons x y)				; constructor
 ;;   pare?				; predicate
 ;;   (x kar set-kar!)			; fields w/ optional accessors
 ;;   (y kdr))				;and modifiers
 
-;; `pare' is the name of the type (used when printing), the variable
-;; `:pare' is bound to the record type. This can be used to redefine
-;; the printed representation of the record type (e.g. by default
-;; `#<pare>') using define-record-discloser:
+;; the variable `:pare' is bound to the record type. This can be used
+;; to redefine the printed representation of the record type (e.g. by
+;; default `#<:pare>') using define-record-discloser:
 
 ;; (define-record-discloser :pare
 ;;   (lambda (x) `(pare ,(kar x) ,(kdr x))))
 
 ;; General syntax of define-record-type is:
 
-;; (define-record-type <name> <type-variable>
-;;   (<constructor> <field-tags>*)
-;;   [<predicate>]
+;; (define-record-type <type-name>
+;;   (<constructor-name> <field-tags>*)
+;;   [<predicate-name>]
 ;;   (<field-tag> [<accessor-name> [<modifier-name>]])*)
 
 (define-structure records (export make-record-type
@@ -60,7 +59,9 @@
 ;;; record type structures
 
   (define (make-record-type name fields)
-    (vector name fields nil))
+    (let ((rt (vector name fields nil)))
+      (define-datum-printer rt (record-printer rt))
+      rt))
 
   (define (record-type-name rt) (aref rt 0))
   (define (record-type-fields rt) (aref rt 1))
@@ -122,7 +123,7 @@
 
 ;;; syntax
 
-  (defmacro define-record-type (name rt constructor . fields)
+  (defmacro define-record-type (rt constructor . fields)
     (let (names predicate-defs accessor-defs modifier-defs)
       (when (and fields (symbolp (car fields)))
 	(setq predicate-defs `((define ,(car fields) (record-predicate ,rt))))
@@ -141,10 +142,9 @@
 			    modifier-defs))))
 	    fields)
       `(progn
-	 (define ,rt (make-record-type ',name ',names))
+	 (define ,rt (make-record-type ',rt ',names))
 	 (define ,(car constructor)
 	   (record-constructor ,rt ',(cdr constructor)))
-	 (define-datum-printer ,rt (record-printer ,rt))
 	 ,@predicate-defs
 	 ,@accessor-defs
 	 ,@modifier-defs))))
