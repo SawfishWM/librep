@@ -226,6 +226,26 @@ string INPUT."
   (list 'cdr (list 'cdr (list 'cdr x))))
 
 
+;; guardian wrapper
+
+(defun make-guardian ()
+  "Create a new guardian. Guardians provide a means of protecting data
+objects from deallocation when they have no extant references.
+
+`make-guardian' returns a function representing a single guardian.
+Calling this function with a single argument adds that value to the
+list of objects protected by the guardian. Calling the function with no
+arguments returns one of the objects that would otherwise have been
+deallocated by the garbage collector, or `nil' if no such objects
+exist that have not already been returned."
+  (let
+      ((g (make-primitive-guardian)))
+    (lambda (&optional arg)
+      (if arg
+	  (primitive-guardian-push g arg)
+	(primitive-guardian-pop g)))))
+
+
 ;; entry point
 
 ;; null i18n function until gettext is loaded
