@@ -196,6 +196,10 @@ available as the reader shortcut #', i.e. #'foo == (function foo)."
   "Returns t when NAME1 and NAME2 both name the same file."
   (string= (canonical-file-name name1) (canonical-file-name name2)))
 
+(defun identity (arg)
+  "Return ARG."
+  arg)
+
 
 ;; Macros for handling positions
 
