@@ -458,6 +458,12 @@ save_stack (rep_continuation *c)
 
     FLUSH_REGISTER_WINDOWS;
 
+#if defined (__GNUC__) && !defined (BROKEN_ALPHA_GCC)
+    c->stack_top = __builtin_frame_address (0);
+#else
+    c->stack_top = (char *) &size;
+#endif
+
 #if STACK_DIRECTION < 0
     size = c->stack_bottom - c->stack_top;
 #else
@@ -629,19 +635,6 @@ execution point of the interpreter.
     return anc == 0 ? Qnil : Qt;
 }
 
-/* Return the address further into the stack than any part of the frame
-   of the calling function. */
-static char *
-get_stack_top (rep_continuation *c)
-{
-#if defined (__GNUC__) && !defined (BROKEN_ALPHA_GCC)
-    return __builtin_frame_address (0);
-#else
-    int dummy;
-    return (char *) &dummy;
-#endif
-}
-
 static repv
 primitive_call_cc (repv (*callback)(rep_continuation *, void *), void *data,
 		   rep_continuation *c)
@@ -738,7 +731,6 @@ primitive_call_cc (repv (*callback)(rep_continuation *, void *), void *data,
 	c->single_step = rep_single_step_flag;
 	c->lisp_depth = rep_lisp_depth;
 
-	c->stack_top = get_stack_top (c);
 	c->stack_bottom = c->root->point;
 	save_stack (c);
 
