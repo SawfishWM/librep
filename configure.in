@@ -365,14 +365,8 @@ AC_ARG_WITH(stack-direction,
 			   +1 for upwards. [DIR=<probed>]], [],
  [with_stack_direction=0])
 if test "${with_stack_direction}" = 0; then
-  AC_TRY_RUN([
-    static char *inner (void) {
-      char bar; return &bar;
-    }
-    int main (void) {
-      char foo, *bar = inner ();
-      return !(&foo > bar);
-    }],
+  AC_TRY_RUN([ void inner (char *foo) { char bar; exit (!(foo >= &bar)); }
+	       void main () { char foo; inner (&foo); } ],
    [AC_MSG_RESULT([downwards])
     with_stack_direction=-1],
    [AC_MSG_RESULT([upwards])
