@@ -65,8 +65,8 @@
 /* Convert a signed integer into a VALUE. */
 #define MAKE_INT(x)	(((x) << VALUE_INT_SHIFT) | VALUE_IS_INT)
 
-/* Assuming we're using 32 bit VALUEs. */
-#define LISP_INT_BITS   (32 - VALUE_INT_SHIFT)
+/* Bounds of the integer type */
+#define LISP_INT_BITS   (VALUE_BITS - VALUE_INT_SHIFT)
 #define LISP_MAX_INT	((1 << (LISP_INT_BITS - 1)) - 1)
 #define LISP_MIN_INT	(-(1 << (LISP_INT_BITS - 1)))
 
