@@ -1,5 +1,8 @@
 1998-07-04  John Harper  <john@dcs.warwick.ac.uk>
 
+	* lispmach.c (cmd_make_byte_code_subr): don't allocate the
+	optional fourth and fifth elements unless they're required
+
 	* unix_defs.h: remove EXEC_DIR define, just use JADE_EXEC_DIR
 
 	* lispcmds.c: misc. changes to how the build directories and

@@ -25,6 +25,7 @@
 ;;    - Allow file transfer mode (binary/ascii) to be determined by
 ;;	matching files against regexp(s)
 ;;    - Cache more than a single directory listing?
+;;    - Passwords are entered into the alist even if they're invalid
 ;;    - Fix all the kludges marked by XXX
 
 (require 'remote)

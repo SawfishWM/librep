@@ -1,5 +1,8 @@
 1998-07-04  John Harper  <john@dcs.warwick.ac.uk>
 
+	* disassembler.jl (disassemble): fixed for bytecode objects
+	that have less than six elements
+
 	* modes.jl (mode-comment-header): new variable. Provides a
 	simple method of defining how one-line comments are introduced
 	in a file
