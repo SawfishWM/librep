@@ -1,5 +1,7 @@
 2000-07-11  John Harper  <john@dcs.warwick.ac.uk>
 
+	* lispcmds.c (Fload): return nil if file is empty, not null
+
 	* repgdbm.c (Fgdbm_open): check for defined (GDBM_NOLOCK)
 	before using it
 
