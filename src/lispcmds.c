@@ -35,6 +35,8 @@
 DEFSTRING(default_rep_directory, REP_DIRECTORY);
 DEFSTRING(dot, ".");
 
+static repv default_suffixes;
+
 DEFSYM(or, "or");
 DEFSYM(and, "and");
 DEFSYM(load_path, "load-path");
@@ -1225,61 +1227,6 @@ like the last else in an else-if statement in C.
     return(res);
 }
 
-DEFUN("case", Fcase, Scase, (repv args, repv tail_posn), rep_SF) /*
-::doc:case::
-case KEY CLAUSES...
-
-Each CLAUSE is `((ITEMS... ) FORMS...)'. Find the first CLAUSE with an
-ITEM matching (using `eql') the result of evaluating KEY (only
-evaluated once), then evaluate the associated FORMS in a `progn'. The
-final clause may have the form `(t FORMS...)', which always matches KEY
-if no other CLAUSE has already. Returns `nil' if no clause matches.
-
-If any of the ITEMS appear more than once, then the behaviour is
-undefined.
-::end:: */
-{
-    repv key;
-    rep_GC_root gc_args;
-    int i = 2;
-
-    if (!rep_CONSP(args))
-	return rep_signal_missing_arg (0);
-    
-    rep_PUSHGC(gc_args, args);
-    key = rep_eval (rep_CAR(args), Qnil);
-    rep_POPGC;
-    if (key == rep_NULL)
-	return rep_NULL;
-    args = rep_CDR(args);
-
-    while(rep_CONSP(args))
-    {
-	if (!rep_CONSP(rep_CAR(args)))
-	    return rep_signal_arg_error (rep_CAR(args), i);
-	if (rep_CONSP(rep_CAAR(args)))
-	{
-	    repv ptr = rep_CAAR(args);
-	    while (rep_CONSP(ptr))
-	    {
-		if (Feql (key, rep_CAR(ptr)) != Qnil)
-		    return Fprogn (rep_CDAR(args), tail_posn);
-		ptr = rep_CDR(ptr);
-		rep_TEST_INT;
-		if (rep_INTERRUPTP)
-		    return rep_NULL;
-	    }
-	}
-	else if (rep_CAAR(args) == Qt)
-	    return Fprogn (rep_CDAR(args), tail_posn);
-	else
-	    return rep_signal_arg_error (rep_CAR(args), i);
-	args = rep_CDR(args);
-	i++;
-    }
-    return Qnil;
-}
-
 DEFUN("apply", Fapply, Sapply, (repv args), rep_SubrN) /*
 ::doc:apply::
 apply FUNCTION ARGS... ARG-LIST
@@ -1372,7 +1319,7 @@ loaded and a warning is displayed.
 
     suffixes = F_structure_ref (rep_structure, Q_load_suffixes);
     if (!suffixes || !rep_CONSP (suffixes))
-	no_suffix_p = rep_TRUE;
+	suffixes = default_suffixes;
 
     rep_PUSHGC(gc_name, name);
     rep_PUSHGC(gc_file, file);
@@ -1858,16 +1805,6 @@ Returns t if ARG is a vector.
     return rep_VECTORP(arg) ? Qt : Qnil;
 }
 
-DEFUN("bytecodep", Fbytecodep, Sbytecodep, (repv arg), rep_Subr1) /*
-::doc:bytecodep::
-bytecodep ARG
-
-Returns t if ARG is a byte code subroutine (i.e. compiled Lisp code).
-::end:: */
-{
-    return rep_COMPILEDP(arg) ? Qt : Qnil;
-}
-
 DEFUN("functionp", Ffunctionp, Sfunctionp, (repv arg), rep_Subr1) /*
 ::doc:functionp::
 functionp ARG
@@ -2088,9 +2025,23 @@ void
 rep_lispcmds_init(void)
 {
     DEFSTRING (common_exec, REP_COMMON_EXEC_DIRECTORY);
+    repv tem;
 
+    tem = rep_push_structure ("rep.lang.interpreter");
     rep_ADD_SUBR(Squote);
     rep_ADD_SUBR(Slambda);
+    rep_ADD_SUBR(Scond);
+    rep_ADD_SUBR(Sapply);
+    rep_ADD_SUBR(Scall_with_exception_handler);
+    rep_ADD_SUBR(Sraise_exception);
+    rep_ADD_SUBR(Sfunctionp);
+    rep_ADD_SUBR(Smacrop);
+    rep_ADD_SUBR(Sspecial_form_p);
+    rep_ADD_SUBR(Ssubrp);
+    rep_ADD_SUBR(Ssubr_name);
+    rep_pop_structure (tem);
+
+    tem = rep_push_structure ("rep.data");
     rep_ADD_SUBR(Scar);
     rep_ADD_SUBR(Scdr);
     rep_ADD_SUBR(Slist);
@@ -2130,10 +2081,6 @@ rep_lispcmds_init(void)
     rep_ADD_SUBR(Slength);
     rep_ADD_SUBR(Scopy_sequence);
     rep_ADD_SUBR(Selt);
-    rep_ADD_SUBR(Scond);
-    rep_ADD_SUBR(Scase);
-    rep_ADD_SUBR(Sapply);
-    rep_ADD_SUBR_INT(Sload);
     rep_ADD_SUBR(Snot);
     rep_ADD_SUBR(Sequal);
     rep_ADD_SUBR(Seq);
@@ -2152,16 +2099,16 @@ rep_lispcmds_init(void)
     rep_ADD_SUBR(Slistp);
     rep_ADD_SUBR(Sstringp);
     rep_ADD_SUBR(Svectorp);
-    rep_ADD_SUBR(Sbytecodep);
-    rep_ADD_SUBR(Sfunctionp);
-    rep_ADD_SUBR(Smacrop);
-    rep_ADD_SUBR(Sspecial_form_p);
-    rep_ADD_SUBR(Ssubrp);
     rep_ADD_SUBR(Ssequencep);
-    rep_ADD_SUBR(Ssubr_name);
+    rep_pop_structure (tem);
+
+    tem = rep_push_structure ("rep.io.files");
+    rep_ADD_SUBR_INT(Sload);
+    rep_pop_structure (tem);
+
+    tem = rep_push_structure ("rep.system");
     rep_ADD_SUBR(Scall_hook);
-    rep_ADD_SUBR(Scall_with_exception_handler);
-    rep_ADD_SUBR(Sraise_exception);
+    rep_pop_structure (tem);
 
     rep_INTERN(provide);
 
@@ -2237,7 +2184,7 @@ rep_lispcmds_init(void)
 
     rep_INTERN_SPECIAL(load_filename);
 
+    default_suffixes = Fcons (rep_VAL (&jl), rep_VAL (&jlc));
+    rep_mark_static (&default_suffixes);
     rep_INTERN (_load_suffixes);
-    Fstructure_set (rep_structure, Q_load_suffixes, Fcons (rep_VAL (&jl),
-							   rep_VAL (&jlc)));
 }
