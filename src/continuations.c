@@ -615,6 +615,7 @@ get_stack_top (rep_continuation *c)
 static repv
 primitive_call_cc (repv (*callback)(rep_continuation *, void *), void *data)
 {
+    struct rep_saved_regexp_data re_data;
     rep_continuation *c;
     repv ret;
 
@@ -677,10 +678,14 @@ primitive_call_cc (repv (*callback)(rep_continuation *, void *), void *data)
 		}
 	    }
 	}
+
+	rep_pop_regexp_data ();
     }
     else
     {
 	/* into call/cc */
+
+	rep_push_regexp_data (&re_data);
 
 	c->barriers = barriers;
 	c->root = root_barrier;
@@ -703,6 +708,8 @@ primitive_call_cc (repv (*callback)(rep_continuation *, void *), void *data)
 	     c, (u_long) c->stack_size, rep_stack_bottom - c->stack_top));
 
 	ret = callback (c, data);
+
+	rep_pop_regexp_data ();
     }
 
     return ret;
