@@ -234,12 +234,14 @@
 	    (let
 		((required (nth 1 decl))
 		 (optional (nth 2 decl))
-		 (rest (nth 3 decl)))
+		 (rest (nth 3 decl))
+		 (keys (nth 4 decl)))
 	      (if (< nargs required)
 		  (compiler-warning
 		   'parameters "%d arguments required by %s; %d supplied"
 		   required name nargs)
-		(when (and (null rest) (> nargs (+ required (or optional 0))))
+		(when (and (null rest) (null keys)
+			   (> nargs (+ required (or optional 0))))
 		  (compiler-warning
 		   'parameters "Too many arguments to %s (%d given, %d used)"
 		   name nargs (+ required (or optional 0)))))))))))
