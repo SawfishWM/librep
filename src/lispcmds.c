@@ -223,7 +223,16 @@ list ARGS...
 Returns a new list with elements ARGS...
 ::end:: */
 {
-    return args;
+    VALUE res = sym_nil;
+    VALUE *ptr = &res;
+    while(CONSP(args))
+    {
+	if(!(*ptr = cmd_cons(VCAR(args), sym_nil)))
+	    return LISP_NULL;
+	ptr = &VCDR(*ptr);
+	args = VCDR(args);
+    }
+    return(res);
 }
 
 _PR VALUE cmd_make_list(VALUE, VALUE);
@@ -389,8 +398,7 @@ were. This function is destructive towards it's argument.
 	TEST_INT;
 	if(INT_P)
 	    return(LISP_NULL);
-	head = nxt;
-    } while(head != LISP_NULL);
+    } while((head = nxt) != LISP_NULL);
     return(res);
 }
 
