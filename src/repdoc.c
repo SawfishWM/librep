@@ -26,12 +26,12 @@
 static void
 usage(void)
 {
-    fputs("usage: repdoc [-a] doc-file [src-files...]\n", stderr);
+    fputs("usage: repdoc doc-file [src-files...]\n", stderr);
     exit(1);
 }
 
 static void
-scanfile(FILE *src, DBM *dbm)
+scanfile(FILE *src, SDBM *sdbm)
 {
     char buf[512];
     while(fgets(buf, 512, src))
@@ -62,10 +62,10 @@ scanfile(FILE *src, DBM *dbm)
 	    *out = 0;
 
 	    key.dptr = id;
-	    key.dsize = strlen(id);
+	    key.dsize = strlen(id) + 1;
             value.dptr = buf;
-	    value.dsize = strlen(buf);
-	    dbm_store (dbm, key, value, DBM_REPLACE);
+	    value.dsize = strlen(buf) + 1;
+	    sdbm_store (sdbm, key, value, SDBM_REPLACE);
 	}
     }
 }
@@ -73,18 +73,12 @@ scanfile(FILE *src, DBM *dbm)
 int
 main(int ac, char **av)
 {
-    DBM *docdbm;
-    char append_p = 0;
+    SDBM *docdbm;
     ac--;
     av++;
-    if(ac >= 1 && !strcmp("-a", av[0]))
-    {
-	append_p = 1;
-	ac--; av++;
-    }
     if(ac < 2)
 	usage();
-    docdbm = dbm_open(*av++, O_RDWR | O_CREAT | (append_p ? 0 : O_TRUNC), 0666);
+    docdbm = sdbm_open(*av++, O_RDWR | O_CREAT, 0666);
     ac--;
     if(docdbm == 0)
     {
