@@ -39,7 +39,7 @@
     lambda last length let let* letrec list list* logand logior lognot logxor
     lower-case-p lsh macroexpand macrolet macrop make-closure make-list
     make-string make-string-input-stream make-string-output-stream
-    make-symbol make-vector makunbound mapc mapcar match-end
+    make-symbol make-timer make-vector makunbound mapc mapcar match-end
     match-start max member memq message min mod nconc nop not nreverse
     nth nthcdr null numberp or prin1 prin1-to-string princ print prog1
     prog2 progn put quote quote-regexp random rassoc rassq read
@@ -56,8 +56,7 @@
 
 ;; alist mapping functions to their safe versions
 (defvar gaol-redefined-functions
-  '((require . gaol:require)
-    (make-timer . gaol:make-timer)))
+  '((require . gaol:require)))
 
 ;; list of accessible special variables
 (defvar gaol-safe-specials
@@ -169,9 +168,3 @@
     (error "Gaolled code trying to require %s" feature))
   (require feature)
   (gaol-rebuild-environment))
-
-(defun gaol:make-timer (fun &optional secs msecs)
-  (unless (closurep fun)
-    (error "Restricted code can only pass closures to make-timer"))
-  (require 'timers)
-  (make-timer fun secs msecs))
