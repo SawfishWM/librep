@@ -67,16 +67,12 @@
    <clause> -> (open <name>*)
 	       (access <name>*)
 
-   Most files will just contain a single `(structure ...)' form. E.g.
+   Most files will just contain a single `(define-structure ...)' form.
+   E.g.:
 
-   (structure (export foo)
-     (open rep)
+   (define-structure foo (export foo) (open rep)
      (defun foo (x)
        (1+ x)))
-
-   The name of the module may be inferred from the file containing it.
-   The <config> clauses define which structures the new module imports,
-   the `module-system' structure is always included. (XXX remove this?)
 
    As Rees points out, this changes load from being used for its side
    effects to being used for its value, the created structure.
@@ -1085,16 +1081,12 @@ attempt to load it.
 	rep_PUSHGC (gc_old, old);
 	rep_PUSHGC (gc_name, name);
 	tem = Fload (Fstructure_file (name), Qnil, Qnil, Qnil, Qnil);
-	rep_POPGC;
-	if (tem != rep_NULL)
-	{
-	    if (rep_STRUCTUREP (tem))
-		Fname_structure (tem, name);
-	    else
-		tem = Qnil;
-	}
-	rep_POPGC;
+	rep_POPGC; rep_POPGC;
+
 	rep_structure = old;
+
+	if (tem != rep_NULL && !rep_STRUCTUREP (tem))
+	    tem = Qnil;
     }
     return tem;
 }
