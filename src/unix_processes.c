@@ -345,7 +345,7 @@ read_from_one_fd(struct Proc *pr, int fd)
 	}
     } while((actual > 0) || (actual < 0 && errno == EINTR));
 
-    if((actual <= 0) && (errno != EWOULDBLOCK) && (errno != EAGAIN))
+    if (actual == 0 || (actual < 0 && errno != EWOULDBLOCK && errno != EAGAIN))
     {
 	/* We assume EOF  */
 
