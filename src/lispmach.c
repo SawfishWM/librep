@@ -338,13 +338,7 @@ fetch:
 		    lc.args = tmp2;
 		    lc.args_evalled_p = sym_t;
 		    lisp_call_stack = &lc;
-		    if(!(TOP = eval_lambda(tmp, tmp2, FALSE))
-		       && throw_value
-		       && (VCAR(throw_value) == sym_defun))
-		    {
-			TOP = VCDR(throw_value);
-			throw_value = LISP_NULL;
-		    }
+		    TOP = eval_lambda(tmp, tmp2, FALSE);
 		    lisp_call_stack = lc.next;
 		}
 		else if(VCAR(tmp) == sym_autoload)
@@ -382,13 +376,6 @@ fetch:
 						 MAKE_INT(COMPILED_STACK(tmp)));
 			POPGC;
 			unbind_symbols(bindings);
-			if(TOP == LISP_NULL
-			   && throw_value != LISP_NULL
-			   && (VCAR(throw_value) == sym_defun))
-			{
-			    TOP = VCDR(throw_value);
-			    throw_value = LISP_NULL;
-			}
 		    }
 		    else
 			goto error;
@@ -866,11 +853,6 @@ fetch:
 
 	case OP_SIGNAL:
 	    CALL_2(cmd_signal);
-
-	case OP_RETURN:
-	    if(!throw_value)
-		throw_value = cmd_cons(sym_defun, TOP);
-	    goto error;
 
 	case OP_REVERSE:
 	    CALL_1(cmd_reverse);

@@ -182,10 +182,6 @@ is 0)."
   "A do-nothing command."
   (interactive))
 
-(defmacro return (&optional arg)
-  "Return ARG from the outermost function."
-  (list 'throw ''defun arg))
-
 (defmacro function (arg)
   "Normally the same as `quote'. When being compiled, if ARG is not a symbol
 it causes ARG to be compiled as a lambda expression. This macro is also

@@ -25,10 +25,11 @@
   (let
       ((cell process-environment)
        (regexp (concat (quote-regexp name) ?=)))
-    (while (consp cell)
-      (when (string-looking-at regexp (car cell))
-	(return (substring (car cell) (match-end))))
-      (setq cell (cdr cell)))))
+    (catch 'return
+      (while (consp cell)
+	(when (string-looking-at regexp (car cell))
+	  (throw 'return (substring (car cell) (match-end))))
+	(setq cell (cdr cell))))))
 
 ;;;###autoload
 (defun setenv (name value)
@@ -37,10 +38,11 @@ The `process-environment' variable is destructively modified."
   (let
       ((cell process-environment)
        (regexp (concat (quote-regexp name) ?=)))
-    (while (consp cell)
-      (when (string-looking-at regexp (car cell))
-	(rplaca cell (concat name ?= value))
-	(return))
-      (setq cell (cdr cell)))
-    (setq process-environment (cons (concat name ?= value)
-				    process-environment))))
+    (catch 'return
+      (while (consp cell)
+	(when (string-looking-at regexp (car cell))
+	  (rplaca cell (concat name ?= value))
+	  (throw 'return value))
+	(setq cell (cdr cell)))
+      (setq process-environment (cons (concat name ?= value)
+				      process-environment)))))

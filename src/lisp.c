@@ -92,10 +92,9 @@ DEFSYM(macro, "macro");
 DEFSYM(autoload, "autoload");
 DEFSYM(function, "function");
 
-_PR VALUE sym_standard_input, sym_standard_output, sym_defun;
+_PR VALUE sym_standard_input, sym_standard_output;
 DEFSYM(standard_input, "standard-input");
 DEFSYM(standard_output, "standard-output");
-DEFSYM(defun, "defun");
 
 _PR VALUE sym_amp_optional, sym_amp_rest, sym_amp_aux;
 DEFSYM(amp_optional, "&optional");
@@ -902,12 +901,6 @@ eval_lambda(VALUE lambdaExp, VALUE argList, bool eval_args)
 	    result = cmd_progn(VCDR(lambdaExp));
 	    POPGC;
 	    unbind_symbols(boundlist);
-	    if(throw_value != LISP_NULL
-	       && (VCAR(throw_value) == sym_defun))
-	    {
-		result = VCDR(throw_value);
-		throw_value = LISP_NULL;
-	    }
 	}
 	else
 	    result = LISP_NULL;
@@ -1134,13 +1127,6 @@ again:
 		    result = LISP_NULL;
 	    }
 	    lisp_call_stack = lc.next;
-
-	    if(throw_value != LISP_NULL
-	       && (VCAR(throw_value) == sym_defun))
-	    {
-		result = VCDR(throw_value);
-		throw_value = LISP_NULL;
-	    }
 	}
 	else if(car == sym_autoload)
 	{
@@ -1184,13 +1170,6 @@ again:
 	    else
 		result = LISP_NULL;
 	    lisp_call_stack = lc.next;
-
-	    if(throw_value != LISP_NULL
-	       && (VCAR(throw_value) == sym_defun))
-	    {
-		result = VCDR(throw_value);
-		throw_value = LISP_NULL;
-	    }
 	    break;
 	}
 
@@ -1788,13 +1767,6 @@ top:
 		    form = LISP_NULL;
 		lisp_call_stack = lc.next;
 
-		if(throw_value != LISP_NULL
-		   && (VCAR(throw_value) == sym_defun))
-		{
-		    form = VCDR(throw_value);
-		    throw_value = LISP_NULL;
-		}
-
 		if(form != LISP_NULL)
 		    goto top;
 	    }
@@ -2042,7 +2014,7 @@ too small (you get errors in normal use) set it to something larger.
 void
 lisp_init(void)
 {
-    INTERN(quote); INTERN(lambda); INTERN(macro); INTERN(defun);
+    INTERN(quote); INTERN(lambda); INTERN(macro);
     INTERN(backquote); INTERN(backquote_unquote); INTERN(backquote_splice);
     INTERN(autoload); INTERN(function);
     INTERN(standard_input); INTERN(standard_output);

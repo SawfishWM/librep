@@ -138,7 +138,7 @@
 					    then bindsym (stk[1], cdr stk[0]),
 					         stk[0] = nil */
 #define OP_SIGNAL 0x7d			/* call-2 signal */
-#define OP_RETURN 0x7e			/* (throw 'defun pop[0]) */
+#define OP_UNUSED2 0x7e
 #define OP_REVERSE 0x7f			/* call-1 reverse */
 #define OP_NREVERSE 0x80		/* call-1 nreverse */
 #define OP_ASSOC 0x81			/* call-2 assoc */

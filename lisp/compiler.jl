@@ -158,12 +158,14 @@ their position in that file.")
 ;; Message output
 
 (defun comp-message (fmt &rest args)
-  (if (null comp-output-stream)
-      (if comp-batch-compile
-	  (setq comp-output-stream (stdout-file))
-	(setq comp-output-stream (open-buffer "*compilation-output*"))
-	(goto-buffer comp-output-stream)
-	(goto (end-of-buffer))))
+  (when (null comp-output-stream)
+    (if comp-batch-compile
+	(setq comp-output-stream (stdout-file))
+      (setq comp-output-stream (open-buffer "*compilation-output*"))))
+  (when (and (bufferp comp-output-stream)
+	     (not (eq (current-buffer) comp-output-stream)))
+    (goto-buffer comp-output-stream)
+    (goto (end-of-buffer)))
 ; (when comp-current-file
 ;   (format comp-output-stream "%s:" comp-current-file))
   (when comp-current-fun
@@ -225,29 +227,30 @@ their position in that file.")
 
 ;; Test a call to NAME with NARGS arguments
 (defun comp-test-funcall (name nargs)
-  (let
-      ((decl (assq name comp-defuns)))
-    (when (and (null decl) (fboundp name))
-      (setq decl (symbol-function name))
-      (when (or (subrp decl)
-		(and (consp decl) (eq (car decl) 'autoload)))
-	(return))
-      (if (bytecodep decl)
-	  (comp-remember-fun name (aref decl 0))
-	(comp-remember-fun name (nth (if (macrop name) 2 1) decl)))
-      (setq decl (assq name comp-defuns)))
-    (if (null decl)
-	(comp-warning "Call to undeclared function: %s" name)
-      (let
-	  ((required (nth 1 decl))
-	   (optional (nth 2 decl))
-	   (rest (nth 3 decl)))
-	(if (< nargs required)
-	    (comp-warning "%d arguments required by %s; %d supplied"
-			  required name nargs)
-	  (when (and (null rest) (> nargs (+ required (or optional 0))))
-	    (comp-warning "Too many arguments to %s (%d given, %d used)"
-			  name nargs (+ required (or optional 0)))))))))
+  (catch 'return
+    (let
+	((decl (assq name comp-defuns)))
+      (when (and (null decl) (fboundp name))
+	(setq decl (symbol-function name))
+	(when (or (subrp decl)
+		  (and (consp decl) (eq (car decl) 'autoload)))
+	  (throw 'return))
+	(if (bytecodep decl)
+	    (comp-remember-fun name (aref decl 0))
+	  (comp-remember-fun name (nth (if (macrop name) 2 1) decl)))
+	(setq decl (assq name comp-defuns)))
+      (if (null decl)
+	  (comp-warning "Call to undeclared function: %s" name)
+	(let
+	    ((required (nth 1 decl))
+	     (optional (nth 2 decl))
+	     (rest (nth 3 decl)))
+	  (if (< nargs required)
+	      (comp-warning "%d arguments required by %s; %d supplied"
+			    required name nargs)
+	    (when (and (null rest) (> nargs (+ required (or optional 0))))
+	      (comp-warning "Too many arguments to %s (%d given, %d used)"
+			    name nargs (+ required (or optional 0))))))))))
 
 
 ;; Top level entrypoints
@@ -271,6 +274,7 @@ is one of these that form is compiled.")
        (comp-defuns '())
        (comp-defvars '())
        (comp-bindings '())
+       (comp-output-stream nil)
        src-file dst-file form)
     (message (concat "Compiling " file-name "...") t)
     (when (setq src-file (open-file file-name 'read))
@@ -400,7 +404,10 @@ that files which shouldn't be compiled aren't."
   (interactive "aFunction to compile:")
   (let
       ((fbody (symbol-function function))
-       (comp-current-fun function))
+       (comp-current-fun function)
+       (comp-defuns nil)
+       (comp-defvars nil)
+       (comp-output-stream nil))
     (when (assq 'jade-byte-code fbody)
       (comp-error "Function already compiled" function))
     (fset function (comp-compile-lambda fbody)))
@@ -488,7 +495,8 @@ that files which shouldn't be compiled aren't."
       ;; Setup comp-defuns and comp-defvars if compile-file hasn't already
       (let
 	  ((comp-defuns '())
-	   (comp-defvars '()))
+	   (comp-defvars '())
+	   (comp-output-stream nil))
 	(comp-compile-form form)))
     (when comp-output
       (list 'jade-byte-code (comp-make-code-string) (comp-make-const-vec)
@@ -1570,8 +1578,6 @@ that files which shouldn't be compiled aren't."
   (put 'put 'compile-opcode op-put)
   (put 'signal 'compile-fun 'comp-compile-2-args)
   (put 'signal 'compile-opcode op-signal)
-  (put 'return 'compile-fun 'comp-compile-1-args)
-  (put 'return 'compile-opcode op-return)
   (put 'reverse 'compile-fun 'comp-compile-1-args) ; new 12/7/94
   (put 'reverse 'compile-opcode op-reverse)
   (put 'nreverse 'compile-fun 'comp-compile-1-args)

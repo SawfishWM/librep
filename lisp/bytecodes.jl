@@ -123,7 +123,7 @@
 (defconst op-put 0x7b)
 (defconst op-errorpro 0x7c)
 (defconst op-signal 0x7d)
-(defconst op-return 0x7e)
+(defconst op-unused2 0x7e)
 (defconst op-reverse 0x7f)
 (defconst op-nreverse 0x80)
 (defconst op-assoc 0x81)
