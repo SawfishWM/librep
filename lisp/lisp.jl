@@ -125,7 +125,7 @@ formal parameters are the same as the variables bound by the `let'
 form. Thus the execution of BODY... may be repeated by invoking VAR."
 
   ((lambda (fun vars values)
-     (cond ((symbolp (car args))
+     (cond ((cond ((car args) (symbolp (car args))))	;and expanded
 	    ;; named let
 	    (setq fun (car args))
 	    (setq args (cdr args))))
