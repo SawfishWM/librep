@@ -2852,7 +2852,8 @@ rep_lispcmds_init(void)
     }
     rep_SYM(Qdl_load_path)->value
 	= Fcons(rep_SYM(Qexec_directory)->value,
-		Fnreverse(rep_SYM(Qdl_load_path)->value));
+		Fcons (rep_string_dup (REP_COMMON_EXEC_DIRECTORY),
+		       Fnreverse(rep_SYM(Qdl_load_path)->value)));
 
     rep_INTERN(after_load_alist);
     rep_SYM(Qafter_load_alist)->value = Qnil;
