@@ -105,7 +105,8 @@
 					  (symbol-value (cdr cell))))
 				  gaol-redefined-file-handlers))))
 	(unless gaol-structure
-	  (setq gaol-structure (%make-structure)))
+	  (setq gaol-structure (%make-structure))
+	  (set-special-environment gaol-safe-specials gaol-structure))
 	(mapc (lambda (sym)
 		(%structure-set
 		 gaol-structure sym (%structure-ref (%current-structure) sym)))
@@ -148,7 +149,6 @@
   (defun gaol-trampoline (form)
     (gaol-rebuild-environment)
     `(save-environment
-      (set-special-environment ',gaol-safe-specials)
       (set-environment t)
       (%eval-in-structure ',form ',gaol-structure)))
 
