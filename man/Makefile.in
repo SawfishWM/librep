@@ -54,7 +54,7 @@ uninstall :
 	-install-info --delete librep.info $(DESTDIR)$(infodir)/dir
 
 clean :
-	rm -f *~ librep.info* librep.?? librep.??
+	rm -f *~ librep.info* librep.?? librep.???
 
 distclean : clean
 	rm -f Makefile

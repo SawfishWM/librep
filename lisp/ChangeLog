@@ -1,5 +1,14 @@
 2000-09-04  John Harper  <john@dcs.warwick.ac.uk>
 
+	* rep/vm/compiler/scheme.jl: when compiling let* and letrec
+	forms, scan out inner defines before passing the forms to the
+	rep compilers
+	* rep/vm/compiler/unscheme.jl: same thing
+
+	* scheme/syntax-funs.jl (expand-letrec): expand inner defines
+	in body by hand; `lambda' would miss them since they come after
+	the initialising `set!' forms
+
 	* rep/i18n/xgettext.jl: track the current module name while
 	scanning, and export it via the current-module fluid
 
@@ -41,7 +50,7 @@
 	* rep/util/ispell.jl: use accept-process-input-1 so as not to
 	call other process handlers asynchronously
 
-2000-08-27    <john@dcs.warwick.ac.uk>
+2000-08-27  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep/vm/compiler/inline.jl, rep/vm/compiler/basic.jl: now
 	evaluate default values of #!optional and #!key parameters

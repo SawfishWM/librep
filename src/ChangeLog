@@ -1,3 +1,8 @@
+2000-09-05  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispmach.h: when OPTIMIZE_FOR_SPACE is defined don't bother
+	inlining SAFE_NEXT, the assertions add too much overhead 
+
 2000-09-04  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_dl.c (rep_open_dl_library): when no `dlname=' line was
