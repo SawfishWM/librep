@@ -5908,10 +5908,10 @@ this in turn defines a number of functions implementing the type. These
 functions include a constructor, a type predicate, and a user-defined
 set of field-accessor and -modifier functions.
 
-@defmac define-record-type name type (constructor fields@dots{}) [predicate] (field accessor [modifier])@dots{}
+@defmac define-record-type type (constructor fields@dots{}) [predicate] (field accessor [modifier])@dots{}
 
-This macro creates a new record type called @var{name} and stores an
-opaque object identifying the type in the variable @var{type}.
+This macro creates a new record type storing an opaque object
+identifying the type in the variable named @var{type}.
 
 It then defines a function @var{constructor} with arguments as
 specified by the @var{fields@dots{}}, a predicate function called
@@ -5933,7 +5933,7 @@ record.
 Here is an example record definition:
 
 @lisp
-(define-record-type pare :pare
+(define-record-type :pare
   (kons x y)                         ; constructor
   pare?                              ; predicate
   (x kar set-kar!)                   ; fields w/ optional accessors
@@ -5941,9 +5941,8 @@ Here is an example record definition:
 @end lisp
 
 @noindent
-@code{pare} is the name of the type (used when printing), the variable
-@code{:pare} is bound to the record type. Following this definition,
-the record type could be used as follows:
+the variable @code{:pare} is bound to the record type. Following this
+definition, the record type could be used as follows:
 
 @lisp
 (define x (kons 1 2))
@@ -5962,7 +5961,7 @@ the record type could be used as follows:
 
 By default record objects print as the name of their type in angle
 brackets, e.g. for the above @code{pare} type, each object would print
-as the string @samp{#<pare>}. This may be redefined using the
+as the string @samp{#<:pare>}. This may be redefined using the
 @code{define-record-discloser} function.
 
 @defun define-record-discloser type discloser
