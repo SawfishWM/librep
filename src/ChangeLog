@@ -1,5 +1,34 @@
 1998-09-02  John Harper  <john@dcs.warwick.ac.uk>
 
+	* edit.h (Merged_Face): new structure, pared down version of
+	Lisp_Face, used to amalgamate face attributes from the various
+	source faces for each character
+	(FACEFF_INVERT, FACEFF_BOXED): new face attributes, used for
+	drawing the cursor (and its ghosting)
+	(WIN): new field `w_MergedFaces', a table of the actual faces
+	used for drawing in this window. Currently it's limited to 64
+	entries
+
+	* faces.c (cmd_make_face): no longers copies from a source
+	face, now all faces are created equal (and empty)
+	(cmd_delete_face, mark_faces, cmd_face_id): deleted, no longer
+	needed now faces don't have id's associated with them
+	(cmd_set_face_attribute, cmd_face_attribute): new attributes
+	`inverted' and `boxed'
+	(merge_faces): new function, compute a face for an extent
+	(get_face_id): new function, compute a face from a face
+	(mark_merged_faces): new function
+
+	* glyphs.c (make_window_glyphs, make_message_glyphs): support
+	merged faces
+
+	* values.c (cmd_garbage_collect): call mark_merge_faces in each
+	window
+
+	* x11_windows.c: support merged faces
+
+	* x11_main.c (x11_free_dpy_colors): fix infinite loop bug
+
 	* unix_processes.c (cmd_accept_process_output): check if
 	there's any queued notifications as well as SIGCHLDs before
 	waiting for output
