@@ -55,6 +55,9 @@ void (*rep_on_termination_fun)(void);
 /* The event-loop function, may be entered recursively. */
 repv (*rep_event_loop_fun)(void) = rep_event_loop;
 
+/* rep_init () will set this to an early stack pointer */
+char *rep_stack_bottom;
+
 DEFSYM(exit, "exit");
 DEFSYM(quit, "quit");
 DEFSYM(top_level, "top-level");
@@ -248,7 +251,6 @@ rep_init_from_dump(char *prog_name, int *argc, char ***argv,
 	   XXX any other way to reliably find the real base of the
 	   XXX stack.. */
 	rep_stack_bottom = (char *) argc;
-	rep_continuations_init ();
 
 	if (sys_symbols != 0)
 	    (*sys_symbols)();
@@ -281,7 +283,6 @@ rep_load_environment (repv file)
 void
 rep_kill(void)
 {
-    rep_continuations_kill ();
     rep_sys_os_kill();
     rep_find_kill();
     rep_files_kill();
