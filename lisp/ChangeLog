@@ -1,3 +1,20 @@
+2000-05-12  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp-doc.jl (apropos-output, apropos-function,
+	apropos-variable, describe-variable, describe-variable-1,
+	describe-function): deleted these functions, they're all
+	useless since they call symbol-value (from the wrong structure)
+
+	(describe-function-1): renamed describe-value, takes two args
+	VALUE and NAME (optional), then describes the value to
+	standard-output. Handles both functions and variables
+
+	(documentation): added optional second arg VALUE, the value of
+	the symbol in the caller's environment
+	
+	* rep-repl.jl: added `,describe' and `,apropos' commands,
+	removed `,doc'
+
 2000-05-11  John Harper  <john@dcs.warwick.ac.uk>
 
 	* init.jl (or, and): implement base cases explicitly, (or) =>
