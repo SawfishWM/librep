@@ -139,13 +139,7 @@
   (define (list-ref lst i) (nth i lst))
 
   (define memq (make-nil-predicate rep#memq))
-
-  (define (memv obj lst)
-    (let loop ((rest lst))
-      (cond ((null rest) #f)
-	    ((eql (car rest) obj) rest)
-	    (t (loop (cdr rest))))))
-
+  (define memv (make-nil-predicate rep#memql))
   (define member (make-nil-predicate rep#member))
 
   (define assq (make-nil-predicate rep#assq))
