@@ -14,7 +14,7 @@ copy_la_file () {
   old_stem=`echo "$la_src" | sed -e 's|^.*/\([^/]*\)\.[^/]*$|\1|'`
   new_stem=`echo "$la_dest" | sed -e 's|^.*/\([^/]*\)\.[^/]*$|\1|'`
 
-  sed -e '/^dlname=/ s/^'"${old_stem}"'$/'"${new_stem}"'/' \
+  sed -e '/^dlname=/ s/'"${old_stem}"'/'"${new_stem}"'/' \
       < "$la_src" > "$la_dest"
 }
 
