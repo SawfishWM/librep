@@ -1,5 +1,7 @@
 Sat May 16 13:51:54 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* x11_misc.c (write_clip, read_clip): deleted, not used anymore
+
 	* unix_files.c, ../config.h.in: remove definition and use of
 	HAVE_REALPATH since we provide an implementation for when libc
 	doesn't
