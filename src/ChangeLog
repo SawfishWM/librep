@@ -1,3 +1,10 @@
+2000-05-29  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.c (rep_readl): fix bug when reading `#!' when not at the
+	start of a file
+
+	* lisp.c (rep_readl): recognize #F and #T
+
 2000-05-28  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lisp.c, numbers.c (read_symbol, rep_readl,
