@@ -1,3 +1,8 @@
+2001-11-17  John Harper  <jsh@unfactored.org>
+
+	* Makedefs.in: don't use `libtool --mode=execute' in
+	$(rep_prog), just call the script directly
+
 2001-10-28  John Harper  <jsh@unfactored.org>
 
 	* configure.in: version 0.15.2
