@@ -212,6 +212,20 @@ Returns t when TIME-STAMP1 refers to a later time than TIME-STAMP2.
     return VLONG_INT(t1) > VLONG_INT(t2) ? sym_t : sym_nil;
 }
 
+_PR VALUE cmd_sleep_for(VALUE secs, VALUE msecs);
+DEFUN("sleep-for", cmd_sleep_for, subr_sleep_for, (VALUE secs, VALUE msecs),
+      V_Subr2, DOC_sleep_for) /*
+::doc:sleep_for::
+sleep-for SECONDS [MILLISECONDS]
+
+Pause for SECONDS (plus the optional MILLISECOND component) length of time.
+::end:: */
+{
+    DECLARE1(secs, INTP);
+    sys_sleep_for(VINT(secs), INTP(msecs) ? VINT(msecs) : 0);
+    return sym_t;
+}
+
 _PR VALUE cmd_user_login_name(void);
 DEFUN("user-login-name", cmd_user_login_name, subr_user_login_name, (void), V_Subr0, DOC_user_login_name) /*
 ::doc:user_login_name::
@@ -326,6 +340,7 @@ misc_init(void)
     ADD_SUBR(subr_current_time);
     ADD_SUBR(subr_current_time_string);
     ADD_SUBR(subr_time_later_p);
+    ADD_SUBR(subr_sleep_for);
 
     ADD_SUBR(subr_user_login_name);
     ADD_SUBR(subr_user_full_name);
