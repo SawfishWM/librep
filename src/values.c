@@ -191,7 +191,7 @@ DEFSTRING(string_overflow, "String too long");
 /* Return a string object with room for exactly LEN characters. No extra
    byte is allocated for a zero terminator; do this manually if required. */
 repv
-rep_make_string(int len)
+rep_make_string(long len)
 {
     rep_string *str;
     int memlen;
@@ -205,6 +205,7 @@ rep_make_string(int len)
     {
 	str->car = rep_MAKE_STRING_CAR(len - 1);
 	str->next = strings;
+	str->data = ((char *)str) + sizeof (rep_string);
 	strings = str;
 	allocated_strings++;
 	allocated_string_bytes += memlen;
@@ -216,7 +217,7 @@ rep_make_string(int len)
 }
 
 repv
-rep_string_dupn(const u_char *src, int slen)
+rep_string_dupn(const u_char *src, long slen)
 {
     rep_string *dst = rep_STRING(rep_make_string(slen + 1));
     if(dst != NULL)
@@ -716,11 +717,6 @@ collection is triggered when the editor is idle.
 {
     return rep_handle_var_int(val, &rep_idle_gc_threshold);
 }
-
-#ifndef NO_GC_MSG
-DEFSTRING(gc_start, "Garbage collecting...");
-DEFSTRING(gc_done, "Garbage collecting...done.");
-#endif
 
 DEFUN_INT("garbage-collect", Fgarbage_collect, Sgarbage_collect, (repv noStats), rep_Subr1, "") /*
 ::doc:Sgarbage-collect::
