@@ -242,8 +242,6 @@ of byte code. See the functions `compile-file', `compile-directory' and
 `compile-lisp-lib' for more details.
 ::end:: */
 {
-    repv *stackbase;
-    register repv *stackp;
     /* This holds a list of sets of bindings, it can also hold the form of
        an unwind-protect that always gets eval'd (when the car is t).  */
     repv bindstack;
@@ -253,18 +251,34 @@ of byte code. See the functions `compile-file', `compile-directory' and
        a chance of gc.	*/
     rep_GC_n_roots gc_stackbase;
 
-    /* this is the number of dynamic `bindings' in effect (including
-       non-variable bindings). */
+    /* this is the number of dynamic `bindings' in effect
+       (including non-variable bindings). */
     int impurity;
 
     rep_DECLARE3(stkreq, rep_INTP);
 
-again_stack:
-    stackbase = alloca(sizeof(repv) * (rep_INT(stkreq) + 1));
+    /* Jump to this label when tail-calling but the current stack
+       is insufficiently large */
+again_stack: {
+    register repv *stackp;
+    repv *stackbase;
+
+#if defined (__GNUC__)
+    /* Using GCC's variable length auto arrays is better for this since
+       the stack space is freed when leaving the containing scope */
+    repv stack[rep_INT (stkreq) + 1];
+#else
+    /* Otherwise just use alloca (). When tail-calling we'll only
+       allocate a new stack if the current is too small. */
+    repv *stack = alloca(sizeof(repv) * (rep_INT(stkreq) + 1));
+#endif
+
     /* Make sure that even when the stack has no entries, the TOP
        element still != 0 (for the error-detection at label quit:) */
+    stackbase = stack;
     *stackbase++ = Qt;
 
+    /* Jump to this label when tail-calling with a large enough stack */
 again:
     rep_DECLARE1(code, rep_STRINGP);
     rep_DECLARE2(consts, rep_VECTORP);
@@ -489,7 +503,7 @@ again:
 			rep_call_stack->args_evalled_p = lc.args_evalled_p;
 
 			/* since impurity==0 there can only be lexical
-			   bindings; these are unbound by switching
+			   bindings; these were unbound when switching
 			   environments.. */
 
 			bindings = (rep_bind_lambda_list
@@ -1380,6 +1394,8 @@ again:
 quit:
     /* only use this var to save declaring another */
     bindstack = TOP;
+
+    /* close the stack scope */ }
 
     rep_POPGCN; rep_POPGC; rep_POPGC; rep_POPGC;
     return bindstack;
