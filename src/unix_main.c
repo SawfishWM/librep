@@ -31,9 +31,6 @@
 #include <netdb.h>
 #include <signal.h>
 
-/* I haven't had time to get this working satisfactorily yet.. */
-#define NO_ASYNC_INPUT
-
 #ifdef HAVE_FCNTL_H
 # include <fcntl.h>
 #endif
@@ -61,15 +58,6 @@
   extern char **environ;
 #endif
 
-#ifndef NO_ASYNC_INPUT
-# if defined(SIGIO) && !defined(O_ASYNC) && defined(FASYNC)
-#  define O_ASYNC FASYNC
-# endif
-#endif
-#ifndef FD_CLOEXEC
-# define FD_CLOEXEC 1
-#endif
-
 _PR VALUE lookup_errno(void);
 _PR u_long sys_time(void);
 _PR void sys_sleep_for(long secs, long msecs);
@@ -86,14 +74,10 @@ _PR void unix_set_fd_cloexec(int fd);
 _PR VALUE sys_event_loop(void);
 _PR VALUE sys_sit_for(u_long timeout_msecs);
 _PR VALUE sys_accept_input(u_long timeout_msecs, void *callback);
+_PR bool sys_poll_input(int fd);
 _PR void *sys_alloc(u_int length);
 _PR void pre_sys_init(void);
 _PR void sys_misc_init(void);
-
-/* Depending on whether SIGIO works or not, this may be set when
-   input is available on any of our input file handles. */
-_PR int unix_input_pending;
-int unix_input_pending;
 
 
 /* Support functions */
@@ -287,19 +271,6 @@ sys_register_input_fd(int fd, void (*callback)(int fd))
     input_actions[fd] = callback;
 
     unix_set_fd_cloexec(fd);
-
-#ifndef NO_ASYNC_INPUT
-# if defined(SIGIO) && defined(O_ASYNC)
-    {
-	/* Enable async. input for this fd. */
-	int flags;
-	fcntl(fd, F_SETOWN, getpid());
-	flags = fcntl(fd, F_GETFL, 0);
-	if(flags != -1)
-	    fcntl(fd, F_SETFL, flags | O_ASYNC);
-    }
-# endif
-#endif
 }
 
 void
@@ -307,18 +278,6 @@ sys_deregister_input_fd(int fd)
 {
     FD_CLR(fd, &input_fdset);
     input_actions[fd] = NULL;
-
-#ifndef NO_ASYNC_INPUT
-# if defined(SIGIO) && defined(O_ASYNC)
-    {
-	/* Disable async. input */
-	int flags;
-	flags = fcntl(fd, F_GETFL, 0);
-	if(flags != -1)
-	    fcntl(fd, F_SETFL, flags & ~O_ASYNC);
-    }
-# endif
-#endif
 }
 
 void
@@ -372,12 +331,6 @@ wait_for_input(fd_set *inputs, u_long timeout_msecs)
 
 #ifdef HAVE_SUBPROCESSES
     sigchld_restart(TRUE);
-#endif
-
-#ifndef NO_ASYNC_INPUT
-    /* Is this the best place to set this? Should it be after
-       reading all input..? */
-    unix_input_pending = 0;
 #endif
 
     return ready;
@@ -511,6 +464,15 @@ sys_accept_input(u_long timeout_msecs, void *callback)
 	return ready > 0 ? sym_nil : sym_t;
 }
 
+bool
+sys_poll_input(int fd)
+{
+    fd_set in;
+    FD_ZERO(&in);
+    FD_SET(fd, &in);
+    return wait_for_input(&in, 0);
+}
+
 
 /* Memory allocation; sys_free() is a macro in unix_defs.h */
 
@@ -533,18 +495,6 @@ sys_alloc(u_int length)
 
 
 /* Standard signal handlers */
-
-#ifndef NO_ASYNC_INPUT
-# ifdef SIGIO
-/* Invoked from SIGIO when input is pending. */
-static RETSIGTYPE
-sigio_handler(int sig)
-{
-    unix_input_pending = 1;
-    signal(sig, sigio_handler);
-}
-# endif
-#endif
 
 static volatile bool in_fatal_signal_handler;
 
@@ -653,17 +603,7 @@ pre_sys_init(void)
     if(signal(SIGHUP, termination_signal_handler) == SIG_IGN)
 	signal(SIGHUP, SIG_IGN);
 #endif
-
-#ifndef NO_ASYNC_INPUT
-    /* Also async IO signals */
-# ifdef SIGIO
-    signal(SIGIO, sigio_handler);
-# endif
-# ifdef SIGURG
-    signal(SIGURG, sigio_handler);
-# endif
-#endif
-}    
+}
 
 /* More normal initialisation. */
 void
