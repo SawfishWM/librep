@@ -787,6 +787,17 @@ struct Lisp_Call {
 #define INT_P (throw_value != LISP_NULL)
 
 
+/* Storing timestamps */
+
+#define MAKE_TIME(time) \
+    cmd_cons(MAKE_INT(time / 86400), MAKE_INT(time % 86400))
+
+#define GET_TIME(time) \
+    (VINT(VCAR(time)) * 86400 + VINT(VCDR(time)))
+
+#define TIMEP(v) CONSP(v)
+
+
 /* Dumped Lisp code */
 
 #ifdef DUMPED
