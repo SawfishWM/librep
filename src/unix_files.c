@@ -123,39 +123,51 @@ rep_expand_file_name(repv file)
 		iptr++;
 		continue;
 	    }
-	    else if(iptr[1] == '.')
+	    else if(iptr[1] == '.' && (iptr[2] == '/' || iptr[2] == 0))
 	    {
-		if(iptr[2] == '/' || iptr[2] == 0)
+		/* `XXX/..[/]' Try to back up over the parent directory */
+
+		char *back = optr;
+		rep_bool all_dots = rep_TRUE;
+		char *end;
+
+		/* Step over any contiguous `/' characters */
+		while(back > buf && back[-1] == '/')
+		    back--;
+		end = back;
+
+		/* Step over any non-`/' characters */
+		while(back > buf && back[-1] != '/')
 		{
-		    char *back = optr;
-		    rep_bool all_dots = rep_TRUE;
-		    char *end;
-		    while(back > buf && back[-1] == '/')
-			back--;
-		    end = back;
-		    while(back > buf && back[-1] != '/')
-		    {
-			back--;
-			if (back[0] != '.')
-			    all_dots = rep_FALSE;
-		    }
-		    if(back < optr && back >= buf && *back != '/'
-		       /* Don't allow `../..' -> `' */
-		       && (!all_dots || end - back != 2))
-		    {
-			optr = back;
-		    }
-		    else
-		    {
-			/* Can't move up; leave the .. in the file name */
-			*optr++ = '.';
-			*optr++ = '.';
-			if(iptr[2] == '/')
-			    *optr++ = '/';
-		    }
-		    iptr += (iptr[2] == 0) ? 2 : 3;
-		    goto strip;
+		    back--;
+		    if (back[0] != '.')
+			all_dots = rep_FALSE;
 		}
+
+		if(back < optr && back >= buf && *back != '/'
+		   /* Don't allow `../..' -> `' */
+		   && (!all_dots || end - back != 2))
+		{
+		    /* Reset the output ptr to the end of the parent */
+		    optr = back;
+		}
+		/* Check for `/..' */
+		else if (all_dots && end == back
+			 && back == buf && buf[0] == '/'
+			 && optr - end == 1)
+		{
+		    optr = back + 1;
+		}
+		else
+		{
+		    /* Can't move up; leave the .. in the file name */
+		    *optr++ = '.';
+		    *optr++ = '.';
+		    if(iptr[2] == '/')
+			*optr++ = '/';
+		}
+		iptr += (iptr[2] == 0) ? 2 : 3;
+		goto strip;
 	    }
 	}
 	end = strchr(iptr, '/');

@@ -1,0 +1,8 @@
+
+Please send all patches to the rep mailing list:
+<librep-list@lists.sourceforge.net>.
+
+When possible, please make patches in unified diff format (i.e. `diff -u').
+
+ - John Harper <jsh@eazel.com>
+
