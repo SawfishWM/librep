@@ -19,12 +19,15 @@
 ;; along with librep; see the file COPYING.  If not, write to
 ;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-(structure (export make-mutex
-		   mutexp
-		   obtain-mutex
-		   maybe-obtain-mutex
-		   release-mutex)
-  (open rep)
+(define-structure mutex
+
+    (export make-mutex
+	    mutexp
+	    obtain-mutex
+	    maybe-obtain-mutex
+	    release-mutex)
+
+    (open rep)
 
   ;; Each mutex is (mutex [OWNING-THREAD [BLOCKED-THREADS...]])
 

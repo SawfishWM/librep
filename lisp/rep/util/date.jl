@@ -18,18 +18,21 @@
 ;;; along with Jade; see the file COPYING.  If not, write to
 ;;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-(structure (export parse-date
-		   date-vec-day-abbrev
-		   date-vec-day
-		   date-vec-month-abbrev
-		   date-vec-month
-		   date-vec-year
-		   date-vec-hour
-		   date-vec-minute
-		   date-vec-second
-		   date-vec-timezone
-		   date-vec-epoch-time)
-  (open rep)
+(define-structure date
+
+    (export parse-date
+	    date-vec-day-abbrev
+	    date-vec-day
+	    date-vec-month-abbrev
+	    date-vec-month
+	    date-vec-year
+	    date-vec-hour
+	    date-vec-minute
+	    date-vec-second
+	    date-vec-timezone
+	    date-vec-epoch-time)
+
+    (open rep)
 
   (define date-month-alist '(("Jan" . 1) ("Feb" . 2) ("Mar" . 3) ("Apr" . 4)
 			     ("May" . 5) ("Jun" . 6) ("Jul" . 7) ("Aug" . 8)

@@ -21,17 +21,19 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(structure (export bytecode-major bytecode-minor bytecode
-		   byte-max-1-byte-arg byte-max-2-byte-arg byte-max-3-byte-arg
-		   byte-two-byte-insns byte-three-byte-insns
-		   byte-insn-stack-delta byte-constant-insns
-		   byte-varref-free-insns byte-side-effect-free-insns
-		   byte-conditional-jmp-insns byte-jmp-insns
-		   byte-insns-with-constants byte-varref-insns
-		   byte-varset-insns byte-varbind-insns
-		   byte-nth-insns byte-nthcdr-insns)
+(define-structure bytecodes
 
-  (open rep bytecode-defs)
+    (export bytecode-major bytecode-minor bytecode
+	    byte-max-1-byte-arg byte-max-2-byte-arg byte-max-3-byte-arg
+	    byte-two-byte-insns byte-three-byte-insns
+	    byte-insn-stack-delta byte-constant-insns
+	    byte-varref-free-insns byte-side-effect-free-insns
+	    byte-conditional-jmp-insns byte-jmp-insns
+	    byte-insns-with-constants byte-varref-insns
+	    byte-varset-insns byte-varbind-insns
+	    byte-nth-insns byte-nthcdr-insns)
+
+    (open rep bytecode-defs)
 
 ;;; Description of instruction set for when optimising
 
