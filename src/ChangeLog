@@ -1,3 +1,10 @@
+1999-07-22  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispcmds.c (Fload): while evaluating the forms from a file,
+	bind load-filename to the full name of the file being loaded
+
+	* debug-buffer.c: dladdr seems to work again under linux
+
 1999-07-09  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep-remote.c (do_get, do_put): don't assume an error if

@@ -1,3 +1,10 @@
+1999-07-22  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep.jl (rep): clear the cached input when an error occurs
+
+	* debug.jl (debug-rep): implements a proper terminal-based
+	debugger loop
+
 1999-07-07  John Harper  <john@dcs.warwick.ac.uk>
 
 	* remote-rep.jl (remote-rep-read-length): fix this for large
