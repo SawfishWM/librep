@@ -49,9 +49,6 @@ enum server_request {
     req_end_of_session
 };
 
-/* How we test for pending input */
-#define INPUT_PENDING (unix_input_pending != 0)
-
 #ifndef HAVE_REALPATH
 extern char *realpath (const char *name, char *resolved);
 #endif
