@@ -49,6 +49,7 @@ char *alloca ();
 
 /* The number of hash buckets in each rep_obarray, this is a prime number. */
 #define rep_OBSIZE		509
+#define rep_KEY_OBSIZE		127
 
 #define rep_FUNARGBLK_SIZE	204		/* ~4k */
 
@@ -59,7 +60,7 @@ typedef struct rep_funarg_block_struct {
 } rep_funarg_block;
 
 /* Main storage of symbols.  */
-repv rep_obarray;
+repv rep_obarray, rep_keyword_obarray;
 
 /* Plist storage */
 static repv plist_structure;
@@ -90,8 +91,6 @@ static rep_funarg *funarg_freelist;
 int rep_allocated_funargs, rep_used_funargs;
 
 /* support for scheme boolean type */
-DEFSYM(hash_t, "#t");
-DEFSYM(hash_f, "#f");
 repv rep_scm_t, rep_scm_f;
 
 
@@ -1375,7 +1374,7 @@ signalled if SYMBOL is itself a keyword.
     memcpy (rep_STR (str) + 2, rep_STR (name), name_len);
     rep_STR (str)[name_len+2] = 0;
 
-    key = Fintern (str, Qnil);
+    key = Fintern (str, rep_keyword_obarray);
     rep_SYM (key)->car |= rep_SF_KEYWORD;
     return key;
 }
@@ -1396,12 +1395,14 @@ rep_pre_symbols_init(void)
     rep_register_type(rep_Symbol, "symbol", symbol_cmp, symbol_princ,
 		      symbol_print, symbol_sweep, 0, 0, 0, 0, 0, 0, 0, 0);
     rep_obarray = Fmake_obarray(rep_MAKE_INT(rep_OBSIZE));
+    rep_keyword_obarray = Fmake_obarray(rep_MAKE_INT(rep_KEY_OBSIZE));
     rep_register_type(rep_Funarg, "funarg", rep_ptr_cmp,
 		      rep_lisp_prin, rep_lisp_prin, funarg_sweep,
 		      0, 0, 0, 0, 0, 0, 0, 0);
-    if(rep_obarray)
+    if(rep_obarray && rep_keyword_obarray)
     {
 	rep_mark_static(&rep_obarray);
+	rep_mark_static(&rep_keyword_obarray);
 	return rep_TRUE;
     }
     else
@@ -1411,6 +1412,9 @@ rep_pre_symbols_init(void)
 void
 rep_symbols_init(void)
 {
+    DEFSTRING (hash_f, "#f");
+    DEFSTRING (hash_t, "#t");
+
     repv tem;
 
     rep_pre_datums_init ();		/* initializes Qnil */
@@ -1428,10 +1432,12 @@ rep_symbols_init(void)
     rep_INTERN(documentation);
     rep_INTERN(permanent_local);
 
-    rep_INTERN(hash_t); rep_INTERN (hash_f);
-    rep_SYM(Qhash_t)->car |= rep_SF_LITERAL;
-    rep_SYM(Qhash_f)->car |= rep_SF_LITERAL;
-    rep_scm_t = Qhash_t; rep_scm_f = Qhash_f;
+    rep_scm_f = Fmake_symbol (rep_VAL (&hash_f));
+    rep_scm_t = Fmake_symbol (rep_VAL (&hash_t));
+    rep_SYM(rep_scm_f)->car |= rep_SF_LITERAL;
+    rep_SYM(rep_scm_t)->car |= rep_SF_LITERAL;
+    rep_mark_static (&rep_scm_f);
+    rep_mark_static (&rep_scm_t);
 
     tem = rep_push_structure ("rep.lang.symbols");
     rep_ADD_SUBR(Smake_symbol);
