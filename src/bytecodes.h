@@ -237,6 +237,9 @@
 #define OP_MEMQL 0xc2			/* call-2 memql */
 #define OP_NUM_EQ 0xc3
 
+#define OP_TEST_SCM 0xc4
+#define OP_TEST_SCM_F 0xc5
+
 
 /* Jump opcodes */
 
