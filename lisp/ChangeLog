@@ -1,3 +1,9 @@
+2001-07-17  John Harper  <jsh@pixelslut.com>
+
+	* rep/io/file-handlers/remote/rep.jl
+	(remote-rep-output-filter): don't print annoying messages about
+	unhandled input
+
 2001-07-15  John Harper  <jsh@pixelslut.com>
 
 	* rep/user.jl: catch errors signalled during command line

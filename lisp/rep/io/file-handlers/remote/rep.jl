@@ -298,9 +298,9 @@
 			 (substring output point))
 		   (setq point (length output)))))
 	      (t
-	       (unless (string-looking-at "\\s*$" output point)
-		 (format standard-error "remote-rep: unhandled output %S\n"
-			 (substring output point)))
+;	       (unless (string-looking-at "\\s*$" output point)
+;		 (format standard-error "remote-rep: unhandled output %S\n"
+;			 (substring output point)))
 	       (setq point (length output))))))))
 
 (defun remote-rep-sentinel (process)
