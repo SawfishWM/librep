@@ -1405,6 +1405,8 @@ DIVISOR.
     repv out;
     rep_DECLARE1 (x, rep_INTEGERP);
     rep_DECLARE2 (y, rep_INTEGERP);
+    if(Fzerop (y) != Qnil)
+	return Fsignal (Qarith_error, rep_LIST_1 (rep_VAL (&div_zero)));
     out = promote_dup (&x, &y);
     if (rep_INTP (x))
 	out = rep_MAKE_INT (rep_INT (x) / rep_INT (y));
