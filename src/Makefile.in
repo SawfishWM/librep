@@ -56,7 +56,8 @@ INTL_OBJS=$(INTL_OBJS_@USE_INCLUDED_LIBINTL@)
 all : librep.la $(DL_OBJS) check-dl rep rep-config rep-remote rep-xgettext .libexec
 
 librep.la : $(OBJS) $(LIBOBJS) $(ALLOCA)
-	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -version-info $(libversion) \
+	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) \
+	  -version-info $(libversion) -export-symbols librep.sym \
 	  -o $@ $^ -rpath $(libdir) $(LIBS) $(GMP_LIBS)
 
 rep : $(REP_OBJS) $(EXTRA_LIBOBJS) librep.la
@@ -133,28 +134,22 @@ repdoc : repdoc.o
 	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -o $@ $^ $(GDBM_LIBS)
 
 sdbm.la : $(SDBM_LOBJS) repsdbm.lo
-	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -avoid-version -module -o $@ \
-	 $(SDBM_LOBJS) repsdbm.lo -rpath $(repexecdir)
+	$(rep_DL_LD) $(LDFLAGS) -o $@ $^
 
 gdbm.la : repgdbm.lo
-	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -avoid-version -module -o $@ \
-	 $^ $(GDBM_LIBS) -rpath $(repexecdir)
+	$(rep_DL_LD) $(LDFLAGS) -o $@ $^ $(GDBM_LIBS)
 
 gettext.la : gettext.lo
-	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -avoid-version -module -o $@ \
-	 $^ $(INTL_OBJS) -rpath $(repexecdir)
+	$(rep_DL_LD) $(LDFLAGS) -o $@ $^ $(INTL_OBJS)
 
 readline.la : readline.lo
-	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -avoid-version -module -o $@ \
-	 $^ $(READLINE_LIBS) -rpath $(repexecdir)
+	$(rep_DL_LD) $(LDFLAGS) -o $@ $^ $(READLINE_LIBS)
 
 safe-interpreter.la : safemach.lo
-	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -avoid-version -module -o $@ \
-	 $^ -rpath $(repexecdir)
+	$(rep_DL_LD) $(LDFLAGS) -o $@ $^
 
 sockets.la : sockets.lo
-	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -avoid-version -module -o $@ \
-	 $^ -rpath $(repexecdir)
+	$(rep_DL_LD) $(LDFLAGS) -o $@ $^
 
 .libexec : $(DL_OBJS)
 	$(SHELL) $(srcdir)/fake-libexec

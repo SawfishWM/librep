@@ -1,3 +1,18 @@
+2000-11-15  John Harper  <jsh@eazel.com>
+
+	* repint_subrs.h, rep_subrs.h: moved the low-level unix file
+	operations to repint_subrs.h
+
+	* Makefile.in, librep.sym: when building librep.la, use the
+	librep.sym file and the -export-symbols libtool option to
+	define which symbols should be retained in the library
+
+2000-11-14  John Harper  <jsh@eazel.com>
+
+	* rep_regexp.h, regexp.c: be sure to use unsigned char's when
+	converting values to int (for <ctype.h> functions, etc. Adapted
+	from a patch to Jade by Andrew Rodionoff <arnost@mail.ru>)
+
 2000-11-12  John Harper  <jsh@eazel.com>
 
 	* readline.c (Freadline): accept optional second arg the
