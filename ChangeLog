@@ -1,5 +1,7 @@
 2000-06-16  John Harper  <john@dcs.warwick.ac.uk>
 
+	* configure.in: fixed typo when checking for shl_load in libdld
+
 	* configure.in: version 0.12
 
 	* configure.in: check libdld for shl_load
