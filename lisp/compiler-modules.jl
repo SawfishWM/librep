@@ -354,7 +354,9 @@
       (decrement-stack (if name 4 3))))
 
   (defun parse-interface (sig)
-    (cond ((eq (car sig) 'export)
+    (cond ((null sig) '())
+
+	  ((eq (car sig) 'export)
 	   (cdr sig))
 
 	  ((eq (car sig) 'compound-interface)
