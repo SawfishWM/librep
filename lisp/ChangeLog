@@ -1,5 +1,7 @@
 Mon Apr 20 00:20:06 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* cvs.jl (cvs-commit-directory): new command, bound to `C'
+
 	* cvs.jl (cvs-summary-mode): defined this function to provide
 	the mode's documentation
 	(cvs-command-get-files): in the summary buffer, when no files
