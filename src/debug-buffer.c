@@ -29,11 +29,6 @@
 # include <memory.h>
 #endif
 
-#ifdef linux
-  /* dladdr() seems to crash for me at the moment (glibc-2.0.6) */
-# undef DB_RESOLVE_SYMBOLS
-#endif
-
 struct debug_buf {
     struct debug_buf *next;
     char *name;
