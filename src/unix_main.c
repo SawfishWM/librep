@@ -394,19 +394,23 @@ handle_input(fd_set *inputs, int ready, void *callback)
 
 	idle_period = 0;
 
-	/* no need to test first 3 descriptors */
-	for(i = 3; i < FD_SETSIZE && ready > 0 && !INT_P; i++)
+	for(i = 0; i < FD_SETSIZE && ready > 0 && !INT_P; i++)
 	{
-	    if((FD_ISSET(i, inputs) || FD_ISSET(i, &input_pending))
-	       && (!callback || input_actions[i] == callback))
+	    if(FD_ISSET(i, inputs))
 	    {
-		if(FD_ISSET(i, inputs))
-		    ready--;
-		if(input_actions[i] != NULL)
+		ready--;
+		if(!callback || input_actions[i] == callback)
 		{
-		    FD_CLR(i, &input_pending);
-		    input_actions[i](i);
-		    refreshp = TRUE;
+		    if(FD_ISSET(i, &input_pending))
+		    {
+			FD_CLR(i, &input_pending);
+			input_pending_count--;
+		    }
+		    if(input_actions[i] != NULL)
+		    {
+			input_actions[i](i);
+			refreshp = TRUE;
+		    }
 		}
 	    }
 	}
