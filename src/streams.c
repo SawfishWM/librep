@@ -38,8 +38,7 @@
 
 #include "jade.h"
 #include "jade_protos.h"
-#define BUILD_JADE
-#include "regexp/regexp.h"
+#include "regexp.h"
 
 #include <string.h>
 #include <fcntl.h>
@@ -49,6 +48,10 @@
 #ifdef NEED_MEMORY_H
 # include <memory.h>
 #endif
+
+_PR VALUE sym_start, sym_end;
+DEFSYM(start, "start");
+DEFSYM(end, "end");
 
 _PR int stream_getc(VALUE);
 _PR int stream_ungetc(VALUE, int);
@@ -1083,10 +1086,10 @@ file_prin(VALUE strm, VALUE obj)
 	stream_puts(strm, "*unbound*>", -1, FALSE);
 }
 
-_PR VALUE cmd_open(VALUE name, VALUE modes, VALUE file);
-DEFUN("open", cmd_open, subr_open, (VALUE name, VALUE modes, VALUE file), V_Subr3, DOC_open) /*
-::doc:open::
-open [FILE-NAME MODE-STRING] [FILE]
+_PR VALUE cmd_open_file(VALUE name, VALUE modes, VALUE file);
+DEFUN("open-file", cmd_open_file, subr_open_file, (VALUE name, VALUE modes, VALUE file), V_Subr3, DOC_open_file) /*
+::doc:open_file::
+open-file [FILE-NAME MODE-STRING] [FILE]
 
 Opens a file called FILE-NAME with modes MODE-STRING (standard c-library
 modes, ie `r' == read, `w' == write, etc). If FILE is given it is an
@@ -1136,10 +1139,10 @@ existing file object which is to be closed before opening the new file on it.
     return LISP_NULL;
 }
 
-_PR VALUE cmd_close(VALUE file);
-DEFUN("close", cmd_close, subr_close, (VALUE file), V_Subr1, DOC_close) /*
-::doc:close::
-close FILE
+_PR VALUE cmd_close_file(VALUE file);
+DEFUN("close-file", cmd_close_file, subr_close_file, (VALUE file), V_Subr1, DOC_close_file) /*
+::doc:close_file::
+close-file FILE
 
 Kills any association between object FILE and the file in the filesystem that
 it has open.
@@ -1151,6 +1154,43 @@ it has open.
     VFILE(file)->file = NULL;
     VFILE(file)->name = LISP_NULL;
     return(file);
+}
+
+DEFSTRING(file_unbound, "file is unbound");
+
+_PR VALUE cmd_seek_file(VALUE file, VALUE offset, VALUE where);
+DEFUN("seek-file", cmd_seek_file, subr_seek_file, (VALUE file, VALUE offset, VALUE where), V_Subr3, DOC_seek_file) /*
+::doc:seek_file::
+seek-file FILE [OFFSET] [WHERE-FROM]
+
+Called as (seek-file FILE), returns the distance in bytes from the start
+of the file that the next character would be read from.
+
+Called as (seek-file FILE OFFSET [WHERE]) alters the position from which the
+next byte will be read. WHERE can be one of,
+
+	nil		OFFSET bytes after the current position
+	start		OFFSET bytes after the beginning of the file
+	end		OFFSET bytes before the end of the file.
+::end:: */
+{
+    DECLARE1(file, FILEP);
+    if(!VFILE(file)->name)
+	return cmd_signal(sym_error, list_2(VAL(&file_unbound), file));
+    if(!INTP(offset))
+	return MAKE_INT(ftell(VFILE(file)->file));
+    else
+    {
+	int whence = SEEK_CUR;
+	if(where == sym_start)
+	    whence = SEEK_SET;
+	else if(where == sym_end)
+	    whence = SEEK_END;
+	if(fseek(VFILE(file)->file, VINT(offset), whence) != 0)
+	    return signal_file_error(LIST_1(file));
+	else
+	    return sym_t;
+    }
 }
 
 _PR VALUE cmd_flush_file(VALUE file);
@@ -1222,45 +1262,6 @@ Returns t when the end of FILE is reached.
     return(sym_nil);
 }
 
-DEFSTRING(file_unbound, "File object is unbound");
-
-_PR VALUE cmd_read_file_until(VALUE file, VALUE re, VALUE nocase_p);
-DEFUN("read-file-until", cmd_read_file_until, subr_read_file_until, (VALUE file, VALUE re, VALUE nocase_p), V_Subr3, DOC_read_file_until) /*
-::doc:read_file_until::
-read-file-until FILE REGEXP [IGNORE-CASE-P]
-
-Read lines from the Lisp file object FILE until one matching the regular
-expression REGEXP is found. The matching line is returned, or nil if no
-lines match.
-If IGNORE-CASE-P is non-nil the regexp matching is not case-sensitive.
-::end:: */
-{
-    regexp *prog;
-    u_char buf[400];		/* Fix this later. */
-    DECLARE1(file, FILEP);
-    DECLARE2(re, STRINGP);
-    if(!VFILE(file)->name)
-	return(cmd_signal(sym_bad_arg, list_2(VAL(&file_unbound), file)));
-    prog = regcomp(VSTR(re));
-    if(prog)
-    {
-	int eflags = NILP(nocase_p) ? 0 : REG_NOCASE;
-	FILE *fh = VFILE(file)->file;
-	VALUE res = sym_nil;
-	while(fgets(buf, 400, fh))
-	{
-	    if(regexec2(prog, buf, eflags))
-	    {
-		res = string_dup(buf);
-		break;
-	    }
-	}
-	free(prog);
-	return(res);
-    }
-    return LISP_NULL;
-}
-
 DEFSTRING(stdin_name, "<stdin>");
 
 _PR VALUE cmd_stdin_file(void);
@@ -1274,7 +1275,7 @@ Returns the file object representing the editor's standard input.
     static VALUE stdin_file;
     if(stdin_file)
 	return(stdin_file);
-    stdin_file = cmd_open(sym_nil, sym_nil, sym_nil);
+    stdin_file = cmd_open_file(sym_nil, sym_nil, sym_nil);
     VFILE(stdin_file)->name = VAL(&stdin_name);
     VFILE(stdin_file)->file = stdin;
     VFILE(stdin_file)->car |= LFF_DONT_CLOSE;
@@ -1295,7 +1296,7 @@ Returns the file object representing the editor's standard output.
     static VALUE stdout_file;
     if(stdout_file)
 	return(stdout_file);
-    stdout_file = cmd_open(sym_nil, sym_nil, sym_nil);
+    stdout_file = cmd_open_file(sym_nil, sym_nil, sym_nil);
     VFILE(stdout_file)->name = VAL(&stdout_name);
     VFILE(stdout_file)->file = stdout;
     VFILE(stdout_file)->car |= LFF_DONT_CLOSE;
@@ -1316,7 +1317,7 @@ Returns the file object representing the editor's standard output.
     static VALUE stderr_file;
     if(stderr_file)
 	return(stderr_file);
-    stderr_file = cmd_open(sym_nil, sym_nil, sym_nil);
+    stderr_file = cmd_open_file(sym_nil, sym_nil, sym_nil);
     VFILE(stderr_file)->name = VAL(&stderr_name);
     VFILE(stderr_file)->file = stderr;
     VFILE(stderr_file)->car |= LFF_DONT_CLOSE;
@@ -1340,14 +1341,14 @@ streams_init(void)
     ADD_SUBR(subr_make_string_output_stream);
     ADD_SUBR(subr_get_output_stream_string);
     ADD_SUBR(subr_streamp);
-    ADD_SUBR(subr_open);
-    ADD_SUBR(subr_close);
+    ADD_SUBR(subr_open_file);
+    ADD_SUBR(subr_close_file);
+    ADD_SUBR(subr_seek_file);
     ADD_SUBR(subr_flush_file);
     ADD_SUBR(subr_filep);
     ADD_SUBR(subr_file_bound_p);
     ADD_SUBR(subr_file_binding);
     ADD_SUBR(subr_file_eof_p);
-    ADD_SUBR(subr_read_file_until);
     ADD_SUBR(subr_stdin_file);
     ADD_SUBR(subr_stdout_file);
     ADD_SUBR(subr_stderr_file);
