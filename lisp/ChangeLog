@@ -1,6 +1,15 @@
+2001-09-02  John Harper  <jsh@pixelslut.com>
+
+	* rep/vm/compiler/rep.jl (compile-log): new function, handles
+	the new `log' function (which optionally has a BASE parameter).
+	Compiles this into two calls to log and a divide
+
+	* rep/util/repl.jl: fixed ,reload and ,unload commands not to
+	try to unload structures that don't actually exist
+
 2001-08-31  John Harper  <jsh@pixelslut.com>
 
-	* ~/src/librep/lisp/rep/test/framework.jl (run-all-self-tests,
+	* rep/test/framework.jl (run-all-self-tests,
 	run-module-self-tests): these both return the number of failed
 	tests now
 

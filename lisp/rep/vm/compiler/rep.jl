@@ -952,6 +952,25 @@
     (decrement-stack))
   (put 'make-closure 'rep-compile-fun compile-make-closure)
 
+  (defun compile-log (form)
+    (cond ((nthcdr 3 form)
+	   (compiler-warning
+	    'parameters "more than two parameters to `log'; rest ignored"))
+	  ((nthcdr 2 form)
+	   ;; dual argument form of log. compiles to
+	   (compile-form-1 (nth 1 form))
+	   (emit-insn '(log))
+	   (compile-form-1 (nth 2 form))
+	   (emit-insn '(log))
+	   (emit-insn '(div))
+	   (decrement-stack))
+	  ((nthcdr 1 form)
+	   ;; single argument form
+	   (compile-form-1 (nth 1 form))
+	   (emit-insn '(log)))
+	  (t (compiler-warning 'parameters "too few parameters to `log'"))))
+  (put 'log 'rep-compile-fun compile-log)
+
   (defun get-form-opcode (form)
     (cond ((symbolp form) (get form 'rep-compile-opcode))
 	  ;; must be a structure-ref
@@ -1220,8 +1239,6 @@
     (put 'round 'rep-compile-opcode 'round)
     (put 'exp 'rep-compile-fun compile-1-args)
     (put 'exp 'rep-compile-opcode 'exp)
-    (put 'log 'rep-compile-fun compile-1-args)
-    (put 'log 'rep-compile-opcode 'log)
     (put 'sin 'rep-compile-fun compile-1-args)
     (put 'sin 'rep-compile-opcode 'sin)
     (put 'cos 'rep-compile-fun compile-1-args)

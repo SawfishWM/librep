@@ -215,16 +215,20 @@
   (define-repl-command
    'reload
    (lambda structs
-     (mapc (lambda (struct)
-	     (name-structure (get-structure struct) nil)
-	     (intern-structure struct)) structs))
+     (mapc (lambda (x)
+	     (let ((struct (get-structure x)))
+	       (when struct
+		 (name-structure struct nil))
+	       (intern-structure x))) structs))
    "STRUCT ...")
 
   (define-repl-command
    'unload
    (lambda structs
-     (mapc (lambda (struct)
-	     (name-structure (get-structure struct) nil)) structs))
+     (mapc (lambda (x)
+	     (let ((struct (get-structure x)))
+	       (when struct
+		 (name-structure struct nil)))) structs))
    "STRUCT ...")
 
   (define-repl-command
@@ -252,7 +256,8 @@
      (let (structures)
        (structure-walk (lambda (var value)
 			 (declare (unused value))
-			 (setq structures (cons var structures)))
+			 (when value
+			   (setq structures (cons var structures))))
 		       (get-structure '%structures))
        (print-list (sort structures)))))
 
@@ -397,7 +402,7 @@ commands may be abbreviated to their unique leading characters.\n\n")
      (let ((out '()))
        (structure-walk (lambda (k v)
 			 (declare (unused k))
-			 (when (and (structure-name v)
+			 (when (and v (structure-name v)
 				    (structure-exports-p v var))
 			   (setq out (cons (structure-name v) out))))
 		       (get-structure '%structures))
