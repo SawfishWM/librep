@@ -34,6 +34,9 @@ on how regularly this gets called, any events from the window-system will
 delay it. Also, auto-saving files and garbage-collection take precedence
 when there's idle time available. Use this hook sparingly, or for short
 periods only!
+::end::
+::doc:Vprogram-name::
+The name of the program running the rep interpreter.
 ::end:: */
 
 /* Called when we get a termination signal. */
@@ -45,6 +48,7 @@ DEFSYM(top_level, "top-level");
 DEFSYM(command_line_args, "command-line-args");
 DEFSYM(batch_mode, "batch-mode");
 DEFSYM(interpreted_mode, "interpreted-mode");
+DEFSYM(program_name, "program-name");
 
 DEFSTRING(definit, "init");
 static repv init_script = rep_VAL(&definit);
@@ -227,6 +231,8 @@ rep_init(char *prog_name, int *argc, char ***argv,
 	if (sys_symbols != 0)
 	    (*sys_symbols)();
 
+	rep_SYM(Qprogram_name)->value = rep_string_dup (prog_name);
+
 	if(get_main_options(prog_name, argc, argv, sys_usage))
 	{
 	    repv res = Fload(init_script, Qnil, Qnil, Qnil);
@@ -396,4 +402,5 @@ rep_main_init(void)
     rep_INTERN(interpreted_mode);
     rep_SYM(Qinterpreted_mode)->value = Qnil;
     rep_ADD_SUBR(Sget_command_line_option);
+    rep_INTERN(program_name);
 }
