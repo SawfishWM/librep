@@ -106,7 +106,7 @@
 			  write display newline write-char load
 
 			  ;; exported local kludges
-			  %cond %case %setq %while %progn %test %lambda
+			  %cond %case %setq %progn %test %lambda
 			  backquote list* %load-suffixes)
   ((access rep)
    (open scheme-utils
@@ -117,7 +117,6 @@
   (rep#setq %cond rep#cond)
   (rep#setq %case rep#case)
   (rep#setq %setq rep#setq)
-  (rep#setq %while rep#while)
   (rep#setq %progn rep#progn)
   (rep#setq %lambda rep#lambda)
   (rep#setq backquote rep#backquote)
