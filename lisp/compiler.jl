@@ -1299,16 +1299,6 @@ that files which shouldn't be compiled aren't."
   (comp-dec-stack))
 (put 'prog1 'compile-fun comp-compile-prog1)
 
-(defun comp-compile-prog2 (form)
-  (comp-compile-form (nth 1 form))
-  (comp-write-op op-pop)
-  (comp-dec-stack)
-  (comp-compile-form (nth 2 form))
-  (comp-compile-body (nthcdr 3 form))
-  (comp-write-op op-pop)
-  (comp-dec-stack))
-(put 'prog2 'compile-fun comp-compile-prog2)
-
 (defun comp-compile-set (form)
   (let
       ((fun (car form))
