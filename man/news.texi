@@ -39,6 +39,9 @@ collected, the pointer in the weak reference is set to false.
 is called and tries to print a human-understandable message explaining
 why the error may have occurred
 
+@item REPL commands may now be specified by their shortest unique set
+of leading characters, e.g. @samp{,o} instead of @samp{,open}
+
 @item Added an @code{#undefined} value. Returned by @code{%define} and
 the macros using it (@code{defun}, @code{defmacro}, etc@dots{})
 
@@ -58,9 +61,16 @@ and @code{obtain-mutex} functions
 @item New @code{rep.threads.message-port} module, implements a simple
 message queue for threads
 
+@item @code{log} function now optionally accepts a second argument, the
+base of the logarithm
+
 @item Bug fixes:
 
 @itemize @minus
+
+@item Signal an error if writes don't write all characters they were
+asked to. Also, some functions could write fewer characters than they
+were supposed to even if no errors occurred
 
 @item Remembered that file sizes may not fit in fixnums
 
