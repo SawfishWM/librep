@@ -97,24 +97,29 @@ AC_HEADER_TIME
 AC_CHECK_HEADERS(fcntl.h sys/ioctl.h sys/time.h sys/utsname.h unistd.h siginfo.h memory.h stropts.h termios.h string.h limits.h argz.h locale.h nl_types.h malloc.h sys/param.h)
 
 dnl Check for GNU MP library and header files
-GMP_LIBS="-lm"
 AC_ARG_WITH(gmp,
  [  --without-gmp		  Don't use GMP for bignum/rational numbers],
  [], [with_gmp=maybe])
 
+GMP_LIBS="-lm"
 if test "$with_gmp" != "no"; then
   AC_ARG_WITH(gmp-prefix, [  --with-gmp-prefix=DIR   path to GMP],
-   [ if test "$withval" != "no"; then
-       CPPFLAGS="${CPPFLAGS} -I$withval/include"
-       LDFLAGS="${LDFLAGS} -L$withval/lib"
-     fi ])
+   [if test "$withval" != "no"; then
+      CPPFLAGS="${CPPFLAGS} -I$withval/include"
+      LDFLAGS="${LDFLAGS} -L$withval/lib"
+    fi],
+   dnl debian brain-damage
+   [if test -d /usr/include/gmp2; then
+      CPPFLAGS="${CPPFLAGS} -I/usr/include/gmp2"
+    fi])
 
-  found_gmp=yes
+  found_gmp=no
   AC_CHECK_HEADER(gmp.h,
-      AC_CHECK_LIB(gmp, mpz_init, GMP_LIBS="-lgmp -lm",
-          AC_CHECK_LIB(gmp, __gmpz_init, GMP_LIBS="-lgmp -lm",
-              found_gmp="library")),
-      found_gmp="header")
+    [AC_CHECK_LIB(gmp, mpz_init,
+       [GMP_LIBS="-lgmp -lm"; found_gmp=yes],
+       [AC_CHECK_LIB(gmp, __gmpz_init,
+          [GMP_LIBS="-lgmp -lm"; found_gmp=yes])])])
+
   if test "$found_gmp" = "yes"; then
     AC_DEFINE(HAVE_GMP)
   elif test "$with_gmp" != "no"; then
