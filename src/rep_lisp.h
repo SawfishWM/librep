@@ -436,6 +436,8 @@ typedef struct {
    unrestricted special environment */
 #define rep_SF_WEAK_MOD	(1 << (rep_CELL8_TYPE_BITS + 6))
 
+/* Set when the variable has been defvar'd */
+#define rep_SF_DEFVAR	(1 << (rep_CELL8_TYPE_BITS + 7))
 
 /* Symbol allocation blocks */
 typedef struct rep_symbol_block_struct {
@@ -798,7 +800,7 @@ struct rep_Call {
 #define rep_INTERN_SPECIAL(x) 					\
     do {							\
 	rep_intern_static (& Q ## x, rep_VAL(& str_ ## x));	\
-	rep_SYM(Q ## x)->car |= rep_SF_SPECIAL;			\
+	rep_SYM(Q ## x)->car |= rep_SF_SPECIAL | rep_SF_DEFVAR;	\
     } while (0)
 
 /* Add an error string called err_X for symbol stored in QX */
