@@ -411,6 +411,8 @@ typedef struct {
     repv name;
 } rep_symbol;
 
+#define rep_SF_KEYWORD	(1 << (rep_CELL8_TYPE_BITS + 0))
+
 /* Means that the symbol's value may be in some form of local storage,
    if so then that occurrence takes precedence. */
 #define rep_SF_LOCAL 	(1 << (rep_CELL8_TYPE_BITS + 1))
@@ -438,11 +440,18 @@ typedef struct {
 /* Set when the variable has been defvar'd */
 #define rep_SF_DEFVAR	(1 << (rep_CELL8_TYPE_BITS + 7))
 
+#define rep_SF_LITERAL	(1 << (rep_CELL8_TYPE_BITS + 8))
+
 #define rep_SYM(v)		((rep_symbol *)rep_PTR(v))
 #define rep_SYMBOLP(v)		rep_CELL8_TYPEP(v, rep_Symbol)
 
 #define rep_NILP(v)		((v) == Qnil)
 #define rep_LISTP(v)		(rep_NILP(v) || rep_CONSP(v))
+
+#define rep_KEYWORDP(v)		(rep_SYMBOLP(v) \
+				 && (rep_SYM(v)->car & rep_SF_KEYWORD) != 0)
+
+#define rep_SYMBOL_LITERAL_P(v)	((rep_SYM(v)->car & rep_SF_LITERAL) != 0)
 
 
 /* Vectors */
