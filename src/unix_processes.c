@@ -1641,6 +1641,22 @@ Return a list containing all active process objects.
     return head;
 }
 
+_PR VALUE cmd_accept_process_output(VALUE secs, VALUE msecs);
+DEFUN("accept-process-output", cmd_accept_process_output,
+      subr_accept_process_output, (VALUE secs, VALUE msecs), V_Subr2,
+      DOC_accept_process_output) /*
+::doc:accept_process_output::
+accept-process-output [SECONDS] [MILLISECONDS]
+
+Wait SECONDS plus MILLISECONDS for input from any asynchronous subprocesses.
+If any arrives, process it, then return nil. Otherwise return t.
+::end:: */
+{
+    return sys_accept_input((INTP(secs) ? VINT(secs) * 1000 : 0)
+			    + (INTP(msecs) ? VINT(msecs) : 0),
+			    read_from_process);
+}
+
 /* Turns on or off restarted system calls */
 void
 sigchld_restart(bool flag)
@@ -1721,6 +1737,7 @@ proc_init(void)
     ADD_SUBR(subr_process_connection_type);
     ADD_SUBR(subr_set_process_connection_type);
     ADD_SUBR(subr_active_processes);
+    ADD_SUBR(subr_accept_process_output);
 
     /* Initialise the type information. */
     data_types[V_Process].compare = ptr_cmp;
