@@ -1,3 +1,20 @@
+1998-09-22  John Harper  <john@dcs.warwick.ac.uk>
+
+	* sm-mail-dir.jl (expand-mail-aliases): attempts to expand
+	local addresses in the address book, e.g. if I put "john" in a
+	header, it looks for john@MY.DOMAIN, and if it exists, expands
+	it with the real name
+
+	* mail-dir.jl: minor fixes
+	* mail-dir-summary.jl: miscellaneous minor fixes
+	(mds-edit-field): used to move to or create new fields when
+	editing records
+
+	* help.jl (describe-function): don't pass the documentation
+	through substitute-command-keys anymore
+
+	* maildefs.jl (mail-domain-name): new variable
+
 1998-09-21  John Harper  <john@dcs.warwick.ac.uk>
 
 	* mail-dir.jl: aliases are now kept in the mail-address-list
