@@ -1136,7 +1136,7 @@ static int
 regrepeat(p)
     char	   *p;
 {
-    register int    count = 0;
+    int count;
     register char  *scan;
     register char  *opnd;
 
@@ -1144,81 +1144,72 @@ regrepeat(p)
     opnd = OPERAND(p);
     switch (OP(p)) {
     case ANY:
-	count = strlen(scan);
-	scan += count;
+	scan += strlen(scan);
 	break;
     case EXACTLY:
 	if(regnocase)
 	{
 	    while(toupper(*opnd) == toupper(*scan)) {
-		count++;
 		scan++;
 	    }
 	}
 	else
 	{
 	    while(*opnd == *scan) {
-		count++;
 		scan++;
 	    }
 	}
 	break;
     case ANYOF:
 	while (*scan != '\0' && strchr(opnd, *scan) != NULL) {
-	    count++;
 	    scan++;
 	}
 	break;
     case ANYBUT:
 	while (*scan != '\0' && strchr(opnd, *scan) == NULL) {
-	    count++;
 	    scan++;
 	}
 	break;
     case WORD:
 	while (*scan != '\0' && (*scan == '_' || isalnum ((int)*scan))) {
-	    count++;
 	    scan++;
 	}
 	break;
     case NWORD:
 	while (*scan != '\0' && (*scan != '_' && !isalnum ((int)*scan))) {
-	    count++;
 	    scan++;
 	}
 	break;
     case WSPC:
 	while (*scan != '\0' && isspace ((int)*scan)) {
-	    count++;
 	    scan++;
 	}
 	break;
     case NWSPC:
 	while (*scan != '\0' && !isspace ((int)*scan)) {
-	    count++;
 	    scan++;
 	}
 	break;
     case DIGI:
 	while (*scan != '\0' && isdigit ((int)*scan)) {
-	    count++;
 	    scan++;
 	}
 	break;
     case NDIGI:
 	while (*scan != '\0' && !isdigit ((int)*scan)) {
-	    count++;
 	    scan++;
 	}
 	break;
     default:			/* Oh dear.  Called inappropriately. */
 	rep_regerror("internal foulup");
-	count = 0;		/* Best compromise. */
+	return 0;		/* Best compromise. */
 	break;
     }
+
+    count = scan - reginput;
     reginput = scan;
 
-    return (count);
+    return count;
 }
 
 /*
