@@ -26,7 +26,7 @@
     (export bytecode-major
 	    bytecode-minor
 	    bytecode
-	    bytecode-alist
+	    bytecode-ref
 	    byte-max-1-byte-arg
 	    byte-max-2-byte-arg
 	    byte-max-3-byte-arg
@@ -41,6 +41,10 @@
   ;; macro to get a named bytecode
   (defmacro bytecode (name)
     (cdr (assq name bytecode-alist)))
+
+  (define (bytecode-ref name)
+    (or (cdr (assq name bytecode-alist))
+	(error "No such instruction: %s" name)))
 
   (define bytecode-alist
     '((call . #x08)			;call (stk[n] stk[n-1] ... stk[0])

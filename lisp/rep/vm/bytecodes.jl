@@ -23,7 +23,7 @@
 
 (define-structure rep.vm.bytecodes
 
-    (export bytecode-major bytecode-minor bytecode
+    (export bytecode-major bytecode-minor bytecode bytecode-ref
 	    byte-max-1-byte-arg byte-max-2-byte-arg byte-max-3-byte-arg
 	    byte-two-byte-insns byte-three-byte-insns
 	    byte-insn-stack-delta byte-constant-insns
