@@ -235,7 +235,7 @@ rep_open_dl_library(repv file_name)
 		char *ptr = buf + sizeof("dlname='") - 1;
 		u_char *base;
 		char *end = strchr(ptr, '\'');
-		if (end != 0)
+		if (end != 0 && end > ptr)
 		{
 		    *end = 0;
 		    base = strrchr(rep_STR(file_name), '/');
