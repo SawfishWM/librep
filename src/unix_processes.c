@@ -446,14 +446,16 @@ get_pty(char *slavenam)
     }
 # else
     /* Assume /dev/ptyXNN and /dev/ttyXN naming system.
-       The FIRST_PTY_LETTER gives the first X to try. */
-    char c;
-    int i, master;
-    struct stat statb;
-    for(c = FIRST_PTY_LETTER; c < 'z'; c++)
-    {
+       The FIRST_PTY_LETTER gives the first X to try. We try in the 
+       sequence FIRST_PTY_LETTER, .., 'z', 'a', .., FIRST_PTY_LETTER.
+       Is this worthwhile, or just over-zealous? */
+    char c = FIRST_PTY_LETTER;
+    do {
+	int i;
 	for(i = 0; i < 16; i++)
 	{
+	    struct stat statb;
+	    int master;
 	    sprintf(slavenam, "/dev/pty%c%x", c, i);
 	    if(stat(slavenam, &statb) < 0)
 		goto none;
@@ -465,10 +467,13 @@ get_pty(char *slavenam)
 		close(master);
 	    }
 	}
-    }
+	if(++c > 'z')
+	    c = 'a';
+    } while(c != FIRST_PTY_LETTER);
 none:
-# endif
-#endif
+# endif /* !HAVE_DEV_PTMX */
+#endif /* HAVE_PTYS */
+
     /* Couldn't find a pty. Signal an error. */
     cmd_signal(sym_process_error, LIST_1(VAL(&no_pty)));
     return 0;
