@@ -758,6 +758,13 @@ else
       link_static_flag='-Bstatic'
     fi
     ;;
+  linux*)
+    if test "$CC" = "ccc"; then
+     pic_flag='-fPIC'
+     wl='-Wl,'
+     link_static_flag='-static'
+    fi
+    ;;
   *)
     can_build_shared=no
     ;;
