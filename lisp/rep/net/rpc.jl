@@ -43,22 +43,28 @@
 
 ;; =Server=
 
-;; (rpc-create-server 10000)		-- create listener on port 10000
+;; (rpc-create-server)		-- create rpc listener on a random port
 
 ;; (define (foo x) (+ x 42))
 
 ;; (define foo-id (make-rpc-servant foo))
 
 ;; `foo-id' is now a symbol that uniquely identifies the `foo' function
-;; on this server. E.g. it may be something like `=9s72fdln00=61vxd7='
+;; on this server. E.g. it may be something like `9s72fdln00-61vxd7'
+
+;; To turn this into a globally valid id, use the servant-id->global-id
+;; function:
+
+;; (define foo-global-id (servant-id->global-id foo-id))
+
+;; this creates a string, e.g.: "9s72fdln00-61vxd7@1.2.3.4:2000"
 
 
 ;; =Client=
 
-;; (define proxy (make-rpc-proxy "localhost" 10000 '=9s72fdln00=61vxd7=))
+;; (define proxy (global-id->rpc-proxy "9s72fdln00-61vxd7@1.2.3.4:2000"))
 
-;; Assuming both client and server are on the same machine in this
-;; case. Now `proxy' is a function that when called marshals all its
+;; Now `proxy' is a function that when called marshals all its
 ;; arguments, sends them to the server, along with the unique id, and
 ;; waits for a result to be returned, which it then unmarshals and
 ;; returns
