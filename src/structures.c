@@ -130,14 +130,21 @@ static rep_struct_node *lookup_or_add (rep_struct *s, repv var);
 
 /* cached lookups */
 
-static int ref_cache_hits, ref_cache_misses;
-
 #ifdef DEBUG
+/* Hits and misses are obvious. Collisions occur when a miss ejects data
+   from the cache, conflicts when a miss ejects data for the _same_ symbol. */
+static int ref_cache_hits, ref_cache_misses,
+    ref_cache_collisions, ref_cache_conflicts;
+
 static void
 print_cache_stats (void)
 {
-    printf ("ref cache miss ratio: %g\n",
-	    (double) ref_cache_misses / (ref_cache_hits + ref_cache_misses));
+    fprintf (stderr, "ref cache miss ratio: %g\n",
+	     (double) ref_cache_misses / (ref_cache_hits + ref_cache_misses));
+    fprintf (stderr, "        - collisions: %g\n",
+	     (double) ref_cache_collisions / ref_cache_misses);
+    fprintf (stderr, "        -  conflicts: %g\n",
+	     (double) ref_cache_conflicts / ref_cache_misses);
 }
 #endif
 
@@ -158,9 +165,18 @@ struct cache_line {
 static struct cache_line ref_cache[CACHE_SETS];
 
 static inline void
-enter_cache (rep_struct *s, repv var, rep_struct_node *binding)
+enter_cache (rep_struct *s, rep_struct_node *binding)
 {
-    u_int hash = CACHE_HASH (var);
+    u_int hash = CACHE_HASH (binding->symbol);
+    if (ref_cache[hash].s != 0)
+    {
+#ifdef DEBUG
+	if (ref_cache[hash].n->symbol == binding->symbol)
+	    ref_cache_conflicts++;
+	else
+	    ref_cache_collisions++;
+#endif
+    }
     ref_cache[hash].s = s;
     ref_cache[hash].n = binding;
 }
@@ -171,21 +187,25 @@ lookup_cache (rep_struct *s, repv var)
     u_int hash = CACHE_HASH (var);
     if (ref_cache[hash].s == s && ref_cache[hash].n->symbol == var)
     {
+#ifdef DEBUG
 	ref_cache_hits++;
+#endif
 	return ref_cache[hash].n;
     }
     else
     {
+#ifdef DEBUG
 	ref_cache_misses++;
+#endif
 	return 0;
     }
 }
 
 static inline void
-cache_invalidate_binding (rep_struct *s, repv var)
+cache_invalidate_symbol (repv symbol)
 {
-    u_int hash = CACHE_HASH (var);
-    if (ref_cache[hash].s != 0 && ref_cache[hash].n->symbol == var)
+    u_int hash = CACHE_HASH (symbol);
+    if (ref_cache[hash].s != 0 && ref_cache[hash].n->symbol == symbol)
 	ref_cache[hash].s = 0;
 }
 
@@ -200,12 +220,11 @@ cache_invalidate_struct (rep_struct *s)
     }
 }
 
-static void
+static inline void
 cache_flush (void)
 {
-    int i;
-    for (i = 0; i < CACHE_SETS; i++)
-	ref_cache[i].s = 0;
+    /* assumes null pointer == all zeros.. */
+    memset (ref_cache, 0, sizeof (ref_cache));
 }
 
 #else /* SINGLE_DM_CACHE */
@@ -213,19 +232,21 @@ cache_flush (void)
 /* no cache at all */
 
 static inline void
-enter_cache (rep_struct *s, repv var, rep_struct_node *binding)
+enter_cache (rep_struct *s, rep_struct_node *binding)
 {
 }
 
 static inline rep_struct_node *
 lookup_cache (rep_struct *s, repv var)
 {
+#ifdef DEBUG
     ref_cache_misses++;
+#endif
     return 0;
 }
 
 static inline void
-cache_invalidate_binding (rep_struct *s, repv var)
+cache_invalidate_symbol (repv symbol)
 {
 }
 
@@ -240,18 +261,6 @@ cache_flush (void)
 }
 
 #endif /* !SINGLE_DM_CACHE */
-
-#if 0
-static void
-cache_invalidate_bindings (rep_struct *s, repv vars)
-{
-    while (rep_CONSP (vars))
-    {
-	cache_invalidate_binding (s, rep_CAR (vars));
-	vars = rep_CDR (vars);
-    }
-}
-#endif
 
 
 /* type hooks */
@@ -424,6 +433,8 @@ lookup_or_add (rep_struct *s, repv var)
 	    n->is_exported = 1;
 	    s->inherited = Fdelq (var, s->inherited);
 	}
+
+	cache_invalidate_symbol (var);
     }
     return n;
 }
@@ -465,7 +476,7 @@ rep_search_imports (rep_struct *s, repv var)
 	    n = lookup_recursively (rep_CAR (imports), var);
 	    if (n != 0)
 	    {
-		enter_cache (s, var, n);
+		enter_cache (s, n);
 		return n;
 	    }
 	    imports = rep_CDR (imports);
@@ -670,7 +681,6 @@ STRUCTURE to VALUE. If no such binding exists, one will be created.
     if (!n->is_constant)
     {
 	n->binding = value;
-	cache_invalidate_binding (s, var);
 	return value;
     }
     else
