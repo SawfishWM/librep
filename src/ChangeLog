@@ -1,3 +1,39 @@
+2000-04-12  John Harper  <john@dcs.warwick.ac.uk>
+
+	* values.c (Fgarbage_collect): return stats if arg is t, not if
+	it's nil
+
+	* rep_lisp.h (rep_funarg): removed next and fh_env fields
+	* files.c: store fh_env in current structure, associated with
+	an uninterned symbol
+	* symbols.c: allocate closures in blocks of N
+
+	* lisp.c (Qdebug_entry, Qdebug_exit, Qdebug_error_entry): these
+	are now special variables, so they can be accessed from within
+	any structure
+
+	* datums.c (Fdatum_set): new function
+
+	* structures.c (F_set_interface): remove the clause that the
+	passed-in interface may be modified, liable to introduce bugs
+
+	* symbols.c (Fdefault_value, Fset_default, Fdefault_boundp):
+	don't only look at special bindings, look for global lexical
+	bindings as well
+
+	* lisp.c (rep_load_autoload): when throwing error, don't refer
+	to uninitialized variable
+
+2000-04-11  John Harper  <john@dcs.warwick.ac.uk>
+
+	* symbols.c (Fdefvar): use default-boundp instead of boundp
+	when checking if whether or not to set the value
+	(Fset_default): if symbol isn't already special, call
+	Fmake_variable_special () on the symbol
+	(Fmake_variable_special): if symbol isn't already special, call
+	rep_get_initial_special_value () to try to forward an existing
+	value
+
 2000-04-10  John Harper  <john@dcs.warwick.ac.uk>
 
 	* symbols.c (Fdefvar): fixes for working with predefined

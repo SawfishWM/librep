@@ -1,3 +1,22 @@
+2000-04-12  John Harper  <john@dcs.warwick.ac.uk>
+
+	* gaol.jl: updated for new set-file-handler-environment semantics
+
+	* rep-repl.jl: added commands `,step' and `,expand'. `,help'
+	now prints two columns
+
+	* debug.jl: now works with the module system
+
+	* init.jl, compiler-modules.jl: changed module definition
+	syntax, the config section is now a single form or list of
+	forms, instead of the kludge of extracting them from the head
+	of the module body. This way no extra indentation is introduced
+	for the body. Existing modules only need changing if they have
+	more than one config form
+
+	* scheme.jl, scheme-syntax.jl, scheme-misc.jl, scheme-data.jl:
+	updated for new module configuration syntax
+
 2000-04-11  John Harper  <john@dcs.warwick.ac.uk>
 
 	* remote-rep.jl, remote-ftp.jl: export all interactive

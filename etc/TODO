@@ -15,11 +15,6 @@ modules
 
    also, the first level lookup of foo#bar isn't cached
 
- ! autoload is kind of fucked
-
-   (you have to create the autoload stub in the module that the
-   function will get loaded into)
-
  ! environment of macro expanders is not consistent
 
    interpreted code closes macros in the usual lexical environment,
@@ -34,6 +29,15 @@ modules
 
 Outstanding bugs
 ================
+
+ ! closures are too big (8 words)
+
+   1. remove fh_env field by storing this per-structure
+      (using an uninterned symbol) [DONE]
+
+   2. remove next field by allocating in blocks of N a la cons [DONE]
+
+   3. remove structure field by dotting tail of environment to it?
 
  ! doesn't handle NaN or Inf in floats properly (at all)
 
