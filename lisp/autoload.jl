@@ -156,6 +156,7 @@
 (autoload 'file-subst "file-subst" t)
 (autoload 'map-file-subst "file-subst")
 (autoload 'find-url "find-url" t)
+(autoload 'find-file-as-url "find-url" t)
 (autoload 'pwd-prompt "pwd-prompt")
 (autoload 'telnet "telnet" t)
 (autoload 'rlogin "telnet" t)

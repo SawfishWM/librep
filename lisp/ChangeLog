@@ -1,3 +1,13 @@
+1999-01-28  John Harper  <john@dcs.warwick.ac.uk>
+
+	* find-url.jl (find-file-as-url): new command
+
+	* html-display.jl (html-display): if the given URL is nil, and
+	the source buffer has a file name, set the URL to the file:
+	version of the filename
+
+	* html-decode.jl (html-decode): more bug fixes
+
 1999-01-27  John Harper  <john@dcs.warwick.ac.uk>
 
 	* mime-decode.jl (mime-encode-mmencode): new function, wrapper
