@@ -1,3 +1,10 @@
+2002-06-20  John Harper  <jsh@unfactored.org>
+
+	* rep/xml/reader.jl, rep/xml/printer.jl: some code I wrote when
+	I was interested in making rep speak xml-rpc. I didn't finish
+	it, but, if I recall correctly, the xml parser and printer
+	worked well enough that it might be useful for toy problems..
+
 2002-04-21  John Harper  <jsh@unfactored.org>
 
 	* rep/util/autoloader.jl (make-autoloader): propagate arbitrary
