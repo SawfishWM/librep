@@ -22,6 +22,7 @@
     (export gaol-define
 	    gaol-define-special
 	    gaol-define-file-handler
+	    gaol-define-vm
 	    make-gaol
 	    gaol-eval
 	    gaol-load
@@ -113,6 +114,9 @@
   ;; alist of file handlers
   (define file-handler-env nil)
 
+  ;; function providing the virtual machine, or nil
+  (define byte-code-interpreter nil)
+
 ;;; building the actual environments
 
   ;; initialization
@@ -135,7 +139,7 @@
     (let ((gaol (make-structure '() (lambda () (%open-structures '(%gaol))))))
       (set-file-handler-environment file-handler-env gaol)
       (set-special-environment gaol-safe-specials gaol)
-      (structure-install-vm gaol nil)
+      (structure-install-vm gaol byte-code-interpreter)
       (call-hook '*make-gaol-hook* (list gaol))
       gaol))
 
@@ -164,6 +168,13 @@
 	  (rplacd cell fun)
 	(setq file-handler-env (nconc file-handler-env
 				      (list (cons name fun)))))))
+
+  ;; only works properly for gaols created after calling this function
+  (define (gaol-define-vm run validate)
+    (build-structure)
+    (gaol-define 'run-byte-code run)
+    (gaol-define 'validate-byte-code validate)
+    (setq byte-code-interpreter run))
 
   (define (gaol-open struct)
     (build-structure)
