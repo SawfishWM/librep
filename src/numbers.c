@@ -846,6 +846,41 @@ number_cmp (repv v1, repv v2)
     return 1;
 }
 
+static const signed int map[] = {
+    0,  1,  2,  3,  4,  5,  6,  7,		/* 0x30 -> 0x37 */
+    8,  9, -1, -1, -1, -1, -1, -1,
+    -1, 10, 11, 12, 13, 14, 15, 16,		/* 0x40 -> 0x48 */
+    17, 18, 19, 20, 21, 22, 23, 24,
+    25, 26, 27, 28, 29, 30, 31, 32,		/* 0x50 -> 0x58 */
+    33, 34, 35, 36
+};
+#define MAP_SIZE 0x2c
+
+#ifndef HAVE_GMP
+static rep_bool
+parse_integer_to_float (char *buf, u_int len, u_int radix,
+			int sign, double *output)
+{
+    double value = 0.0;
+
+    while (len-- > 0)
+    {
+	int d;
+	char c = *buf++;
+	d = toupper (c) - '0';
+	if (d < 0 || d >= MAP_SIZE)
+	    return rep_FALSE;
+	d = map [d];
+	if (d < 0 || d >= radix)
+	    return rep_FALSE;
+	value = value * radix + d;
+    }
+
+    *output = (sign < 0) ? value * -1.0 : value;
+    return rep_TRUE;
+}
+#endif
+
 repv
 rep_parse_number (char *buf, u_int len, u_int radix, int sign, u_int type)
 {
@@ -888,15 +923,6 @@ rep_parse_number (char *buf, u_int len, u_int radix, int sign, u_int type)
 	}
 	if (bits < rep_LISP_INT_BITS)
 	{
-	    static const signed int map[] = {
-		 0,  1,  2,  3,  4,  5,  6,  7,		/* 0x30 -> 0x37 */
-		 8,  9, -1, -1, -1, -1, -1, -1,
-		-1, 10, 11, 12, 13, 14, 15, 16,		/* 0x40 -> 0x48 */
-		17, 18, 19, 20, 21, 22, 23, 24,
-		25, 26, 27, 28, 29, 30, 31, 32,		/* 0x50 -> 0x58 */
-		33, 34, 35, 36
-	    };
-#define MAP_SIZE 0x2c
 	    long value = 0;
 	    char c;
 	    if (radix == 10)
@@ -954,18 +980,35 @@ rep_parse_number (char *buf, u_int len, u_int radix, int sign, u_int type)
 # else
 		value = strtol (copy, &tail, radix);
 # endif
-		if (errno != 0)
-		    goto do_float;	/* overflow */
-		else if (*tail != 0)
+		if (errno == ERANGE)
+		{
+		    /* Overflow - parse to a double, then try to convert
+		       back to an int.. */
+		    double d;
+		    if (parse_integer_to_float (buf, len, radix, sign, &d))
+		    {
+			if (d > BIGNUM_MIN && d < BIGNUM_MAX)
+			{
+			    z->z = d;
+			    return maybe_demote (rep_VAL (z));
+			}
+			else
+			{
+			    f = make_number (rep_NUMBER_FLOAT);
+			    f->f = d;
+			    return rep_VAL (f);
+			}
+		    }
+		    else
+			goto error;
+		}
+		else if (*tail != 0 || errno != 0)
 		    goto error;		/* not all characters used */
 
-		if (sign < 0)
-		    value = -value;
-
-		z->z = value;
+		z->z = (sign < 0) ? -value : value;
 		return maybe_demote (rep_VAL (z));
 	    }
-#endif
+#endif /* !HAVE_GMP */
 	}
 
     case rep_NUMBER_RATIONAL:
@@ -1005,9 +1048,6 @@ rep_parse_number (char *buf, u_int len, u_int radix, int sign, u_int type)
 #endif
 
     case rep_NUMBER_FLOAT:
-#ifndef HAVE_GMP
-    do_float:
-#endif
 #ifdef HAVE_SETLOCALE
 	old_locale = setlocale (LC_NUMERIC, "C");
 #endif

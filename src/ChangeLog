@@ -1,3 +1,15 @@
+2001-03-12  John Harper  <jsh@eazel.com>
+
+	* numbers.c (rep_parse_number): if strto[l]l gives a range
+	error, it's not possible to fall back to the float parsing code
+	(since the radix may not be decimal). Instead, use a special
+	helper function to parse an integer with an arbitrary base to a
+	double, then if this succeeds decide whether to use an inexact
+	or exact representation to store the number
+
+	[ This fixes a bug reported on HP-UX, when using --without-gmp
+	and there is no known strtoll function ]
+
 2001-02-20  John Harper  <jsh@eazel.com>
 
 	* rep_subrs.h (rep_message_fun): declared using extern (patch
