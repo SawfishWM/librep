@@ -1,3 +1,7 @@
+1998-10-10  John Harper  <john@dcs.warwick.ac.uk>
+
+	* misc.c (cmd_random): new function
+
 1998-10-08  John Harper  <john@dcs.warwick.ac.uk>
 
 	* editcommands.c (cmd_insert): when POSITION isn't specified

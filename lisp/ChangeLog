@@ -1,4 +1,12 @@
+1998-10-11  John Harper  <john@dcs.warwick.ac.uk>
+
+	* send-mail.jl (mail-send-hook): defvar'd this hook
+
+	* mime-encode.jl: initial attempt at creating MIME messages
+
 1998-10-09  John Harper  <john@dcs.warwick.ac.uk>
+
+	* mime-decode.jl (mime-decode-mark-inlines): new variable
 
 	* mime-decode.jl, rm-mime.jl: support for Content-Disposition
 	header, other misc fixes
