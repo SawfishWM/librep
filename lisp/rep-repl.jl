@@ -60,12 +60,13 @@
 			(format standard-output
 				"unrecognized command name: %s\n"
 				(car sexps))))
-		  (format standard-output "%S\n"
-			  (repl-eval (read-from-string input))))
+		  (let ((form (condition-case nil
+				  (read-from-string input)
+				(end-of-stream
+				 (unless (and input (not (string= "" input)))
+				   (throw 'out))))))
+		    (format standard-output "%S\n" (repl-eval form))))
 		(setq input nil))
-	    (end-of-stream
-	     (unless (and input (not (string= "" input)))
-	       (throw 'out)))
 	    (error
 	     (error-handler-function (car data) (cdr data))
 	     (setq input nil))))))))
