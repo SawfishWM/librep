@@ -10,7 +10,7 @@ and more long-term ideas are marked -
 Outstanding bugs
 ================
 
- ! case uses eq comparison, should use eql or equal?
+ ! document in manual: records, queues, datums, (declare ..)
 
  ! scheme define/lambda doesn't splice begin forms
 
@@ -79,6 +79,12 @@ Outstanding bugs
 General programming tasks:
 ==========================
 
+ - scheme compilation is worse than rep compilation
+
+   should be able to make this a lot better, maybe not as good as rep
+   code (since the vm primitives are designed for that), but still a
+   lot better..
+
  - the gc sucks
 
    raising garbage-threshold to 200k helps, but gc still takes about
@@ -90,6 +96,8 @@ General programming tasks:
    overall time, but only by about 4% over the 200k value
 
    is it possible to add a good (generational?) gc?
+
+   could sweeping be sped up by prefetching cache lines?
 
  - remove special forms (replacing them with macros) where both
    possible and desirable
@@ -143,6 +151,9 @@ General programming tasks:
      * etc..
 
    implement this as a plugin?
+
+   OCaml uses cryptographic signatures to ensure that bytecode was
+   created by a trusted source
 
  - Implement weak-pairs or equivalent
 

@@ -25,6 +25,7 @@ functions.
 * Functions::                   Functions are the building blocks of Lisp
                                  programs
 * Macros::                      User-defined control structures
+* Modules::                     Static namespaces for variable bindings
 * Lexical Environment::		Manipulating closures and bindings
 * Definitions::			Scheme-like block structuring
 * Threads::			Multi-threaded programs
@@ -579,11 +580,13 @@ There are two related functions for finding the maximum or minimum of a
 sequence of values.
 
 @defun max &rest args
-Return the maximum value from the list of @var{args}.
+Return the maximum value from the list of @var{args}. When comparing
+numbers, any inexact arguments cause the result to be inexact.
 @end defun
 
 @defun min &rest args
-Return the minimum value from the list of @var{args}.
+Return the minimum value from the list of @var{args}. When comparing
+numbers, any inexact arguments cause the result to be inexact.
 @end defun
 
 
@@ -2233,7 +2236,7 @@ foo\(bar\)              ; @samp{foo(bar)}
 @subsection Symbol Attributes
 @cindex Symbol attributes
 
-All symbols have three basic attributes: name, value and property list.
+All symbols have two basic attributes: print name and property list.
 Most important is the @dfn{print name} of the symbol. This is a string
 naming the symbol, after it has been defined (when the symbol is first
 created) it may not be changed.
@@ -2247,18 +2250,19 @@ This function returns the print name of the symbol @var{symbol}.
 @end lisp
 @end defun
 
-Each symbol also has a @dfn{value} storing the value of this symbol
-when it is evaluated. Usually this cell is accessed implicitly by
-evaluating a variable form (i.e. just writing the name of the symbol)
-but it can also be read via the @code{symbol-value} function
-(@pxref{Variables}). Some applications that embed @code{librep} may
-allow symbols to have local values, based on context, but this never
-happens in the stand-alone interpreter.
+The symbol's @dfn{property list} (or plist) is similar to an alist
+(@pxref{Association Lists}), though stored differently, and provides a
+method of storing arbitrary extra values in each symbol. @xref{Property
+Lists}.
 
-Lastly, there is the symbol's @dfn{property list}, or plist. This is
-similar to an alist (@pxref{Association Lists}), though stored
-differently, and provides a method of storing arbitrary extra values in
-each symbol. @xref{Property Lists}.
+Although not strictly an attribute of the symbol, symbols also provide
+a means of associating values with names (i.e. variables). Within a
+defined context, a symbol may have a @dfn{binding}, this binding
+associates the symbol with a memory location within which a value may
+be stored. When writing Lisp programs, the value of a symbol's current
+binding is accessed by writing the print name of the symbol. Similarly
+the binding may be modified by using the @code{setq} special form.
+@xref{Variables}.
 
 
 @node Obarrays, Creating Symbols, Symbol Attributes, Symbols
@@ -3653,9 +3657,9 @@ the current environment.
 * Setting Variables::           Altering a variable's value
 * Scope and Extent::            Technical jargon
 * Void Variables::              Some variables have no values
-* Constant Variables::          Variables which may not be altered
 * Defining Variables::          How to define a variable before
                                   using it
+* Fluid Variables::             Another dynamic bindingd methodb
 @end menu
 
 
@@ -3800,8 +3804,8 @@ be defined, as in the following example (also from SICP):
 @cindex Setting variables
 @cindex Variables, setting
 
-@dfn{Setting} a variable means to overwrite its current value (that is, the
-value of its most recent binding) with a new one. In the
+@dfn{Setting} a variable means to overwrite its current value (that is,
+the value of its most recent active binding) with a new one. In the
 variable-as-stack analogy, this is analogous to overwriting the top of
 the stack. The old value is irretrievably lost (unlike when a new value
 is bound to a variable, @pxref{Local Variables}).
@@ -3837,6 +3841,13 @@ run-time, and therefore has to be computed from a form.
 (setq foo 20)           ;@code{setq} means `set-quoted'
     @result{} 20
 @end lisp
+
+@emph{Note:} currently the @code{set} function may be used to set any
+type of variable (i.e. lexical or special). However this likely to
+change in the future, such that only special variables will be allowed
+to be modified using the @code{set} function. It is strongly advised to
+avoid using this function on lexical bindings! (Moreover the compiler
+may generate incorrect code in certain circumstances.)
 @end defun
 
 
@@ -3908,10 +3919,10 @@ and debug. A quick example of the use of dynamic scope,
 
 @noindent
 As shown in the previous example, a common convention is to mark
-special variables by enclosing there names within asterisks.
+special variables by enclosing their names within asterisks.
 
 
-@node Void Variables, Constant Variables, Scope and Extent, Variables
+@node Void Variables, Defining Variables, Scope and Extent, Variables
 @subsection Void Variables
 @cindex Void variables
 @cindex Variables, void
@@ -3947,57 +3958,20 @@ foo
 @end defun
 
 
-@node Constant Variables, Defining Variables, Void Variables, Variables
-@subsection Constant Variables
-@cindex Constant variables
-@cindex Variables, constant
-
-In Lisp constants are represented by variables which have been marked as
-being read-only. Any attempt to alter the value of a constant results
-in an error.
-
-Two of the most commonly used constants are @code{nil} and @code{t}.
-
-@defun set-const-variable variable &optional read-write
-This function defines whether or not the value of the symbol @var{variable}
-may be modified. If @var{read-write} is @code{nil} or undefined the variable
-is marked to be constant, otherwise it's marked to be a normal variable.
-The value returned is @var{variable}.
-@end defun
-
-@defun const-variable-p variable
-Returns @code{t} if the value of the symbol @var{variable} may not be altered,
-@code{nil} otherwise.
-@end defun
-
-Constants may behave a bit strangely when you compile the program they
-are used in: the value of the constant is likely to be hardwired into
-the compiled functions it is accessed in, and the constant is unlikely
-to be @code{eq} to itself!
-
-The compiler assumes that a constant is always the same, whenever it is
-evaluated. It may even be evaluated more than once. @xref{Compiled
-Lisp}.
-
-The special form @code{defconst} can be used to define global
-constants, see @ref{Defining Variables}.
-
-
-@node Defining Variables, , Constant Variables, Variables
+@node Defining Variables, Fluid Variables, Void Variables, Variables
 @subsection Defining Variables
 @cindex Defining variables
 @cindex Variables, defining
 
 The special forms @code{defvar} and @code{defconst} allow you to define
-the special (i.e. global, dynamically-scoped) variables which will be
-used in a program.
+the global variables that will be used by a program.
 
 @defspec defvar variable form [doc-string]
-This special form defines a special variable, the symbol
-@var{variable}. If the value of @var{variable} is void the @var{form}
-is evaluated and its value is stored as the value of @var{variable}
-(note that only the default value is modified, never a buffer-local
-value).
+This special form defines a special (i.e. dynamically scoped) variable,
+the symbol @var{variable}. If the value of @var{variable} is void the
+@var{form} is evaluated and its value is stored as the value of
+@var{variable} (note that only the default value is modified, never a
+buffer-local value).
 
 If the @var{doc-string} argument is defined it is a string documenting
 @var{variable}. This string is then stored as the symbol's
@@ -4013,11 +3987,10 @@ special form.")
 @end defspec
 
 @defspec defconst constant form [doc-string]
-@code{defconst} defines a special constant, the symbol @var{constant}.
-Its value (in the case of a buffer-local symbol, its default value) is
-set to the result of evaluating @var{form}. Note that unlike
-@code{defvar} the value of the symbol is @emph{always} set, even if it
-already has a value.
+@code{defconst} defines a global constant, the symbol @var{constant}.
+Its value is set to the result of evaluating @var{form}. Note that
+unlike @code{defvar} the value of the symbol is @emph{always} set, even
+if it already has a value.
 
 The @var{doc-string} argument, if defined, is the documentation string
 for the constant.
@@ -4027,9 +4000,83 @@ for the constant.
   "An example constant.")
     @result{} the-answer
 @end lisp
-
-@xref{Constant Variables}.
 @end defspec
+
+Another way of defining global variables is to use the @code{define}
+macro (@pxref{Definitions}). The following example defines a global
+variable @code{foo} with value @code{42}. This is similar to both
+@code{defvar} and @code{defconst} except that the defined variable
+binding is both lexically scoped and mutable.
+
+@example
+(define foo 42)
+@end example
+
+
+@node Fluid Variables, , Defining Variables, Variables
+@subsection Fluid Variables
+@cindex Fluid variables
+@cindex Variables, fluid
+
+Special variables have a number of drawbacks, especially when used in
+conjunction with the module system (@pxref{Modules and Special
+Variables}). As a consequence of these drawbacks, @code{rep} provides a
+second method of implementing dynamically scoped variables, known as
+@dfn{fluid variables}, or just @dfn{fluids}.
+
+A fluid is a first class Lisp object that may be passed around as any
+other Lisp object. It's sole function is to provide a location from
+which dynamic bindings may be created. Fluids are anonymous objects,
+they are usually named by being stored in lexically scoped variables.
+
+@defun make-fluid &optional value
+Create and return a new fluid, it will have an initial binding of
+@var{value} (or the symbol @code{nil} if @var{value} is undefined).
+@end defun
+
+@defun fluid fluid
+Return the value of the most recently created binding of the fluid
+variable object @var{fluid}.
+@end defun
+
+@defun fluid-set fluid value
+Set the value of the most recently created binding of the fluid
+variable object @var{fluid} to @var{value}.
+@end defun
+
+@defun with-fluids fluids values thunk
+Call the zero parameter function @var{thunk} (and return the value that
+it returns) with new bindings created for each of the fluid variables
+specified in the list @var{fluids}. 
+
+For each member of @var{fluids} the corresponding member of the
+@var{values} list provides the initial value of the new binding.
+
+If the lists @var{fluids} and @var{values} are not of the same length,
+an error is signalled.
+@end defun
+
+@defmac fluid-let bindings body @dots{}
+A convenient wrapper around @code{with-fluids}, similar to the
+@code{let} syntax.
+
+The list @var{bindings} associates the names of lexical variables
+containing fluid objects, with the values to bind to those fluid
+objects. Once the bindings have been installed, the @var{body @dots{}}
+forms are evaluated, and the bindings removed. The value of the last of
+the @var{body @dots{}} forms is returned.
+
+Here is an example use of @code{fluid-let}, assuming that the lexical
+variables @code{a} and @code{b} were previously initialized to contain
+references to fluid objects created by @code{make-fluid}.
+
+@lisp
+(fluid-let ((a 1)
+            (b 2))
+  (+ a b))
+  @result{} 3
+@end lisp
+@end defmac
 
 
 @node Functions, Macros, Variables, The language
@@ -4306,7 +4353,7 @@ name the quality that the predicate is testing followed by either a
 first string does not contain any hyphens.
 
 For example, the predicate to test for the quality @dfn{const-variable}
-(a variable which has a constant value, @pxref{Constant Variables}) is
+(a variable which has a constant value, @pxref{Defining Variables}) is
 called @code{const-variable-p}. On the other hand the predicate to test
 for the quality @dfn{cons} (a Cons cell) is called @code{consp}.
 
@@ -4448,7 +4495,7 @@ function is equivalent to:
 @end defun
 
 
-@node Macros, Lexical Environment, Functions, The language
+@node Macros, Modules, Functions, The language
 @section Macros
 @cindex Macros
 
@@ -4655,7 +4702,209 @@ used before they are defined (two passes are made through the source
 file).
 
 
-@node Lexical Environment, Definitions, Macros, The language
+@node Modules, Lexical Environment, Macros, The language
+@section Modules
+@cindex Modules
+
+When creating large programs from many separate components, it is
+important to be able to encapsulate these components, such that the
+interfaces they present to other components are well defined, and the
+implementations of these interfaces may be modified without affecting
+any other components. To this end @code{rep} provides a @dfn{module
+system} for managing the scope of global definitions. This module
+system was inspired by the Scheme48, Xerox Scheme and Standard ML
+module systems.
+
+Modules are known as @dfn{structures} and may be anonymous or named.
+Each structure specifies and implements an @dfn{interface}, essentially
+a list of names listing the definitions within the module that may be
+referenced by other modules. Each structure is a separate global
+namespace, with a number of variable bindings. Each closure contains a
+reference to the structure it was instantiated in, providing the source
+for referencing any unbound variables.
+
+As well as specifying its name and interface, each module also lists
+the other modules whose bindings it may reference. Structures may
+either @dfn{open} or @dfn{access} other structures; when opening a
+structure all its exported bindings are immediately referenceable from
+the importing module. Exported bindings from accessed structures are
+referenced using the `structure-ref' form.
+
+@menu
+* Module Interfaces::
+* Module Definition::
+* Module Loading::
+* Modules and Special Variables::
+@end menu
+
+
+@node Module Interfaces, Module Definition, , Modules
+@subsection Module Interfaces
+@cindex Modules, interfaces
+
+Each module implements an interface---the set of bindings (i.e.
+functions, macros or variables) that it exports to other modules.
+Interfaces may either be defined and then referenced by name, written
+literally, or combined from a number of sources.
+
+The syntax of interface definitions is as follows:
+
+@example
+@var{interface} -> (export @var{id} @dots{})
+          |  @var{name}
+          |  (compound-interface @var{interface} @dots{})
+@end example
+
+@noindent
+where each @var{id} is the name of a binding to export, and each
+@var{name} is the name of an interface previously defined using
+@code{define-interface}.
+
+@defmac define-interface name interface
+Associate the symbol @var{name} with the module interface
+@var{interface} (using one of the forms listed above.
+@end defmac
+
+Here is an example defining an interface called @code{foo}:
+
+@lisp
+(define-interface foo (compound-interface bar (export baz quux)))
+@end lisp
+
+@noindent
+It includes the interface called @code{bar} and adds two extra exported
+symbols: @code{baz} and @code{quux}.
+
+
+@node Module Definition, Module Loading, Module Interfaces, Modules
+@subsection Module Definition
+@cindex Modules, definition of
+
+Two special forms are used to define modules, one for anonymous
+modules, one for named modules. When storing modules in files, each
+file often contains a single instance of one of these forms.
+
+@defmac structure interface config body @dots{}
+@defmacx define-structure name interface config body @dots{}
+These special forms each create a new module with interface
+@var{interface} (using the syntax described in the previous section),
+and configuration @var{config}.
+
+After configuring the module as specified, the sequence of forms
+@var{body @dots{}} is evaluated; it should include the definitions
+required to fulfil the interface that the module has promised to
+exhibit.
+
+The @var{config} form is either a list of configuration clauses, or a
+single configuration clause. Each such clause must be of the following
+syntax:
+
+@example
+@var{clause} -> (open @var{name} @dots{})
+       |  (access @var{name} @dots{})
+@end example
+
+@noindent
+Each @var{name} specifies the name of a module, in the case of
+@code{open} clauses, the named module(s) will be loaded such that their
+exported bindings may be referenced from within the current module with
+no qualification (i.e. as if they had been defined within the module
+itself).
+
+Alternatively, if an @code{access} clause was used, the named module(s)
+will be loaded, but their exported bindings will only be accessible
+from within the current module using the @code{structure-ref} form.
+E.g. if a module @code{foo} has been accessed and it exports a binding
+named @code{bar}, then the following form could be used to access its
+value:
+
+@lisp
+(structure-ref foo bar)
+@end lisp
+
+@noindent
+Since this form is used so often, the reader allows the abbreviation
+@code{foo#bar} to be used instead, it is expanded to the form above
+when read. Note that no whitespace is allowed between the three tokens.
+@end defmac
+
+Note that to access the standard features of the @code{rep} language
+described in this manual, modules need to import the @code{rep} module.
+Alternatively, they may import the @code{scheme} module to load a
+minimal R4RS Scheme environment.
+
+Here is an example module definition, defining a module named
+@code{test} that exports two functions @code{foo} and @code{bar}.
+
+@lisp
+(define-structure test (export foo bar)
+
+    (open rep)
+
+  (defun foo (x)
+    (* x 42))
+
+  (defun bar (x y)
+    (+ (foo x) (1+ y))))
+@end lisp
+
+
+@node Module Loading, Modules and Special Variables, Module Definition, Modules
+@subsection Module Loading
+@cindex Modules, loading
+
+As described above, the common way of loading modules is to use the
+@code{open} and @code{access} clauses of the configuration language.
+
+If the modules named by these clauses are not currently loaded into the
+interpreter, then the system will attempt to load them from the filing
+system, using the standard @code{load-path} variable to define the
+directories to search. As with the @code{require} function
+(@pxref{Features}) the file loaded will have the same name as the
+module being searched for (modulo any file extension, @pxref{Load
+Function}).
+
+This file should contain a module definition form (as described in the
+previous section) as the last top-level form in the file. If the
+@code{structure} macro is used, and therefore the module is anonymous,
+it will be renamed to have the name of the module being loaded.
+
+For backwards compatibility, the @code{require} function can also be
+used to import modules. If a module of the same name as the requested
+feature has already been loaded, then it is imported into the current
+module. Otherwise if a file is loaded that contains a module definition
+as its last top-level form, this module is imported into the current
+module. @xref{Features}.
+
+
+@node Modules and Special Variables, , Module Loading, Modules
+@subsection Modules and Special Variables
+@cindex Modules, and special variables
+
+As described earlier, the @code{defvar} special form may be used to
+create variables that are scoped dynamically, known as special
+variables, see @ref{Defining Variables}. Due to their dynamic scope,
+special variables do not fit well with the lexically scoped module
+system described here.
+
+As a result of this mismatch, special variables are stored in a
+separate namespace. This means that modules defining special variables
+must take the necessary steps to avoid the names of these variables
+clashing with those declared in other modules@footnote{The usual
+convention is to prefix the variable name with a unique string derived
+from the module name.}. 
+
+In fact, it is often advisable to avoid using special variables as much
+as possible, especially when writing modules of Lisp code. An
+alternative method of creating dynamically scoped variables is to use
+fluid variable objects. These use first class Lisp objects to represent
+anonymous dynamically scoped variables. Since they are just Lisp
+objects, they may be stored in lexically scoped variables---this gives
+the benefits of both lexical (i.e. encapsulation) and dynamic scoping.
+@xref{Fluid Variables}.
+
+
+@node Lexical Environment, Definitions, Modules, The language
 @section Lexical Environment
 @cindex Lexical environment
 @cindex Environment, lexical
@@ -4976,8 +5225,16 @@ until it has parsed a whole object. This stream could be a file, a
 function, or even a string; the @code{read} function does not need to
 differentiate.
 
-@defun streamp object
-This function returns @code{t} if its argument may be used as a stream.
+@defun streamp arg
+Return @code{t} if @var{arg} is a stream.
+@end defun
+
+@defun input-stream-p arg
+Return @code{t} if @var{arg} is an input stream.
+@end defun
+
+@defun output-stream-p arg
+Return @code{t} if @var{arg} is an output stream.
 @end defun
 
 @menu
@@ -5625,10 +5882,11 @@ the @code{provide} function. This names the feature and installs it into
 the list of present features.
 
 @defvar features
-A list of the features currently present (that is, loaded). Each feature
-is represented by a symbol. Usually the print name of the symbol (the
-name of the feature) is the same as the name of the file it was loaded
-from, minus any @samp{.jl} or @samp{.jlc} suffix.
+A list of the features currently present (that is, loaded) in the
+current module. Each feature is represented by a symbol. Usually the
+print name of the symbol (the name of the feature) is the same as the
+name of the file it was loaded from, minus any @samp{.jl} or
+@samp{.jlc} suffix.
 
 @lisp
 features
@@ -5671,6 +5929,9 @@ else the print name of the symbol @var{feature} is used.
 
 When called interactively the symbol @var{feature} is prompted for.
 @end defun
+
+Features may also be provided by modules, for more details @xref{Module
+Loading}.
 
 
 @node Compiled Lisp, Hooks, Loading, The language
@@ -5758,6 +6019,13 @@ The @var{exclude} argument may be a list of filenames, these files will
 @emph{not} be compiled.
 
 When this function is called interactively it prompts for the directory.
+@end deffn
+
+@deffn Command compile-module module-name
+Compiles all uncompiled function definitions in the module named
+@var{module-name} (a symbol).
+
+When called interactively the module name will be prompted for.
 @end deffn
 
 @defun jade-byte-code byte-codes constants max-stack
@@ -5910,7 +6178,7 @@ program in its place. For example
 @end lisp
 
 @item
-Careful use of named constants (@pxref{Constant Variables}) can increase
+Careful use of named constants (@pxref{Defining Variables}) can increase
 the speed of some programs. For example, in the Lisp compiler itself
 all the opcode values (small integers) are defined as constants.
 

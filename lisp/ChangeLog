@@ -1,3 +1,19 @@
+2000-05-14  John Harper  <john@dcs.warwick.ac.uk>
+
+	* init.jl (and): fixed bug `(and 1 nil) => 1'
+
+	* compiler-modules.jl (compile-module): added interactive spec
+
+2000-05-13  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compiler-rep.jl: compile `=' using num-eq insn
+	(compile-case): use memql and eql for comparisons instead of
+	memq and eq
+
+	* bytecode-defs.jl, disassembler.jl (memql, num-eq): new insns
+
+	* scheme-data.jl (memv): defined by wrapping memql
+
 2000-05-12  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lisp-doc.jl (apropos-output, apropos-function,
@@ -26,6 +42,14 @@
 
 	* init.jl, compiler-modules.jl (%parse-interface,
 	parse-interface): accept `()' as null interface
+
+2000-04-30  John Harper  <john@dcs.warwick.ac.uk>
+
+	* string-util.jl (mapconcat): new function
+
+2000-04-28  John Harper  <john@dcs.warwick.ac.uk>
+
+	* records.jl: detect and report unknown fields
 
 2000-04-24  John Harper  <john@dcs.warwick.ac.uk>
 

@@ -16,8 +16,8 @@ For more details see:
 
 	http://librep.sourceforge.net/
 
-To compile this you'll need GNU make and the GNU MP library (see
-below). Basically, just do:
+To compile this you'll need GNU make, the GNU MP library (see below)
+and GNU dbm installed. Basically, just do:
 
 	$ ./configure --with-readline
 	$ make
@@ -61,13 +61,16 @@ libgmp
 ------
 
 rep uses GNU MP for it's bignum/rational implementation; you can find
-gmp at any GNU mirror. GMP as distributed only builds a static library
-and hasn't been updated for around four years.
+it at any GNU mirror. The most recent version of GMP that rep has been
+tested with at time of writing is version 3.0.1
 
-The support directory contains four patches that can be used to make
-gmp (version 2.0.2) build a shared library on some platforms (tested on
-at least Linux and Solaris). One of the patches also includes a number
-of bug fixes.
 
-Three of these patches were taken from the Redhat 6.0 gmp sources.
+shared libraries
+----------------
+
+rep includes plugins providing language bindings for several libraries.
+Because these plugins are implemented as shared objects that are loaded
+at runtime, the libraries they wrap must also be shared libraries on
+most systems. This means that the installed libgdm must be shared, and
+if compiling with readline support, so must libreadline
 

@@ -1,3 +1,31 @@
+2000-05-13  John Harper  <john@dcs.warwick.ac.uk>
+
+	* structures.c (F_eval_in_structure): optional third arg, the
+	environment to install
+
+	* numbers.c (rep_compare_numbers): new function, the original
+	comparison method that ignores exactness
+	(number_cmp): now treats inexact and exact versions of the same
+	number as being different (i.e. for eql and equal)
+	(rep_number_max, rep_number_min): new functions, propagate
+	any inexactness in their arguments
+
+	* lispmach.c: handle numeric comparisons correctly, call out to
+	handle max and min
+
+	* lispcmds.c (Fmemql): new function, member using eql
+	for comparisons
+	(=, >, <, >=, <=): compare numbers specially (folding exactness) 
+	(min, max): moved to numbers.c
+	(Fcase): use Feql for comparisons
+
+	* bytecodes.h, lispmac.h.c (OP_MEMQL, OP_NUM_EQ): new insns
+
+2000-04-29  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispmach.c: borrowed and adapted some code from OCaml virtual
+	machine to explicitly assign vm registers to physical registers
+
 2000-04-24  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lispmach.c: if GNU CC is detected, then build an indirectly
