@@ -31,6 +31,7 @@
 #define POS(x)   MAX(x, 0)
 #define ABS(x)   MAX(x, -(x))
 
+#define rep_INTERNAL 1
 #include "rep.h"
 
 #ifndef ENABLE_BROKEN_DUMPING
