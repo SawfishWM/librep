@@ -171,4 +171,5 @@
 (autoload 'cvs-update-pwd "cvs" t)
 (autoload-variable 'cvs-keymap "cvs")
 (bind-keys ctrl-x-keymap "c" '(next-keymap-path '(cvs-keymap)))
+(autoload 'html-style-add-style "html-style")
 ;;; ::autoload-end::
