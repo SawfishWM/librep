@@ -36,7 +36,8 @@
 					 comp-constant-p
 					 comp-constant-value
 					 comp-constant-function-p
-					 comp-constant-function-value)
+					 comp-constant-function-value
+					 comp-note-declaration)
   (open rep
 	compiler
 	compiler-modules
@@ -57,12 +58,13 @@
       (goto-buffer comp-output-stream)
       (goto (end-of-buffer)))
     (when comp-current-fun
-      (format comp-output-stream "%s:" comp-current-fun))
+      (format comp-output-stream "%s: " comp-current-fun))
     (apply format comp-output-stream fmt args))
 
   (put 'compile-error 'error-message "Compilation mishap")
-  (defun comp-error (&rest data)
-    (signal 'compile-error data))
+  (defun comp-error (text &rest data)
+    (signal 'compile-error (cons (format nil "%s: %s" comp-current-fun text)
+				 data)))
 
   (defun comp-warning (fmt &rest args)
     (apply comp-message fmt args)
@@ -266,5 +268,15 @@
 	 form)
 	((eq (car form) 'function)
 	 (nth 1 form))))
+
+
+;;; declarations
+
+(defun comp-note-declaration (form)
+  (mapc (lambda (clause)
+	  (let ((handler (get (or (car clause) clause) 'compiler-decl-fun)))
+	    (if handler
+		(handler clause)
+	      (comp-warning "unknown declaration" clause)))) form))
 
 )

@@ -247,8 +247,7 @@ we would like. This is due to the view of folded functions as
 			(setq body (cons (read src-file) body)))
 		    (end-of-stream)))
 	      (close-file src-file))
-	    ;; XXX don't assume imported rep module
-	    (setq body (comp-compile-module-body (nreverse body) '(rep) nil))
+	    (setq body (comp-compile-module-body (nreverse body) nil t t))
 	    (when (setq dst-file (open-file temp-file 'write))
 	      (condition-case error-info
 		  (unwind-protect

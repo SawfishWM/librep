@@ -51,13 +51,8 @@ their position in that file.")
 
   ;; Compilation "environment"
 
-  (defvar comp-open-modules '(rep))
-  (defvar comp-accessed-modules nil)
-
   (defvar comp-macro-env nil)		;alist of (NAME . MACRO-DEF)
-  (defvar comp-default-macro-env
-    (list (cons 'eval-when-compile (lambda (x)
-				     `(quote ,(eval x))))))
+  (defvar comp-default-macro-env nil)
 
   (defvar comp-const-env '())		;alist of (NAME . CONST-DEF)
   (defvar comp-inline-env '())		;alist of (NAME . FUNCTION-VALUE)

@@ -63,7 +63,8 @@
   ;; List of symbols, when the car of a top-level form is a member of this
   ;; list, don't macroexpand the form before compiling.
   (define top-level-unexpanded
-    '(defun defmacro defvar defconst defsubst require define-value))
+    '(defun defmacro defvar defconst defsubst require define-value
+      declare eval-when-compile))
 
   ;; setup properties to tell the compiler where to look for symbols
   ;; in the `rep'  package
@@ -81,39 +82,48 @@
 			 (or (eq in out)
 			     (memq (car out) top-level-unexpanded)
 			     (memq (car out) top-level-compiled))))))
-    (cond
-     ((eq (car form) 'defun)
-      (comp-remember-fun (nth 1 form) (nth 2 form)))
+    (case (car form)
+      ((defun)
+       (comp-remember-fun (nth 1 form) (nth 2 form)))
 
-     ((eq (car form) 'defmacro)
-      (comp-remember-fun (nth 1 form) (nth 2 form))
-      (setq comp-macro-env (cons (cons (nth 1 form)
-				       (make-closure
-					(cons 'lambda (nthcdr 2 form))))
-				 comp-macro-env)))
+      ((defmacro)
+       (comp-remember-fun (nth 1 form) (nth 2 form))
+       (comp-note-macro (nth 1 form) (cons 'lambda (nthcdr 2 form))))
 
-     ((eq (car form) 'defsubst)
-      (setq comp-inline-env (cons (cons (nth 1 form)
-					(cons 'lambda (nthcdr 2 form)))
-				  comp-inline-env)))
+      ((defsubst)
+       (setq comp-inline-env (cons (cons (nth 1 form)
+					 (cons 'lambda (nthcdr 2 form)))
+				   comp-inline-env)))
 
-     ((eq (car form) 'defvar)
-      (comp-remember-var (nth 1 form)))
+      ((defvar)
+       (comp-remember-var (nth 1 form)))
 
-     ((eq (car form) 'defconst)
-      (comp-remember-var (nth 1 form))
-      (setq comp-const-env (cons (cons (nth 1 form) (nth 2 form))
-				 comp-const-env)))
+      ((defconst)
+       (comp-remember-var (nth 1 form))
+       (setq comp-const-env (cons (cons (nth 1 form) (nth 2 form))
+				  comp-const-env)))
 
-     ((eq (car form) 'define-value)
-      (let
-	  ((sym (nth 1 form)))
-	(when (comp-constant-p sym)
-	  (comp-remember-lexical-var
-	   (comp-constant-value sym)))))
+      ((define-value)
+       (let
+	   ((sym (nth 1 form)))
+	 (when (comp-constant-p sym)
+	   (comp-remember-lexical-var
+	    (comp-constant-value sym)))))
 
-     ((eq (car form) 'require)
-      (eval form)))
+      ((require)
+       (if (comp-constant-p (cadr form))
+	   (comp-note-require (comp-constant-value (cadr form)))
+	 ;; hmm..
+	 (eval form)))
+
+      ((declare)
+       (comp-note-declaration (cdr form)))
+
+      ((eval-when-compile)
+       (if (and (eq (car (nth 1 form)) 'require)
+		(comp-constant-p (cadr (nth 1 form))))
+	   (comp-note-require (comp-constant-value (cadr (nth 1 form))))
+	 (eval (nth 1 form)))))
 
     form)
 
@@ -213,11 +223,9 @@
 	   (rplaca (nthcdr 2 form) (compile-form (nth 2 form))))
 	 form))
 
-      ((require)
-       (eval form)
-       form)
+      ((eval-when-compile) nil)
 
-      (t (comp-error "Shouldn't have got here!" form))))
+      (t form)))
 
 
 ;;; Source code transformations. These are basically macros that are only
@@ -257,7 +265,7 @@
     (let
 	((feature (nth 1 form)))
       (when (comp-constant-p feature)
-	(require (comp-constant-value feature)))
+	(comp-note-require (comp-constant-value feature)))
       ;; Must transform to something other than (require FEATURE) to
       ;; prevent infinite regress
       `(funcall require ,feature)))

@@ -120,8 +120,8 @@
     (when (>= (setq comp-inline-depth (1+ comp-inline-depth))
 	      comp-max-inline-depth)
       (setq comp-inline-depth 0)
-      (comp-error "Won't inline more than %d nested functions"
-		  comp-max-inline-depth))
+      (comp-error (format nil "Won't inline more than %d nested functions"
+			  comp-max-inline-depth)))
     (unless (eq (car fun) 'lambda)
       (comp-error "Invalid function to inline: %s, %s" fun args))
     (let*
@@ -161,11 +161,10 @@
 	(comp-compile-body body)))
     (setq comp-inline-depth (1- comp-inline-depth)))
   
-  ;; The defsubst form stuffs this into the compile-fun property of
-  ;; all defsubst declared functions
+  ;; The defsubst form stores the defun in the compile-inline property
+  ;; of all defsubst declared functions
   (defun comp-compile-inline-function (form)
-    (comp-compile-lambda-inline
-     (closure-function (symbol-value (car form))) (cdr form)))
+    (comp-compile-lambda-inline (get (car form) 'compile-inline) (cdr form)))
 
   (defun comp-do-tail-call (arg-spec args)
     (let*
