@@ -163,7 +163,7 @@
      (gensym)))
 
   (defmacro delay (expression)
-    `(%make-promise (rep#lambda () ,expression)))
+    `(%make-promise (lambda () ,expression)))
 
   (defmacro define args
     (rep#cond
