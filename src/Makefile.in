@@ -57,7 +57,7 @@ all : librep.la $(DL_OBJS) check-dl rep rep-config rep-remote rep-xgettext .libe
 
 librep.la : $(OBJS) $(LIBOBJS) $(ALLOCA)
 	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) \
-	  -version-info $(libversion) -export-symbols librep.sym \
+	  -version-info $(libversion) -export-symbols $(srcdir)/librep.sym \
 	  -o $@ $^ -rpath $(libdir) $(LIBS) $(GMP_LIBS)
 
 rep : $(REP_OBJS) $(EXTRA_LIBOBJS) librep.la
