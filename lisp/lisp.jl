@@ -21,6 +21,8 @@
 ;; This file is loaded right at the beginning of the initialisation
 ;; procedure.
 
+(provide 'lisp)
+
 (defvar standard-output (stdout-file)
   "Stream that `prin?' writes its output to by default.")
 
@@ -68,33 +70,13 @@ FORMS."
   (list 'if (list 'not condition) (cons 'progn forms)))
 
 
-;; Features
-
-(defvar features nil
-  "List of features currently loaded by the interpreter.")
-
-(defun featurep (feature)
-  "Return non-nil if FEATURE (a symbol) has been loaded."
-  (memq feature features))
-
-(defun provide (feature)
-  "Mark that FEATURE (a symbol) has been loaded."
-  (setq features (cons feature features)))
-
-(defun require (feature)
-  "If FEATURE (a symbol) hasn't been loaded yet, load it."
-  (unless (featurep feature)
-    (load (symbol-name feature)))
-  feature)
-
-
 ;; Function to allow easy creation of autoload stubs
 
-(defmacro autoload (symbol file &rest extra)
+(defun autoload (symbol file &rest extra)
   "Tell the evaluator that the value of SYMBOL will be initialised
 by loading FILE."
-  `(if (not (boundp ,symbol))
-     (set ,symbol (make-closure (list 'autoload ,symbol ,file ,@extra)))))
+  (unless (boundp symbol)
+    (define-value symbol (make-closure (list* 'autoload symbol file extra)))))
 
 
 ;; Hook manipulation
@@ -244,13 +226,12 @@ string INPUT."
   (list 'cdr (list 'cdr (list 'cdr x))))
 
 
-;; null i18n function until gettext is loaded
+;; entry point
 
+;; null i18n function until gettext is loaded
 (unless (boundp '_)
   (defun _ (arg) arg))
 
-
 ;; Setup format-hooks-alist to a few default'ish things
-
 (setq format-hooks-alist '((?D . file-name-directory)
 			   (?F . file-name-nondirectory)))
