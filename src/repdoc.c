@@ -23,6 +23,10 @@
 #include <gdbm.h>
 #include <fcntl.h>
 
+#ifndef GDBM_NOLOCK
+# define GDBM_NOLOCK 0
+#endif
+
 static void
 usage(void)
 {
@@ -79,7 +83,7 @@ main(int ac, char **av)
     av++;
     if(ac < 2)
 	usage();
-    docdbm = gdbm_open(*av++, 0, GDBM_WRCREAT, 0666, 0);
+    docdbm = gdbm_open(*av++, 0, GDBM_WRCREAT | GDBM_NOLOCK, 0666, 0);
     ac--;
     if(docdbm == 0)
     {
