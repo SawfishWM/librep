@@ -610,25 +610,31 @@ with CHAR. Returns the position of the next match or nil.
     return NULL;
 }
 
-_PR VALUE cmd_string_match(VALUE re, VALUE str, VALUE nocase_p);
-DEFUN("string-match", cmd_string_match, subr_string_match, (VALUE re, VALUE str, VALUE nocase_p), V_Subr3, DOC_string_match) /*
+_PR VALUE cmd_string_match(VALUE re, VALUE str, VALUE nocase_p, VALUE start);
+DEFUN("string-match", cmd_string_match, subr_string_match, (VALUE re, VALUE str, VALUE nocase_p, VALUE start), V_Subr4, DOC_string_match) /*
 ::doc:string_match::
-string-match REGEXP STRING [IGNORE-CASE-P]
+string-match REGEXP STRING [IGNORE-CASE-P] [START]
 
 Return t if REGEXP matches STRING.
 
 When IGNORE-CASE-P is non-nil the case of matched strings are ignored. Note
 that character classes are still case-significant.
+
+When defined, START is the index of the first character to start matching
+at (counting from zero).
 ::end:: */
 {
     regexp *prog;
+    long xstart = NUMBERP(start) ? VNUM(start) : 0;
     DECLARE1(re, STRINGP);
     DECLARE2(str, STRINGP);
     prog = compile_regexp(re);
     if(prog)
     {
 	VALUE res;
-	if(regexec2(prog, VSTR(str), NILP(nocase_p) ? 0 : REG_NOCASE))
+	if(regexec2(prog, VSTR(str) + xstart,
+		    (NILP(nocase_p) ? 0 : REG_NOCASE)
+		    | (xstart == 0 ? 0 : REG_NOTBOL)))
 	{
 	    update_last_match(str, prog);
 	    res = sym_t;
