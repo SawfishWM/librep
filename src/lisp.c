@@ -155,11 +155,14 @@ DEFSYM(stack_error, "stack-error");
 static DEFSTRING(err_stack_error, "Out of stack space");
 #endif
 
-_PR VALUE debug_on_error, sym_error_info;
-VALUE debug_on_error;
-DEFSYM(error_info, "error-info");
-
+DEFSYM(debug_on_error, "debug-on-error");
 DEFSYM(debug_macros, "debug-macros"); /*
+::doc:debug_on_error::
+When an error is signalled this variable controls whether or not to enter the
+Lisp debugger immediately. If the variable's value is t or a list of symbols
+- one of which is the signalled error symbol - the debugger is entered.
+See `signal'.
+::end::
 ::doc:debug_macros::
 When nil, the debugger isn't entered while expanding macro definitions.
 ::end:: */
@@ -1742,20 +1745,6 @@ it's first character (a number).
     return(cmd_signal(sym_file_error, list_2(VAL(no_open), VAL(doc_file))));
 }
 
-_PR VALUE var_debug_on_error(VALUE val);
-DEFUN("debug-on-error", var_debug_on_error, subr_debug_on_error, (VALUE val), V_Var, DOC_debug_on_error) /*
-::doc:debug_on_error::
-When an error is signalled this variable controls whether or not to enter the
-Lisp debugger immediately. If the variable's value is t or a list of symbols
-- one of which is the signalled error symbol - the debugger is entered.
-See `signal'.
-::end:: */
-{
-    if(val)
-	debug_on_error = val;
-    return(debug_on_error);
-}
-
 _PR VALUE cmd_signal(VALUE error, VALUE data);
 DEFUN("signal", cmd_signal, subr_signal, (VALUE error, VALUE data), V_Subr2, DOC_signal) /*
 ::doc:signal::
@@ -1769,29 +1758,27 @@ be made available to any error-handler or printed by the default error
 handler.
 ::end:: */
 {
-    VALUE tmp, errlist;
+    VALUE tmp, errlist, on_error;
     /* Can only have one error at once.	 */
     if(throw_value)
 	return LISP_NULL;
     DECLARE1(error, SYMBOLP);
 
     errlist = cmd_cons(error, data);
-
-    if(((debug_on_error == sym_t)
-	|| (CONSP(debug_on_error) && (tmp = cmd_memq(error, debug_on_error))
-	    && !NILP(tmp)))
+    on_error = cmd_symbol_value(sym_debug_on_error, sym_t);
+    if(((on_error != LISP_NULL && on_error == sym_t)
+	|| (CONSP(on_error) && (tmp = cmd_memq(error, on_error)) && !NILP(tmp)))
        && VSYM(sym_debug_error_entry)->function)
     {
 	/* Enter debugger. */
-	VALUE old_debug_on_error = debug_on_error;
-	GC_root gc_odoe;
+	GC_root gc_on_error;
 	bool oldssflag = single_step_flag;
-	debug_on_error = sym_nil;
+	cmd_set(sym_debug_on_error, sym_nil);
 	single_step_flag = FALSE;
-	PUSHGC(gc_odoe, old_debug_on_error);
+	PUSHGC(gc_on_error, on_error);
 	tmp = funcall(sym_debug_error_entry, cmd_cons(errlist, sym_nil));
 	POPGC;
-	debug_on_error = old_debug_on_error;
+	cmd_set(sym_debug_on_error, on_error);
 	if(tmp && (tmp == sym_t))
 	    single_step_flag = TRUE;
 	else
@@ -2007,14 +1994,12 @@ lisp_init(void)
     ADD_SUBR(subr_macroexpand);
     ADD_SUBR(subr_get_doc_string);
     ADD_SUBR(subr_add_doc_string);
-    ADD_SUBR(subr_debug_on_error);
     ADD_SUBR(subr_signal);
     ADD_SUBR(subr_condition_case);
     ADD_SUBR(subr_backtrace);
     ADD_SUBR(subr_max_lisp_depth);
 
     /* Stuff for error-handling */
-    debug_on_error = sym_nil;
     INTERN(error_message);
     INTERN(error); ERROR(error);
     INTERN(invalid_function); ERROR(invalid_function);
@@ -2044,10 +2029,10 @@ lisp_init(void)
     INTERN(window_error); ERROR(window_error);
     INTERN(invalid_pos); ERROR(invalid_pos);
     INTERN(term_interrupt);
-    INTERN(error_info);
 
-    INTERN(debug_macros);
-    DOC(debug_macros);
+    INTERN(debug_on_error); DOC(debug_on_error);
+    VSYM(sym_debug_on_error)->value = sym_nil;
+    INTERN(debug_macros); DOC(debug_macros);
     VSYM(sym_debug_macros)->value = sym_nil;
 
     int_cell = cmd_cons(sym_user_interrupt, sym_nil);
