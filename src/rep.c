@@ -13,7 +13,6 @@
 int
 main(int argc, char **argv)
 {
-    char *tem;
     char *prog_name = *argv++;
     argc--;
 
