@@ -575,7 +575,7 @@ Returns the last element of LIST.
 	    if(INT_P)
 		return(NULL);
 	}
-	return(list);
+	return(VCAR(list));
     }
     return(sym_nil);
 }
