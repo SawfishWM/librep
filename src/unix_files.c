@@ -548,3 +548,26 @@ rep_getpwd(void)
 	return rep_string_dupn(buf, len);
     }
 }
+
+
+/* module name conversion */
+
+repv
+rep_structure_file (repv in)
+{
+    /* Convert dots to slashes.  XXX escape meta chars? */
+
+    char *ptr = strchr (rep_STR (in), '.');
+    if (ptr == 0)
+	return in;
+    else
+    {
+	repv copy = rep_string_dupn (rep_STR (in), rep_STRING_LEN (in));
+	for (ptr = rep_STR (copy); *ptr != 0; ptr++)
+	{
+	    if (*ptr == '.')
+		*ptr = '/';
+	}
+	return copy;
+    }
+}
