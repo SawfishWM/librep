@@ -21,7 +21,7 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure compiler-forms (export current-file
+(define-structure compiler-basic (export current-file
 					 current-fun
 					 lambda-name
 					 lambda-args
@@ -170,6 +170,24 @@
 	  (decrement-stack))
 	(setq body (cdr body)))))
 
+  (defun compile-lambda-spec (in)
+    (let ((min-args 0)
+	  (max-args 0)
+	  (rest-arg nil))
+      (while (and (consp in) (not (memq (car in) '(&optional &rest))))
+	(setq min-args (1+ min-args))
+	(setq in (cdr in)))
+      (when (eq (car in) '&optional)
+	(setq in (cdr in))
+	(while (and (consp in) (not (eq (car in) '&rest)))
+	  (setq max-args (1+ max-args))
+	  (setq in (cdr in)))
+	(when (eq (car in) '&optional)
+	  (setq in (cdr in))))
+      (when (or (eq (car in) '&rest) (and in (not (consp in))))
+	(setq rest-arg t))
+      (logior min-args (ash max-args 12) (ash (if rest-arg 1 0) 24))))
+
   ;; From LST, `(lambda (ARGS) [DOC-STRING] BODY ...)' returns a byte-code
   ;; vector
   (defun compile-lambda (lst &optional name)
@@ -192,7 +210,10 @@
 	(add-documentation name doc))
       (let
 	  ((vars (get-lambda-vars args)))
-	(mapc test-variable-bind vars)
+	(mapc (lambda (x)
+		(when (spec-bound-p x)
+		  (compiler-error "special variable in function parameters" x))
+		(test-variable-bind x)) vars)
 	(when (setq form (fluid-let
 			     ((spec-bindings (fluid spec-bindings))
 			      (lex-bindings (fluid lex-bindings))
@@ -204,6 +225,7 @@
 			   (fluid-set lambda-bindings (fluid lex-bindings))
 			   (compile-form (cons (get-language-property
 						'compiler-sequencer) body))))
-	  (make-byte-code-subr args (nth 1 form) (nth 2 form) (nth 3 form)
+	  (make-byte-code-subr (compile-lambda-spec args)
+			       (nth 1 form) (nth 2 form) (nth 3 form)
 			       (and (not *compiler-write-docs*) doc)
 			       interactive))))))
