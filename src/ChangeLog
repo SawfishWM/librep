@@ -1,3 +1,8 @@
+2000-05-21  John Harper  <john@dcs.warwick.ac.uk>
+
+	* values.c (cons_sweep): don't update global variables each
+	iteration, update temps then copy to globals before exiting
+
 2000-05-18  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep.h.in (rep_PTR_SIZED_INT_SIZEOF): new define, set by
