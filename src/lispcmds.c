@@ -1398,6 +1398,61 @@ like the last else in an else-if statement in C.
     return(res);
 }
 
+DEFUN("case", Fcase, Scase, (repv args), rep_SF) /*
+::doc:case::
+case KEY CLAUSES...
+
+Each CLAUSE is `((ITEMS... ) FORMS...)'. Find the first CLAUSE with an
+ITEM matching (using `eql') the result of evaluating KEY (only
+evaluated once), then evaluate the associated FORMS in a `progn'. The
+final clause may have the form `(t FORMS...)', which always matches KEY
+if no other CLAUSE has already. Returns `nil' if no clause matches.
+
+If any of the ITEMS appear more than once, then the behaviour is
+undefined.
+::end:: */
+{
+    repv key;
+    rep_GC_root gc_args;
+    int i = 2;
+
+    if (!rep_CONSP(args))
+	return rep_signal_missing_arg (0);
+    
+    rep_PUSHGC(gc_args, args);
+    key = Feval (rep_CAR(args));
+    rep_POPGC;
+    if (key == rep_NULL)
+	return rep_NULL;
+    args = rep_CDR(args);
+
+    while(rep_CONSP(args))
+    {
+	if (!rep_CONSP(rep_CAR(args)))
+	    return rep_signal_arg_error (rep_CAR(args), i);
+	if (rep_CONSP(rep_CAAR(args)))
+	{
+	    repv ptr = rep_CAAR(args);
+	    while (rep_CONSP(ptr))
+	    {
+		if (rep_CAR(ptr) == key)
+		    return Fprogn (rep_CDAR(args));
+		ptr = rep_CDR(ptr);
+		rep_TEST_INT;
+		if (rep_INTERRUPTP)
+		    return rep_NULL;
+	    }
+	}
+	else if (rep_CAAR(args) == Qt)
+	    return Fprogn (rep_CDAR(args));
+	else
+	    return rep_signal_arg_error (rep_CAR(args), i);
+	args = rep_CDR(args);
+	i++;
+    }
+    return Qnil;
+}
+
 DEFUN("if", Fif, Sif, (repv args), rep_SF) /*
 ::doc:if::
 if CONDITION THEN-FORM [ELSE-FORMS...]
@@ -2780,6 +2835,7 @@ rep_lispcmds_init(void)
     rep_ADD_SUBR(Sprog2);
     rep_ADD_SUBR(Swhile);
     rep_ADD_SUBR(Scond);
+    rep_ADD_SUBR(Scase);
     rep_ADD_SUBR(Sif);
     rep_ADD_SUBR(Sand);
     rep_ADD_SUBR(Sor);
