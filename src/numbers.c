@@ -617,7 +617,7 @@ number_cmp(repv v1, repv v2)
 }
 
 repv
-rep_parse_number (char *buf, int len, int radix, int sign, int type)
+rep_parse_number (char *buf, u_int len, u_int radix, int sign, u_int type)
 {
     switch (type)
     {
@@ -626,7 +626,7 @@ rep_parse_number (char *buf, int len, int radix, int sign, int type)
 	rep_number_f *f;
 	char *tem;
 	double d;
-	int bits;
+	u_int bits;
 
     case 0:
 	switch (radix)
@@ -640,8 +640,8 @@ rep_parse_number (char *buf, int len, int radix, int sign, int type)
 	    break;
 
 	case 10:
-	    /* log_2 10 = 3.3219.. */
-	    bits = (len * 33) / 10;
+	    /* log_2 10 = 3.3219.. ~ 27/8 */
+	    bits = (len * 27) / 8;
 	    break;
 
 	case 16:
@@ -664,9 +664,20 @@ rep_parse_number (char *buf, int len, int radix, int sign, int type)
 	    };
 	    long value = 0;
 	    char c;
-	    while ((c = *buf++) != 0)
-		value = value * radix + map[toupper(c) - '0'];
-	    return rep_MAKE_INT (value * sign);
+	    if (radix == 10)
+	    {
+		/* optimize most common case */
+		while ((c = *buf++) != 0)
+		    value = value * 10 + (c - '0');
+	    }
+	    else
+	    {
+		while ((c = *buf++) != 0)
+		    value = value * radix + map[toupper(c) - '0'];
+	    }
+	    return ((sign > 0)
+		    ? rep_MAKE_INT (value)
+		    : rep_MAKE_INT (value * -1));
 	}
 	else
 	{
