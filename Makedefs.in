@@ -21,6 +21,9 @@
 version=@version@
 SHELL=/bin/sh
 
+top_srcdir=@top_srcdir@
+srcdir=@srcdir@
+
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 datadir=@datadir@
@@ -33,24 +36,23 @@ localstatedir=@localstatedir@
 mandir=@mandir@
 sharedstatedir=@sharedstatedir@
 
-jadedir=@jadedir@
-lispdir=@lispdir@
+host_type=@host@
+repdir=@repdir@
+replispdir=@replispdir@
+repexecdir=@repexecdir@
+repdocfile=@repdocfile@
 dumped_lisp_files=@dumped_lisp_files@
 enable_dumped=@opt_enable_dumped@
-jadeexecdir=@jadeexecdir@
-host_type=@host@
 
 CC=@CC@
-CPPFLAGS=-DHAVE_CONFIG_H -I. -I$(top_srcdir)/src -I../lib -I.. @CPPFLAGS@
-CFLAGS=@CFLAGS@ @X_CFLAGS@
+LIBTOOL=@LIBTOOL@
+CPPFLAGS=-DHAVE_CONFIG_H -I. -I$(top_srcdir)/src -I.. @CPPFLAGS@
+CFLAGS=@CFLAGS@
 DL_CFLAGS=@DL_CFLAGS@
 LDFLAGS=@LDFLAGS@
 DL_LDFLAGS=@DL_LDFLAGS@
 LIBS=@LIBS@
 LIBOBJS=@LIBOBJS@ @ALLOCA@
-X11LIBS=@X_PRE_LIBS@ -lX11 @X_LIBS@ @X_EXTRA_LIBS@
-dynsuffix=@dynamic_file_suffix@
-XCPPFLAGS=-DJADE '-DJADE_DIR="$(jadedir)"' '-DJADE_EXEC_DIR="$(jadeexecdir)"'
 
 INSTALL=@INSTALL@
 INSTALL_DATA=@INSTALL_DATA@
@@ -58,25 +60,28 @@ INSTALL_PROGRAM=@INSTALL_PROGRAM@
 
 HAVE_X11=@HAVE_X11@
 HAVE_UNIX=@HAVE_UNIX@
-HAVE_GNU_MALLOC=@HAVE_GNU_MALLOC@
-
-ifeq ($(HAVE_GNU_MALLOC),0)
- CPPFLAGS += -I$(top_srcdir)/malloc-src
-endif
 
 .PHONY: clean realclean install
 
+# Rule for ``normal'' C objects
 %.o : %.c
-	$(CC) -c $(CPPFLAGS) $(XCPPFLAGS) $(CFLAGS) -o $@ $<
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) -o $@ $<
 
+# Rule for ``normal'' executables
 % : %.c
-	$(CC) $(CPPFLAGS) $(XCPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LIBS)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LIBS)
 
-%.$(dynsuffix) : %.c
-	$(CC) $(CPPFLAGS) $(XCPPFLAGS) $(CFLAGS) $(DL_CFLAGS) \
-	 -DJADE_DL -o $@ $<
+# Rule for libtool controlled C objects
+%.lo : %.c
+	$(LIBTOOL) $(CC) -c $(CPPFLAGS) $(CFLAGS) $<
 
-# This rule builds dependancy files from C source files.
+# Rule for dlopen'able C objects
+lib%.la : %.c
+	$(LIBTOOL) $(CC) -c $(CPPFLAGS) $(CFLAGS) $<
+	$(LIBTOOL) gcc -export-dynamic $(CPPFLAGS) $(CFLAGS) -o $@ $*.lo \
+	  -rpath $(repexecdir)
+
+# Build dependancy files from C source files.
 .%.d : %.c
-	$(SHELL) -ec '$(CC) -MM $(CPPFLAGS) $(XCPPFLAGS) $< \
-	| sed '\''s/$*\.o/& .$*\.d/g'\'' > $@'
+	$(SHELL) -ec '$(CC) -MM -MG $(CPPFLAGS) $< \
+	| sed '\''s/$*\.o/& $*.lo .$*\.d/g'\'' > $@'

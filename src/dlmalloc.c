@@ -772,13 +772,7 @@ struct mallinfo {
 
 */
 
-/* For jade; need the __morecore hook for ralloc.c... */
-
-#if defined(INTERNAL_LINUX_C_LIB) || defined(JADE)
-
-#ifdef JADE
-#define __default_morecore_init __jade_morecore
-#endif
+#if defined(INTERNAL_LINUX_C_LIB)
 
 #if __STD_C
 

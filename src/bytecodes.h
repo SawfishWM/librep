@@ -21,8 +21,8 @@
 #ifndef BYTECODES_H
 #define BYTECODES_H
 
-#define BYTECODE_MAJOR_VERSION 4
-#define BYTECODE_MINOR_VERSION 1
+#define BYTECODE_MAJOR_VERSION 5
+#define BYTECODE_MINOR_VERSION 0
 
 /* Number of bits encoded in each extra opcode forming the argument. */
 #define ARG_SHIFT    8
@@ -175,24 +175,12 @@
 #define OP_PUSHI 0x9f			/* push pc[0] */
 #define OP_PUSHIW 0xa0			/* push pc[0,1] */
 
-#define OP_SET_CURRENT_BUFFER 0xb0	/* call-2 set-current-buffer */
-#define OP_BIND_BUFFER 0xb1
-#define OP_CURRENT_BUFFER 0xb2		/* call-1 current-buffer */
-#define OP_BUFFERP 0xb3			/* call-1 bufferp */
-#define OP_MARKP 0xb4			/* call-1 markp */
-#define OP_WINDOWP 0xb5			/* call-1 windowp */
-#define OP_BIND_WINDOW 0xb6
+#define OP_BINDOBJ 0xb0			/* bind stk[0] */
 
-#define OP_VIEWP 0xb7			/* call-1 viewp */
-#define OP_BIND_VIEW 0xb8
-#define OP_CURRENT_VIEW 0xb9		/* call-1 current-view */
 #define OP_SWAP2 0xba			/* stk[0] = stk[1], stk[1] = stk[2],
 					   stk[2] = stk[0]. */
 
 #define OP_MOD 0xbb			/* push (mod pop[1] pop[2]) */
-
-#define OP_POS 0xbc			/* call-2 pos */
-#define OP_POSP 0xbd			/* call-1 posp */
 
 
 /* Jump opcodes */

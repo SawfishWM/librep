@@ -18,8 +18,8 @@
    along with Jade; see the file COPYING.	If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-#include "jade.h"
-#include <lib/jade_protos.h>
+#include "repint.h"
+
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,28 +36,18 @@ struct debug_buf {
     struct debug_buf *next;
     char *name;
     int size, ptr;
-    bool wrapped;
+    rep_bool wrapped;
     char data[1];
 };
 
 #define DB_SIZE(n) (sizeof(struct debug_buf) + (n) - 1)
 
-_PR void *db_alloc(char *name, int size);
-_PR void db_free(void *db);
-_PR void db_vprintf(void *_db, char *fmt, va_list args);
-_PR void db_printf(void *db, char *fmt, ...);
-_PR void db_print_backtrace(void *_db, char *fun);
-_PR void *db_return_address(void);
-_PR void db_spew(void *_db);
-_PR void db_spew_all(void);
-_PR void db_kill(void);
-
 static struct debug_buf *db_chain;
 
 void *
-db_alloc(char *name, int size)
+rep_db_alloc(char *name, int size)
 {
-    struct debug_buf *db = sys_alloc(DB_SIZE(size));
+    struct debug_buf *db = rep_alloc(DB_SIZE(size));
     if(db == NULL)
     {
 	perror("create_debug_buf");
@@ -66,7 +56,7 @@ db_alloc(char *name, int size)
     db->name = name;
     db->size = size;
     db->ptr = 0;
-    db->wrapped = FALSE;
+    db->wrapped = rep_FALSE;
     db->next = db_chain;
     db_chain = db;
 
@@ -74,7 +64,7 @@ db_alloc(char *name, int size)
 }
 
 void
-db_free(void *_db)
+rep_db_free(void *_db)
 {
     struct debug_buf *db = _db;
     struct debug_buf **x = &db_chain;
@@ -87,11 +77,11 @@ db_free(void *_db)
 	}
 	x = &((*x)->next);
     }
-    sys_free(db);
+    rep_free(db);
 }
 
 void
-db_vprintf(void *_db, char *fmt, va_list args)
+rep_db_vprintf(void *_db, char *fmt, va_list args)
 {
     char buf[256];
     int length;
@@ -110,7 +100,7 @@ db_vprintf(void *_db, char *fmt, va_list args)
 	memcpy(db->data + db->ptr, buf, before);
 	memcpy(db->data, buf + before, after);
 	db->ptr = after;
-	db->wrapped = TRUE;
+	db->wrapped = rep_TRUE;
     }
     else
     {
@@ -120,16 +110,16 @@ db_vprintf(void *_db, char *fmt, va_list args)
 }
 
 void
-db_printf(void *_db, char *fmt, ...)
+rep_db_printf(void *_db, char *fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    db_vprintf(_db, fmt, args);
+    rep_db_vprintf(_db, fmt, args);
     va_end(args);
 }
 
 void
-db_print_backtrace(void *_db, char *fun)
+rep_db_print_backtrace(void *_db, char *fun)
 {
 #if defined(__GNUC__)
 
@@ -161,30 +151,30 @@ db_print_backtrace(void *_db, char *fun)
     STACK_PROBE(1);  STACK_PROBE(2);  STACK_PROBE(3);  STACK_PROBE(4);
     STACK_PROBE(5);  STACK_PROBE(6);  STACK_PROBE(7);  STACK_PROBE(8);
 
-    db_printf(_db, "\nBacktrace in `%s':\n", fun);
+    rep_db_printf(_db, "\nBacktrace in `%s':\n", fun);
     for(i = BT_BASE; i < BT_BASE+BT_DEPTH && stack[i] != 0; i++)
     {
 #ifdef DB_RESOLVE_SYMBOLS
 	if(stack[i] == 0)
-	    db_printf(_db, "\t(nil)\n");
+	    rep_db_printf(_db, "\t(nil)\n");
 	else
 	{
 	    char *name;
 	    void *addr;
-	    if(find_c_symbol(stack[i], &name, &addr))
-		db_printf(_db, "\t<%s+%d>\n", name, stack[i] - addr);
+	    if(rep_find_c_symbol(stack[i], &name, &addr))
+		rep_db_printf(_db, "\t<%s+%d>\n", name, stack[i] - addr);
 	    else
-		db_printf(_db, "\t0x%08lx\n", stack[i]);
+		rep_db_printf(_db, "\t0x%08lx\n", stack[i]);
 	}
 #else
-	db_printf(_db, "\t0x%08lx\n", stack[i]);
+	rep_db_printf(_db, "\t0x%08lx\n", stack[i]);
 #endif
     }
 #endif
 }
 
 void *
-db_return_address(void)
+rep_db_return_address(void)
 {
 #if defined(__GNUC__)
     return __builtin_return_address(1);
@@ -194,7 +184,7 @@ db_return_address(void)
 }
 
 void
-db_spew(void *_db)
+rep_db_spew(void *_db)
 {
      struct debug_buf *db = _db;
 
@@ -212,26 +202,26 @@ db_spew(void *_db)
 }
 
 void
-db_spew_all(void)
+rep_db_spew_all(void)
 {
     struct debug_buf *db = db_chain;
     while(db != NULL)
     {
-	db_spew(db);
+	rep_db_spew(db);
 	db = db->next;
     }
 }
 
 void
-db_kill(void)
+rep_db_kill(void)
 {
     struct debug_buf *db = db_chain;
-    db_spew_all();
+    rep_db_spew_all();
     db_chain = NULL;
     while(db != NULL)
     {
 	struct debug_buf *next = db->next;
-	sys_free(db);
+	rep_free(db);
 	db = next;
     }
 }

@@ -18,9 +18,7 @@
    along with Jade; see the file COPYING.	If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-#include "jade.h"
-#include <lib/jade_protos.h>
-#include "revision.h"
+#include "repint.h"
 #include "build.h"
 
 #include <string.h>
@@ -28,35 +26,51 @@
 #include <stdlib.h>
 #include <time.h>
 
-_PR u_char *str_dupn(const u_char *old, int len);
-_PR void misc_init(void);
+void (*rep_beep_fun)(void);
 
-DEFSTRING(vers_string, VERSSTRING);
 DEFSTRING(build_id_string,
 	  BUILD_DATE " by " BUILD_USER "@" BUILD_HOST ", for " HOST_TYPE ".");
+DEFSTRING(rep_version_string, REP_VERSION);
 
-_PR VALUE sym_operating_system, sym_window_system, sym_process_environment;
 DEFSYM(operating_system, "operating-system");
-DEFSYM(window_system, "window-system");
-DEFSYM(process_environment, "process-environment"); /*
-::doc:operating_system::
+DEFSYM(process_environment, "process-environment");
+DEFSYM(rep_version, "rep-version");
+DEFSYM(rep_build_id, "rep-build-id"); /*
+::doc:Voperating-system::
 A symbol defining the type of operating system that Jade is running
 under. Currently this is always the symbol `unix'.
 ::end::
-::doc:window_system::
-A symbol defining the window system that Jade is running under. The only
-current possibility is `x11'.
-::end::
-::doc:process_environment::
+::doc:Vprocess-environment::
 A list of all environment variables (as strings "NAME=VALUE") passed
-to Jade. Also used to specify the environment of all subprocesses.
+to the interpreter. Also used to specify the environment of subprocesses.
+::end::
+::doc:Vrep-version::
+A string defining the current version of the REP interpreter.
+::end::
+::doc:Vrep-build-id::
+A string describing when, where, and by who the running version of the
+LISP interpreter was built.
 ::end:: */
-#ifdef HAVE_X11
-DEFSYM(x11, "x11");
-#endif
-#ifdef HAVE_UNIX
+
+#ifdef rep_HAVE_UNIX
 DEFSYM(unix, "unix");
 #endif
+
+DEFSYM(upcase_table, "upcase-table");
+DEFSYM(downcase_table, "downcase-table");
+DEFSYM(flatten_table, "flatten-table");
+/* Some doc strings
+::doc:Vupcase-table::
+256-byte string holding translations to turn each character into its
+upper-case equivalent.
+::end::
+::doc:Vdowncase-table::
+256-byte string holding translations to turn each character into its
+lower-case equivalent.
+::end::
+::doc:Vflatten-table::
+Translation table to convert newline characters to spaces.
+::end:: */
 
 #ifndef HAVE_STPCPY
 /*
@@ -73,25 +87,10 @@ stpcpy(register char *dst, register const char *src)
 }
 #endif /* !HAVE_STPCPY */
 
-#ifndef HAVE_MEMCHR
-void *
-memchr(const void *mem, int c, size_t len)
-{
-    register char *tmp = (char *)mem;
-    while(len-- > 0)
-    {
-	if(*tmp++ != c)
-	    continue;
-	return((void *)(tmp - 1));
-    }
-    return(NULL);
-}
-#endif /* !HAVE_MEMCHR */
-
 u_char *
-str_dupn(const u_char *old, int len)
+rep_str_dupn(const u_char *old, int len)
 {
-    char *new = sys_alloc(len + 1);
+    char *new = rep_alloc(len + 1);
     if(new)
     {
 	memcpy(new, old, len);
@@ -100,23 +99,21 @@ str_dupn(const u_char *old, int len)
     return new;
 }
 
-_PR VALUE cmd_beep(void);
-DEFUN_INT("beep", cmd_beep, subr_beep, (void), V_Subr0, DOC_beep, "") /*
-::doc:beep::
+DEFUN_INT("beep", Fbeep, Sbeep, (void), rep_Subr0, "") /*
+::doc:Sbeep::
 beep
 
 Rings a bell.
 ::end:: */
 {
-    beep(curr_vw);
-    return(sym_t);
+    if (rep_beep_fun != 0)
+	(*rep_beep_fun)();
+    return Qt;
 }
 
-_PR VALUE cmd_complete_string(VALUE existing, VALUE arg_list, VALUE fold);
-DEFUN("complete-string", cmd_complete_string, subr_complete_string,
-      (VALUE existing, VALUE arg_list, VALUE fold), V_Subr3,
-      DOC_complete_string) /*
-::doc:complete_string::
+DEFUN("complete-string", Fcomplete_string, Scomplete_string,
+      (repv existing, repv arg_list, repv fold), rep_Subr3) /*
+::doc:Scomplete-string::
 complete-string TEMPLATE LIST [FOLD-CASE]
 
 Return a string whose beginning matches the string TEMPLATE, and is unique
@@ -127,19 +124,19 @@ is t, all matching ignores character case.
     u_char *orig, *match = NULL;
     int matchlen = 0, origlen;
 
-    DECLARE1(existing, STRINGP);
-    DECLARE2(arg_list, LISTP);
+    rep_DECLARE1(existing, rep_STRINGP);
+    rep_DECLARE2(arg_list, rep_LISTP);
 
-    orig = VSTR(existing);
-    origlen = STRING_LEN(existing);
+    orig = rep_STR(existing);
+    origlen = rep_STRING_LEN(existing);
 
-    while(CONSP(arg_list))
+    while(rep_CONSP(arg_list))
     {
-	VALUE arg = VCAR(arg_list);
-	if(STRINGP(arg))
+	repv arg = rep_CAR(arg_list);
+	if(rep_STRINGP(arg))
 	{
-	    u_char *tmp = VSTR(arg);
-	    if((NILP(fold) ? strncmp : strncasecmp)(orig, tmp, origlen) == 0)
+	    u_char *tmp = rep_STR(arg);
+	    if((rep_NILP(fold) ? strncmp : strncasecmp)(orig, tmp, origlen) == 0)
 	    {
 		if(match)
 		{
@@ -147,7 +144,7 @@ is t, all matching ignores character case.
 		    tmp += origlen;
 		    while(*tmp2 && *tmp)
 		    {
-			if(NILP(fold)
+			if(rep_NILP(fold)
 			   ? (*tmp2 != *tmp)
 			   : (tolower(*tmp2) != tolower(*tmp)))
 			{
@@ -165,17 +162,16 @@ is t, all matching ignores character case.
 		}
 	    }
 	}
-	arg_list = VCDR(arg_list);
+	arg_list = rep_CDR(arg_list);
     }
     if(match)
-	return string_dupn(match, matchlen);
+	return rep_string_dupn(match, matchlen);
     else
-	return sym_nil;
+	return Qnil;
 }
 
-_PR VALUE cmd_current_time(void);
-DEFUN("current-time", cmd_current_time, subr_current_time, (void), V_Subr0, DOC_current_time) /*
-::doc:current_time::
+DEFUN("current-time", Fcurrent_time, Scurrent_time, (void), rep_Subr0) /*
+::doc:Scurrent-time::
 current-time
 
 Return a value denoting the current system time. This will be a cons cell
@@ -183,13 +179,12 @@ containing (DAYS . SECONDS), the number of DAYS since the epoch, and the
 number of seconds since the start of the day (universal time).
 ::end:: */
 {
-    u_long time = sys_time();
-    return MAKE_TIME(time);
+    u_long time = rep_time();
+    return rep_MAKE_TIME(time);
 }
 
-_PR VALUE cmd_fix_time(VALUE time);
-DEFUN("fix-time", cmd_fix_time, subr_fix_time, (VALUE time), V_Subr1, DOC_fix_time) /*
-::doc:fix_time::
+DEFUN("fix-time", Ffix_time, Sfix_time, (repv time), rep_Subr1) /*
+::doc:Sfix-time::
 fix-time TIMESTAMP
 
 Ensure that the two parts of TIMESTAMP are mutually consistent. If not
@@ -197,18 +192,16 @@ TIMESTAMP is altered. Returns TIMESTAMP.
 ::end:: */
 {
     u_long timestamp;
-    DECLARE1(time, TIMEP);
-    timestamp = GET_TIME(time);
-    VCAR(time) = MAKE_INT(timestamp / 86400);
-    VCDR(time) = MAKE_INT(timestamp % 86400);
+    rep_DECLARE1(time, rep_TIMEP);
+    timestamp = rep_GET_TIME(time);
+    rep_CAR(time) = rep_MAKE_INT(timestamp / 86400);
+    rep_CDR(time) = rep_MAKE_INT(timestamp % 86400);
     return time;
 }
 
-_PR VALUE cmd_current_time_string(VALUE time, VALUE format);
-DEFUN("current-time-string", cmd_current_time_string,
-      subr_current_time_string, (VALUE time, VALUE format), V_Subr2,
-      DOC_current_time_string) /*
-::doc:current_time_string::
+DEFUN("current-time-string", Fcurrent_time_string,
+      Scurrent_time_string, (repv time, repv format), rep_Subr2) /*
+::doc:Scurrent-time-string::
 current-time-string [TIME] [FORMAT]
 
 Returns a human-readable string defining the current date and time, or if
@@ -219,61 +212,58 @@ the same conventions as the template to the C library's strftime function.
 ::end:: */
 {
     time_t timestamp;
-    if(TIMEP(time))
-	timestamp = GET_TIME(time);
+    if(rep_TIMEP(time))
+	timestamp = rep_GET_TIME(time);
     else
-	timestamp = sys_time();
-    if(STRINGP(format))
+	timestamp = rep_time();
+    if(rep_STRINGP(format))
     {
 	struct tm *loctime = localtime(&timestamp);
 	char buf[256];
-	int len = strftime(buf, sizeof(buf), VSTR(format), loctime);
+	int len = strftime(buf, sizeof(buf), rep_STR(format), loctime);
 	if(len > 0)
-	    return string_dupn(buf, len);
+	    return rep_string_dupn(buf, len);
     }
     else
     {
 	char *str = ctime(&timestamp);
 	if(str)
-	    return(string_dupn(str, strlen(str) - 1));
+	    return(rep_string_dupn(str, strlen(str) - 1));
     }
-    return LISP_NULL;
+    return rep_NULL;
 }
 
-_PR VALUE cmd_time_later_p(VALUE t1, VALUE t2);
-DEFUN("time-later-p", cmd_time_later_p, subr_time_later_p, (VALUE t1, VALUE t2), V_Subr2, DOC_time_later_p) /*
-::doc:time_later_p::
+DEFUN("time-later-p", Ftime_later_p, Stime_later_p, (repv t1, repv t2), rep_Subr2) /*
+::doc:Stime-later-p::
 time-later-p TIME-STAMP1 TIME-STAMP2
 
 Returns t when TIME-STAMP1 refers to a later time than TIME-STAMP2.
 ::end:: */
 {
     u_long time1, time2;
-    DECLARE1(t1, TIMEP);
-    DECLARE2(t2, TIMEP);
-    time1 = GET_TIME(t1);
-    time2 = GET_TIME(t2);
-    return time1 > time2 ? sym_t : sym_nil;
+    rep_DECLARE1(t1, rep_TIMEP);
+    rep_DECLARE2(t2, rep_TIMEP);
+    time1 = rep_GET_TIME(t1);
+    time2 = rep_GET_TIME(t2);
+    return time1 > time2 ? Qt : Qnil;
 }
 
-_PR VALUE cmd_sleep_for(VALUE secs, VALUE msecs);
-DEFUN("sleep-for", cmd_sleep_for, subr_sleep_for, (VALUE secs, VALUE msecs),
-      V_Subr2, DOC_sleep_for) /*
-::doc:sleep_for::
+DEFUN("sleep-for", Fsleep_for, Ssleep_for, (repv secs, repv msecs),
+      rep_Subr2) /*
+::doc:Ssleep-for::
 sleep-for SECONDS [MILLISECONDS]
 
 Pause for SECONDS (plus the optional MILLISECOND component) length of time.
 ::end:: */
 {
-    DECLARE1(secs, INTP);
-    sys_sleep_for(VINT(secs), INTP(msecs) ? VINT(msecs) : 0);
-    return sym_t;
+    rep_DECLARE1(secs, rep_INTP);
+    rep_sleep_for(rep_INT(secs), rep_INTP(msecs) ? rep_INT(msecs) : 0);
+    return Qt;
 }
 
-_PR VALUE cmd_sit_for(VALUE secs, VALUE msecs);
-DEFUN("sit-for", cmd_sit_for, subr_sit_for, (VALUE secs, VALUE msecs),
-      V_Subr2, DOC_sit_for) /*
-::doc:sit_for::
+DEFUN("sit-for", Fsit_for, Ssit_for, (repv secs, repv msecs),
+      rep_Subr2) /*
+::doc:Ssit-for::
 sit-for [SECONDS] [MILLISECONDS]
 
 Wait for input to arrive and be processed. No more than SECONDS seconds plus
@@ -284,106 +274,78 @@ If neither SECONDS nor MILLISECONDS is defined the command will return
 immediately, using a null timeout.
 ::end:: */
 {
-    return sys_sit_for(((INTP(secs) ? VINT(secs) : 0) * 1000)
-		       + (INTP(msecs) ? VINT(msecs) : 0));
+    return rep_sit_for(((rep_INTP(secs) ? rep_INT(secs) : 0) * 1000)
+		       + (rep_INTP(msecs) ? rep_INT(msecs) : 0));
 }
 
-_PR VALUE cmd_user_login_name(void);
-DEFUN("user-login-name", cmd_user_login_name, subr_user_login_name, (void), V_Subr0, DOC_user_login_name) /*
-::doc:user_login_name::
+DEFUN("user-login-name", Fuser_login_name, Suser_login_name, (void), rep_Subr0) /*
+::doc:Suser-login-name::
 user-login-name
 
 Returns the login name of the user (a string).
 ::end:: */
 {
-    return sys_user_login_name();
+    return rep_user_login_name();
 }
 
-_PR VALUE cmd_user_full_name(VALUE arg);
-DEFUN("user-full-name", cmd_user_full_name, subr_user_full_name, (VALUE arg), V_Subr1, DOC_user_full_name) /*
-::doc:user_full_name::
+DEFUN("user-full-name", Fuser_full_name, Suser_full_name, (repv arg), rep_Subr1) /*
+::doc:Suser-full-name::
 user-full-name [REAL-NAME]
 
 Returns the real name of the user (a string). If REAL-NAME is non-nil, it's
 the name to return in subsequent calls.
 ::end:: */
 {
-    static VALUE saved_name;
-    if(STRINGP(arg))
+    static repv saved_name;
+    if(rep_STRINGP(arg))
     {
 	if(!saved_name)
-	    mark_static(&saved_name);
+	    rep_mark_static(&saved_name);
 	saved_name = arg;
     }
-    return saved_name ? saved_name : sys_user_full_name();
+    return saved_name ? saved_name : rep_user_full_name();
 }
 
-_PR VALUE cmd_user_home_directory(VALUE user);
-DEFUN("user-home-directory", cmd_user_home_directory,
-      subr_user_home_directory, (VALUE user), V_Subr1,
-      DOC_user_home_directory) /*
-::doc:user_home_directory::
+DEFUN("user-home-directory", Fuser_home_directory,
+      Suser_home_directory, (repv user), rep_Subr1) /*
+::doc:Suser-home-directory::
 user-home-directory [USER]
 
 Return the path to USER's home directory (a string). When USER is undefined
 the directory of the user who executed Jade is found.
 ::end:: */
 {
-    if(!NILP(user))
-	DECLARE1(user, STRINGP);
-    return sys_user_home_directory(user);
+    if(!rep_NILP(user))
+	rep_DECLARE1(user, rep_STRINGP);
+    return rep_user_home_directory(user);
 }
 
-_PR VALUE cmd_system_name(void);
-DEFUN("system-name", cmd_system_name, subr_system_name, (void), V_Subr0,  DOC_system_name) /*
-::doc:system_name::
+DEFUN("system-name", Fsystem_name, Ssystem_name, (void), rep_Subr0) /*
+::doc:Ssystem-name::
 system-name
 
 Returns the name of the host which the editor is running on.
 ::end:: */
 {
-    return sys_system_name();
+    return rep_system_name();
 }
 
-_PR VALUE cmd_major_version_number(void);
-DEFUN("major-version-number", cmd_major_version_number, subr_major_version_number, (void), V_Subr0, DOC_major_version_number) /*
-::doc:major_version_number::
-major-version-number
+DEFUN("message", Fmessage, Smessage, (repv string, repv now), rep_Subr2) /*
+::doc:Smessage::
+message STRING [DISPLAY-NOW]
+
+Temporarily sets the status display to STRING, this may not happen until the
+next complete redisplay, unless DISPLAY-NOW is non-nil.
 ::end:: */
 {
-    return MAKE_INT(MAJOR);
-}
-
-_PR VALUE cmd_minor_version_number(void);
-DEFUN("minor-version-number", cmd_minor_version_number, subr_minor_version_number, (void), V_Subr0, DOC_minor_version_number) /*
-::doc:minor_version_number::
-minor-version-number
-::end:: */
-{
-    return MAKE_INT(MINOR);
-}
-
-_PR VALUE cmd_version_string(void);
-DEFUN("version-string", cmd_version_string, subr_version_string, (void), V_Subr0, DOC_version_string) /*
-::doc:version_string::
-version-string
-
-Return a string identifying the current version of Jade.
-::end:: */
-{
-    return VAL(&vers_string);
-}
-
-_PR VALUE cmd_build_id_string(void);
-DEFUN("build-id-string", cmd_build_id_string, subr_build_id_string, (void), V_Subr0, DOC_build_id_string) /*
-::doc:build_id_string::
-build-id-string
-
-Returns a string describing when, where, and by who the running version of
-Jade was built.
-::end:: */
-{
-    return VAL(&build_id_string);
+    rep_DECLARE1(string, rep_STRINGP);
+    if (rep_message_fun != 0)
+    {
+	(*rep_message_fun)(rep_message, rep_STR(string));
+	if(!rep_NILP(now))
+	    (*rep_message_fun)(rep_redisplay_message);
+    }
+    return string;
 }
 
 /* Try to work out how many bits of randomness rand() will give.. */
@@ -401,9 +363,8 @@ Jade was built.
 # endif
 #endif
 
-_PR VALUE cmd_random(VALUE arg);
-DEFUN("random", cmd_random, subr_random, (VALUE arg), V_Subr1, DOC_random) /*
-::doc:random::
+DEFUN("random", Frandom, Srandom, (repv arg), rep_Subr1) /*
+::doc:Srandom::
 random [LIMIT]
 
 Produce a pseudo-random number between zero and LIMIT (or the largest positive
@@ -412,26 +373,26 @@ with the current time of day.
 ::end:: */
 {
     long limit, divisor, val;
-    if(arg == sym_t)
+    if(arg == Qt)
     {
 	srand(time(0));
-	return sym_t;
+	return Qt;
     }
 
-    if(INTP(arg))
-	limit = VINT(arg);
+    if(rep_INTP(arg))
+	limit = rep_INT(arg);
     else
-	limit = LISP_MAX_INT;
-    divisor = LISP_MAX_INT / limit;
+	limit = rep_LISP_MAX_INT;
+    divisor = rep_LISP_MAX_INT / limit;
     do {
 	val = rand();
-#if LISP_INT_BITS > RAND_BITS
+#if rep_LISP_INT_BITS > RAND_BITS
 	val = (val << RAND_BITS) | rand();
-# if LISP_INT_BITS > 2*RAND_BITS
+# if rep_LISP_INT_BITS > 2*RAND_BITS
 	val = (val << RAND_BITS) | rand();
-#  if LISP_INT_BITS > 3*RAND_BITS
+#  if rep_LISP_INT_BITS > 3*RAND_BITS
 	val = (val << RAND_BITS) | rand();
-#   if LISP_INT_BITS > 4*RAND_BITS
+#   if rep_LISP_INT_BITS > 4*RAND_BITS
 	val = (val << RAND_BITS) | rand();
 #   endif
 #  endif
@@ -440,44 +401,180 @@ with the current time of day.
 	val /= divisor;
     } while(val >= limit);
 
-    return MAKE_INT(val);
+    return rep_MAKE_INT(val);
+}
+
+DEFUN("translate-string", Ftranslate_string, Stranslate_string, (repv string, repv table), rep_Subr2) /*
+::doc:Stranslate-string:
+translate-string STRING TRANSLATION-TABLE
+
+Applies the TRANSLATION-TABLE to each character in the string STRING.
+TRANSLATION-TABLE is a string, each character represents the translation
+for an ascii character of that characters position in the string. If the
+string is less than 256 chars long any undefined characters will remain
+unchanged.
+Note that the STRING really is modified, no copy is made!
+::end:: */
+{
+    int tablen, slen;
+    register u_char *str;
+    rep_DECLARE1(string, rep_STRINGP);
+    rep_DECLARE2(table, rep_STRINGP);
+    tablen = rep_STRING_LEN(table);
+    if(!rep_STRING_WRITABLE_P(string))
+	return(rep_signal_arg_error(string, 1));
+    str = rep_STR(string);
+    slen = rep_STRING_LEN(string);
+    while(slen-- > 0)
+    {
+	register u_char c = *str;
+	*str++ = (c < tablen) ? rep_STR(table)[c] : c;
+    }
+    return(string);
+}
+
+DEFUN("alpha-char-p", Falpha_char_p, Salpha_char_p, (repv ch), rep_Subr1) /*
+::doc:Salpha-char-p::
+alpha-char-p CHAR
+
+Returns t if CHAR is an alphabetic character.
+::end:: */
+{
+    return (rep_INTP(ch) && isalpha(rep_INT(ch))) ? Qt : Qnil;
+}
+
+DEFUN("upper-case-p", Fupper_case_p, Supper_case_p, (repv ch), rep_Subr1) /*
+::doc:Supper-case-p::
+upper-case-p CHAR
+
+Returns t if CHAR is upper case.
+::end:: */
+{
+    return (rep_INTP(ch) && isupper(rep_INT(ch))) ? Qt : Qnil;
+}
+
+DEFUN("lower-case-p", Flower_case_p, Slower_case_p, (repv ch), rep_Subr1) /*
+::doc:Slower-case-p::
+lower-case-p CHAR
+
+Returns t if CHAR is lower case.
+::end:: */
+{
+    return (rep_INTP(ch) && islower(rep_INT(ch))) ? Qt : Qnil;
+}
+
+DEFUN("digit-char-p", Fdigit_char_p, Sdigit_char_p, (repv ch), rep_Subr1) /*
+::doc:Sdigit-char-p::
+digit-char-p CHAR
+
+Returns t if CHAR is a digit.
+::end:: */
+{
+    return (rep_INTP(ch) && isdigit(rep_INT(ch))) ? Qt : Qnil;
+}
+
+DEFUN("alphanumericp", Falphanumericp, Salphanumericp, (repv ch), rep_Subr1) /*
+::doc:Salphanumericp::
+alphanumericp CHAR
+
+Returns t if CHAR is alpha-numeric.
+::end:: */
+{
+    return (rep_INTP(ch) && isalnum(rep_INT(ch))) ? Qt : Qnil;
+}
+
+DEFUN("space-char-p", Fspace_char_p, Sspace_char_p, (repv ch), rep_Subr1) /*
+::doc:Sspace-char-p::
+space-char-p CHAR
+
+Returns t if CHAR is whitespace.
+::end:: */
+{
+    return (rep_INTP(ch) && isspace(rep_INT(ch))) ? Qt : Qnil;
+}
+
+DEFUN("char-upcase", Fchar_upcase, Schar_upcase, (repv ch), rep_Subr1) /*
+::doc:Schar-upcase::
+char-upcase CHAR
+
+Returns the upper-case equivalent of CHAR.
+::end:: */
+{
+    rep_DECLARE1(ch, rep_INTP);
+    return rep_MAKE_INT(toupper(rep_INT(ch)));
+}
+
+DEFUN("char-downcase", Fchar_downcase, Schar_downcase, (repv ch), rep_Subr1) /*
+::doc:Schar-downcase::
+char-downcase CHAR
+
+Returns the lower-case equivalent of CHAR.
+::end:: */
+{
+    rep_DECLARE1(ch, rep_INTP);
+    return rep_MAKE_INT(toupper(rep_INT(ch)));
 }
 
 void
-misc_init(void)
+rep_misc_init(void)
 {
-    INTERN(operating_system); DOC(operating_system);
-#ifdef HAVE_UNIX
-    INTERN(unix);
-    VSYM(sym_operating_system)->value = sym_unix;
-#endif
-    INTERN(window_system); DOC(window_system);
-#ifdef HAVE_X11
-    INTERN(x11);
-    VSYM(sym_window_system)->value = sym_x11;
+    int i;
+
+    rep_INTERN(operating_system);
+#ifdef rep_HAVE_UNIX
+    rep_INTERN(unix);
+    rep_SYM(Qoperating_system)->value = Qunix;
 #endif
 
-    INTERN(process_environment); DOC(process_environment);
-    VSYM(sym_process_environment)->value = sym_nil;
+    rep_INTERN(process_environment);
+    rep_SYM(Qprocess_environment)->value = Qnil;
 
-    ADD_SUBR_INT(subr_beep);
-    ADD_SUBR(subr_complete_string);
-    ADD_SUBR(subr_current_time);
-    ADD_SUBR(subr_fix_time);
-    ADD_SUBR(subr_current_time_string);
-    ADD_SUBR(subr_time_later_p);
-    ADD_SUBR(subr_sleep_for);
-    ADD_SUBR(subr_sit_for);
+    rep_INTERN(rep_version);
+    rep_SYM(Qrep_version)->value = rep_VAL(&rep_version_string);
+    rep_INTERN(rep_build_id);
+    rep_SYM(Qrep_build_id)->value = rep_VAL(&build_id_string);
 
-    ADD_SUBR(subr_user_login_name);
-    ADD_SUBR(subr_user_full_name);
-    ADD_SUBR(subr_user_home_directory);
-    ADD_SUBR(subr_system_name);
+    rep_ADD_SUBR_INT(Sbeep);
+    rep_ADD_SUBR(Scomplete_string);
+    rep_ADD_SUBR(Scurrent_time);
+    rep_ADD_SUBR(Sfix_time);
+    rep_ADD_SUBR(Scurrent_time_string);
+    rep_ADD_SUBR(Stime_later_p);
+    rep_ADD_SUBR(Ssleep_for);
+    rep_ADD_SUBR(Ssit_for);
 
-    ADD_SUBR(subr_major_version_number);
-    ADD_SUBR(subr_minor_version_number);
-    ADD_SUBR(subr_version_string);
-    ADD_SUBR(subr_build_id_string);
+    rep_ADD_SUBR(Suser_login_name);
+    rep_ADD_SUBR(Suser_full_name);
+    rep_ADD_SUBR(Suser_home_directory);
+    rep_ADD_SUBR(Ssystem_name);
+    rep_ADD_SUBR(Smessage);
+    rep_ADD_SUBR(Srandom);
+    rep_ADD_SUBR(Stranslate_string);
+    rep_ADD_SUBR(Salpha_char_p);
+    rep_ADD_SUBR(Supper_case_p);
+    rep_ADD_SUBR(Slower_case_p);
+    rep_ADD_SUBR(Sdigit_char_p);
+    rep_ADD_SUBR(Salphanumericp);
+    rep_ADD_SUBR(Sspace_char_p);
+    rep_ADD_SUBR(Schar_upcase);
+    rep_ADD_SUBR(Schar_downcase);
 
-    ADD_SUBR(subr_random);
+    rep_INTERN(upcase_table);
+    rep_SYM(Qupcase_table)->value = rep_make_string(257);
+    rep_INTERN(downcase_table);
+    rep_SYM(Qdowncase_table)->value = rep_make_string(257);
+    for(i = 0; i < 256; i++)
+    {
+	rep_STR(rep_SYM(Qupcase_table)->value)[i] = toupper(i);
+	rep_STR(rep_SYM(Qdowncase_table)->value)[i] = tolower(i);
+    }
+    rep_STR(rep_SYM(Qupcase_table)->value)[256] = 0;
+    rep_STR(rep_SYM(Qdowncase_table)->value)[256] = 0;
+
+    rep_INTERN(flatten_table);
+    rep_SYM(Qflatten_table)->value = rep_make_string(12);
+    for(i = 0; i < 10; i++)
+	rep_STR(rep_SYM(Qflatten_table)->value)[i] = i;
+    rep_STR(rep_SYM(Qflatten_table)->value)[10] = ' ';
+    rep_STR(rep_SYM(Qflatten_table)->value)[11] = 0;
 }

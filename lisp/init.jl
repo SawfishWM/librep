@@ -18,74 +18,12 @@
 ;;; along with Jade; see the file COPYING.  If not, write to
 ;;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-(message "Initialising; wait..." t)
-
 ;; Load standard libraries
 (load "lisp")
 (load "backquote")
 (load "tilde")
-(load "loadkeys")
-(load "windows")
-(load "buffers")
-(load "modes")
-(load "edit")
 
-;; Install all autoload hooks. This is done last so that it works
-;; when dumped. We load autoload.jl to ensure that we don't get a
-;; compiled (and possibly out of date) version
-(load "autoload.jl")
-
-;; Do operating- and window-system initialisation
-(load (concat "os-" (symbol-name operating-system)) t)
-(load (concat "ws-" (symbol-name window-system)) t)
-
-;; Load site specific initialisation. Errors here are trapped since
-;; they're probably not going to leave the editor in an unusable state
-(if (not (member "-no-rc" command-line-args))
-    (condition-case error-data
-	(progn
-	  ;; First the site-wide stuff, the t means don't complain
-	  ;; if it doesn't exist
-	  (load "site-init" t)
-	  ;; Now try to interpret the user's startup file, or failing that
-	  ;; the default.jl file providing site-wide user options
-	  (or
-	   (load (concat (user-home-directory) ".jaderc") t t)
-	   (load "default" t)))
-      (error
-       (format (stderr-file) "error in local config--> %S\n" error-data)))
-  (setq command-line-args (delete "-no-rc" command-line-args)))
-
-;; Set up the first window as command shell type thing
-(with-buffer default-buffer
-  (lisp-mode))
-
-;; Print a message in the first buffer
-(format default-buffer
-	";; %s, Copyright (C) 1993, 1994 John Harper
-;; Jade comes with ABSOLUTELY NO WARRANTY; for details see the file COPYING\n\n"
-	(version-string))
-;; Don't want it in the undo list
-(setq buffer-undo-list nil)
-(set-buffer-modified default-buffer nil)
-
-;; Use all arguments which are left.
-(let
-    (arg)
-  (while (setq arg (car command-line-args))
-    (setq command-line-args (cdr command-line-args))
-    (cond
-      ((equal "-f" arg)
-       (setq arg (car command-line-args)
-	     command-line-args (cdr command-line-args))
-       (funcall (read-from-string arg)))
-      ((equal "-l" arg)
-       (setq arg (car command-line-args)
-	     command-line-args (cdr command-line-args))
-       (load arg))
-      ((equal "-q" arg)
-       (throw 'quit 0))
-      (t
-       (find-file arg)))))
-
-(message (concat "Built " (build-id-string)))
+;; It's up to the specific system's initialisatio scripts to do the
+;; rest. Typically this will involve doing a (load-all "autoload.jl")
+;; and loading .reprc and any other user configuration files. See
+;; rep.jl for an example

@@ -36,125 +36,108 @@ char *alloca ();
 # endif
 #endif
 
-#include "jade.h"
-#include <lib/jade_protos.h>
-#include "regexp.h"
+#include "repint.h"
 
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
 
-_PR void symbol_sweep(void);
-_PR int symbol_cmp(VALUE, VALUE);
-_PR void symbol_princ(VALUE, VALUE);
-_PR void symbol_print(VALUE, VALUE);
-_PR VALUE add_subr(Lisp_XSubr *);
-_PR VALUE add_const_num(VALUE, long);
-_PR void intern_static(VALUE *, VALUE);
-_PR VALUE bind_symbol(VALUE, VALUE, VALUE);
-_PR void unbind_symbols(VALUE);
-_PR int pre_symbols_init(void);
-_PR void symbols_init(void);
-_PR void symbols_kill(void);
-
 /* Main storage of symbols.  */
-_PR VALUE obarray;
-VALUE obarray;
+repv rep_obarray;
 
-_PR VALUE sym_nil, sym_t;
 DEFSYM(nil, "nil");
 DEFSYM(t, "t");
 
-_PR VALUE sym_variable_documentation, sym_permanent_local;
 DEFSYM(variable_documentation, "variable-documentation");
 DEFSYM(permanent_local, "permanent-local");
 
+/* Function vectors to implement local symbols through. */
+repv (*rep_deref_local_symbol_fun)(repv sym) = 0;
+repv (*rep_set_local_symbol_fun)(repv sym, repv val) = 0;
+
 /* This value is stored in the cells of a symbol to denote a void object. */
-_PR VALUE void_value;
-static Lisp_Cell void_object ALIGN_4 = { V_Void };
-VALUE void_value = VAL(&void_object);
+rep_ALIGN_CELL(static rep_cell void_object) = { rep_Void };
+repv rep_void_value = rep_VAL(&void_object);
 
 /* The special value which signifies the end of a hash-bucket chain.
    It can be any Lisp object which isn't a symbol.  */
-#define OB_NIL VAL(&void_object)
+#define OB_NIL rep_VAL(&void_object)
 
-static Lisp_Symbol_Block *symbol_block_chain;
-static Lisp_Symbol *symbol_freelist;
-_PR int allocated_symbols, used_symbols;
-int allocated_symbols, used_symbols;
+static rep_symbol_block *symbol_block_chain;
+static rep_symbol *symbol_freelist;
+int rep_allocated_symbols, rep_used_symbols;
 
-_PR VALUE cmd_make_symbol(VALUE);
-DEFUN("make-symbol", cmd_make_symbol, subr_make_symbol, (VALUE name), V_Subr1, DOC_make_symbol) /*
-::doc:make_symbol::
+DEFUN("make-symbol", Fmake_symbol, Smake_symbol, (repv name), rep_Subr1) /*
+::doc:Smake-symbol::
 make-symbol NAME
 
 Returns a new, uninterned, symbol with print-name NAME. It's value and
 function definition are both void and it has a nil property-list.
 ::end:: */
 {
-    VALUE sym;
-    DECLARE1(name, STRINGP);
+    repv sym;
+    rep_DECLARE1(name, rep_STRINGP);
     if(!symbol_freelist)
     {
-	Lisp_Symbol_Block *sb = ALLOC_OBJECT(sizeof(Lisp_Symbol_Block));
+	rep_symbol_block *sb = rep_ALLOC_CELL(sizeof(rep_symbol_block));
 	if(sb)
 	{
 	    int i;
-	    allocated_symbols += SYMBOLBLK_SIZE;
+	    rep_allocated_symbols += rep_SYMBOLBLK_SIZE;
 	    sb->next = symbol_block_chain;
 	    symbol_block_chain = sb;
-	    for(i = 0; i < (SYMBOLBLK_SIZE - 1); i++)
-		sb->symbols[i].next = VAL(&sb->symbols[i + 1]);
-	    sb->symbols[i].next = VAL(symbol_freelist);
+	    for(i = 0; i < (rep_SYMBOLBLK_SIZE - 1); i++)
+		sb->symbols[i].next = rep_VAL(&sb->symbols[i + 1]);
+	    sb->symbols[i].next = rep_VAL(symbol_freelist);
 	    symbol_freelist = sb->symbols;
 	}
     }
-    if((sym = VAL(symbol_freelist)))
+    if((sym = rep_VAL(symbol_freelist)))
     {
-	symbol_freelist = VSYM(VSYM(sym)->next);
-	VSYM(sym)->next = LISP_NULL;
-	VSYM(sym)->car = V_Symbol;
-	VSYM(sym)->name = name;
-	VSYM(sym)->value = void_value;
-	VSYM(sym)->function = void_value;
-	VSYM(sym)->prop_list = sym_nil;
-	used_symbols++;
-	data_after_gc += sizeof(Lisp_Symbol);
+	symbol_freelist = rep_SYM(rep_SYM(sym)->next);
+	rep_SYM(sym)->next = rep_NULL;
+	rep_SYM(sym)->car = rep_Symbol;
+	rep_SYM(sym)->name = name;
+	rep_SYM(sym)->value = rep_void_value;
+	rep_SYM(sym)->function = rep_void_value;
+	rep_SYM(sym)->prop_list = Qnil;
+	rep_used_symbols++;
+	rep_data_after_gc += sizeof(rep_symbol);
     }
     return(sym);
 }
 
-void
+static void
 symbol_sweep(void)
 {
-    Lisp_Symbol_Block *sb = symbol_block_chain;
+    rep_symbol_block *sb = symbol_block_chain;
     symbol_freelist = NULL;
-    used_symbols = 0;
+    rep_used_symbols = 0;
     while(sb)
     {
 	int i;
-	Lisp_Symbol_Block *nxt = sb->next;
-	for(i = 0; i < SYMBOLBLK_SIZE; i++)
+	rep_symbol_block *nxt = sb->next;
+	for(i = 0; i < rep_SYMBOLBLK_SIZE; i++)
 	{
-	    if(!GC_CELL_MARKEDP(VAL(&sb->symbols[i])))
+	    if(!rep_GC_CELL_MARKEDP(rep_VAL(&sb->symbols[i])))
 	    {
-		sb->symbols[i].next = VAL(symbol_freelist);
+		sb->symbols[i].next = rep_VAL(symbol_freelist);
 		symbol_freelist = &sb->symbols[i];
 	    }
 	    else
 	    {
-		GC_CLR_CELL(VAL(&sb->symbols[i]));
-		used_symbols++;
+		rep_GC_CLR_CELL(rep_VAL(&sb->symbols[i]));
+		rep_used_symbols++;
 	    }
 	}
 	sb = nxt;
     }
-#ifdef DUMPED
+#ifdef rep_DUMPED
     {
-	Lisp_Symbol *sym;
-	for(sym = &dumped_symbols_start; sym < &dumped_symbols_end; sym++)
+	rep_symbol *sym;
+	for(sym = &rep_dumped_symbols_start; sym < &rep_dumped_symbols_end; sym++)
 	{
-	    if(!GC_CELL_MARKEDP(VAL(sym)))
+	    if(!rep_GC_CELL_MARKEDP(rep_VAL(sym)))
 	    {
 		/* Don't put this on the free list. There may
 		   still be references to it from other dumped
@@ -162,32 +145,32 @@ symbol_sweep(void)
 	    }
 	    else
 	    {
-		GC_CLR_CELL(VAL(sym));
-		used_symbols++;
+		rep_GC_CLR_CELL(rep_VAL(sym));
+		rep_used_symbols++;
 	    }
 	}
     }
-#endif /* DUMPED */
+#endif /* rep_DUMPED */
 }
 
-int
-symbol_cmp(VALUE v1, VALUE v2)
+static int
+symbol_cmp(repv v1, repv v2)
 {
-    if(VTYPE(v1) == VTYPE(v2))
-	return(!(VSYM(v1) == VSYM(v2)));
+    if(rep_TYPE(v1) == rep_TYPE(v2))
+	return(!(rep_SYM(v1) == rep_SYM(v2)));
     return(1);
 }
 
-void
-symbol_princ(VALUE strm, VALUE obj)
+static void
+symbol_princ(repv strm, repv obj)
 {
-    stream_puts(strm, VPTR(VSYM(obj)->name), -1, TRUE);
+    rep_stream_puts(strm, rep_PTR(rep_SYM(obj)->name), -1, rep_TRUE);
 }
 
-void
-symbol_print(VALUE strm, VALUE obj)
+static void
+symbol_print(repv strm, repv obj)
 {
-    u_char *s = VSTR(VSYM(obj)->name);
+    u_char *s = rep_STR(rep_SYM(obj)->name);
     u_char c;
     while((c = *s++))
     {
@@ -206,54 +189,48 @@ symbol_print(VALUE strm, VALUE obj)
 	case ';':
 	case '\\':
 	case '|':
-	    stream_putc(strm, (int)'\\');
+	    rep_stream_putc(strm, (int)'\\');
 	    break;
 	default:
 	    if(iscntrl(c))
-		stream_putc(strm, (int)'\\');
+		rep_stream_putc(strm, (int)'\\');
 	    break;
 	}
-	stream_putc(strm, (int)c);
+	rep_stream_putc(strm, (int)c);
     }
 }
 
-VALUE
-add_subr(Lisp_XSubr *subr)
+repv
+rep_add_subr(rep_xsubr *subr)
 {
-    VALUE sym = cmd_intern(subr->name, obarray);
+    repv sym = Fintern(subr->name, rep_obarray);
     if(sym)
     {
-	if(subr->car == V_Var)
-	{
-	    VSYM(sym)->value = VAL(subr);
-	    VSYM(sym)->prop_list
-	        = cmd_cons(sym_variable_documentation,
-			   cmd_cons(MAKE_INT(subr->doc_index),
-				    VSYM(sym)->prop_list));
-	}
+	if(subr->car == rep_Var)
+	    rep_SYM(sym)->value = rep_VAL(subr);
 	else
-	    VSYM(sym)->function = VAL(subr);
+	    rep_SYM(sym)->function = rep_VAL(subr);
     }
     return(sym);
 }
 
-VALUE
-add_const_num(VALUE name, long num)
+repv
+rep_add_const_num(repv name, long num)
 {
-    VALUE sym = cmd_intern(name, obarray);
+    repv sym = Fintern(name, rep_obarray);
     if(sym)
     {
-	VSYM(sym)->value = MAKE_INT(num);
-	VSYM(sym)->car |= SF_CONSTANT;
+	rep_SYM(sym)->value = rep_MAKE_INT(num);
+	rep_SYM(sym)->car |= rep_SF_CONSTANT;
     }
     return(sym);
 }
 
 void
-intern_static(VALUE *symp, VALUE name)
+rep_intern_static(repv *symp, repv name)
 {
-    if((*symp = cmd_intern(name, sym_nil)))
-	mark_static(symp);
+    if((*symp = Fintern(name, Qnil)))
+	rep_mark_static(symp);
     else
 	abort();
 }
@@ -267,49 +244,46 @@ hash(u_char *str)
     return(value);
 }
 
-_PR VALUE cmd_make_obarray(VALUE);
-DEFUN("make-obarray", cmd_make_obarray, subr_make_obarray, (VALUE size), V_Subr1, DOC_make_obarray) /*
-::doc:make_obarray::
-make-obarray SIZE
+DEFUN("make-rep_obarray", Fmake_obarray, Smake_obarray, (repv size), rep_Subr1) /*
+::doc:Smake-obarray::
+make-rep_obarray SIZE
 
 Creates a new structure for storing symbols in. This is basically a vector
 with a few slight differences (all elements initialised to a special value).
 ::end:: */
 {
-    DECLARE1(size, INTP);
-    return(cmd_make_vector(size, OB_NIL));
+    rep_DECLARE1(size, rep_INTP);
+    return(Fmake_vector(size, OB_NIL));
 }
 
-_PR VALUE cmd_find_symbol(VALUE, VALUE);
-DEFUN("find-symbol", cmd_find_symbol, subr_find_symbol, (VALUE name, VALUE ob), V_Subr2, DOC_find_symbol) /*
-::doc:find_symbol::
+DEFUN("find-symbol", Ffind_symbol, Sfind_symbol, (repv name, repv ob), rep_Subr2) /*
+::doc:Sfind-symbol::
 find-symbol NAME [OBARRAY]
 
 Returns the symbol with print-name NAME, found by searching OBARRAY (or
-the default `obarray' if nil), or nil if no such symbol exists.
+the default `rep_obarray' if nil), or nil if no such symbol exists.
 ::end:: */
 {
     int vsize;
-    DECLARE1(name, STRINGP);
-    if(!VECTORP(ob))
-	ob = obarray;
-    if((vsize = VVECT_LEN(ob)) == 0)
-	return(sym_nil);
-    ob = VVECT(ob)->array[hash(VSTR(name)) % vsize];
-    while(SYMBOLP(ob))
+    rep_DECLARE1(name, rep_STRINGP);
+    if(!rep_VECTORP(ob))
+	ob = rep_obarray;
+    if((vsize = rep_VECT_LEN(ob)) == 0)
+	return(Qnil);
+    ob = rep_VECT(ob)->array[hash(rep_STR(name)) % vsize];
+    while(rep_SYMBOLP(ob))
     {
-	if(!strcmp(VSTR(name), VSTR(VSYM(ob)->name)))
+	if(!strcmp(rep_STR(name), rep_STR(rep_SYM(ob)->name)))
 	    return(ob);
-	ob = VSYM(ob)->next;
+	ob = rep_SYM(ob)->next;
     }
-    return(sym_nil);
+    return(Qnil);
 }
 
 DEFSTRING(already_interned, "Symbol is already interned");
 
-_PR VALUE cmd_intern_symbol(VALUE, VALUE);
-DEFUN("intern-symbol", cmd_intern_symbol, subr_intern_symbol, (VALUE sym, VALUE ob), V_Subr2, DOC_intern_symbol) /*
-::doc:intern_symbol::
+DEFUN("intern-symbol", Fintern_symbol, Sintern_symbol, (repv sym, repv ob), rep_Subr2) /*
+::doc:Sintern-symbol::
 intern-symbol SYMBOL [OBARRAY]
 
 Stores SYMBOL in OBARRAY (or the default). If SYMBOL has already been interned
@@ -317,25 +291,24 @@ somewhere an error is signalled.
 ::end:: */
 {
     int vsize, hashid;
-    DECLARE1(sym, SYMBOLP);
-    if(VSYM(sym)->next != LISP_NULL)
+    rep_DECLARE1(sym, rep_SYMBOLP);
+    if(rep_SYM(sym)->next != rep_NULL)
     {
-	cmd_signal(sym_error, list_2(VAL(&already_interned), sym));
-	return LISP_NULL;
+	Fsignal(Qerror, rep_list_2(rep_VAL(&already_interned), sym));
+	return rep_NULL;
     }
-    if(!VECTORP(ob))
-	ob = obarray;
-    if((vsize = VVECT_LEN(ob)) == 0)
-	return LISP_NULL;
-    hashid = hash(VSTR(VSYM(sym)->name)) % vsize;
-    VSYM(sym)->next = VVECT(ob)->array[hashid];
-    VVECT(ob)->array[hashid] = sym;
+    if(!rep_VECTORP(ob))
+	ob = rep_obarray;
+    if((vsize = rep_VECT_LEN(ob)) == 0)
+	return rep_NULL;
+    hashid = hash(rep_STR(rep_SYM(sym)->name)) % vsize;
+    rep_SYM(sym)->next = rep_VECT(ob)->array[hashid];
+    rep_VECT(ob)->array[hashid] = sym;
     return(sym);
 }
 
-_PR VALUE cmd_intern(VALUE, VALUE);
-DEFUN("intern", cmd_intern, subr_intern, (VALUE name, VALUE ob), V_Subr2, DOC_intern) /*
-::doc:intern::
+DEFUN("intern", Fintern, Sintern, (repv name, repv ob), rep_Subr2) /*
+::doc:Sintern::
 intern NAME [OBARRAY]
 
 If a symbol with print-name exists in OBARRAY (or the default) return it.
@@ -343,47 +316,46 @@ Else use `(make-symbol NAME)' to create a new symbol, intern that into the
 OBARRAY, then return it.
 ::end:: */
 {
-    VALUE sym;
-    DECLARE1(name, STRINGP);
-    if(!(sym = cmd_find_symbol(name, ob))
-       || (NILP(sym) && strcmp(VSTR(name), "nil")))
+    repv sym;
+    rep_DECLARE1(name, rep_STRINGP);
+    if(!(sym = Ffind_symbol(name, ob))
+       || (rep_NILP(sym) && strcmp(rep_STR(name), "nil")))
     {
-	sym = cmd_make_symbol(name);
+	sym = Fmake_symbol(name);
 	if(sym)
-	    return(cmd_intern_symbol(sym, ob));
+	    return(Fintern_symbol(sym, ob));
     }
     return(sym);
 }
 
-_PR VALUE cmd_unintern(VALUE, VALUE);
-DEFUN("unintern", cmd_unintern, subr_unintern, (VALUE sym, VALUE ob), V_Subr2, DOC_unintern) /*
-::doc:unintern::
+DEFUN("unintern", Funintern, Sunintern, (repv sym, repv ob), rep_Subr2) /*
+::doc:Sunintern::
 unintern SYMBOL [OBARRAY]
 
 Removes SYMBOL from OBARRAY (or the default). Use this with caution.
 ::end:: */
 {
-    VALUE list;
+    repv list;
     int vsize, hashid;
-    DECLARE1(sym, SYMBOLP);
-    if(!VECTORP(ob))
-	ob = obarray;
-    if((vsize = VVECT_LEN(ob)) == 0)
-	return LISP_NULL;
-    hashid = hash(VSTR(VSYM(sym)->name)) % vsize;
-    list = VVECT(ob)->array[hashid];
-    VVECT(ob)->array[hashid] = LISP_NULL;
-    while(SYMBOLP(list))
+    rep_DECLARE1(sym, rep_SYMBOLP);
+    if(!rep_VECTORP(ob))
+	ob = rep_obarray;
+    if((vsize = rep_VECT_LEN(ob)) == 0)
+	return rep_NULL;
+    hashid = hash(rep_STR(rep_SYM(sym)->name)) % vsize;
+    list = rep_VECT(ob)->array[hashid];
+    rep_VECT(ob)->array[hashid] = rep_NULL;
+    while(rep_SYMBOLP(list))
     {
-	VALUE nxt = VSYM(list)->next;
+	repv nxt = rep_SYM(list)->next;
 	if(list != sym)
 	{
-	    VSYM(list)->next = VVECT(ob)->array[hashid];
-	    VVECT(ob)->array[hashid] = VAL(list);
+	    rep_SYM(list)->next = rep_VECT(ob)->array[hashid];
+	    rep_VECT(ob)->array[hashid] = rep_VAL(list);
 	}
 	list = nxt;
     }
-    VSYM(sym)->next = LISP_NULL;
+    rep_SYM(sym)->next = rep_NULL;
     return(sym);
 }
 
@@ -391,10 +363,10 @@ Removes SYMBOL from OBARRAY (or the default). Use this with caution.
    the list OLDLIST. OLDLIST is structured like,
      ((SYMBOL . OLDVALUE) ...)
    Returns the new version of OLDLIST.   */
-VALUE
-bind_symbol(VALUE oldList, VALUE symbol, VALUE newVal)
+repv
+rep_bind_symbol(repv oldList, repv symbol, repv newVal)
 {
-    VALUE newbl = cmd_cons(cmd_cons(symbol, sym_nil), oldList);
+    repv newbl = Fcons(Fcons(symbol, Qnil), oldList);
     if(newbl)
     {
 	/* Binding to buffer-local values is a recipe for disaster; when
@@ -403,27 +375,26 @@ bind_symbol(VALUE oldList, VALUE symbol, VALUE newVal)
 	   value being removed. So binding always works on the *default*
 	   value of a variable; this also won't work properly with
 	   buffer-local variables but hopefully it's less destructive... */
-	VCDR(VCAR(newbl)) = cmd_default_value(symbol, sym_t);
-	cmd_set_default(symbol, newVal);
+	rep_CDR(rep_CAR(newbl)) = Fdefault_value(symbol, Qt);
+	Fset_default(symbol, newVal);
     }
     return(newbl);
 }
 
 /* Undoes what the above function does.  */
 void
-unbind_symbols(VALUE oldList)
+rep_unbind_symbols(repv oldList)
 {
-    while(CONSP(oldList))
+    while(rep_CONSP(oldList))
     {
-	VALUE tmp = VCAR(oldList);
-	cmd_set_default(VCAR(tmp), VCDR(tmp));
-	oldList = VCDR(oldList);
+	repv tmp = rep_CAR(oldList);
+	Fset_default(rep_CAR(tmp), rep_CDR(tmp));
+	oldList = rep_CDR(oldList);
     }
 }
 
-_PR VALUE cmd_symbol_value(VALUE, VALUE);
-DEFUN("symbol-value", cmd_symbol_value, subr_symbol_value, (VALUE sym, VALUE no_err), V_Subr2, DOC_symbol_value) /*
-::doc:symbol_value::
+DEFUN("symbol-value", Fsymbol_value, Ssymbol_value, (repv sym, repv no_err), rep_Subr2) /*
+::doc:Ssymbol-value::
 symbol-value SYMBOL
 
 Returns the value of SYMBOL, if SYMBOL is flagged as having buffer-local
@@ -432,188 +403,170 @@ values look for one of those first.
 /* Second argument (NO-ERR) means don't signal an error if the value is
    void. */
 {
-    VALUE val = void_value;
-    DECLARE1(sym, SYMBOLP);
+    repv val = rep_void_value;
+    rep_DECLARE1(sym, rep_SYMBOLP);
 
-    if(VSYM(sym)->car & SF_BUFFER_LOCAL)
-	val = cmd_buffer_symbol_value(sym, sym_nil, sym_nil, sym_t);
-    if(val == void_value)
-	val = VSYM(sym)->value;
+    if(rep_SYM(sym)->car & rep_SF_LOCAL)
+	val = (*rep_deref_local_symbol_fun)(sym);
+    if(val == rep_void_value)
+	val = rep_SYM(sym)->value;
 
-    if(val && (VCELL8_TYPEP(val, V_Var)))
+    if(val && (rep_CELL8_TYPEP(val, rep_Var)))
     {
-	val = VVARFUN(val)(LISP_NULL);
-	if(val == LISP_NULL)
-	    val = void_value;
+	val = rep_VARFUN(val)(rep_NULL);
+	if(val == rep_NULL)
+	    val = rep_void_value;
     }
-    if(NILP(no_err) && (VOIDP(val)))
-	return(cmd_signal(sym_void_value, LIST_1(sym)));
+    if(rep_NILP(no_err) && (rep_VOIDP(val)))
+	return(Fsignal(Qvoid_value, rep_LIST_1(sym)));
     else
 	return(val);
 }
 
-_PR VALUE cmd_set(VALUE, VALUE);
-DEFUN_INT("set", cmd_set, subr_set, (VALUE sym, VALUE val), V_Subr2, DOC_set, "vVariable:" DS_NL "xNew value of %s:") /*
-::doc:set::
-set SYMBOL VALUE
+DEFUN_INT("set", Fset, Sset, (repv sym, repv val), rep_Subr2, "vVariable:" rep_DS_NL "xNew value of %s:") /*
+::doc:Sset::
+set SYMBOL repv
 
-Sets the value of SYMBOL to VALUE. If SYMBOL has a buffer-local binding
+Sets the value of SYMBOL to repv. If SYMBOL has a buffer-local binding
 in the current buffer or `make-variable-buffer-local' has been called on
-SYMBOL the buffer-local value in the current buffer is set. Returns VALUE.
+SYMBOL the buffer-local value in the current buffer is set. Returns repv.
 ::end:: */
 {
-    DECLARE1(sym, SYMBOLP);
-    if(VSYM(sym)->car & SF_CONSTANT)
-	return(cmd_signal(sym_setting_constant, LIST_1(sym)));
-    if(VSYM(sym)->car & SF_BUFFER_LOCAL)
+    rep_DECLARE1(sym, rep_SYMBOLP);
+    if(rep_SYM(sym)->car & rep_SF_CONSTANT)
+	return(Fsignal(Qsetting_constant, rep_LIST_1(sym)));
+    if(rep_SYM(sym)->car & rep_SF_LOCAL)
     {
-	TX *tx = curr_vw->vw_Tx;
-	if(buffer_set_if_bound(sym, val))
-	    return val;
-	else if(VSYM(sym)->car & SF_SET_BUFFER_LOCAL)
-	{
-	    /* Create a new buffer-local value */
-	    tx->tx_GlobalExtent->locals
-		= cmd_cons(cmd_cons(sym, val), tx->tx_GlobalExtent->locals);
-	    return(val);
-	}
+	repv tem = (*rep_set_local_symbol_fun)(sym, val);
+	if (tem != rep_NULL)
+	    return tem;
 	/* Fall through and set the default value. */
     }
-    if(VSYM(sym)->value && (VCELL8_TYPEP(VSYM(sym)->value, V_Var)))
-	VVARFUN(VSYM(sym)->value)(val);
+    if(rep_SYM(sym)->value && (rep_CELL8_TYPEP(rep_SYM(sym)->value, rep_Var)))
+	rep_VARFUN(rep_SYM(sym)->value)(val);
     else
-	VSYM(sym)->value = val;
+	rep_SYM(sym)->value = val;
     return(val);
 }
 
-_PR VALUE cmd_setplist(VALUE, VALUE);
-DEFUN("setplist", cmd_setplist, subr_setplist, (VALUE sym, VALUE prop), V_Subr2, DOC_setplist) /*
-::doc:setplist::
+DEFUN("setplist", Fsetplist, Ssetplist, (repv sym, repv prop), rep_Subr2) /*
+::doc:Ssetplist::
 setplist SYMBOL PROP-LIST
 
 Sets the property list of SYMBOL to PROP-LIST, returns PROP-LIST.
 ::end:: */
 {
-    DECLARE1(sym, SYMBOLP);
-    VSYM(sym)->prop_list = prop;
+    rep_DECLARE1(sym, rep_SYMBOLP);
+    rep_SYM(sym)->prop_list = prop;
     return(prop);
 }
 
-_PR VALUE cmd_symbol_name(VALUE);
-DEFUN("symbol-name", cmd_symbol_name, subr_symbol_name, (VALUE sym), V_Subr1, DOC_symbol_name) /*
-::doc:symbol_name::
+DEFUN("symbol-name", Fsymbol_name, Ssymbol_name, (repv sym), rep_Subr1) /*
+::doc:Ssymbol-name::
 symbol-name SYMBOL
 
 Returns the print-name of SYMBOL.
 ::end:: */
 {
-    DECLARE1(sym, SYMBOLP);
-    return(VSYM(sym)->name);
+    rep_DECLARE1(sym, rep_SYMBOLP);
+    return(rep_SYM(sym)->name);
 }
 
-_PR VALUE cmd_symbol_function(VALUE, VALUE);
-DEFUN("symbol-function", cmd_symbol_function, subr_symbol_function, (VALUE sym, VALUE no_err), V_Subr2, DOC_symbol_function) /*
-::doc:symbol_function::
+DEFUN("symbol-function", Fsymbol_function, Ssymbol_function, (repv sym, repv no_err), rep_Subr2) /*
+::doc:Ssymbol-function::
 symbol-function SYMBOL
 
 Returns the function value of SYMBOL.
 ::end:: */
 {
-    DECLARE1(sym, SYMBOLP);
-    if(NILP(no_err) && (VOIDP(VSYM(sym)->function)))
-	return(cmd_signal(sym_void_function, LIST_1(sym)));
+    rep_DECLARE1(sym, rep_SYMBOLP);
+    if(rep_NILP(no_err) && (rep_VOIDP(rep_SYM(sym)->function)))
+	return(Fsignal(Qvoid_function, rep_LIST_1(sym)));
     else
-	return(VSYM(sym)->function);
+	return(rep_SYM(sym)->function);
 }
 
-_PR VALUE cmd_default_value(VALUE, VALUE);
-DEFUN("default-value", cmd_default_value, subr_default_value, (VALUE sym, VALUE no_err), V_Subr2, DOC_default_value) /*
-::doc:default_value::
+DEFUN("default-value", Fdefault_value, Sdefault_value, (repv sym, repv no_err), rep_Subr2) /*
+::doc:Sdefault-value::
 default-value SYMBOL
 
 Returns the default value of the symbol SYMBOL. This will be the value of
 SYMBOL in buffers or windows which do not have their own local value.
 ::end:: */
 {
-    VALUE val;
-    DECLARE1(sym, SYMBOLP);
-    if(VSYM(sym)->value && (VCELL8_TYPEP(VSYM(sym)->value, V_Var)))
-	val = VVARFUN(VSYM(sym)->value)(LISP_NULL);
+    repv val;
+    rep_DECLARE1(sym, rep_SYMBOLP);
+    if(rep_SYM(sym)->value && (rep_CELL8_TYPEP(rep_SYM(sym)->value, rep_Var)))
+	val = rep_VARFUN(rep_SYM(sym)->value)(rep_NULL);
     else
-	val = VSYM(sym)->value;
-    if(NILP(no_err) && VOIDP(val))
-	return(cmd_signal(sym_void_value, LIST_1(sym)));
+	val = rep_SYM(sym)->value;
+    if(rep_NILP(no_err) && rep_VOIDP(val))
+	return(Fsignal(Qvoid_value, rep_LIST_1(sym)));
     else
 	return(val);
 }
 
-_PR VALUE cmd_default_boundp(VALUE);
-DEFUN("default-boundp", cmd_default_boundp, subr_default_boundp, (VALUE sym), V_Subr1, DOC_default_boundp) /*
-::doc:default_boundp::
+DEFUN("default-boundp", Fdefault_boundp, Sdefault_boundp, (repv sym), rep_Subr1) /*
+::doc:Sdefault-boundp::
 default-boundp SYMBOL
 
 Returns t if SYMBOL has a default value.
 ::end:: */
 {
-    DECLARE1(sym, SYMBOLP);
-    return((VOIDP(VSYM(sym)->value)) ? sym_nil : sym_t);
+    rep_DECLARE1(sym, rep_SYMBOLP);
+    return((rep_VOIDP(rep_SYM(sym)->value)) ? Qnil : Qt);
 }
 
-_PR VALUE cmd_set_default(VALUE, VALUE);
-DEFUN("set-default", cmd_set_default, subr_set_default, (VALUE sym, VALUE val), V_Subr2, DOC_set_default) /*
-::doc:set_default::
-set-default SYMBOL VALUE
+DEFUN("set-default", Fset_default, Sset_default, (repv sym, repv val), rep_Subr2) /*
+::doc:Sset-default::
+set-default SYMBOL repv
 
-Sets the default value of SYMBOL to VALUE, then returns VALUE.
+Sets the default value of SYMBOL to repv, then returns repv.
 ::end:: */
 {
-    DECLARE1(sym, SYMBOLP);
-    if(VSYM(sym)->value && (VCELL8_TYPEP(VSYM(sym)->value, V_Var)))
-	VVARFUN(VSYM(sym)->value)(val);
+    rep_DECLARE1(sym, rep_SYMBOLP);
+    if(rep_SYM(sym)->value && (rep_CELL8_TYPEP(rep_SYM(sym)->value, rep_Var)))
+	rep_VARFUN(rep_SYM(sym)->value)(val);
     else
-	VSYM(sym)->value = val;
+	rep_SYM(sym)->value = val;
     return(val);
 }
 
-_PR VALUE cmd_fboundp(VALUE);
-DEFUN("fboundp", cmd_fboundp, subr_fboundp, (VALUE sym), V_Subr1, DOC_fboundp) /*
-::doc:fboundp::
+DEFUN("fboundp", Ffboundp, Sfboundp, (repv sym), rep_Subr1) /*
+::doc:Sfboundp::
 fboundp SYMBOL
 
 Returns t if the function-slot of SYMBOL has a value.
 ::end:: */
 {
-    DECLARE1(sym, SYMBOLP);
-    return(VOIDP(cmd_symbol_function(sym, sym_t)) ? sym_nil : sym_t);
+    rep_DECLARE1(sym, rep_SYMBOLP);
+    return(rep_VOIDP(Fsymbol_function(sym, Qt)) ? Qnil : Qt);
 }
 
-_PR VALUE cmd_boundp(VALUE);
-DEFUN("boundp", cmd_boundp, subr_boundp, (VALUE sym), V_Subr1, DOC_boundp) /*
-::doc:boundp::
+DEFUN("boundp", Fboundp, Sboundp, (repv sym), rep_Subr1) /*
+::doc:Sboundp::
 boundp SYMBOL
 
 Returns t if SYMBOL has a value as a variable.
 ::end:: */
 {
-    DECLARE1(sym, SYMBOLP);
-    return(VOIDP(cmd_symbol_value(sym, sym_t)) ? sym_nil : sym_t);
+    rep_DECLARE1(sym, rep_SYMBOLP);
+    return(rep_VOIDP(Fsymbol_value(sym, Qt)) ? Qnil : Qt);
 }
 
-_PR VALUE cmd_symbol_plist(VALUE);
-DEFUN("symbol-plist", cmd_symbol_plist, subr_symbol_plist, (VALUE sym), V_Subr1, DOC_symbol_plist) /*
-::doc:symbol_plist::
+DEFUN("symbol-plist", Fsymbol_plist, Ssymbol_plist, (repv sym), rep_Subr1) /*
+::doc:Ssymbol-plist::
 symbol-plist SYMBOL
 
 Returns the property-list of SYMBOL.
 ::end:: */
 {
-    DECLARE1(sym, SYMBOLP);
-    return(VSYM(sym)->prop_list);
+    rep_DECLARE1(sym, rep_SYMBOLP);
+    return(rep_SYM(sym)->prop_list);
 }
 
-_PR VALUE cmd_gensym(void);
-DEFUN("gensym", cmd_gensym, subr_gensym, (void), V_Subr0, DOC_gensym) /*
-::doc:gensym::
+DEFUN("gensym", Fgensym, Sgensym, (void), rep_Subr0) /*
+::doc:Sgensym::
 gensym
 
 Returns a new (non-interned) symbol with a unique print name.
@@ -627,23 +580,21 @@ Returns a new (non-interned) symbol with a unique print name.
 #else
     sprintf(buf, "G%04d", counter);
 #endif
-    return(cmd_make_symbol(string_dup(buf)));
+    return(Fmake_symbol(rep_string_dup(buf)));
 }
 
-_PR VALUE cmd_symbolp(VALUE);
-DEFUN("symbolp", cmd_symbolp, subr_symbolp, (VALUE sym), V_Subr1, DOC_symbolp) /*
-::doc:symbolp::
+DEFUN("symbolp", Fsymbolp, Ssymbolp, (repv sym), rep_Subr1) /*
+::doc:Ssymbolp::
 symbolp ARG
 
 Returns t if ARG is a symbol.
 ::end:: */
 {
-    return(SYMBOLP(sym) ? sym_t : sym_nil);
+    return(rep_SYMBOLP(sym) ? Qt : Qnil);
 }
 
-_PR VALUE cmd_setq(VALUE);
-DEFUN("setq", cmd_setq, subr_setq, (VALUE args), V_SF, DOC_setq) /*
-::doc:setq::
+DEFUN("setq", Fsetq, Ssetq, (repv args), rep_SF) /*
+::doc:Ssetq::
 setq { SYMBOL FORM }...
 
 Sets the value of each SYMBOL to the value of its corresponding FORM
@@ -656,97 +607,92 @@ evaluated, returns the value of the last evaluation. ie,
    => "nil"
 ::end:: */
 {
-    VALUE res = sym_nil;
-    GC_root gc_args;
-    PUSHGC(gc_args, args);
-    while(CONSP(args) && CONSP(VCDR(args)) && SYMBOLP(VCAR(args)))
+    repv res = Qnil;
+    rep_GC_root gc_args;
+    rep_PUSHGC(gc_args, args);
+    while(rep_CONSP(args) && rep_CONSP(rep_CDR(args)) && rep_SYMBOLP(rep_CAR(args)))
     {
-	if(!(res = cmd_eval(VCAR(VCDR(args)))))
+	if(!(res = Feval(rep_CAR(rep_CDR(args)))))
 	    goto end;
-	if(!cmd_set(VCAR(args), res))
+	if(!Fset(rep_CAR(args), res))
 	{
-	    res = LISP_NULL;
+	    res = rep_NULL;
 	    goto end;
 	}
-	args = VCDR(VCDR(args));
+	args = rep_CDR(rep_CDR(args));
     }
 end:
-    POPGC;
+    rep_POPGC;
     return(res);
 }
 
-_PR VALUE cmd_setq_default(VALUE);
-DEFUN("setq-default", cmd_setq_default, subr_setq_default, (VALUE args), V_SF, DOC_setq_default) /*
-::doc:setq_default::
+DEFUN("setq-default", Fsetq_default, Ssetq_default, (repv args), rep_SF) /*
+::doc:Ssetq-default::
 setq-default { SYMBOL FORM }...
 
 Sets the default value of each SYMBOL to the value of its corresponding
 FORM evaluated, returns the value of the last evaluation. See also setq.
 ::end:: */
 {
-    VALUE res = sym_nil;
-    GC_root gc_args;
-    PUSHGC(gc_args, args);
-    while(CONSP(args) && CONSP(VCDR(args)) && SYMBOLP(VCAR(args)))
+    repv res = Qnil;
+    rep_GC_root gc_args;
+    rep_PUSHGC(gc_args, args);
+    while(rep_CONSP(args) && rep_CONSP(rep_CDR(args)) && rep_SYMBOLP(rep_CAR(args)))
     {
-	if(!(res = cmd_eval(VCAR(VCDR(args)))))
+	if(!(res = Feval(rep_CAR(rep_CDR(args)))))
 	    goto end;
-	if(!cmd_set_default(VCAR(args), res))
+	if(!Fset_default(rep_CAR(args), res))
 	{
-	    res = LISP_NULL;
+	    res = rep_NULL;
 	    goto end;
 	}
-	args = VCDR(VCDR(args));
+	args = rep_CDR(rep_CDR(args));
     }
 end:
-    POPGC;
+    rep_POPGC;
     return(res);
 }
 
-_PR VALUE cmd_fset(VALUE, VALUE);
-DEFUN("fset", cmd_fset, subr_fset, (VALUE sym, VALUE val), V_Subr2, DOC_fset) /*
-::doc:fset::
-fset SYMBOL VALUE
+DEFUN("fset", Ffset, Sfset, (repv sym, repv val), rep_Subr2) /*
+::doc:Sfset::
+fset SYMBOL repv
 
-Sets the function value of SYMBOL to VALUE, returns VALUE.
+Sets the function value of SYMBOL to repv, returns repv.
 ::end:: */
 {
-    DECLARE1(sym, SYMBOLP);
-    VSYM(sym)->function = val;
+    rep_DECLARE1(sym, rep_SYMBOLP);
+    rep_SYM(sym)->function = val;
     return(val);
 }
 
-_PR VALUE cmd_makunbound(VALUE);
-DEFUN("makunbound", cmd_makunbound, subr_makunbound, (VALUE sym), V_Subr1, DOC_makunbound) /*
-::doc:makunbound::
+DEFUN("makunbound", Fmakunbound, Smakunbound, (repv sym), rep_Subr1) /*
+::doc:Smakunbound::
 makunbound SYMBOL
 
 Make SYMBOL have no value as a variable.
 ::end:: */
 {
-    DECLARE1(sym, SYMBOLP);
-    VSYM(sym)->value = void_value;
+    rep_DECLARE1(sym, rep_SYMBOLP);
+    rep_SYM(sym)->value = rep_void_value;
     return(sym);
 }
 
-_PR VALUE cmd_fmakunbound(VALUE);
-DEFUN("fmakunbound", cmd_fmakunbound, subr_fmakunbound, (VALUE sym), V_Subr1, DOC_fmakunbound) /*
-::doc:fmakunbound::
+DEFUN("fmakunbound", Ffmakunbound, Sfmakunbound, (repv sym), rep_Subr1) /*
+::doc:Sfmakunbound::
 fmakunbound SYMBOL
 
 Make the function slot of SYMBOL have no value.
 ::end:: */
 {
-    DECLARE1(sym, SYMBOLP);
-    VSYM(sym)->function = void_value;
+    rep_DECLARE1(sym, rep_SYMBOLP);
+    rep_SYM(sym)->function = rep_void_value;
     return(sym);
 }
 
 DEFSTRING(no_symbol, "No symbol to bind to in let");
 
-_PR VALUE cmd_let(VALUE);
-DEFUN("let", cmd_let, subr_let, (VALUE args), V_SF, DOC_let) /*
-::doc:let::
+DEFUN("let", Flet, Slet, (repv args), rep_SF) /*
+::doc:Slet::
 let (SYMBOL-BINDINGS...) BODY...
 
 Binds temporary values to symbols while BODY is being evaluated.
@@ -762,81 +708,80 @@ value of the forms making up the tail. ie,
 All values of the new bindings are evaluated before any symbols are bound.
 ::end:: */
 {
-    VALUE tmp, *store, oldvals, res = LISP_NULL;
+    repv tmp, *store, oldvals, res = rep_NULL;
     int numsyms = 0;
-    if(!CONSP(args))
-	return LISP_NULL;
-    oldvals = sym_nil;
-    for(tmp = VCAR(args); CONSP(tmp); numsyms++)
-	tmp = VCDR(tmp);
+    if(!rep_CONSP(args))
+	return rep_NULL;
+    oldvals = Qnil;
+    for(tmp = rep_CAR(args); rep_CONSP(tmp); numsyms++)
+	tmp = rep_CDR(tmp);
     if(numsyms == 0)
-	return(cmd_progn(VCDR(args)));
+	return(Fprogn(rep_CDR(args)));
 
-    store = alloca(sizeof(VALUE) * numsyms);
+    store = alloca(sizeof(repv) * numsyms);
     if(store != NULL)
     {
 	int i;
-	GC_root gc_args;
-	GC_n_roots gc_store;
-	PUSHGC(gc_args, args);
-	PUSHGCN(gc_store, store, 0);
+	rep_GC_root gc_args;
+	rep_GC_n_roots gc_store;
+	rep_PUSHGC(gc_args, args);
+	rep_PUSHGCN(gc_store, store, 0);
 	i = 0;
-	tmp = VCAR(args);
-	while(CONSP(tmp))
+	tmp = rep_CAR(args);
+	while(rep_CONSP(tmp))
 	{
-	    if(CONSP(VCAR(tmp)))
+	    if(rep_CONSP(rep_CAR(tmp)))
 	    {
-		if(!(store[i] = cmd_progn(VCDR(VCAR(tmp)))))
+		if(!(store[i] = Fprogn(rep_CDR(rep_CAR(tmp)))))
 		{
-		    POPGCN; POPGC;
+		    rep_POPGCN; rep_POPGC;
 		    goto end;
 		}
 	    }
 	    else
-		store[i] = sym_nil;
-	    tmp = VCDR(tmp);
+		store[i] = Qnil;
+	    tmp = rep_CDR(tmp);
 	    i++;
 	    gc_store.count = i;
 	}
-	POPGCN;
-	POPGC;
+	rep_POPGCN;
+	rep_POPGC;
 	i = 0;
-	tmp = VCAR(args);
-	while(CONSP(tmp))
+	tmp = rep_CAR(args);
+	while(rep_CONSP(tmp))
 	{
-	    VALUE sym;
-	    switch(VTYPE(VCAR(tmp)))
+	    repv sym;
+	    switch(rep_TYPE(rep_CAR(tmp)))
 	    {
-	    case V_Symbol:
-		sym = VCAR(tmp);
+	    case rep_Symbol:
+		sym = rep_CAR(tmp);
 		break;
-	    case V_Cons:
-		sym = VCAR(VCAR(tmp));
-		if(SYMBOLP(sym))
+	    case rep_Cons:
+		sym = rep_CAR(rep_CAR(tmp));
+		if(rep_SYMBOLP(sym))
 		    break;
 		/* FALL THROUGH */
 	    default:
-		cmd_signal(sym_error, LIST_1(VAL(&no_symbol)));
+		Fsignal(Qerror, rep_LIST_1(rep_VAL(&no_symbol)));
 		goto end;
 	    }
-	    if(!(oldvals = bind_symbol(oldvals, sym, store[i])))
+	    if(!(oldvals = rep_bind_symbol(oldvals, sym, store[i])))
 		goto end;
-	    tmp = VCDR(tmp);
+	    tmp = rep_CDR(tmp);
 	    i++;
 	}
-	PUSHGC(gc_args, oldvals);
-	res = cmd_progn(VCDR(args));
-	POPGC;
+	rep_PUSHGC(gc_args, oldvals);
+	res = Fprogn(rep_CDR(args));
+	rep_POPGC;
 end:
-	unbind_symbols(oldvals);
+	rep_unbind_symbols(oldvals);
 	return(res);
     }
-    return LISP_NULL;
+    return rep_NULL;
 }
 
-_PR VALUE cmd_letstar(VALUE);
-DEFUN("let*", cmd_letstar, subr_letstar, (VALUE args), V_SF, DOC_letstar) /*
-::doc:letstar::
+DEFUN("let*", Fletstar, Sletstar, (repv args), rep_SF) /*
+::doc:Sletstar::
 let* (SYMBOL-BINDINGS...) BODY...
 
 Binds temporary values to symbols while BODY is being evaluated.
@@ -859,212 +804,97 @@ this means that,
    => (10 . 10)
 ::end:: */
 {
-    VALUE binds, res = LISP_NULL;
-    VALUE oldvals = sym_nil;
-    GC_root gc_args, gc_oldvals;
-    if(!CONSP(args))
-	return LISP_NULL;
-    binds = VCAR(args);
-    PUSHGC(gc_args, args);
-    PUSHGC(gc_oldvals, oldvals);
-    while(CONSP(binds))
+    repv binds, res = rep_NULL;
+    repv oldvals = Qnil;
+    rep_GC_root gc_args, gc_oldvals;
+    if(!rep_CONSP(args))
+	return rep_NULL;
+    binds = rep_CAR(args);
+    rep_PUSHGC(gc_args, args);
+    rep_PUSHGC(gc_oldvals, oldvals);
+    while(rep_CONSP(binds))
     {
-	if(CONSP(VCAR(binds)))
+	if(rep_CONSP(rep_CAR(binds)))
 	{
-	    if(SYMBOLP(VCAR(VCAR(binds))))
+	    if(rep_SYMBOLP(rep_CAR(rep_CAR(binds))))
 	    {
-		VALUE val;
-		if(!(val = cmd_progn(VCDR(VCAR(binds)))))
+		repv val;
+		if(!(val = Fprogn(rep_CDR(rep_CAR(binds)))))
 		    goto error;
-		if(!(oldvals = bind_symbol(oldvals, VCAR(VCAR(binds)), val)))
+		if(!(oldvals = rep_bind_symbol(oldvals, rep_CAR(rep_CAR(binds)), val)))
 		    goto error;
 	    }
 	}
 	else
 	{
-	    if(!(oldvals = bind_symbol(oldvals, VCAR(binds), sym_nil)))
+	    if(!(oldvals = rep_bind_symbol(oldvals, rep_CAR(binds), Qnil)))
 		goto error;
 	}
-	binds = VCDR(binds);
+	binds = rep_CDR(binds);
     }
-    res = cmd_progn(VCDR(args));
+    res = Fprogn(rep_CDR(args));
 error:
-    POPGC; POPGC;
-    unbind_symbols(oldvals);
+    rep_POPGC; rep_POPGC;
+    rep_unbind_symbols(oldvals);
     return(res);
 }
 
-_PR VALUE cmd_get(VALUE, VALUE);
-DEFUN("get", cmd_get, subr_get, (VALUE sym, VALUE prop), V_Subr2, DOC_get) /*
-::doc:get::
+DEFUN("get", Fget, Sget, (repv sym, repv prop), rep_Subr2) /*
+::doc:Sget::
 get SYMBOL PROPERTY
 
 Returns the value of SYMBOL's property PROPERTY. See `put'.
 ::end:: */
 {
-    VALUE plist;
-    DECLARE1(sym, SYMBOLP);
-    plist = VSYM(sym)->prop_list;
-    while(CONSP(plist) && CONSP(VCDR(plist)))
+    repv plist;
+    rep_DECLARE1(sym, rep_SYMBOLP);
+    plist = rep_SYM(sym)->prop_list;
+    while(rep_CONSP(plist) && rep_CONSP(rep_CDR(plist)))
     {
-	if(VCAR(plist) == prop)
-	    return(VCAR(VCDR(plist)));
-	plist = VCDR(VCDR(plist));
+	if(rep_CAR(plist) == prop)
+	    return(rep_CAR(rep_CDR(plist)));
+	plist = rep_CDR(rep_CDR(plist));
     }
-    return(sym_nil);
+    return(Qnil);
 }
 
-_PR VALUE cmd_put(VALUE, VALUE, VALUE);
-DEFUN("put", cmd_put, subr_put, (VALUE sym, VALUE prop, VALUE val), V_Subr3, DOC_put) /*
-::doc:put::
-put SYMBOL PROPERTY VALUE
+DEFUN("put", Fput, Sput, (repv sym, repv prop, repv val), rep_Subr3) /*
+::doc:Sput::
+put SYMBOL PROPERTY repv
 
-Sets the value of SYMBOL's property PROPERTY to VALUE, this value can be
+Sets the value of SYMBOL's property PROPERTY to repv, this value can be
 retrieved with the `get' function.
 ::end:: */
 {
-    VALUE plist;
-    DECLARE1(sym, SYMBOLP);
-    plist = VSYM(sym)->prop_list;
-    while(CONSP(plist) && CONSP(VCDR(plist)))
+    repv plist;
+    rep_DECLARE1(sym, rep_SYMBOLP);
+    plist = rep_SYM(sym)->prop_list;
+    while(rep_CONSP(plist) && rep_CONSP(rep_CDR(plist)))
     {
-	if(VCAR(plist) == prop)
+	if(rep_CAR(plist) == prop)
 	{
-	    if(!CONS_WRITABLE_P(VCDR(plist)))
+	    if(!rep_CONS_WRITABLE_P(rep_CDR(plist)))
 	    {
 		/* Can't write into a dumped cell; need to cons
 		   onto the head. */
 		break;
 	    }
-	    VCAR(VCDR(plist)) = val;
+	    rep_CAR(rep_CDR(plist)) = val;
 	    return val;
 	}
-	plist = VCDR(VCDR(plist));
+	plist = rep_CDR(rep_CDR(plist));
     }
-    plist = cmd_cons(prop, cmd_cons(val, VSYM(sym)->prop_list));
+    plist = Fcons(prop, Fcons(val, rep_SYM(sym)->prop_list));
     if(plist)
     {
-	VSYM(sym)->prop_list = plist;
+	rep_SYM(sym)->prop_list = plist;
 	return val;
     }
-    return LISP_NULL;
+    return rep_NULL;
 }
 
-_PR VALUE cmd_make_local_variable(VALUE);
-DEFUN("make-local-variable", cmd_make_local_variable, subr_make_local_variable, (VALUE sym), V_Subr1, DOC_make_local_variable) /*
-::doc:make_local_variable::
-make-local-variable SYMBOL
-
-Gives the variable SYMBOL a buffer-local binding in the current buffer. It
-will be the same as the default value to start with. If the current buffer
-alread has a buffer-local binding for SYMBOL nothing happens.
-Returns SYMBOL.
-::end:: */
-{
-    VALUE slot;
-    TX *tx = curr_vw->vw_Tx;
-    DECLARE1(sym, SYMBOLP);
-    VSYM(sym)->car |= SF_BUFFER_LOCAL;
-    slot = cmd_assq(sym, tx->tx_GlobalExtent->locals);
-    if(!slot || !CONSP(slot))
-    {
-	/* Need to create a binding. */
-	tx->tx_GlobalExtent->locals = cmd_cons(cmd_cons(sym, VSYM(sym)->value),
-					       tx->tx_GlobalExtent->locals);
-    }
-    return(sym);
-}
-
-_PR VALUE cmd_make_variable_buffer_local(VALUE);
-DEFUN("make-variable-buffer-local", cmd_make_variable_buffer_local, subr_make_variable_buffer_local, (VALUE sym), V_Subr1, DOC_make_variable_buffer_local) /*
-::doc:make_variable_buffer_local::
-make-variable-buffer-local SYMBOL
-
-Marks the variable SYMBOL as being automatically buffer-local. Any attempts
-at setting SYMBOL result in the current buffer being given its own binding.
-Returns SYMBOL.
-::end:: */
-{
-    DECLARE1(sym, SYMBOLP);
-    VSYM(sym)->car |= (SF_BUFFER_LOCAL | SF_SET_BUFFER_LOCAL);
-    return(sym);
-}
-
-_PR VALUE cmd_buffer_variables(VALUE);
-DEFUN("buffer-variables", cmd_buffer_variables, subr_buffer_variables, (VALUE tx), V_Subr1, DOC_buffer_variables) /*
-::doc:buffer_variables::
-buffer-variables [BUFFER]
-
-Returns a list of (SYMBOL . VALUE) bindings which take effect when the
-current buffer is BUFFER. (Only the buffer-wide bindings, not those
-for each minor extent.)
-::end:: */
-{
-    if(!BUFFERP(tx))
-	tx = VAL(curr_vw->vw_Tx);
-    return(VTX(tx)->tx_GlobalExtent->locals);
-}
-
-_PR VALUE cmd_kill_all_local_variables(VALUE);
-DEFUN("kill-all-local-variables", cmd_kill_all_local_variables, subr_kill_all_local_variables, (VALUE tx), V_Subr1, DOC_kill_all_local_variables) /*
-::doc:kill_all_local_variables::
-kill-all-local-variables [BUFFER]
-
-Remove all buffer-local variables from BUFFER that are not marked as being
-permanent (i.e. their `permanent-local' property is unset or non-nil.)
-::end:: */
-{
-    VALUE list;
-    if(!BUFFERP(tx))
-	tx = VAL(curr_vw->vw_Tx);
-    list = VTX(tx)->tx_GlobalExtent->locals;
-    VTX(tx)->tx_GlobalExtent->locals = sym_nil;
-    while(CONSP(list))
-    {
-	if(NILP(cmd_get(VCAR(VCAR(list)), sym_permanent_local)))
-	    list = VCDR(list);
-	else
-	{
-	    VALUE next = VCDR(list);
-	    VCDR(list) = VTX(tx)->tx_GlobalExtent->locals;
-	    VTX(tx)->tx_GlobalExtent->locals = list;
-	    list = next;
-	}
-    }
-    tx_kill_local_variables(VTX(tx));
-    return tx;
-}
-
-_PR VALUE cmd_kill_local_variable(VALUE, VALUE);
-DEFUN("kill-local-variable", cmd_kill_local_variable, subr_kill_local_variable, (VALUE sym, VALUE tx), V_Subr2, DOC_kill_local_variable) /*
-::doc:kill_local_variable::
-kill-local-variable SYMBOL [BUFFER]
-
-Remove the buffer-local value of the symbol SYMBOL in the specified buffer.
-::end:: */
-{
-    VALUE list;
-    DECLARE1(sym, SYMBOLP);
-    if(!BUFFERP(tx))
-	tx = VAL(curr_vw->vw_Tx);
-    list = VTX(tx)->tx_GlobalExtent->locals;
-    VTX(tx)->tx_GlobalExtent->locals = sym_nil;
-    while(CONSP(list))
-    {
-	VALUE nxt = VCDR(list);
-	if(VCAR(list) != sym)
-	{
-	    VCDR(list) = VTX(tx)->tx_GlobalExtent->locals;
-	    VTX(tx)->tx_GlobalExtent->locals = list;
-	}
-	list = nxt;
-    }
-    return(sym);
-}
-
-_PR VALUE cmd_apropos(VALUE, VALUE, VALUE);
-DEFUN("apropos", cmd_apropos, subr_apropos, (VALUE re, VALUE pred, VALUE ob), V_Subr3, DOC_apropos) /*
-::doc:apropos::
+DEFUN("apropos", Fapropos, Sapropos, (repv re, repv pred, repv ob), rep_Subr3) /*
+::doc:Sapropos::
 apropos REGEXP [PREDICATE] [OBARRAY]
 
 Returns a list of symbols from OBARRAY (or the default) whose print-name
@@ -1073,196 +903,188 @@ each symbol which matches is applied to the function PREDICATE, if the value
 is non-nil it is considered a match.
 ::end:: */
 {
-    regexp *prog;
-    DECLARE1(re, STRINGP);
-    if(!VECTORP(ob))
-	ob = obarray;
-    prog = regcomp(VSTR(re));
+    rep_regexp *prog;
+    rep_DECLARE1(re, rep_STRINGP);
+    if(!rep_VECTORP(ob))
+	ob = rep_obarray;
+    prog = rep_regcomp(rep_STR(re));
     if(prog)
     {
-	VALUE last = sym_nil;
-	int i, len = VVECT_LEN(ob);
-	GC_root gc_last, gc_ob, gc_pred;
-	PUSHGC(gc_last, last);
-	PUSHGC(gc_ob, ob);
-	PUSHGC(gc_pred, pred);
+	repv last = Qnil;
+	int i, len = rep_VECT_LEN(ob);
+	rep_GC_root gc_last, gc_ob, gc_pred;
+	rep_PUSHGC(gc_last, last);
+	rep_PUSHGC(gc_ob, ob);
+	rep_PUSHGC(gc_pred, pred);
 	for(i = 0; i < len; i++)
 	{
-	    VALUE chain = VVECT(ob)->array[i];
-	    while(SYMBOLP(chain))
+	    repv chain = rep_VECT(ob)->array[i];
+	    while(rep_SYMBOLP(chain))
 	    {
-		if(regexec(prog, VSTR(VSYM(chain)->name)))
+		if(rep_regexec(prog, rep_STR(rep_SYM(chain)->name)))
 		{
-		    if(pred && !NILP(pred))
+		    if(pred && !rep_NILP(pred))
 		    {
-			VALUE tmp;
-			if(!(tmp = funcall(pred, LIST_1(chain), FALSE))
-			   || NILP(tmp))
+			repv tmp;
+			if(!(tmp = rep_funcall(pred, rep_LIST_1(chain), rep_FALSE))
+			   || rep_NILP(tmp))
 			{
 			    goto next;
 			}
 		    }
-		    last = cmd_cons(chain, last);
+		    last = Fcons(chain, last);
 		}
 next:
-		chain = VSYM(chain)->next;
+		chain = rep_SYM(chain)->next;
 	    }
 	}
-	POPGC; POPGC; POPGC;
+	rep_POPGC; rep_POPGC; rep_POPGC;
 	free(prog);
 	return(last);
     }
-    return LISP_NULL;
+    return rep_NULL;
 }
 
-_PR VALUE cmd_set_const_variable(VALUE sym, VALUE stat);
-DEFUN("set-const-variable", cmd_set_const_variable, subr_set_const_variable, (VALUE sym, VALUE stat), V_Subr2, DOC_set_const_variable) /*
-::doc:set_const_variable::
+DEFUN("set-const-variable", Fset_const_variable, Sset_const_variable, (repv sym, repv stat), rep_Subr2) /*
+::doc:Sset-const-variable::
 set-const-variable SYMBOL
 
 Flags that the value of SYMBOL may not be changed.
 ::end:: */
 {
-    DECLARE1(sym, SYMBOLP);
-    if(NILP(stat))
-	VSYM(sym)->car |= SF_CONSTANT;
+    rep_DECLARE1(sym, rep_SYMBOLP);
+    if(rep_NILP(stat))
+	rep_SYM(sym)->car |= rep_SF_CONSTANT;
     else
-	VSYM(sym)->car &= ~SF_CONSTANT;
+	rep_SYM(sym)->car &= ~rep_SF_CONSTANT;
     return(sym);
 }
 
-_PR VALUE cmd_const_variable_p(VALUE sym);
-DEFUN("const-variable-p", cmd_const_variable_p, subr_const_variable_p, (VALUE sym), V_Subr1, DOC_const_variable_p) /*
-::doc:const_variable_p::
+DEFUN("const-variable-p", Fconst_variable_p, Sconst_variable_p, (repv sym), rep_Subr1) /*
+::doc:Sconst-variable-p::
 const-variable-p SYMBOL
 
 Return t is `set-const-variable' has been called on SYMBOL.
 ::end:: */
 {
-    DECLARE1(sym, SYMBOLP);
-    if(VSYM(sym)->car & SF_CONSTANT)
-	return(sym_t);
-    return(sym_nil);
+    rep_DECLARE1(sym, rep_SYMBOLP);
+    if(rep_SYM(sym)->car & rep_SF_CONSTANT)
+	return(Qt);
+    return(Qnil);
 }
 
-_PR VALUE cmd_trace(VALUE sym);
-DEFUN_INT("trace", cmd_trace, subr_trace, (VALUE sym), V_Subr1, DOC_trace, "aFunction to trace") /*
-::doc:trace::
+DEFUN_INT("trace", Ftrace, Strace, (repv sym), rep_Subr1, "aFunction to trace") /*
+::doc:Strace::
 trace SYMBOL
 
 Flag that whenever SYMBOL is evaluated (as a variable or a function) the
 debugger is entered.
 ::end:: */
 {
-    DECLARE1(sym, SYMBOLP);
-    VSYM(sym)->car |= SF_DEBUG;
+    rep_DECLARE1(sym, rep_SYMBOLP);
+    rep_SYM(sym)->car |= rep_SF_DEBUG;
     return(sym);
 }
 
-_PR VALUE cmd_untrace(VALUE sym);
-DEFUN_INT("untrace", cmd_untrace, subr_untrace, (VALUE sym), V_Subr1, DOC_untrace, "aFunction to untrace") /*
-::doc:untrace::
+DEFUN_INT("untrace", Funtrace, Suntrace, (repv sym), rep_Subr1, "aFunction to untrace") /*
+::doc:Suntrace::
 untrace SYMBOL
 
 Cancel the effect of (trace SYMBOL).
 ::end:: */
 {
-    DECLARE1(sym, SYMBOLP);
-    VSYM(sym)->car &= ~SF_DEBUG;
+    rep_DECLARE1(sym, rep_SYMBOLP);
+    rep_SYM(sym)->car &= ~rep_SF_DEBUG;
     return(sym);
 }
 
-_PR VALUE var_obarray(VALUE val);
-DEFUN("obarray", var_obarray, subr_obarray, (VALUE val), V_Var, DOC_obarray) /*
-::doc:obarray::
+DEFUN("obarray", Vobarray, Sobarray, (repv val), rep_Var) /*
+::doc:Sobarray::
 The obarray used by the Lisp reader.
 ::end:: */
 {
-    if(val && VECTORP(val))
-	obarray = val;
-    return(obarray);
+    if(val && rep_VECTORP(val))
+	rep_obarray = val;
+    return(rep_obarray);
 }
 
 int
-pre_symbols_init(void)
+rep_pre_symbols_init(void)
 {
-    obarray = cmd_make_obarray(MAKE_INT(OBSIZE));
-    if(obarray)
+    rep_register_type(rep_Symbol, "symbol", symbol_cmp, symbol_princ,
+		      symbol_print, symbol_sweep, 0, 0, 0, 0, 0, 0, 0, 0);
+    rep_obarray = Fmake_obarray(rep_MAKE_INT(rep_OBSIZE));
+    if(rep_obarray)
     {
-	mark_static(&obarray);
-	return TRUE;
+	rep_mark_static(&rep_obarray);
+	return rep_TRUE;
     }
     else
-	return FALSE;
+	return rep_FALSE;
 }
 
 void
-symbols_init(void)
+rep_symbols_init(void)
 {
     /* Fiddly details of initialising the first symbol. We initialise
        all fields in case it was dumped. */
-    sym_nil = cmd_intern(VAL(&str_nil), obarray);
-    mark_static(&sym_nil);
-    VSYM(sym_nil)->value = sym_nil;
-    VSYM(sym_nil)->function = void_value;
-    VSYM(sym_nil)->prop_list = sym_nil;
-    VSYM(sym_nil)->car |= SF_CONSTANT;
+    Qnil = Fintern(rep_VAL(&str_nil), rep_obarray);
+    rep_mark_static(&Qnil);
+    rep_SYM(Qnil)->value = Qnil;
+    rep_SYM(Qnil)->function = rep_void_value;
+    rep_SYM(Qnil)->prop_list = Qnil;
+    rep_SYM(Qnil)->car |= rep_SF_CONSTANT;
 
-    INTERN(t);
-    VSYM(sym_t)->value = sym_t;
-    VSYM(sym_t)->car |= SF_CONSTANT;
+    rep_INTERN(t);
+    rep_SYM(Qt)->value = Qt;
+    rep_SYM(Qt)->car |= rep_SF_CONSTANT;
 
-    INTERN(variable_documentation);
-    INTERN(permanent_local);
-    ADD_SUBR(subr_make_symbol);
-    ADD_SUBR(subr_make_obarray);
-    ADD_SUBR(subr_find_symbol);
-    ADD_SUBR(subr_intern_symbol);
-    ADD_SUBR(subr_intern);
-    ADD_SUBR(subr_unintern);
-    ADD_SUBR(subr_symbol_value);
-    ADD_SUBR_INT(subr_set);
-    ADD_SUBR(subr_setplist);
-    ADD_SUBR(subr_symbol_name);
-    ADD_SUBR(subr_symbol_function);
-    ADD_SUBR(subr_default_value);
-    ADD_SUBR(subr_default_boundp);
-    ADD_SUBR(subr_set_default);
-    ADD_SUBR(subr_fboundp);
-    ADD_SUBR(subr_boundp);
-    ADD_SUBR(subr_symbol_plist);
-    ADD_SUBR(subr_gensym);
-    ADD_SUBR(subr_symbolp);
-    ADD_SUBR(subr_setq);
-    ADD_SUBR(subr_setq_default);
-    ADD_SUBR(subr_fset);
-    ADD_SUBR(subr_makunbound);
-    ADD_SUBR(subr_fmakunbound);
-    ADD_SUBR(subr_let);
-    ADD_SUBR(subr_letstar);
-    ADD_SUBR(subr_get);
-    ADD_SUBR(subr_put);
-    ADD_SUBR(subr_make_local_variable);
-    ADD_SUBR(subr_make_variable_buffer_local);
-    ADD_SUBR(subr_buffer_variables);
-    ADD_SUBR(subr_kill_all_local_variables);
-    ADD_SUBR(subr_kill_local_variable);
-    ADD_SUBR(subr_apropos);
-    ADD_SUBR(subr_set_const_variable);
-    ADD_SUBR(subr_const_variable_p);
-    ADD_SUBR_INT(subr_trace);
-    ADD_SUBR_INT(subr_untrace);
-    ADD_SUBR(subr_obarray);
+    rep_INTERN(variable_documentation);
+    rep_INTERN(permanent_local);
+    rep_ADD_SUBR(Smake_symbol);
+    rep_ADD_SUBR(Smake_obarray);
+    rep_ADD_SUBR(Sfind_symbol);
+    rep_ADD_SUBR(Sintern_symbol);
+    rep_ADD_SUBR(Sintern);
+    rep_ADD_SUBR(Sunintern);
+    rep_ADD_SUBR(Ssymbol_value);
+    rep_ADD_SUBR_INT(Sset);
+    rep_ADD_SUBR(Ssetplist);
+    rep_ADD_SUBR(Ssymbol_name);
+    rep_ADD_SUBR(Ssymbol_function);
+    rep_ADD_SUBR(Sdefault_value);
+    rep_ADD_SUBR(Sdefault_boundp);
+    rep_ADD_SUBR(Sset_default);
+    rep_ADD_SUBR(Sfboundp);
+    rep_ADD_SUBR(Sboundp);
+    rep_ADD_SUBR(Ssymbol_plist);
+    rep_ADD_SUBR(Sgensym);
+    rep_ADD_SUBR(Ssymbolp);
+    rep_ADD_SUBR(Ssetq);
+    rep_ADD_SUBR(Ssetq_default);
+    rep_ADD_SUBR(Sfset);
+    rep_ADD_SUBR(Smakunbound);
+    rep_ADD_SUBR(Sfmakunbound);
+    rep_ADD_SUBR(Slet);
+    rep_ADD_SUBR(Sletstar);
+    rep_ADD_SUBR(Sget);
+    rep_ADD_SUBR(Sput);
+    rep_ADD_SUBR(Sapropos);
+    rep_ADD_SUBR(Sset_const_variable);
+    rep_ADD_SUBR(Sconst_variable_p);
+    rep_ADD_SUBR_INT(Strace);
+    rep_ADD_SUBR_INT(Suntrace);
+    rep_ADD_SUBR(Sobarray);
 }
 
 void
-symbols_kill(void)
+rep_symbols_kill(void)
 {
-    Lisp_Symbol_Block *sb = symbol_block_chain;
+    rep_symbol_block *sb = symbol_block_chain;
     while(sb)
     {
-	Lisp_Symbol_Block *nxt = sb->next;
-	FREE_OBJECT(sb);
+	rep_symbol_block *nxt = sb->next;
+	rep_FREE_CELL(sb);
 	sb = nxt;
     }
     symbol_block_chain = NULL;

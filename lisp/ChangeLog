@@ -1,34 +1,7 @@
-1999-02-13  John Harper  <john@dcs.warwick.ac.uk>
+src/1999-02-28  John Harper  <john@dcs.warwick.ac.uk>
 
-	* perl-mode.jl (perl-indent-line): when calling c-backward-stmt
-	make it skip blocks (to avoid hash references for one thing)
-
-1999-02-12  John Harper  <john@dcs.warwick.ac.uk>
-
-	* tilde.jl: canonicalise the user-home-directory before
-	comparing it against the original default-directory
-
-1999-02-12  John Harper  <john@dcs.warwick.ac.uk>
-
-	* modes.jl (auto-mode-alist): added .pm for perl-mode
-
-1999-02-11  John Harper  <john@dcs.warwick.ac.uk>
-
-	* html-decode.jl (html-decode-initial-indent): new variable
-
-1999-02-10  John Harper  <john@dcs.warwick.ac.uk>
-
-	* html-decode.jl: implemented <DL>, <DT> and <DD> tags
-
-1999-02-07  John Harper  <john@dcs.warwick.ac.uk>
-
-	* cvs.jl (cvs-diff-cvs): allow revision numbers to be specified
-
-1999-02-05  John Harper  <john@dcs.warwick.ac.uk>
-
-	* read-mail.jl (rm-prune-messages): when the variable
-	`rm-uniquify-messages' is t, ensure that all messages in the
-	list to be displayed have distinct message-id's
+	* MAJOR CHANGES: separated all LISP interpreter specific parts
+	into a separate library, librep (Read-Eval-Print)
 
 1999-02-02  John Harper  <john@dcs.warwick.ac.uk>
 

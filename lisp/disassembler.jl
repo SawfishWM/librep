@@ -46,8 +46,8 @@
    "macrop" "bytecodep" "pushi\t0" "pushi\t1" "pushi\t2" "pushi\t-1" "pushi\t-2" "pushi\t%d"
    "pushi\t%d" nil nil nil nil nil nil nil	 ; 0xa0
    nil nil nil nil nil nil nil nil
-   "set-current-buffer" "bind-buffer" "current-buffer" "bufferp" "markp" "windowp" "bind-window" "viewp"
-   "bind-view" "current-view" "swap2" "mod" "pos" "posp" nil nil
+   "bindobj" nil nil nil nil nil nil nil	 ; 0xb0
+   nil nil "swap2" "mod" nil nil nil nil
    nil nil nil nil nil nil nil nil	 ; 0xc0
    nil nil nil nil nil nil nil nil
    nil nil nil nil nil nil nil nil	 ; 0xd0
@@ -65,13 +65,16 @@
       (code-string consts stack
        (print-escape 'newlines))
     (unless stream
-      (setq stream (open-buffer "*disassembly*"))
-      (clear-buffer stream)
-      (goto-other-view)
-      (goto-buffer stream)
-      (insert "\n" stream)
-      (goto (start-of-buffer))
-      (setq stream (cons stream t)))
+      (if (featurep 'jade)
+	  (progn
+	    (setq stream (open-buffer "*disassembly*"))
+	    (clear-buffer stream)
+	    (goto-other-view)
+	    (goto-buffer stream)
+	    (insert "\n" stream)
+	    (goto (start-of-buffer))
+	    (setq stream (cons stream t)))
+	(setq stream standard-output)))
     (unless depth
       (setq depth 0))
     (when (zerop depth)

@@ -18,8 +18,7 @@
    along with Jade; see the file COPYING.	If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-#include "jade.h"
-#include <lib/jade_protos.h>
+#include "repint.h"
 
 /* Note that I have no idea how portable this code will be. It has
    been tested under Solaris and Linux, but beyond that, I really don't
@@ -85,7 +84,7 @@ static sigset_t chld_sigset;
 
 struct Proc
 {
-    VALUE	pr_Car;		/* status in high bits */
+    repv	pr_Car;		/* status in high bits */
     struct Proc *pr_Next;
     /* Chain of all processes waiting to be notified of a change of state. */
     struct Proc *pr_NotifyNext;
@@ -95,18 +94,18 @@ struct Proc
        connection to the stderr stream of the process. At all other times
        it will be equal to pr_Stdout. */
     int		pr_Stdin, pr_Stdout, pr_Stderr;
-    VALUE	pr_OutputStream, pr_ErrorStream;
+    repv	pr_OutputStream, pr_ErrorStream;
     int		pr_ExitStatus;
-    VALUE	pr_NotifyFun;
-    VALUE	pr_Prog;
-    VALUE	pr_Args;
-    VALUE	pr_Dir;
-    VALUE	pr_ConnType;
+    repv	pr_NotifyFun;
+    repv	pr_Prog;
+    repv	pr_Args;
+    repv	pr_Dir;
+    repv	pr_ConnType;
 };
 
 /* Status is two bits above the type code (presently 8->9) */
-#define PR_ACTIVE  (1 << (CELL8_TYPE_BITS + 0))	/* active, may be stopped */
-#define PR_STOPPED (2 << (CELL8_TYPE_BITS + 1))	/* stopped */
+#define PR_ACTIVE  (1 << (rep_CELL8_TYPE_BITS + 0))	/* active, may be stopped */
+#define PR_STOPPED (2 << (rep_CELL8_TYPE_BITS + 1))	/* stopped */
 #define PR_DEAD    0
 #define PR_RUNNING PR_ACTIVE
 
@@ -118,20 +117,18 @@ struct Proc
 #define PR_SET_STATUS(p,s) \
     ((p)->pr_Car = (((p)->pr_Car & ~(PR_ACTIVE | PR_STOPPED)) | (s)))
 
-/* Connection types, pty-echo is a pty with the ECHO bit set in c_lflag */
-_PR VALUE sym_pipe, sym_pty, sym_pty_echo;
+/* Connection types */
 DEFSYM(pipe, "pipe");
 DEFSYM(pty, "pty");
-DEFSYM(pty_echo, "pty-echo");
 
 #define PR_CONN_PTY_P(p) \
-    (((p)->pr_ConnType == sym_pty) || ((p)->pr_ConnType == sym_pty_echo))
-
-#define PR_CONN_PTY_ECHO_P(p) \
-    ((p)->pr_ConnType == sym_pty_echo)
+    ((p)->pr_ConnType == Qpty)
 
 #define PR_CONN_PIPE_P(p) \
-    ((p)->pr_ConnType == sym_pipe)
+    ((p)->pr_ConnType == Qpipe)
+
+#define VPROC(v)	((struct Proc *)rep_PTR(v))
+#define PROCESSP(v)	rep_CELL8_TYPEP(v, rep_Process)
 
 /* Handy debugging macro */
 #if 0
@@ -144,19 +141,11 @@ static struct Proc *process_chain;
 static struct Proc *notify_chain;
 static int process_run_count;
 
-/* Set to TRUE by the SIGCHLD handler */
-static volatile bool got_sigchld;
+/* Set to rep_TRUE by the SIGCHLD handler */
+static volatile rep_bool got_sigchld;
 
-_PR bool proc_periodically(void);
 static void read_from_one_fd(struct Proc *pr, int fd);
 static void read_from_process(int);
-_PR int	 write_to_process(VALUE, u_char *, int);
-_PR void proc_mark(VALUE);
-_PR void mark_active_processes(void);
-_PR void proc_prin(VALUE, VALUE);
-_PR void sigchld_restart(bool);
-_PR void proc_init(void);
-_PR void proc_kill(void);
 
 DEFSTRING(not_running, "Not running");
 DEFSTRING(not_stopped, "Not stopped");
@@ -176,7 +165,7 @@ DEFSTRING(forkstr, "fork");
 static RETSIGTYPE
 sigchld_handler(int sig)
 {
-    got_sigchld = TRUE;
+    got_sigchld = rep_TRUE;
 }
 
 static void
@@ -184,12 +173,12 @@ close_proc_files(struct Proc *pr)
 {
     if(pr->pr_Stdout)
     {
-	sys_deregister_input_fd(pr->pr_Stdout);
+	rep_deregister_input_fd(pr->pr_Stdout);
 	close(pr->pr_Stdout);
     }
     if(pr->pr_Stderr && pr->pr_Stderr != pr->pr_Stdout)
     {
-	sys_deregister_input_fd(pr->pr_Stderr);
+	rep_deregister_input_fd(pr->pr_Stderr);
 	close(pr->pr_Stderr);
     }
     if(pr->pr_Stdin && (pr->pr_Stdin != pr->pr_Stdout))
@@ -210,35 +199,30 @@ queue_notify(struct Proc *pr)
 }
 
 /* Dispatch all queued notification.  */
-static bool
+static rep_bool
 proc_notification(void)
 {
     if(!notify_chain)
-	return(FALSE);
-    while(notify_chain != NULL && !INT_P)
+	return(rep_FALSE);
+    while(notify_chain != NULL && !rep_INTERRUPTP)
     {
 	struct Proc *pr = notify_chain;
 	notify_chain = pr->pr_NotifyNext;
 	pr->pr_NotifyNext = NULL;
-	if(pr->pr_NotifyFun && !NILP(pr->pr_NotifyFun))
-	    call_lisp1(pr->pr_NotifyFun, VAL(pr));
+	if(pr->pr_NotifyFun && !rep_NILP(pr->pr_NotifyFun))
+	    rep_call_lisp1(pr->pr_NotifyFun, rep_VAL(pr));
     }
-    return TRUE;
+    return rep_TRUE;
 }
 
 /* Checks if any of my children are zombies, takes appropriate action. */
-static bool
+static rep_bool
 check_for_zombies(void)
 {
-#if 0
-    /* XXX It seems that under some circumstances SIGCHLD signals can
-       XXX not get delivered? What am I doing wrong? Anyway, it's better
-       XXX to always check for now... */
     if(!got_sigchld)
-	return FALSE;
-#endif
+	return rep_FALSE;
 
-    got_sigchld = FALSE;
+    got_sigchld = rep_FALSE;
     while(process_run_count > 0)
     {
 	struct Proc *pr;
@@ -295,17 +279,17 @@ check_for_zombies(void)
 		break;
 	}
     }
-    return TRUE;
+    return rep_TRUE;
 }
 
 /* Called by the event loop after each event or timeout. Returns true
    if the display should be updated. */
-bool
-proc_periodically(void)
+rep_bool
+rep_proc_periodically(void)
 {
-    bool rc = check_for_zombies();
+    rep_bool rc = check_for_zombies();
     if(proc_notification())
-	rc = TRUE;
+	rc = rep_TRUE;
     return rc;
 }
 
@@ -314,7 +298,7 @@ proc_periodically(void)
 static void
 read_from_one_fd(struct Proc *pr, int fd)
 {
-    VALUE stream = ((fd != pr->pr_Stdout)
+    repv stream = ((fd != pr->pr_Stdout)
 		    ? pr->pr_ErrorStream : pr->pr_OutputStream);
     u_char buf[1025];
     int actual;
@@ -322,8 +306,8 @@ read_from_one_fd(struct Proc *pr, int fd)
 	if((actual = read(fd, buf, 1024)) > 0)
 	{
 	    buf[actual] = 0;
-	    if(!NILP(stream))
-		stream_puts(stream, buf, actual, FALSE);
+	    if(!rep_NILP(stream))
+		rep_stream_puts(stream, buf, actual, rep_FALSE);
 	}
     } while((actual > 0) || (actual < 0 && errno == EINTR));
 
@@ -331,7 +315,7 @@ read_from_one_fd(struct Proc *pr, int fd)
     {
 	/* We assume EOF  */
 
-	sys_deregister_input_fd(fd);
+	rep_deregister_input_fd(fd);
 	close(fd);
 
 	/* Could be either pr_Stdout or pr_Stderr */
@@ -361,8 +345,8 @@ read_from_process(int fd)
     }
 }
 
-int
-write_to_process(VALUE pr, u_char *buf, int bufLen)
+static int
+write_to_process(repv pr, u_char *buf, int bufLen)
 {
     int act = 0;
     if(!PROCESSP(pr))
@@ -371,7 +355,7 @@ write_to_process(VALUE pr, u_char *buf, int bufLen)
     {
 	if(VPROC(pr)->pr_Stdin == 0)
 	{
-	    cmd_signal(sym_process_error, list_2(pr, VAL(&no_link)));
+	    Fsignal(Qprocess_error, rep_list_2(pr, rep_VAL(&no_link)));
 	}
 	else
 	{
@@ -379,20 +363,20 @@ write_to_process(VALUE pr, u_char *buf, int bufLen)
 	    act = write(VPROC(pr)->pr_Stdin, buf, bufLen);
 	    if(act < 0)
 	    {
-		signal_file_error(pr);
+		rep_signal_file_error(pr);
 		act = 0;
 	    }
 	}
     }
     else
-	cmd_signal(sym_process_error, list_2(pr, VAL(&not_running)));
+	Fsignal(Qprocess_error, rep_list_2(pr, rep_VAL(&not_running)));
     return(act);
 }
 
-static bool
-signal_process(struct Proc *pr, int sig, bool do_grp)
+static rep_bool
+signal_process(struct Proc *pr, int sig, rep_bool do_grp)
 {
-    bool rc = TRUE;
+    rep_bool rc = rep_TRUE;
     if(do_grp)
     {
 	if(pr->pr_Stdin && PR_CONN_PTY_P(pr))
@@ -403,14 +387,14 @@ signal_process(struct Proc *pr, int sig, bool do_grp)
 	    else if(PR_ACTIVE_P(pr))
 		kill(-pr->pr_Pid, sig);
 	    else
-		rc = FALSE;
+		rc = rep_FALSE;
 	}
 	else
 	{
 	    if(PR_ACTIVE_P(pr))
 		kill(-pr->pr_Pid, sig);
 	    else
-		rc = FALSE;
+		rc = rep_FALSE;
 	}
     }
     else
@@ -418,7 +402,7 @@ signal_process(struct Proc *pr, int sig, bool do_grp)
 	if(PR_ACTIVE_P(pr))
 	    kill(pr->pr_Pid, sig);
 	else
-	    rc = FALSE;
+	    rc = rep_FALSE;
     }
     return(rc);
 }
@@ -432,13 +416,13 @@ kill_process(struct Proc *pr)
     if(PR_ACTIVE_P(pr))
     {
 	/* is this too heavy-handed?? */
-	if(!signal_process(pr, SIGKILL, TRUE))
+	if(!signal_process(pr, SIGKILL, rep_TRUE))
 	    kill(-pr->pr_Pid, SIGKILL);
 	waitpid(pr->pr_Pid, &pr->pr_ExitStatus, 0);
 	process_run_count--;
 	close_proc_files(pr);
     }
-    FREE_OBJECT(pr);
+    rep_FREE_CELL(pr);
 }
 
 /* Return the file descriptor (or 0 if an error) of the first available
@@ -497,7 +481,7 @@ none:
 #endif /* HAVE_PTYS */
 
     /* Couldn't find a pty. Signal an error. */
-    cmd_signal(sym_process_error, LIST_1(VAL(&no_pty)));
+    Fsignal(Qprocess_error, rep_LIST_1(rep_VAL(&no_pty)));
     return 0;
 }
 
@@ -505,21 +489,21 @@ none:
    is non-NULL it means to run the process synchronously with it's
    stdin connected to the file SYNC_INPUT. Otherwise this function returns
    immediately after starting the process.  */
-static bool
+static rep_bool
 run_process(struct Proc *pr, char **argv, u_char *sync_input)
 {
-    bool rc = FALSE;
+    rep_bool rc = rep_FALSE;
     if(PR_DEAD_P(pr))
     {
-	bool usepty = PR_CONN_PTY_P(pr);
+	rep_bool usepty = PR_CONN_PTY_P(pr);
 	char slavenam[32];
 	int stdin_fds[2], stdout_fds[2], stderr_fds[2]; /* only for pipes */
 	pr->pr_ExitStatus = -1;
 
 	if(sync_input != NULL || !usepty)
 	{
-	    usepty = FALSE;
-	    pr->pr_ConnType = sym_pipe;
+	    usepty = rep_FALSE;
+	    pr->pr_ConnType = Qpipe;
 	    if(pipe(stdout_fds) == 0)
 	    {
 		if(pipe(stderr_fds) == 0)
@@ -563,26 +547,26 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 	{
 	    switch(pr->pr_Pid = fork())
 	    {
-		VALUE tem;
+		repv tem;
 
 	    case 0:
 		/* Child process */
 
 		/* Build the environment */
-		tem = cmd_symbol_value(sym_process_environment, sym_t);
-		if(CONSP(tem))
+		tem = Fsymbol_value(Qprocess_environment, Qt);
+		if(rep_CONSP(tem))
 		{
-		    VALUE len = cmd_length(tem);
-		    if(len && INTP(len))
+		    repv len = Flength(tem);
+		    if(len && rep_INTP(len))
 		    {
-			environ = sys_alloc(sizeof(char *) * (VINT(len) + 1));
+			environ = rep_alloc(sizeof(char *) * (rep_INT(len) + 1));
 			if(environ != 0)
 			{
 			    char **ptr = environ;
-			    while(CONSP(tem))
+			    while(rep_CONSP(tem))
 			    {
-				*ptr++ = VSTR(VCAR(tem));
-				tem = VCDR(tem);
+				*ptr++ = rep_STR(rep_CAR(tem));
+				tem = rep_CDR(tem);
 			    }
 			    *ptr++ = 0;
 			}
@@ -628,8 +612,6 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 		    st.c_cflag |= CREAD | CS8 | CLOCAL;
 		    st.c_lflag &= ~(ECHO | ECHOE | ECHOK | NOFLSH | TOSTOP);
 		    st.c_lflag |= ISIG;
-		    if(PR_CONN_PTY_ECHO_P(pr))
-			st.c_lflag |= ECHO;
 #if 0
 		    st.c_cc[VMIN] = 1;
 		    st.c_cc[VTIME] = 0;
@@ -662,10 +644,10 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 		    close(stderr_fds[0]);
 		    close(stderr_fds[1]);
 		}
-		if(STRINGP(pr->pr_Dir))
+		if(rep_STRINGP(pr->pr_Dir))
 		{
-		    if(STRING_LEN(pr->pr_Dir) > 0)
-			chdir(VSTR(pr->pr_Dir));
+		    if(rep_STRING_LEN(pr->pr_Dir) > 0)
+			chdir(rep_STR(pr->pr_Dir));
 		}
 
 		execvp(argv[0], argv);
@@ -686,7 +668,7 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 		else
 		    close(pr->pr_Stdin);
 		pr->pr_Stdin = pr->pr_Stdout = pr->pr_Stderr = 0;
-		signal_file_error(VAL(&forkstr));
+		rep_signal_file_error(rep_VAL(&forkstr));
 		break;
 
 	    default:
@@ -712,13 +694,13 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 			    pr->pr_Stdin = pr->pr_Stdout;
 			}
 		    }
-		    unix_set_fd_cloexec(pr->pr_Stdin);
-		    unix_set_fd_nonblocking(pr->pr_Stdout);
-		    sys_register_input_fd(pr->pr_Stdout, read_from_process);
+		    rep_unix_set_fd_cloexec(pr->pr_Stdin);
+		    rep_unix_set_fd_nonblocking(pr->pr_Stdout);
+		    rep_register_input_fd(pr->pr_Stdout, read_from_process);
 		    if(pr->pr_Stderr != pr->pr_Stdout)
 		    {
-			unix_set_fd_nonblocking(pr->pr_Stderr);
-			sys_register_input_fd(pr->pr_Stderr,
+			rep_unix_set_fd_nonblocking(pr->pr_Stderr);
+			rep_register_input_fd(pr->pr_Stderr,
 					      read_from_process);
 		    }
 		    process_run_count++;
@@ -729,7 +711,8 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 		    u_char buf[1025];
 		    int actual;
 		    fd_set inputs;
-		    bool done_out = FALSE, done_err = FALSE, exited = FALSE;
+		    rep_bool done_out = rep_FALSE, done_err = rep_FALSE;
+		    rep_bool exited = rep_FALSE;
 		    int interrupt_count = 0;
 #ifdef KLUDGE_SYNCHRONOUS_OUTPUT
 		    int post_exit_count = 0;
@@ -750,13 +733,13 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 			timeout.tv_sec = 1;
 			timeout.tv_usec = 0;
 
-			sigchld_restart(FALSE);
+			rep_sigchld_restart(rep_FALSE);
 			number = select(FD_SETSIZE, &copy, NULL,
 					NULL, &timeout);
-			sigchld_restart(TRUE);
+			rep_sigchld_restart(rep_TRUE);
 
-			TEST_INT_SLOW;
-			if(INT_P)
+			rep_TEST_INT_SLOW;
+			if(rep_INTERRUPTP)
 			{
 			    int signal;
 			    /* What to do here? */
@@ -771,26 +754,26 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 			    default:
 				signal = SIGKILL;
 			    }
-			    signal_process(pr, signal, TRUE);
-			    if(throw_value == int_cell)
-				throw_value = 0;
+			    signal_process(pr, signal, rep_TRUE);
+			    if(rep_throw_value == rep_int_cell)
+				rep_throw_value = 0;
 			}
 
 			if(number > 0)
 			{
-			    GC_root gc_pr;
-			    VALUE vpr = VAL(pr);
-			    PUSHGC(gc_pr, vpr);
+			    rep_GC_root gc_pr;
+			    repv vpr = rep_VAL(pr);
+			    rep_PUSHGC(gc_pr, vpr);
 			    if(!done_out && FD_ISSET(pr->pr_Stdout, &copy))
 			    {
 				actual = read(pr->pr_Stdout, buf, 1024);
 				if(actual > 0)
 				{
 				    buf[actual] = 0;
-				    if(!NILP(pr->pr_OutputStream))
+				    if(!rep_NILP(pr->pr_OutputStream))
 				    {
-					stream_puts(pr->pr_OutputStream, buf,
-						    actual, FALSE);
+					rep_stream_puts(pr->pr_OutputStream, buf,
+						    actual, rep_FALSE);
 				    }
 				}
 				else if(actual == 0
@@ -798,7 +781,7 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 					    && errno != EAGAIN
 					    && errno != EWOULDBLOCK))
 				{
-				    done_out = TRUE;
+				    done_out = rep_TRUE;
 				    FD_CLR(pr->pr_Stdout, &inputs);
 				}
 			    }
@@ -808,10 +791,10 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 				if(actual > 0)
 				{
 				    buf[actual] = 0;
-				    if(!NILP(pr->pr_ErrorStream))
+				    if(!rep_NILP(pr->pr_ErrorStream))
 				    {
-					stream_puts(pr->pr_ErrorStream, buf,
-						    actual, FALSE);
+					rep_stream_puts(pr->pr_ErrorStream, buf,
+						    actual, rep_FALSE);
 				    }
 				}
 				else if(actual == 0
@@ -819,11 +802,11 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 					    && errno != EAGAIN
 					    && errno != EWOULDBLOCK))
 				{
-				    done_err = TRUE;
+				    done_err = rep_TRUE;
 				    FD_CLR(pr->pr_Stderr, &inputs);
 				}
 			    }
-			    POPGC;
+			    rep_POPGC;
 			}
 #ifdef KLUDGE_SYNCHRONOUS_OUTPUT
 			/* This still doesn't work. The best way to
@@ -850,7 +833,7 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 			   && waitpid(pr->pr_Pid,
 				      &pr->pr_ExitStatus,
 				      WNOHANG) == pr->pr_Pid)
-			    exited = TRUE;
+			    exited = rep_TRUE;
 #endif
 		    }
 		    if(!exited)
@@ -863,38 +846,38 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 		    PR_SET_STATUS(pr, PR_DEAD);
 		    queue_notify(pr);
 		}
-		rc = TRUE;
+		rc = rep_TRUE;
 		break;
 	    }
 	}
-	else if(throw_value == LISP_NULL)
-	    cmd_signal(sym_process_error, LIST_1(lookup_errno()));
+	else if(rep_throw_value == rep_NULL)
+	    Fsignal(Qprocess_error, rep_LIST_1(rep_lookup_errno()));
     }
     else
-	cmd_signal(sym_process_error, list_2(VAL(pr), VAL(&already_running)));
+	Fsignal(Qprocess_error, rep_list_2(rep_VAL(pr), rep_VAL(&already_running)));
     return(rc);
 }
 
-void
-proc_mark(VALUE pr)
+static void
+proc_mark(repv pr)
 {
-    MARKVAL(VPROC(pr)->pr_OutputStream);
-    MARKVAL(VPROC(pr)->pr_ErrorStream);
-    MARKVAL(VPROC(pr)->pr_NotifyFun);
-    MARKVAL(VPROC(pr)->pr_Prog);
-    MARKVAL(VPROC(pr)->pr_Args);
-    MARKVAL(VPROC(pr)->pr_Dir);
-    MARKVAL(VPROC(pr)->pr_ConnType);
+    rep_MARKVAL(VPROC(pr)->pr_OutputStream);
+    rep_MARKVAL(VPROC(pr)->pr_ErrorStream);
+    rep_MARKVAL(VPROC(pr)->pr_NotifyFun);
+    rep_MARKVAL(VPROC(pr)->pr_Prog);
+    rep_MARKVAL(VPROC(pr)->pr_Args);
+    rep_MARKVAL(VPROC(pr)->pr_Dir);
+    rep_MARKVAL(VPROC(pr)->pr_ConnType);
 }
 
-void
+static void
 mark_active_processes(void)
 {
     struct Proc *pr = process_chain;
     while(pr != 0)
     {
 	if(PR_ACTIVE_P(pr))
-	    MARKVAL(VAL(pr));
+	    rep_MARKVAL(rep_VAL(pr));
 	pr = pr->pr_Next;
     }
 }
@@ -909,7 +892,7 @@ proc_sweep(void)
     notify_chain = NULL;
     while(pr)
     {
-	if(GC_CELL_MARKEDP(VAL(pr)))
+	if(rep_GC_CELL_MARKEDP(rep_VAL(pr)))
 	{
 	    pr->pr_NotifyNext = notify_chain;
 	    notify_chain = pr;
@@ -923,11 +906,11 @@ proc_sweep(void)
     while(pr)
     {
 	struct Proc *nxt = pr->pr_Next;
-	if(!GC_CELL_MARKEDP(VAL(pr)))
+	if(!rep_GC_CELL_MARKEDP(rep_VAL(pr)))
 	    kill_process(pr);
 	else
 	{
-	    GC_CLR_CELL(VAL(pr));
+	    rep_GC_CLR_CELL(rep_VAL(pr));
 	    pr->pr_Next = process_chain;
 	    process_chain = pr;
 	}
@@ -935,21 +918,21 @@ proc_sweep(void)
     }
 }
 
-void
-proc_prin(VALUE strm, VALUE obj)
+static void
+proc_prin(repv strm, repv obj)
 {
     struct Proc *pr = VPROC(obj);
     u_char buf[40];
-    stream_puts(strm, "#<process", -1, FALSE);
+    rep_stream_puts(strm, "#<process", -1, rep_FALSE);
     if(PR_RUNNING_P(pr))
     {
-	stream_puts(strm, " running: ", -1, FALSE);
-	stream_puts(strm, VPTR(pr->pr_Prog), -1, TRUE);
+	rep_stream_puts(strm, " running: ", -1, rep_FALSE);
+	rep_stream_puts(strm, rep_PTR(pr->pr_Prog), -1, rep_TRUE);
     }
     else if(PR_STOPPED_P(pr))
     {
-	stream_puts(strm, " stopped: ", -1, FALSE);
-	stream_puts(strm, VPTR(pr->pr_Prog), -1, TRUE);
+	rep_stream_puts(strm, " stopped: ", -1, rep_FALSE);
+	rep_stream_puts(strm, rep_PTR(pr->pr_Prog), -1, rep_TRUE);
     }
     else
     {
@@ -960,15 +943,29 @@ proc_prin(VALUE strm, VALUE obj)
 #else
 	    sprintf(buf, " exited: 0x%x", pr->pr_ExitStatus);
 #endif
-	    stream_puts(strm, buf, -1, FALSE);
+	    rep_stream_puts(strm, buf, -1, rep_FALSE);
 	}
     }
-    stream_putc(strm, '>');
+    rep_stream_putc(strm, '>');
 }
 
-_PR VALUE cmd_make_process(VALUE stream, VALUE fun, VALUE dir, VALUE prog, VALUE args);
-DEFUN("make-process", cmd_make_process, subr_make_process, (VALUE stream, VALUE fun, VALUE dir, VALUE prog, VALUE args), V_Subr5, DOC_make_process) /*
-::doc:make_process::
+static int
+proc_putc(repv stream, int c)
+{
+    char tmps[2];
+    tmps[0] = (u_char)c;
+    tmps[1] = 0;
+    return write_to_process(stream, tmps, 1);
+}
+
+static int
+proc_puts(repv stream, void *buf, int len, rep_bool is_lisp)
+{
+    return write_to_process(stream, buf, len);
+}
+
+DEFUN("make-process", Fmake_process, Smake_process, (repv stream, repv fun, repv dir, repv prog, repv args), rep_Subr5) /*
+::doc:Smake-process::
 make-process [OUTPUT-STREAM] [FUN] [DIR] [PROGRAM] [ARGS]
 
 Creates a new process-object, OUTPUT-STREAM is where all output from this
@@ -985,11 +982,11 @@ If the DIR parameter is nil it will be inherited from the
 `default-directory' variable of the current buffer.
 ::end:: */
 {
-    VALUE pr = VAL(ALLOC_OBJECT(sizeof(struct Proc)));
-    if(pr != LISP_NULL)
+    repv pr = rep_VAL(rep_ALLOC_CELL(sizeof(struct Proc)));
+    if(pr != rep_NULL)
     {
-	GC_root gc_pr;
-	VPROC(pr)->pr_Car = V_Process;
+	rep_GC_root gc_pr;
+	VPROC(pr)->pr_Car = rep_Process;
 	VPROC(pr)->pr_Next = process_chain;
 	process_chain = VPROC(pr);
 	VPROC(pr)->pr_NotifyNext = NULL;
@@ -1002,27 +999,26 @@ If the DIR parameter is nil it will be inherited from the
 	VPROC(pr)->pr_NotifyFun = fun;
 	VPROC(pr)->pr_Prog = prog;
 	VPROC(pr)->pr_Args = args;
-	VPROC(pr)->pr_ConnType = sym_pipe;
+	VPROC(pr)->pr_ConnType = Qpipe;
 	VPROC(pr)->pr_Dir = dir;
 
 	/* Ensure that pr_Dir refers to an absolute local file */
-	PUSHGC(gc_pr, pr);
-	dir = cmd_local_file_name(STRINGP(dir) ? dir : VAL(&dot));
-	POPGC;
-	if(dir && STRINGP(dir))
+	rep_PUSHGC(gc_pr, pr);
+	dir = Flocal_file_name(rep_STRINGP(dir) ? dir : rep_VAL(&dot));
+	rep_POPGC;
+	if(dir && rep_STRINGP(dir))
 	    VPROC(pr)->pr_Dir = dir;
 	else
-	    VPROC(pr)->pr_Dir = sym_nil;
+	    VPROC(pr)->pr_Dir = Qnil;
 
 	return pr;
     }
     else
-	return mem_error();
+	return rep_mem_error();
 }
 
-_PR VALUE cmd_start_process(VALUE arg_list);
-DEFUN("start-process", cmd_start_process, subr_start_process, (VALUE arg_list), V_SubrN, DOC_start_process) /*
-::doc:start_process::
+DEFUN("start-process", Fstart_process, Sstart_process, (repv arg_list), rep_SubrN) /*
+::doc:Sstart-process::
 start-process [PROCESS] [PROGRAM] [ARGS...]
 
 Starts a process running on process-object PROCESS. The child-process runs
@@ -1038,66 +1034,65 @@ set in the PROCESS prior to calling this function.
 ::end:: */
 {
     struct Proc *pr = NULL;
-    VALUE res = sym_nil;
-    if(CONSP(arg_list))
+    repv res = Qnil;
+    if(rep_CONSP(arg_list))
     {
-	if(PROCESSP(VCAR(arg_list)))
-	    pr = VPROC(VCAR(arg_list));
-	arg_list = VCDR(arg_list);
+	if(PROCESSP(rep_CAR(arg_list)))
+	    pr = VPROC(rep_CAR(arg_list));
+	arg_list = rep_CDR(arg_list);
     }
     if(pr == NULL)
     {
-	pr = VPROC(cmd_make_process(sym_nil, sym_nil, sym_nil,
-				    sym_nil, sym_nil));
+	pr = VPROC(Fmake_process(Qnil, Qnil, Qnil,
+				    Qnil, Qnil));
 	if(pr == NULL)
-	    return LISP_NULL;
+	    return rep_NULL;
     }
-    if(CONSP(arg_list))
+    if(rep_CONSP(arg_list))
     {
-	if(STRINGP(VCAR(arg_list)))
-	    pr->pr_Prog = VCAR(arg_list);
-	arg_list = VCDR(arg_list);
-	if(CONSP(arg_list))
+	if(rep_STRINGP(rep_CAR(arg_list)))
+	    pr->pr_Prog = rep_CAR(arg_list);
+	arg_list = rep_CDR(arg_list);
+	if(rep_CONSP(arg_list))
 	    pr->pr_Args = arg_list;
     }
-    if(!STRINGP(pr->pr_Prog))
+    if(!rep_STRINGP(pr->pr_Prog))
     {
-	res = cmd_signal(sym_process_error, list_2(VAL(&no_prog), VAL(pr)));
+	res = Fsignal(Qprocess_error, rep_list_2(rep_VAL(&no_prog), rep_VAL(pr)));
     }
     else
     {
-	int numargs = list_length(pr->pr_Args) + 1;
-	char **argv = sys_alloc(sizeof(char *) * (numargs + 1));
+	int numargs = rep_list_length(pr->pr_Args) + 1;
+	char **argv = rep_alloc(sizeof(char *) * (numargs + 1));
 	if(argv)
 	{
 	    int i;
 	    arg_list = pr->pr_Args;
-	    argv[0] = VSTR(pr->pr_Prog);
+	    argv[0] = rep_STR(pr->pr_Prog);
 	    for(i = 1; i < numargs; i++)
 	    {
-		if(STRINGP(VCAR(arg_list)))
-		    argv[i] = VSTR(VCAR(arg_list));
+		if(rep_STRINGP(rep_CAR(arg_list)))
+		    argv[i] = rep_STR(rep_CAR(arg_list));
 		else
 		    argv[i] = "";
-		arg_list = VCDR(arg_list);
+		arg_list = rep_CDR(arg_list);
 	    }
 	    argv[i] = NULL;
 	    if(run_process(pr, argv, NULL))
-		res = VAL(pr);
+		res = rep_VAL(pr);
 	    else
 	    {
-		res = cmd_signal(sym_process_error, list_2(VAL(&cant_start),
-							   VAL(pr)));
+		res = Fsignal(Qprocess_error, rep_list_2(rep_VAL(&cant_start),
+							   rep_VAL(pr)));
 	    }
-	    sys_free(argv);
+	    rep_free(argv);
 	}
     }
     return(res);
 }
 
-_PR VALUE cmd_call_process(VALUE arg_list);
-DEFUN("call-process", cmd_call_process, subr_call_process, (VALUE arg_list), V_SubrN, DOC_call_process) /*
-::doc:call_process::
+DEFUN("call-process", Fcall_process, Scall_process, (repv arg_list), rep_SubrN) /*
+::doc:Scall-process::
 call-process [PROCESS] [IN-FILE] [PROGRAM] [ARGS...]
 
 Starts a process running on process-object PROCESS. Waits for the child to
@@ -1115,189 +1110,109 @@ set in the PROCESS prior to calling this function.
 ::end:: */
 {
     struct Proc *pr = NULL;
-    VALUE res = sym_nil, infile = VAL(&dev_null);
-    if(CONSP(arg_list))
+    repv res = Qnil, infile = rep_VAL(&dev_null);
+    if(rep_CONSP(arg_list))
     {
-	if(PROCESSP(VCAR(arg_list)))
-	    pr = VPROC(VCAR(arg_list));
-	arg_list = VCDR(arg_list);
+	if(PROCESSP(rep_CAR(arg_list)))
+	    pr = VPROC(rep_CAR(arg_list));
+	arg_list = rep_CDR(arg_list);
     }
     if(pr == NULL)
     {
-	pr = VPROC(cmd_make_process(sym_nil, sym_nil, sym_nil,
-				    sym_nil, sym_nil));
+	pr = VPROC(Fmake_process(Qnil, Qnil, Qnil,
+				    Qnil, Qnil));
 	if(pr == NULL)
-	    return LISP_NULL;
+	    return rep_NULL;
     }
-    if(CONSP(arg_list))
+    if(rep_CONSP(arg_list))
     {
-	if(STRINGP(VCAR(arg_list)))
-	    infile = VCAR(arg_list);
-	arg_list = VCDR(arg_list);
-	if(CONSP(arg_list))
+	if(rep_STRINGP(rep_CAR(arg_list)))
+	    infile = rep_CAR(arg_list);
+	arg_list = rep_CDR(arg_list);
+	if(rep_CONSP(arg_list))
 	{
-	    if(STRINGP(VCAR(arg_list)))
-		pr->pr_Prog = VCAR(arg_list);
-	    arg_list = VCDR(arg_list);
-	    if(CONSP(arg_list))
+	    if(rep_STRINGP(rep_CAR(arg_list)))
+		pr->pr_Prog = rep_CAR(arg_list);
+	    arg_list = rep_CDR(arg_list);
+	    if(rep_CONSP(arg_list))
 		pr->pr_Args = arg_list;
 	}
     }
-    if(infile != VAL(&dev_null))
+    if(infile != rep_VAL(&dev_null))
     {
 	/* Ensure that INFILE is a real name in the local file
 	   system, and that the file actually exists. */
-	GC_root gc_arg_list, gc_pr, gc_infile;
-	VALUE _pr = VAL(pr);
-	PUSHGC(gc_arg_list, arg_list);
-	PUSHGC(gc_pr, _pr);
-	PUSHGC(gc_infile, infile);
-	infile = cmd_local_file_name(infile);
-	if(infile && STRINGP(infile))
+	rep_GC_root gc_arg_list, gc_pr, gc_infile;
+	repv _pr = rep_VAL(pr);
+	rep_PUSHGC(gc_arg_list, arg_list);
+	rep_PUSHGC(gc_pr, _pr);
+	rep_PUSHGC(gc_infile, infile);
+	infile = Flocal_file_name(infile);
+	if(infile && rep_STRINGP(infile))
 	{
-	    if(NILP(sys_file_exists_p(infile)))
-		res = signal_file_error(infile);
+	    if(rep_NILP(rep_file_exists_p(infile)))
+		res = rep_signal_file_error(infile);
 	}
 	else
-	    res = cmd_signal(sym_process_error,
-			     LIST_2(VAL(&not_local), VAL(pr)));
-	POPGC; POPGC; POPGC;
+	    res = Fsignal(Qprocess_error,
+			     rep_LIST_2(rep_VAL(&not_local), rep_VAL(pr)));
+	rep_POPGC; rep_POPGC; rep_POPGC;
     }
-    if(NILP(res) && !STRINGP(pr->pr_Prog))
-	res = cmd_signal(sym_process_error, LIST_2(VAL(&no_prog), VAL(pr)));
-    if(NILP(res))
+    if(rep_NILP(res) && !rep_STRINGP(pr->pr_Prog))
+	res = Fsignal(Qprocess_error, rep_LIST_2(rep_VAL(&no_prog), rep_VAL(pr)));
+    if(rep_NILP(res))
     {
-	int numargs = list_length(pr->pr_Args) + 1;
-	char **argv = sys_alloc(sizeof(char *) * (numargs + 1));
+	int numargs = rep_list_length(pr->pr_Args) + 1;
+	char **argv = rep_alloc(sizeof(char *) * (numargs + 1));
 	if(argv)
 	{
 	    int i;
 	    arg_list = pr->pr_Args;
-	    argv[0] = VSTR(pr->pr_Prog);
+	    argv[0] = rep_STR(pr->pr_Prog);
 	    for(i = 1; i < numargs; i++)
 	    {
-		if(STRINGP(VCAR(arg_list)))
-		    argv[i] = VSTR(VCAR(arg_list));
+		if(rep_STRINGP(rep_CAR(arg_list)))
+		    argv[i] = rep_STR(rep_CAR(arg_list));
 		else
 		    argv[i] = "";
-		arg_list = VCDR(arg_list);
+		arg_list = rep_CDR(arg_list);
 	    }
 	    argv[i] = NULL;
-	    if(run_process(pr, argv, VSTR(infile)))
-		res = MAKE_INT(pr->pr_ExitStatus);
+	    if(run_process(pr, argv, rep_STR(infile)))
+		res = rep_MAKE_INT(pr->pr_ExitStatus);
 	    else
 	    {
-		res = cmd_signal(sym_process_error, list_2(VAL(&cant_start),
-							   VAL(pr)));
+		res = Fsignal(Qprocess_error, rep_list_2(rep_VAL(&cant_start),
+							   rep_VAL(pr)));
 	    }
-	    sys_free(argv);
+	    rep_free(argv);
 	}
     }
     return(res);
 }
 
-_PR VALUE cmd_call_process_area(VALUE arg_list);
-DEFUN("call-process-area", cmd_call_process_area, subr_call_process_area, (VALUE arg_list), V_SubrN, DOC_call_process_area) /*
-::doc:call_process_area::
-call-process-area [PROCESS] START END DELETEP [PROGRAM] [ARGS...]
-
-Starts a process running on process-object PROCESS. Waits for the child to
-exit, then returns the exit-value of the child. If PROCESS is unspecified
-the make-process function will be called (with zero arguments) to create one.
-
-The area of the current buffer between START and END is used as the
-input stream of the new process. If DELETE-P is non-nil the area will
-be deleted from the buffer before the process is started.
-
-PROGRAM is the filename of the binary image, it will be searched for in
-all directories listed in the `PATH' environment variable.
-ARGS are the arguments to give to the process.
-
-If any of the optional parameters are unspecified they should have been
-set in the PROCESS prior to calling this function.
-::end:: */
-{
-    if(CONSP(arg_list))
-    {
-	VALUE proc = VCAR(arg_list);
-	arg_list = VCDR(arg_list);
-	if(CONSP(arg_list) && POSP(VCAR(arg_list)))
-	{
-	    VALUE start = VCAR(arg_list);
-	    arg_list = VCDR(arg_list);
-	    if(CONSP(arg_list) && POSP(VCAR(arg_list)))
-	    {
-		VALUE end = VCAR(arg_list);
-		arg_list = VCDR(arg_list);
-		if(CONSP(arg_list))
-		{
-		    bool deletep = !NILP(VCAR(arg_list));
-		    VALUE temp_file;
-		    VALUE ret;
-		    arg_list = VCDR(arg_list);
-		    temp_file = cmd_make_temp_name();
-		    if(temp_file && STRINGP(temp_file))
-		    {
-			/* Open the file to make it private. */
-			int fd = open(VSTR(temp_file),
-				      O_RDWR | O_CREAT | O_TRUNC,
-				      S_IRUSR | S_IWUSR);
-			if(fd < 0)
-			    return signal_file_error(temp_file);
-			close(fd);
-		    }
-		    ret = cmd_write_buffer_contents(temp_file, start, end);
-		    if(ret && !NILP(ret))
-		    {
-			GC_root gc_temp_file;
-
-			if(deletep)
-			{
-			    ret = cmd_delete_area(start, end, sym_nil);
-			    if(!ret || NILP(ret))
-				goto error;
-			}
-			/* Splice together the arguments to call-process.
-			   PROC FILE-NAME REST.. */
-			arg_list = cmd_cons(proc, cmd_cons(temp_file,
-							   arg_list));
-			PUSHGC(gc_temp_file, temp_file);
-			ret = cmd_call_process(arg_list);
-			POPGC;
-		    }
-		error:
-		    unlink(VSTR(temp_file));	/* ignore errors! */
-		    return ret;
-		}
-	    }
-	}
-    }
-    return cmd_signal(sym_bad_arg, list_1(arg_list));
-}
-
 /* If PROC is running asynchronously then send signal number SIGNAL
    to it. If SIGNAL-GROUP is non-nil send the signal to all processes
    in the process group of PROC. Returns t if successful. */
-static VALUE
-do_signal_command(VALUE proc, int signal, VALUE signal_group)
+static repv
+do_signal_command(repv proc, int signal, repv signal_group)
 {
-    VALUE res = sym_nil;
-    DECLARE1(proc, PROCESSP);
+    repv res = Qnil;
+    rep_DECLARE1(proc, PROCESSP);
     if(PR_ACTIVE_P(VPROC(proc)))
     {
-	if(signal_process(VPROC(proc), signal, !NILP(signal_group)))
-	    res = sym_t;
+	if(signal_process(VPROC(proc), signal, !rep_NILP(signal_group)))
+	    res = Qt;
     }
     else
     {
-	res = cmd_signal(sym_process_error, list_2(proc, VAL(&not_running)));
+	res = Fsignal(Qprocess_error, rep_list_2(proc, rep_VAL(&not_running)));
     }
     return res;
 }
 
-_PR VALUE cmd_interrupt_process(VALUE proc, VALUE grp);
-DEFUN("interrupt-process", cmd_interrupt_process, subr_interrupt_process, (VALUE proc, VALUE grp), V_Subr2, DOC_interrupt_process) /*
-::doc:interrupt_process::
+DEFUN("interrupt-process", Finterrupt_process, Sinterrupt_process, (repv proc, repv grp), rep_Subr2) /*
+::doc:Sinterrupt-process::
 interrupt-process PROCESS [SIGNAL-GROUP]
 
 Interrupt the asynchronous process PROCESS. If SIGNAL-GROUP is t, interrupt
@@ -1307,9 +1222,8 @@ all child processes of PROCESS (it's process group).
     return do_signal_command(proc, SIGINT, grp);
 }
 
-_PR VALUE cmd_kill_process(VALUE proc, VALUE grp);
-DEFUN("kill-process", cmd_kill_process, subr_kill_process, (VALUE proc, VALUE grp), V_Subr2, DOC_kill_process) /*
-::doc:kill_process::
+DEFUN("kill-process", Fkill_process, Skill_process, (repv proc, repv grp), rep_Subr2) /*
+::doc:Skill-process::
 kill-process PROCESS [SIGNAL-GROUP]
 
 Kill the asynchronous process PROCESS. If SIGNAL-GROUP is t, kill all
@@ -1319,9 +1233,8 @@ child processes of PROCESS (it's process group).
     return do_signal_command(proc, SIGKILL, grp);
 }
 
-_PR VALUE cmd_stop_process(VALUE proc, VALUE grp);
-DEFUN("stop-process", cmd_stop_process, subr_stop_process, (VALUE proc, VALUE grp), V_Subr2, DOC_stop_process) /*
-::doc:stop_process::
+DEFUN("stop-process", Fstop_process, Sstop_process, (repv proc, repv grp), rep_Subr2) /*
+::doc:Sstop-process::
 stop-process PROCESS [SIGNAL-GROUP]
 
 Suspends execution of PROCESS, see `continue-process'. If SIGNAL-GROUP is
@@ -1331,9 +1244,8 @@ non-nil also suspends the processes in the process group of PROCESS.
     return do_signal_command(proc, SIGSTOP, grp);
 }
 
-_PR VALUE cmd_continue_process(VALUE proc, VALUE grp);
-DEFUN("continue-process", cmd_continue_process, subr_continue_process, (VALUE proc, VALUE grp), V_Subr2, DOC_continue_process) /*
-::doc:continue_process::
+DEFUN("continue-process", Fcontinue_process, Scontinue_process, (repv proc, repv grp), rep_Subr2) /*
+::doc:Scontinue-process::
 continue-process PROCESS [SIGNAL-GROUP]
 
 Restarts PROCESS after it has been stopped (via `stop-process'). If
@@ -1341,46 +1253,44 @@ SIGNAL-GROUP is non-nil also continues the processes in the process group of
 PROCESS.
 ::end:: */
 {
-    VALUE res = sym_t;
-    DECLARE1(proc, PROCESSP);
+    repv res = Qt;
+    rep_DECLARE1(proc, PROCESSP);
     if(PR_STOPPED_P(VPROC(proc)))
     {
-	if(signal_process(VPROC(proc), SIGCONT, !NILP(grp)))
+	if(signal_process(VPROC(proc), SIGCONT, !rep_NILP(grp)))
 	{
 	    PR_SET_STATUS(VPROC(proc), PR_RUNNING);
-	    res = sym_t;
+	    res = Qt;
 	    queue_notify(VPROC(proc));
 	}
     }
     else
     {
-	res = cmd_signal(sym_process_error, list_2(proc, VAL(&not_stopped)));
+	res = Fsignal(Qprocess_error, rep_list_2(proc, rep_VAL(&not_stopped)));
     }
     return(res);
 }
 
-_PR VALUE cmd_process_exit_status(VALUE proc);
-DEFUN("process-exit-status", cmd_process_exit_status, subr_process_exit_status, (VALUE proc), V_Subr1, DOC_process_exit_status) /*
-::doc:process_exit_status::
+DEFUN("process-exit-status", Fprocess_exit_status, Sprocess_exit_status, (repv proc), rep_Subr1) /*
+::doc:Sprocess-exit-status::
 process-exit-status PROCESS
 
 Returns the unprocessed exit-status of the last process to be run on the
 process-object PROCESS. If PROCESS is currently running, return nil.
 ::end:: */
 {
-    VALUE res = sym_nil;
-    DECLARE1(proc, PROCESSP);
+    repv res = Qnil;
+    rep_DECLARE1(proc, PROCESSP);
     if(PR_DEAD_P(VPROC(proc)))
     {
 	if(VPROC(proc)->pr_ExitStatus != -1)
-	    res = MAKE_INT(VPROC(proc)->pr_ExitStatus);
+	    res = rep_MAKE_INT(VPROC(proc)->pr_ExitStatus);
     }
     return(res);
 }
 
-_PR VALUE cmd_process_exit_value(VALUE proc);
-DEFUN("process-exit-value", cmd_process_exit_value, subr_process_exit_value, (VALUE proc), V_Subr1, DOC_process_exit_value) /*
-::doc:process_exit_value::
+DEFUN("process-exit-value", Fprocess_exit_value, Sprocess_exit_value, (repv proc), rep_Subr1) /*
+::doc:Sprocess-exit-value::
 process-exit-value PROCESS
 
 Returns the return-value of the last process to be run on PROCESS, or nil if:
@@ -1389,339 +1299,316 @@ Returns the return-value of the last process to be run on PROCESS, or nil if:
   c) PROCESS exited abnormally
 ::end:: */
 {
-    VALUE res = sym_nil;
-    DECLARE1(proc, PROCESSP);
+    repv res = Qnil;
+    rep_DECLARE1(proc, PROCESSP);
     if((PR_DEAD_P(VPROC(proc)))
        && (VPROC(proc)->pr_ExitStatus != -1))
-	res = MAKE_INT(WEXITSTATUS(VPROC(proc)->pr_ExitStatus));
+	res = rep_MAKE_INT(WEXITSTATUS(VPROC(proc)->pr_ExitStatus));
     return(res);
 }
 
-_PR VALUE cmd_process_id(VALUE proc);
-DEFUN("process-id", cmd_process_id, subr_process_id, (VALUE proc), V_Subr1, DOC_process_id) /*
-::doc:process_id::
+DEFUN("process-id", Fprocess_id, Sprocess_id, (repv proc), rep_Subr1) /*
+::doc:Sprocess-id::
 process-id PROCESS
 
 If PROCESS is running or stopped, return the process-identifier associated
 with it (ie, its pid).
 ::end:: */
 {
-    VALUE res = sym_nil;
-    DECLARE1(proc, PROCESSP);
+    repv res = Qnil;
+    rep_DECLARE1(proc, PROCESSP);
     if(PR_ACTIVE_P(VPROC(proc)))
-	res = MAKE_INT(VPROC(proc)->pr_Pid);
+	res = rep_MAKE_INT(VPROC(proc)->pr_Pid);
     return(res);
 }
 
-_PR VALUE cmd_process_running_p(VALUE proc);
-DEFUN("process-running-p", cmd_process_running_p, subr_process_running_p, (VALUE proc), V_Subr1, DOC_process_running_p) /*
-::doc:process_running_p::
+DEFUN("process-running-p", Fprocess_running_p, Sprocess_running_p, (repv proc), rep_Subr1) /*
+::doc:Sprocess-running-p::
 process-running-p PROCESS
 
 Return t if PROCESS is running.
 ::end:: */
 {
-    VALUE res;
-    DECLARE1(proc, PROCESSP);
+    repv res;
+    rep_DECLARE1(proc, PROCESSP);
     if(PR_RUNNING_P(VPROC(proc)))
-	res = sym_t;
+	res = Qt;
     else
-	res = sym_nil;
+	res = Qnil;
     return(res);
 }
 
-_PR VALUE cmd_process_stopped_p(VALUE proc);
-DEFUN("process-stopped-p", cmd_process_stopped_p, subr_process_stopped_p, (VALUE proc), V_Subr1, DOC_process_stopped_p) /*
-::doc:process_stopped_p::
+DEFUN("process-stopped-p", Fprocess_stopped_p, Sprocess_stopped_p, (repv proc), rep_Subr1) /*
+::doc:Sprocess-stopped-p::
 process-stopped-p PROCESS
 
 Return t if PROCESS has been stopped.
 ::end:: */
 {
-    VALUE res;
-    DECLARE1(proc, PROCESSP);
+    repv res;
+    rep_DECLARE1(proc, PROCESSP);
     if(PR_STOPPED_P(VPROC(proc)))
-	res = sym_t;
+	res = Qt;
     else
-	res = sym_nil;
+	res = Qnil;
     return(res);
 }
 
-_PR VALUE cmd_process_in_use_p(VALUE proc);
-DEFUN("process-in-use-p", cmd_process_in_use_p, subr_process_in_use_p, (VALUE proc), V_Subr1, DOC_process_in_use_p) /*
-::doc:process_in_use_p::
+DEFUN("process-in-use-p", Fprocess_in_use_p, Sprocess_in_use_p, (repv proc), rep_Subr1) /*
+::doc:Sprocess-in-use-p::
 process-in-use-p PROCESS
 
 Similar to `process-running-p' except that this returns t even when the
 process has stopped.
 ::end:: */
 {
-    VALUE res;
-    DECLARE1(proc, PROCESSP);
+    repv res;
+    rep_DECLARE1(proc, PROCESSP);
     if(PR_ACTIVE_P(VPROC(proc)))
-	res = sym_t;
+	res = Qt;
     else
-	res = sym_nil;
+	res = Qnil;
     return(res);
 }
 
-_PR VALUE cmd_processp(VALUE arg);
-DEFUN("processp", cmd_processp, subr_processp, (VALUE arg), V_Subr1, DOC_process_p) /*
-::doc:process_p::
+DEFUN("processp", Fprocessp, Sprocessp, (repv arg), rep_Subr1) /*
+::doc:Sprocess-p::
 processp ARG
 
 Return t is ARG is a process-object.
 ::end:: */
 {
     if(PROCESSP(arg))
-	return(sym_t);
-    return(sym_nil);
+	return(Qt);
+    return(Qnil);
 }
 
-_PR VALUE cmd_process_prog(VALUE proc);
-DEFUN("process-prog", cmd_process_prog, subr_process_prog, (VALUE proc), V_Subr1, DOC_process_prog) /*
-::doc:process_prog::
+DEFUN("process-prog", Fprocess_prog, Sprocess_prog, (repv proc), rep_Subr1) /*
+::doc:Sprocess-prog::
 process-prog PROCESS
 
 Return the name of the program in PROCESS.
 ::end:: */
 {
-    VALUE res;
-    DECLARE1(proc, PROCESSP);
+    repv res;
+    rep_DECLARE1(proc, PROCESSP);
     res = VPROC(proc)->pr_Prog;
     return(res);
 }
 
-_PR VALUE cmd_set_process_prog(VALUE proc, VALUE prog);
-DEFUN("set-process-prog", cmd_set_process_prog, subr_set_process_prog, (VALUE proc, VALUE prog), V_Subr2, DOC_set_process_prog) /*
-::doc:set_process_prog::
+DEFUN("set-process-prog", Fset_process_prog, Sset_process_prog, (repv proc, repv prog), rep_Subr2) /*
+::doc:Sset-process-prog::
 set-process-prog PROCESS PROGRAM
 
 Sets the name of the program to run on PROCESS to FILE.
 ::end:: */
 {
-    DECLARE1(proc, PROCESSP);
-    DECLARE2(prog, STRINGP);
+    rep_DECLARE1(proc, PROCESSP);
+    rep_DECLARE2(prog, rep_STRINGP);
     VPROC(proc)->pr_Prog = prog;
     return(prog);
 }
 
-_PR VALUE cmd_process_args(VALUE proc);
-DEFUN("process-args", cmd_process_args, subr_process_args, (VALUE proc), V_Subr1, DOC_process_args) /*
-::doc:process_args::
+DEFUN("process-args", Fprocess_args, Sprocess_args, (repv proc), rep_Subr1) /*
+::doc:Sprocess-args::
 process-args PROCESS
 
 Return the list of arguments to PROCESS.
 ::end:: */
 {
-    VALUE res;
-    DECLARE1(proc, PROCESSP);
+    repv res;
+    rep_DECLARE1(proc, PROCESSP);
     res = VPROC(proc)->pr_Args;
     return(res);
 }
 
-_PR VALUE cmd_set_process_args(VALUE proc, VALUE args);
-DEFUN("set-process-args", cmd_set_process_args, subr_set_process_args, (VALUE proc, VALUE args), V_Subr2, DOC_set_process_args) /*
-::doc:set_process_args::
+DEFUN("set-process-args", Fset_process_args, Sset_process_args, (repv proc, repv args), rep_Subr2) /*
+::doc:Sset-process-args::
 set-process-args PROCESS ARG-LIST
 
 Set the arguments to PROCESS.
 ::end:: */
 {
-    DECLARE1(proc, PROCESSP);
-    if(!NILP(args) && !CONSP(args))
-	return(signal_arg_error(args, 2));
+    rep_DECLARE1(proc, PROCESSP);
+    if(!rep_NILP(args) && !rep_CONSP(args))
+	return(rep_signal_arg_error(args, 2));
     VPROC(proc)->pr_Args = args;
     return(args);
 }
 
-_PR VALUE cmd_process_output_stream(VALUE proc);
-DEFUN("process-output-stream", cmd_process_output_stream, subr_process_output_stream, (VALUE proc), V_Subr1, DOC_process_output_stream) /*
-::doc:process_output_stream::
+DEFUN("process-output-stream", Fprocess_output_stream, Sprocess_output_stream, (repv proc), rep_Subr1) /*
+::doc:Sprocess-output-stream::
 process-output-stream PROCESS
 
 Return the stream to which all output from PROCESS is sent.
 ::end:: */
 {
-    VALUE res;
-    DECLARE1(proc, PROCESSP);
+    repv res;
+    rep_DECLARE1(proc, PROCESSP);
     res = VPROC(proc)->pr_OutputStream;
     return(res);
 }
 
-_PR VALUE cmd_set_process_output_stream(VALUE proc, VALUE stream);
-DEFUN("set-process-output-stream", cmd_set_process_output_stream, subr_set_process_output_stream, (VALUE proc, VALUE stream), V_Subr2, DOC_set_process_output_stream) /*
-::doc:set_process_output_stream::
+DEFUN("set-process-output-stream", Fset_process_output_stream, Sset_process_output_stream, (repv proc, repv stream), rep_Subr2) /*
+::doc:Sset-process-output-stream::
 set-process-output-stream PROCESS STREAM
 
 Set the output-stream of PROCESS to STREAM. nil means discard all output.
 ::end:: */
 {
-    DECLARE1(proc, PROCESSP);
+    rep_DECLARE1(proc, PROCESSP);
     VPROC(proc)->pr_OutputStream = stream;
     return(stream);
 }
 
-_PR VALUE cmd_process_error_stream(VALUE proc);
-DEFUN("process-error-stream", cmd_process_error_stream, subr_process_error_stream, (VALUE proc), V_Subr1, DOC_process_error_stream) /*
-::doc:process_error_stream::
+DEFUN("process-error-stream", Fprocess_error_stream, Sprocess_error_stream, (repv proc), rep_Subr1) /*
+::doc:Sprocess-error-stream::
 process-error-stream PROCESS
 
 Return the stream to which all standard-error output from PROCESS is sent.
 ::end:: */
 {
-    VALUE res;
-    DECLARE1(proc, PROCESSP);
+    repv res;
+    rep_DECLARE1(proc, PROCESSP);
     res = VPROC(proc)->pr_ErrorStream;
     return(res);
 }
 
-_PR VALUE cmd_set_process_error_stream(VALUE proc, VALUE stream);
-DEFUN("set-process-error-stream", cmd_set_process_error_stream, subr_set_process_error_stream, (VALUE proc, VALUE stream), V_Subr2, DOC_set_process_error_stream) /*
-::doc:set_process_error_stream::
+DEFUN("set-process-error-stream", Fset_process_error_stream, Sset_process_error_stream, (repv proc, repv stream), rep_Subr2) /*
+::doc:Sset-process-error-stream::
 set-process-error-stream PROCESS STREAM
 
 Set the error-stream of PROCESS to STREAM. nil means discard all output.
 ::end:: */
 {
-    DECLARE1(proc, PROCESSP);
+    rep_DECLARE1(proc, PROCESSP);
     VPROC(proc)->pr_ErrorStream = stream;
     return(stream);
 }
 
-_PR VALUE cmd_process_function(VALUE proc);
-DEFUN("process-function", cmd_process_function, subr_process_function, (VALUE proc), V_Subr1, DOC_process_function) /*
-::doc:process_function::
+DEFUN("process-function", Fprocess_function, Sprocess_function, (repv proc), rep_Subr1) /*
+::doc:Sprocess-function::
 process-function PROCESS
 
 Return the function which is called when PROCESS changes state (i.e. it
 exits or is stopped).
 ::end:: */
 {
-    VALUE res;
-    DECLARE1(proc, PROCESSP);
+    repv res;
+    rep_DECLARE1(proc, PROCESSP);
     res = VPROC(proc)->pr_NotifyFun;
     return(res);
 }
 
-_PR VALUE cmd_set_process_function(VALUE proc, VALUE fn);
-DEFUN("set-process-function", cmd_set_process_function, subr_set_process_function, (VALUE proc, VALUE fn), V_Subr2, DOC_set_process_function) /*
-::doc:set_process_function::
+DEFUN("set-process-function", Fset_process_function, Sset_process_function, (repv proc, repv fn), rep_Subr2) /*
+::doc:Sset-process-function::
 set-process-function PROCESS FUNCTION
 
 Set the function which is called when PROCESS changes state to FUNCTION.
 ::end:: */
 {
-    DECLARE1(proc, PROCESSP);
+    rep_DECLARE1(proc, PROCESSP);
     VPROC(proc)->pr_NotifyFun = fn;
     return(fn);
 }
 
-_PR VALUE cmd_process_dir(VALUE proc);
-DEFUN("process-dir", cmd_process_dir, subr_process_dir, (VALUE proc), V_Subr1, DOC_process_dir) /*
-::doc:process_dir::
+DEFUN("process-dir", Fprocess_dir, Sprocess_dir, (repv proc), rep_Subr1) /*
+::doc:Sprocess-dir::
 process-dir PROCESS
 
 Return the name of the directory which becomes the working directory of
 PROCESS when it is started.
 ::end:: */
 {
-    VALUE res;
-    DECLARE1(proc, PROCESSP);
+    repv res;
+    rep_DECLARE1(proc, PROCESSP);
     res = VPROC(proc)->pr_Dir;
     return(res);
 }
 
-_PR VALUE cmd_set_process_dir(VALUE proc, VALUE dir);
-DEFUN("set-process-dir", cmd_set_process_dir, subr_set_process_dir, (VALUE proc, VALUE dir), V_Subr2, DOC_set_process_dir) /*
-::doc:set_process_dir::
+DEFUN("set-process-dir", Fset_process_dir, Sset_process_dir, (repv proc, repv dir), rep_Subr2) /*
+::doc:Sset-process-dir::
 set-process-dir PROCESS DIR
 
 Set the directory of PROCESS to DIR.
 ::end:: */
 {
-    GC_root gc_proc;
-    DECLARE1(proc, PROCESSP);
-    DECLARE2(dir, STRINGP);
+    rep_GC_root gc_proc;
+    rep_DECLARE1(proc, PROCESSP);
+    rep_DECLARE2(dir, rep_STRINGP);
 
     /* Ensure that pr_Dir refers to an absolute local file */
-    PUSHGC(gc_proc, proc);
-    dir = cmd_local_file_name(STRINGP(dir) ? dir : VAL(&dot));
-    POPGC;
-    if(dir && STRINGP(dir))
+    rep_PUSHGC(gc_proc, proc);
+    dir = Flocal_file_name(rep_STRINGP(dir) ? dir : rep_VAL(&dot));
+    rep_POPGC;
+    if(dir && rep_STRINGP(dir))
 	VPROC(proc)->pr_Dir = dir;
     else
-	VPROC(proc)->pr_Dir = sym_nil;
+	VPROC(proc)->pr_Dir = Qnil;
 
     return VPROC(proc)->pr_Dir;;
 }
 
-_PR VALUE cmd_process_connection_type(VALUE proc);
-DEFUN("process-connection-type", cmd_process_connection_type, subr_process_connection_type, (VALUE proc), V_Subr1, DOC_process_connection_type) /*
-::doc:process_connection_type::
+DEFUN("process-connection-type", Fprocess_connection_type, Sprocess_connection_type, (repv proc), rep_Subr1) /*
+::doc:Sprocess-connection-type::
 process-connection-type PROCESS
 
 Returns a symbol defining the type of stream (i.e. pipe or pty) used to
 connect PROCESS with its physical process.
 ::end:: */
 {
-    VALUE res;
-    DECLARE1(proc, PROCESSP);
+    repv res;
+    rep_DECLARE1(proc, PROCESSP);
     res = VPROC(proc)->pr_ConnType;
     return(res);
 }
 
-_PR VALUE cmd_set_process_connection_type(VALUE proc, VALUE type);
-DEFUN("set-process-connection-type", cmd_set_process_connection_type, subr_set_process_connection_type, (VALUE proc, VALUE type), V_Subr2, DOC_set_process_connection_type) /*
-::doc:set_process_connection_type::
+DEFUN("set-process-connection-type", Fset_process_connection_type, Sset_process_connection_type, (repv proc, repv type), rep_Subr2) /*
+::doc:Sset-process-connection-type::
 set-process-connection-type PROCESS TYPE
 
 Define how PROCESS communicates with it's child process, TYPE can be one of
 the following symbols,
   pty		Use a pty
-  pty-echo	Similar to `pty' but the ECHO flag is set in the slave
   pipe		Two pipes are used
 
 This function can only be used when PROCESS is not in use.
 ::end:: */
 {
-    DECLARE1(proc, PROCESSP);
+    rep_DECLARE1(proc, PROCESSP);
     if(PR_ACTIVE_P(VPROC(proc)))
-	type = cmd_signal(sym_process_error, list_2(VAL(&in_use), proc));
+	type = Fsignal(Qprocess_error, rep_list_2(rep_VAL(&in_use), proc));
     else
 	VPROC(proc)->pr_ConnType = type;
     return(type);
 }
 
-_PR VALUE cmd_active_processes(void);
-DEFUN("active-processes", cmd_active_processes, subr_active_processes, (void),
-      V_Subr0, DOC_active_processes) /*
-::doc:active_processes::
+DEFUN("active-processes", Factive_processes, Sactive_processes, (void),
+      rep_Subr0) /*
+::doc:Sactive-processes::
 active-processes
 
 Return a list containing all active process objects.
 ::end:: */
 {
-    VALUE head = sym_nil;
-    VALUE *ptr = &head;
+    repv head = Qnil;
+    repv *ptr = &head;
     struct Proc *p = process_chain;
     while(p != 0)
     {
 	if(PR_ACTIVE_P(p))
 	{
-	    *ptr = cmd_cons(VAL(p), sym_nil);
-	    ptr = &(VCDR(*ptr));
+	    *ptr = Fcons(rep_VAL(p), Qnil);
+	    ptr = &(rep_CDR(*ptr));
 	}
 	p = p->pr_Next;
     }
     return head;
 }
 
-_PR VALUE cmd_accept_process_output(VALUE secs, VALUE msecs);
-DEFUN("accept-process-output", cmd_accept_process_output,
-      subr_accept_process_output, (VALUE secs, VALUE msecs), V_Subr2,
-      DOC_accept_process_output) /*
-::doc:accept_process_output::
+DEFUN("accept-process-output", Faccept_process_output,
+      Saccept_process_output, (repv secs, repv msecs), rep_Subr2) /*
+::doc:Saccept-process-output::
 accept-process-output [SECONDS] [MILLISECONDS]
 
 Wait SECONDS plus MILLISECONDS for output from any asynchronous subprocesses.
@@ -1730,25 +1617,25 @@ If any arrives, process it, then return nil. Otherwise return t.
 Note that output includes notification of process termination.
 ::end:: */
 {
-    VALUE result = sym_t;
+    repv result = Qt;
     /* Only wait for output if nothing already waiting. */
     if(!got_sigchld && !notify_chain)
     {
-	result = sys_accept_input((INTP(secs) ? VINT(secs) * 1000 : 0)
-				  + (INTP(msecs) ? VINT(msecs) : 0),
+	result = rep_accept_input((rep_INTP(secs) ? rep_INT(secs) * 1000 : 0)
+				  + (rep_INTP(msecs) ? rep_INT(msecs) : 0),
 				  read_from_process);
     }
     if(got_sigchld || notify_chain)
     {
-	result = sym_nil;
-	proc_periodically();
+	result = Qnil;
+	rep_proc_periodically();
     }
     return result;
 }
 
 /* Turns on or off restarted system calls */
 void
-sigchld_restart(bool flag)
+rep_sigchld_restart(rep_bool flag)
 {
     if(flag)
     {
@@ -1774,7 +1661,7 @@ sigchld_restart(bool flag)
 }
 
 void
-proc_init(void)
+rep_proc_init(void)
 {
     /* Setup SIGCHLD stuff.  */
     sigemptyset(&chld_sigset);
@@ -1793,50 +1680,46 @@ proc_init(void)
 
     setpgid(0, 0);
 
-    INTERN(pipe);
-    INTERN(pty);
-    INTERN(pty_echo);
-    ADD_SUBR(subr_make_process);
-    ADD_SUBR(subr_start_process);
-    ADD_SUBR(subr_call_process);
-    ADD_SUBR(subr_call_process_area);
-    ADD_SUBR(subr_interrupt_process);
-    ADD_SUBR(subr_kill_process);
-    ADD_SUBR(subr_stop_process);
-    ADD_SUBR(subr_continue_process);
-    ADD_SUBR(subr_process_exit_status);
-    ADD_SUBR(subr_process_exit_value);
-    ADD_SUBR(subr_process_id);
-    ADD_SUBR(subr_process_running_p);
-    ADD_SUBR(subr_process_stopped_p);
-    ADD_SUBR(subr_process_in_use_p);
-    ADD_SUBR(subr_processp);
-    ADD_SUBR(subr_process_prog);
-    ADD_SUBR(subr_set_process_prog);
-    ADD_SUBR(subr_process_args);
-    ADD_SUBR(subr_set_process_args);
-    ADD_SUBR(subr_process_output_stream);
-    ADD_SUBR(subr_set_process_output_stream);
-    ADD_SUBR(subr_process_error_stream);
-    ADD_SUBR(subr_set_process_error_stream);
-    ADD_SUBR(subr_process_function);
-    ADD_SUBR(subr_set_process_function);
-    ADD_SUBR(subr_process_dir);
-    ADD_SUBR(subr_set_process_dir);
-    ADD_SUBR(subr_process_connection_type);
-    ADD_SUBR(subr_set_process_connection_type);
-    ADD_SUBR(subr_active_processes);
-    ADD_SUBR(subr_accept_process_output);
+    rep_INTERN(pipe);
+    rep_INTERN(pty);
+    rep_ADD_SUBR(Smake_process);
+    rep_ADD_SUBR(Sstart_process);
+    rep_ADD_SUBR(Scall_process);
+    rep_ADD_SUBR(Sinterrupt_process);
+    rep_ADD_SUBR(Skill_process);
+    rep_ADD_SUBR(Sstop_process);
+    rep_ADD_SUBR(Scontinue_process);
+    rep_ADD_SUBR(Sprocess_exit_status);
+    rep_ADD_SUBR(Sprocess_exit_value);
+    rep_ADD_SUBR(Sprocess_id);
+    rep_ADD_SUBR(Sprocess_running_p);
+    rep_ADD_SUBR(Sprocess_stopped_p);
+    rep_ADD_SUBR(Sprocess_in_use_p);
+    rep_ADD_SUBR(Sprocessp);
+    rep_ADD_SUBR(Sprocess_prog);
+    rep_ADD_SUBR(Sset_process_prog);
+    rep_ADD_SUBR(Sprocess_args);
+    rep_ADD_SUBR(Sset_process_args);
+    rep_ADD_SUBR(Sprocess_output_stream);
+    rep_ADD_SUBR(Sset_process_output_stream);
+    rep_ADD_SUBR(Sprocess_error_stream);
+    rep_ADD_SUBR(Sset_process_error_stream);
+    rep_ADD_SUBR(Sprocess_function);
+    rep_ADD_SUBR(Sset_process_function);
+    rep_ADD_SUBR(Sprocess_dir);
+    rep_ADD_SUBR(Sset_process_dir);
+    rep_ADD_SUBR(Sprocess_connection_type);
+    rep_ADD_SUBR(Sset_process_connection_type);
+    rep_ADD_SUBR(Sactive_processes);
+    rep_ADD_SUBR(Saccept_process_output);
 
-    /* Initialise the type information. */
-    data_types[V_Process].compare = ptr_cmp;
-    data_types[V_Process].princ = proc_prin;
-    data_types[V_Process].print = proc_prin;
-    data_types[V_Process].sweep = proc_sweep;
+    rep_register_type(rep_Process, "subprocess", rep_ptr_cmp, proc_prin, proc_prin,
+		  proc_sweep, proc_mark, mark_active_processes,
+		  0, 0, proc_putc, proc_puts, 0, 0);
 }
 
 void
-proc_kill(void)
+rep_proc_kill(void)
 {
     struct Proc *pr;
     pr = process_chain;

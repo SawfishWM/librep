@@ -131,9 +131,6 @@ their position in that file.")
 (defvar comp-max-inline-depth 8
   "The maximum nesting of open-coded function applications.")
 
-(defvar comp-batch-compile nil
-  "When t, all output goes to standard output.")
-
 (defvar comp-constant-functions
   '(+ - * / % mod max min 1+ 1- car cdr assoc assq rassoc rassq nth nthcdr
     last member memq arrayp aref substring concat length elt lognot not
@@ -156,7 +153,7 @@ value when given the same inputs. Used when constant folding.")
 
 ;; Compilation "environment"
 (defvar comp-macro-env			;alist of (NAME . MACRO-DEF)
-  '((eval-when-compile . (lambda (x) (eval x)))))
+  '((eval-when-compile . (lambda (x) (list 'quote (eval x))))))
 (defvar comp-const-env '())		;alist of (NAME . CONST-DEF)
 (defvar comp-inline-env '())		;alist of (NAME . FUNCTION-VALUE)
 (defvar comp-defuns nil)		;alist of (NAME REQ OPT RESTP)
@@ -174,10 +171,11 @@ value when given the same inputs. Used when constant folding.")
 
 (defun comp-message (fmt &rest args)
   (when (null comp-output-stream)
-    (if comp-batch-compile
+    (if (or batch-mode (not (featurep 'jade)))
 	(setq comp-output-stream (stdout-file))
       (setq comp-output-stream (open-buffer "*compilation-output*"))))
-  (when (and (bufferp comp-output-stream)
+  (when (and (featurep 'jade)
+	     (bufferp comp-output-stream)
 	     (not (eq (current-buffer) comp-output-stream)))
     (goto-buffer comp-output-stream)
     (goto (end-of-buffer)))
@@ -272,7 +270,7 @@ value when given the same inputs. Used when constant folding.")
 
 (defvar comp-top-level-compiled
   '(if cond when unless let let* catch unwind-protect condition-case
-    with-buffer with-window with-view progn prog1 prog2 while and or)
+    progn prog1 prog2 while and or)
   "List of symbols, when the name of the function called by a top-level form
 is one of these that form is compiled.")
 
@@ -290,6 +288,7 @@ is one of these that form is compiled.")
        (comp-defvars '())
        (comp-bindings '())
        (comp-output-stream nil)
+       (temp-file (make-temp-name))
        src-file dst-file form)
     (message (concat "Compiling " file-name "...") t)
     (when (setq src-file (open-file file-name 'read))
@@ -323,18 +322,14 @@ is one of these that form is compiled.")
 	    (end-of-stream))
 	(close-file src-file))
       (when (and (setq src-file (open-file file-name 'read))
-		 (setq dst-file (open-file (concat file-name
-						   (if (string-match
-							"\\.jl$" file-name)
-						       ?c ".jlc")) 'write)))
+		 (setq dst-file (open-file temp-file 'write)))
 	(condition-case error-info
 	    (unwind-protect
 		(progn
 		  ;; Pass 2. The actual compile
 		  (format dst-file
-			  ";; Source file: %s\n(validate-byte-code %d %d %d %d)\n"
-			  file-name bytecode-major bytecode-minor
-			  (major-version-number) (minor-version-number))
+			  ";; Source file: %s\n(validate-byte-code %d %d)\n"
+			  file-name bytecode-major bytecode-minor)
 		  (condition-case nil
 		      (while t
 			(when (setq form (read src-file))
@@ -360,6 +355,10 @@ is one of these that form is compiled.")
 	       (delete-file fname)))
 	   ;; Hack to signal error without entering the debugger (again)
 	   (throw 'error error-info)))
+	;; Copy the file to its correct location
+	(copy-file temp-file (concat file-name (if (string-match
+						    "\\.jl$" file-name)
+						   ?c ".jlc")))
 	t))))
 
 ;;;###autoload
@@ -387,23 +386,32 @@ EXCLUDE-LIST is a list of files which shouldn't be compiled."
   '("autoload.jl"))
 
 ;;;###autoload
-(defun compile-lisp-lib (&optional force-p)
+(defun compile-lisp-lib (&optional directory force-p)
   "Recompile all out of date files in the lisp library directory. If FORCE-P
 is non-nil it's as though all files were out of date.
 This makes sure that all doc strings are written to their special file and
 that files which shouldn't be compiled aren't."
-  (interactive "P")
+  (interactive "\nP")
   (let
-      ((comp-write-docs t)
-       (comp-batch-compile t))
-    (compile-directory lisp-lib-directory force-p compile-lib-exclude-list)))
+      ((comp-write-docs t))
+    (compile-directory (or directory lisp-lib-directory)
+		       force-p compile-lib-exclude-list)))
+
+;; Call like `rep --batch -l compiler -f compile-lib-batch [--force] DIR'
+(defun compile-lib-batch ()
+  (let
+      ((force (when (equal (car command-line-args) "--force")
+		(setq command-line-args (cdr command-line-args))
+		t))
+       (dir (car command-line-args)))
+    (setq command-line-args (cdr command-line-args))
+    (compile-lisp-lib dir force)))
 
 ;; Used when bootstrapping from the Makefile, recompiles compiler.jl if
 ;; it's out of date
 (defun compile-compiler ()
   (let
       ((comp-write-docs t)
-       (comp-batch-compile t)
        (file (expand-file-name "compiler.jl" lisp-lib-directory)))
     (when (or (not (file-exists-p (concat file ?c)))
 	      (file-newer-than-file-p file (concat file ?c)))
@@ -421,7 +429,7 @@ that files which shouldn't be compiled aren't."
        (comp-output-stream nil))
     (when (assq 'jade-byte-code fbody)
       (comp-error "Function already compiled" function))
-    (fset function (comp-compile-lambda fbody)))
+    (fset function (comp-compile-lambda fbody nil function)))
   function)
     
 
@@ -443,10 +451,12 @@ that files which shouldn't be compiled aren't."
 	  (rplaca tmp nil)
 	  (rplacd tmp nil))
 	(list 'defun (nth 1 form)
-	      (comp-compile-lambda (cons 'lambda (nthcdr 2 form))))))
+	      (comp-compile-lambda (cons 'lambda (nthcdr 2 form))
+				   nil (nth 1 form)))))
      ((eq fun 'defmacro)
       (let
-	  ((code (comp-compile-lambda (cons 'lambda (nthcdr 2 form)) t))
+	  ((code (comp-compile-lambda (cons 'lambda (nthcdr 2 form))
+				      t (nth 1 form)))
 	   (tmp (assq (nth 1 form) comp-macro-env))
 	   (comp-current-fun (nth 1 form)))
 	(if tmp
@@ -457,9 +467,11 @@ that files which shouldn't be compiled aren't."
       (when comp-write-docs
 	(cond
 	 ((stringp (nth 3 form))
-	  (rplaca (nthcdr 3 form) (add-documentation (nth 3 form))))
+	  (add-documentation (nth 1 form) (nth 3 form))
+	  (setq form (delq (nth 3 form) form)))
 	 ((stringp (nth 4 form))
-	  (rplaca (nthcdr 4 form) (add-documentation (nth 4 form))))))
+	  (add-documentation (nth 1 form) (nth 4 form))
+	  (setq form (delq (nth 4 form) form)))))
       (unless (assq (nth 1 form) comp-inline-env)
 	(comp-error "Inline function wasn't in environment" (nth 1 form)))
       form)
@@ -468,7 +480,8 @@ that files which shouldn't be compiled aren't."
 	  ((value (eval (nth 2 form)))
 	   (doc (nth 3 form)))
 	(when (and comp-write-docs (stringp doc))
-	  (rplaca (nthcdr 3 form) (add-documentation doc)))
+	  (add-documentation (nth 1 form) doc t)
+	  (setq form (delq (nth 3 form) form)))
 	(unless (assq (nth 1 form) comp-const-env)
 	  (comp-error "Constant wasn't in environment" (nth 1 form))))
       form)
@@ -481,7 +494,8 @@ that files which shouldn't be compiled aren't."
 	  ;; Compile the definition. A good idea?
 	  (rplaca (nthcdr 2 form) (compile-form (nth 2 form))))
 	(when (and comp-write-docs (stringp doc))
-	  (rplaca (nthcdr 3 form) (add-documentation doc))))
+	  (add-documentation (nth 1 form) doc t)
+	  (setq form (delq (nth 3 form) form))))
       form)
      ((eq fun 'require)
       (eval form)
@@ -695,16 +709,14 @@ that files which shouldn't be compiled aren't."
 
 ;; From LIST, `(lambda (ARGS) [DOC-STRING] BODY ...)' returns a byte-code
 ;; vector
-(defun comp-compile-lambda (list &optional macrop)
+(defun comp-compile-lambda (list &optional macrop name)
   (let
       ((args (nth 1 list))
        (body (nthcdr 2 list))
        doc interactive form)
     (when (stringp (car body))
-      (setq doc (if comp-write-docs
-		    (add-documentation (nth 2 list))
-		  (nth 2 list))
-	    body (cdr body)))
+      (setq doc (nth 2 list))
+      (setq body (cdr body)))
     (when (eq (car (car body)) 'interactive)
       ;; If we have (interactive), set the interactive spec to t
       ;; so that it's not ignored
@@ -714,6 +726,8 @@ that files which shouldn't be compiled aren't."
       (when (and (consp interactive)
 		 (memq (car interactive) comp-top-level-compiled))
 	(setq interactive (compile-form interactive))))
+    (when (and comp-write-docs doc name)
+      (add-documentation name doc))
     (when (setq form (let
 			 ((comp-bindings
 			   (nconc (comp-get-lambda-vars args) comp-bindings)))
@@ -1421,6 +1435,14 @@ that files which shouldn't be compiled aren't."
     (comp-write-op op-pop)
     (comp-dec-stack)))
 
+(put 'with-object 'compile-fun 'comp-compile-with-object)
+(defun comp-compile-with-object (form)
+  (comp-compile-form (nth 1 form))
+  (comp-write-op op-bindobj)
+  (comp-dec-stack)
+  (comp-compile-body (nthcdr 2 form))
+  (comp-write-op op-unbind))
+
 (put 'list 'compile-fun 'comp-compile-list)
 (defun comp-compile-list (form)
   (let
@@ -1470,15 +1492,6 @@ that files which shouldn't be compiled aren't."
     (comp-dec-stack)
     (comp-compile-body (nthcdr 2 form))
     (comp-write-op op-unbind)))
-
-(put 'with-buffer 'compile-fun 'comp-compile-with-form)
-(put 'with-buffer 'compile-opcode op-bind-buffer)
-
-(put 'with-window 'compile-fun 'comp-compile-with-form)
-(put 'with-window 'compile-opcode op-bind-window)
-
-(put 'with-view 'compile-fun 'comp-compile-with-form)
-(put 'with-view 'compile-opcode op-bind-view)
 
 (put '- 'compile-fun 'comp-compile-minus)
 (put '- 'compile-opcode op-sub)
@@ -1740,23 +1753,4 @@ that files which shouldn't be compiled aren't."
   (put 'macrop 'compile-fun 'comp-compile-1-args)
   (put 'macrop 'compile-opcode op-macrop)
   (put 'bytecodep 'compile-fun 'comp-compile-1-args)
-  (put 'bytecodep 'compile-opcode op-bytecodep)
-
-  (put 'set-current-buffer 'compile-fun 'comp-compile-2-args)
-  (put 'set-current-buffer 'compile-opcode op-set-current-buffer)
-  (put 'current-buffer 'compile-fun 'comp-compile-1-args)
-  (put 'current-buffer 'compile-opcode op-current-buffer)
-  (put 'bufferp 'compile-fun 'comp-compile-1-args)
-  (put 'bufferp 'compile-opcode op-bufferp)
-  (put 'markp 'compile-fun 'comp-compile-1-args)
-  (put 'markp 'compile-opcode op-markp)
-  (put 'windowp 'compile-fun 'comp-compile-1-args)
-  (put 'windowp 'compile-opcode op-windowp)
-  (put 'viewp 'compile-fun 'comp-compile-1-args)
-  (put 'viewp 'compile-opcode op-viewp)
-  (put 'current-view 'compile-fun 'comp-compile-1-args)
-  (put 'current-view 'compile-opcode op-current-view)
-  (put 'pos 'compile-fun 'comp-compile-2-args)
-  (put 'pos 'compile-opcode op-pos)
-  (put 'posp 'compile-fun 'comp-compile-1-args)
-  (put 'posp 'compile-opcode op-posp))
+  (put 'bytecodep 'compile-opcode op-bytecodep))

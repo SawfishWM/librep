@@ -18,93 +18,88 @@
 # along with Jade; see the file COPYING.  If not, write to
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-include ../Makedefs
+top_builddir=..
+VPATH=@top_srcdir@/src:.
 
-top_srcdir=@top_srcdir@
-srcdir=@srcdir@
-VPATH=@top_srcdir@/src:@top_srcdir@/lib-src:../lib:.
-
-JADE_LIBOBJS=@JADE_LIBOBJS@
-
-# Check if we're building a dumped binary
-ifeq ($(notdir $(shell pwd)), jaded)
-  DUMPED_JADE = 1
-else
-  DUMPED_JADE = 0
-endif
-
-COMMON_SRCS =	buffers.c commands.c debug-buffer.c edit.c editcommands.c \
-		extent.c faces.c files.c find.c glyphs.c housekeeping.c \
-		keys.c lisp.c lispcmds.c lispmach.c main.c misc.c movement.c \
-		redisplay.c regexp.c regjade.c regsub.c streams.c \
-		symbols.c undo.c values.c views.c windows.c
-COMMON_HDRS =	jade.h edit.h lisp.h value.h keys.h stringmem.h \
-		revision.h regexp.h
-
-X11_SRCS =	x11_keys.c x11_main.c x11_misc.c x11_windows.c
-X11_HDRS =	x11_defs.h x11_windowsys.h
-
+COMMON_SRCS =	debug-buffer.c files.c find.c lisp.c lispcmds.c lispmach.c \
+		main.c message.c misc.c regexp.c regsub.c streams.c \
+		symbols.c values.c
 UNIX_SRCS =	unix_dl.c unix_files.c unix_main.c unix_processes.c
-UNIX_HDRS =	unix_defs.h
 
-SRCS = $(COMMON_SRCS)
-HDRS = $(COMMON_HDRS)
+INSTALL_HDRS = rep.h rep_lisp.h rep_regexp.h rep_subrs.h
 
-ifneq ($(HAVE_X11), 0)
- SRCS += $(X11_SRCS)
- HDRS += $(X11_HDRS)
-endif
+SRCS = $(COMMON_SRCS) $(UNIX_SRCS)
+OBJS = $(SRCS:.c=.lo)
 
-ifneq ($(HAVE_UNIX), 0)
- SRCS += $(UNIX_SRCS)
- HDRS += $(UNIX_HDRS)
-endif
+SDBM_SRCS = sdbm.c sdbm_pair.c sdbm_hash.c
+SDBM_OBJS = $(SDBM_SRCS:.c=.lo)
 
-OBJS = $(SRCS:.c=.o)
+DL_SRCS = test-dl.c repsdbm.c
+DL_OBJS = libtest-dl.la libsdbm.la
 
-ifeq ($(DUMPED_JADE), 1)
- CFLAGS := $(CFLAGS) -DDUMPED
- DUMP_FLAGS := @dump_flags@
- DUMPED_IN  := $(dumped_lisp_files)
- DUMPED_SRC := $(addprefix ../lisp/, $(addsuffix .jl, $(DUMPED_IN)))
- DUMPED_CMP := $(DUMPED_SRC:.jl=.jlc)
- DUMPED_ASM := dumped.s
- DUMPED_OBJ := $(DUMPED_ASM:.s=.o)
- OBJS       += $(DUMPED_OBJ)
-endif
+REP_SRCS =	rep.c
+REP_OBJS =	$(REP_SRCS:.c=.o)
 
-ifneq ($(HAVE_X11), 0)
- LIBS += $(X11LIBS)
-endif
+all : libxsdbm.la librep.la $(DL_OBJS) rep rep-config
 
-ifeq ($(DUMPED_JADE), 0)
- all : jade
-else
- all : jaded
-endif
+libxsdbm.la : $(SDBM_OBJS)
+	$(LIBTOOL) $(CC) $(LDFLAGS) -o $@ $^ -rpath $(libdir)
 
-jade : jade_protos.h doc-strings.h $(OBJS) $(JADE_LIBOBJS) $(LIBOBJS)
-	$(CC) $(LDFLAGS) $(DL_LDFLAGS) -o jade $(OBJS) \
-	  $(JADE_LIBOBJS) $(LIBOBJS) $(LIBS)
+librep.la : $(OBJS)
+	$(LIBTOOL) $(CC) $(LDFLAGS) -o $@ $^ -rpath $(libdir)
 
-jaded : jade_protos.h doc-strings.h $(OBJS) $(JADE_LIBOBJS) $(LIBOBJS)
-	$(CC) $(LDFLAGS) $(DL_LDFLAGS) -o jaded $(OBJS) \
-	  $(JADE_LIBOBJS) $(LIBOBJS) $(LIBS)
+rep : $(REP_OBJS) librep.la $(LIBOBJS)
+	$(LIBTOOL) $(CC) -export-dynamic $(CPPFLAGS) $(CFLAGS) -o $@ \
+	  $(REP_OBJS) librep.la $(LIBOBJS) $(LIBS)
 
-ifeq ($(DUMPED_JADE), 1)
-$(DUMPED_ASM) : $(DUMPED_CMP)
-	JADELISPLIB=../lisp ../jade/jade -batch \
-	  -l dump -f dump-batch $(DUMP_FLAGS) -o $@ $(dumped_lisp_files)
+install : all installdirs
+	$(LIBTOOL) cp librep.la ${libdir}
+	$(LIBTOOL) -n --finish ${libdir}
+	$(LIBTOOL) cp rep ${bindir}
+	$(LIBTOOL) cp repdoc ${bindir}
+	$(INSTALL_PROGRAM) rep-config ${bindir}
+	for dl in $(DL_OBJS); do \
+	  $(LIBTOOL) cp $$dl ${repexecdir}; \
+	done
+	for i in $(INSTALL_HDRS); do \
+	  $(INSTALL_DATA) $$i $(includedir); \
+	done
 
-$(DUMPED_CMP) : $(DUMPED_SRC)
-	(cd $(top_srcdir)/lisp && $(MAKE) lisp)
-endif
+installdirs : $(top_srcdir)/mkinstalldirs
+	$(SHELL) $(top_srcdir)/mkinstalldirs $(libdir) $(bindir) \
+	  $(repexecdir) $(includedir)
+
+uninstall :
+	$(LIBTOOL) rm ${libdir}/librep.la
+	$(LIBTOOL) rm ${bindir}/rep
+	$(LIBTOOL) rm ${bindir}/repdoc
+	rm ${bindir}/rep-config
+	for dl in $(DL_OBJS); do \
+	  $(LIBTOOL) rm ${repexecdir}/$$dl; \
+	done
+	for i in $(INSTALL_HDRS); do \
+	  rm $(includedir)/$$i; \
+	done
+
+rep-config : rep-config.sh
+	$(SHELL) $< "${prefix}" "${exec_prefix}" "${version}" "${LIBS}" >$@
+	chmod +x $@
+
+repdoc : repdoc.o libxsdbm.la
+	$(LIBTOOL) $(CC) -static $(LDFLAGS) -o $@ repdoc.o libxsdbm.la
+
+libtest-dl.la : test-dl.c
+
+libsdbm.la : $(SDBM_OBJS) repsdbm.lo
+	$(LIBTOOL) $(CC) $(LDFLAGS) -export-dynamic -o $@ \
+	 $(SDBM_OBJS) repsdbm.lo -rpath $(repexecdir)
 
 clean :
-	rm -f *~ *.o build.h core
+	rm -f *~ *.o *.lo *.la build.h
+	rm -f repdoc core rep
 
 realclean : clean
-	rm -f .*.d jade jaded jadeclient makedoc stripproto Makefile
-	rm -f dump.out dumped.s
+	rm -f .*.d Makefile rep.h dump.out dumped.s rep-config
+	rm -rf .libs
 
-include $(SRCS:%.c=.%.d) $(JADE_LIBOBJS:%.o=.%.d)
+include $(SRCS:%.c=.%.d) $(DL_SRCS:%.c=.%.d) $(REP_SRCS:%.c=.%.d)

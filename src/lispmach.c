@@ -39,16 +39,14 @@ char *alloca ();
 /* Define this to get a list of byte-code/frequency of use */
 #undef BYTE_CODE_HISTOGRAM
 
-#include "jade.h"
-#include <lib/jade_protos.h>
+#include "repint.h"
+
 #include "bytecodes.h"
 
 #include <assert.h>
 
-_PR void lispmach_init(void);
-_PR void lispmach_kill(void);
 
-_PR VALUE sym_bytecode_error;
+
 DEFSYM(bytecode_error, "bytecode-error");
 DEFSTRING(err_bytecode_error, "Invalid byte code version");
 DEFSTRING(unknown_op, "Unknown lisp opcode");
@@ -57,6 +55,9 @@ DEFSTRING(unknown_op, "Unknown lisp opcode");
 static u_long byte_code_usage[256];
 #endif
 
+
+/* Bindings */
+
 /* Unbind one level of the BIND-STACK and return the new head of the stack.
    Each item in the BIND-STACK may be one of:
 	(t . FORM)
@@ -64,63 +65,56 @@ static u_long byte_code_usage[256];
 	(BUFFER . VIEW)
 		install BUFFER as current in VIEW
 	((SYM . OLD-VAL) ...)
-		list of symbol bindings to undo with unbind_symbols()
+		list of symbol bindings to undo with rep_unbind_symbols()
 	(VIEW . WINDOW)
 		set VIEW as current in its window
 	WINDOW
 		set WINDOW as current.
 	(PC . STACK-DEPTH)
 		not unbound here; install exception handler at PC */
-static inline VALUE
-unbind_one_level(VALUE bind_stack)
+inline void
+rep_unbind_object(repv item)
 {
-    if(CONSP(bind_stack))
+    if(rep_CONSP(item))
     {
-	VALUE item = VCAR(bind_stack);
-	if(CONSP(item))
+	if(rep_CAR(item) == Qt)
 	{
-	    if(VCAR(item) == sym_t)
-	    {
-		/* unwind-protect protection forms. */
-		cmd_eval(VCDR(item));
-	    }
-	    else if(BUFFERP(VCAR(item)) && VIEWP(VCDR(item)))
-	    {
-		/* (BUFFER . VIEW)
-		   reinstall BUFFER in VIEW */
-		swap_buffers(VVIEW(VCDR(item)), VTX(VCAR(item)));
-	    }
-	    else if(CONSP(VCAR(item)))
-	    {
-		/* A set of symbol bindings (let or let*). */
-		unbind_symbols(item);
-	    }
-	    else if(VIEWP(VCAR(item)) && WINDOWP(VCDR(item)))
-	    {
-		/* (VIEW . WINDOW) */
-		VW *vw = VVIEW(VCAR(item));
-		WIN *win = VWIN(VCDR(item));
-		if(vw->vw_Win && vw->vw_Win->w_Window != WINDOW_NIL)
-		{
-		    vw->vw_Win->w_CurrVW = vw;
-		    curr_win = win;
-		    curr_vw = curr_win->w_CurrVW;
-		}
-	    }
+	    /* unwind-protect protection forms. */
+	    Feval(rep_CDR(item));
 	}
-	else if(WINDOWP(item))
+	else if(rep_CONSP(rep_CAR(item)))
 	{
-	    /* Reinstall WINDOW */
-	    if(VWIN(item)->w_Window != WINDOW_NIL)
-	    {
-		curr_win = VWIN(item);
-		curr_vw = curr_win->w_CurrVW;
-	    }
+	    /* A set of symbol bindings (let or let*). */
+	    rep_unbind_symbols(item);
 	}
-	return VCDR(bind_stack);
+	else
+	{
+	    rep_type *t = rep_get_data_type(rep_TYPE(rep_CAR(item)));
+	    if (t->unbind != 0)
+		t->unbind(item);
+	}
     }
-    return sym_nil;
+    else
+    {
+	rep_type *t = rep_get_data_type(rep_TYPE(item));
+	if (t->unbind != 0)
+	    t->unbind(item);
+    }
 }
+
+/* Bind one object, returning the handle to later unbind by. */
+inline repv
+rep_bind_object(repv obj)
+{
+    rep_type *t = rep_get_data_type(rep_TYPE(obj));
+    if (t->bind != 0)
+	return t->bind(obj);
+    else
+	return Qnil;
+}
+
+
+/* Lisp VM. */
 
 #define TOP	    (*stackp)
 #define RET_POP	    (*stackp--)
@@ -158,16 +152,15 @@ unbind_one_level(VALUE bind_stack)
    piece of code. */
 #define CASE_OP_ARG(op)							\
 	case op+7:							\
-	    FETCH2(arg); goto CONCAT(op_, op);				\
+	    FETCH2(arg); goto rep_CONCAT(op_, op);			\
 	case op: case op+1: case op+2: case op+3: case op+4: case op+5:	\
-	    arg = c - op; goto CONCAT(op_, op);				\
+	    arg = c - op; goto rep_CONCAT(op_, op);			\
 	case op+6:							\
 	    arg = FETCH;						\
-	CONCAT(op_, op):
+	rep_CONCAT(op_, op):
 
-_PR VALUE cmd_jade_byte_code(VALUE code, VALUE consts, VALUE stkreq);
-DEFUN("jade-byte-code", cmd_jade_byte_code, subr_jade_byte_code, (VALUE code, VALUE consts, VALUE stkreq), V_Subr3, DOC_jade_byte_code) /*
-::doc:jade_byte_code::
+DEFUN("jade-byte-code", Fjade_byte_code, Sjade_byte_code, (repv code, repv consts, repv stkreq), rep_Subr3) /*
+::doc:Sjade-byte-code::
 jade-byte-code CODE-STRING CONST-VEC MAX-STACK
 
 Evaluates the string of byte codes CODE-STRING, the constants that it
@@ -180,31 +173,31 @@ of byte code. See the functions `compile-file', `compile-directory' and
 `compile-lisp-lib' for more details.
 ::end:: */
 {
-    VALUE *stackbase;
-    register VALUE *stackp;
+    repv *stackbase;
+    register repv *stackp;
     /* This holds a list of sets of bindings, it can also hold the form of
        an unwind-protect that always gets eval'd (when the car is t).  */
-    VALUE bindstack = sym_nil;
+    repv bindstack = Qnil;
     register u_char *pc;
     u_char c;
-    GC_root gc_code, gc_consts, gc_bindstack;
+    rep_GC_root gc_code, gc_consts, gc_bindstack;
     /* The `gcv_N' field is only filled in with the stack-size when there's
        a chance of gc.	*/
-    GC_n_roots gc_stackbase;
+    rep_GC_n_roots gc_stackbase;
 
-    DECLARE1(code, STRINGP);
-    DECLARE2(consts, VECTORP);
-    DECLARE3(stkreq, INTP);
+    rep_DECLARE1(code, rep_STRINGP);
+    rep_DECLARE2(consts, rep_VECTORP);
+    rep_DECLARE3(stkreq, rep_INTP);
 
-    stackbase = alloca(sizeof(VALUE) * VINT(stkreq));
+    stackbase = alloca(sizeof(repv) * rep_INT(stkreq));
 
     stackp = stackbase - 1;
-    PUSHGC(gc_code, code);
-    PUSHGC(gc_consts, consts);
-    PUSHGC(gc_bindstack, bindstack);
-    PUSHGCN(gc_stackbase, stackbase, 0);
+    rep_PUSHGC(gc_code, code);
+    rep_PUSHGC(gc_consts, consts);
+    rep_PUSHGC(gc_bindstack, bindstack);
+    rep_PUSHGCN(gc_stackbase, stackbase, 0);
 
-    pc = VSTR(code);
+    pc = rep_STR(code);
 fetch:
     while((c = FETCH) != 0)
     {
@@ -214,14 +207,14 @@ fetch:
 	switch(c)
 	{
 	    u_short arg;
-	    VALUE tmp, tmp2;
+	    repv tmp, tmp2;
 
 	CASE_OP_ARG(OP_CALL)
 #ifdef MINSTACK
 	    if(STK_SIZE <= MINSTACK)
 	    {
 		STK_WARN("lisp-code");
-		TOP = cmd_signal(sym_stack_error, sym_nil);
+		TOP = Fsignal(Qstack_error, Qnil);
 		goto quit;
 	    }
 #endif
@@ -229,176 +222,176 @@ fetch:
 	       this just makes things a bit easier. */
 	    POPN(arg);
 	    tmp = TOP;
-	    if(SYMBOLP(tmp))
+	    if(rep_SYMBOLP(tmp))
 	    {
-		if(VSYM(tmp)->car & SF_DEBUG)
-		    single_step_flag = TRUE;
-		if(!(tmp = cmd_symbol_function(tmp, sym_nil)))
+		if(rep_SYM(tmp)->car & rep_SF_DEBUG)
+		    rep_single_step_flag = rep_TRUE;
+		if(!(tmp = Fsymbol_function(tmp, Qnil)))
 		    goto error;
 	    }
 	    gc_stackbase.count = STK_USE;
-	    switch(VTYPE(tmp))
+	    switch(rep_TYPE(tmp))
 	    {
-	    case V_Subr0:
-		TOP = VSUBR0FUN(tmp)();
+	    case rep_Subr0:
+		TOP = rep_SUBR0FUN(tmp)();
 		break;
-	    case V_Subr1:
-		TOP = VSUBR1FUN(tmp)(arg >= 1 ? stackp[1] : sym_nil);
+	    case rep_Subr1:
+		TOP = rep_SUBR1FUN(tmp)(arg >= 1 ? stackp[1] : Qnil);
 		break;
-	    case V_Subr2:
+	    case rep_Subr2:
 		switch(arg)
 		{
 		case 0:
-		    TOP = VSUBR2FUN(tmp)(sym_nil, sym_nil);
+		    TOP = rep_SUBR2FUN(tmp)(Qnil, Qnil);
 		    break;
 		case 1:
-		    TOP = VSUBR2FUN(tmp)(stackp[1], sym_nil);
+		    TOP = rep_SUBR2FUN(tmp)(stackp[1], Qnil);
 		    break;
 		default:
-		    TOP = VSUBR2FUN(tmp)(stackp[1], stackp[2]);
+		    TOP = rep_SUBR2FUN(tmp)(stackp[1], stackp[2]);
 		    break;
 		}
 		break;
-	    case V_Subr3:
+	    case rep_Subr3:
 		switch(arg)
 		{
 		case 0:
-		    TOP = VSUBR3FUN(tmp)(sym_nil, sym_nil, sym_nil);
+		    TOP = rep_SUBR3FUN(tmp)(Qnil, Qnil, Qnil);
 		    break;
 		case 1:
-		    TOP = VSUBR3FUN(tmp)(stackp[1], sym_nil, sym_nil);
+		    TOP = rep_SUBR3FUN(tmp)(stackp[1], Qnil, Qnil);
 		    break;
 		case 2:
-		    TOP = VSUBR3FUN(tmp)(stackp[1], stackp[2], sym_nil);
+		    TOP = rep_SUBR3FUN(tmp)(stackp[1], stackp[2], Qnil);
 		    break;
 		default:
-		    TOP = VSUBR3FUN(tmp)(stackp[1], stackp[2], stackp[3]);
+		    TOP = rep_SUBR3FUN(tmp)(stackp[1], stackp[2], stackp[3]);
 		    break;
 		}
 		break;
-	    case V_Subr4:
+	    case rep_Subr4:
 		switch(arg)
 		{
 		case 0:
-		    TOP = VSUBR4FUN(tmp)(sym_nil, sym_nil,
-					 sym_nil, sym_nil);
+		    TOP = rep_SUBR4FUN(tmp)(Qnil, Qnil,
+					 Qnil, Qnil);
 		    break;
 		case 1:
-		    TOP = VSUBR4FUN(tmp)(stackp[1], sym_nil,
-					 sym_nil, sym_nil);
+		    TOP = rep_SUBR4FUN(tmp)(stackp[1], Qnil,
+					 Qnil, Qnil);
 		    break;
 		case 2:
-		    TOP = VSUBR4FUN(tmp)(stackp[1], stackp[2],
-					 sym_nil, sym_nil);
+		    TOP = rep_SUBR4FUN(tmp)(stackp[1], stackp[2],
+					 Qnil, Qnil);
 		    break;
 		case 3:
-		    TOP = VSUBR4FUN(tmp)(stackp[1], stackp[2],
-					 stackp[3], sym_nil);
+		    TOP = rep_SUBR4FUN(tmp)(stackp[1], stackp[2],
+					 stackp[3], Qnil);
 		    break;
 		default:
-		    TOP = VSUBR4FUN(tmp)(stackp[1], stackp[2],
+		    TOP = rep_SUBR4FUN(tmp)(stackp[1], stackp[2],
 					 stackp[3], stackp[4]);
 		    break;
 		}
 		break;
-	    case V_Subr5:
+	    case rep_Subr5:
 		switch(arg)
 		{
 		case 0:
-		    TOP = VSUBR5FUN(tmp)(sym_nil, sym_nil, sym_nil,
-					 sym_nil, sym_nil);
+		    TOP = rep_SUBR5FUN(tmp)(Qnil, Qnil, Qnil,
+					 Qnil, Qnil);
 		    break;
 		case 1:
-		    TOP = VSUBR5FUN(tmp)(stackp[1], sym_nil, sym_nil,
-					 sym_nil, sym_nil);
+		    TOP = rep_SUBR5FUN(tmp)(stackp[1], Qnil, Qnil,
+					 Qnil, Qnil);
 		    break;
 		case 2:
-		    TOP = VSUBR5FUN(tmp)(stackp[1], stackp[2], sym_nil,
-					 sym_nil, sym_nil);
+		    TOP = rep_SUBR5FUN(tmp)(stackp[1], stackp[2], Qnil,
+					 Qnil, Qnil);
 		    break;
 		case 3:
-		    TOP = VSUBR5FUN(tmp)(stackp[1], stackp[2], stackp[3],
-					 sym_nil, sym_nil);
+		    TOP = rep_SUBR5FUN(tmp)(stackp[1], stackp[2], stackp[3],
+					 Qnil, Qnil);
 		    break;
 		case 4:
-		    TOP = VSUBR5FUN(tmp)(stackp[1], stackp[2], stackp[3],
-					 stackp[4], sym_nil);
+		    TOP = rep_SUBR5FUN(tmp)(stackp[1], stackp[2], stackp[3],
+					 stackp[4], Qnil);
 		default:
-		    TOP = VSUBR5FUN(tmp)(stackp[1], stackp[2], stackp[3],
+		    TOP = rep_SUBR5FUN(tmp)(stackp[1], stackp[2], stackp[3],
 					 stackp[4], stackp[5]);
 		    break;
 		}
 		break;
-	    case V_SubrN:
-		tmp2 = sym_nil;
+	    case rep_SubrN:
+		tmp2 = Qnil;
 		POPN(-arg); /* reclaim my args */
 		while(arg--)
-		    tmp2 = cmd_cons(RET_POP, tmp2);
-		TOP = VSUBRNFUN(tmp)(tmp2);
+		    tmp2 = Fcons(RET_POP, tmp2);
+		TOP = rep_SUBRNFUN(tmp)(tmp2);
 		break;
 
-	    case V_Cons:
-		tmp2 = sym_nil;
+	    case rep_Cons:
+		tmp2 = Qnil;
 		POPN(-arg);
 		while(arg--)
-		    tmp2 = cmd_cons(RET_POP, tmp2);
-		if(VCAR(tmp) == sym_lambda)
+		    tmp2 = Fcons(RET_POP, tmp2);
+		if(rep_CAR(tmp) == Qlambda)
 		{
-		    struct Lisp_Call lc;
-		    lc.next = lisp_call_stack;
+		    struct rep_Call lc;
+		    lc.next = rep_call_stack;
 		    lc.fun = TOP;
 		    lc.args = tmp2;
-		    lc.args_evalled_p = sym_t;
-		    lisp_call_stack = &lc;
-		    TOP = eval_lambda(tmp, tmp2, FALSE);
-		    lisp_call_stack = lc.next;
+		    lc.args_evalled_p = Qt;
+		    rep_call_stack = &lc;
+		    TOP = rep_eval_lambda(tmp, tmp2, rep_FALSE);
+		    rep_call_stack = lc.next;
 		}
-		else if(VCAR(tmp) == sym_autoload)
+		else if(rep_CAR(tmp) == Qautoload)
 		    /* I can't be bothered to go to all the hassle
 		       of doing this here, it's going to be slow
-		       anyway so just pass it to funcall.  */
-		    TOP = funcall(TOP, tmp2, FALSE);
+		       anyway so just pass it to rep_funcall.  */
+		    TOP = rep_funcall(TOP, tmp2, rep_FALSE);
 		else
 		    goto invalid;
 		break;
 
-	    case V_Compiled:
-		tmp2 = sym_nil;
+	    case rep_Compiled:
+		tmp2 = Qnil;
 		POPN(-arg);
 		while(arg--)
-		    tmp2 = cmd_cons(RET_POP, tmp2);
-		if(!COMPILED_MACRO_P(tmp))
+		    tmp2 = Fcons(RET_POP, tmp2);
+		if(!rep_COMPILED_MACRO_P(tmp))
 		{
-		    VALUE bindings;
-		    struct Lisp_Call lc;
-		    lc.next = lisp_call_stack;
+		    repv bindings;
+		    struct rep_Call lc;
+		    lc.next = rep_call_stack;
 		    lc.fun = TOP;
 		    lc.args = tmp2;
-		    lc.args_evalled_p = sym_t;
-		    lisp_call_stack = &lc;
+		    lc.args_evalled_p = Qt;
+		    rep_call_stack = &lc;
 
-		    bindings = bindlambdalist(COMPILED_LAMBDA(tmp),
-					      tmp2, FALSE);
-		    if(bindings != LISP_NULL)
+		    bindings = rep_bind_lambda_list(rep_COMPILED_LAMBDA(tmp),
+					      tmp2, rep_FALSE);
+		    if(bindings != rep_NULL)
 		    {
-			GC_root gc_bindings;
-			PUSHGC(gc_bindings, bindings);
-			TOP = cmd_jade_byte_code(COMPILED_CODE(tmp),
-						 COMPILED_CONSTANTS(tmp),
-						 MAKE_INT(COMPILED_STACK(tmp)));
-			POPGC;
-			unbind_symbols(bindings);
+			rep_GC_root gc_bindings;
+			rep_PUSHGC(gc_bindings, bindings);
+			TOP = Fjade_byte_code(rep_COMPILED_CODE(tmp),
+						 rep_COMPILED_CONSTANTS(tmp),
+						 rep_MAKE_INT(rep_COMPILED_STACK(tmp)));
+			rep_POPGC;
+			rep_unbind_symbols(bindings);
 		    }
 		    else
 			goto error;
-		    lisp_call_stack = lc.next;
+		    rep_call_stack = lc.next;
 		}
 		else
 		    goto invalid;
 		break;
 		    
 	    default: invalid:
-		cmd_signal(sym_invalid_function, LIST_1(TOP));
+		Fsignal(Qinvalid_function, rep_LIST_1(TOP));
 		goto error;
 	    }
 	    if(!TOP)
@@ -406,62 +399,63 @@ fetch:
 	    break;
 
 	CASE_OP_ARG(OP_PUSH)
-	    PUSH(VVECT(consts)->array[arg]);
+	    PUSH(rep_VECT(consts)->array[arg]);
 	    break;
 
 	CASE_OP_ARG(OP_REFQ)
-	    if(PUSH(cmd_symbol_value(VVECT(consts)->array[arg],
-				     sym_nil)))
+	    if(PUSH(Fsymbol_value(rep_VECT(consts)->array[arg],
+				     Qnil)))
 	    {
 		break;
 	    }
 	    goto error;
 
 	CASE_OP_ARG(OP_SETQ)
-	    if((TOP = cmd_set(VVECT(consts)->array[arg], TOP)))
+	    if((TOP = Fset(rep_VECT(consts)->array[arg], TOP)))
 		break;
 	    goto error;
 
 	CASE_OP_ARG(OP_LIST)
-	    tmp = sym_nil;
+	    tmp = Qnil;
 	    while(arg--)
-		tmp = cmd_cons(RET_POP, tmp);
+		tmp = Fcons(RET_POP, tmp);
 	    PUSH(tmp);
 	    break;
 
 	CASE_OP_ARG(OP_BIND)
-	    tmp = VVECT(consts)->array[arg];
-	    if(SYMBOLP(tmp))
+	    tmp = rep_VECT(consts)->array[arg];
+	    if(rep_SYMBOLP(tmp))
 	    {
-		VCAR(bindstack) = bind_symbol(VCAR(bindstack), tmp, RET_POP);
+		rep_CAR(bindstack) = rep_bind_symbol(rep_CAR(bindstack), tmp, RET_POP);
 		break;
 	    }
-	    signal_arg_error(tmp, 1);
+	    rep_signal_arg_error(tmp, 1);
 	    goto error;
 
 	case OP_REF:
-	    if((TOP = cmd_symbol_value(TOP, sym_nil)))
+	    if((TOP = Fsymbol_value(TOP, Qnil)))
 		break;
 	    goto error;
 
 	case OP_SET:
-	    CALL_2(cmd_set);
+	    CALL_2(Fset);
 
 	case OP_FREF:
-	    if((TOP = cmd_symbol_function(TOP, sym_nil)))
+	    if((TOP = Fsymbol_function(TOP, Qnil)))
 		break;
 	    goto error;
 
 	case OP_FSET:
-	    CALL_2(cmd_fset);
+	    CALL_2(Ffset);
 
 	case OP_INIT_BIND:
-	    bindstack = cmd_cons(sym_nil, bindstack);
+	    bindstack = Fcons(Qnil, bindstack);
 	    break;
 
 	case OP_UNBIND:
 	    gc_stackbase.count = STK_USE;
-	    bindstack = unbind_one_level(bindstack);
+	    rep_unbind_object(rep_CAR(bindstack));
+	    bindstack = rep_CDR(bindstack);
 	    break;
 
 	case OP_DUP:
@@ -480,326 +474,326 @@ fetch:
 	    break;
 
 	case OP_NIL:
-	    PUSH(sym_nil);
+	    PUSH(Qnil);
 	    break;
 
 	case OP_T:
-	    PUSH(sym_t);
+	    PUSH(Qt);
 	    break;
 
 	case OP_CONS:
-	    CALL_2(cmd_cons);
+	    CALL_2(Fcons);
 
 	case OP_CAR:
 	    tmp = TOP;
-	    if(CONSP(tmp))
-		TOP = VCAR(tmp);
+	    if(rep_CONSP(tmp))
+		TOP = rep_CAR(tmp);
 	    else
-		TOP = sym_nil;
+		TOP = Qnil;
 	    break;
 
 	case OP_CDR:
 	    tmp = TOP;
-	    if(CONSP(tmp))
-		TOP = VCDR(tmp);
+	    if(rep_CONSP(tmp))
+		TOP = rep_CDR(tmp);
 	    else
-		TOP = sym_nil;
+		TOP = Qnil;
 	    break;
 
 	case OP_RPLACA:
-	    CALL_2(cmd_rplaca);
+	    CALL_2(Frplaca);
 
 	case OP_RPLACD:
-	    CALL_2(cmd_rplacd);
+	    CALL_2(Frplacd);
 
 	case OP_NTH:
-	    CALL_2(cmd_nth);
+	    CALL_2(Fnth);
 
 	case OP_NTHCDR:
-	    CALL_2(cmd_nthcdr);
+	    CALL_2(Fnthcdr);
 
 	case OP_ASET:
-	    CALL_3(cmd_aset);
+	    CALL_3(Faset);
 
 	case OP_AREF:
-	    CALL_2(cmd_aref);
+	    CALL_2(Faref);
 
 	case OP_LENGTH:
-	    CALL_1(cmd_length);
+	    CALL_1(Flength);
 
 	case OP_EVAL:
 	    gc_stackbase.count = STK_USE;
-	    CALL_1(cmd_eval);
+	    CALL_1(Feval);
 
 	case OP_ADD:
 	    tmp = RET_POP;
-	    if(INTP(tmp) && INTP(TOP))
+	    if(rep_INTP(tmp) && rep_INTP(TOP))
 	    {
-		TOP = MAKE_INT(VINT(TOP) + VINT(tmp));
+		TOP = rep_MAKE_INT(rep_INT(TOP) + rep_INT(tmp));
 		break;
 	    }
-	    if(INTP(tmp))
-		signal_arg_error(TOP, 2);
+	    if(rep_INTP(tmp))
+		rep_signal_arg_error(TOP, 2);
 	    else
-		signal_arg_error(tmp, 1);
+		rep_signal_arg_error(tmp, 1);
 	    goto error;
 
 	case OP_NEG:
-	    if(INTP(TOP))
+	    if(rep_INTP(TOP))
 	    {
-		TOP = MAKE_INT(-VINT(TOP));
+		TOP = rep_MAKE_INT(-rep_INT(TOP));
 		break;
 	    }
-	    signal_arg_error(TOP, 1);
+	    rep_signal_arg_error(TOP, 1);
 	    goto error;
 
 	case OP_SUB:
 	    tmp = RET_POP;
-	    if(INTP(tmp) && INTP(TOP))
+	    if(rep_INTP(tmp) && rep_INTP(TOP))
 	    {
-		TOP = MAKE_INT(VINT(TOP) - VINT(tmp));
+		TOP = rep_MAKE_INT(rep_INT(TOP) - rep_INT(tmp));
 		break;
 	    }
-	    if(INTP(tmp))
-		signal_arg_error(TOP, 2);
+	    if(rep_INTP(tmp))
+		rep_signal_arg_error(TOP, 2);
 	    else
-		signal_arg_error(tmp, 1);
+		rep_signal_arg_error(tmp, 1);
 	    goto error;
 
 	case OP_MUL:
 	    tmp = RET_POP;
-	    if(INTP(tmp) && INTP(TOP))
+	    if(rep_INTP(tmp) && rep_INTP(TOP))
 	    {
-		TOP = MAKE_INT(VINT(TOP) * VINT(tmp));
+		TOP = rep_MAKE_INT(rep_INT(TOP) * rep_INT(tmp));
 		break;
 	    }
-	    if(INTP(tmp))
-		signal_arg_error(TOP, 2);
+	    if(rep_INTP(tmp))
+		rep_signal_arg_error(TOP, 2);
 	    else
-		signal_arg_error(tmp, 1);
+		rep_signal_arg_error(tmp, 1);
 	    goto error;
 
 	case OP_DIV:
 	    tmp = RET_POP;
-	    if(INTP(tmp) && INTP(TOP))
+	    if(rep_INTP(tmp) && rep_INTP(TOP))
 	    {
-		TOP = MAKE_INT(VINT(TOP) / VINT(tmp));
+		TOP = rep_MAKE_INT(rep_INT(TOP) / rep_INT(tmp));
 		break;
 	    }
-	    if(INTP(tmp))
-		signal_arg_error(TOP, 2);
+	    if(rep_INTP(tmp))
+		rep_signal_arg_error(TOP, 2);
 	    else
-		signal_arg_error(tmp, 1);
+		rep_signal_arg_error(tmp, 1);
 	    goto error;
 
 	case OP_REM:
-	    CALL_2(cmd_remainder);
+	    CALL_2(Fremainder);
 
 	case OP_LNOT:
-	    if(INTP(TOP))
+	    if(rep_INTP(TOP))
 	    {
-		TOP = MAKE_INT(~VINT(TOP));
+		TOP = rep_MAKE_INT(~rep_INT(TOP));
 		break;
 	    }
-	    signal_arg_error(TOP, 1);
+	    rep_signal_arg_error(TOP, 1);
 	    goto error;
 
 	case OP_NOT:
-	    if(TOP == sym_nil)
-		TOP = sym_t;
+	    if(TOP == Qnil)
+		TOP = Qt;
 	    else
-		TOP = sym_nil;
+		TOP = Qnil;
 	    break;
 
 	case OP_LOR:
 	    tmp = RET_POP;
-	    if(INTP(tmp) && INTP(TOP))
+	    if(rep_INTP(tmp) && rep_INTP(TOP))
 	    {
-		TOP = MAKE_INT(VINT(TOP) | VINT(tmp));
+		TOP = rep_MAKE_INT(rep_INT(TOP) | rep_INT(tmp));
 		break;
 	    }
-	    if(INTP(tmp))
-		signal_arg_error(TOP, 2);
+	    if(rep_INTP(tmp))
+		rep_signal_arg_error(TOP, 2);
 	    else
-		signal_arg_error(tmp, 1);
+		rep_signal_arg_error(tmp, 1);
 	    goto error;
 
 	case OP_LXOR:
 	    tmp = RET_POP;
-	    if(INTP(tmp) && INTP(TOP))
+	    if(rep_INTP(tmp) && rep_INTP(TOP))
 	    {
-		TOP = MAKE_INT(VINT(TOP) ^ VINT(tmp));
+		TOP = rep_MAKE_INT(rep_INT(TOP) ^ rep_INT(tmp));
 		break;
 	    }
-	    if(INTP(tmp))
-		signal_arg_error(TOP, 2);
+	    if(rep_INTP(tmp))
+		rep_signal_arg_error(TOP, 2);
 	    else
-		signal_arg_error(tmp, 1);
+		rep_signal_arg_error(tmp, 1);
 	    goto error;
 
 	case OP_LAND:
 	    tmp = RET_POP;
-	    if(INTP(tmp) && INTP(TOP))
+	    if(rep_INTP(tmp) && rep_INTP(TOP))
 	    {
-		TOP = MAKE_INT(VINT(TOP) & VINT(tmp));
+		TOP = rep_MAKE_INT(rep_INT(TOP) & rep_INT(tmp));
 		break;
 	    }
-	    if(INTP(tmp))
-		signal_arg_error(TOP, 2);
+	    if(rep_INTP(tmp))
+		rep_signal_arg_error(TOP, 2);
 	    else
-		signal_arg_error(tmp, 1);
+		rep_signal_arg_error(tmp, 1);
 	    goto error;
 
 	case OP_EQUAL:
 	    tmp = RET_POP;
-	    if(!(VALUE_CMP(TOP, tmp)))
-		TOP = sym_t;
+	    if(!(rep_value_cmp(TOP, tmp)))
+		TOP = Qt;
 	    else
-		TOP = sym_nil;
+		TOP = Qnil;
 	    break;
 
 	case OP_EQ:
 	    tmp = RET_POP;
 	    if(TOP == tmp)
-		TOP = sym_t;
+		TOP = Qt;
 	    else
-		TOP = sym_nil;
+		TOP = Qnil;
 	    break;
 
 	case OP_NUM_EQ:
-	    CALL_2(cmd_num_eq);
+	    CALL_2(Fnum_eq);
 
 	case OP_NUM_NOTEQ:
-	    CALL_2(cmd_num_noteq);
+	    CALL_2(Fnum_noteq);
 
 	case OP_GT:
 	    tmp = RET_POP;
-	    if(VALUE_CMP(TOP, tmp) > 0)
-		TOP = sym_t;
+	    if(rep_value_cmp(TOP, tmp) > 0)
+		TOP = Qt;
 	    else
-		TOP = sym_nil;
+		TOP = Qnil;
 	    break;
 
 	case OP_GE:
 	    tmp = RET_POP;
-	    if(VALUE_CMP(TOP, tmp) >= 0)
-		TOP = sym_t;
+	    if(rep_value_cmp(TOP, tmp) >= 0)
+		TOP = Qt;
 	    else
-		TOP = sym_nil;
+		TOP = Qnil;
 	    break;
 
 	case OP_LT:
 	    tmp = RET_POP;
-	    if(VALUE_CMP(TOP, tmp) < 0)
-		TOP = sym_t;
+	    if(rep_value_cmp(TOP, tmp) < 0)
+		TOP = Qt;
 	    else
-		TOP = sym_nil;
+		TOP = Qnil;
 	    break;
 
 	case OP_LE:
 	    tmp = RET_POP;
-	    if(VALUE_CMP(TOP, tmp) <= 0)
-		TOP = sym_t;
+	    if(rep_value_cmp(TOP, tmp) <= 0)
+		TOP = Qt;
 	    else
-		TOP = sym_nil;
+		TOP = Qnil;
 	    break;
 
 	case OP_INC:
-	    if(INTP(TOP))
+	    if(rep_INTP(TOP))
 	    {
-		TOP = MAKE_INT(VINT(TOP) + 1);
+		TOP = rep_MAKE_INT(rep_INT(TOP) + 1);
 		break;
 	    }
-	    signal_arg_error(TOP, 1);
+	    rep_signal_arg_error(TOP, 1);
 	    goto error;
 
 	case OP_DEC:
-	    if(INTP(TOP))
+	    if(rep_INTP(TOP))
 	    {
-		TOP = MAKE_INT(VINT(TOP) - 1);
+		TOP = rep_MAKE_INT(rep_INT(TOP) - 1);
 		break;
 	    }
-	    signal_arg_error(TOP, 1);
+	    rep_signal_arg_error(TOP, 1);
 	    goto error;
 
 	case OP_LSH:
-	    CALL_2(cmd_lsh);
+	    CALL_2(Flsh);
 
 	case OP_ZEROP:
-	    if(INTP(TOP) && (VINT(TOP) == 0))
-		TOP = sym_t;
+	    if(rep_INTP(TOP) && (rep_INT(TOP) == 0))
+		TOP = Qt;
 	    else
-		TOP = sym_nil;
+		TOP = Qnil;
 	    break;
 
 	case OP_NULL:
-	    if(NILP(TOP))
-		TOP = sym_t;
+	    if(rep_NILP(TOP))
+		TOP = Qt;
 	    else
-		TOP = sym_nil;
+		TOP = Qnil;
 	    break;
 
 	case OP_ATOM:
-	    if(!CONSP(TOP))
-		TOP = sym_t;
+	    if(!rep_CONSP(TOP))
+		TOP = Qt;
 	    else
-		TOP = sym_nil;
+		TOP = Qnil;
 	    break;
 
 	case OP_CONSP:
-	    if(CONSP(TOP))
-		TOP = sym_t;
+	    if(rep_CONSP(TOP))
+		TOP = Qt;
 	    else
-		TOP = sym_nil;
+		TOP = Qnil;
 	    break;
 
 	case OP_LISTP:
-	    if(CONSP(TOP) || NILP(TOP))
-		TOP = sym_t;
+	    if(rep_CONSP(TOP) || rep_NILP(TOP))
+		TOP = Qt;
 	    else
-		TOP = sym_nil;
+		TOP = Qnil;
 	    break;
 
 	case OP_NUMBERP:
-	    if(INTP(TOP))
-		TOP = sym_t;
+	    if(rep_INTP(TOP))
+		TOP = Qt;
 	    else
-		TOP = sym_nil;
+		TOP = Qnil;
 	    break;
 
 	case OP_STRINGP:
-	    if(STRINGP(TOP))
-		TOP = sym_t;
+	    if(rep_STRINGP(TOP))
+		TOP = Qt;
 	    else
-		TOP = sym_nil;
+		TOP = Qnil;
 	    break;
 
 	case OP_VECTORP:
-	    if(VECTORP(TOP))
-		TOP = sym_t;
+	    if(rep_VECTORP(TOP))
+		TOP = Qt;
 	    else
-		TOP = sym_nil;
+		TOP = Qnil;
 	    break;
 
 	case OP_CATCH:
-	    /* This takes two arguments, TAG and THROW-VALUE.
-	       THROW-VALUE is the saved copy of throw_value,
-	       if (car THROW-VALUE) == TAG we match, and we
+	    /* This takes two arguments, TAG and THROW-repv.
+	       THROW-repv is the saved copy of rep_throw_value,
+	       if (car THROW-repv) == TAG we match, and we
 	       leave two values on the stack, nil on top (to
-	       pacify EJMP), (cdr THROW-VALUE) below that. */
+	       pacify EJMP), (cdr THROW-repv) below that. */
 	    tmp = RET_POP;		/* tag */
-	    tmp2 = TOP;		/* throw_value */
-	    if(CONSP(tmp2) && VCAR(tmp2) == tmp)
+	    tmp2 = TOP;		/* rep_throw_value */
+	    if(rep_CONSP(tmp2) && rep_CAR(tmp2) == tmp)
 	    {
-		TOP = VCDR(tmp2);	/* leave result at stk[1] */
-		PUSH(sym_nil);		/* cancel error */
+		TOP = rep_CDR(tmp2);	/* leave result at stk[1] */
+		PUSH(Qnil);		/* cancel error */
 	    }
 	    break;
 
 	case OP_THROW:
 	    tmp = RET_POP;
-	    if(!throw_value)
-		throw_value = cmd_cons(TOP, tmp);
+	    if(!rep_throw_value)
+		rep_throw_value = Fcons(TOP, tmp);
 	    /* This isn't really an error :-)  */
 	    goto error;
 
@@ -809,263 +803,191 @@ fetch:
 	       This installs an address in the code string as an
 	       error handler. */
 	    tmp = RET_POP;
-	    bindstack = cmd_cons(cmd_cons(tmp, MAKE_INT(STK_USE)), bindstack);
+	    bindstack = Fcons(Fcons(tmp, rep_MAKE_INT(STK_USE)), bindstack);
 	    break;
 
 	case OP_FBOUNDP:
-	    CALL_1(cmd_fboundp);
+	    CALL_1(Ffboundp);
 
 	case OP_BOUNDP:
-	    CALL_1(cmd_boundp);
+	    CALL_1(Fboundp);
 
 	case OP_SYMBOLP:
-	    if(SYMBOLP(TOP))
-		TOP = sym_t;
+	    if(rep_SYMBOLP(TOP))
+		TOP = Qt;
 	    else
-		TOP = sym_nil;
+		TOP = Qnil;
 	    break;
 
 	case OP_GET:
-	    CALL_2(cmd_get);
+	    CALL_2(Fget);
 
 	case OP_PUT:
-	    CALL_3(cmd_put);
+	    CALL_3(Fput);
 
 	case OP_ERRORPRO:
 	    /* This should be called with three values on the stack.
 		1. conditions of the error handler
-		2. throw_value of the exception
+		2. rep_throw_value of the exception
 		3. symbol to bind the error data to (or nil)
 
 	       This function pops (1) and tests it against the error
 	       in (2). If they match it sets (2) to nil, and binds the
 	       error data to the symbol in (3). */
 	    tmp = RET_POP;
-	    if(CONSP(TOP) && VCAR(TOP) == sym_error
-	       && compare_error(VCDR(TOP), tmp))
+	    if(rep_CONSP(TOP) && rep_CAR(TOP) == Qerror
+	       && rep_compare_error(rep_CDR(TOP), tmp))
 	    {
 		/* The handler matches the error. */
-		tmp = VCDR(TOP);	/* the error data */
+		tmp = rep_CDR(TOP);	/* the error data */
 		tmp2 = stackp[-1];	/* the symbol to bind to */
-		if(SYMBOLP(tmp2) && !NILP(tmp2))
-		    bindstack = cmd_cons(bind_symbol(sym_nil, tmp2, tmp),
+		if(rep_SYMBOLP(tmp2) && !rep_NILP(tmp2))
+		    bindstack = Fcons(rep_bind_symbol(Qnil, tmp2, tmp),
 					 bindstack);
 		else
 		    /* Placeholder to allow simple unbinding */
-		    bindstack = cmd_cons(sym_nil, bindstack);
-		TOP = sym_nil;
+		    bindstack = Fcons(Qnil, bindstack);
+		TOP = Qnil;
 	    }
 	    break;
 
 	case OP_SIGNAL:
 	    gc_stackbase.count = STK_USE;
-	    CALL_2(cmd_signal);
+	    CALL_2(Fsignal);
 
 	case OP_REVERSE:
-	    CALL_1(cmd_reverse);
+	    CALL_1(Freverse);
 
 	case OP_NREVERSE:
-	    CALL_1(cmd_nreverse);
+	    CALL_1(Fnreverse);
 
 	case OP_ASSOC:
-	    CALL_2(cmd_assoc);
+	    CALL_2(Fassoc);
 
 	case OP_ASSQ:
-	    CALL_2(cmd_assq);
+	    CALL_2(Fassq);
 
 	case OP_RASSOC:
-	    CALL_2(cmd_rassoc);
+	    CALL_2(Frassoc);
 
 	case OP_RASSQ:
-	    CALL_2(cmd_rassq);
+	    CALL_2(Frassq);
 
 	case OP_LAST:
-	    CALL_1(cmd_last);
+	    CALL_1(Flast);
 
 	case OP_MAPCAR:
 	    gc_stackbase.count = STK_USE;
-	    CALL_2(cmd_mapcar);
+	    CALL_2(Fmapcar);
 
 	case OP_MAPC:
 	    gc_stackbase.count = STK_USE;
-	    CALL_2(cmd_mapc);
+	    CALL_2(Fmapc);
 
 	case OP_MEMBER:
-	    CALL_2(cmd_member);
+	    CALL_2(Fmember);
 
 	case OP_MEMQ:
-	    CALL_2(cmd_memq);
+	    CALL_2(Fmemq);
 
 	case OP_DELETE:
-	    CALL_2(cmd_delete);
+	    CALL_2(Fdelete);
 
 	case OP_DELQ:
-	    CALL_2(cmd_delq);
+	    CALL_2(Fdelq);
 
 	case OP_DELETE_IF:
 	    gc_stackbase.count = STK_USE;
-	    CALL_2(cmd_delete_if);
+	    CALL_2(Fdelete_if);
 
 	case OP_DELETE_IF_NOT:
 	    gc_stackbase.count = STK_USE;
-	    CALL_2(cmd_delete_if_not);
+	    CALL_2(Fdelete_if_not);
 
 	case OP_COPY_SEQUENCE:
-	    CALL_1(cmd_copy_sequence);
+	    CALL_1(Fcopy_sequence);
 
 	case OP_SEQUENCEP:
-	    CALL_1(cmd_sequencep);
+	    CALL_1(Fsequencep);
 
 	case OP_FUNCTIONP:
-	    CALL_1(cmd_functionp);
+	    CALL_1(Ffunctionp);
 
 	case OP_SPECIAL_FORM_P:
-	    CALL_1(cmd_special_form_p);
+	    CALL_1(Fspecial_form_p);
 
 	case OP_SUBRP:
-	    CALL_1(cmd_subrp);
+	    CALL_1(Fsubrp);
 
 	case OP_EQL:
 	    tmp = RET_POP;
-	    if(INTP(tmp) && INTP(TOP))
-		TOP = (VINT(TOP) == VINT(tmp) ? sym_t : sym_nil);
+	    if(rep_INTP(tmp) && rep_INTP(TOP))
+		TOP = (rep_INT(TOP) == rep_INT(tmp) ? Qt : Qnil);
 	    else
-		TOP = (TOP == tmp ? sym_t : sym_nil);
+		TOP = (TOP == tmp ? Qt : Qnil);
 	    break;
 
 	case OP_MAX:
 	    tmp = RET_POP;
-	    if(value_cmp(tmp, TOP) > 0)
+	    if(rep_value_cmp(tmp, TOP) > 0)
 		TOP = tmp;
 	    break;
 
 	case OP_MIN:
 	    tmp = RET_POP;
-	    if(value_cmp(tmp, TOP) < 0)
+	    if(rep_value_cmp(tmp, TOP) < 0)
 		TOP = tmp;
 	    break;
 
 	case OP_FILTER:
 	    gc_stackbase.count = STK_USE;
-	    CALL_2(cmd_filter);
+	    CALL_2(Ffilter);
 
 	case OP_MACROP:
-	    CALL_1(cmd_macrop);
+	    CALL_1(Fmacrop);
 
 	case OP_BYTECODEP:
-	    CALL_1(cmd_bytecodep);
+	    CALL_1(Fbytecodep);
 
 	case OP_PUSHI0:
-	    PUSH(MAKE_INT(0));
+	    PUSH(rep_MAKE_INT(0));
 	    break;
 
 	case OP_PUSHI1:
-	    PUSH(MAKE_INT(1));
+	    PUSH(rep_MAKE_INT(1));
 	    break;
 
 	case OP_PUSHI2:
-	    PUSH(MAKE_INT(2));
+	    PUSH(rep_MAKE_INT(2));
 	    break;
 
 	case OP_PUSHIM1:
-	    PUSH(MAKE_INT(-1));
+	    PUSH(rep_MAKE_INT(-1));
 	    break;
 
 	case OP_PUSHIM2:
-	    PUSH(MAKE_INT(-2));
+	    PUSH(rep_MAKE_INT(-2));
 	    break;
 
 	case OP_PUSHI:
 	    arg = FETCH;
 	    if (arg < 128)
-		PUSH(MAKE_INT(arg));
+		PUSH(rep_MAKE_INT(arg));
 	    else
-		PUSH(MAKE_INT(((short)arg) - 256));
+		PUSH(rep_MAKE_INT(((short)arg) - 256));
 	    break;
 
 	case OP_PUSHIW:
 	    FETCH2(arg);
 	    if (arg < 32768)
-		PUSH(MAKE_INT(arg));
+		PUSH(rep_MAKE_INT(arg));
 	    else
-		PUSH(MAKE_INT(((long)arg) - 65536));
+		PUSH(rep_MAKE_INT(((long)arg) - 65536));
 	    break;
 
-	case OP_SET_CURRENT_BUFFER:
-	    CALL_2(cmd_set_current_buffer);
-
-	case OP_BIND_BUFFER:
-	    /* one arg: buffer. */
+	case OP_BINDOBJ:
 	    tmp = RET_POP;
-	    if(!BUFFERP(tmp))
-	    {
-		signal_arg_error(tmp, 1);
-		goto error;
-	    }
-	    tmp = VAL(swap_buffers(curr_vw, VTX(tmp)));
-	    bindstack = cmd_cons(cmd_cons(tmp, VAL(curr_vw)), bindstack);
-	    break;
-
-	case OP_CURRENT_BUFFER:
-	    CALL_1(cmd_current_buffer);
-
-	case OP_BUFFERP:
-	    if(BUFFERP(TOP))
-		TOP = sym_t;
-	    else
-		TOP = sym_nil;
-	    break;
-
-	case OP_MARKP:
-	    if(MARKP(TOP))
-		TOP = sym_t;
-	    else
-		TOP = sym_nil;
-	    break;
-
-	case OP_WINDOWP:
-	    if(WINDOWP(TOP))
-		TOP = sym_t;
-	    else
-		TOP = sym_nil;
-	    break;
-
-	case OP_BIND_WINDOW:
-	    tmp = RET_POP;
-	    if(!WINDOWP(tmp) || !VWIN(tmp)->w_Window)
-	    {
-		signal_arg_error(tmp, 1);
-		goto error;
-	    }
-	    bindstack = cmd_cons(VAL(curr_win), bindstack);
-	    curr_win = VWIN(tmp);
-	    curr_vw = curr_win->w_CurrVW;
-	    break;
-
-	case OP_VIEWP:
-	    if(VIEWP(TOP))
-		TOP = sym_t;
-	    else
-		TOP = sym_nil;
-	    break;
-
-	case OP_BIND_VIEW:
-	    tmp = RET_POP;
-	    if(!VIEWP(tmp) || !VVIEW(tmp)->vw_Win
-	       || !VVIEW(tmp)->vw_Win->w_Window)
-	    {
-		signal_arg_error(tmp, 1);
-		goto error;
-	    }
-	    bindstack = cmd_cons(cmd_cons(VAL(VVIEW(tmp)->vw_Win->w_CurrVW),
-					  VAL(curr_win)), bindstack);
-	    curr_vw = VVIEW(tmp);
-	    curr_win = VVIEW(tmp)->vw_Win;
-	    curr_win->w_CurrVW = curr_vw;
-	    break;
-
-	case OP_CURRENT_VIEW:
-	    CALL_1(cmd_current_view);
+	    bindstack = Fcons(rep_bind_object(tmp), bindstack);
 	    break;
 
 	case OP_SWAP2:
@@ -1076,40 +998,33 @@ fetch:
 	    break;
 
 	case OP_MOD:
-	    CALL_2(cmd_mod);
-
-	case OP_POS:
-	    CALL_2(cmd_pos);
-
-	case OP_POSP:
-	    TOP = (POSP(TOP) ? sym_t : sym_nil);
-	    break;
+	    CALL_2(Fmod);
 
 	/* Jump instructions follow */
 
 	case OP_EJMP:
 	    /* Pop the stack; if it's nil jmp pc[0,1], otherwise
-	       set throw_value=ARG and goto the error handler. */
+	       set rep_throw_value=ARG and goto the error handler. */
 	    tmp = RET_POP;
-	    if(NILP(tmp))
+	    if(rep_NILP(tmp))
 		goto do_jmp;
-	    throw_value = tmp;
+	    rep_throw_value = tmp;
 	    goto error;
 
 	case OP_JN:
-	    if(NILP(RET_POP))
+	    if(rep_NILP(RET_POP))
 		goto do_jmp;
 	    pc += 2;
 	    break;
 
 	case OP_JT:
-	    if(!NILP(RET_POP))
+	    if(!rep_NILP(RET_POP))
 		goto do_jmp;
 	    pc += 2;
 	    break;
 
 	case OP_JPN:
-	    if(NILP(TOP))
+	    if(rep_NILP(TOP))
 	    {
 		POP;
 		goto do_jmp;
@@ -1118,7 +1033,7 @@ fetch:
 	    break;
 
 	case OP_JPT:
-	    if(!NILP(TOP))
+	    if(!rep_NILP(TOP))
 	    {
 		POP;
 		goto do_jmp;
@@ -1127,14 +1042,14 @@ fetch:
 	    break;
 
 	case OP_JNP:
-	    if(NILP(TOP))
+	    if(rep_NILP(TOP))
 		goto do_jmp;
 	    POP;
 	    pc += 2;
 	    break;
 
 	case OP_JTP:
-	    if(NILP(TOP))
+	    if(rep_NILP(TOP))
 	    {
 		POP;
 		pc += 2;
@@ -1144,43 +1059,46 @@ fetch:
 
 	case OP_JMP:
 	do_jmp:
-	    pc = VSTR(code) + ((pc[0] << ARG_SHIFT) | pc[1]);
+	    pc = rep_STR(code) + ((pc[0] << ARG_SHIFT) | pc[1]);
 
 	    /* Test if an error occurred (or an interrupt) */
-	    TEST_INT;
-	    if(INT_P)
+	    rep_TEST_INT;
+	    if(rep_INTERRUPTP)
 		goto error;
 	    /* Test for gc time */
-	    if(data_after_gc >= gc_threshold)
+	    if(rep_data_after_gc >= rep_gc_threshold)
 	    {
 		gc_stackbase.count = STK_USE;
-		cmd_garbage_collect(sym_t);
+		Fgarbage_collect(Qt);
 	    }
 	    break;
 
 	default:
-	    cmd_signal(sym_error, LIST_1(VAL(&unknown_op)));
+	    Fsignal(Qerror, rep_LIST_1(rep_VAL(&unknown_op)));
 	error:
-	    while(CONSP(bindstack))
+	    while(rep_CONSP(bindstack))
 	    {
-		VALUE item = VCAR(bindstack);
-		if(!CONSP(item) || !INTP(VCAR(item)) || !INTP(VCDR(item)))
+		repv item = rep_CAR(bindstack);
+		if(!rep_CONSP(item)
+		   || !rep_INTP(rep_CAR(item)) || !rep_INTP(rep_CDR(item)))
 		{
-		    GC_root gc_throwval;
-		    VALUE throwval = throw_value;
-		    throw_value = LISP_NULL;
-		    PUSHGC(gc_throwval, throwval);
-		    bindstack = unbind_one_level(bindstack);
-		    POPGC;
-		    throw_value = throwval;
+		    rep_GC_root gc_throwval;
+		    repv throwval = rep_throw_value;
+		    rep_throw_value = rep_NULL;
+		    rep_PUSHGC(gc_throwval, throwval);
+		    gc_stackbase.count = STK_USE;
+		    rep_unbind_object(item);
+		    bindstack = rep_CDR(bindstack);
+		    rep_POPGC;
+		    rep_throw_value = throwval;
 		}
-		else if(throw_value != LISP_NULL)
+		else if(rep_throw_value != rep_NULL)
 		{
 		    /* car is an exception-handler, (PC . SP)
 
 		       When the code at PC is called, it will have
 		       the current stack usage set to SP, and then
-		       the value of throw_value pushed on top.
+		       the value of rep_throw_value pushed on top.
 
 		       The handler can then use the EJMP instruction
 		       to pass control back to the error: label, or
@@ -1189,27 +1107,27 @@ fetch:
 		       Note how we remove the bindstack entry before
 		       jumping :-) */
 
-		    stackp = (stackbase - 1) + VINT(VCDR(item));
-		    PUSH(throw_value);
-		    throw_value = LISP_NULL;
-		    pc = VSTR(code) + VINT(VCAR(item));
-		    bindstack = VCDR(bindstack);
+		    stackp = (stackbase - 1) + rep_INT(rep_CDR(item));
+		    PUSH(rep_throw_value);
+		    rep_throw_value = rep_NULL;
+		    pc = rep_STR(code) + rep_INT(rep_CAR(item));
+		    bindstack = rep_CDR(bindstack);
 		    goto fetch;
 		}
 		else
 		{
-		    /* car is an exception handler, but throw_value isn't
+		    /* car is an exception handler, but rep_throw_value isn't
 		       set, so there's nothing to handle. Keep unwinding. */
 #if 1
 		    fprintf(stderr, "lispmach: ignoring exception handler (%ld . %ld) pc=%d",
-			    VINT(VCAR(item)), VINT(VCDR(item)), pc - VSTR(code));
-		    cmd_backtrace(cmd_stderr_file());
+			    rep_INT(rep_CAR(item)), rep_INT(rep_CDR(item)), pc - rep_STR(code));
+		    Fbacktrace(Fstderr_file());
 		    fputs("\n", stderr);
 #endif
-		    bindstack = VCDR(bindstack);
+		    bindstack = rep_CDR(bindstack);
 		}
 	    }
-	    TOP = LISP_NULL;
+	    TOP = rep_NULL;
 	    goto quit;
 	}
 #ifdef PARANOID
@@ -1218,7 +1136,7 @@ fetch:
 	    fprintf(stderr, "jade: stack underflow in lisp-code: aborting...\n");
 	    abort();
 	}
-	if(stackp > (stackbase + VINT(stkreq)))
+	if(stackp > (stackbase + rep_INT(stkreq)))
 	{
 	    fprintf(stderr, "jade: stack overflow in lisp-code: aborting...\n");
 	    abort();
@@ -1235,98 +1153,92 @@ quit:
     /* only use this var to save declaring another */
     bindstack = TOP;
 
-    POPGCN; POPGC; POPGC; POPGC;
+    rep_POPGCN; rep_POPGC; rep_POPGC; rep_POPGC;
     return bindstack;
 }
 
-_PR VALUE cmd_validate_byte_code(VALUE bc_major, VALUE bc_minor, VALUE e_major, VALUE e_minor);
-DEFUN("validate-byte-code", cmd_validate_byte_code, subr_validate_byte_code, (VALUE bc_major, VALUE bc_minor, VALUE e_major, VALUE e_minor), V_Subr4, DOC_validate_byte_code) /*
-::doc:validate_byte_code::
-validate-byte-code BC-MAJOR BC-MINOR JADE-MAJOR JADE-MINOR
+DEFUN("validate-byte-code", Fvalidate_byte_code, Svalidate_byte_code, (repv bc_major, repv bc_minor), rep_Subr2) /*
+::doc:Svalidate-byte-code::
+validate-byte-code BC-MAJOR BC-MINOR
 
-Check that byte codes from instruction set BC-MAJOR.BC-MINOR, compiled
-by Jade version JADE-MAJOR.JADE-MINOR, may be executed. If not, an error
-will be signalled.
+Check that byte codes from instruction set BC-MAJOR.BC-MINOR, may be
+executed. If not, an error will be signalled.
 ::end:: */
 {
-    if(!INTP(bc_major) || !INTP(bc_minor)
-       || !INTP(e_major) || !INTP(e_minor)
-       || VINT(bc_major) != BYTECODE_MAJOR_VERSION
-       || VINT(bc_minor) > BYTECODE_MINOR_VERSION
-       || VINT(e_major) != MAJOR
-       || VINT(e_minor) > MINOR)
-	return cmd_signal(sym_bytecode_error, sym_nil);
+    if(!rep_INTP(bc_major) || !rep_INTP(bc_minor)
+       || rep_INT(bc_major) != BYTECODE_MAJOR_VERSION
+       || rep_INT(bc_minor) > BYTECODE_MINOR_VERSION)
+	return Fsignal(Qbytecode_error, Qnil);
     else
-	return sym_t;
+	return Qt;
 }
 
-_PR VALUE cmd_make_byte_code_subr(VALUE args);
-DEFUN("make-byte-code-subr", cmd_make_byte_code_subr, subr_make_byte_code_subr, (VALUE args), V_SubrN, DOC_make_byte_code_subr) /*
-::doc:make_byte_code_subr::
-make-byte-code-subr ARGS CODE CONSTANTS STACK [DOC] [INTERACTIVE] [MACROP]
+DEFUN("make-byte-code-subr", Fmake_byte_code_subr, Smake_byte_code_subr, (repv args), rep_SubrN) /*
+::doc:Smake-byte-code-subr::
+make-byte-code-subr ARGS CODE CONSTANTS STACK [rep_DOC] [INTERACTIVE] [MACROP]
 
 Return an object that can be used as the function value of a symbol.
 ::end:: */
 {
-    int len = list_length(args);
-    VALUE obj[6], vec;
+    int len = rep_list_length(args);
+    repv obj[6], vec;
     int used;
 
-    if(len < COMPILED_MIN_SLOTS)
-	return signal_missing_arg(len + 1);
+    if(len < rep_COMPILED_MIN_SLOTS)
+	return rep_signal_missing_arg(len + 1);
     
-    if(!LISTP(VCAR(args)))
-	return signal_arg_error(VCAR(args), 1);
-    obj[0] = VCAR(args); args = VCDR(args);
-    if(!STRINGP(VCAR(args)))
-	return signal_arg_error(VCAR(args), 2);
-    obj[1] = VCAR(args); args = VCDR(args);
-    if(!VECTORP(VCAR(args)))
-	return signal_arg_error(VCAR(args), 3);
-    obj[2] = VCAR(args); args = VCDR(args);
-    if(!INTP(VCAR(args)))
-	return signal_arg_error(VCAR(args), 4);
-    obj[3] = VCAR(args); args = VCDR(args);
+    if(!rep_LISTP(rep_CAR(args)))
+	return rep_signal_arg_error(rep_CAR(args), 1);
+    obj[0] = rep_CAR(args); args = rep_CDR(args);
+    if(!rep_STRINGP(rep_CAR(args)))
+	return rep_signal_arg_error(rep_CAR(args), 2);
+    obj[1] = rep_CAR(args); args = rep_CDR(args);
+    if(!rep_VECTORP(rep_CAR(args)))
+	return rep_signal_arg_error(rep_CAR(args), 3);
+    obj[2] = rep_CAR(args); args = rep_CDR(args);
+    if(!rep_INTP(rep_CAR(args)))
+	return rep_signal_arg_error(rep_CAR(args), 4);
+    obj[3] = rep_CAR(args); args = rep_CDR(args);
     used = 4;
 
-    if(CONSP(args))
+    if(rep_CONSP(args))
     {
-	obj[used++] = VCAR(args); args = VCDR(args);
-	if(CONSP(args))
+	obj[used++] = rep_CAR(args); args = rep_CDR(args);
+	if(rep_CONSP(args))
 	{
-	    obj[used++] = VCAR(args); args = VCDR(args);
-	    if(CONSP(args) && !NILP(VCAR(args)))
-		obj[3] = MAKE_INT(VINT(obj[3]) | 0x10000);
-	    if(NILP(obj[used - 1]))
+	    obj[used++] = rep_CAR(args); args = rep_CDR(args);
+	    if(rep_CONSP(args) && !rep_NILP(rep_CAR(args)))
+		obj[3] = rep_MAKE_INT(rep_INT(obj[3]) | 0x10000);
+	    if(rep_NILP(obj[used - 1]))
 		used--;
 	}
-	if(used == 5 && NILP(obj[used - 1]))
+	if(used == 5 && rep_NILP(obj[used - 1]))
 	    used--;
     }
 
-    vec = cmd_make_vector(MAKE_INT(used), sym_nil);
-    if(vec != LISP_NULL)
+    vec = Fmake_vector(rep_MAKE_INT(used), Qnil);
+    if(vec != rep_NULL)
     {
 	int i;
-	VCOMPILED(vec)->car = ((VCOMPILED(vec)->car & ~CELL8_TYPE_MASK)
-			       | V_Compiled);
+	rep_COMPILED(vec)->car = ((rep_COMPILED(vec)->car & ~rep_CELL8_TYPE_MASK)
+			       | rep_Compiled);
 	for(i = 0; i < used; i++)
-	    VVECTI(vec, i) = obj[i];
+	    rep_VECTI(vec, i) = obj[i];
     }
     return vec;
 }
 
 void
-lispmach_init(void)
+rep_lispmach_init(void)
 {
-    ADD_SUBR(subr_jade_byte_code);
-    ADD_SUBR(subr_validate_byte_code);
-    ADD_SUBR(subr_make_byte_code_subr);
-    INTERN(bytecode_error); ERROR(bytecode_error);
+    rep_ADD_SUBR(Sjade_byte_code);
+    rep_ADD_SUBR(Svalidate_byte_code);
+    rep_ADD_SUBR(Smake_byte_code_subr);
+    rep_INTERN(bytecode_error); rep_ERROR(bytecode_error);
 }
 
 void
-lispmach_kill(void)
+rep_lispmach_kill(void)
 {
 #ifdef BYTE_CODE_HISTOGRAM
     int i;

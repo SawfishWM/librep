@@ -18,8 +18,8 @@
    along with Jade; see the file COPYING.	If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-#include "jade.h"
-#include <lib/jade_protos.h>
+#include "repint.h"
+
 
 #include <string.h>
 #include <stdlib.h>
@@ -31,96 +31,87 @@
 
 /* #define GC_MONITOR_STK */
 
-#define TEST_GC_INHIBIT
+
+/* Type handling */
 
-_PR int value_cmp(VALUE, VALUE);
-_PR void princ_val(VALUE, VALUE);
-_PR void print_val(VALUE, VALUE);
-_PR int type_cmp(VALUE, VALUE);
-_PR VALUE null_string(void);
-_PR VALUE make_string(int);
-_PR VALUE string_dupn(const u_char *, int);
-_PR VALUE string_dup(const u_char *);
-_PR VALUE concat2(u_char *, u_char *);
-_PR VALUE concat3(u_char *, u_char *, u_char *);
-_PR int string_cmp(VALUE, VALUE);
-static void string_sweep(void);
-_PR bool set_string_len(VALUE, long);
-_PR int number_cmp(VALUE, VALUE);
-_PR int ptr_cmp(VALUE, VALUE);
-_PR void cons_free(VALUE);
-static void cons_sweep(void);
-_PR int cons_cmp(VALUE, VALUE);
-_PR VALUE list_1(VALUE);
-_PR VALUE list_2(VALUE, VALUE);
-_PR VALUE list_3(VALUE, VALUE, VALUE);
-_PR VALUE list_4(VALUE, VALUE, VALUE, VALUE);
-_PR VALUE list_5(VALUE, VALUE, VALUE, VALUE, VALUE);
-_PR VALUE make_vector(int);
-static void vector_sweep(void);
-_PR int vector_cmp(VALUE, VALUE);
-_PR VALUE make_pos(long, long);
+#define TYPE_HASH_SIZE 32
+#define TYPE_HASH(type) (((type) >> 1) & (TYPE_HASH_SIZE-1))
 
-_PR void mark_static(VALUE *);
-_PR void mark_value(VALUE);
+static u_int next_free_type = 0;
+static rep_type *data_types[TYPE_HASH_SIZE];
 
-_PR void pre_values_init (void);
-_PR void values_init(void);
-_PR void values_kill (void);
-_PR void dumped_init(void);
+void
+rep_register_type(u_int code, char *name,
+		  int (*compare)(repv, repv),
+		  void (*princ)(repv, repv),
+		  void (*print)(repv, repv),
+		  void (*sweep)(void),
+		  void (*mark)(repv),
+		  void (*mark_type)(void),
+		  int (*getc)(repv),
+		  int (*ungetc)(repv, int),
+		  int (*putc)(repv, int),
+		  int (*puts)(repv, void *, int, rep_bool),
+		  repv (*bind)(repv),
+		  void (*unbind)(repv))
+{
+    rep_type *t = rep_alloc(sizeof(rep_type));
+    if (t == 0)
+    {
+	rep_mem_error();
+	return;
+    }
+    t->code = code;
+    t->name = name;
+    t->compare = compare;
+    t->princ = princ;
+    t->print = print;
+    t->sweep = sweep;
+    t->mark = mark;
+    t->mark_type = mark_type;
+    t->getc = getc;
+    t->ungetc = ungetc;
+    t->putc = putc;
+    t->puts = puts;
+    t->bind = bind;
+    t->unbind = unbind;
+    t->next = data_types[TYPE_HASH(code)];
+    data_types[TYPE_HASH(code)] = t;
+}
 
-#define DT_NULL { 0, 0, 0, 0, 0 }
-Lisp_Type_Data data_types[V_MAX] = {
-    { cons_cmp, lisp_prin, lisp_prin, cons_sweep, "cons" },
-    { symbol_cmp, symbol_princ, symbol_print, symbol_sweep, "symbol" },
-    { number_cmp, lisp_prin, lisp_prin, NULL, "number" },
-    { vector_cmp, lisp_prin, lisp_prin, vector_sweep, "vector" },
-    DT_NULL,
-    { string_cmp, string_princ, string_print, string_sweep, "string" },
-    DT_NULL,
-    { vector_cmp, lisp_prin, lisp_prin, NULL, "bytecode-subr" },
-    DT_NULL,
-    { type_cmp, lisp_prin, lisp_prin, NULL, "void" },
-    DT_NULL,
-    { type_cmp, lisp_prin, lisp_prin, NULL, "process" },
-    DT_NULL,
-    { ptr_cmp, lisp_prin, lisp_prin, NULL, "var" },
-    DT_NULL,
-    { ptr_cmp, lisp_prin, lisp_prin, NULL, "special-form" },
-    DT_NULL,
-    { ptr_cmp, lisp_prin, lisp_prin, NULL, "subr-0" },
-    DT_NULL,
-    { ptr_cmp, lisp_prin, lisp_prin, NULL, "subr-1" },
-    DT_NULL,
-    { ptr_cmp, lisp_prin, lisp_prin, NULL, "subr-2" },
-    DT_NULL,
-    { ptr_cmp, lisp_prin, lisp_prin, NULL, "subr-3" },
-    DT_NULL,
-    { ptr_cmp, lisp_prin, lisp_prin, NULL, "subr-4" },
-    DT_NULL,
-    { ptr_cmp, lisp_prin, lisp_prin, NULL, "subr-5" },
-    DT_NULL,
-    { ptr_cmp, lisp_prin, lisp_prin, NULL, "subr-n" },
-    DT_NULL,
-    { ptr_cmp, buffer_prin, buffer_prin, buffer_sweep, "buffer" },
-    DT_NULL,
-    { ptr_cmp, window_prin, window_prin, window_sweep, "window" },
-    DT_NULL,
-    { ptr_cmp, view_prin, view_prin, view_sweep, "view" },
-    DT_NULL,
-    { mark_cmp, mark_prin, mark_prin, NULL, "mark" },
-    DT_NULL,
-    { ptr_cmp, file_prin, file_prin, file_sweep, "file" },
-    DT_NULL,
-    { ptr_cmp, glyphtable_prin, glyphtable_prin,
-      glyphtable_sweep, "glyph-table" },
-    DT_NULL,
-    { extent_cmp, extent_prin, extent_prin, extent_sweep, "extent" },
-    DT_NULL,
-    { ptr_cmp, face_prin, face_prin, face_sweep, "face" },
-    DT_NULL,
-    { ptr_cmp, color_prin, color_prin, color_sweep, "color" },
-};
+u_int
+rep_register_new_type(char *name,
+		      int (*compare)(repv, repv),
+		      void (*princ)(repv, repv),
+		      void (*print)(repv, repv),
+		      void (*sweep)(void),
+		      void (*mark)(repv),
+		      void (*mark_type)(void),
+		      int (*getc)(repv),
+		      int (*ungetc)(repv, int),
+		      int (*putc)(repv, int),
+		      int (*puts)(repv, void *, int, rep_bool),
+		      repv (*bind)(repv),
+		      void (*unbind)(repv))
+{
+    u_int code;
+    assert(next_free_type != 256);
+    code = (next_free_type++ << rep_CELL16_TYPE_SHIFT) | rep_CELL_IS_8 | rep_CELL_IS_16;
+    rep_register_type(code, name, compare, princ, print,
+		  sweep, mark, mark_type,
+		  getc, ungetc, putc, puts, bind, unbind);
+    return code;
+}
+
+rep_type *
+rep_get_data_type(u_int code)
+{
+    rep_type *t = data_types[TYPE_HASH(code)];
+    while (t != 0 && t->code != code)
+	t = t->next;
+    assert (t != 0);
+    return t;
+}
 
 
 /* General object handling */
@@ -128,135 +119,149 @@ Lisp_Type_Data data_types[V_MAX] = {
 /* Returns zero if V1 == V2, less than zero if V1 < V2, and greater than
    zero otherwise. */
 int
-value_cmp(VALUE v1, VALUE v2)
+rep_value_cmp(repv v1, repv v2)
 {
-    if(v1 != LISP_NULL && v2 != LISP_NULL)
+    if(v1 != rep_NULL && v2 != rep_NULL)
     {
-	/* If the two objects are the same object then they must be
-	   equivalent :-) */
-	return (v1 == v2) ? 0 : VALUE_CMP(v1, v2);
+	rep_type *t1 = rep_get_data_type(rep_TYPE(v1));
+	if (t1 != 0)
+	    return (v1 == v2) ? 0 : t1->compare(v1, v2);
+	else
+	    return (v1 == v2) ? 0 : 1;
     }
     return 1;
 }
 
 void
-princ_val(VALUE strm, VALUE val)
+rep_princ_val(repv strm, repv val)
 {
-    if(val != LISP_NULL)
+    if(val != rep_NULL)
     {
-	GC_root gc_strm, gc_val;
-	PUSHGC(gc_strm, strm);
-	PUSHGC(gc_val, val);
-	data_types[VTYPE(val)].princ(strm, val);
-	POPGC; POPGC;
+	rep_type *t = rep_get_data_type(rep_TYPE(val));
+	rep_GC_root gc_strm, gc_val;
+	rep_PUSHGC(gc_strm, strm);
+	rep_PUSHGC(gc_val, val);
+	t->princ(strm, val);
+	rep_POPGC; rep_POPGC;
     }
 }
 
 void
-print_val(VALUE strm, VALUE val)
+rep_print_val(repv strm, repv val)
 {
-    if(val != LISP_NULL)
+    if(val != rep_NULL)
     {
-	GC_root gc_strm, gc_val;
-	PUSHGC(gc_strm, strm);
-	PUSHGC(gc_val, val);
-	data_types[VTYPE(val)].print(strm, val);
-	POPGC; POPGC;
+	rep_type *t = rep_get_data_type(rep_TYPE(val));
+	rep_GC_root gc_strm, gc_val;
+	rep_PUSHGC(gc_strm, strm);
+	rep_PUSHGC(gc_val, val);
+	t->print(strm, val);
+	rep_POPGC; rep_POPGC;
     }
 }
 
 int
-type_cmp(VALUE val1, VALUE val2)
+rep_type_cmp(repv val1, repv val2)
 {
-    return !(VTYPE(val1) == VTYPE(val2));
+    return !(rep_TYPE(val1) == rep_TYPE(val2));
 }
 
 
 /* Strings */
 
-static Lisp_String *strings;
+static rep_string *strings;
 static int allocated_strings, allocated_string_bytes;
 
 DEFSTRING(null_string_const, "");
 
-VALUE
-null_string(void)
+repv
+rep_null_string(void)
 {
-    return VAL(&null_string_const);
+    return rep_VAL(&null_string_const);
 }
 
 DEFSTRING(string_overflow, "String too long");
 
 /* Return a string object with room for exactly LEN characters. No extra
    byte is allocated for a zero terminator; do this manually if required. */
-VALUE
-make_string(int len)
+repv
+rep_make_string(int len)
 {
-    Lisp_String *str;
+    rep_string *str;
     int memlen;
 
-    if(len > LISP_MAX_STRING)
-	return cmd_signal(sym_error, LIST_1(VAL(&string_overflow)));
+    if(len > rep_MAX_STRING)
+	return Fsignal(Qerror, rep_LIST_1(rep_VAL(&string_overflow)));
 
-    memlen = DSTRING_SIZE(len);
-    str = ALLOC_OBJECT(memlen);
+    memlen = rep_DSTRING_SIZE(len);
+    str = rep_ALLOC_CELL(memlen);
     if(str != NULL)
     {
-	str->car = MAKE_STRING_CAR(len - 1);
+	str->car = rep_MAKE_STRING_CAR(len - 1);
 	str->next = strings;
 	strings = str;
 	allocated_strings++;
 	allocated_string_bytes += memlen;
-	data_after_gc += memlen;
-	return VAL(str);
+	rep_data_after_gc += memlen;
+	return rep_VAL(str);
     }
     else
-	return LISP_NULL;
+	return rep_NULL;
 }
 
-VALUE
-string_dupn(const u_char *src, int slen)
+repv
+rep_string_dupn(const u_char *src, int slen)
 {
-    Lisp_String *dst = VSTRING(make_string(slen + 1));
+    rep_string *dst = rep_STRING(rep_make_string(slen + 1));
     if(dst != NULL)
     {
-	memcpy(VSTR(dst), src, slen);
-	VSTR(dst)[slen] = 0;
+	memcpy(rep_STR(dst), src, slen);
+	rep_STR(dst)[slen] = 0;
     }
-    return VAL(dst);
+    return rep_VAL(dst);
 }
 
-VALUE
-string_dup(const u_char *src)
+repv
+rep_string_dup(const u_char *src)
 {
-    return string_dupn(src, strlen(src));
+    return rep_string_dupn(src, strlen(src));
 }
 
-VALUE
-concat2(u_char *s1, u_char *s2)
+repv
+rep_concat2(u_char *s1, u_char *s2)
 {
     int len = strlen(s1) + strlen(s2);
-    VALUE res = make_string(len + 1);
-    stpcpy(stpcpy(VSTR(res), s1), s2);
-    return(res);
-}
-VALUE
-concat3(u_char *s1, u_char *s2, u_char *s3)
-{
-    int len = strlen(s1) + strlen(s2) + strlen(s3);
-    VALUE res = make_string(len + 1);
-    stpcpy(stpcpy(stpcpy(VSTR(res), s1), s2), s3);
+    repv res = rep_make_string(len + 1);
+    stpcpy(stpcpy(rep_STR(res), s1), s2);
     return(res);
 }
 
-int
-string_cmp(VALUE v1, VALUE v2)
+repv
+rep_concat3(u_char *s1, u_char *s2, u_char *s3)
 {
-    if(STRINGP(v1) && STRINGP(v2))
+    int len = strlen(s1) + strlen(s2) + strlen(s3);
+    repv res = rep_make_string(len + 1);
+    stpcpy(stpcpy(stpcpy(rep_STR(res), s1), s2), s3);
+    return(res);
+}
+
+repv
+rep_concat4(u_char *s1, u_char *s2, u_char *s3, u_char *s4)
+{
+    int len = strlen(s1) + strlen(s2) + strlen(s3) + strlen(s4);
+    repv res = rep_make_string(len + 1);
+    stpcpy(stpcpy(stpcpy(stpcpy(rep_STR(res), s1), s2), s3), s4);
+    return(res);
+}
+
+static int
+string_cmp(repv v1, repv v2)
+{
+    if(rep_STRINGP(v1) && rep_STRINGP(v2))
     {
-	long len1 = STRING_LEN(v1);
-	long len2 = STRING_LEN(v2);
-	long tem = memcmp(VSTR(v1), VSTR(v2), MIN(len1, len2));
+	long len1 = rep_STRING_LEN(v1);
+	long len2 = rep_STRING_LEN(v2);
+	long tem = memcmp(rep_STR(v1), rep_STR(v2), MIN(len1, len2));
 	return tem != 0 ? tem : (len1 - len2);
     }
     else
@@ -266,57 +271,57 @@ string_cmp(VALUE v1, VALUE v2)
 static void
 string_sweep(void)
 {
-    Lisp_String *x = strings;
+    rep_string *x = strings;
     strings = 0;
     allocated_strings = 0;
     allocated_string_bytes = 0;
     while(x != 0)
     {
-	Lisp_String *next = x->next;
-	if(GC_CELL_MARKEDP(VAL(x)))
+	rep_string *next = x->next;
+	if(rep_GC_CELL_MARKEDP(rep_VAL(x)))
 	{
-	    GC_CLR_CELL(VAL(x));
+	    rep_GC_CLR_CELL(rep_VAL(x));
 	    x->next = strings;
 	    strings = x;
 	    allocated_strings++;
-	    allocated_string_bytes += DSTRING_SIZE(STRING_LEN(VAL(x)));
+	    allocated_string_bytes += rep_DSTRING_SIZE(rep_STRING_LEN(rep_VAL(x)));
 	}
 	else
-	    sys_free(x);
+	    rep_free(x);
 	x = next;
     }
 }
 
 /* Sets the length-field of the dynamic string STR to LEN. */
-bool
-set_string_len(VALUE str, long len)
+rep_bool
+rep_set_string_len(repv str, long len)
 {
-    if(STRING_WRITABLE_P(str))
+    if(rep_STRING_WRITABLE_P(str))
     {
-	VSTRING(str)->car = MAKE_STRING_CAR(len);
-	return TRUE;
+	rep_STRING(str)->car = rep_MAKE_STRING_CAR(len);
+	return rep_TRUE;
     }
     else
-	return FALSE;
+	return rep_FALSE;
 }
 
 
 /* Misc */
 
-int
-number_cmp(VALUE v1, VALUE v2)
+static int
+number_cmp(repv v1, repv v2)
 {
-    if(VTYPE(v1) == VTYPE(v2))
-	return VINT(v1) - VINT(v2);
+    if(rep_TYPE(v1) == rep_TYPE(v2))
+	return rep_INT(v1) - rep_INT(v2);
     else
 	return 1;
 }
 
 int
-ptr_cmp(VALUE v1, VALUE v2)
+rep_ptr_cmp(repv v1, repv v2)
 {
-    if(VTYPE(v1) == VTYPE(v2))
-	return !(VPTR(v1) == VPTR(v2));
+    if(rep_TYPE(v1) == rep_TYPE(v2))
+	return !(rep_PTR(v1) == rep_PTR(v2));
     else
 	return 1;
 }
@@ -324,106 +329,93 @@ ptr_cmp(VALUE v1, VALUE v2)
 
 /* Cons */
 
-static Lisp_Cons_Block *cons_block_chain;
-static Lisp_Cons *cons_freelist;
+static rep_cons_block *cons_block_chain;
+static rep_cons *cons_freelist;
 static int allocated_cons, used_cons;
 
-_PR VALUE cmd_cons(VALUE, VALUE);
-DEFUN("cons", cmd_cons, subr_cons, (VALUE car, VALUE cdr), V_Subr2, DOC_cons) /*
-::doc:cons::
-cons CAR-VALUE CDR-VALUE
+DEFUN("cons", Fcons, Scons, (repv car, repv cdr), rep_Subr2) /*
+::doc:Scons::
+cons CAR-repv CDR-repv
 
-Returns a new cons-cell with car CAR-VALUE and cdr CDR-VALUE.
+Returns a new cons-cell with car CAR-repv and cdr CDR-repv.
 ::end:: */
 {
-    Lisp_Cons *cn;
+    rep_cons *cn;
     cn = cons_freelist;
     if(cn == NULL)
     {
-	Lisp_Cons_Block *cb;
-#if MALLOC_ALIGNMENT >= CONS_ALIGNMENT
-	cb = sys_alloc(sizeof(Lisp_Cons_Block));
-#else
-	cb = sys_alloc(sizeof(Lisp_Cons_Block) + CONS_ALIGNMENT - 1);
-#endif
+	rep_cons_block *cb;
+	cb = rep_alloc(sizeof(rep_cons_block));
 	if(cb != NULL)
 	{
 	    int i;
-#if MALLOC_ALIGNMENT >= CONS_ALIGNMENT
-	    cb->alloc_address = cb;
-#else
-	    void *tem = cb;
-	    cb = (Lisp_Cons_Block *)(((PTR_SIZED_INT)cb)
-				     & ~(CONS_ALIGNMENT - 1));
-	    cb->alloc_address = tem;
-#endif
-	    allocated_cons += CONSBLK_SIZE;
+	    allocated_cons += rep_CONSBLK_SIZE;
 	    cb->next = cons_block_chain;
 	    cons_block_chain = cb;
-	    for(i = 0; i < (CONSBLK_SIZE - 1); i++)
-		cb->cons[i].cdr = CONS_VAL(&cb->cons[i + 1]);
+	    for(i = 0; i < (rep_CONSBLK_SIZE - 1); i++)
+		cb->cons[i].cdr = rep_CONS_VAL(&cb->cons[i + 1]);
 	    cb->cons[i].cdr = 0;
 	    cons_freelist = cb->cons;
 	}
 	else
-	    return mem_error();
+	    return rep_mem_error();
 	cn = cons_freelist;
     }
-    cons_freelist = VCONS(cn->cdr);
+    cons_freelist = rep_CONS(cn->cdr);
     cn->car = car;
     cn->cdr = cdr;
     used_cons++;
-    data_after_gc += sizeof(Lisp_Cons);
-    return CONS_VAL(cn);
+    rep_data_after_gc += sizeof(rep_cons);
+    return rep_CONS_VAL(cn);
 }
 
 void
-cons_free(VALUE cn)
+rep_cons_free(repv cn)
 {
-    VCDR(cn) = CONS_VAL(cons_freelist);
-    cons_freelist = VCONS(cn);
+    rep_CDR(cn) = rep_CONS_VAL(cons_freelist);
+    cons_freelist = rep_CONS(cn);
     used_cons--;
 }
 
 static void
 cons_sweep(void)
 {
-    Lisp_Cons_Block *cb = cons_block_chain;
+    rep_cons_block *cb = cons_block_chain;
     cons_block_chain = NULL;
     cons_freelist = NULL;
     used_cons = 0;
     while(cb != NULL)
     {
-	Lisp_Cons_Block *nxt = cb->next;
-	Lisp_Cons *newfree = NULL, *newfreetail = NULL, *this;
+	rep_cons_block *nxt = cb->next;
+	rep_cons *newfree = NULL, *newfreetail = NULL, *this;
 	int i, newused = 0;
-	for(i = 0, this = cb->cons; i < CONSBLK_SIZE; i++, this++)
+	for(i = 0, this = cb->cons; i < rep_CONSBLK_SIZE; i++, this++)
 	{
-	    if(!GC_CONS_MARKEDP(CONS_VAL(this)))
+	    if(!rep_GC_CONS_MARKEDP(rep_CONS_VAL(this)))
 	    {
 		if(!newfreetail)
 		    newfreetail = this;
-		this->cdr = CONS_VAL(newfree);
+		this->cdr = rep_CONS_VAL(newfree);
 		newfree = this;
 	    }
 	    else
 	    {
-		GC_CLR_CONS(CONS_VAL(this));
+		rep_GC_CLR_CONS(rep_CONS_VAL(this));
 		newused++;
 	    }
 	}
 	if(newused == 0)
 	{
 	    /* Whole ConsBlk unused, lets get rid of it.  */
-	    sys_free(cb->alloc_address);
-	    allocated_cons -= CONSBLK_SIZE;
+	    rep_free(cb);
+	    allocated_cons -= rep_CONSBLK_SIZE;
 	}
 	else
 	{
 	    if(newfreetail != NULL)
 	    {
 		/* Link this mini-freelist onto the main one.  */
-		newfreetail->cdr = CONS_VAL(cons_freelist);
+		newfreetail->cdr = rep_CONS_VAL(cons_freelist);
 		cons_freelist = newfree;
 		used_cons += newused;
 	    }
@@ -435,165 +427,128 @@ cons_sweep(void)
     }
 }
 
-int
-cons_cmp(VALUE v1, VALUE v2)
+static int
+cons_cmp(repv v1, repv v2)
 {
     int rc = 1;
-    if(VTYPE(v1) == VTYPE(v2))
+    if(rep_TYPE(v1) == rep_TYPE(v2))
     {
-	rc = value_cmp(VCAR(v1), VCAR(v2));
+	rc = rep_value_cmp(rep_CAR(v1), rep_CAR(v2));
 	if(!rc)
-	    rc = value_cmp(VCDR(v1), VCDR(v2));
+	    rc = rep_value_cmp(rep_CDR(v1), rep_CDR(v2));
     }
     return rc;
 }
 
-VALUE
-list_1(VALUE v1)
+repv
+rep_list_1(repv v1)
 {
-    return LIST_1(v1);
+    return rep_LIST_1(v1);
 }
 
-VALUE
-list_2(VALUE v1, VALUE v2)
+repv
+rep_list_2(repv v1, repv v2)
 {
-    return LIST_2(v1, v2);
+    return rep_LIST_2(v1, v2);
 }
 
-VALUE
-list_3(VALUE v1, VALUE v2, VALUE v3)
+repv
+rep_list_3(repv v1, repv v2, repv v3)
 {
-    return LIST_3(v1, v2, v3);
+    return rep_LIST_3(v1, v2, v3);
 }
 
-VALUE
-list_4(VALUE v1, VALUE v2, VALUE v3, VALUE v4)
+repv
+rep_list_4(repv v1, repv v2, repv v3, repv v4)
 {
-    return LIST_4(v1, v2, v3, v4);
+    return rep_LIST_4(v1, v2, v3, v4);
 }
 
-VALUE
-list_5(VALUE v1, VALUE v2, VALUE v3, VALUE v4, VALUE v5)
+repv
+rep_list_5(repv v1, repv v2, repv v3, repv v4, repv v5)
 {
-    return LIST_5(v1, v2, v3, v4, v5);
+    return rep_LIST_5(v1, v2, v3, v4, v5);
 }
 
 
 /* Vectors */
 
-static Lisp_Vector *vector_chain;
+static rep_vector *vector_chain;
 static int used_vector_slots;
 
-VALUE
-make_vector(int size)
+repv
+rep_make_vector(int size)
 {
-    int len = VECT_SIZE(size);
-    Lisp_Vector *v = ALLOC_OBJECT(len);
+    int len = rep_VECT_SIZE(size);
+    rep_vector *v = rep_ALLOC_CELL(len);
     if(v != NULL)
     {
-	VSET_VECT_LEN(VAL(v), size);
+	rep_SET_VECT_LEN(rep_VAL(v), size);
 	v->next = vector_chain;
 	vector_chain = v;
 	used_vector_slots += size;
-	data_after_gc += len;
+	rep_data_after_gc += len;
     }
-    return VAL(v);
+    return rep_VAL(v);
 }
 
 static void
 vector_sweep(void)
 {
-    Lisp_Vector *this = vector_chain;
+    rep_vector *this = vector_chain;
     vector_chain = NULL;
     used_vector_slots = 0;
     while(this != NULL)
     {
-	Lisp_Vector *nxt = this->next;
-	if(!GC_CELL_MARKEDP(VAL(this)))
-	    FREE_OBJECT(this);
+	rep_vector *nxt = this->next;
+	if(!rep_GC_CELL_MARKEDP(rep_VAL(this)))
+	    rep_FREE_CELL(this);
 	else
 	{
 	    this->next = vector_chain;
 	    vector_chain = this;
-	    used_vector_slots += VVECT_LEN(this);
-	    GC_CLR_CELL(VAL(this));
+	    used_vector_slots += rep_VECT_LEN(this);
+	    rep_GC_CLR_CELL(rep_VAL(this));
 	}
 	this = nxt;
     }
 }
 
-int
-vector_cmp(VALUE v1, VALUE v2)
+static int
+vector_cmp(repv v1, repv v2)
 {
     int rc = 1;
-    if((VTYPE(v1) == VTYPE(v2)) && (VVECT_LEN(v1) == VVECT_LEN(v2)))
+    if((rep_TYPE(v1) == rep_TYPE(v2)) && (rep_VECT_LEN(v1) == rep_VECT_LEN(v2)))
     {
 	int i;
-	int len = VVECT_LEN(v1);
+	int len = rep_VECT_LEN(v1);
 	for(i = rc = 0; (i < len) && (rc == 0); i++)
-	    rc = value_cmp(VVECTI(v1, i), VVECTI(v2, i));
+	    rc = rep_value_cmp(rep_VECTI(v1, i), rep_VECTI(v2, i));
     }
     return rc;
-}
-
-
-/* Positions */
-
-VALUE
-make_pos(long col, long row)
-{
-    return MAKE_POS(col, row);
-}
-
-_PR VALUE cmd_pos(VALUE, VALUE);
-DEFUN("pos", cmd_pos, subr_pos, (VALUE x, VALUE y), V_Subr2, DOC_pos) /*
-::doc:pos::
-pos COLUMN ROW
-
-Returns a new position object with coordinates (COLUMN , ROW).
-::end:: */
-{
-    long col = INTP(x) ? VINT(x) : VCOL(curr_vw->vw_CursorPos);
-    long row = INTP(y) ? VINT(y) : VROW(curr_vw->vw_CursorPos);
-    return MAKE_POS(col ,row);
-}
-
-_PR VALUE cmd_copy_pos(VALUE pos);
-DEFUN("copy-pos", cmd_copy_pos, subr_copy_pos, (VALUE pos), V_Subr1, DOC_copy_pos) /*
-::doc:copy_pos::
-copy-pos POS
-
-Returns a new copy of POS.
-::end:: */
-{
-    DECLARE1(pos, POSP);
-    return MAKE_POS(VCOL(pos), VROW(pos));
 }
 
 
 /* Garbage collection */
 
 #define STATIC_ROOTS 256
-static VALUE *static_roots[STATIC_ROOTS];
+static repv *static_roots[STATIC_ROOTS];
 static int next_static_root;
 
-_PR GC_root *gc_root_stack;
-_PR GC_n_roots *gc_n_roots_stack;
-GC_root *gc_root_stack;
-GC_n_roots *gc_n_roots_stack;
+rep_GC_root *rep_gc_root_stack = 0;
+rep_GC_n_roots *rep_gc_n_roots_stack = 0;
 
-/* data_after_gc = bytes of storage used since last gc
-   gc_threshold = value that data_after_gc should be before gc'ing
-   idle_gc_threshold = value that DAGC should be before gc'ing in idle time */
-_PR int data_after_gc, gc_threshold, idle_gc_threshold, gc_inhibit;
-int data_after_gc, gc_threshold = 100000, idle_gc_threshold = 20000;
+/* rep_data_after_gc = bytes of storage used since last gc
+   rep_gc_threshold = value that rep_data_after_gc should be before gc'ing
+   rep_idle_gc_threshold = value that DAGC should be before gc'ing in idle time */
+int rep_data_after_gc, rep_gc_threshold = 100000, rep_idle_gc_threshold = 20000;
 
 #ifdef GC_MONITOR_STK
 static int *gc_stack_high_tide;
 #endif
 
 void
-mark_static(VALUE *obj)
+rep_mark_static(repv *obj)
 {
     assert(next_static_root < STATIC_ROOTS);
     static_roots[next_static_root++] = obj;
@@ -601,12 +556,12 @@ mark_static(VALUE *obj)
 
 /* Mark a single Lisp object.
    This attempts to eliminate as much tail-recursion as possible (by
-   changing the VAL and jumping back to the `again' label).
+   changing the rep_VAL and jumping back to the `again' label).
 
-   Note that VAL must not be NULL, and must not already have been
-   marked, (see the MARKVAL macro in lisp.h) */
+   Note that rep_VAL must not be NULL, and must not already have been
+   marked, (see the rep_MARKVAL macro in lisp.h) */
 void
-mark_value(register VALUE val)
+rep_mark_value(register repv val)
 {
 #ifdef GC_MONITOR_STK
     int dummy;
@@ -630,26 +585,26 @@ mark_value(register VALUE val)
 #endif
 
 again:
-    if(INTP(val))
+    if(rep_INTP(val))
 	return;
 
-    if(CONSP(val))
+    if(rep_CONSP(val))
     {
-	if(CONS_WRITABLE_P(val))
+	if(rep_CONS_WRITABLE_P(val))
 	{
 	    /* A cons. Attempts to walk though whole lists at a time
 	       (since Lisp lists mainly link from the cdr).  */
-	    GC_SET_CONS(val);
-	    if(NILP(VGCDR(val)))
+	    rep_GC_SET_CONS(val);
+	    if(rep_NILP(rep_GCDR(val)))
 		/* End of a list. We can safely
 		   mark the car non-recursively.  */
-		val = VCAR(val);
+		val = rep_CAR(val);
 	    else
 	    {
-		MARKVAL(VCAR(val));
-		val = VGCDR(val);
+		rep_MARKVAL(rep_CAR(val));
+		val = rep_GCDR(val);
 	    }
-	    if(val && !INTP(val) && !GC_MARKEDP(val))
+	    if(val && !rep_INTP(val) && !rep_GC_MARKEDP(val))
 		goto again;
 	    return;
 	}
@@ -660,172 +615,88 @@ again:
 	}
     }
 
-    /* So we know that it's a cell8 object */
-    switch(VCELL8_TYPE(val))
+    if (rep_CELL16P(val))
     {
-    case V_Vector:
-    case V_Compiled:
-#ifdef DUMPED
+	/* A user allocated type. */
+	rep_type *t = rep_get_data_type(rep_CELL16_TYPE(val));
+	rep_GC_SET_CELL(val);
+	if (t->mark != 0)
+	    t->mark(val);
+	return;
+    }
+
+    /* So we know that it's a cell8 object */
+    switch(rep_CELL8_TYPE(val))
+    {
+	rep_type *t;
+
+    case rep_Vector:
+    case rep_Compiled:
+#ifdef rep_DUMPED
 	/* Ensure that read-only objects aren't marked */
-	if(VECTOR_WRITABLE_P(val))
+	if(rep_VECTOR_WRITABLE_P(val))
 #endif
 	{
-	    int i, len = VVECT_LEN(val);
-	    GC_SET_CELL(val);
+	    int i, len = rep_VECT_LEN(val);
+	    rep_GC_SET_CELL(val);
 	    for(i = 0; i < len; i++)
-		MARKVAL(VVECTI(val, i));
+		rep_MARKVAL(rep_VECTI(val, i));
 	}
 	break;
 
-    case V_Symbol:
+    case rep_Symbol:
 	/* Dumped symbols are dumped read-write, so no worries.. */
-	GC_SET_CELL(val);
-	MARKVAL(VSYM(val)->name);
-	MARKVAL(VSYM(val)->value);
-	MARKVAL(VSYM(val)->function);
-	MARKVAL(VSYM(val)->prop_list);
-	val = VSYM(val)->next;
-	if(val && !INTP(val) && !GC_MARKEDP(val))
+	rep_GC_SET_CELL(val);
+	rep_MARKVAL(rep_SYM(val)->name);
+	rep_MARKVAL(rep_SYM(val)->value);
+	rep_MARKVAL(rep_SYM(val)->function);
+	rep_MARKVAL(rep_SYM(val)->prop_list);
+	val = rep_SYM(val)->next;
+	if(val && !rep_INTP(val) && !rep_GC_MARKEDP(val))
 	    goto again;
 	break;
 
-    case V_Buffer:
-	GC_SET_CELL(val);
-	MARKVAL(VTX(val)->tx_FileName);
-	MARKVAL(VTX(val)->tx_CanonicalFileName);
-	MARKVAL(VTX(val)->tx_BufferName);
-	MARKVAL(VTX(val)->tx_StatusId);
-	MARKVAL(VTX(val)->tx_UndoList);
-	MARKVAL(VTX(val)->tx_ToUndoList);
-	MARKVAL(VTX(val)->tx_UndoneList);
-	MARKVAL(VTX(val)->tx_SavedCPos);
-	MARKVAL(VTX(val)->tx_SavedWPos);
-	MARKVAL(VTX(val)->tx_SavedBlockPos[0]);
-	MARKVAL(VTX(val)->tx_SavedBlockPos[1]);
-	mark_extent(VTX(val)->tx_GlobalExtent);
-	break;
-
-    case V_Window:
-	GC_SET_CELL(val);
-	MARKVAL(VWIN(val)->w_FontName);
-	MARKVAL(VWIN(val)->w_DisplayedName);
-#ifdef HAVE_AMIGA
-	MARKVAL(VWIN(val)->w_WindowSys.ws_ScreenName);
-#endif
-	val = VAL(VWIN(val)->w_ViewList);
-	if(val != 0 && !INTP(val) && !GC_MARKEDP(val) && !NILP(val))
-	    goto again;
-	break;
-
-    case V_View:
-	GC_SET_CELL(val);
-	MARKVAL(VAL(VVIEW(val)->vw_Tx));
-	MARKVAL(VVIEW(val)->vw_BufferList);
-	MARKVAL(VVIEW(val)->vw_CursorPos);
-	MARKVAL(VVIEW(val)->vw_LastCursorPos);
-	MARKVAL(VVIEW(val)->vw_DisplayOrigin);
-	MARKVAL(VVIEW(val)->vw_BlockS);
-	MARKVAL(VVIEW(val)->vw_BlockE);
-	val = VAL(VVIEW(val)->vw_NextView);
-	if(val != 0 && !INTP(val) && !GC_MARKEDP(val) && !NILP(val))
-	    goto again;
-	break;
-
-    case V_File:
-	GC_SET_CELL(val);
-	MARKVAL(VFILE(val)->name);
-	MARKVAL(VFILE(val)->handler);
-	MARKVAL(VFILE(val)->handler_data);
-	if(!LOCAL_FILE_P(val))
-	    MARKVAL(VFILE(val)->file.stream);
-	break;
-
-    case V_Process:
-	GC_SET_CELL(val);
-#ifdef HAVE_SUBPROCESSES
-	proc_mark(val);
-#endif
-	break;
-
-    case V_Mark:
-	GC_SET_CELL(val);
-	if(!MARK_RESIDENT_P(VMARK(val)))
-	{
-	    MARKVAL(VMARK(val)->file);
-	    MARKVAL(VMARK(val)->canon_file);
-	}
-	else
-	{
-	    /* TXs don't get marked here. They should still be able to
-	       be gc'd if there's marks pointing to them. The marks will
-	       just get made non-resident. But to do this we'll need
-	       the names of the file they point to.. */
-	    MARKVAL(VTX(VMARK(val)->file)->tx_FileName);
-	    MARKVAL(VTX(VMARK(val)->file)->tx_CanonicalFileName);
-	}
-	MARKVAL(VMARK(val)->pos);
-	break;
-
-    case V_String:
-	if(!STRING_WRITABLE_P(val))
+    case rep_String:
+	if(!rep_STRING_WRITABLE_P(val))
 	    break;
-	/* FALL THROUGH */
-    case V_GlyphTable:
-	GC_SET_CELL(val);
+	rep_GC_SET_CELL(val);
 	break;
 
-    case V_Extent:
-	GC_SET_CELL(val);
-	MARKVAL(VAL(VEXTENT(val)->frag_next));
-	MARKVAL(VAL(VEXTENT(val)->frag_pred));
-	MARKVAL(VEXTENT(val)->locals);
-	val = VEXTENT(val)->plist;
-	if(val != 0 && !GC_MARKEDP(val) && !NILP(val))
-	    goto again;
+    case rep_Var:
+    case rep_Subr0:
+    case rep_Subr1:
+    case rep_Subr2:
+    case rep_Subr3:
+    case rep_Subr4:
+    case rep_Subr5:
+    case rep_SubrN:
+    case rep_SF:
 	break;
 
-    case V_Face:
-	GC_SET_CELL(val);
-	MARKVAL(VFACE(val)->name);
-	MARKVAL(VFACE(val)->foreground);
-	MARKVAL(VFACE(val)->background);
-	break;
-
-    case V_Color:
-	GC_SET_CELL(val);
-	MARKVAL(VCOLOR(val)->name);
-	break;
-
-    case V_Var:
-    case V_Subr0:
-    case V_Subr1:
-    case V_Subr2:
-    case V_Subr3:
-    case V_Subr4:
-    case V_Subr5:
-    case V_SubrN:
-    case V_SF:
+    default:
+	t = rep_get_data_type(rep_CELL8_TYPE(val));
+	rep_GC_SET_CELL(val);
+	if (t->mark != 0)
+	    t->mark(val);
     }
 }
 
-_PR VALUE var_garbage_threshold(VALUE val);
-DEFUN("garbage-threshold", var_garbage_threshold, subr_garbage_threshold, (VALUE val), V_Var, DOC_garbage_threshold) /*
-::doc:garbage_threshold::
+DEFUN("garbage-threshold", Vgarbage_threshold, Sgarbage_threshold, (repv val), rep_Var) /*
+::doc:Vgarbage-threshold::
 The number of bytes of storage which must be used before a garbage-
 collection is triggered.
 ::end:: */
 {
-    return handle_var_int(val, &gc_threshold);
+    return rep_handle_var_int(val, &rep_gc_threshold);
 }
 
-_PR VALUE var_idle_garbage_threshold(VALUE val);
-DEFUN("idle-garbage-threshold", var_idle_garbage_threshold, subr_idle_garbage_threshold, (VALUE val), V_Var, DOC_idle_garbage_threshold) /*
-::doc:idle_garbage_threshold::
+DEFUN("idle-garbage-threshold", Vidle_garbage_threshold, Sidle_garbage_threshold, (repv val), rep_Var) /*
+::doc:Vidle-garbage-threshold::
 The number of bytes of storage which must be used before a garbage-
 collection is triggered when the editor is idle.
 ::end:: */
 {
-    return handle_var_int(val, &idle_gc_threshold);
+    return rep_handle_var_int(val, &rep_idle_gc_threshold);
 }
 
 #ifndef NO_GC_MSG
@@ -833,9 +704,8 @@ DEFSTRING(gc_start, "Garbage collecting...");
 DEFSTRING(gc_done, "Garbage collecting...done.");
 #endif
 
-_PR VALUE cmd_garbage_collect(VALUE noStats);
-DEFUN_INT("garbage-collect", cmd_garbage_collect, subr_garbage_collect, (VALUE noStats), V_Subr1, DOC_garbage_collect, "") /*
-::doc:garbage_collect::
+DEFUN_INT("garbage-collect", Fgarbage_collect, Sgarbage_collect, (repv noStats), rep_Subr1, "") /*
+::doc:Sgarbage-collect::
 garbage-collect
 
 Scans all allocated storage for unusable data, and puts it onto the free-
@@ -844,152 +714,158 @@ last garbage-collection is greater than `garbage-threshold'.
 ::end:: */
 {
     int i;
-    GC_root *gc_root;
-    GC_n_roots *gc_n_roots;
-    WIN *win;
-    struct Lisp_Call *lc;
-#ifndef NO_GC_MSG
-    u_char *old_msg;
-    u_long old_msg_len;
-    bool old_log_msgs;
-#endif
+    rep_GC_root *rep_gc_root;
+    rep_GC_n_roots *rep_gc_n_roots;
+    struct rep_Call *lc;
 #ifdef GC_MONITOR_STK
     int dummy;
     gc_stack_high_tide = &dummy;
 #endif
 
-#ifndef NO_GC_MSG
-    old_log_msgs = log_messages;
-    log_messages = FALSE;
-    save_message(curr_win, &old_msg, &old_msg_len);
-    cmd_message(VAL(&gc_start), sym_t);
-#endif
-
-    /* gc the undo lists */
-    undo_trim();
-
     /* mark static objects */
     for(i = 0; i < next_static_root; i++)
-	MARKVAL(*static_roots[i]);
+	rep_MARKVAL(*static_roots[i]);
     /* mark stack based objects protected from GC */
-    for(gc_root = gc_root_stack; gc_root != 0; gc_root = gc_root->next)
-	MARKVAL(*gc_root->ptr);
-    for(gc_n_roots = gc_n_roots_stack; gc_n_roots != 0;
-	gc_n_roots = gc_n_roots->next)
+    for(rep_gc_root = rep_gc_root_stack;
+	rep_gc_root != 0; rep_gc_root = rep_gc_root->next)
     {
-	for(i = 0; i < gc_n_roots->count; i++)
-	    MARKVAL(gc_n_roots->first[i]);
+	rep_MARKVAL(*rep_gc_root->ptr);
+    }
+    for(rep_gc_n_roots = rep_gc_n_roots_stack; rep_gc_n_roots != 0;
+	rep_gc_n_roots = rep_gc_n_roots->next)
+    {
+	for(i = 0; i < rep_gc_n_roots->count; i++)
+	    rep_MARKVAL(rep_gc_n_roots->first[i]);
     }
 
-    /* Don't want any open windows mysteriously vanishing so,  */
-    win = win_chain;
-    while(win != 0)
+    /* Do data-type specific marking. */
+    for (i = 0; i < TYPE_HASH_SIZE; i++)
     {
-	if(win->w_Window)
+	rep_type *t = data_types[i];
+	while (t != 0)
 	{
-	    MARKVAL(VAL(win));
-	    mark_merged_faces(win);
+	    if (t->mark_type != 0)
+		t->mark_type();
+	    t = t->next;
 	}
-	win = win->w_Next;
     }
 
-#ifdef HAVE_SUBPROCESSES
-    /* Same goes for active subprocesses */
-    mark_active_processes();
-#endif
+    rep_mark_regexp_data();
 
 #ifdef HAVE_DYNAMIC_LOADING
-    mark_dl_data();
-#endif
-
-#ifdef HAVE_AMIGA
-    /* Mark the strings in the menu strip.  */
-    ami_mark_menus();
+    rep_mark_dl_data();
 #endif
 
     /* have to mark the Lisp backtrace.	 */
-    lc = lisp_call_stack;
+    lc = rep_call_stack;
     while(lc)
     {
-	MARKVAL(lc->fun);
-	MARKVAL(lc->args);
+	rep_MARKVAL(lc->fun);
+	rep_MARKVAL(lc->args);
 	/* don't bother marking `args_evalled_p' it's always `nil' or `t'  */
 	lc = lc->next;
     }
 
-    mark_regexp_data();
-
     /* Finished marking, start sweeping. */
 
-    for(i = 0; i < V_MAX; i++)
-	if(data_types[i].sweep != NULL)
-	    data_types[i].sweep();
+    for(i = 0; i < TYPE_HASH_SIZE; i++)
+    {
+	rep_type *t = data_types[i];
+	while (t != 0)
+	{
+	    if (t->sweep != 0)
+		t->sweep();
+	    t = t->next;
+	}
+    }
 
-#ifndef NO_GC_MSG
-    cmd_message(VAL(&gc_done), sym_t);
-    restore_message(curr_win, old_msg, old_msg_len);
-    log_messages = old_log_msgs;
-#endif
-
-    data_after_gc = 0;
+    rep_data_after_gc = 0;
 
 #ifdef GC_MONITOR_STK
     fprintf(stderr, "gc: stack usage = %d\n",
 	    ((int)&dummy) - (int)gc_stack_high_tide);
 #endif
 
-    if(NILP(noStats))
+    if(rep_NILP(noStats))
     {
-	return(list_4(cmd_cons(MAKE_INT(used_cons),
-			       MAKE_INT(allocated_cons - used_cons)),
-		      cmd_cons(MAKE_INT(used_symbols),
-			       MAKE_INT(allocated_symbols - used_symbols)),
-		      cmd_cons(MAKE_INT(allocated_strings),
-			       MAKE_INT(allocated_string_bytes)),
-		      MAKE_INT(used_vector_slots)));
+	return(rep_list_4(Fcons(rep_MAKE_INT(used_cons),
+			       rep_MAKE_INT(allocated_cons - used_cons)),
+		      Fcons(rep_MAKE_INT(rep_used_symbols),
+			       rep_MAKE_INT(rep_allocated_symbols - rep_used_symbols)),
+		      Fcons(rep_MAKE_INT(allocated_strings),
+			       rep_MAKE_INT(allocated_string_bytes)),
+		      rep_MAKE_INT(used_vector_slots)));
     }
-    return(sym_t);
+    return(Qt);
 }
 
 
 void
-pre_values_init(void)
+rep_pre_values_init(void)
 {
+    rep_register_type(rep_Cons, "cons", cons_cmp,
+		  rep_lisp_prin, rep_lisp_prin, cons_sweep, 0, 0, 0, 0, 0, 0, 0, 0);
+    rep_register_type(rep_Int, "integer", number_cmp,
+		  rep_lisp_prin, rep_lisp_prin, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    rep_register_type(rep_Vector, "vector", vector_cmp,
+		  rep_lisp_prin, rep_lisp_prin, vector_sweep, 0, 0, 0, 0, 0, 0, 0, 0);
+    rep_register_type(rep_String, "string", string_cmp, rep_string_princ,
+		  rep_string_print, string_sweep, 0, 0, 0, 0, 0, 0, 0, 0);
+    rep_register_type(rep_Compiled, "bytecode", vector_cmp,
+		  rep_lisp_prin, rep_lisp_prin, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    rep_register_type(rep_Void, "void", rep_type_cmp,
+		  rep_lisp_prin, rep_lisp_prin, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    rep_register_type(rep_Var, "var", rep_ptr_cmp,
+		  rep_lisp_prin, rep_lisp_prin, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    rep_register_type(rep_SF, "special-form", rep_ptr_cmp,
+		  rep_lisp_prin, rep_lisp_prin, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    rep_register_type(rep_Subr0, "subr0", rep_ptr_cmp,
+		  rep_lisp_prin, rep_lisp_prin, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    rep_register_type(rep_Subr1, "subr1", rep_ptr_cmp,
+		  rep_lisp_prin, rep_lisp_prin, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    rep_register_type(rep_Subr2, "subr2", rep_ptr_cmp,
+		  rep_lisp_prin, rep_lisp_prin, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    rep_register_type(rep_Subr3, "subr3", rep_ptr_cmp,
+		  rep_lisp_prin, rep_lisp_prin, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    rep_register_type(rep_Subr4, "subr4", rep_ptr_cmp,
+		  rep_lisp_prin, rep_lisp_prin, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    rep_register_type(rep_Subr5, "subr5", rep_ptr_cmp,
+		  rep_lisp_prin, rep_lisp_prin, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    rep_register_type(rep_SubrN, "subrn", rep_ptr_cmp,
+		  rep_lisp_prin, rep_lisp_prin, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 }
 
 void
-values_init(void)
+rep_values_init(void)
 {
-    ADD_SUBR(subr_cons);
-    ADD_SUBR(subr_pos);
-    ADD_SUBR(subr_copy_pos);
-    ADD_SUBR(subr_garbage_threshold);
-    ADD_SUBR(subr_idle_garbage_threshold);
-    ADD_SUBR_INT(subr_garbage_collect);
+    rep_ADD_SUBR(Scons);
+    rep_ADD_SUBR(Sgarbage_threshold);
+    rep_ADD_SUBR(Sidle_garbage_threshold);
+    rep_ADD_SUBR_INT(Sgarbage_collect);
 }
 
 void
-values_kill(void)
+rep_values_kill(void)
 {
-    Lisp_Cons_Block *cb = cons_block_chain;
-    Lisp_Vector *v = vector_chain;
-    Lisp_String *s = strings;
+    rep_cons_block *cb = cons_block_chain;
+    rep_vector *v = vector_chain;
+    rep_string *s = strings;
     while(cb != NULL)
     {
-	Lisp_Cons_Block *nxt = cb->next;
-	sys_free(cb->alloc_address);
+	rep_cons_block *nxt = cb->next;
+	rep_free(cb);
 	cb = nxt;
     }
     while(v != NULL)
     {
-	Lisp_Vector *nxt = v->next;
-	FREE_OBJECT(v);
+	rep_vector *nxt = v->next;
+	rep_FREE_CELL(v);
 	v = nxt;
     }
     while(s != NULL)
     {
-	Lisp_String *nxt = s->next;
-	FREE_OBJECT(s);
+	rep_string *nxt = s->next;
+	rep_FREE_CELL(s);
 	s = nxt;
     }
     cons_block_chain = NULL;
@@ -1000,38 +876,38 @@ values_kill(void)
 
 /* Support for dumped Lisp code */
 
-#ifdef DUMPED
+#ifdef rep_DUMPED
 
 void
-dumped_init(void)
+rep_dumped_init(void)
 {
     /* Main function is to go through all dumped symbols, interning
-       them, and changing LISP_NULL values to be void. */
-    Lisp_Symbol *sym;
+       them, and changing rep_NULL values to be void. */
+    rep_symbol *sym;
 
     /* But first, intern nil, it'll be filled in later. */
-    sym_nil = cmd_intern_symbol(VAL(DUMPED_SYM_NIL), void_value);
+    Qnil = Fintern_symbol(rep_VAL(rep_DUMPED_SYM_NIL), rep_void_value);
 
     /* Initialise allocated_X counts */
-    allocated_cons = &dumped_cons_end - &dumped_cons_start;
-    allocated_symbols = &dumped_symbols_end - &dumped_symbols_start;
+    allocated_cons = &rep_dumped_cons_end - &rep_dumped_cons_start;
+    rep_allocated_symbols = &rep_dumped_symbols_end - &rep_dumped_symbols_start;
     /* ish.. */
-    used_vector_slots = ((&dumped_vectors_end - &dumped_vectors_start)
-			 + (&dumped_bytecode_end - &dumped_bytecode_start));
+    used_vector_slots = ((&rep_dumped_vectors_end - &rep_dumped_vectors_start)
+			 + (&rep_dumped_bytecode_end - &rep_dumped_bytecode_start));
 
     /* Stop one symbol too early, since we've already added it (nil) */
-    for(sym = &dumped_symbols_start; sym < (&dumped_symbols_end)-1; sym++)
+    for(sym = &rep_dumped_symbols_start; sym < (&rep_dumped_symbols_end)-1; sym++)
     {
 	/* Second arg is [OBARRAY], but it's only checked against
 	   being a vector. */
-	cmd_intern_symbol(VAL(sym), void_value);
-	if(sym->value == LISP_NULL)
-	    sym->value = void_value;
-	if(sym->function == LISP_NULL)
-	    sym->function = void_value;
-	if(sym->prop_list == LISP_NULL)
-	    sym->prop_list = sym_nil;
+	Fintern_symbol(rep_VAL(sym), rep_void_value);
+	if(sym->value == rep_NULL)
+	    sym->value = rep_void_value;
+	if(sym->function == rep_NULL)
+	    sym->function = rep_void_value;
+	if(sym->prop_list == rep_NULL)
+	    sym->prop_list = Qnil;
     }
 }
 
-#endif /* DUMPED */
+#endif /* rep_DUMPED */

@@ -28,6 +28,15 @@ libraries that were dumped.")
 ;; A list of the dumped libraries whose .jld files have been autoloaded
 (defvar dumped-loaded-libraries nil)
 
+(defvar standard-output (stdout-file)
+  "Stream that `prin?' writes its output to by default.")
+
+(defvar standard-input (stdin-file)
+  "Stream that `read' takes its input from by default.")
+
+(defvar standard-error (stderr-file)
+  "Standard stream for error output.")
+
 
 ;; Function decls
 
@@ -39,13 +48,6 @@ call it. Otherwise exactly the same as defun."
 	(cons 'defun decl)
 	(list 'put (list 'quote (car decl))
 	      ''compile-fun ''comp-compile-inline-function)))
-
-(defmacro defface (name &optional documentation &rest forms)
-  "Create a face called NAME, the Lisp FORMS are evaluated to initialise it.
-If the symbol NAME is already bound, only the documentation property is set."
-  `(unless (prog1 (boundp ',name)
-	     (defvar ,name (make-face ,(symbol-name name)) ,documentation))
-     ,@forms))
 
 
 ;; Convenient conditional macros, defined using cond
@@ -61,30 +63,6 @@ FORMS."
   (list 'cond (cons condition nil) (cons 't forms)))
 
 
-;; Feature definition
-
-(defvar features ()
-  "A list of symbols defining which ``features'' Jade currently has loaded.
-This is used by the `featurep', `provide' and `require' functions.")
-
-(defun require (feature &optional file)
-  "If FEATURE (a symbol) has not already been loaded, load it. The file
-loaded is either FILE (if given), or the print name of FEATURE."
-  (interactive "SFeature to load:")
-  (if (member feature features)
-      t
-    (load (unless file (symbol-name feature)))))
-
-(defun provide (feature)
-  "Show that the feature FEATURE (a symbol) has been loaded."
-  (unless (member feature features)
-      (setq features (cons feature features))))
-
-(defun featurep (feature)
-  "Return non-nil if feature FEATURE has already been loaded."
-  (member feature features))
-
-
 ;; Function to allow easy creation of autoload stubs
 
 (when (boundp 'dumped-lisp-libraries)
@@ -96,38 +74,30 @@ from a named file. The AUTOLOAD-DEFN is the contents of the SYMBOL's
 autoload definition. Currently two items are used, the first is the name
 of the file to load the value of SYMBOL from. The second says whether or
 not the function SYMBOL may be called interactively (as a command)."
-  (if (and (boundp 'dumped-lisp-libraries)
-	   (member file dumped-lisp-libraries))
-      ;; If FILE has been dumped, but not yet loaded, load it
-      (unless (member file dumped-loaded-libraries)
-	(load file)
-	(setq dumped-loaded-libraries (cons file dumped-loaded-libraries)))
+  (cond
+   ((and (boundp 'dumped-lisp-libraries)
+	 (member file dumped-lisp-libraries))
+    ;; If FILE has been dumped, but not yet loaded, load it
+    (unless (member file dumped-loaded-libraries)
+      (load file)
+      (setq dumped-loaded-libraries (cons file dumped-loaded-libraries))))
+   ((not (fboundp symbol))
     ;; Else just add the autoload defn as normal
-    (fset symbol (list* 'autoload file extra))))
+    (fset symbol (list* 'autoload file extra)))))
 
 (defun autoload-variable (symbol file)
   "Tell the evaluator that the value of SYMBOL can be initialised by loading
 the lisp library called FILE. Note that this doesn't work yet!"
-  (if (and (boundp 'dumped-lisp-libraries)
-	   (member file dumped-lisp-libraries))
-      ;; If FILE has been dumped, but not yet loaded, load it
-      (unless (member file dumped-loaded-libraries)
-	(load file)
-	(setq dumped-loaded-libraries (cons file dumped-loaded-libraries)))
+  (cond
+   ((and (boundp 'dumped-lisp-libraries)
+	 (member file dumped-lisp-libraries))
+    ;; If FILE has been dumped, but not yet loaded, load it
+    (unless (member file dumped-loaded-libraries)
+      (load file)
+      (setq dumped-loaded-libraries (cons file dumped-loaded-libraries))))
+   ((not (boundp symbol))
     ;; Else just add the autoload defn as normal
-    (set symbol (list 'autoload file))))
-
-(defun autoload-keymap (keymap-symbol file)
-  "Tell the evaluator that the value of KEYMAP-SYMBOL can be initialised
-by loading the lisp library called FILE."
-  (if (and (boundp 'dumped-lisp-libraries)
-	   (member file dumped-lisp-libraries))
-      ;; If FILE has been dumped, but not yet loaded, load it
-      (unless (member file dumped-loaded-libraries)
-	(load file)
-	(setq dumped-loaded-libraries (cons file dumped-loaded-libraries)))
-    ;; Else just add the autoload defn as normal
-    (fset keymap-symbol (list 'autoload-keymap file))))
+    (set symbol (list 'autoload file)))))
 
 
 ;; Hook manipulation
@@ -157,6 +127,18 @@ match the FILE argument to `load'."
 
 ;; Miscellanea
 
+(defun load-all (file)
+  "Try to load files called FILE (or FILE.jl, etc) from all directories in the
+LISP load path."
+  (mapc #'(lambda (dir)
+	    (let
+		((full-name (expand-file-name file dir)))
+	      (when (or (file-exists-p full-name)
+			(file-exists-p (concat full-name ".jl"))
+			(file-exists-p (concat full-name ".jlc")))
+		(load full-name nil t))))
+	load-path))
+
 (defmacro eval-when-compile (form)
   "FORM is evaluated at compile-time *only*. The evaluated value is inserted
 into the compiled program. When interpreted, nil is returned."
@@ -170,6 +152,18 @@ into the compiled program. When interpreted, nil is returned."
   "Reads an object from STRING, starting at character number START (default
 is 0)."
   (list 'read (list 'make-string-input-stream string start)))
+
+(defun assoc-regexp (input alist &optional fold-case)
+  "Scan ALIST for an element whose car is a regular expression matching the
+string INPUT."
+  (catch 'return
+    (mapc #'(lambda (cell)
+	      (when (string-match (car cell) input nil fold-case)
+		(throw 'return cell))) alist)))
+
+(defun file-newer-than-file-p (file1 file2)
+  "Returns t when FILE1 was modified more recently than FILE2."
+  (time-later-p (file-modtime file1) (file-modtime file2)))
 
 ;; Some function pseudonyms
 (defmacro setcar (&rest args)
@@ -212,16 +206,8 @@ available as the reader shortcut #', i.e. #'foo == (function foo)."
   "Return ARG."
   arg)
 
-
-;; Macros for handling positions
-
-(defmacro pos-col (p)
-  "Return the column pointed to by position P."
-  (list 'cdr p))
-
-(defmacro pos-line (p)
-  "Return the row pointed to by position P."
-  (list 'car p))
+;; Hide interactive decls
+(defmacro interactive ())
 
 
 ;; Setup format-hooks-alist to a few default'ish things

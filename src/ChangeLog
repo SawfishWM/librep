@@ -1,12 +1,7 @@
-1999-02-17  John Harper  <john@dcs.warwick.ac.uk>
+1999-02-28  John Harper  <john@dcs.warwick.ac.uk>
 
-	* unix_processes.c (check_for_zombies): always check for
-	zombies, even if we received no SIGCHLD
-
-1999-02-12  John Harper  <john@dcs.warwick.ac.uk>
-
-	* unix_files.c (sys_canonical_file_name): preserve the trailing
-	slash or lack thereof
+	* MAJOR CHANGES: separated all LISP interpreter specific parts
+	into a separate library, librep (Read-Eval-Print)
 
 1999-01-31  John Harper  <john@dcs.warwick.ac.uk>
 

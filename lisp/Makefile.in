@@ -18,35 +18,34 @@
 # along with Jade; see the file COPYING.  If not, write to
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-include ../Makedefs
+jade_prog = ../src/rep
 
-top_srcdir=@top_srcdir@
+COMPILE_ENV = REPLISPDIR=. REPDOCFILE=../DOC
 
-jade_prog = ../jade/jade
-
-COMPILE_ENV = JADELISPLIB=.
-
-INSTALL_FILES = $(wildcard *.jl) $(wildcard *.jlc) $(wildcard *.jld) DOC
+INSTALL_FILES = $(wildcard *.jl) $(wildcard *.jlc) $(wildcard *.jld)
 
 all : lisp
 
 lisp :
-	$(COMPILE_ENV) $(jade_prog) -batch -log-msgs -no-rc \
-		-l compiler -f compile-compiler
-	$(COMPILE_ENV) $(jade_prog) -batch -log-msgs -no-rc \
-		-f compile-lisp-lib
+	$(COMPILE_ENV) $(jade_prog) --batch --no-rc \
+	  -l compiler -f compile-compiler
+	$(COMPILE_ENV) $(jade_prog) --batch --no-rc -f compile-lisp-lib
 
 install : all installdirs
-	$(INSTALL_DATA) $(INSTALL_FILES) $(lispdir)
+	for f in $(INSTALL_FILES); do \
+	  $(INSTALL_DATA) $$f $(replispdir); \
+	done
 
 installdirs : $(top_srcdir)/mkinstalldirs
-	$(SHELL) $(top_srcdir)/mkinstalldirs $(lispdir)
+	$(SHELL) $(top_srcdir)/mkinstalldirs $(replispdir)
 
 uninstall :
-	rm -f $(addprefix $(lispdir)/, $(INSTALL_FILES))
+	for f in $(INSTALL_FILES); do \
+	  rm -f $(replispdir)/$$f; \
+	done
 
 clean :
-	rm -f *.jlc DOC *.jld dump.out *~
+	rm -f *.jlc *.jld *~
 
 realclean : clean
 	rm -f Makefile

@@ -18,84 +18,94 @@
    along with Jade; see the file COPYING.	If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-#include "jade.h"
-#include <lib/jade_protos.h>
-#include "revision.h"
-
+#include "repint.h"
 #include <string.h>
 #include <limits.h>
 
-_PR int main(int, char **);
-_PR int inner_main(int, char **);
-_PR bool on_idle(long since_last_event);
-_PR bool handle_input_exception(VALUE *result_p);
-_PR void main_init(void);
+void *rep_common_db;
 
-_PR void *common_db;
-void *common_db;
+int rep_recurse_depth = -1;
 
-_PR int recurse_depth;
-int recurse_depth = -1;
+rep_bool (*rep_on_idle_fun)(int since_last);
+DEFSYM(idle_hook, "idle-hook"); /*
+::doc:Vidle-hook::
+This hook gets evaluated every second while the editor is idle. Don't depend
+on how regularly this gets called, any events from the window-system will
+delay it. Also, auto-saving files and garbage-collection take precedence
+when there's idle time available. Use this hook sparingly, or for short
+periods only!
+::end:: */
 
-_PR VALUE sym_exit, sym_quit, sym_top_level, sym_command_line_args;
+/* Called when we get a termination signal. */
+void (*rep_on_termination_fun)(void);
+
 DEFSYM(exit, "exit");
 DEFSYM(quit, "quit");
 DEFSYM(top_level, "top-level");
 DEFSYM(command_line_args, "command-line-args");
+DEFSYM(batch_mode, "batch-mode");
 
 #ifndef INIT_SCRIPT
 # define INIT_SCRIPT "init"
 #endif
 static u_char *init_script = INIT_SCRIPT;
 
-_PR bool opt_batch_mode;
-bool opt_batch_mode;
+static void rep_main_init(void);
 
 static void
-usage(void)
+usage(char *prog_name, void (*sys_usage)(void))
 {
-    fputs("usage: jade [SYSTEM-OPTIONS] [STANDARD-OPTIONS] [LISP-OPTIONS]\n", stderr);
-    sys_usage();
-    fputs("STANDARD-OPTIONS are,\n"
-	"    -rc FILE     use FILE instead of `init.jl' to boot from\n"
-	"    -v           print version/revision details\n"
-	"    -log-msgs    print all messages to standard-error as well\n"
-	"    -batch       don't open any windows; process args and exit\n"
-	"and LISP-OPTIONS are,\n"
-	"    -no-rc       don't load .jaderc or site-init files\n"
-	"    -f FUNCTION  call the Lisp function FUNCTION\n"
-	"    -l FILE      load the file of Lisp forms called FILE\n"
-	"    -q           quit\n"
-	"    FILE         load FILE into a new buffer\n"
-	, stderr);
+    if (sys_usage != 0)
+    {
+	fprintf(stderr, "usage: %s [REP-OPTIONS] [SYSTEM-OPTIONS] [LISP-OPTIONS]\n", prog_name);
+    }
+    else
+	fprintf(stderr, "usage: %s [REP-OPTIONS] [LISP-OPTIONS]\n", prog_name);
+
+    fputs ("\nREP-OPTIONS include:\n"
+	   "    --init FILE  use FILE instead of `init.jl' to boot from\n"
+	   "    -v           print version/revision details\n"
+	   "    --batch       don't open any windows; process args and exit\n",
+	   stderr);
+
+    if (sys_usage != 0)
+	(*sys_usage)();
+
+    fputs ("\nand LISP-OPTIONS are:\n"
+	   "    --no-rc      don't load .jaderc or site-init files\n"
+	   "    -f FUNCTION  call the Lisp function FUNCTION\n"
+	   "    -l FILE      load the file of Lisp forms called FILE\n"
+	   "    -q           quit\n"
+	   "    FILE         load FILE into a new buffer\n"
+	   "\nNote that ordering _is_ important.\n",
+	   stderr);
 }
 
 static int
-get_main_options(int *argc_p, char ***argv_p)
+get_main_options(char *prog_name, int *argc_p,
+		 char ***argv_p, void (*sys_usage)(void))
 {
     int argc = *argc_p;
     char **argv = *argv_p;
-    VALUE head, *last;
+    repv head, *last;
     while(argc && (**argv == '-'))
     {
-	if((argc >= 2) && !strcmp("-rc", *argv))
+	if((argc >= 2) && !strcmp("--init", *argv))
 	{
 	    init_script = *(++argv);
 	    argc--;
 	}
 	else if(!strcmp("-v", *argv))
 	{
-	    fputs(VERSSTRING "\n", stdout);
-	    return FALSE;
+	    fputs("rep version " rep_VERSION "\n", stdout);
+	    return rep_FALSE;
 	}
-	else if(!strcmp("-log-msgs", *argv))
-	    log_messages = TRUE;
-	else if(!strcmp("-batch", *argv))
-	    opt_batch_mode = TRUE;
-	else if(!strcmp("-?", *argv) || !strcmp("-help", *argv))
+	else if(!strcmp("--batch", *argv))
+	    rep_SYM(Qbatch_mode)->value = Qt;
+	else if(!strcmp("-?", *argv) || !strcmp("--help", *argv))
 	{
-	    usage();
-	    return FALSE;
+	    usage(prog_name, sys_usage);
+	    return rep_FALSE;
 	}
 	else
 	    break;
@@ -104,171 +114,130 @@ get_main_options(int *argc_p, char ***argv_p)
     }
     /* any command line args left now get made into a list of strings
        in symbol "command-line-args".  */
-    head = sym_nil;
+    head = Qnil;
     last = &head;
     while(argc > 0)
     {
-	*last = cmd_cons(string_dup(*argv), sym_nil);
-	last = &VCDR(*last);
+	*last = Fcons(rep_string_dup(*argv), Qnil);
+	last = &rep_CDR(*last);
 	argc--;
 	argv++;
     }
-    VSYM(sym_command_line_args)->value = head;
+    rep_SYM(Qcommand_line_args)->value = head;
     *argc_p = argc;
     *argv_p = argv;
-    return TRUE;
+    return rep_TRUE;
 }
 
-int
-main(int argc, char **argv)
+void
+rep_init(char *prog_name, int *argc, char ***argv,
+	 void (*sys_symbols)(void), void (*sys_usage)(void))
 {
-    int rc;
-
-    if(sizeof(PTR_SIZED_INT) != sizeof(void *))
+    if(sizeof(rep_PTR_SIZED_INT) != sizeof(void *))
     {
-	fputs("jade: sizeof(PTR_SIZED_INT) != sizeof(void *); aborting\n",
+	fputs("sizeof(rep_PTR_SIZED_INT) != sizeof(void *); aborting\n",
 	      stderr);
-	return 100;
+	exit(10);
     }
-    if(PTR_SIZED_INT_BITS != sizeof(PTR_SIZED_INT) * CHAR_BIT)
+    if(rep_PTR_SIZED_INT_BITS != sizeof(rep_PTR_SIZED_INT) * CHAR_BIT)
     {
-	fputs("jade: PTR_SIZED_INT_BITS incorrectly defined; aborting\n",
+	fputs("rep_PTR_SIZED_INT_BITS incorrectly defined; aborting\n",
 	      stderr);
-	return 100;
+	exit(10);
     }
 
     if(!sys_memory_init())
-	return 10;
+	exit(10);
 
-    common_db = db_alloc("common", 4096);
+    rep_common_db = rep_db_alloc("common", 4096);
 
-    pre_values_init();
-    pre_sys_init();
-    if(pre_symbols_init())
+    rep_pre_values_init();
+    rep_pre_sys_os_init();
+    if(rep_pre_symbols_init())
     {
-#ifdef DUMPED
+#ifdef rep_DUMPED
 	/* Must initialise dumped out symbols before interning _any_
 	   symbols by hand. */
-	dumped_init();
+	rep_dumped_init();
 #endif
-	symbols_init();
-	rc = sys_init(argc, argv);
-	symbols_kill();
-    }
-    else
-	rc = 5;
-    values_kill();
+	rep_symbols_init();
 
-    sys_memory_kill();
+	rep_values_init();
+	rep_lisp_init();
+	rep_lispcmds_init();
+	rep_lispmach_init();
+	rep_find_init();
+	rep_main_init();
+	rep_misc_init();
+	rep_streams_init();
+	rep_files_init();
+	rep_sys_os_init();
 
-    return rc;
-}
+	if (sys_symbols != 0)
+	    (*sys_symbols)();
 
-/* This function is called from sys_init(), it completes the initialisation
-   process and calls the top-level event loop.  sys_init() must advance
-   ARGC and ARGV so they point to the next unused argument.  */
-int
-inner_main(int argc, char **argv)
-{
-    int rc = 5;
-
-    values_init();
-    lisp_init();
-    lispcmds_init();
-    lispmach_init();
-    buffers_init();
-    commands_init();
-    edit_init();
-    find_init();
-    extent_init();
-    glyphs_init();
-    keys_init();
-    main_init();
-    misc_init();
-    movement_init();
-    redisplay_init();
-    streams_init();
-    files_init();
-    undo_init();
-    views_init();
-    windows_init();
-    sys_misc_init();
-    sys_windows_init();
-
-#ifdef HAVE_SUBPROCESSES
-    proc_init();
-#endif
-
-    if(faces_init() && get_main_options(&argc, &argv) && first_buffer())
-    {
-	VALUE arg, res;
-	if((arg = string_dup(init_script))
-	   && (res = cmd_load(arg, sym_nil, sym_nil, sym_nil)))
+	if(get_main_options(prog_name, argc, argv, sys_usage))
 	{
-	    rc = 0;
-	    if(!opt_batch_mode)
-		res = sys_event_loop();
-	}
-	else if(throw_value && VCAR(throw_value) == sym_quit)
-	{
-	    if(INTP(VCDR(throw_value)))
-		rc = VINT(VCDR(throw_value));
-	    else
-		rc = 0;
-	    throw_value = 0;
+	    repv arg, res;
+	    if((arg = rep_string_dup(init_script))
+	       && (res = Fload(arg, Qnil, Qnil, Qnil)))
+	    {
+		return;
+	    }
 	}
     }
 
-    if(throw_value && VCAR(throw_value) == sym_error)
+    if(rep_throw_value && rep_CAR(rep_throw_value) == Qerror)
     {
 	/* If quitting due to an error, print the error cell if
 	   at all possible. */
-	VALUE stream = cmd_stderr_file();
-	VALUE old_tv = throw_value;
-	GC_root gc_old_tv;
-	PUSHGC(gc_old_tv, old_tv);
-	throw_value = LISP_NULL;
-	if(stream && FILEP(stream))
+	repv stream = Fstderr_file();
+	repv old_tv = rep_throw_value;
+	rep_GC_root gc_old_tv;
+	rep_PUSHGC(gc_old_tv, old_tv);
+	rep_throw_value = rep_NULL;
+	if(stream && rep_FILEP(stream))
 	{
 	    fputs("error--> ", stderr);
-	    cmd_prin1(VCDR(old_tv), stream);
+	    Fprin1(rep_CDR(old_tv), stream);
 	    fputc('\n', stderr);
 	}
 	else
 	    fputs("jade: error in initialisation\n", stderr);
-	throw_value = old_tv;
-	POPGC;
+	rep_throw_value = old_tv;
+	rep_POPGC;
     }
 
+    exit (10);
+}
+
+void
+rep_kill(void)
+{
 #ifdef HAVE_DYNAMIC_LOADING
-    kill_dl_libraries();
+    rep_kill_dl_libraries();
 #endif
 
-#ifdef HAVE_SUBPROCESSES
-    proc_kill();
-#endif
-
-    windows_kill();
-    views_kill();
-    buffers_kill();
-    find_kill();
-    glyphs_kill();
-    files_kill();
-    lispmach_kill();
-    db_kill();
-    return rc;
+    rep_sys_os_kill();
+    rep_find_kill();
+    rep_files_kill();
+    rep_lispmach_kill();
+    rep_db_kill();
+    rep_symbols_kill();
+    rep_values_kill();
+    sys_memory_kill();
 }
 
 /* This function gets called when we have idle time available. The
    single argument is the number of seconds since we weren't idle.
    The first idle period after a non-idle period should pass zero.
-   Returns TRUE if the display should be refreshed. */
-bool
-on_idle(long since_last_event)
+   Returns rep_TRUE if the display should be refreshed. */
+rep_bool
+rep_on_idle(long since_last_event)
 {
-    static bool called_hook;
+    static rep_bool called_hook;
     static int depth;
-    bool res = FALSE;
+    rep_bool res = rep_FALSE;
 
     depth++;
 
@@ -280,105 +249,100 @@ on_idle(long since_last_event)
 	* Run the `idle-hook' (only once per idle-period)  */
 
     if(since_last_event == 0)
-	called_hook = FALSE;
+	called_hook = rep_FALSE;
 
-    if(remove_all_messages(TRUE)
-       || print_event_prefix()
-       || auto_save_buffers(FALSE))
-	res = TRUE;
-    else if(data_after_gc > idle_gc_threshold)
+    if(rep_on_idle_fun != 0 && (*rep_on_idle_fun)(since_last_event))
+	res = rep_TRUE;
+    else if(rep_data_after_gc > rep_idle_gc_threshold)
 	/* nothing was saved so try a GC */
-	cmd_garbage_collect(sym_t);
+	Fgarbage_collect(Qt);
     else if(!called_hook && depth == 1)
     {
-	VALUE hook = cmd_symbol_value(sym_idle_hook, sym_t);
-	if(!VOIDP(hook) && !NILP(hook))
+	repv hook = Fsymbol_value(Qidle_hook, Qt);
+	if(!rep_VOIDP(hook) && !rep_NILP(hook))
 	{
-	    cmd_call_hook(hook, sym_nil, sym_nil);
-	    res = TRUE;
+	    Fcall_hook(hook, Qnil, Qnil);
+	    res = rep_TRUE;
 	}
-	called_hook = TRUE;
+	called_hook = rep_TRUE;
     }
 
     depth--;
     return res;
 }
 
-/* The input loop should call this function when throw_value == LISP_NULL.
-   It returns TRUE when the input loop should exit, returning whatever
+/* The input loop should call this function when rep_throw_value == rep_NULL.
+   It returns rep_TRUE when the input loop should exit, returning whatever
    is stored in *RESULT-P. */
-bool
-handle_input_exception(VALUE *result_p)
+rep_bool
+rep_handle_input_exception(repv *result_p)
 {
-    VALUE tv = throw_value;
-    VALUE car = VCAR(tv);
-    throw_value = LISP_NULL;
-    *result_p = LISP_NULL;
+    repv tv = rep_throw_value;
+    repv car = rep_CAR(tv);
+    rep_throw_value = rep_NULL;
+    *result_p = rep_NULL;
     
-    if(car == sym_exit)
+    if(car == Qexit)
     {
-	*result_p = VCDR(tv);
-	if(recurse_depth > 0)
-	    return TRUE;
+	*result_p = rep_CDR(tv);
+	if(rep_recurse_depth > 0)
+	    return rep_TRUE;
     }
-    else if((car == sym_top_level) && (recurse_depth == 0))
-	*result_p = VCDR(tv);
-    else if(car == sym_quit)
-	return TRUE;
-    else if(car == sym_user_interrupt)
-	handle_error(car, sym_nil);
-    else if(car == sym_term_interrupt)
+    else if((car == Qtop_level) && (rep_recurse_depth == 0))
+	*result_p = rep_CDR(tv);
+    else if(car == Qquit)
+	return rep_TRUE;
+    else if(car == Quser_interrupt)
+	rep_handle_error(car, Qnil);
+    else if(car == Qterm_interrupt)
     {
-	if(recurse_depth == 0)
-	{
-	    /* Autosave all buffers */
-	    while(auto_save_buffers(TRUE) > 0)
-		;
-	}
-	return TRUE;
+	if(rep_recurse_depth == 0 && rep_on_termination_fun != 0)
+	    (*rep_on_termination_fun)();
+	return rep_TRUE;
     }
-    else if(car == sym_error)
-	handle_error(VCAR(VCDR(tv)), VCDR(VCDR(tv)));
-    else if(recurse_depth == 0)
-	handle_error(sym_no_catcher, LIST_1(car));
+    else if(car == Qerror)
+	rep_handle_error(rep_CAR(rep_CDR(tv)), rep_CDR(rep_CDR(tv)));
+    else if(rep_recurse_depth == 0)
+	rep_handle_error(Qno_catcher, rep_LIST_1(car));
     else
     {
-	throw_value = tv;
-	return TRUE;
+	rep_throw_value = tv;
+	return rep_TRUE;
     }
-    return FALSE;
+    return rep_FALSE;
 }
 
-_PR VALUE cmd_recursive_edit(void);
-DEFUN_INT("recursive-edit", cmd_recursive_edit, subr_recursive_edit, (void), V_Subr0, DOC_recursive_edit, "") /*
-::doc:recursive_edit::
+DEFUN_INT("recursive-edit", Frecursive_edit, Srecursive_edit, (void), rep_Subr0, "") /*
+::doc:Srecursive-edit::
 recursive-edit
 
 Enter a new recursive-edit.
 ::end:: */
 {
-    return sys_event_loop();
+    return rep_event_loop();
 }
 
-_PR VALUE cmd_recursion_depth(void);
-DEFUN("recursion-depth", cmd_recursion_depth, subr_recursion_depth, (void), V_Subr0, DOC_recursion_depth) /*
-::doc:recursion_depth::
+DEFUN("recursion-depth", Frecursion_depth, Srecursion_depth, (void), rep_Subr0) /*
+::doc:Srecursion-depth::
 recursion-depth
 
 Returns the number of recursive-edit's deep we are, zero signifies the
 original level.
 ::end:: */
 {
-    return MAKE_INT(recurse_depth);
+    return rep_MAKE_INT(rep_recurse_depth);
 }
 
-void
-main_init(void)
+static void
+rep_main_init(void)
 {
-    ADD_SUBR_INT(subr_recursive_edit);
-    ADD_SUBR(subr_recursion_depth);
-    INTERN(quit);
-    INTERN(exit);
-    INTERN(top_level);
-    INTERN(command_line_args);
+    rep_ADD_SUBR_INT(Srecursive_edit);
+    rep_ADD_SUBR(Srecursion_depth);
+    rep_INTERN(quit);
+    rep_INTERN(exit);
+    rep_INTERN(top_level);
+    rep_INTERN(command_line_args);
+    rep_INTERN(idle_hook);
+    rep_INTERN(batch_mode);
+    rep_SYM(Qbatch_mode)->value = Qnil;
 }

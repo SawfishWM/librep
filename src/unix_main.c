@@ -18,8 +18,7 @@
    along with Jade; see the file COPYING.	If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-#include "jade.h"
-#include <lib/jade_protos.h>
+#include "repint.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -58,29 +57,8 @@
   extern char **environ;
 #endif
 
-_PR VALUE lookup_errno(void);
-_PR u_long sys_time(void);
-_PR void sys_sleep_for(long secs, long msecs);
-_PR VALUE sys_user_login_name(void);
-_PR VALUE sys_user_full_name(void);
-_PR VALUE sys_user_home_directory(VALUE user);
-_PR VALUE sys_system_name(void);
-
-_PR void sys_register_input_fd(int fd, void (*callback)(int fd));
-_PR void sys_deregister_input_fd(int fd);
-_PR void sys_mark_input_pending(int fd);
-_PR void unix_set_fd_nonblocking(int fd);
-_PR void unix_set_fd_blocking(int fd);
-_PR void unix_set_fd_cloexec(int fd);
-_PR VALUE sys_event_loop(void);
-_PR VALUE sys_sit_for(u_long timeout_msecs);
-_PR VALUE sys_accept_input(u_long timeout_msecs, void *callback);
-_PR bool sys_poll_input(int fd);
-_PR void *sys_alloc(u_int length);
-_PR void *sys_realloc(void *ptr, u_int length);
-_PR void sys_print_allocations(void);
-_PR void pre_sys_init(void);
-_PR void sys_misc_init(void);
+void (*rep_redisplay_fun)(void);
+int rep_input_timeout_secs = 1;
 
 
 /* Support functions */
@@ -88,27 +66,27 @@ _PR void sys_misc_init(void);
 #ifndef HAVE_STRERROR
 DEFSTRING(unknown_err, "Unknown system error");
 #endif
-VALUE
-lookup_errno(void)
+repv
+rep_lookup_errno(void)
 {
 #ifdef HAVE_STRERROR
-    return string_dup(strerror(errno));
+    return rep_string_dup(strerror(errno));
 #else
     if(errno >= sys_nerr)
-        return string_dup(sys_errlist[errno]);
+        return rep_string_dup(sys_errlist[errno]);
     else
-        return VAL(&unknown_err);
+        return rep_VAL(&unknown_err);
 #endif
 }
 
 u_long
-sys_time(void)
+rep_time(void)
 {
     return time(0);
 }
 
 void
-sys_sleep_for(long secs, long msecs)
+rep_sleep_for(long secs, long msecs)
 {
     struct timeval timeout;
     timeout.tv_sec = secs + msecs / 1000;
@@ -116,11 +94,11 @@ sys_sleep_for(long secs, long msecs)
     select(FD_SETSIZE, NULL, NULL, NULL, &timeout);
 }
 
-VALUE
-sys_user_login_name(void)
+repv
+rep_user_login_name(void)
 {
     /* Just look this up once, then use the saved copy.	 */
-    static VALUE user_login_name;
+    static repv user_login_name;
     char *tmp;
     if(user_login_name)
 	return user_login_name;
@@ -129,65 +107,65 @@ sys_user_login_name(void)
     {
 	struct passwd *pwd;
 	if(!(pwd = getpwuid(geteuid())))
-	    return LISP_NULL;
+	    return rep_NULL;
 	tmp = pwd->pw_name;
     }
-    user_login_name = string_dup(tmp);
-    mark_static(&user_login_name);
+    user_login_name = rep_string_dup(tmp);
+    rep_mark_static(&user_login_name);
     return user_login_name;
 }
 
-VALUE
-sys_user_full_name(void)
+repv
+rep_user_full_name(void)
 {
     struct passwd *pwd;
-    static VALUE user_full_name;
+    static repv user_full_name;
     if(user_full_name)
 	return user_full_name;
 
     if(!(pwd = getpwuid(geteuid())))
-	return LISP_NULL;
+	return rep_NULL;
 #ifndef FULL_NAME_TERMINATOR
-    user_full_name = string_dup(pwd->pw_gecos);
+    user_full_name = rep_string_dup(pwd->pw_gecos);
 #else
     {
 	char *end = strchr(pwd->pw_gecos, FULL_NAME_TERMINATOR);
 	if(end)
-	    user_full_name = string_dupn(pwd->pw_gecos, end - pwd->pw_gecos);
+	    user_full_name = rep_string_dupn(pwd->pw_gecos, end - pwd->pw_gecos);
 	else
-	    user_full_name = string_dup(pwd->pw_gecos);
+	    user_full_name = rep_string_dup(pwd->pw_gecos);
     }
 #endif
-    mark_static(&user_full_name);
+    rep_mark_static(&user_full_name);
     return user_full_name;
 }
 
 DEFSTRING(no_home, "Can't find home directory");
-VALUE
-sys_user_home_directory(VALUE user)
+repv
+rep_user_home_directory(repv user)
 {
-    static VALUE user_home_directory;
-    if(NILP(user) && user_home_directory)
+    static repv user_home_directory;
+    if(rep_NILP(user) && user_home_directory)
 	return user_home_directory;
     else
     {
-	VALUE dir;
+	repv dir;
 	char *src = 0;
 	int len;
 
-	if(NILP(user))
+	if(rep_NILP(user))
 	    src = getenv("HOME");
 
 	if(src == 0)
 	{
 	    struct passwd *pwd;
-	    if(NILP(user))
+	    if(rep_NILP(user))
 		pwd = getpwuid(geteuid());
 	    else
-		pwd = getpwnam(VSTR(user));
+		pwd = getpwnam(rep_STR(user));
 
 	    if(pwd == 0 || pwd->pw_dir == 0)
-		return cmd_signal(sym_error, LIST_2(VAL(&no_home), user));
+		return Fsignal(Qerror, rep_LIST_2(rep_VAL(&no_home), user));
 
 	    src = pwd->pw_dir;
 	}
@@ -195,36 +173,36 @@ sys_user_home_directory(VALUE user)
 	len = strlen(src);
 	if(src[len] != '/')
 	{
-	    dir = string_dupn(src, len + 1);
-	    VSTR(dir)[len] = '/';
-	    VSTR(dir)[len+1] = 0;
+	    dir = rep_string_dupn(src, len + 1);
+	    rep_STR(dir)[len] = '/';
+	    rep_STR(dir)[len+1] = 0;
 	}
 	else
-	    dir = string_dup(src);
+	    dir = rep_string_dup(src);
 
-	if(NILP(user))
+	if(rep_NILP(user))
 	{
 	    user_home_directory = dir;
-	    mark_static(&user_home_directory);
+	    rep_mark_static(&user_home_directory);
 	}
 
 	return dir;
     }
 }
 
-VALUE
-sys_system_name(void)
+repv
+rep_system_name(void)
 {
     u_char buf[256];
     struct hostent *h;
 
-    static VALUE system_name;
+    static repv system_name;
     if(system_name)
 	return system_name;
 
 #ifdef HAVE_GETHOSTNAME
     if(gethostname(buf, 256))
-	return LISP_NULL;
+	return rep_NULL;
 #else
     {
 	struct utsname uts;
@@ -242,14 +220,14 @@ sys_system_name(void)
 	    char **aliases = h->h_aliases;
 	    while(*aliases && !strchr(*aliases, '.'))
 		aliases++;
-	    system_name = string_dup(*aliases ? *aliases : h->h_name);
+	    system_name = rep_string_dup(*aliases ? *aliases : h->h_name);
 	}
 	else
-	    system_name = string_dup((u_char *)h->h_name);
+	    system_name = rep_string_dup((u_char *)h->h_name);
     }
     else
-	system_name = string_dup(buf);
-    mark_static(&system_name);
+	system_name = rep_string_dup(buf);
+    rep_mark_static(&system_name);
     return system_name;
 }
 
@@ -270,23 +248,23 @@ static fd_set input_pending;
 static int input_pending_count;
 
 void
-sys_register_input_fd(int fd, void (*callback)(int fd))
+rep_register_input_fd(int fd, void (*callback)(int fd))
 {
     FD_SET(fd, &input_fdset);
     input_actions[fd] = callback;
 
-    unix_set_fd_cloexec(fd);
+    rep_unix_set_fd_cloexec(fd);
 }
 
 void
-sys_deregister_input_fd(int fd)
+rep_deregister_input_fd(int fd)
 {
     FD_CLR(fd, &input_fdset);
     input_actions[fd] = NULL;
 }
 
 void
-sys_mark_input_pending(int fd)
+rep_mark_input_pending(int fd)
 {
     if(!FD_ISSET(fd, &input_pending))
     {
@@ -296,7 +274,7 @@ sys_mark_input_pending(int fd)
 }
 
 void
-unix_set_fd_nonblocking(int fd)
+rep_unix_set_fd_nonblocking(int fd)
 {
     int flags = fcntl(fd, F_GETFL, 0);
     if(flags != -1)
@@ -304,7 +282,7 @@ unix_set_fd_nonblocking(int fd)
 }
 
 void
-unix_set_fd_blocking(int fd)
+rep_unix_set_fd_blocking(int fd)
 {
     int flags = fcntl(fd, F_GETFL, 0);
     if(flags != -1)
@@ -312,7 +290,7 @@ unix_set_fd_blocking(int fd)
 }
 
 void
-unix_set_fd_cloexec(int fd)
+rep_unix_set_fd_cloexec(int fd)
 {
     /* Set close on exec flag. */
     int tem = fcntl(fd, F_GETFD, 0);
@@ -329,9 +307,6 @@ wait_for_input(fd_set *inputs, u_long timeout_msecs)
 {
     struct timeval timeout;
     int ready;
-
-    if(curr_win == 0)
-	return 0;
 
     if(input_pending_count > 0)
     {
@@ -362,17 +337,11 @@ wait_for_input(fd_set *inputs, u_long timeout_msecs)
     timeout.tv_sec = timeout_msecs / 1000;
     timeout.tv_usec = (timeout_msecs % 1000) * 1000;
 
-#ifdef HAVE_SUBPROCESSES
     /* Don't want select() to restart after a SIGCHLD; there may be
        a notification to dispatch.  */
-    sigchld_restart(FALSE);
-#endif
-
+    rep_sigchld_restart(rep_FALSE);
     ready = select(FD_SETSIZE, inputs, NULL, NULL, &timeout);
-
-#ifdef HAVE_SUBPROCESSES
-    sigchld_restart(TRUE);
-#endif
+    rep_sigchld_restart(rep_TRUE);
 
     return ready;
 }
@@ -382,11 +351,11 @@ wait_for_input(fd_set *inputs, u_long timeout_msecs)
    whose callback function == CALLBACK. Return true if the display
    might require updating. Returns immediately if a Lisp error has
    occurred. */
-static bool
+static rep_bool
 handle_input(fd_set *inputs, int ready, void *callback)
 {
     static long idle_period;
-    bool refreshp = FALSE;
+    rep_bool refreshp = rep_FALSE;
 
     if(ready > 0)
     {
@@ -394,7 +363,7 @@ handle_input(fd_set *inputs, int ready, void *callback)
 
 	idle_period = 0;
 
-	for(i = 0; i < FD_SETSIZE && ready > 0 && !INT_P; i++)
+	for(i = 0; i < FD_SETSIZE && ready > 0 && !rep_INTERRUPTP; i++)
 	{
 	    if(FD_ISSET(i, inputs))
 	    {
@@ -409,7 +378,7 @@ handle_input(fd_set *inputs, int ready, void *callback)
 		    if(input_actions[i] != NULL)
 		    {
 			input_actions[i](i);
-			refreshp = TRUE;
+			refreshp = rep_TRUE;
 		    }
 		}
 	    }
@@ -418,52 +387,49 @@ handle_input(fd_set *inputs, int ready, void *callback)
     else if(ready == 0)
     {
 	/* A timeout. */
-	if(INT_P || on_idle(idle_period))
-	    refreshp = TRUE;
+	if(rep_INTERRUPTP || rep_on_idle(idle_period))
+	    refreshp = rep_TRUE;
 
 	idle_period++;
     }
 
-#ifdef HAVE_SUBPROCESSES
-    if(!INT_P && proc_periodically())
-	refreshp = TRUE;
-#endif
+    if(!rep_INTERRUPTP && rep_proc_periodically())
+	refreshp = rep_TRUE;
 
     return refreshp;
 }
 
 /* The input handler loop. */
-VALUE
-sys_event_loop(void)
+repv
+rep_event_loop(void)
 {
-    VALUE result = sym_nil;
-    recurse_depth++;
+    repv result = Qnil;
+    rep_recurse_depth++;
 
-    cmd_redisplay(sym_nil);
-    while(curr_win != NULL)
+    if (rep_redisplay_fun != 0)
+	(*rep_redisplay_fun)();
+
+    while(1)
     {
 	int ready;
-	bool refreshp = FALSE;
+	rep_bool refreshp = rep_FALSE;
 	fd_set copy;
 
 	memcpy(&copy, &input_fdset, sizeof(copy));
-	ready = wait_for_input(&copy, EVENT_TIMEOUT_LENGTH * 1000);
+	ready = wait_for_input(&copy, rep_input_timeout_secs * 1000);
 	refreshp = handle_input(&copy, ready, 0);
 
 	/* Check for exceptional conditions. */
-	if(throw_value != LISP_NULL)
+	if(rep_throw_value != rep_NULL)
 	{
-	    if(handle_input_exception(&result))
+	    if(rep_handle_input_exception(&result))
 		goto end;
 	    else
-		refreshp = TRUE;
+		refreshp = rep_TRUE;
 	}
 
-	if(refreshp)
-	{
-	    undo_end_of_command();
-	    cmd_redisplay(sym_nil);
-	}
+	if(refreshp && rep_redisplay_fun != 0)
+	    (*rep_redisplay_fun)();
 
 #ifdef C_ALLOCA
 	/* Using the C implementation of alloca. So garbage collect
@@ -473,30 +439,30 @@ sys_event_loop(void)
     }
 
 end:
-    recurse_depth--;
+    rep_recurse_depth--;
     return result;
 }
 
-VALUE
-sys_sit_for(u_long timeout_msecs)
+repv
+rep_sit_for(u_long timeout_msecs)
 {
     fd_set copy;
     int ready;
-    if(timeout_msecs != 0)
-	cmd_redisplay(sym_nil);
+    if(timeout_msecs != 0 && rep_redisplay_fun != 0)
+	(*rep_redisplay_fun)();
     memcpy(&copy, &input_fdset, sizeof(copy));
     ready = wait_for_input(&copy, timeout_msecs);
-    if(INT_P)
-	return LISP_NULL;
+    if(rep_INTERRUPTP)
+	return rep_NULL;
     else
-	return (ready > 0) ? sym_nil : sym_t;
+	return (ready > 0) ? Qnil : Qt;
 }
 
 /* Wait TIMEOUT_MSECS for input, ignoring any input fds that would
    invoke any callback function except CALLBACK. Return the number of
    input fds serviced. */
-VALUE
-sys_accept_input(u_long timeout_msecs, void *callback)
+repv
+rep_accept_input(u_long timeout_msecs, void *callback)
 {
     fd_set copy;
     int ready, i;
@@ -507,16 +473,16 @@ sys_accept_input(u_long timeout_msecs, void *callback)
 	    FD_SET(i, &copy);
     }
     ready = wait_for_input(&copy, timeout_msecs);
-    if(ready > 0 && !INT_P)
+    if(ready > 0 && !rep_INTERRUPTP)
 	handle_input(&copy, ready, callback);
-    if(INT_P)
-	return LISP_NULL;
+    if(rep_INTERRUPTP)
+	return rep_NULL;
     else
-	return ready > 0 ? sym_nil : sym_t;
+	return ready > 0 ? Qnil : Qt;
 }
 
-bool
-sys_poll_input(int fd)
+rep_bool
+rep_poll_input(int fd)
 {
     fd_set in;
     FD_ZERO(&in);
@@ -527,29 +493,18 @@ sys_poll_input(int fd)
 
 /* Memory allocation; most of these are normally macros in unix_defs.h */
 
-#if defined(DOUG_LEA_MALLOC) && !defined(LIBC_MALLOC)
-void *
-__jade_morecore(long size)
-{
-    void *ptr = sbrk(size);
-    /* functions in the __morecore hook are expected to return zero
-       when failing */
-    return (ptr == (void *)-1) ? 0 : ptr;
-}
-#endif
-
 #ifdef DEBUG_SYS_ALLOC
 struct alloc_data {
     struct alloc_data *next;
     size_t size;
     void *function;
-    char data[0] CONCAT(ALIGN_, MALLOC_ALIGNMENT);
+    char data[0] CONCAT(ALIGN_, rep_MALLOC_ALIGNMENT);
 };
 
 static struct alloc_data *allocations;
 
 void *
-sys_alloc(u_int length)
+rep_alloc(u_int length)
 {
     void *mem;
     length += sizeof(struct alloc_data);
@@ -559,19 +514,19 @@ sys_alloc(u_int length)
 	struct alloc_data *x = mem;
 
 	/* Check that the alignment promised actually occurs */
-	assert((((PTR_SIZED_INT)mem) & (MALLOC_ALIGNMENT - 1)) == 0);
+	assert((((rep_PTR_SIZED_INT)mem) & (rep_MALLOC_ALIGNMENT - 1)) == 0);
 
 	mem = ((char *)mem) + sizeof(struct alloc_data);
 	x->next = allocations;
 	allocations = x;
 	x->size = length - sizeof(struct alloc_data);
-	x->function = db_return_address();
+	x->function = rep_db_return_address();
     }
     return mem;
 }
 
 void *
-sys_realloc(void *ptr, u_int length)
+rep_realloc(void *ptr, u_int length)
 {
     void *mem;
     length += sizeof(struct alloc_data);
@@ -582,7 +537,7 @@ sys_realloc(void *ptr, u_int length)
 	struct alloc_data *x = mem;
 
 	/* Check that the alignment promised actually occurs */
-	assert((((PTR_SIZED_INT)mem) & (MALLOC_ALIGNMENT - 1)) == 0);
+	assert((((rep_PTR_SIZED_INT)mem) & (rep_MALLOC_ALIGNMENT - 1)) == 0);
 
 	if(allocations == ptr)
 	    allocations = x;
@@ -595,13 +550,13 @@ sys_realloc(void *ptr, u_int length)
 	}
 	mem = ((char *)mem) + sizeof(struct alloc_data);
 	x->size = length - sizeof(struct alloc_data);
-	x->function = db_return_address();
+	x->function = rep_db_return_address();
     }
     return mem;
 }
 
 void
-sys_free(void *ptr)
+rep_free(void *ptr)
 {
     struct alloc_data *x = (struct alloc_data *)(((char *)ptr) - sizeof(struct alloc_data));
     struct alloc_data **p = &allocations;
@@ -613,7 +568,7 @@ sys_free(void *ptr)
 }
 
 void
-sys_print_allocations(void)
+rep_print_allocations(void)
 {
     if(allocations != 0)
     {
@@ -624,7 +579,7 @@ sys_print_allocations(void)
 	    char *sname;
 	    void *saddr;
 	    fprintf(stderr, "\t(%p, %d)", x->data, x->size);
-	    if(find_c_symbol(x->function, &sname, &saddr))
+	    if(rep_find_c_symbol(x->function, &sname, &saddr))
 		fprintf(stderr, "\t\t<%s+%d>", sname, x->function - saddr);
 	    fprintf(stderr, "\n");
 	    x = x->next;
@@ -632,25 +587,23 @@ sys_print_allocations(void)
     }
 }
 
-_PR VALUE cmd_unix_print_allocations(void);
-DEFUN("unix-print-allocations", cmd_unix_print_allocations,
-      subr_unix_print_allocations, (void), V_Subr0,
-      DOC_unix_print_allocations) /*
-::doc:unix_print_allocations::
+DEFUN("unix-print-allocations", Funix_print_allocations,
+      Sunix_print_allocations, (void), rep_Subr0) /*
+::doc:Sunix-print-allocations::
 unix-print-allocations
 
 Output a list of all allocated memory blocks to standard error.
 ::end:: */
 {
-    sys_print_allocations();
-    return sym_t;
+    rep_print_allocations();
+    return Qt;
 }
 #endif
 
 
 /* Standard signal handlers */
 
-static volatile bool in_fatal_signal_handler;
+static volatile rep_bool in_fatal_signal_handler;
 
 /* Invoked by any of the handlable error reporting signals */
 static RETSIGTYPE
@@ -663,7 +616,7 @@ fatal_signal_handler(int sig)
     /* Check for nested calls to this function */
     if(in_fatal_signal_handler)
 	raise(sig);
-    in_fatal_signal_handler = TRUE;
+    in_fatal_signal_handler = rep_TRUE;
 
 #ifdef HAVE_PSIGNAL
     psignal(sig, "jade: received fatal signal");
@@ -676,15 +629,15 @@ fatal_signal_handler(int sig)
 #endif
 
     /* Save the C backtrace */
-    db_print_backtrace(common_db, "fatal_signal_handler");
+    rep_db_print_backtrace(rep_common_db, "fatal_signal_handler");
 
     /* Output all debug buffers */
-    db_spew_all();
+    rep_db_spew_all();
 
     /* Try and output the Lisp call stack; this may or may not
        provoke another error, but who cares.. */
     fprintf(stderr, "\nLisp backtrace:");
-    cmd_backtrace(cmd_stderr_file());
+    Fbacktrace(Fstderr_file());
     fputs("\n\n", stderr);
 
     /* Now reraise the signal, since it's currently blocked
@@ -696,7 +649,7 @@ fatal_signal_handler(int sig)
 static RETSIGTYPE
 interrupt_signal_handler(int sig)
 {
-    throw_value = int_cell;
+    rep_throw_value = rep_int_cell;
     signal(SIGINT, interrupt_signal_handler);
 }
 
@@ -704,7 +657,7 @@ interrupt_signal_handler(int sig)
 static RETSIGTYPE
 termination_signal_handler(int sig)
 {
-    throw_value = term_cell;
+    rep_throw_value = rep_term_cell;
     signal(sig, termination_signal_handler);
 }
 
@@ -715,7 +668,7 @@ termination_signal_handler(int sig)
    most importantly, it's called before sys_init() (i.e. we
    start opening displays) */
 void
-pre_sys_init(void)
+rep_pre_sys_os_init(void)
 {
     FD_ZERO(&input_fdset);
     FD_ZERO(&input_pending);
@@ -765,19 +718,27 @@ pre_sys_init(void)
 
 /* More normal initialisation. */
 void
-sys_misc_init(void)
+rep_sys_os_init(void)
 {
-    VALUE env;
+    repv env;
     char **ptr;
 
     /* Initialise process-environment variable */
-    env = sym_nil;
+    env = Qnil;
     ptr = environ;
     while(*ptr != 0)
-	env = cmd_cons(string_dup(*ptr++), env);
-    VSYM(sym_process_environment)->value = env;
+	env = Fcons(rep_string_dup(*ptr++), env);
+    rep_SYM(Qprocess_environment)->value = env;
 
 #ifdef DEBUG_SYS_ALLOC
-    ADD_SUBR(subr_unix_print_allocations);
+    rep_ADD_SUBR(Sunix_print_allocations);
 #endif
+
+    rep_proc_init();
+}
+
+void
+rep_sys_os_kill(void)
+{
+    rep_proc_kill();
 }

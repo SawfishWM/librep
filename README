@@ -1,7 +1,11 @@
 [ this is -*-Text-*- ]
 
-This is Jade 4.0 alpha, an Emacs-like text editor for UNIX/X11. It is
-known to compile on at least Solaris/sparc and Linux/ix86; it is
+This is librep 0.0, an Emacs Lisp-like runtime library for UNIX. It
+contains a LISP interpreter, byte-code compiler and virtual machine.
+Applications may use the LISP interpreter as an extension language,
+or it may be used for standalone scripts.
+
+It is known to compile on at least Solaris/sparc and Linux/ix86; it is
 released under the terms of the GNU GPL, copyright John Harper
 <john@dcs.warwick.ac.uk>
 
@@ -9,17 +13,12 @@ This is a snapshot of the CVS repository:
 
 	http://sprite.dcs.warwick.ac.uk:8080/cgi-bin/cvsweb
 
-but it should be pretty stable (I use it constantly, with very few
-problems). However the TeXinfo manual in the man/ directory has not
-been updated since the last major release, and as such is massively out
-of date. For more details see the url
+but should be pretty stable.
 
-	http://www.dcs.warwick.ac.uk/~john/jade/
-
-To compile this snapshot you'll need GNU Autoconf, GNU make, and
-(currently) GCC, run autoconf in the root of the distribution to create
-a configure script, then compile as normal (generic instructions in the
-INSTALL file).
+To compile this snapshot you'll need GNU Autoconf, GNU Libtool, GNU make,
+and (currently) GCC. Run aclocal and autoconf in the root of the
+distribution to create a configure script, then compile as normal
+(generic instructions in the INSTALL file).
 
 Please send any success or failure reports to the email address above.
 

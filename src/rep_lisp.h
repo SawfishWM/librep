@@ -1,4 +1,4 @@
-/* lisp.h -- Data structures/objects for Lisp
+/* rep_lisp.h -- Data structures/objects for Lisp
    Copyright (C) 1993, 1994 John Harper <john@dcs.warwick.ac.uk>
    $Id$
 
@@ -18,88 +18,118 @@
    along with Jade; see the file COPYING.  If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-#ifndef _LISP_H
-#define _LISP_H
+#ifndef REP_LISP_H
+#define REP_LISP_H
 
-#ifndef _VALUE_H
-# include "value.h"
-#endif
+#include <stdio.h>
 
 /* These numbers weren't just plucked from the air, they make the blocks
    of objects fit as close as possible into powers of 2 sized blocks. */
-#define CONSBLK_SIZE	510		/* ~4k */
-#define SYMBOLBLK_SIZE	340		/* ~8k */
+#define rep_CONSBLK_SIZE	510		/* ~4k */
+#define rep_SYMBOLBLK_SIZE	340		/* ~8k */
 
-/* The number of hash buckets in each obarray, this is a prime number. */
-#define OBSIZE		509
+/* The number of hash buckets in each rep_obarray, this is a prime number. */
+#define rep_OBSIZE		509
+
+/* Stringify X. Expands macros in X. */
+#define rep_QUOTE(x) rep_QUOTE__(x)
+#define rep_QUOTE__(x) #x
+
+/* Concat two tokens. Expands macros in X and Y. */
+#define rep_CONCAT(x, y) rep_CONCAT__(x, y)
+#define rep_CONCAT__(x, y) x##y
 
 
-/* Structure of Lisp objects and the pointers to them (VALUEs) */
+/* Lisp values. */
 
-/* Bit definitions for VALUE pointers. The lowest bit is always zero
+/* A `repv' is a lisp value, perhaps a pointer to an object, but not a real
+   pointer; it's lowest three bits define its type. */
+typedef unsigned rep_PTR_SIZED_INT repv;
+
+/* The value of this definition must be known by the preprocessor. */
+#define rep_VALUE_BITS rep_PTR_SIZED_INT_BITS
+
+
+/* Structure of Lisp objects and the pointers to them. */
+
+/* Bit definitions for repv pointers. The lowest bit is always zero
    except during GC. If bit one is set the object is a 30-bit signed
    integer, with the data bits stored in the pointer as bits 2->31.
 
-   If bit one is clear the VALUE is a pointer to a "cell", all objects
+   If bit one is clear the repv is a pointer to a "cell", all objects
    apart from integers are represented by various types of cells.
-   Every cell has a VALUE as its first element, the lowest bits of this
-   VALUE define the actual type of the cell.
+   Every cell has a repv as its first element, the lowest bits of this
+   repv define the actual type of the cell.
 
    If bit zero is unset, the cell is a cons, a pair of two values the
    car and the cdr (the GC mark bit of the cons is bit zero of the cdr).
 
    If bit zero is set the cell more type information is stored in bits
-   1->6, with bit 7 the mark bit. */
+   1->6, with bit 7 the mark bit.
 
-#define VALUE_CONS_MARK_BIT	1
-#define VALUE_IS_INT		2
-#define VALUE_INT_SHIFT		2
-#define CELL_ALIGNMENT		4
+   XXX Note that some assumptions are made about data object alignment.
+   XXX All Lisp cells _must_ be aligned to four-byte boundaries. If
+   XXX using GNU CC, we'll use the alignment attribute. Otherwise
+   XXX the rep_ALIGN macro needs setting.. */
 
-#define CELLP(v)	(((v) & VALUE_IS_INT) == 0)
-#define INTP(v)		(!CELLP(v))
+#define rep_VALUE_CONS_MARK_BIT	1
+#define rep_VALUE_IS_INT	2
+#define rep_VALUE_INT_SHIFT	2
+#define rep_CELL_ALIGNMENT	4
 
-/* Convert a VALUE into a signed integer. */
-#define VINT(v)		(((PTR_SIZED_INT)(v)) >> VALUE_INT_SHIFT)
+#define rep_CELLP(v)		(((v) & rep_VALUE_IS_INT) == 0)
+#define rep_INTP(v)		(!rep_CELLP(v))
 
-/* Convert a signed integer into a VALUE. */
-#define MAKE_INT(x)	(((x) << VALUE_INT_SHIFT) | VALUE_IS_INT)
+/* Convert a repv into a signed integer. */
+#define rep_INT(v)		(((rep_PTR_SIZED_INT)(v)) \
+				 >> rep_VALUE_INT_SHIFT)
+
+/* Convert a signed integer into a repv. */
+#define rep_MAKE_INT(x)		(((x) << rep_VALUE_INT_SHIFT) \
+				 | rep_VALUE_IS_INT)
 
 /* Bounds of the integer type */
-#define LISP_INT_BITS   (VALUE_BITS - VALUE_INT_SHIFT)
-#define LISP_MAX_INT	((1 << (LISP_INT_BITS - 1)) - 1)
-#define LISP_MIN_INT	(-(1 << (LISP_INT_BITS - 1)))
+#define rep_LISP_INT_BITS	(rep_VALUE_BITS - rep_VALUE_INT_SHIFT)
+#define rep_LISP_MAX_INT	((1 << (rep_LISP_INT_BITS - 1)) - 1)
+#define rep_LISP_MIN_INT	(-(1 << (rep_LISP_INT_BITS - 1)))
 
 /* Store anything needing >24 bits (future expansion and all that),
    in a cons cell, as one 24 bit, and one eight bit quantity. */
-#define MAKE_LONG_INT(x) \
-    cmd_cons(MAKE_INT((x) & 0x00ffffff), MAKE_INT((x) >> 24))
+#define rep_MAKE_LONG_INT(x) \
+    Fcons(rep_MAKE_INT((x) & 0x00ffffff), rep_MAKE_INT((x) >> 24))
 
 /* Convert a cons cell with two integers into a signed long int. */
-#define VLONG_INT(v)	(VINT(VCAR(v)) | (VINT(VCDR(v)) << 24))
+#define rep_LONG_INT(v) \
+    (rep_INT(rep_CAR(v)) | (rep_INT(rep_CDR(v)) << 24))
 
 /* True when V is a long integer. */
-#define LONG_INTP(v)	(CONSP(v) && INTP(VCAR(v)) && INTP(VCDR(v)))
+#define rep_LONG_INTP(v) \
+    (rep_CONSP(v) && rep_INTP(rep_CAR(v)) && rep_INTP(rep_CDR(v)))
 
-#if CELL_ALIGNMENT <= MALLOC_ALIGNMENT
+#if rep_CELL_ALIGNMENT <= rep_MALLOC_ALIGNMENT
   /* Allocate SIZE bytes of memory, aligned to NORMAL_ALIGNMENT */
-# define ALLOC_CELL(n) sys_alloc(n)
-  /* Free something allocated by ALLOC_OBJECT */
-# define FREE_CELL(x)  sys_free(x)
+# define rep_ALLOC_CELL(n) rep_alloc(n)
+  /* Free something allocated by rep_ALLOC_CELL */
+# define rep_FREE_CELL(x)  rep_free(x)
 #else
-# error Need an aligned malloc()
+# error "Need an aligned memory allocator"
 #endif
-
-/* Compatibility */
-#define ALLOC_OBJECT ALLOC_CELL
-#define FREE_OBJECT FREE_CELL
 
 /* A ``null pointer'', i.e. an invalid object. This has the important
    property of being a proper null pointer (i.e. (void *)0) when
-   converted to a pointer, i.e. VPTR(LISP_NULL) == NULL. */
-#define LISP_NULL	(0)
+   converted to a pointer, i.e. rep_PTR(rep_NULL) == NULL. */
+#define rep_NULL	(0)
 
-#define ALIGN_CELL	CONCAT(ALIGN_, CELL_ALIGNMENT)
+#ifndef rep_ALIGN
+# ifdef __GNUC__
+#  define rep_ALIGN(d,x) d __attribute__ ((aligned (x)))
+# else
+#  warning "You should really define the rep_lisp.h:rep_ALIGN macro!"
+#  define rep_ALIGN(d,x)
+# endif
+#endif
+
+#define rep_ALIGN_CELL(d) rep_ALIGN(d, rep_CELL_ALIGNMENT)
 
 
 /* Structure of a cell */
@@ -107,84 +137,135 @@
 typedef struct {
     /* Low bits of this value define type of the cell. See below. All
        other bits (8->31) are available */
-    VALUE car;
+    repv car;
 
     /* Data follows, in real objects. */
-} Lisp_Cell;
+} rep_cell;
 
-/* If this bit is set in the car of a cell, bits 1->5 of the car
-   are type data, bit 6 is set if the object is allocated staticaly,
-   bit 7 is the GC mark bit. This means a maximum of 2^4, i.e. 32,
-   cell8 types. */
-#define CELL_IS_8		1
-#define CELL8_MARK_BIT		0x80
-#define CELL8_STATIC_BIT	0x40
-#define CELL8_TYPE_MASK		0x3f
-#define CELL8_TYPE_BITS		8
+/* If bit zero is set in the car of a cell, bits 1->4 of the car
+   are type data, bit 5 denotes a cell16 type, bit 6 is set if the object
+   is allocated staticaly, bit 7 is the GC mark bit. This means a maximum
+   of 2^3, i.e. 16, cell8 types.
 
-/* Build a `Lisp_Cell *' pointer out of a VALUE of a normal type */
-#define VPTR(v) 		((Lisp_Cell *)(v))
+   cell16 types have eight extra type bits, bits 8->15, this gives 256
+   dynamically allocated type codes: [256 k | k <- [0..255]]. */
 
-/* Build a VALUE out of a pointer to a Lisp_Normal object */
-#define VAL(x)			((VALUE)(x))
+#define rep_CELL_IS_8		0x01
+#define rep_CELL_IS_16		0x20
+#define rep_CELL_STATIC_BIT	0x40
+#define rep_CELL_MARK_BIT	0x80
+#define rep_CELL8_TYPE_MASK	0x1f
+#define rep_CELL8_TYPE_BITS	8
+#define rep_CELL16_TYPE_MASK	0xff21	/* is8 and is16 bits set */
+#define rep_CELL16_TYPE_SHIFT	8
+#define rep_CELL16_TYPE_BITS	16
 
-#define CELL_CONS_P(v)		(!(VPTR(v)->car & CELL_IS_8))
+/* Build a `rep_cell *' pointer out of a repv of a normal type */
+#define rep_PTR(v) 		((rep_cell *)(v))
 
-#define VCELL8_TYPE(v)	 	((VPTR(v)->car & CELL8_TYPE_MASK))
+/* Build a repv out of a pointer to a Lisp_Normal object */
+#define rep_VAL(x)		((repv)(x))
 
-#define SET_CELL8_TYPE(v, t) \
-   (VPTR(v)->car = (VPTR(v)->car & CELL8_TYPE_MASK) | (t))
+#define rep_CELL_CONS_P(v)	(!(rep_PTR(v)->car & rep_CELL_IS_8))
 
-#define VCELL8_STATIC_P(v)	(VPTR(v)->car & CELL8_STATIC_BIT)
+#define rep_CELL_STATIC_P(v)	(rep_PTR(v)->car & rep_CELL_STATIC_BIT)
+
+#define rep_CELL8_TYPE(v) 	(rep_PTR(v)->car & rep_CELL8_TYPE_MASK)
+
+#define rep_SET_CELL8_TYPE(v, t) \
+   (rep_PTR(v)->car = (rep_PTR(v)->car & rep_CELL8_TYPE_MASK) | (t))
+
+#define rep_CELL16P(v)		(rep_PTR(v)->car & rep_CELL_IS_16)
+
+#define rep_CELL16_TYPE(v)	(rep_PTR(v)->car & rep_CELL16_TYPE_MASK)
+
+#define rep_SET_CELL16_TYPE(v, t) \
+   (rep_PTR(v)->car = (rep_PTR(v)->car & rep_CELL16_TYPE_MASK) | (t))
 
 
-/* Structure of a cons cell */
+/* Structure of a cons cell, the only non-cell8 ptr type */
 
 typedef struct {
-    VALUE car;
-    VALUE cdr;				/* low bit is GC mark */
-} Lisp_Cons;
+    repv car;
+    repv cdr;				/* low bit is GC mark */
+} rep_cons;
 
 /* Structure of cons allocation blocks */
-typedef struct lisp_cons_block {
-    struct lisp_cons_block *next;
+typedef struct rep_cons_block_struct {
+    struct rep_cons_block_struct *next;
+    rep_ALIGN_CELL(rep_cons cons[rep_CONSBLK_SIZE]);
+} rep_cons_block;
 
-    /* Actual start address of the allocation block. To enforce
-       alignment, this may be slightly before the start of the
-       structure. */
-    void *alloc_address;
+#define rep_CONSP(v)	(rep_CELLP(v) && rep_CELL_CONS_P(v))
 
-    /* The cons cells */
-    Lisp_Cons cons[CONSBLK_SIZE] ALIGN_CELL;
-} Lisp_Cons_Block;
+/* Build a repv out of a pointer to a rep_cons object */
+#define rep_CONS_VAL(x)	rep_VAL(x)
 
-#define CONS_ALIGNMENT	CELL_ALIGNMENT
+/* Get a pointer to a cons cell from a repv. */
+#define rep_CONS(v)	((rep_cons *) rep_PTR(v))
 
-#define CONSP(v)	(CELLP(v) && CELL_CONS_P(v))
-
-/* Build a VALUE out of a pointer to a Lisp_Cons object */
-#define CONS_VAL(x)	VAL(x)
-
-/* Get a pointer to a cons cell from a VALUE. */
-#define VCONS(v)	((Lisp_Cons *)VPTR(v))
-
-/* Get the car or cdr from a cons VALUE. */
-#define VCAR(v)		(VCONS(v)->car)
-#define VCDR(v)		(VCONS(v)->cdr)
+/* Get the car or cdr from a cons repv. */
+#define rep_CAR(v)	(rep_CONS(v)->car)
+#define rep_CDR(v)	(rep_CONS(v)->cdr)
 
 /* Get the cdr when GC is in progress. */
-#define VGCDR(v)	(VCDR(v) & ~VALUE_CONS_MARK_BIT)
+#define rep_GCDR(v)	(rep_CDR(v) & ~rep_VALUE_CONS_MARK_BIT)
 
 /* True if cons cell V is mutable (i.e. not read-only). */
-#ifdef DUMPED
-# define CONS_WRITABLE_P(v) (!(VCONS(v) >= &dumped_cons_start \
-			       && VCONS(v) < &dumped_cons_end))
+#ifdef rep_DUMPED
+# define rep_CONS_WRITABLE_P(v) \
+    (! (rep_CONS(v) >= &rep_dumped_cons_start \
+	&& rep_CONS(v) < &rep_dumped_cons_end))
 #else
-# define CONS_WRITABLE_P(v) TRUE
+# define rep_CONS_WRITABLE_P(v) rep_TRUE
 #endif
 
 
 /* Type data */
+
+/* Information about each type */
+typedef struct rep_type_struct {
+    struct rep_type_struct *next;
+    char *name;
+    u_int code;
+
+    /* Compares two values, rc is similar to strcmp() */
+    int (*compare)(repv val1, repv val2);
+
+    /* Prints a textual representation of the object, not necessarily in 
+       a read'able format */
+    void (*princ)(repv stream, repv obj);
+
+    /* Prints a textual representation of the object, if possible in
+       a read'able format */
+    void (*print)(repv stream, repv obj);
+
+    /* When non-null, a function that should be called during the
+       sweep phase of garbage collection. */
+    void (*sweep)(void);
+
+    /* When non-null, a function to mark OBJ and all objects
+       it references. */
+    void (*mark)(repv obj);
+
+    /* When called, should mark any objects that must persist across
+       the GC, no matter what. */
+    void (*mark_type)(void);
+
+    /* When non-null, functions called for the stream OBJ. */
+    int (*getc)(repv obj);
+    int (*ungetc)(repv obj, int c);
+    int (*putc)(repv obj, int c);
+    int (*puts)(repv obj, void *data, int length, rep_bool lisp_obj_p);
+
+    /* When non-null, a function to ``bind'' to OBJ temporarily,
+       returning some handle for later unbinding. */
+    repv (*bind)(repv obj);
+
+    /* When non-null, a function to ``unbind'' OBJ, the result of
+       the earlier bind call. */
+    void (*unbind)(repv obj);
+} rep_type;
 
 /* Each type of Lisp object has a type code associated with it. For
    normal objects, this code is stored in the `type' field.
@@ -193,665 +274,535 @@ typedef struct lisp_cons_block {
    complemented by changing values.c:data_types.
 
    Also note how non-cons cells are given odd values, so that the
-   CELL_IS_8 bit doesn't have to be masked out. */
+   rep_CELL_IS_8 bit doesn't have to be masked out. */
 
-#define V_Cons		0x00
-#define V_Symbol	0x01
-#define V_Int		0x02
-#define V_Vector	0x03
-#define V_String	0x05
-#define V_Compiled	0x07
-#define V_Void		0x09
-#define V_Process	0x0b
-#define V_Var		0x0d
-#define V_SF		0x0f
-#define V_Subr0		0x11
-#define V_Subr1		0x13
-#define V_Subr2		0x15
-#define V_Subr3		0x17
-#define V_Subr4		0x19
-#define V_Subr5		0x1b
-#define V_SubrN		0x1d
-#define V_Buffer	0x1f
-#define V_Window	0x21
-#define V_View		0x23
-#define V_Mark		0x25
-#define V_File		0x27
-#define V_GlyphTable	0x29
-#define V_Extent	0x2b
-#define V_Face		0x2d
-#define V_Color		0x2f
-#define V_Cell16	0x3f		/* reserved, not yet used */
-#define V_MAX		0x40		/* nothing from here on */
+#define rep_Cons	0x00
+#define rep_Symbol	0x01
+#define rep_Int		0x02
+#define rep_Vector	0x03
+#define rep_String	0x05
+#define rep_Compiled	0x07
+#define rep_Void	0x09
+#define rep_Process	0x0b
+#define rep_Var		0x0d
+#define rep_SF		0x0f
+#define rep_Subr0	0x11
+#define rep_Subr1	0x13
+#define rep_Subr2	0x15
+#define rep_Subr3	0x17
+#define rep_Subr4	0x19
+#define rep_Subr5	0x1b
+#define rep_SubrN	0x1d
+#define rep_File	0x1f
 
 /* Assuming that V is a cell, return the type code */
-#define VCELL_TYPE(v)	(CONSP(v) ? V_Cons : VCELL8_TYPE(v))
+#define rep_CELL_TYPE(v) (rep_CONSP(v) ? rep_Cons		\
+			  : !rep_CELL16P(v) ? rep_CELL8_TYPE(v)	\
+			  : rep_CELL16_TYPE(v))
 
-/* Return a type code given a VALUE */
-#define VTYPE(v)	(INTP(v) ? V_Int : VCELL_TYPE(v))
+/* Return a type code given a repv */
+#define rep_TYPE(v)	(rep_INTP(v) ? rep_Int : rep_CELL_TYPE(v))
 
 /* true if V is of type T (T must be a cell8 type) */
-#define VCELL8_TYPEP(v,t) (CELLP(v) && VCELL8_TYPE(v) == (t))
+#define rep_CELL8_TYPEP(v, t) \
+    (rep_CELLP(v) && rep_CELL8_TYPE(v) == (t))
+
+#define rep_CELL16_TYPEP(v, t) \
+    (rep_CELLP(v) && rep_CELL16_TYPE(v) == (t))
 
 /* true if V is of type T. */
-#define VTYPEP(v,t)	(VTYPE(v) == t)
-
-
-/* Information about each type */
-typedef struct {
-    /* Compares two values, rc is similar to strcmp() */
-    int (*compare)(VALUE val1, VALUE val2);
-
-    /* Prints a textual representation of the object, not necessarily in 
-       a read'able format */
-    void (*princ)(VALUE stream, VALUE obj);
-
-    /* Prints a textual representation of the object, if possible in
-       a read'able format */
-    void (*print)(VALUE stream, VALUE obj);
-
-    /* When non-null, a function that should be called during the
-       sweep phase of garbage collection. */
-    void (*sweep)(void);
-
-    /* this is the name of the type */
-    char *name;
-} Lisp_Type_Data;
-
-/* An array of these things, indexed by type code */
-extern Lisp_Type_Data data_types[V_MAX];
-
-/* This is also defined as functions (lower-case'd names)...  */
-#define VALUE_CMP(v1,v2) data_types[VTYPE(v1)].compare(v1,v2)
+#define rep_TYPEP(v, t)	(rep_TYPE(v) == t)
 
 
 /* Strings */
 
-/* If INLINE_STATIC_STRINGS is defined we use some inline assembly
-   to create statically allocated Lisp_String constants that are
+/* If rep_INLINE_STATIC_STRINGS is defined we use some inline assembly
+   to create statically allocated rep_string constants that are
    (almost) exactly the same as dynamically allocated strings. If
    it's not defined static strings must differ froom dynamic strings
    introducing extra overhead (the need to differentiate between
    the two). */
 
-typedef struct lisp_string {
+typedef struct rep_string_struct {
     /* Bits 0->7 are standard cell8 defines. Bits 8->31 store the length
        of the string.
 
        This means that strings can't contain more than 2^24-1 bytes
        (thats about 16.7MB) */
-    VALUE car;
-    struct lisp_string *next;
+    repv car;
+    struct rep_string_struct *next;
 
     union {
-#ifndef INLINE_STATIC_STRINGS
+#ifndef rep_INLINE_STATIC_STRINGS
 	/* There's no way I can see to make a C compiler generate
 	   a variably sized string into a structure at compile-time..?
 	   Unless we know how to do this in assembler, put a pointer to
 	   the string instead.. */
-	u_char *static_string;
+	u_char *rep_static_string;
 #endif
 	u_char dynamic_string[1];
     } data;
-} Lisp_String;
+} rep_string;
 
-#define STRING_LEN_SHIFT	8
-#define LISP_MAX_STRING		((1 << (VALUE_BITS - STRING_LEN_SHIFT)) - 1)
+#define rep_STRING_LEN_SHIFT	8
+#define rep_MAX_STRING \
+    ((1 << (rep_VALUE_BITS - rep_STRING_LEN_SHIFT)) - 1)
 
 /* The number of bytes that need to be allocated for a string cell
    containg X string bytes (including terminating zero). */
-#define DSTRING_SIZE(x) 	(sizeof(VALUE) + sizeof(Lisp_String *) + (x))
+#define rep_DSTRING_SIZE(x) 	(sizeof(repv) + sizeof(rep_string *) + (x))
 
-#define STRINGP(v)		VCELL8_TYPEP(v, V_String)
-#define VSTRING(v)		((Lisp_String *)VPTR(v))
+#define rep_STRINGP(v)		rep_CELL8_TYPEP(v, rep_String)
+#define rep_STRING(v)		((rep_string *) rep_PTR(v))
 
-#define STRING_LEN(v)		(VSTRING(v)->car >> STRING_LEN_SHIFT)
+#define rep_STRING_LEN(v)	(rep_STRING(v)->car >> rep_STRING_LEN_SHIFT)
 
-#define MAKE_STRING_CAR(len)	(((len) << STRING_LEN_SHIFT) | V_String)
+#define rep_MAKE_STRING_CAR(len) (((len) << rep_STRING_LEN_SHIFT) | rep_String)
 
-/* True if this string may be written to; generally V_StaticString types
+/* True if this string may be written to; generally rep_StaticString types
    are made from C string-constants and usually in read-only storage. */
-#define STRING_WRITABLE_P(s)	(!VCELL8_STATIC_P(s))
+#define rep_STRING_WRITABLE_P(s) (!rep_CELL_STATIC_P(s))
 
-#ifndef INLINE_STATIC_STRINGS
+#ifndef rep_INLINE_STATIC_STRINGS
 
 /* Structure for initialising statically allocated strings. */
-struct static_string {
-    VALUE car;
-    Lisp_String *next;
+struct rep_static_string {
+    repv car;
+    rep_string *next;
     u_char *data;
 };
 
 /* Define a variable V, containing a static string S. This must be cast
-   to a VALUE via the VAL() macro when using. */
+   to a repv via the rep_VAL() macro when using. */
 # define DEFSTRING(v, s) 					\
-    static struct static_string v ALIGN_CELL			\
-	= { ((sizeof(s) - 1) << STRING_LEN_SHIFT)		\
-	    | CELL8_STATIC_BIT | V_String, 0, s }
+    rep_ALIGN_CELL(static struct rep_static_string v)		\
+	= { ((sizeof(s) - 1) << rep_STRING_LEN_SHIFT)		\
+	    | rep_CELL_STATIC_BIT | rep_String, 0, s }
 
-# define VSTR(v)	((VSTRING(v)->car & STRING_STATIC)	\
-			 ? VSTRING(v)->data.static_string	\
-			 : VSTRING(v)->data.dynamic_string)
+# define rep_STR(v)	((rep_STRING(v)->car & rep_STRING_STATIC)	\
+			 ? rep_STRING(v)->data.rep_static_string		\
+			 : rep_VSTRING(v)->data.dynamic_string)
 
 /* Use this to get a newline into a DEFSTRING */
-# define DS_NL "\n"
+# define rep_DS_NL "\n"
 
-#else /* INLINE_STATIC_STRINGS */
+#else /* rep_INLINE_STATIC_STRINGS */
 
 /* This macro will compile a DEFSTRING expression into exactly the
    same form as the normal dynamically allocated string. The size/type,
    followed immediately by the data itself.. */
 # define DEFSTRING(v, s)						\
-    extern Lisp_String v;						\
-    __asm__ (".align " QUOTE(CELL_ALIGNMENT) "\n"			\
-	     QUOTE(v) ":\n"						\
-	     "\t.long (((2f-1f)-1) << " QUOTE(STRING_LEN_SHIFT) ") | "	\
-	     QUOTE(CELL8_STATIC_BIT) " | " QUOTE(V_String) "\n"		\
+    extern rep_string v;						\
+    __asm__ (".align " rep_QUOTE(rep_CELL_ALIGNMENT) "\n"		\
+	     rep_QUOTE(v) ":\n"						\
+	     "\t.long (((2f-1f)-1) << "					\
+	     rep_QUOTE(rep_STRING_LEN_SHIFT) ") | " 			\
+	     rep_QUOTE(rep_CELL_STATIC_BIT) " | "			\
+	     rep_QUOTE(rep_String) "\n"					\
 	     "\t.long 0\n"						\
 	     "1:\t.asciz \"" s "\"\n2:\n")
 
-# define VSTR(v)	(VSTRING(v)->data.dynamic_string)
+# define rep_STR(v)	(rep_STRING(v)->data.dynamic_string)
 
 /* Use this to get a newline into a DEFSTRING. Need this since we want
    the assembler to expand the \n not the C compiler. */
-# define DS_NL "\\n"
+# define rep_DS_NL "\\n"
 
-#endif /* INLINE_STATIC_STRINGS */
+#endif /* rep_INLINE_STATIC_STRINGS */
 
 
 /* Symbols */
 
 /* Symbol object, each symbol has 4 basic attributes, a name, its value
    as a variable, its value as a function and a property-list.
-   Symbols are generally stored in hash tables (obarray) with collisions
-   chained from the `sym_Next' field.  */
+   Symbols are generally stored in hash tables (rep_obarray) with collisions
+   chained from the `QNext' field.  */
 typedef struct {
-    VALUE car;				/* bits 8->11 are flags */
-    VALUE next;				/* next symbol in obarray bucket */
-    VALUE name;
-    VALUE value;
-    VALUE function;
-    VALUE prop_list;
-} Lisp_Symbol;
+    repv car;				/* bits 8->11 are flags */
+    repv next;				/* next symbol in rep_obarray bucket */
+    repv name;
+    repv value;
+    repv function;
+    repv prop_list;
+} rep_symbol;
 
 /* This bit set in car means that the value is a constant, and therefore
    can't be modified. */
-#define SF_CONSTANT	(1 << (CELL8_TYPE_BITS + 0))
+#define rep_SF_CONSTANT	(1 << (rep_CELL8_TYPE_BITS + 0))
 
-/* Means that the symbol's value may be in the buffer-local storage, if so
-   then that occurrence takes precedence. */
-#define SF_BUFFER_LOCAL (1 << (CELL8_TYPE_BITS + 1))
+/* Means that the symbol's value may be in some form of local storage,
+   if so then that occurrence takes precedence. */
+#define rep_SF_LOCAL 	(1 << (rep_CELL8_TYPE_BITS + 1))
 
 /* This means that setting the value of the symbol always sets the
-   buffer-local value, even if one doesn't already exist.  */
-#define SF_SET_BUFFER_LOCAL (1 << (CELL8_TYPE_BITS + 2))
+   local value, even if one doesn't already exist.  */
+#define rep_SF_SET_LOCAL (1 << (rep_CELL8_TYPE_BITS + 2))
 
 /* When a function is evaluated whose symbol has this bit set, the
    next evaluated form will invoke the Lisp debugger. */
-#define SF_DEBUG	(1 << (CELL8_TYPE_BITS + 3))
+#define rep_SF_DEBUG	(1 << (rep_CELL8_TYPE_BITS + 3))
 
 /* Symbol allocation blocks */
-typedef struct lisp_symbol_block {
-    struct lisp_symbol_block *next;
-    Lisp_Symbol symbols[SYMBOLBLK_SIZE] ALIGN_CELL;
-} Lisp_Symbol_Block;
+typedef struct rep_symbol_block_struct {
+    struct rep_symbol_block_struct *next;
+    rep_ALIGN_CELL(rep_symbol symbols[rep_SYMBOLBLK_SIZE]);
+} rep_symbol_block;
 
-#define VSYM(v)		((Lisp_Symbol *)VPTR(v))
-#define SYMBOLP(v)	VCELL8_TYPEP(v, V_Symbol)
+#define rep_SYM(v)		((rep_symbol *)rep_PTR(v))
+#define rep_SYMBOLP(v)		rep_CELL8_TYPEP(v, rep_Symbol)
 
-#define NILP(v)		((v) == sym_nil)
-#define LISTP(v)	(NILP(v) || CONSP(v))
+#define rep_NILP(v)		((v) == Qnil)
+#define rep_LISTP(v)		(rep_NILP(v) || rep_CONSP(v))
 
 
 /* Vectors */
 
-typedef struct lisp_vector {
-    VALUE car;				/* size is bits 8->31 */
-    struct lisp_vector *next;
-    VALUE array[0];
-} Lisp_Vector;
+typedef struct rep_vector_struct {
+    repv car;				/* size is bits 8->31 */
+    struct rep_vector_struct *next;
+    repv array[0];
+} rep_vector;
 
 /* Bytes to allocate for S objects */
-#define VECT_SIZE(s)	((sizeof(VALUE) * (s)) + sizeof(Lisp_Vector))
+#define rep_VECT_SIZE(s)	((sizeof(repv) * (s)) + sizeof(rep_vector))
 
-#define VVECT(v)	((Lisp_Vector *)VPTR(v))
-#define VVECTI(v,i)	(VVECT(v)->array[(i)])
+#define rep_VECT(v)		((rep_vector *)rep_PTR(v))
+#define rep_VECTI(v,i)		(rep_VECT(v)->array[(i)])
 
-#define VVECT_LEN(v)	(VVECT(v)->car >> 8)
-#define VSET_VECT_LEN(v,l) (VVECT(v)->car = ((l) << 8 | V_Vector))
+#define rep_VECT_LEN(v)		(rep_VECT(v)->car >> 8)
+#define rep_SET_VECT_LEN(v,l)	(rep_VECT(v)->car = ((l) << 8 | rep_Vector))
 
-#define VECTORP(v)	VCELL8_TYPEP(v, V_Vector)
+#define rep_VECTORP(v)		rep_CELL8_TYPEP(v, rep_Vector)
 
-#ifdef DUMPED
-# define VECTOR_WRITABLE_P(v)				\
-    (!(VVECT(v) >= (Lisp_Vector *)&dumped_text_start	\
-       && VVECT(v) < (Lisp_Vector *)&dumped_text_end))
+#ifdef rep_DUMPED
+# define rep_VECTOR_WRITABLE_P(v)					\
+    (!(rep_VECT(v) >= (rep_vector *)&rep_dumped_text_start	\
+       && rep_VECT(v) < (rep_vector *)&rep_dumped_text_end))
 #else
-# define VECTOR_WRITABLE_P(v) TRUE
+# define rep_VECTOR_WRITABLE_P(v) rep_TRUE
 #endif
 
 
 /* Compiled Lisp functions; this is a vector. Some of these definitions
    are probably hard coded into lispmach.c */
 
-#define COMPILEDP(v)	    VCELL8_TYPEP(v, V_Compiled)
-#define VCOMPILED(v)	    ((Lisp_Vector *)VPTR(v))
+#define rep_COMPILEDP(v)	rep_CELL8_TYPEP(v, rep_Compiled)
+#define rep_COMPILED(v)		((rep_vector *)rep_PTR(v))
 
 /* First element is lambda list. */
-#define COMPILED_LAMBDA(v)	VVECTI(v, 0)
+#define rep_COMPILED_LAMBDA(v)	rep_VECTI(v, 0)
 
 /* Second is byte-code string */
-#define COMPILED_CODE(v)	VVECTI(v, 1)
+#define rep_COMPILED_CODE(v)	rep_VECTI(v, 1)
 
 /* Third is constant vector */
-#define COMPILED_CONSTANTS(v)	VVECTI(v, 2)
+#define rep_COMPILED_CONSTANTS(v) rep_VECTI(v, 2)
 
 /* Fourth is an integer, low 16 bits is stack usage bit 16=macrop */
-#define COMPILED_STACK(v)	(VINT(VVECTI(v, 3)) & 0x0ffff)
-#define COMPILED_MACRO_P(v)	(VINT(VVECTI(v, 3)) & 0x10000)
+#define rep_COMPILED_STACK(v)	(rep_INT(rep_VECTI(v, 3)) & 0x0ffff)
+#define rep_COMPILED_MACRO_P(v)	(rep_INT(rep_VECTI(v, 3)) & 0x10000)
 
-#define COMPILED_MIN_SLOTS	4
+#define rep_COMPILED_MIN_SLOTS	4
 
 /* Optional fifth element is documentation. */
-#define COMPILED_DOC(v)		((VVECT_LEN(v) >= 5) ? VVECTI(v, 4) : sym_nil)
+#define rep_COMPILED_DOC(v)	((rep_VECT_LEN(v) >= 5) \
+				 ? rep_VECTI(v, 4) : Qnil)
 
 /* Optional sixth element is interactive specification. */
-#define COMPILED_INTERACTIVE(v) ((VVECT_LEN(v) >= 6) ? VVECTI(v, 5) : sym_nil)
-
-
-/* Positions */
-
-/* A pointer to a buffer position. There's a conventions that positions
-   accessed via VALUE pointers (and VCOL, VROW macros) are _read_only_,
-   while those accessed through Pos * pointers (and PCOL, PROW macros)
-   are _read_write_, probably allocated on the stack. */
-
-#define POSP(v) (CONSP(v) && INTP(VCAR(v)) && INTP(VCDR(v)))
-
-/* We define the column in the cdr and the row in the car, so that
-   the normal cons-comparison (car first, then cdr) will work as the
-   old pos-comparison used to (i.e. row-major). */
-#define MAKE_POS(col, row) cmd_cons(MAKE_INT(row), MAKE_INT(col))
-#define VCOL(v) (VINT(VCDR(v)))
-#define VROW(v) (VINT(VCAR(v)))
-
-/* These should never be used unless it's clear there can be
-   no other references to V. */
-#define VSETCOL(v,c) (VCDR(v) = MAKE_INT(c))
-#define VSETROW(v,r) (VCAR(v) = MAKE_INT(r))
-
-/* These all want VALUE pointers */
-#define POS_EQUAL_P(s,e) \
-    ((VROW(s) == VROW(e)) && (VCOL(s) == VCOL(e)))
-#define POS_GREATER_P(s,e) \
-    ((VROW(s) > VROW(e)) || ((VROW(s) == VROW(e)) && (VCOL(s) > VCOL(e))))
-#define POS_GREATER_EQUAL_P(s,e) \
-    ((VROW(s) > VROW(e)) || ((VROW(s) == VROW(e)) && (VCOL(s) >= VCOL(e))))
-#define POS_LESS_P(s,e) \
-    ((VROW(s) < VROW(e)) || ((VROW(s) == VROW(e)) && (VCOL(s) < VCOL(e))))
-#define POS_LESS_EQUAL_P(s,e) \
-    ((VROW(s) < VROW(e)) || ((VROW(s) == VROW(e)) && (VCOL(s) <= VCOL(e))))
-
-/* A more conventional C structure, used in the editor internals to
-   avoid the gratuitous masking and shifting otherwise required. */
-typedef struct {
-    long row, col;
-} Pos;
-
-#define PCOL(p) ((p)->col)
-#define PROW(p) ((p)->row)
-
-#define COPY_VPOS(p, v) 	\
-    do {			\
-	PROW(p) = VROW(v);	\
-	PCOL(p) = VCOL(v);	\
-    } while(0)
-
-#define COPY_POS(p) MAKE_POS(PCOL(p), PROW(p))
-
-/* These all want Pos pointers */
-#define PPOS_EQUAL_P(s,e) \
-    ((PROW(s) == PROW(e)) && (PCOL(s) == PCOL(e)))
-#define PPOS_GREATER_P(s,e) \
-    ((PROW(s) > PROW(e)) || ((PROW(s) == PROW(e)) && (PCOL(s) > PCOL(e))))
-#define PPOS_GREATER_EQUAL_P(s,e) \
-    ((PROW(s) > PROW(e)) || ((PROW(s) == PROW(e)) && (PCOL(s) >= PCOL(e))))
-#define PPOS_LESS_P(s,e) \
-    ((PROW(s) < PROW(e)) || ((PROW(s) == PROW(e)) && (PCOL(s) < PCOL(e))))
-#define PPOS_LESS_EQUAL_P(s,e) \
-    ((PROW(s) < PROW(e)) || ((PROW(s) == PROW(e)) && (PCOL(s) <= PCOL(e))))
+#define rep_COMPILED_INTERACTIVE(v) ((rep_VECT_LEN(v) >= 6) \
+				     ? rep_VECTI(v, 5) : Qnil)
 
 
 /* Files */
 
 /* A file object.  */
-typedef struct lisp_file {
-    VALUE car;				/* single flag at bit 8 */
-    struct lisp_file *next;
+typedef struct rep_file_struct {
+    repv car;				/* single flag at bit 8 */
+    struct rep_file_struct *next;
 
     /* Name as user sees it */
-    VALUE name;
+    repv name;
 
     /* Function to call to handle file operations,
        or t for file in local fs */
-    VALUE handler;
+    repv handler;
 
     /* Data for handler's use; for local files, this is the
        name of the file opened in the local fs. */
-    VALUE handler_data;
+    repv handler_data;
 
-    /* For local files, a buffer file handle; for others some sort
+    /* For local files, a buffered file handle; for others some sort
        of stream. */
     union {
 	FILE *fh;
-	VALUE stream;
+	repv stream;
     } file;
 
-} Lisp_File;
+} rep_file;
 
 /* When this bit is set in flags, the file handle is never fclose()'d,
    i.e. this file points to something like stdin. */
-#define LFF_DONT_CLOSE (1 << CELL8_TYPE_BITS)
+#define rep_LFF_DONT_CLOSE	(1 << rep_CELL8_TYPE_BITS)
 
-#define VFILE(v)	((Lisp_File *)VPTR(v))
-#define FILEP(v)	VCELL8_TYPEP(v, V_File)
+#define rep_FILE(v)		((rep_file *)rep_PTR(v))
+#define rep_FILEP(v)		rep_CELL8_TYPEP(v, rep_File)
 
-#define LOCAL_FILE_P(v)	(VFILE(v)->handler == sym_t)
+#define rep_LOCAL_FILE_P(v)	(rep_FILE(v)->handler == Qt)
 
 
 /* Built-in subroutines */
 
 /* C subroutine, can take from zero to five arguments.  */
 typedef struct {
-    VALUE car;
+    repv car;
     union {
-	VALUE (*fun0)(void);
-	VALUE (*fun1)(VALUE);
-	VALUE (*fun2)(VALUE, VALUE);
-	VALUE (*fun3)(VALUE, VALUE, VALUE);
-	VALUE (*fun4)(VALUE, VALUE, VALUE, VALUE);
-	VALUE (*fun5)(VALUE, VALUE, VALUE, VALUE, VALUE);
+	repv (*fun0)(void);
+	repv (*fun1)(repv);
+	repv (*fun2)(repv, repv);
+	repv (*fun3)(repv, repv, repv);
+	repv (*fun4)(repv, repv, repv, repv);
+	repv (*fun5)(repv, repv, repv, repv, repv);
     } fun;
-    VALUE name;
-    VALUE doc_index;
-    VALUE int_spec;
-} Lisp_Subr;
+    repv name;
+    repv int_spec;
+} rep_subr;
 
 typedef struct {
-    VALUE car;
+    repv car;
     void *fun;
-    VALUE name;
-    VALUE doc_index;
-    VALUE int_spec;
-} Lisp_XSubr;
+    repv name;
+    repv int_spec;			/* put this in plist? (jade only) */
+} rep_xsubr;
 
-#define VXSUBR(v)	((Lisp_XSubr *)VPTR(v))
-#define VSUBR(v)	((Lisp_Subr *)VPTR(v))
-#define VSUBR0FUN(v)	(VSUBR(v)->fun.fun0)
-#define VSUBR1FUN(v)	(VSUBR(v)->fun.fun1)
-#define VSUBR2FUN(v)	(VSUBR(v)->fun.fun2)
-#define VSUBR3FUN(v)	(VSUBR(v)->fun.fun3)
-#define VSUBR4FUN(v)	(VSUBR(v)->fun.fun4)
-#define VSUBR5FUN(v)	(VSUBR(v)->fun.fun5)
-#define VSUBRNFUN(v)	(VSUBR(v)->fun.fun1)
-#define VSFFUN(v)	(VSUBR(v)->fun.fun1)
-#define VVARFUN(v)	(VSUBR(v)->fun.fun1)
+#define rep_XSUBR(v)	((rep_xsubr *) rep_PTR(v))
+#define rep_SUBR(v)	((rep_subr *) rep_PTR(v))
+#define rep_SUBR0FUN(v)	(rep_SUBR(v)->fun.fun0)
+#define rep_SUBR1FUN(v)	(rep_SUBR(v)->fun.fun1)
+#define rep_SUBR2FUN(v)	(rep_SUBR(v)->fun.fun2)
+#define rep_SUBR3FUN(v)	(rep_SUBR(v)->fun.fun3)
+#define rep_SUBR4FUN(v)	(rep_SUBR(v)->fun.fun4)
+#define rep_SUBR5FUN(v)	(rep_SUBR(v)->fun.fun5)
+#define rep_SUBRNFUN(v)	(rep_SUBR(v)->fun.fun1)
+#define rep_SFFUN(v)	(rep_SUBR(v)->fun.fun1)
+#define rep_VARFUN(v)	(rep_SUBR(v)->fun.fun1)
 
 
 /* Other definitions */
 
 /* Macros for other types */
-#define VMARK(v)	((Lisp_Mark *)VPTR(v))
-#define VTX(v)		((TX *)VPTR(v))
-#define VBUFFER(v)	VTX(v)
-#define VPROC(v)	((struct Proc *)VPTR(v))
-#define VWIN(v)		((WIN *)VPTR(v))
-#define VVIEW(v)	((VW *)VPTR(v))
-#define VGLYPHTAB(v)	((glyph_table_t *)VPTR(v))
-#define VEXTENT(v)	((Lisp_Extent *)VPTR(v))	
-#define VFACE(v)	((Lisp_Face *)VPTR(v))	
-#define VCOLOR(v)	((Lisp_Color *)VPTR(v))	
-
-#define BUFFERP(v)	VCELL8_TYPEP(v, V_Buffer)
-#define MARKP(v)	VCELL8_TYPEP(v, V_Mark)
-#define PROCESSP(v)	VCELL8_TYPEP(v, V_Process)
-#define WINDOWP(v)	(VCELL8_TYPEP(v, V_Window) && VWIN(v)->w_Window)
-#define VIEWP(v)	(VCELL8_TYPEP(v, V_View) && VVIEW(v)->vw_Win)
-#define GLYPHTABP(v)	VCELL8_TYPEP(v, V_GlyphTable)
-#define EXTENTP(v)	VCELL8_TYPEP(v, V_Extent)
-#define FACEP(v)	VCELL8_TYPEP(v, V_Face)
-#define COLORP(v)	VCELL8_TYPEP(v, V_Color)
-#define VOIDP(v)	VCELL8_TYPEP(v, V_Void)
+#define rep_VOIDP(v)	rep_CELL8_TYPEP(v, rep_Void)
 
 /* Building lists */
-#define LIST_1(v1)	       cmd_cons(v1, sym_nil)
-#define LIST_2(v1,v2)	       cmd_cons(v1, LIST_1(v2))
-#define LIST_3(v1,v2,v3)       cmd_cons(v1, LIST_2(v2, v3))
-#define LIST_4(v1,v2,v3,v4)    cmd_cons(v1, LIST_3(v2, v3, v4))
-#define LIST_5(v1,v2,v3,v4,v5) cmd_cons(v1, LIST_4(v2, v3, v4, v5))
+#define rep_LIST_1(v1)			Fcons(v1, Qnil)
+#define rep_LIST_2(v1,v2)		Fcons(v1, rep_LIST_1(v2))
+#define rep_LIST_3(v1,v2,v3)		Fcons(v1, rep_LIST_2(v2, v3))
+#define rep_LIST_4(v1,v2,v3,v4)		Fcons(v1, rep_LIST_3(v2, v3, v4))
+#define rep_LIST_5(v1,v2,v3,v4,v5)	Fcons(v1, rep_LIST_4(v2, v3, v4, v5))
 
 
 /* Garbage collection definitions */
 
-#define GC_CELL_MARKEDP(v)	(VPTR(v)->car & CELL8_MARK_BIT)
-#define GC_SET_CELL(v)		(VPTR(v)->car |= CELL8_MARK_BIT)
-#define GC_CLR_CELL(v)		(VPTR(v)->car &= ~CELL8_MARK_BIT)
+#define rep_GC_CELL_MARKEDP(v)	(rep_PTR(v)->car & rep_CELL_MARK_BIT)
+#define rep_GC_SET_CELL(v)	(rep_PTR(v)->car |= rep_CELL_MARK_BIT)
+#define rep_GC_CLR_CELL(v)	(rep_PTR(v)->car &= ~rep_CELL_MARK_BIT)
 
-#define GC_CONS_MARKEDP(v)	(VCDR(v) & VALUE_CONS_MARK_BIT)
-#define GC_SET_CONS(v)		(VCDR(v) |= VALUE_CONS_MARK_BIT)
-#define GC_CLR_CONS(v)		(VCDR(v) &= ~VALUE_CONS_MARK_BIT)
+#define rep_GC_CONS_MARKEDP(v)	(rep_CDR(v) & rep_VALUE_CONS_MARK_BIT)
+#define rep_GC_SET_CONS(v)	(rep_CDR(v) |= rep_VALUE_CONS_MARK_BIT)
+#define rep_GC_CLR_CONS(v)	(rep_CDR(v) &= ~rep_VALUE_CONS_MARK_BIT)
 
 /* True when cell V has been marked. */
-#define GC_MARKEDP(v) \
-    (CELL_CONS_P(v) ? GC_CONS_MARKEDP(v) : GC_CELL_MARKEDP(v))
+#define rep_GC_MARKEDP(v) \
+    (rep_CELL_CONS_P(v) ? rep_GC_CONS_MARKEDP(v) : rep_GC_CELL_MARKEDP(v))
 
 /* Set the mark bit of cell V. */
-#define GC_SET(v)		\
+#define rep_GC_SET(v)		\
     do {			\
-	if(CELLP(v))		\
-	    GC_SET_CELL(v);	\
+	if(rep_CELLP(v))	\
+	    rep_GC_SET_CELL(v);	\
 	else			\
-	    GC_SET_CONS(v);	\
+	    rep_GC_SET_CONS(v);	\
     } while(0)
 
 /* Clear the mark bit of cell V. */
-#define GC_CLR(v)		\
+#define rep_GC_CLR(v)		\
     do {			\
-	if(CELLP(v))		\
-	    GC_CLR_CELL(v);	\
+	if(rep_CELLP(v))	\
+	    rep_GC_CLR_CELL(v);	\
 	else			\
-	    GC_CLR_CONS(v);	\
+	    rep_GC_CLR_CONS(v);	\
     } while(0)
 
 /* Recursively mark object V. */
-#define MARKVAL(v)					\
-    do {						\
-	if(v != 0 && !INTP(v) && !GC_MARKEDP(v))	\
-	    mark_value(v);				\
+#define rep_MARKVAL(v)						\
+    do {							\
+	if(v != 0 && !rep_INTP(v) && !rep_GC_MARKEDP(v))	\
+	    rep_mark_value(v);					\
     } while(0)
 
 /* A stack of dynamic GC roots, i.e. objects to start marking from.  */
-typedef struct gc_root {
-    VALUE *ptr;
-    struct gc_root *next;
-} GC_root;
+typedef struct rep_gc_root {
+    repv *ptr;
+    struct rep_gc_root *next;
+} rep_GC_root;
 
-typedef struct gc_n_roots {
-    VALUE *first;
+typedef struct rep_gc_n_roots {
+    repv *first;
     int count;
-    struct gc_n_roots *next;
-} GC_n_roots;
+    struct rep_gc_n_roots *next;
+} rep_GC_n_roots;
 
-#define POPGC (gc_root_stack = gc_root_stack->next)
-#define PUSHGC(root, val)			\
+#define rep_POPGC (rep_gc_root_stack = rep_gc_root_stack->next)
+#define rep_PUSHGC(root, val)			\
     do {					\
 	(root).ptr = &(val);			\
-	(root).next = gc_root_stack;		\
-	gc_root_stack = &(root);		\
+	(root).next = rep_gc_root_stack;	\
+	rep_gc_root_stack = &(root);		\
     } while(0)
 
-#define POPGCN (gc_n_roots_stack = gc_n_roots_stack->next)
-#define PUSHGCN(root, ptr, n)			\
+#define rep_POPGCN (rep_gc_n_roots_stack = rep_gc_n_roots_stack->next)
+#define rep_PUSHGCN(root, ptr, n)		\
     do {					\
 	(root).first = (ptr);			\
 	(root).count = (n);			\
-	(root).next = gc_n_roots_stack;		\
-	gc_n_roots_stack = &(root);		\
+	(root).next = rep_gc_n_roots_stack;	\
+	rep_gc_n_roots_stack = &(root);		\
     } while(0)
 
 
 /* More other stuff */
 
 /* Keeps a backtrace of all lisp functions called. NOT primitives. */
-struct Lisp_Call {
-    struct Lisp_Call *next;
-    VALUE fun;
-    VALUE args;
+struct rep_Call {
+    struct rep_Call *next;
+    repv fun;
+    repv args;
     /* t if `args' is list of *evalled* arguments.  */
-    VALUE args_evalled_p;
+    repv args_evalled_p;
 };
 
 
 /* Macros for declaring functions */
 
 /* Define a function named NAME (a string), whose function body will
-   be called FSYM, whose Lisp_Subr will be called SSYM, with argument
-   list ARGS, of type code TYPE, whose doc-string is at index DOCINDEX
-   in the documentation file. */
-#define DEFUN(name,fsym,ssym,args,type,docindex)			\
-    DEFSTRING(CONCAT(ssym, __name), name);				\
-    extern VALUE fsym args;						\
-    Lisp_XSubr ALIGN_CELL ssym = { type, fsym,				\
-				   VAL(&CONCAT(ssym, __name)),		\
-				   MAKE_INT(docindex), LISP_NULL }; 	\
-    VALUE fsym args
+   be called FSYM, whose rep_subr will be called SSYM, with argument
+   list ARGS, of type code TYPE. */
+#define DEFUN(name,fsym,ssym,args,type)					\
+    DEFSTRING(rep_CONCAT(ssym, __name), name);				\
+    extern repv fsym args;						\
+    rep_ALIGN_CELL(rep_xsubr ssym) = { type, fsym,			\
+					rep_VAL(&rep_CONCAT(ssym, __name)), \
+					rep_NULL };			\
+    repv fsym args
 
 /* Same as above but with an extra arg -- an interactive-spec string. */
-#define DEFUN_INT(name,fsym,ssym,args,type,docindex,interactive)	\
-    DEFSTRING(CONCAT(ssym, __name), name);				\
-    DEFSTRING(CONCAT(ssym, __int), interactive);			\
-    extern VALUE fsym args;						\
-    Lisp_XSubr ALIGN_CELL ssym = { type, fsym,				\
-				   VAL(&CONCAT(ssym, __name)), 		\
-				   MAKE_INT(docindex),			\
-				   VAL(&CONCAT(ssym, __int)) };		\
-    VALUE fsym args
+#define DEFUN_INT(name,fsym,ssym,args,type,interactive)	\
+    DEFSTRING(rep_CONCAT(ssym, __name), name);				\
+    DEFSTRING(rep_CONCAT(ssym, __int), interactive);			\
+    extern repv fsym args;						\
+    rep_ALIGN_CELL(rep_xsubr ssym) = { type, fsym,			\
+					rep_VAL(&rep_CONCAT(ssym, __name)), \
+					rep_VAL(&rep_CONCAT(ssym, __int)) };\
+    repv fsym args
 
 /* Add a subroutine */    
-#define ADD_SUBR(subr) add_subr(&subr)
+#define rep_ADD_SUBR(subr) rep_add_subr(&subr)
 
 /* Add an interactive subroutine */    
-#define ADD_SUBR_INT(subr) ADD_SUBR(subr)
+#define rep_ADD_SUBR_INT(subr) rep_ADD_SUBR(subr)
 
-/* Declare a symbol stored in variable sym_X. */
+/* Declare a symbol stored in variable QX. */
 #define DEFSYM(x, name) \
-    VALUE sym_ ## x; DEFSTRING(str_ ## x, name)
+    repv Q ## x; DEFSTRING(str_ ## x, name)
 
-/* Intern a symbol stored in sym_X, whose name (a lisp string) is stored
+/* Intern a symbol stored in QX, whose name (a lisp string) is stored
    in str_X (i.e. declared with DEFSYM) */
-#define INTERN(x) intern_static(& sym_ ## x, VAL(& str_ ## x))
+#define rep_INTERN(x) rep_intern_static(& Q ## x, rep_VAL(& str_ ## x))
 
-/* Add an error string called err_X for symbol stored in sym_X */
-#define ERROR(x) \
-    cmd_put(sym_ ## x, sym_error_message, VAL(& err_ ## x))
-
-/* Add a documentation string for the variable stored in sym_X, pointing at
-   index DOC_X */
-#define DOC(x) \
-    cmd_put(sym_ ## x, sym_variable_documentation, MAKE_INT(DOC_ ## x))
+/* Add an error string called err_X for symbol stored in QX */
+#define rep_ERROR(x) \
+    Fput(Q ## x, Qerror_message, rep_VAL(& err_ ## x))
 
 
 /* Macros for ensuring an object is of a certain type i.e. to ensure
-   first arg `foo' is a string, DECLARE1(foo, STRINGP);  */
+   first arg `foo' is a string, rep_DECLARE1(foo, rep_STRINGP);  */
 
-#define DECLARE(n,x,t) 			\
+#define rep_DECLARE(n,x,t)		\
     do { 				\
 	if(! t(x)) 			\
 	{ 				\
-	    signal_arg_error(x, n); 	\
-	    return LISP_NULL; 		\
+	    rep_signal_arg_error(x, n); \
+	    return rep_NULL; 		\
 	} 				\
     } while(0)
 
-#define DECLARE1(x,t) DECLARE(1,x,t)
-#define DECLARE2(x,t) DECLARE(2,x,t)
-#define DECLARE3(x,t) DECLARE(3,x,t)
-#define DECLARE4(x,t) DECLARE(4,x,t)
-#define DECLARE5(x,t) DECLARE(5,x,t)
+#define rep_DECLARE1(x,t) rep_DECLARE(1,x,t)
+#define rep_DECLARE2(x,t) rep_DECLARE(2,x,t)
+#define rep_DECLARE3(x,t) rep_DECLARE(3,x,t)
+#define rep_DECLARE4(x,t) rep_DECLARE(4,x,t)
+#define rep_DECLARE5(x,t) rep_DECLARE(5,x,t)
 
 
 /* Macros for interrupt handling */
 
-/* Defines how many calls to TEST_INT are required before actually
-   doing any checking (which might be costly). It shouldn't really
-   matter if this is large since interrupts are only normally used
-   when the editor is wedged.. */
-#ifndef TEST_INT_PERIOD
-# define TEST_INT_PERIOD 1000
-#endif
-
-/* TEST_INT is called before testing INT_P, if necessary the target
-   operating system header files will define it to be something useful.
-   There's also a variant TEST_INT_SLOW that should be used by code that
+/* rep_TEST_INT is called before testing rep_INTERRUPTP, if necessary the
+   target operating system will define it to be something useful.
+   There's also a variant rep_TEST_INT_SLOW that should be used by code that
    only checks a few times or less a second */
-#ifndef TEST_INT
+#ifndef rep_TEST_INT
 
-/* TEST_INT_GUTS can be used for code that's costly to execute. It's
-   only evaluated one in TEST_INT_PERIOD calls to TEST_INT */
-# ifdef TEST_INT_GUTS
-#  define TEST_INT					\
-    do {						\
-	if(++lisp_test_int_counter > TEST_INT_PERIOD) {	\
-	    TEST_INT_GUTS;				\
-	    lisp_test_int_counter = 0;			\
-	}						\
+# define rep_TEST_INT						\
+    do {							\
+	if(++rep_test_int_counter > rep_test_int_period) { 	\
+	    (*rep_test_int_fun)();				\
+	    rep_test_int_counter = 0;				\
+	}							\
     } while(0)
-#  define TEST_INT_SLOW			\
+
+# define rep_TEST_INT_SLOW		\
     do {				\
-	TEST_INT_GUTS;			\
-	lisp_test_int_counter = 0;	\
+	(*rep_test_int_fun)();		\
+	rep_test_int_counter = 0;	\
     } while(0)
-# else
-#  define TEST_INT	\
-    do {		\
-    } while(0)
-#  define TEST_INT_SLOW TEST_INT
+
+#else /* !rep_TEST_INT */
+
+# ifndef rep_TEST_INT_SLOW
+#  define rep_TEST_INT_SLOW rep_TEST_INT
 # endif
-#else /* !TEST_INT */
-# define TEST_INT_SLOW TEST_INT
+
 #endif
 
 /* True when an interrupt has occurred; this means that the function
-   should exit as soon as possible, returning LISP_NULL. */
-#define INT_P (throw_value != LISP_NULL)
+   should exit as soon as possible, returning rep_NULL. */
+#define rep_INTERRUPTP (rep_throw_value != rep_NULL)
 
 
 /* Storing timestamps */
 
-#define MAKE_TIME(time) \
-    cmd_cons(MAKE_INT(time / 86400), MAKE_INT(time % 86400))
+#define rep_MAKE_TIME(time) \
+    Fcons(rep_MAKE_INT(time / 86400), rep_MAKE_INT(time % 86400))
 
-#define GET_TIME(time) \
-    (VINT(VCAR(time)) * 86400 + VINT(VCDR(time)))
+#define rep_GET_TIME(time) \
+    (rep_INT(rep_CAR(time)) * 86400 + rep_INT(rep_CDR(time)))
 
-#define TIMEP(v) CONSP(v)
+#define rep_TIMEP(v) rep_CONSP(v)
 
 
 /* Dumped Lisp code */
 
-#ifdef DUMPED
+#ifdef rep_DUMPED
 
-extern PTR_SIZED_INT dumped_text_start, dumped_data_start;
-extern PTR_SIZED_INT dumped_text_end, dumped_data_end;
+extern rep_PTR_SIZED_INT rep_dumped_text_start, rep_dumped_data_start;
+extern rep_PTR_SIZED_INT rep_dumped_text_end, rep_dumped_data_end;
 
-extern Lisp_String dumped_strings_start, dumped_strings_end;
-extern Lisp_Cons dumped_cons_start, dumped_cons_end;
-extern Lisp_Symbol dumped_symbols_start, dumped_symbols_end;
-extern Lisp_Vector dumped_vectors_start, dumped_vectors_end;
-extern Lisp_Vector dumped_bytecode_start, dumped_bytecode_end;
+extern rep_string rep_dumped_strings_start, rep_dumped_strings_end;
+extern rep_cons rep_dumped_cons_start, rep_dumped_cons_end;
+extern rep_symbol rep_dumped_symbols_start, rep_dumped_symbols_end;
+extern rep_vector rep_dumped_vectors_start, rep_dumped_vectors_end;
+extern rep_vector rep_dumped_bytecode_start, rep_dumped_bytecode_end;
 
-#define DUMPED_SYM_NIL ((&dumped_symbols_end)-1)	/* trust me */
+#define rep_DUMPED_SYM_NIL ((&rep_dumped_symbols_end)-1)	/* trust me */
 
-#endif /* DUMPED */
+#endif /* rep_DUMPED */
 
-#endif /* _LISP_H */
+#endif /* REP_LISP_H */

@@ -1,0 +1,69 @@
+/* rep.h.in -- Public include file, brings in all the rest
+   Copyright (C) 1993, 1994 John Harper <john@dcs.warwick.ac.uk>
+   $Id$
+
+   This file is part of Jade.
+
+   Jade is free software; you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2, or (at your option)
+   any later version.
+
+   Jade is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with Jade; see the file COPYING.  If not, write to
+   the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+
+#ifndef REP_H
+#define REP_H
+
+#include <sys/types.h>
+
+typedef int rep_bool;
+#define rep_TRUE 1
+#define rep_FALSE 0
+
+#ifndef NULL
+#define NULL 0
+#endif
+
+
+/* configure defs needed by library callers */
+
+/* Version number */
+#undef rep_VERSION
+
+/* Define if you have some flavour of Unix */
+#undef rep_HAVE_UNIX
+
+/* Define this to be the minimum alignment of memory allocated
+   by malloc(). The default of four should be ok for most systems? If
+   not the Lisp data layout is probably screwed anyway... */
+#undef rep_MALLOC_ALIGNMENT
+
+/* If the default given below is no good, define this to an implicitly
+   signed integer type, that a pointer can be cast to and from. The
+   only reason this might have to change is on a 64-bit pointer machine
+   that only has 32-bit longs.. */
+#undef rep_PTR_SIZED_INT
+
+/* This should be the number of bits in the above type. Only needs
+   changing on 64-bit machines.. */
+#undef rep_PTR_SIZED_INT_BITS
+
+/* If you define this statically allocated Lisp strings will be
+   coded in GCC's asm statement to allow better code generation. */
+#undef rep_INLINE_STATIC_STRINGS
+
+
+/* Other public includes */
+
+#include "rep_lisp.h"
+#include "rep_regexp.h"
+#include "rep_subrs.h"
+
+#endif /* REP_H */

@@ -24,7 +24,7 @@
 ;;    - Fix all the kludges marked by XXX
 
 (require 'remote)
-(require 'maildefs)			;for user-mail-address
+(require 'mailaddr)			;for user-mail-address
 (provide 'remote-ftp)
 
 
@@ -378,20 +378,24 @@ file types.")
       (setq remote-ftp-sessions (delq session remote-ftp-sessions)))))
 
 (defun remote-ftp-show-multi (string start end)
-  (let
-      ((buffer (open-buffer "*ftp messages*")))
-    (with-buffer buffer
-      (goto (end-of-buffer))
-      (insert (substring string start end))
-      (when (and remote-ftp-max-message-lines
-		 (> (pos-line (end-of-buffer)) remote-ftp-max-message-lines))
-	(delete-area (start-of-buffer)
-		     (backward-line remote-ftp-max-message-lines
-				    (end-of-buffer)))))
+  (if (featurep 'jade)
+      (let
+	  ((buffer (open-buffer "*ftp messages*")))
+	(with-object buffer
+	  (goto (end-of-buffer))
+	  (insert (substring string start end))
+	  (when (and remote-ftp-max-message-lines
+		     (> (pos-line (end-of-buffer))
+			remote-ftp-max-message-lines))
+	    (delete-area (start-of-buffer)
+			 (backward-line remote-ftp-max-message-lines
+					(end-of-buffer)))))
+	(when remote-ftp-show-messages
+	  (with-object (other-view)
+	    (goto-buffer buffer)
+	    (shrink-view-if-larger-than-buffer))))
     (when remote-ftp-show-messages
-      (with-view (other-view)
-	(goto-buffer buffer)
-	(shrink-view-if-larger-than-buffer)))))
+      (write standard-output (substring string start end)))))
 
 
 ;; FTP commands
@@ -502,12 +506,12 @@ file types.")
 
 (defun remote-ftp-file-modtime (file-struct)
   (when (stringp (aref file-struct remote-ftp-file-modtime))
-    (require 'mail-headers)
+    (require 'date)
     (let
-	((date (mail-parse-date (aref file-struct remote-ftp-file-modtime))))
+	((date (parse-date (aref file-struct remote-ftp-file-modtime))))
       (when date
 	(aset file-struct remote-ftp-file-modtime
-	      (aref date mail-date-epoch-time)))))
+	      (aref date date-vec-epoch-time)))))
   (aref file-struct remote-ftp-file-modtime))
 
 (defun remote-ftp-file-modes (file-struct)

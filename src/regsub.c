@@ -18,10 +18,11 @@
  * misrepresented as being the original software.
  */
 
-#ifdef JADE
-#include "jade.h"
-#include <lib/jade_protos.h>
-#endif
+#define rep_NEED_REGEXP_INTERNALS
+#include "repint.h"
+
+#include <stdio.h>
+#include <string.h>
 
 /*
  * CHANGED, 14-Jan-93, by J.Harper,
@@ -32,18 +33,11 @@
  * (regsub() has no checks for overstepping its dest string)
  */
 
-#include <stdio.h>
-#include "regexp.h"
-#include "regmagic.h"
-
 #ifndef CHARBITS
 #define UCHARAT(p)	((int)*(unsigned char *)(p))
 #else
 #define UCHARAT(p)	((int)*(p)&CHARBITS)
 #endif
-
-#include <string.h>
-void	regerror(char *);
 
 /*
  * - regsub - perform substitutions after a regexp match
@@ -52,9 +46,9 @@ void	regerror(char *);
  * match was on a buffer.
  */
 void
-regsub(lasttype, matches, source, dest, data)
+rep_default_regsub(lasttype, matches, source, dest, data)
     int		    lasttype;
-    regsubs	   *matches;
+    rep_regsubs	   *matches;
     char	   *source;
     char	   *dest;
     void	   *data;
@@ -66,17 +60,15 @@ regsub(lasttype, matches, source, dest, data)
     register int    len;
 
     if (matches == NULL || source == NULL || dest == NULL) {
-	regerror("NULL parm to regsub");
+	rep_regerror("NULL parm to regsub");
 	return;
     }
-#ifdef JADE
-    if ((lasttype == reg_string && !STRINGP(VAL(data)))
-	|| (lasttype == reg_tx && !BUFFERP(VAL(data))))
+    if ((lasttype == rep_reg_string && !rep_STRINGP(rep_VAL(data)))
+	|| (lasttype == rep_reg_obj))
     {
-	regerror("Bad type of data to regsub");
+	rep_regerror("Bad type of data to regsub");
 	return;
     }
-#endif
     src = source;
     dst = dest;
     while ((c = *src++) != '\0')
@@ -93,7 +85,7 @@ regsub(lasttype, matches, source, dest, data)
 		c = *src++;
 	    *dst++ = c;
 	} else {
-	    if(lasttype == reg_string)
+	    if(lasttype == rep_reg_string)
 	    {
 		if (matches->string.startp[no] != NULL
 		    && matches->string.endp[no] != NULL)
@@ -105,29 +97,11 @@ regsub(lasttype, matches, source, dest, data)
 		    if (len != 0 && *(dst - 1) == '\0')
 		    {
 			/* strncpy hit NUL. */
-			regerror("damaged match string");
+			rep_regerror("damaged match string");
 			return;
 		    }
 		}
 	    }
-#ifdef JADE
-	    else if(lasttype == reg_tx)
-	    {
-		TX *tx = data;
-		if(matches->tx.startp[no] != LISP_NULL)
-		{
-		    if(check_section(tx, &matches->tx.startp[no],
-				     &matches->tx.endp[no]))
-		    {
-			long len = section_length(tx, matches->tx.startp[no],
-						  matches->tx.endp[no]);
-			copy_section(tx, matches->tx.startp[no],
-				     matches->tx.endp[no], dst);
-			dst += len;
-		    }
-		}
-	    }
-#endif
 	}
     }
     *dst++ = '\0';
@@ -138,9 +112,9 @@ regsub(lasttype, matches, source, dest, data)
  * including terminating '\0'
  */
 int
-regsublen(lasttype, matches, source, data)
+rep_default_regsublen(lasttype, matches, source, data)
     int		    lasttype;
-    regsubs	   *matches;
+    rep_regsubs	   *matches;
     char	   *source;
     void	   *data;
 {
@@ -150,17 +124,15 @@ regsublen(lasttype, matches, source, data)
     register int    dstlen = 1;
 
     if (matches == NULL || source == NULL) {
-	regerror("NULL parm to regsublen");
+	rep_regerror("NULL parm to regsublen");
 	return(0);
     }
-#ifdef JADE
-    if ((lasttype == reg_string && !STRINGP(VAL(data)))
-	|| (lasttype == reg_tx && !BUFFERP(VAL(data))))
+    if ((lasttype == rep_reg_string && !rep_STRINGP(rep_VAL(data)))
+	|| (lasttype == rep_reg_obj))
     {
-	regerror("Bad type of data to regsublen");
+	rep_regerror("Bad type of data to regsublen");
 	return (0);
     }
-#endif
     src = source;
     while ((c = *src++) != '\0') {
 	if (c == '&')
@@ -175,7 +147,7 @@ regsublen(lasttype, matches, source, data)
 		c = *src++;
 	    dstlen++;
 	} else {
-	    if(lasttype == reg_string)
+	    if(lasttype == rep_reg_string)
 	    {
 		if (matches->string.startp[no] != NULL
 		    && matches->string.endp[no] != NULL)
@@ -184,21 +156,6 @@ regsublen(lasttype, matches, source, data)
 			      - matches->string.startp[no];
 		}
 	    }
-#ifdef JADE
-	    else if(lasttype == reg_tx)
-	    {
-		TX *tx = data;
-		if(matches->tx.startp[no] != LISP_NULL)
-		{
-		    if(check_section(tx, &matches->tx.startp[no],
-				     &matches->tx.endp[no]))
-		    {
-			dstlen += section_length(tx, matches->tx.startp[no],
-						 matches->tx.endp[no]);
-		    }
-		}
-	    }
-#endif
 	}
     }
     return(dstlen);

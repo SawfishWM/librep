@@ -23,21 +23,12 @@
  * regular-expression syntax might require a total rethink.
  */
 
-#ifdef JADE
-#include "jade.h"
-#include <lib/jade_protos.h>
-#endif
-
 /* Lots of changes for Jade. See the file README.regexp for more details */
 
-#include <stdio.h>
-#ifdef AMIGA
-#undef min
-#endif
-#include "regexp.h"
-#include "regprog.h"
-#include "regmagic.h"
+#define rep_NEED_REGEXP_INTERNALS
+#include "repint.h"
 
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -51,7 +42,7 @@
 #define UCHARAT(p)	((int)*(p)&CHARBITS)
 #endif
 
-#define FAIL(m) { regerror(m); return(NULL); }
+#define FAIL(m) { rep_regerror(m); return(NULL); }
 #define ISMULT(c)	((c) == '*' || (c) == '+' || (c) == '?')
 #define META	"^$.[()|?+*\\"
 
@@ -85,7 +76,7 @@ static void	regc(char);
 static void	reginsert(char, char *);
 static void	regtail(char *, char *);
 static void	regoptail(char *, char *);
-extern void	regerror(char *);
+extern void	rep_regerror(char *);
 
 #ifndef HAVE_STRCSPN
 int		strcspn(char *, char *);
@@ -106,11 +97,11 @@ int		strcspn(char *, char *);
  * Beware that the optimization-preparation code in here knows about some of the
  * structure of the compiled regexp.
  */
-regexp *
-regcomp(exp)
+rep_regexp *
+rep_regcomp(exp)
     char	   *exp;
 {
-    register regexp *r;
+    register rep_regexp *r;
     register char  *scan;
     register char  *longest;
     register int    len;
@@ -133,7 +124,7 @@ regcomp(exp)
 	FAIL("regexp too big");
 
     /* Allocate space. */
-    r = (regexp *) malloc(sizeof(regexp) + (unsigned) regsize);
+    r = (rep_regexp *) malloc(sizeof(rep_regexp) + (unsigned) regsize);
     if (r == NULL)
 	FAIL("out of space");
 
@@ -150,7 +141,7 @@ regcomp(exp)
     r->reganch = 0;
     r->regmust = NULL;
     r->regmlen = 0;
-    r->regsize = sizeof(regexp) + (unsigned)regsize;
+    r->regsize = sizeof(rep_regexp) + (unsigned)regsize;
     scan = r->program + 1;	/* First BRANCH. */
     if (OP(regnext(scan)) == END) {	/* Only one top-level choice. */
 	scan = OPERAND(scan);
@@ -193,7 +184,7 @@ regcomp(exp)
  * trifle forced, but the need to tie the tails of the branches to what
  * follows makes it hard to avoid.
  */
-static char    *
+static char *
 reg(paren, flagp)
     int		    paren;	/* Parenthesized? */
     int		   *flagp;
@@ -264,7 +255,7 @@ reg(paren, flagp)
  *
  * Implements the concatenation operator.
  */
-static char    *
+static char *
 regbranch(flagp)
     int		   *flagp;
 {
@@ -303,7 +294,7 @@ regbranch(flagp)
  * seem that this node could be dispensed with entirely, but the endmarker
  * role is not redundant.
  */
-static char    *
+static char *
 regpiece(flagp)
     int		   *flagp;
 {
@@ -366,7 +357,7 @@ regpiece(flagp)
  * run.	 Backslashed characters are exceptions, each becoming a separate
  * node; the code is simpler that way and it's not worth fixing. 
  */
-static char    *
+static char *
 regatom(flagp)
     int		   *flagp;
 {
@@ -475,7 +466,7 @@ regatom(flagp)
 /*
  * - regnode - emit a node
  */
-static char    *		/* Location. */
+static char *		/* Location. */
 regnode(op)
     char	    op;
 {
@@ -601,7 +592,7 @@ static char	regnocase;	/* Ignore case when string-matching. */
 /*
  * Forwards.
  */
-static int	regtry(regexp *, char *);
+static int	regtry(rep_regexp *, char *);
 static int	regmatch(char *);
 static int	regrepeat(char *);
 
@@ -619,8 +610,8 @@ static char    *regprop(char *);
  * flags are REG_NOTBOL and REG_NOCASE.
  */
 int
-regexec2(prog, string, eflags)
-    register regexp *prog;
+rep_regexec2(prog, string, eflags)
+    register rep_regexp *prog;
     register char  *string;
     int eflags;
 {
@@ -630,17 +621,17 @@ regexec2(prog, string, eflags)
 
     /* Be paranoid... */
     if (prog == NULL || string == NULL) {
-	regerror("NULL parameter");
+	rep_regerror("NULL parameter");
 	return (0);
     }
     /* Check validity of program. */
     if (UCHARAT(prog->program) != MAGIC) {
-	regerror("corrupted program");
+	rep_regerror("corrupted program");
 	return (0);
     }
 
     /* jsh -- Check for REG_NOCASE, means ignore case in string matches.  */
-    regnocase = ((eflags & REG_NOCASE) != 0);
+    regnocase = ((eflags & rep_REG_NOCASE) != 0);
 
     /* If there is a "must appear" string, look for it. */
     if (prog->regmust != NULL)
@@ -672,7 +663,7 @@ regexec2(prog, string, eflags)
     /* Mark beginning of line for ^ . */
     /* jsh -- if REG_NOTBOL is set then set regbol to something absurd
        to guarantee ^ doesn't match */
-    regbol = (eflags & REG_NOTBOL) ? "" : string;
+    regbol = (eflags & rep_REG_NOTBOL) ? "" : string;
 
     /* Simplest case:  anchored match need be tried only once. */
     if (prog->reganch)
@@ -720,18 +711,18 @@ regexec2(prog, string, eflags)
  *   No searching
  */
 int
-regmatch_string(prog, string, eflags)
-    register regexp *prog;
+rep_regmatch_string(prog, string, eflags)
+    register rep_regexp *prog;
     char *string;
     int eflags;
 {
     /* Check for REG_NOCASE, means ignore case in string matches.  */
-    regnocase = ((eflags & REG_NOCASE) != 0);
+    regnocase = ((eflags & rep_REG_NOCASE) != 0);
 
     /* Mark beginning of line for ^ . */
     /* jsh -- if REG_NOTBOL is set then set regbol to something absurd
        to guarantee ^ doesn't match */
-    regbol = (eflags & REG_NOTBOL) ? "" : string;
+    regbol = (eflags & rep_REG_NOTBOL) ? "" : string;
 
     return regtry(prog, string);
 }
@@ -741,7 +732,7 @@ regmatch_string(prog, string, eflags)
  */
 static int			/* 0 failure, 1 success */
 regtry(prog, string)
-    regexp	   *prog;
+    rep_regexp	   *prog;
     char	   *string;
 {
     register int    i;
@@ -761,7 +752,7 @@ regtry(prog, string)
     if (regmatch(prog->program + 1)) {
 	regstartp[0] = string;
 	regendp[0] = reginput;
-	prog->lasttype = reg_string;
+	prog->lasttype = rep_reg_string;
 	return (1);
     } else
 	return (0);
@@ -957,7 +948,7 @@ regmatch(prog)
 	    return (1);		/* Success! */
 	    break;
 	default:
-	    regerror("memory corruption");
+	    rep_regerror("memory corruption");
 	    return (0);
 	    break;
 	}
@@ -969,7 +960,7 @@ regmatch(prog)
      * We get here only if there's trouble -- normally "case END" is the
      * terminating point.
      */
-    regerror("corrupted pointers");
+    rep_regerror("corrupted pointers");
     return (0);
 }
 
@@ -1020,7 +1011,7 @@ regrepeat(p)
 	}
 	break;
     default:			/* Oh dear.  Called inappropriately. */
-	regerror("internal foulup");
+	rep_regerror("internal foulup");
 	count = 0;		/* Best compromise. */
 	break;
     }
@@ -1172,7 +1163,7 @@ regprop(op)
 	p = "PLUS";
 	break;
     default:
-	regerror("corrupted opcode");
+	rep_regerror("corrupted opcode");
 	break;
     }
     if (p != NULL)

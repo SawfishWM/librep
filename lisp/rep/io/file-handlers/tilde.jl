@@ -70,8 +70,6 @@
   (setq file-handler-alist (cons '("^~" . tilde-file-handler)
 				 file-handler-alist))
   ;; Fix the initial default-directory; replacing $HOME by ~ if possible
-  (when (string-looking-at (concat (quote-regexp
-				    (canonical-file-name
-				     (user-home-directory)))
+  (when (string-looking-at (concat (quote-regexp (user-home-directory))
 				   "?(.*)$") default-directory)
     (setq-default default-directory (expand-last-match "~/\\1"))))

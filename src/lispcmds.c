@@ -18,8 +18,7 @@
    along with Jade; see the file COPYING.	If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-#include "jade.h"
-#include <lib/jade_protos.h>
+#include "repint.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -28,13 +27,7 @@
 # include <memory.h>
 #endif
 
-_PR void lispcmds_init(void);
-_PR VALUE sym_or, sym_and;
-_PR VALUE sym_load_path, sym_after_load_alist, sym_lisp_lib_directory;
-_PR VALUE sym_dl_load_path;
-_PR VALUE sym_site_lisp_directory, sym_documentation_file;
-
-DEFSTRING(default_jade_directory, JADE_DIR);
+DEFSTRING(default_rep_directory, REP_DIRECTORY);
 DEFSTRING(div_zero, "Divide by zero");
 
 DEFSYM(or, "or");
@@ -42,57 +35,64 @@ DEFSYM(and, "and");
 DEFSYM(load_path, "load-path");
 DEFSYM(dl_load_path, "dl-load-path");
 DEFSYM(after_load_alist, "after-load-alist");
-DEFSYM(jade_directory, "jade-directory");
+DEFSYM(features, "features");
+DEFSYM(rep_directory, "rep-directory");
 DEFSYM(lisp_lib_directory, "lisp-lib-directory");
 DEFSYM(site_lisp_directory, "site-lisp-directory");
 DEFSYM(exec_directory, "exec-directory");
-DEFSYM(documentation_file, "documentation-file"); /*
-::doc:load_path::
+DEFSYM(documentation_file, "documentation-file");
+DEFSYM(documentation_files, "documentation-files"); /*
+::doc:Vload-path::
 A list of directory names. When `load' opens a lisp-file it searches each
 directory named in this list in turn until the file is found or the list
 is exhausted.
 ::end::
-::doc:dl_load_path::
+::doc:Vdl-load-path::
 List of directories searched for dynamically loaded object files.
 ::end::
-::doc:after_load_alist::
+::doc:Vafter-load-alist::
 A list of (LIBRARY FORMS...). Whenever the `load' command reads a file
 of Lisp code LIBRARY, it executes each of FORMS. Note that LIBRARY must
 exactly match the FILE argument given to `load'.
 ::end::
-::doc:jade_directory::
-The directory in which all of Jade's installed data files live.
+::doc:Vfeatures::
+A list of symbols defining which ``features'' Jade currently has loaded.
+This is used by the `featurep', `provide' and `require' functions.
 ::end::
-::doc:lisp_lib_directory::
+::doc:Vrep-directory::
+The directory in which all installed data files live.
+::end::
+::doc:Vlisp-lib-directory::
 The name of the directory in which the standard lisp files live.
 ::end::
-::doc:site_lisp_directory::
+::doc:Vsite-lisp-directory::
 The name of the directory in which site-specific Lisp files are stored.
 ::end::
-::doc:exec_directory::
-The name of the directory containing Jade's architecture specific files.
+::doc:Vexec-directory::
+The name of the directory containing architecture specific files.
 ::end::
-::doc:documentation_file::
-The name of the file containing all Jade's documentation strings.
+::doc:Vdocumentation-file::
+The name of the database containing the lisp-library's documentation strings.
+::end::
+::doc:Vdocumentation-files::
+A list of database names containing all documentation strings.
 ::end:: */
 
-_PR VALUE cmd_quote(VALUE);
-DEFUN("quote", cmd_quote, subr_quote, (VALUE args), V_SF, DOC_quote) /*
-::doc:quote::
+DEFUN("quote", Fquote, Squote, (repv args), rep_SF) /*
+::doc:Squote::
 quote ARG
 'ARG
 
 Returns ARG.
 ::end:: */
 {
-    if(CONSP(args))
-	return(VCAR(args));
-    return signal_missing_arg(1);
+    if(rep_CONSP(args))
+	return(rep_CAR(args));
+    return rep_signal_missing_arg(1);
 }
 
-_PR VALUE cmd_defmacro(VALUE);
-DEFUN("defmacro", cmd_defmacro, subr_defmacro, (VALUE args), V_SF, DOC_defmacro) /*
-::doc:defmacro::
+DEFUN("defmacro", Fdefmacro, Sdefmacro, (repv args), rep_SF) /*
+::doc:Sdefmacro::
 defmacro NAME LAMBDA-LIST [DOC-STRING] BODY...
 defmacro NAME BYTECODE-OBJECT
 
@@ -113,27 +113,26 @@ Note that macros are expanded at *compile-time* (unless, of course, the Lisp
 code has not been compiled).
 ::end:: */
 {
-    VALUE name;
-    if(!CONSP(args))
-	return signal_missing_arg(1);
-    name = VCAR(args);
-    args = VCDR(args);
-    if(!CONSP(args))
-	return signal_missing_arg(2);
-    if(!COMPILEDP(VCAR(args)))
-	args = cmd_cons(sym_macro, cmd_cons(sym_lambda, args));
+    repv name;
+    if(!rep_CONSP(args))
+	return rep_signal_missing_arg(1);
+    name = rep_CAR(args);
+    args = rep_CDR(args);
+    if(!rep_CONSP(args))
+	return rep_signal_missing_arg(2);
+    if(!rep_COMPILEDP(rep_CAR(args)))
+	args = Fcons(Qmacro, Fcons(Qlambda, args));
     else
     {
-	args = VCAR(args);
-	if(!COMPILED_MACRO_P(args))
-	    return signal_arg_error(args, 2);
+	args = rep_CAR(args);
+	if(!rep_COMPILED_MACRO_P(args))
+	    return rep_signal_arg_error(args, 2);
     }
-    return (cmd_fset(name, args) != LISP_NULL) ? name : LISP_NULL;
+    return (Ffset(name, args) != rep_NULL) ? name : rep_NULL;
 }
 
-_PR VALUE cmd_defun(VALUE);
-DEFUN("defun", cmd_defun, subr_defun, (VALUE args), V_SF, DOC_defun) /*
-::doc:defun::
+DEFUN("defun", Fdefun, Sdefun, (repv args), rep_SF) /*
+::doc:Sdefun::
 defun NAME LAMBDA-LIST [DOC-STRING] BODY...
 defun NAME BYTECODE-OBJECT
 
@@ -143,76 +142,74 @@ value is,
     `(lambda LAMBDA-LIST [DOC-STRING] BODY...)'
 ::end:: */
 {
-    VALUE name;
-    if(!CONSP(args))
-	return signal_missing_arg(1);
-    name = VCAR(args);
-    args = VCDR(args);
-    if(!CONSP(args))
-	return signal_missing_arg(2);
-    if(!COMPILEDP(VCAR(args)))
-	args = cmd_cons(sym_lambda, args);
+    repv name;
+    if(!rep_CONSP(args))
+	return rep_signal_missing_arg(1);
+    name = rep_CAR(args);
+    args = rep_CDR(args);
+    if(!rep_CONSP(args))
+	return rep_signal_missing_arg(2);
+    if(!rep_COMPILEDP(rep_CAR(args)))
+	args = Fcons(Qlambda, args);
     else
     {
-	args = VCAR(args);
-	if(COMPILED_MACRO_P(args))
-	    return signal_arg_error(args, 2);
+	args = rep_CAR(args);
+	if(rep_COMPILED_MACRO_P(args))
+	    return rep_signal_arg_error(args, 2);
     }
-    return (cmd_fset(name, args) != LISP_NULL) ? name : LISP_NULL;
+    return (Ffset(name, args) != rep_NULL) ? name : rep_NULL;
 }
 
-_PR VALUE cmd_defvar(VALUE);
-DEFUN("defvar", cmd_defvar, subr_defvar, (VALUE args), V_SF, DOC_defvar) /*
-::doc:defvar::
-defvar NAME DEFAULT-VALUE [DOC-STRING]
+DEFUN("defvar", Fdefvar, Sdefvar, (repv args), rep_SF) /*
+::doc:Sdefvar::
+defvar NAME DEFAULT-repv [DOC-STRING]
 
 Define a variable called NAME whose standard value is DEFAULT-
-VALUE. If NAME is already bound to a value (that's not an autoload
+repv. If NAME is already bound to a value (that's not an autoload
 definition) it is left as it is.
 
 If the symbol NAME is marked buffer-local the *default value* of the
 variable will be set (if necessary) not the local value.
 ::end:: */
 {
-    if(CONSP(args) && CONSP(VCDR(args)))
+    if(rep_CONSP(args) && rep_CONSP(rep_CDR(args)))
     {
-	GC_root gc_args;
-	VALUE sym = VCAR(args), val;
-	VALUE tmp = cmd_default_boundp(sym);
+	rep_GC_root gc_args;
+	repv sym = rep_CAR(args), val;
+	repv tmp = Fdefault_boundp(sym);
 	if(!tmp)
-	    return LISP_NULL;
-	PUSHGC(gc_args, args);
-	val = cmd_eval(VCAR(VCDR(args)));
-	POPGC;
+	    return rep_NULL;
+	rep_PUSHGC(gc_args, args);
+	val = Feval(rep_CAR(rep_CDR(args)));
+	rep_POPGC;
 	if(!val)
-	    return LISP_NULL;
-	if(!NILP(tmp))
+	    return rep_NULL;
+	if(!rep_NILP(tmp))
 	{
 	    /* Variable is bound, see if it's an autoload defn to overwrite. */
-	    if(CONSP(VSYM(sym)->value)
-	       && VCAR(VSYM(sym)->value) == sym_autoload)
-		tmp = sym_nil;
+	    if(rep_CONSP(rep_SYM(sym)->value)
+	       && rep_CAR(rep_SYM(sym)->value) == Qautoload)
+		tmp = Qnil;
 	}
-	if(NILP(tmp) && !cmd_set_default(sym, val))
-	    return LISP_NULL;
-	if(CONSP(VCDR(VCDR(args)))
-	   && !cmd_put(sym, sym_variable_documentation,
-		       VCAR(VCDR(VCDR(args)))))
-	    return LISP_NULL;
+	if(rep_NILP(tmp) && !Fset_default(sym, val))
+	    return rep_NULL;
+	if(rep_CONSP(rep_CDR(rep_CDR(args)))
+	   && !Fput(sym, Qvariable_documentation,
+		       rep_CAR(rep_CDR(rep_CDR(args)))))
+	    return rep_NULL;
 	return sym;
     }
     else
-	return signal_missing_arg(CONSP(args) ? 2 : 1);
+	return rep_signal_missing_arg(rep_CONSP(args) ? 2 : 1);
 }
 
 DEFSTRING(const_bound, "Constant already bound");
 
-_PR VALUE cmd_defconst(VALUE);
-DEFUN("defconst", cmd_defconst, subr_defconst, (VALUE args), V_SF, DOC_defconst) /*
-::doc:defconst::
-defconst NAME VALUE [DOC-STRING]
+DEFUN("defconst", Fdefconst, Sdefconst, (repv args), rep_SF) /*
+::doc:Sdefconst::
+defconst NAME repv [DOC-STRING]
 
-Define a constant NAME whose (default) value is VALUE. If NAME is already
+Define a constant NAME whose (default) value is repv. If NAME is already
 bound an error is signalled.
 
 Constants are treated specially by the Lisp compiler, basically they are
@@ -220,123 +217,117 @@ hard-coded into the byte-code. For more details see the comments in
 the compiler source (`lisp/compiler.jl').
 ::end:: */
 {
-    if(CONSP(args))
+    if(rep_CONSP(args))
     {
-	VALUE tmp = cmd_default_boundp(VCAR(args));
-	if(tmp && !NILP(tmp))
+	repv tmp = Fdefault_boundp(rep_CAR(args));
+	if(tmp && !rep_NILP(tmp))
 	{
-	    return(cmd_signal(sym_error, list_2(VAL(&const_bound),
-						VCAR(args))));
+	    return(Fsignal(Qerror, rep_list_2(rep_VAL(&const_bound),
+						rep_CAR(args))));
 	}
-	tmp = cmd_defvar(args);
+	tmp = Fdefvar(args);
 	if(tmp)
-	    return(cmd_set_const_variable(tmp, sym_nil));
+	    return(Fset_const_variable(tmp, Qnil));
 	return(tmp);
     }
-    return signal_missing_arg(1);
+    return rep_signal_missing_arg(1);
 }
 
-_PR VALUE cmd_car(VALUE);
-DEFUN("car", cmd_car, subr_car, (VALUE cons), V_Subr1, DOC_car) /*
-::doc:car::
+DEFUN("car", Fcar, Scar, (repv cons), rep_Subr1) /*
+::doc:Scar::
 car CONS-CELL
 
 Returns the value stored in the car slot of CONS-CELL, or nil if CONS-CELL
 is nil.
 ::end:: */
 {
-    if(CONSP(cons))
-	return(VCAR(cons));
-    return(sym_nil);
+    if(rep_CONSP(cons))
+	return(rep_CAR(cons));
+    return(Qnil);
 }
-_PR VALUE cmd_cdr(VALUE);
-DEFUN("cdr", cmd_cdr, subr_cdr, (VALUE cons), V_Subr1, DOC_cdr) /*
-::doc:cdr::
+DEFUN("cdr", Fcdr, Scdr, (repv cons), rep_Subr1) /*
+::doc:Scdr::
 cdr CONS-CELL
 
 Returns the value stored in the cdr slot of CONS-CELL, or nil if CONS-CELL
 is nil.
 ::end:: */
 {
-    if(CONSP(cons))
-	return(VCDR(cons));
-    return(sym_nil);
+    if(rep_CONSP(cons))
+	return(rep_CDR(cons));
+    return(Qnil);
 }
 
-_PR VALUE cmd_list(VALUE);
-DEFUN("list", cmd_list, subr_list, (VALUE args), V_SubrN, DOC_list) /*
-::doc:list::
+DEFUN("list", Flist, Slist, (repv args), rep_SubrN) /*
+::doc:Slist::
 list ARGS...
 
 Returns a new list with elements ARGS...
 ::end:: */
 {
-    VALUE res = sym_nil;
-    VALUE *ptr = &res;
-    while(CONSP(args))
+    repv res = Qnil;
+    repv *ptr = &res;
+    while(rep_CONSP(args))
     {
-	if(!(*ptr = cmd_cons(VCAR(args), sym_nil)))
-	    return LISP_NULL;
-	ptr = &VCDR(*ptr);
-	args = VCDR(args);
-	TEST_INT;
-	if(INT_P)
-	    return LISP_NULL;
+	if(!(*ptr = Fcons(rep_CAR(args), Qnil)))
+	    return rep_NULL;
+	ptr = &rep_CDR(*ptr);
+	args = rep_CDR(args);
+	rep_TEST_INT;
+	if(rep_INTERRUPTP)
+	    return rep_NULL;
     }
     return res;
 }
 
-_PR VALUE cmd_list_star(VALUE);
-DEFUN("list*", cmd_list_star, subr_list_star, (VALUE args), V_SubrN, DOC_list_star) /*
-::doc:list_star::
+DEFUN("list*", Flist_star, Slist_star, (repv args), rep_SubrN) /*
+::doc:Slist*::
 list* ARG1 ARG2 ... ARGN
 
 Returns a new list (ARG1 ARG2 ... ARGN-1 . ARGN). That is, the same as from
 `list' but the last argument is dotted to the last but one argument.
 ::end:: */
 {
-    VALUE res = sym_nil;
-    VALUE *ptr = &res;
-    while(CONSP(args))
+    repv res = Qnil;
+    repv *ptr = &res;
+    while(rep_CONSP(args))
     {
-	if(CONSP(VCDR(args)))
+	if(rep_CONSP(rep_CDR(args)))
 	{
-	    if(!(*ptr = cmd_cons(VCAR(args), sym_nil)))
-		return LISP_NULL;
+	    if(!(*ptr = Fcons(rep_CAR(args), Qnil)))
+		return rep_NULL;
 	}
 	else
-	    *ptr = VCAR(args);
-	ptr = &VCDR(*ptr);
-	args = VCDR(args);
-	TEST_INT;
-	if(INT_P)
-	    return LISP_NULL;
+	    *ptr = rep_CAR(args);
+	ptr = &rep_CDR(*ptr);
+	args = rep_CDR(args);
+	rep_TEST_INT;
+	if(rep_INTERRUPTP)
+	    return rep_NULL;
     }
     return res;
 }
 
-_PR VALUE cmd_make_list(VALUE, VALUE);
-DEFUN("make-list", cmd_make_list, subr_make_list, (VALUE len, VALUE init), V_Subr2, DOC_make_list) /*
-::doc:make_list::
-make-list LENGTH [INITIAL-VALUE]
+DEFUN("make-list", Fmake_list, Smake_list, (repv len, repv init), rep_Subr2) /*
+::doc:Smake-list::
+make-list LENGTH [INITIAL-repv]
 
 Returns a new list with LENGTH members, each of which is initialised to
-INITIAL-VALUE, or nil.
+INITIAL-repv, or nil.
 ::end:: */
 {
     int i;
-    VALUE list = sym_nil;
-    DECLARE1(len, INTP);
-    if(VINT(len) < 0)
-	return signal_arg_error(len, 1);
-    for(i = 0; list != LISP_NULL && i < VINT(len); i++)
-	list = cmd_cons(init, list);
+    repv list = Qnil;
+    rep_DECLARE1(len, rep_INTP);
+    if(rep_INT(len) < 0)
+	return rep_signal_arg_error(len, 1);
+    for(i = 0; list != rep_NULL && i < rep_INT(len); i++)
+	list = Fcons(init, list);
     return(list);
 }
 
-_PR VALUE cmd_append(VALUE);
-DEFUN("append", cmd_append, subr_append, (VALUE args), V_SubrN, DOC_append) /*
-::doc:append::
+DEFUN("append", Fappend, Sappend, (repv args), rep_SubrN) /*
+::doc:Sappend::
 append LISTS...
 
 Non-destructively concatenates each of it's argument LISTS... into one
@@ -344,36 +335,35 @@ new list which is returned.
 ::end:: */
 {
     int i = 1;
-    VALUE res = sym_nil;
-    VALUE *resend = &res;
-    while(CONSP(args))
+    repv res = Qnil;
+    repv *resend = &res;
+    while(rep_CONSP(args))
     {
-	if(!LISTP(VCAR(args)))
-	    return signal_arg_error(VCAR(args), i);
-	if(CONSP(VCAR(args)) && CONSP(VCDR(args)))
+	if(!rep_LISTP(rep_CAR(args)))
+	    return rep_signal_arg_error(rep_CAR(args), i);
+	if(rep_CONSP(rep_CAR(args)) && rep_CONSP(rep_CDR(args)))
 	{
 	    /* Only make a new copy if there's another list after this
 	       one. */
-	    *resend = copy_list(VCAR(args));
+	    *resend = rep_copy_list(rep_CAR(args));
 	}
 	else
-	    *resend = VCAR(args);	/* Use the old object */
-	while(CONSP(*resend))
+	    *resend = rep_CAR(args);	/* Use the old object */
+	while(rep_CONSP(*resend))
 	{
-	    TEST_INT;
-	    if(INT_P)
-		return LISP_NULL;
-	    resend = &(VCDR(*resend));
+	    rep_TEST_INT;
+	    if(rep_INTERRUPTP)
+		return rep_NULL;
+	    resend = &(rep_CDR(*resend));
 	}
-	args = VCDR(args);
+	args = rep_CDR(args);
 	i++;
     }
     return(res);
 }
 
-_PR VALUE cmd_nconc(VALUE);
-DEFUN("nconc", cmd_nconc, subr_nconc, (VALUE args), V_SubrN, DOC_nconc) /*
-::doc:nconc::
+DEFUN("nconc", Fnconc, Snconc, (repv args), rep_SubrN) /*
+::doc:Snconc::
 nconc LISTS...
 
 Destructively concatenates each of it's argument LISTS... into one new
@@ -382,119 +372,114 @@ to the beginning of the next list. Returns the new list.
 ::end:: */
 {
     int i = 1;
-    VALUE res = sym_nil;
-    VALUE *resend = &res;
-    while(CONSP(args))
+    repv res = Qnil;
+    repv *resend = &res;
+    while(rep_CONSP(args))
     {
-	VALUE tmp = VCAR(args);
-	if(!LISTP(tmp))
-	    return signal_arg_error(tmp, i);
-	if(CONSP(tmp))
+	repv tmp = rep_CAR(args);
+	if(!rep_LISTP(tmp))
+	    return rep_signal_arg_error(tmp, i);
+	if(rep_CONSP(tmp))
 	{
-	    if(!CONS_WRITABLE_P(tmp))
-		return cmd_signal(sym_setting_constant, LIST_1(tmp));
+	    if(!rep_CONS_WRITABLE_P(tmp))
+		return Fsignal(Qsetting_constant, rep_LIST_1(tmp));
 	    *resend = tmp;
-	    while(CONSP(VCDR(tmp)))
+	    while(rep_CONSP(rep_CDR(tmp)))
 	    {
-		TEST_INT;
-		if(INT_P)
-		    return LISP_NULL;
-		tmp = VCDR(tmp);
+		rep_TEST_INT;
+		if(rep_INTERRUPTP)
+		    return rep_NULL;
+		tmp = rep_CDR(tmp);
 	    }
-	    resend = &VCDR(tmp);
+	    resend = &rep_CDR(tmp);
 	}
-	args = VCDR(args);
+	args = rep_CDR(args);
     }
     return(res);
 }
 
-_PR VALUE cmd_rplaca(VALUE, VALUE);
-DEFUN("rplaca", cmd_rplaca, subr_rplaca, (VALUE cons, VALUE car), V_Subr2, DOC_rplaca) /*
-::doc:rplaca::
+DEFUN("rplaca", Frplaca, Srplaca, (repv cons, repv car), rep_Subr2) /*
+::doc:Srplaca::
 rplaca CONS-CELL NEW-CAR
 
 Sets the value of the car slot in CONS-CELL to NEW-CAR. Returns the new
 value.
 ::end:: */
 {
-    DECLARE1(cons, CONSP);
-    if(!CONS_WRITABLE_P(cons))
-	return cmd_signal(sym_setting_constant, LIST_1(cons));
-    VCAR(cons) = car;
+    rep_DECLARE1(cons, rep_CONSP);
+    if(!rep_CONS_WRITABLE_P(cons))
+	return Fsignal(Qsetting_constant, rep_LIST_1(cons));
+    rep_CAR(cons) = car;
     return(car);
 }
 
-_PR VALUE cmd_rplacd(VALUE, VALUE);
-DEFUN("rplacd", cmd_rplacd, subr_rplacd, (VALUE cons, VALUE cdr), V_Subr2, DOC_rplacd) /*
-::doc:rplacd::
+DEFUN("rplacd", Frplacd, Srplacd, (repv cons, repv cdr), rep_Subr2) /*
+::doc:Srplacd::
 rplacd CONS-CELL NEW-CDR
 
 Sets the value of the cdr slot in CONS-CELL to NEW-CAR. Returns the new
 value.
 ::end:: */
 {
-    DECLARE1(cons, CONSP);
-    if(!CONS_WRITABLE_P(cons))
-	return cmd_signal(sym_setting_constant, LIST_1(cons));
-    VCDR(cons) = cdr;
+    rep_DECLARE1(cons, rep_CONSP);
+    if(!rep_CONS_WRITABLE_P(cons))
+	return Fsignal(Qsetting_constant, rep_LIST_1(cons));
+    rep_CDR(cons) = cdr;
     return(cdr);
 }
 
-_PR VALUE cmd_reverse(VALUE);
-DEFUN("reverse", cmd_reverse, subr_reverse, (VALUE head), V_Subr1, DOC_reverse) /*
-::doc:reverse::
+DEFUN("reverse", Freverse, Sreverse, (repv head), rep_Subr1) /*
+::doc:Sreverse::
 reverse LIST
 
 Returns a new list which is a copy of LIST except that the members are in
 reverse order.
 ::end:: */
 {
-    VALUE res = sym_nil;
-    DECLARE1(head, LISTP);
-    while(CONSP(head))
+    repv res = Qnil;
+    rep_DECLARE1(head, rep_LISTP);
+    while(rep_CONSP(head))
     {
-	res = cmd_cons(VCAR(head), res);
-	head = VCDR(head);
-	TEST_INT;
-	if(res == LISP_NULL || INT_P)
-	    return(LISP_NULL);
+	res = Fcons(rep_CAR(head), res);
+	head = rep_CDR(head);
+	rep_TEST_INT;
+	if(res == rep_NULL || rep_INTERRUPTP)
+	    return(rep_NULL);
     }
     return(res);
 }
 
-_PR VALUE cmd_nreverse(VALUE);
-DEFUN("nreverse", cmd_nreverse, subr_nreverse, (VALUE head), V_Subr1, DOC_nreverse) /*
-::doc:nreverse::
+DEFUN("nreverse", Fnreverse, Snreverse, (repv head), rep_Subr1) /*
+::doc:Snreverse::
 nreverse LIST
 
 Returns LIST altered so that it's members are in reverse order to what they
 were. This function is destructive towards it's argument.
 ::end:: */
 {
-    VALUE res = sym_nil;
-    VALUE nxt;
-    DECLARE1(head, LISTP);
-    if(NILP(head))
+    repv res = Qnil;
+    repv nxt;
+    rep_DECLARE1(head, rep_LISTP);
+    if(rep_NILP(head))
 	return(head);
-    if(!CONS_WRITABLE_P(head))
-	return cmd_signal(sym_setting_constant, LIST_1(head));
+    if(!rep_CONS_WRITABLE_P(head))
+	return Fsignal(Qsetting_constant, rep_LIST_1(head));
     do {
-	if(CONSP(VCDR(head)))
-	    nxt = VCDR(head);
+	if(rep_CONSP(rep_CDR(head)))
+	    nxt = rep_CDR(head);
 	else
-	    nxt = LISP_NULL;
-	VCDR(head) = res;
+	    nxt = rep_NULL;
+	rep_CDR(head) = res;
 	res = head;
-	TEST_INT;
-	if(INT_P)
-	    return(LISP_NULL);
-    } while((head = nxt) != LISP_NULL);
+	rep_TEST_INT;
+	if(rep_INTERRUPTP)
+	    return(rep_NULL);
+    } while((head = nxt) != rep_NULL);
     return(res);
 }
 
-_PR VALUE cmd_assoc(VALUE, VALUE);
-DEFUN("assoc", cmd_assoc, subr_assoc, (VALUE elt, VALUE list), V_Subr2, DOC_assoc) /*
-::doc:assoc::
+DEFUN("assoc", Fassoc, Sassoc, (repv elt, repv list), rep_Subr2) /*
+::doc:Sassoc::
 assoc ELT ASSOC-LIST
 
 Searches ASSOC-LIST for a list whose first element is ELT. `assoc' uses
@@ -505,23 +490,22 @@ For example,
      => (three . 3)
 ::end:: */
 {
-    DECLARE2(list, LISTP);
-    while(CONSP(list))
+    rep_DECLARE2(list, rep_LISTP);
+    while(rep_CONSP(list))
     {
-	register VALUE car = VCAR(list);
-	if(CONSP(car) && (!value_cmp(elt, VCAR(car))))
+	register repv car = rep_CAR(list);
+	if(rep_CONSP(car) && (!rep_value_cmp(elt, rep_CAR(car))))
 	    return(car);
-	list = VCDR(list);
-	TEST_INT;
-	if(INT_P)
-	    return(LISP_NULL);
+	list = rep_CDR(list);
+	rep_TEST_INT;
+	if(rep_INTERRUPTP)
+	    return(rep_NULL);
     }
-    return(sym_nil);
+    return(Qnil);
 }
 
-_PR VALUE cmd_assq(VALUE, VALUE);
-DEFUN("assq", cmd_assq, subr_assq, (VALUE elt, VALUE list), V_Subr2, DOC_assq) /*
-::doc:assq::
+DEFUN("assq", Fassq, Sassq, (repv elt, repv list), rep_Subr2) /*
+::doc:Sassq::
 assq ELT ASSOC-LIST
 
 Searches ASSOC-LIST for a list whose first element is ELT. `assq' uses `eq'
@@ -529,23 +513,22 @@ to compare elements. Returns the sub-list starting from the first matching
 association.
 ::end:: */
 {
-    DECLARE2(list, LISTP);
-    while(CONSP(list))
+    rep_DECLARE2(list, rep_LISTP);
+    while(rep_CONSP(list))
     {
-	register VALUE car = VCAR(list);
-	if(CONSP(car) && (elt == VCAR(car)))
+	register repv car = rep_CAR(list);
+	if(rep_CONSP(car) && (elt == rep_CAR(car)))
 	    return(car);
-	list = VCDR(list);
-	TEST_INT;
-	if(INT_P)
-	    return(LISP_NULL);
+	list = rep_CDR(list);
+	rep_TEST_INT;
+	if(rep_INTERRUPTP)
+	    return(rep_NULL);
     }
-    return(sym_nil);
+    return(Qnil);
 }
 
-_PR VALUE cmd_rassoc(VALUE, VALUE);
-DEFUN("rassoc", cmd_rassoc, subr_rassoc, (VALUE elt, VALUE list), V_Subr2, DOC_rassoc) /*
-::doc:rassoc::
+DEFUN("rassoc", Frassoc, Srassoc, (repv elt, repv list), rep_Subr2) /*
+::doc:Srassoc::
 rassoc ELT ASSOC-LIST
 
 Searches ASSOC-LIST for a cons-cell whose cdr element is `equal' to ELT. 
@@ -555,117 +538,112 @@ For example,
      => (three . 3)
 ::end:: */
 {
-    DECLARE2(list, LISTP);
-    while(CONSP(list))
+    rep_DECLARE2(list, rep_LISTP);
+    while(rep_CONSP(list))
     {
-	register VALUE car = VCAR(list);
-	if(CONSP(car) && (!value_cmp(elt, VCDR(car))))
+	register repv car = rep_CAR(list);
+	if(rep_CONSP(car) && (!rep_value_cmp(elt, rep_CDR(car))))
 	    return(car);
-	list = VCDR(list);
-	TEST_INT;
-	if(INT_P)
-	    return(LISP_NULL);
+	list = rep_CDR(list);
+	rep_TEST_INT;
+	if(rep_INTERRUPTP)
+	    return(rep_NULL);
     }
-    return(sym_nil);
+    return(Qnil);
 }
 
-_PR VALUE cmd_rassq(VALUE, VALUE);
-DEFUN("rassq", cmd_rassq, subr_rassq, (VALUE elt, VALUE list), V_Subr2, DOC_rassq) /*
-::doc:rassq::
+DEFUN("rassq", Frassq, Srassq, (repv elt, repv list), rep_Subr2) /*
+::doc:Srassq::
 rassq ELT ASSOC-LIST
 
 Searches ASSOC-LIST for a cons-cell whose cdr is `eq' to ELT.
 Returns the first matching cons-cell, else nil.
 ::end:: */
 {
-    DECLARE2(list, LISTP);
-    while(CONSP(list))
+    rep_DECLARE2(list, rep_LISTP);
+    while(rep_CONSP(list))
     {
-	register VALUE car = VCAR(list);
-	if(CONSP(car) && (elt == VCDR(car)))
+	register repv car = rep_CAR(list);
+	if(rep_CONSP(car) && (elt == rep_CDR(car)))
 	    return(car);
-	list = VCDR(list);
-	TEST_INT;
-	if(INT_P)
-	    return(LISP_NULL);
+	list = rep_CDR(list);
+	rep_TEST_INT;
+	if(rep_INTERRUPTP)
+	    return(rep_NULL);
     }
-    return(sym_nil);
+    return(Qnil);
 }
 
-_PR VALUE cmd_nth(VALUE, VALUE);
-DEFUN("nth", cmd_nth, subr_nth, (VALUE index, VALUE list), V_Subr2, DOC_nth) /*
-::doc:nth::
+DEFUN("nth", Fnth, Snth, (repv index, repv list), rep_Subr2) /*
+::doc:Snth::
 nth INDEX LIST
 
 Returns the INDEXth element of LIST. The first element has an INDEX of zero.
 ::end:: */
 {
     int i;
-    DECLARE1(index, INTP);
-    DECLARE2(list, LISTP);
-    i = VINT(index);
+    rep_DECLARE1(index, rep_INTP);
+    rep_DECLARE2(list, rep_LISTP);
+    i = rep_INT(index);
     if(i < 0)
-	return signal_arg_error(index, 1);
-    while((i-- > 0) && CONSP(list))
+	return rep_signal_arg_error(index, 1);
+    while((i-- > 0) && rep_CONSP(list))
     {
-	list = VCDR(list);
-	TEST_INT;
-	if(INT_P)
-	    return LISP_NULL;
+	list = rep_CDR(list);
+	rep_TEST_INT;
+	if(rep_INTERRUPTP)
+	    return rep_NULL;
     }
-    return (i <= 0 && CONSP(list)) ? VCAR(list) : sym_nil;
+    return (i <= 0 && rep_CONSP(list)) ? rep_CAR(list) : Qnil;
 }
 
-_PR VALUE cmd_nthcdr(VALUE index, VALUE list);
-DEFUN("nthcdr", cmd_nthcdr, subr_nthcdr, (VALUE index, VALUE list), V_Subr2, DOC_nthcdr) /*
-::doc:nthcdr::
+DEFUN("nthcdr", Fnthcdr, Snthcdr, (repv index, repv list), rep_Subr2) /*
+::doc:Snthcdr::
 nthcdr INDEX LIST
 
 Returns the INDEXth cdr of LIST. The first is INDEX zero.
 ::end:: */
 {
     int i;
-    DECLARE1(index, INTP);
-    DECLARE2(list, LISTP);
-    i = VINT(index);
+    rep_DECLARE1(index, rep_INTP);
+    rep_DECLARE2(list, rep_LISTP);
+    i = rep_INT(index);
     if(i < 0)
-	return signal_arg_error(index, 1);
-    while((i-- > 0) && CONSP(list))
+	return rep_signal_arg_error(index, 1);
+    while((i-- > 0) && rep_CONSP(list))
     {
-	list = VCDR(list);
-	TEST_INT;
-	if(INT_P)
-	    return LISP_NULL;
+	list = rep_CDR(list);
+	rep_TEST_INT;
+	if(rep_INTERRUPTP)
+	    return rep_NULL;
     }
     return list;
 }
 
-_PR VALUE cmd_last(VALUE);
-DEFUN("last", cmd_last, subr_last, (VALUE list), V_Subr1, DOC_last) /*
-::doc:last::
+DEFUN("last", Flast, Slast, (repv list), rep_Subr1) /*
+::doc:Slast::
 last LIST
 
 Returns the last element of LIST.
 ::end:: */
 {
-    DECLARE1(list, LISTP);
-    if(CONSP(list))
+    rep_DECLARE1(list, rep_LISTP);
+    if(rep_CONSP(list))
     {
-	while(CONSP(VCDR(list)))
+	while(rep_CONSP(rep_CDR(list)))
 	{
-	    list = VCDR(list);
-	    TEST_INT;
-	    if(INT_P)
-		return(LISP_NULL);
+	    list = rep_CDR(list);
+	    rep_TEST_INT;
+	    if(rep_INTERRUPTP)
+		return(rep_NULL);
 	}
-	return(VCAR(list));
+	return(rep_CAR(list));
     }
-    return(sym_nil);
+    return(Qnil);
 }
 
-_PR VALUE cmd_mapcar(VALUE, VALUE);
-DEFUN("mapcar", cmd_mapcar, subr_mapcar, (VALUE fun, VALUE list), V_Subr2, DOC_mapcar) /*
-::doc:mapcar::
+DEFUN("mapcar", Fmapcar, Smapcar, (repv fun, repv list), rep_Subr2) /*
+::doc:Smapcar::
 mapcar FUNCTION LIST
 
 Calls FUNCTION-NAME with each element of LIST as an argument in turn and
@@ -674,58 +652,56 @@ returns a new list constructed from the results, ie,
    => (2 3 4)
 ::end:: */
 {
-    VALUE res = sym_nil;
-    VALUE *last = &res;
-    GC_root gc_list, gc_fun, gc_res;
-    DECLARE2(list, LISTP);
+    repv res = Qnil;
+    repv *last = &res;
+    rep_GC_root gc_list, gc_fun, gc_res;
+    rep_DECLARE2(list, rep_LISTP);
 
-    PUSHGC(gc_res, res);
-    PUSHGC(gc_fun, fun);
-    PUSHGC(gc_list, list);
-    while(res != LISP_NULL && CONSP(list))
+    rep_PUSHGC(gc_res, res);
+    rep_PUSHGC(gc_fun, fun);
+    rep_PUSHGC(gc_list, list);
+    while(res != rep_NULL && rep_CONSP(list))
     {
-	TEST_INT;
-	if(INT_P
-	   || !(*last = cmd_cons(sym_nil, sym_nil))
-	   || !(VCAR(*last) = call_lisp1(fun, VCAR(list))))
-	    res = LISP_NULL;
+	rep_TEST_INT;
+	if(rep_INTERRUPTP
+	   || !(*last = Fcons(Qnil, Qnil))
+	   || !(rep_CAR(*last) = rep_call_lisp1(fun, rep_CAR(list))))
+	    res = rep_NULL;
 	else
 	{
-	    last = &VCDR(*last);
-	    list = VCDR(list);
+	    last = &rep_CDR(*last);
+	    list = rep_CDR(list);
 	}
     }
-    POPGC; POPGC; POPGC;
+    rep_POPGC; rep_POPGC; rep_POPGC;
     return res;
 }
 
-_PR VALUE cmd_mapc(VALUE, VALUE);
-DEFUN("mapc", cmd_mapc, subr_mapc, (VALUE fun, VALUE list), V_Subr2, DOC_mapc) /*
-::doc:mapc::
+DEFUN("mapc", Fmapc, Smapc, (repv fun, repv list), rep_Subr2) /*
+::doc:Smapc::
 mapc FUNCTION LIST
 
 Applies FUNCTION to each element in LIST, discards the results.
 ::end:: */
 {
-    VALUE res = sym_nil;
-    GC_root gc_fun, gc_list;
-    DECLARE2(list, LISTP);
-    PUSHGC(gc_fun, fun);
-    PUSHGC(gc_list, list);
-    while(res != LISP_NULL && CONSP(list))
+    repv res = Qnil;
+    rep_GC_root gc_fun, gc_list;
+    rep_DECLARE2(list, rep_LISTP);
+    rep_PUSHGC(gc_fun, fun);
+    rep_PUSHGC(gc_list, list);
+    while(res != rep_NULL && rep_CONSP(list))
     {
-	TEST_INT;
-	if(INT_P || !call_lisp1(fun, VCAR(list)))
-	    res = LISP_NULL;
-	list = VCDR(list);
+	rep_TEST_INT;
+	if(rep_INTERRUPTP || !rep_call_lisp1(fun, rep_CAR(list)))
+	    res = rep_NULL;
+	list = rep_CDR(list);
     }
-    POPGC; POPGC;
+    rep_POPGC; rep_POPGC;
     return res;
 }
 
-_PR VALUE cmd_filter(VALUE pred, VALUE list);
-DEFUN("filter", cmd_filter, subr_filter, (VALUE pred, VALUE list), V_Subr2, DOC_filter) /*
-::doc:filter::
+DEFUN("filter", Ffilter, Sfilter, (repv pred, repv list), rep_Subr2) /*
+::doc:Sfilter::
 filter PREDICATE LIST
 
 Return a new list, consisting of the elements in LIST which the function
@@ -737,35 +713,34 @@ PREDICATE returns t when applied to; i.e. something like
 		       LIST))
 ::end:: */
 {
-    VALUE output = sym_nil, *ptr = &output;
-    GC_root gc_pred, gc_list, gc_output;
-    DECLARE2(list, LISTP);
-    PUSHGC(gc_pred, pred);
-    PUSHGC(gc_list, list);
-    PUSHGC(gc_output, output);
-    while(CONSP(list))
+    repv output = Qnil, *ptr = &output;
+    rep_GC_root gc_pred, gc_list, gc_output;
+    rep_DECLARE2(list, rep_LISTP);
+    rep_PUSHGC(gc_pred, pred);
+    rep_PUSHGC(gc_list, list);
+    rep_PUSHGC(gc_output, output);
+    while(rep_CONSP(list))
     {
-	VALUE tem = call_lisp1(pred, VCAR(list));
-	TEST_INT;
-	if(tem == LISP_NULL || INT_P)
+	repv tem = rep_call_lisp1(pred, rep_CAR(list));
+	rep_TEST_INT;
+	if(tem == rep_NULL || rep_INTERRUPTP)
 	{
-	    output = LISP_NULL;
+	    output = rep_NULL;
 	    break;
 	}
-	if(!NILP(tem))
+	if(!rep_NILP(tem))
 	{
-	    *ptr = cmd_cons(VCAR(list), sym_nil);
-	    ptr = &VCDR(*ptr);
+	    *ptr = Fcons(rep_CAR(list), Qnil);
+	    ptr = &rep_CDR(*ptr);
 	}
-	list = VCDR(list);
+	list = rep_CDR(list);
     }
-    POPGC; POPGC; POPGC;
+    rep_POPGC; rep_POPGC; rep_POPGC;
     return output;
 }
 
-_PR VALUE cmd_member(VALUE, VALUE);
-DEFUN("member", cmd_member, subr_member, (VALUE elt, VALUE list), V_Subr2, DOC_member) /*
-::doc:member::
+DEFUN("member", Fmember, Smember, (repv elt, repv list), rep_Subr2) /*
+::doc:Smember::
 member ELT LIST
 
 If ELT is a member of list LIST then return the tail of the list starting
@@ -775,22 +750,21 @@ from the matched ELT, ie,
 `member' uses `equal' to compare atoms.
 ::end:: */
 {
-    DECLARE2(list, LISTP);
-    while(CONSP(list))
+    rep_DECLARE2(list, rep_LISTP);
+    while(rep_CONSP(list))
     {
-	if(!value_cmp(elt, VCAR(list)))
+	if(!rep_value_cmp(elt, rep_CAR(list)))
 	    return(list);
-	list = VCDR(list);
-	TEST_INT;
-	if(INT_P)
-	    return(LISP_NULL);
+	list = rep_CDR(list);
+	rep_TEST_INT;
+	if(rep_INTERRUPTP)
+	    return(rep_NULL);
     }
-    return(sym_nil);
+    return(Qnil);
 }
 
-_PR VALUE cmd_memq(VALUE, VALUE);
-DEFUN("memq", cmd_memq, subr_memq, (VALUE elt, VALUE list), V_Subr2, DOC_memq) /*
-::doc:memq::
+DEFUN("memq", Fmemq, Smemq, (repv elt, repv list), rep_Subr2) /*
+::doc:Smemq::
 memq ELT LIST
 
 If ELT is a member of list LIST then return the tail of the list starting
@@ -800,68 +774,65 @@ from the matched ELT, ie,
 `memq' uses `eq' to compare atoms.
 ::end:: */
 {
-    DECLARE2(list, LISTP);
-    while(CONSP(list))
+    rep_DECLARE2(list, rep_LISTP);
+    while(rep_CONSP(list))
     {
-	if(elt == VCAR(list))
+	if(elt == rep_CAR(list))
 	    return(list);
-	list = VCDR(list);
-	TEST_INT;
-	if(INT_P)
-	    return(LISP_NULL);
+	list = rep_CDR(list);
+	rep_TEST_INT;
+	if(rep_INTERRUPTP)
+	    return(rep_NULL);
     }
-    return(sym_nil);
+    return(Qnil);
 }
 
-_PR VALUE cmd_delete(VALUE, VALUE);
-DEFUN("delete", cmd_delete, subr_delete, (VALUE elt, VALUE list), V_Subr2, DOC_delete) /*
-::doc:delete::
+DEFUN("delete", Fdelete, Sdelete, (repv elt, repv list), rep_Subr2) /*
+::doc:Sdelete::
 delete ELT LIST
 
 Returns LIST with any members `equal' to ELT destructively removed.
 ::end:: */
 {
-    VALUE *head = &list;
-    DECLARE2(list, LISTP);
-    while(CONSP(*head))
+    repv *head = &list;
+    rep_DECLARE2(list, rep_LISTP);
+    while(rep_CONSP(*head))
     {
-	if(!value_cmp(elt, VCAR(*head)))
-	    *head = VCDR(*head);
+	if(!rep_value_cmp(elt, rep_CAR(*head)))
+	    *head = rep_CDR(*head);
 	else
-	    head = &VCDR(*head);
-	TEST_INT;
-	if(INT_P)
-	    return(LISP_NULL);
+	    head = &rep_CDR(*head);
+	rep_TEST_INT;
+	if(rep_INTERRUPTP)
+	    return(rep_NULL);
     }
     return(list);
 }
 
-_PR VALUE cmd_delq(VALUE, VALUE);
-DEFUN("delq", cmd_delq, subr_delq, (VALUE elt, VALUE list), V_Subr2, DOC_delq) /*
-::doc:delq::
+DEFUN("delq", Fdelq, Sdelq, (repv elt, repv list), rep_Subr2) /*
+::doc:Sdelq::
 delq ELT LIST
 
 Returns LIST with any members `eq' to ELT destructively removed.
 ::end:: */
 {
-    VALUE *head = &list;
-    DECLARE2(list, LISTP);
-    while(CONSP(*head))
+    repv *head = &list;
+    rep_DECLARE2(list, rep_LISTP);
+    while(rep_CONSP(*head))
     {
-	if(elt == VCAR(*head))
-	    *head = VCDR(*head);
+	if(elt == rep_CAR(*head))
+	    *head = rep_CDR(*head);
 	else
-	    head = &VCDR(*head);
-	TEST_INT;
-	if(INT_P)
-	    return(LISP_NULL);
+	    head = &rep_CDR(*head);
+	rep_TEST_INT;
+	if(rep_INTERRUPTP)
+	    return(rep_NULL);
     }
     return(list);
 }
 
-_PR VALUE cmd_delete_if(VALUE, VALUE);
-DEFUN("delete-if", cmd_delete_if, subr_delete_if, (VALUE pred, VALUE list), V_Subr2, DOC_delete_if) /*
-::doc:delete_if::
+DEFUN("delete-if", Fdelete_if, Sdelete_if, (repv pred, repv list), rep_Subr2) /*
+::doc:Sdelete-if::
 delete-if FUNCTION LIST
 
 Similar to `delete' except that a predicate function, FUNCTION-NAME, is
@@ -872,32 +843,31 @@ applied to that element, ie,
    => (2 3 4 2)
 ::end:: */
 {
-    VALUE *head = &list;
-    GC_root gc_list, gc_pred;
-    DECLARE2(list, LISTP);
-    PUSHGC(gc_list, list);
-    PUSHGC(gc_pred, pred);
-    while(CONSP(*head))
+    repv *head = &list;
+    rep_GC_root gc_list, gc_pred;
+    rep_DECLARE2(list, rep_LISTP);
+    rep_PUSHGC(gc_list, list);
+    rep_PUSHGC(gc_pred, pred);
+    while(rep_CONSP(*head))
     {
-	VALUE tmp = call_lisp1(pred, VCAR(*head));
-	TEST_INT;
-	if(INT_P || !tmp)
+	repv tmp = rep_call_lisp1(pred, rep_CAR(*head));
+	rep_TEST_INT;
+	if(rep_INTERRUPTP || !tmp)
 	{
-	    list = LISP_NULL;
+	    list = rep_NULL;
 	    break;
 	}
-	if(!NILP(tmp))
-	    *head = VCDR(*head);
+	if(!rep_NILP(tmp))
+	    *head = rep_CDR(*head);
 	else
-	    head = &VCDR(*head);
+	    head = &rep_CDR(*head);
     }
-    POPGC; POPGC;
+    rep_POPGC; rep_POPGC;
     return list;
 }
 
-_PR VALUE cmd_delete_if_not(VALUE, VALUE);
-DEFUN("delete-if-not", cmd_delete_if_not, subr_delete_if_not, (VALUE pred, VALUE list), V_Subr2, DOC_delete_if_not) /*
-::doc:delete_if_not::
+DEFUN("delete-if-not", Fdelete_if_not, Sdelete_if_not, (repv pred, repv list), rep_Subr2) /*
+::doc:Sdelete-if-not::
 delete-if-not FUNCTION LIST
 
 Similar to `delete' except that a predicate function, FUNCTION-NAME, is
@@ -908,181 +878,174 @@ applied to that element, ie,
    => (1 1)
 ::end:: */
 {
-    VALUE *head = &list;
-    GC_root gc_list, gc_pred;
-    DECLARE2(list, LISTP);
-    PUSHGC(gc_list, list);
-    PUSHGC(gc_pred, pred);
-    while(CONSP(*head))
+    repv *head = &list;
+    rep_GC_root gc_list, gc_pred;
+    rep_DECLARE2(list, rep_LISTP);
+    rep_PUSHGC(gc_list, list);
+    rep_PUSHGC(gc_pred, pred);
+    while(rep_CONSP(*head))
     {
-	VALUE tmp = call_lisp1(pred, VCAR(*head));
-	TEST_INT;
-	if(INT_P || !tmp)
+	repv tmp = rep_call_lisp1(pred, rep_CAR(*head));
+	rep_TEST_INT;
+	if(rep_INTERRUPTP || !tmp)
 	{
-	    list = LISP_NULL;
+	    list = rep_NULL;
 	    break;
 	}
-	if(NILP(tmp))
-	    *head = VCDR(*head);
+	if(rep_NILP(tmp))
+	    *head = rep_CDR(*head);
 	else
-	    head = &VCDR(*head);
+	    head = &rep_CDR(*head);
     }
-    POPGC; POPGC;
+    rep_POPGC; rep_POPGC;
     return list;
 }
 
-_PR VALUE cmd_vector(VALUE);
-DEFUN("vector", cmd_vector, subr_vector, (VALUE args), V_SubrN, DOC_vector) /*
-::doc:vector::
+DEFUN("vector", Fvector, Svector, (repv args), rep_SubrN) /*
+::doc:Svector::
 vector ARGS...
 
 Returns a new vector with ARGS... as its elements.
 ::end:: */
 {
-    VALUE res = make_vector(list_length(args));
+    repv res = rep_make_vector(rep_list_length(args));
     if(res)
     {
 	int i = 0;
-	while(CONSP(args))
+	while(rep_CONSP(args))
 	{
-	    VVECTI(res, i) = VCAR(args);
-	    args = VCDR(args);
+	    rep_VECTI(res, i) = rep_CAR(args);
+	    args = rep_CDR(args);
 	    i++;
-	    TEST_INT;
-	    if(INT_P)
-		return(LISP_NULL);
+	    rep_TEST_INT;
+	    if(rep_INTERRUPTP)
+		return(rep_NULL);
 	}
     }
     return(res);
 }
 
-_PR VALUE cmd_make_vector(VALUE, VALUE);
-DEFUN("make-vector", cmd_make_vector, subr_make_vector, (VALUE size, VALUE init), V_Subr2, DOC_make_vector) /*
-::doc:make_vector::
-make-vector SIZE [INITIAL-VALUE]
+DEFUN("make-vector", Fmake_vector, Smake_vector, (repv size, repv init), rep_Subr2) /*
+::doc:Smake-vector::
+make-vector SIZE [INITIAL-repv]
 
-Creates a new vector of size SIZE. If INITIAL-VALUE is provided each element
+Creates a new vector of size SIZE. If INITIAL-repv is provided each element
 will be set to that value, else they will all be nil.
 ::end:: */
 {
     int len;
-    VALUE res;
-    DECLARE1(size, INTP);
-    if(VINT(size) < 0)
-	return signal_arg_error(size, 1);
-    len = VINT(size);
-    res = make_vector(len);
+    repv res;
+    rep_DECLARE1(size, rep_INTP);
+    if(rep_INT(size) < 0)
+	return rep_signal_arg_error(size, 1);
+    len = rep_INT(size);
+    res = rep_make_vector(len);
     if(res)
     {
 	int i;
 	for(i = 0; i < len; i++)
-	    VVECTI(res, i) = init;
+	    rep_VECTI(res, i) = init;
     }
     return(res);
 }
 
-_PR VALUE cmd_arrayp(VALUE);
-DEFUN("arrayp", cmd_arrayp, subr_arrayp, (VALUE arg), V_Subr1, DOC_arrayp) /*
-::doc:arrayp::
+DEFUN("arrayp", Farrayp, Sarrayp, (repv arg), rep_Subr1) /*
+::doc:Sarrayp::
 arrayp ARG
 
 Returns t when ARG is an array.
 ::end:: */
 {
-    return((VECTORP(arg) || STRINGP(arg) || COMPILEDP(arg)) ? sym_t : sym_nil);
+    return((rep_VECTORP(arg) || rep_STRINGP(arg) || rep_COMPILEDP(arg)) ? Qt : Qnil);
 }
 
-_PR VALUE cmd_aset(VALUE, VALUE, VALUE);
-DEFUN("aset", cmd_aset, subr_aset, (VALUE array, VALUE index, VALUE new), V_Subr3, DOC_aset) /*
-::doc:aset::
-aset ARRAY INDEX NEW-VALUE
+DEFUN("aset", Faset, Saset, (repv array, repv index, repv new), rep_Subr3) /*
+::doc:Saset::
+aset ARRAY INDEX NEW-repv
 
 Sets element number INDEX (a positive integer) of ARRAY (can be a vector
-or a string) to NEW-VALUE, returning NEW-VALUE. Note that strings
+or a string) to NEW-repv, returning NEW-repv. Note that strings
 can only contain characters (ie, integers).
 ::end:: */
 {
-    DECLARE2(index, INTP);
-    if(VINT(index) < 0)
-	return signal_arg_error(index, 2);
-    if(STRINGP(array))
+    rep_DECLARE2(index, rep_INTP);
+    if(rep_INT(index) < 0)
+	return rep_signal_arg_error(index, 2);
+    if(rep_STRINGP(array))
     {
-	if(!STRING_WRITABLE_P(array))
-	    return cmd_signal(sym_setting_constant, LIST_1(array));
-	if(VINT(index) < STRING_LEN(array))
+	if(!rep_STRING_WRITABLE_P(array))
+	    return Fsignal(Qsetting_constant, rep_LIST_1(array));
+	if(rep_INT(index) < rep_STRING_LEN(array))
 	{
-	    DECLARE3(new, INTP);
-	    VSTR(array)[VINT(index)] = (u_char)VINT(new);
+	    rep_DECLARE3(new, rep_INTP);
+	    rep_STR(array)[rep_INT(index)] = (u_char)rep_INT(new);
 	    return(new);
 	}
     }
-    else if(VECTORP(array) || COMPILEDP(array))
+    else if(rep_VECTORP(array) || rep_COMPILEDP(array))
     {
-	if(!VECTOR_WRITABLE_P(array))
-	    return cmd_signal(sym_setting_constant, LIST_1(array));
-	if(VINT(index) < VVECT_LEN(array))
+	if(!rep_VECTOR_WRITABLE_P(array))
+	    return Fsignal(Qsetting_constant, rep_LIST_1(array));
+	if(rep_INT(index) < rep_VECT_LEN(array))
 	{
-	    VVECTI(array, VINT(index)) = new;
+	    rep_VECTI(array, rep_INT(index)) = new;
 	    return(new);
 	}
     }
     else
-	return(signal_arg_error(array, 1));
-    return(signal_arg_error(index, 2));
+	return(rep_signal_arg_error(array, 1));
+    return(rep_signal_arg_error(index, 2));
 }
 
-_PR VALUE cmd_aref(VALUE, VALUE);
-DEFUN("aref", cmd_aref, subr_aref, (VALUE array, VALUE index), V_Subr2, DOC_aref) /*
-::doc:aref::
+DEFUN("aref", Faref, Saref, (repv array, repv index), rep_Subr2) /*
+::doc:Saref::
 aref ARRAY INDEX
 
 Returns the INDEXth (a non-negative integer) element of ARRAY, which
 can be a vector or a string. INDEX starts at zero.
 ::end:: */
 {
-    DECLARE2(index, INTP);
-    if(VINT(index) < 0)
-	return signal_arg_error(index, 2);
-    if(STRINGP(array))
+    rep_DECLARE2(index, rep_INTP);
+    if(rep_INT(index) < 0)
+	return rep_signal_arg_error(index, 2);
+    if(rep_STRINGP(array))
     {
-	if(VINT(index) < STRING_LEN(array))
-	    return(MAKE_INT(VSTR(array)[VINT(index)]));
+	if(rep_INT(index) < rep_STRING_LEN(array))
+	    return(rep_MAKE_INT(rep_STR(array)[rep_INT(index)]));
     }
-    else if(VECTORP(array) || COMPILEDP(array))
+    else if(rep_VECTORP(array) || rep_COMPILEDP(array))
     {
-	if(VINT(index) < VVECT_LEN(array))
-	    return(VVECTI(array, VINT(index)));
+	if(rep_INT(index) < rep_VECT_LEN(array))
+	    return(rep_VECTI(array, rep_INT(index)));
     }
     else
-	return(cmd_signal(sym_bad_arg, list_2(array, MAKE_INT(1))));
-    return(signal_arg_error(index, 2));
+	return(Fsignal(Qbad_arg, rep_list_2(array, rep_MAKE_INT(1))));
+    return(rep_signal_arg_error(index, 2));
 }
 
-_PR VALUE cmd_make_string(VALUE, VALUE);
-DEFUN("make-string", cmd_make_string, subr_make_string, (VALUE len, VALUE init), V_Subr2, DOC_make_string) /*
-::doc:make_string::
-make-string LENGTH [INITIAL-VALUE]
+DEFUN("make-string", Fmake_string, Smake_string, (repv len, repv init), rep_Subr2) /*
+::doc:Smake-string::
+make-string LENGTH [INITIAL-repv]
 
 Returns a new string of length LENGTH, each character is initialised to
-INITIAL-VALUE, or to space if INITIAL-VALUE is not given.
+INITIAL-repv, or to space if INITIAL-repv is not given.
 ::end:: */
 {
-    VALUE res;
-    DECLARE1(len, INTP);
-    if(VINT(len) < 0)
-	return signal_arg_error(len, 1);
-    res = make_string(VINT(len) + 1);
+    repv res;
+    rep_DECLARE1(len, rep_INTP);
+    if(rep_INT(len) < 0)
+	return rep_signal_arg_error(len, 1);
+    res = rep_make_string(rep_INT(len) + 1);
     if(res)
     {
-	memset(VSTR(res), INTP(init) ? (u_char)VINT(init) : ' ', VINT(len));
-	VSTR(res)[VINT(len)] = 0;
+	memset(rep_STR(res), rep_INTP(init) ? (u_char)rep_INT(init) : ' ', rep_INT(len));
+	rep_STR(res)[rep_INT(len)] = 0;
     }
     return(res);
 }
 
-_PR VALUE cmd_substring(VALUE string, VALUE start, VALUE end);
-DEFUN("substring", cmd_substring, subr_substring, (VALUE string, VALUE start, VALUE end), V_Subr3, DOC_substring) /*
-::doc:substring::
+DEFUN("substring", Fsubstring, Ssubstring, (repv string, repv start, repv end), rep_Subr3) /*
+::doc:Ssubstring::
 substring STRING START [END]
 
 Returns the portion of STRING starting at character number START and ending
@@ -1091,19 +1054,19 @@ All indices start at zero.
 ::end:: */
 {
     int slen;
-    DECLARE1(string, STRINGP);
-    DECLARE2(start, INTP);
-    slen = STRING_LEN(string);
-    if(VINT(start) > slen || VINT(start) < 0)
-	return(signal_arg_error(start, 2));
-    if(INTP(end))
+    rep_DECLARE1(string, rep_STRINGP);
+    rep_DECLARE2(start, rep_INTP);
+    slen = rep_STRING_LEN(string);
+    if(rep_INT(start) > slen || rep_INT(start) < 0)
+	return(rep_signal_arg_error(start, 2));
+    if(rep_INTP(end))
     {
-	if((VINT(end) > slen) || (VINT(end) < VINT(start)))
-	    return(signal_arg_error(end, 3));
-	return(string_dupn(VSTR(string) + VINT(start), VINT(end) - VINT(start)));
+	if((rep_INT(end) > slen) || (rep_INT(end) < rep_INT(start)))
+	    return(rep_signal_arg_error(end, 3));
+	return(rep_string_dupn(rep_STR(string) + rep_INT(start), rep_INT(end) - rep_INT(start)));
     }
     else
-	return(string_dupn(VSTR(string) + VINT(start), slen - VINT(start)));
+	return(rep_string_dupn(rep_STR(string) + rep_INT(start), slen - rep_INT(start)));
 }
 
 static inline int
@@ -1112,23 +1075,22 @@ extend_concat(u_char **buf, int *bufLen, int i, int addLen)
     u_char *newbuf;
     int newbuflen;
     if((i + addLen) < *bufLen)
-	return(TRUE);
+	return(rep_TRUE);
     newbuflen = (i + addLen) * 2;
-    newbuf = sys_alloc(newbuflen);
+    newbuf = rep_alloc(newbuflen);
     if(newbuf)
     {
 	memcpy(newbuf, *buf, i);
-	sys_free(*buf);
+	rep_free(*buf);
 	*buf = newbuf;
 	*bufLen = newbuflen;
-	return(TRUE);
+	return(rep_TRUE);
     }
-    mem_error();
-    return(FALSE);
+    rep_mem_error();
+    return(rep_FALSE);
 }
-_PR VALUE cmd_concat(VALUE);
-DEFUN("concat", cmd_concat, subr_concat, (VALUE args), V_SubrN, DOC_concat) /*
-::doc:concat::
+DEFUN("concat", Fconcat, Sconcat, (repv args), rep_SubrN) /*
+::doc:Sconcat::
 concat ARGS...
 
 Concatenates all ARGS... into a single string, each argument can be a string,
@@ -1136,274 +1098,267 @@ a character or a list or vector of characters.
 ::end:: */
 {
     int buflen = 128;
-    u_char *buf = sys_alloc(buflen);
+    u_char *buf = rep_alloc(buflen);
     if(buf)
     {
-	VALUE res = LISP_NULL;
+	repv res = rep_NULL;
 	int i = 0;
 	int argnum = 1;
-	while(CONSP(args))
+	while(rep_CONSP(args))
 	{
-	    VALUE arg = VCAR(args);
-	    switch(VTYPE(arg))
+	    repv arg = rep_CAR(args);
+	    switch(rep_TYPE(arg))
 	    {
 		int slen, j;
-	    case V_String:
-		slen = STRING_LEN(arg);
+	    case rep_String:
+		slen = rep_STRING_LEN(arg);
 		if(!extend_concat(&buf, &buflen, i, slen))
 		    goto error;
-		memcpy(buf + i, VSTR(arg), slen);
+		memcpy(buf + i, rep_STR(arg), slen);
 		i += slen;
 		break;
-	    case V_Int:
+	    case rep_Int:
 		if(!extend_concat(&buf, &buflen, i, 1))
 		    goto error;
-		buf[i++] = VINT(arg);
+		buf[i++] = rep_INT(arg);
 		break;
-	    case V_Symbol:
-		if(arg != sym_nil)
+	    case rep_Symbol:
+		if(arg != Qnil)
 		    break;
 		/* FALL THROUGH */
-	    case V_Cons:
-		while(CONSP(arg))
+	    case rep_Cons:
+		while(rep_CONSP(arg))
 		{
-		    VALUE ch = VCAR(arg);
-		    if(INTP(ch))
+		    repv ch = rep_CAR(arg);
+		    if(rep_INTP(ch))
 		    {
 			if(!extend_concat(&buf, &buflen, i, 1))
 			    goto error;
-			buf[i++] = VINT(ch);
+			buf[i++] = rep_INT(ch);
 		    }
-		    arg = VCDR(arg);
-		    TEST_INT;
-		    if(INT_P)
+		    arg = rep_CDR(arg);
+		    rep_TEST_INT;
+		    if(rep_INTERRUPTP)
 			goto error;
 		}
 		break;
-	    case V_Vector:
+	    case rep_Vector:
 		{
-		    int len = VVECT_LEN(arg);
+		    int len = rep_VECT_LEN(arg);
 		    for(j = 0; j < len; j++)
 		    {
-			if(INTP(VVECTI(arg, j)))
+			if(rep_INTP(rep_VECTI(arg, j)))
 			{
 			    if(!extend_concat(&buf, &buflen, i, 1))
 				goto error;
-			    buf[i++] = VINT(VVECTI(arg, j));
+			    buf[i++] = rep_INT(rep_VECTI(arg, j));
 			}
 		    }
 		    break;
 		}
 	    default:
-		res = signal_arg_error(arg, argnum);
+		res = rep_signal_arg_error(arg, argnum);
 		goto error;
 	    }
-	    args = VCDR(args);
+	    args = rep_CDR(args);
 	    argnum++;
 	}
-	res = string_dupn(buf, i);
+	res = rep_string_dupn(buf, i);
 error:
-	sys_free(buf);
+	rep_free(buf);
 	return(res);
     }
-    return(LISP_NULL);
+    return(rep_NULL);
 }
 
-_PR VALUE cmd_length(VALUE);
-DEFUN("length", cmd_length, subr_length, (VALUE sequence), V_Subr1, DOC_length) /*
-::doc:length::
+DEFUN("length", Flength, Slength, (repv sequence), rep_Subr1) /*
+::doc:Slength::
 length SEQUENCE
 
 Returns the number of elements in SEQUENCE (a string, list or vector).
 ::end:: */
 {
-    switch(VTYPE(sequence))
+    switch(rep_TYPE(sequence))
     {
 	int i;
-    case V_String:
-	return(MAKE_INT(STRING_LEN(sequence)));
+    case rep_String:
+	return(rep_MAKE_INT(rep_STRING_LEN(sequence)));
 	break;
-    case V_Vector: case V_Compiled:
-	return(MAKE_INT(VVECT_LEN(sequence)));
+    case rep_Vector: case rep_Compiled:
+	return(rep_MAKE_INT(rep_VECT_LEN(sequence)));
 	break;
-    case V_Cons:
+    case rep_Cons:
 	i = 0;
-	while(CONSP(sequence))
+	while(rep_CONSP(sequence))
 	{
-	    sequence = VCDR(sequence);
+	    sequence = rep_CDR(sequence);
 	    i++;
-	    TEST_INT;
-	    if(INT_P)
-		return(LISP_NULL);
+	    rep_TEST_INT;
+	    if(rep_INTERRUPTP)
+		return(rep_NULL);
 	}
-	return(MAKE_INT(i));
+	return(rep_MAKE_INT(i));
 	break;
-    case V_Symbol:
-	if(sequence == sym_nil)
-	    return(MAKE_INT(0));
+    case rep_Symbol:
+	if(sequence == Qnil)
+	    return(rep_MAKE_INT(0));
 	/* FALL THROUGH */
     default:
-	cmd_signal(sym_bad_arg, list_2(sequence, MAKE_INT(1)));
-	return(LISP_NULL);
+	Fsignal(Qbad_arg, rep_list_2(sequence, rep_MAKE_INT(1)));
+	return(rep_NULL);
     }
 }
 
-_PR VALUE cmd_copy_sequence(VALUE);
-DEFUN("copy-sequence", cmd_copy_sequence, subr_copy_sequence, (VALUE seq), V_Subr1, DOC_copy_sequence) /*
-::doc:copy_sequence::
+DEFUN("copy-sequence", Fcopy_sequence, Scopy_sequence, (repv seq), rep_Subr1) /*
+::doc:Scopy-sequence::
 copy-sequence SEQUENCE
 
 Returns a new sequence whose elements are eq to those in SEQUENCE.
 ::end:: */
 {
-    VALUE res = sym_nil;
-    switch(VTYPE(seq))
+    repv res = Qnil;
+    switch(rep_TYPE(seq))
     {
-    case V_Symbol:
-	if(!NILP(seq))
-	    res = signal_arg_error(seq, 1);
+    case rep_Symbol:
+	if(!rep_NILP(seq))
+	    res = rep_signal_arg_error(seq, 1);
 	break;
-    case V_Cons:
+    case rep_Cons:
 	{
-	    VALUE *last = &res;
-	    while(CONSP(seq))
+	    repv *last = &res;
+	    while(rep_CONSP(seq))
 	    {
-		TEST_INT;
-		if(INT_P)
-		    return(LISP_NULL);
-		if(!(*last = cmd_cons(VCAR(seq), sym_nil)))
-		    return(LISP_NULL);
-		last = &VCDR(*last);
-		seq = VCDR(seq);
+		rep_TEST_INT;
+		if(rep_INTERRUPTP)
+		    return(rep_NULL);
+		if(!(*last = Fcons(rep_CAR(seq), Qnil)))
+		    return(rep_NULL);
+		last = &rep_CDR(*last);
+		seq = rep_CDR(seq);
 	    }
 	}
 	break;
-    case V_Vector: case V_Compiled:
-	res = make_vector(VVECT_LEN(seq));
+    case rep_Vector: case rep_Compiled:
+	res = rep_make_vector(rep_VECT_LEN(seq));
 	if(res)
 	{
-	    int i, len = VVECT_LEN(seq);
-	    VVECT(res)->car = VVECT(seq)->car;
+	    int i, len = rep_VECT_LEN(seq);
+	    rep_VECT(res)->car = rep_VECT(seq)->car;
 	    for(i = 0; i < len; i++)
-		VVECTI(res, i) = VVECTI(seq, i);
+		rep_VECTI(res, i) = rep_VECTI(seq, i);
 	}
 	break;
-    case V_String:
-	res = string_dupn(VSTR(seq), STRING_LEN(seq));
+    case rep_String:
+	res = rep_string_dupn(rep_STR(seq), rep_STRING_LEN(seq));
 	break;
     default:
-	res = signal_arg_error(seq, 1);
+	res = rep_signal_arg_error(seq, 1);
     }
     return(res);
 }
 
-_PR VALUE cmd_elt(VALUE, VALUE);
-DEFUN("elt", cmd_elt, subr_elt, (VALUE seq, VALUE index), V_Subr2, DOC_elt) /*
-::doc:elt::
+DEFUN("elt", Felt, Selt, (repv seq, repv index), rep_Subr2) /*
+::doc:Selt::
 elt SEQUENCE INDEX
 
 Return the element of SEQUENCE at position INDEX (counting from zero).
 ::end:: */
 {
-    if(NILP(cmd_arrayp(seq)))
-	return(cmd_nth(index, seq));
+    if(rep_NILP(Farrayp(seq)))
+	return(Fnth(index, seq));
     else
-	return(cmd_aref(seq, index));
+	return(Faref(seq, index));
 }
 
-_PR VALUE cmd_prog1(VALUE);
-DEFUN("prog1", cmd_prog1, subr_prog1, (VALUE args), V_SF, DOC_prog1) /*
-::doc:prog1::
+DEFUN("prog1", Fprog1, Sprog1, (repv args), rep_SF) /*
+::doc:Sprog1::
 prog1 FORM1 FORMS...
 
 First evals FORM1 then FORMS, returns the value that FORM1 gave.
 ::end:: */
 {
-    if(CONSP(args))
+    if(rep_CONSP(args))
     {
-	VALUE res;
-	GC_root gc_args, gc_res;
-	PUSHGC(gc_args, args);
-	res = cmd_eval(VCAR(args));
+	repv res;
+	rep_GC_root gc_args, gc_res;
+	rep_PUSHGC(gc_args, args);
+	res = Feval(rep_CAR(args));
 	if(res)
 	{
-	    PUSHGC(gc_res, res);
-	    if(!cmd_progn(VCDR(args)))
-		res = LISP_NULL;
-	    POPGC;
+	    rep_PUSHGC(gc_res, res);
+	    if(!Fprogn(rep_CDR(args)))
+		res = rep_NULL;
+	    rep_POPGC;
 	}
-	POPGC;
+	rep_POPGC;
 	return(res);
     }
-    return signal_missing_arg(1);
+    return rep_signal_missing_arg(1);
 }
 
-_PR VALUE cmd_prog2(VALUE);
-DEFUN("prog2", cmd_prog2, subr_prog2, (VALUE args), V_SF, DOC_prog2) /*
-::doc:prog2::
+DEFUN("prog2", Fprog2, Sprog2, (repv args), rep_SF) /*
+::doc:Sprog2::
 prog2 FORM1 FORM2 FORMS...
 
 Evals FORM1 then FORM2 then the rest. Returns whatever FORM2 gave.
 ::end:: */
 {
-    if(CONSP(args) && CONSP(VCDR(args)))
+    if(rep_CONSP(args) && rep_CONSP(rep_CDR(args)))
     {
-	VALUE res;
-	GC_root gc_args, gc_res;
-	PUSHGC(gc_args, args);
-	if(cmd_eval(VCAR(args)))
+	repv res;
+	rep_GC_root gc_args, gc_res;
+	rep_PUSHGC(gc_args, args);
+	if(Feval(rep_CAR(args)))
 	{
-	    res = cmd_eval(VCAR(VCDR(args)));
+	    res = Feval(rep_CAR(rep_CDR(args)));
 	    if(res)
 	    {
-		PUSHGC(gc_res, res);
-		if(!cmd_progn(VCDR(VCDR(args))))
-		    res = LISP_NULL;
-		POPGC;
+		rep_PUSHGC(gc_res, res);
+		if(!Fprogn(rep_CDR(rep_CDR(args))))
+		    res = rep_NULL;
+		rep_POPGC;
 	    }
 	}
 	else
-	    res = LISP_NULL;
-	POPGC;
+	    res = rep_NULL;
+	rep_POPGC;
 	return(res);
     }
-    return signal_missing_arg(CONSP(args) ? 2 : 1);
+    return rep_signal_missing_arg(rep_CONSP(args) ? 2 : 1);
 }
 
-_PR VALUE cmd_while(VALUE);
-DEFUN("while", cmd_while, subr_while, (VALUE args), V_SF, DOC_while) /*
-::doc:while::
+DEFUN("while", Fwhile, Swhile, (repv args), rep_SF) /*
+::doc:Swhile::
 while CONDITION FORMS...
 
 Eval CONDITION, if it is non-nil then execute FORMS and repeat the
 procedure, else return nil.
 ::end:: */
 {
-    if(CONSP(args))
+    if(rep_CONSP(args))
     {
-	GC_root gc_args;
-	VALUE cond = VCAR(args), wval, body = VCDR(args);
-	PUSHGC(gc_args, args);
-	while((wval = cmd_eval(cond)) && !NILP(wval))
+	rep_GC_root gc_args;
+	repv cond = rep_CAR(args), wval, body = rep_CDR(args);
+	rep_PUSHGC(gc_args, args);
+	while((wval = Feval(cond)) && !rep_NILP(wval))
 	{
-	    TEST_INT;
-	    if(INT_P || !cmd_progn(body))
+	    rep_TEST_INT;
+	    if(rep_INTERRUPTP || !Fprogn(body))
 	    {
-		wval = LISP_NULL;
+		wval = rep_NULL;
 		break;
 	    }
 	}
-	POPGC;
+	rep_POPGC;
 	if(!wval)
-	    return(LISP_NULL);
-	return(sym_nil);
+	    return(rep_NULL);
+	return(Qnil);
     }
-    return signal_missing_arg(1);
+    return rep_signal_missing_arg(1);
 }
 
-_PR VALUE cmd_cond(VALUE);
-DEFUN("cond", cmd_cond, subr_cond, (VALUE args), V_SF, DOC_cond) /*
-::doc:cond::
+DEFUN("cond", Fcond, Scond, (repv args), rep_SF) /*
+::doc:Scond::
 cond (CONDITION FORMS... ) ...
 
 Find the first CONDITION which has a value of t when eval'ed, then perform
@@ -1423,32 +1378,31 @@ Note the use of plain `t' on it's own for the last CONDITION, this is
 like the last else in an else-if statement in C.
 ::end:: */
 {
-    VALUE res = sym_nil;
-    GC_root gc_args;
-    PUSHGC(gc_args, args);
-    while(CONSP(args) && CONSP(VCAR(args)))
+    repv res = Qnil;
+    rep_GC_root gc_args;
+    rep_PUSHGC(gc_args, args);
+    while(rep_CONSP(args) && rep_CONSP(rep_CAR(args)))
     {
-	VALUE cndlist = VCAR(args);
-	if(!(res = cmd_eval(VCAR(cndlist))))
+	repv cndlist = rep_CAR(args);
+	if(!(res = Feval(rep_CAR(cndlist))))
 	    break;
-	if(!NILP(res))
+	if(!rep_NILP(res))
 	{
-	    if(CONSP(VCDR(cndlist)))
+	    if(rep_CONSP(rep_CDR(cndlist)))
 	    {
-		if(!(res = cmd_progn(VCDR(cndlist))))
+		if(!(res = Fprogn(rep_CDR(cndlist))))
 		    break;
 	    }
 	    break;
 	}
-	args = VCDR(args);
+	args = rep_CDR(args);
     }
-    POPGC;
+    rep_POPGC;
     return(res);
 }
 
-_PR VALUE cmd_if(VALUE args);
-DEFUN("if", cmd_if, subr_if, (VALUE args), V_SF, DOC_if) /*
-::doc:if::
+DEFUN("if", Fif, Sif, (repv args), rep_SF) /*
+::doc:Sif::
 if CONDITION THEN-FORM [ELSE-FORMS...]
 
 Evaluate CONDITION, if it is non-nil then evaluate THEN-FORM and return
@@ -1456,27 +1410,26 @@ it's result. Otherwise do an implicit progn with the ELSE-FORMS returning
 its value.
 ::end:: */
 {
-    GC_root gc_args;
-    VALUE res;
-    if(!CONSP(args))
-	return signal_missing_arg(1);
-    PUSHGC(gc_args, args);
-    res = cmd_eval(VCAR(args));
-    POPGC;
-    args = VCDR(args);
-    if(res != LISP_NULL && CONSP(args))
+    rep_GC_root gc_args;
+    repv res;
+    if(!rep_CONSP(args))
+	return rep_signal_missing_arg(1);
+    rep_PUSHGC(gc_args, args);
+    res = Feval(rep_CAR(args));
+    rep_POPGC;
+    args = rep_CDR(args);
+    if(res != rep_NULL && rep_CONSP(args))
     {
-	if(!NILP(res))
-	    res = cmd_eval(VCAR(args));
+	if(!rep_NILP(res))
+	    res = Feval(rep_CAR(args));
 	else
-	    res = cmd_progn(VCDR(args));
+	    res = Fprogn(rep_CDR(args));
     }
     return res;
 }
 
-_PR VALUE cmd_and(VALUE);
-DEFUN("and", cmd_and, subr_and, (VALUE args), V_SF, DOC_and) /*
-::doc:and::
+DEFUN("and", Fand, Sand, (repv args), rep_SF) /*
+::doc:Sand::
 and FORMS...
 
 Evaluates each member of FORMS in turn, until one returns nil, and returns
@@ -1484,52 +1437,50 @@ nil. If none return nil then the value of the last form evaluated is
 returned.
 ::end:: */
 {
-    VALUE res = sym_t;
-    GC_root gc_args, gc_res;
-    PUSHGC(gc_args, args);
-    PUSHGC(gc_res, res);
-    while(res && CONSP(args) && !NILP(res))
+    repv res = Qt;
+    rep_GC_root gc_args, gc_res;
+    rep_PUSHGC(gc_args, args);
+    rep_PUSHGC(gc_res, res);
+    while(res && rep_CONSP(args) && !rep_NILP(res))
     {
-	res = cmd_eval(VCAR(args));
-	args = VCDR(args);
-	TEST_INT;
-	if(INT_P)
-	    res = LISP_NULL;
+	res = Feval(rep_CAR(args));
+	args = rep_CDR(args);
+	rep_TEST_INT;
+	if(rep_INTERRUPTP)
+	    res = rep_NULL;
     }
-    POPGC;
-    POPGC;
+    rep_POPGC;
+    rep_POPGC;
     return res;
 }
 
-_PR VALUE cmd_or(VALUE);
-DEFUN("or", cmd_or, subr_or, (VALUE args), V_SF, DOC_or) /*
-::doc:or::
+DEFUN("or", For, Sor, (repv args), rep_SF) /*
+::doc:Sor::
 or FORMS...
 
 Evaluates each member of FORMS in turn until one returns t, the result of
 which is returned. If none are t then return nil.
 ::end:: */
 {
-    VALUE res = sym_nil;
-    GC_root gc_args, gc_res;
-    PUSHGC(gc_args, args);
-    PUSHGC(gc_res, res);
-    while(res && CONSP(args) && NILP(res))
+    repv res = Qnil;
+    rep_GC_root gc_args, gc_res;
+    rep_PUSHGC(gc_args, args);
+    rep_PUSHGC(gc_res, res);
+    while(res && rep_CONSP(args) && rep_NILP(res))
     {
-	res = cmd_eval(VCAR(args));
-	args = VCDR(args);
-	TEST_INT;
-	if(INT_P)
-	    res = LISP_NULL;
+	res = Feval(rep_CAR(args));
+	args = rep_CDR(args);
+	rep_TEST_INT;
+	if(rep_INTERRUPTP)
+	    res = rep_NULL;
     }
-    POPGC;
-    POPGC;
+    rep_POPGC;
+    rep_POPGC;
     return res;
 }
 
-_PR VALUE cmd_apply(VALUE);
-DEFUN("apply", cmd_apply, subr_apply, (VALUE args), V_SubrN, DOC_apply) /*
-::doc:apply::
+DEFUN("apply", Fapply, Sapply, (repv args), rep_SubrN) /*
+::doc:Sapply::
 apply FUNCTION ARGS... ARG-LIST
 
 Calls FUNCTION passing all of ARGS to it as well as all elements in ARG-LIST.
@@ -1538,36 +1489,35 @@ ie,
    => 21
 ::end:: */
 {
-    VALUE list = sym_nil, *last;
+    repv list = Qnil, *last;
     last = &list;
-    if(CONSP(args))
+    if(rep_CONSP(args))
     {
-	while(CONSP(VCDR(args)))
+	while(rep_CONSP(rep_CDR(args)))
 	{
-	    if(!(*last = cmd_cons(VCAR(args), sym_nil)))
-		return(LISP_NULL);
-	    last = &VCDR(*last);
-	    args = VCDR(args);
-	    TEST_INT;
-	    if(INT_P)
-		return(LISP_NULL);
+	    if(!(*last = Fcons(rep_CAR(args), Qnil)))
+		return(rep_NULL);
+	    last = &rep_CDR(*last);
+	    args = rep_CDR(args);
+	    rep_TEST_INT;
+	    if(rep_INTERRUPTP)
+		return(rep_NULL);
 	}
-	if(!NILP(cmd_listp(VCAR(args))))
-	    *last = VCAR(args);
+	if(!rep_NILP(Flistp(rep_CAR(args))))
+	    *last = rep_CAR(args);
 	else
-	    return(cmd_signal(sym_bad_arg, LIST_1(VCAR(args))));
-	return(cmd_funcall(list));
+	    return(Fsignal(Qbad_arg, rep_LIST_1(rep_CAR(args))));
+	return(Ffuncall(list));
     }
-    return signal_missing_arg(1);
+    return rep_signal_missing_arg(1);
 }
 
 DEFSTRING(r_str, "r");
 DEFSTRING(no_load_file, "Can't open lisp-file");
 
-_PR VALUE cmd_load(VALUE file, VALUE noerr_p, VALUE nopath_p, VALUE nosuf_p);
-DEFUN_INT("load", cmd_load, subr_load, (VALUE file, VALUE noerr_p, VALUE nopath_p, VALUE nosuf_p), V_Subr4, DOC_load, "fLisp file to load:") /*
-::doc:load::
-load FILE [NO-ERROR-P] [NO-PATH-P] [NO-SUFFIX-P]
+DEFUN_INT("load", Fload, Sload, (repv file, repv noerr_p, repv nopath_p, repv nosuf_p), rep_Subr4, "fLisp file to load:") /*
+::doc:Sload::
+load FILE [NO-rep_ERROR-P] [NO-PATH-P] [NO-SUFFIX-P]
 
 Attempt to open and then read-and-eval the file of Lisp code FILE.
 
@@ -1575,7 +1525,7 @@ For each directory named in the variable `load-path' tries the value of
 FILE with `.jlc' (compiled-lisp) appended to it, then with `.jl' appended
 to it, finally tries FILE without modification.
 
-If NO-ERROR-P is non-nil no error is signalled if FILE can't be found.
+If NO-rep_ERROR-P is non-nil no error is signalled if FILE can't be found.
 If NO-PATH-P is non-nil the `load-path' variable is not used, just the value
 of FILE.
 If NO-SUFFIX-P is non-nil no suffixes are appended to FILE.
@@ -1585,79 +1535,76 @@ loaded and a warning is displayed.
 ::end:: */
 {
     /* Avoid the need to protect these args from GC. */
-    bool no_error_p = !NILP(noerr_p), no_suffix_p = !NILP(nosuf_p);
+    rep_bool no_error_p = !rep_NILP(noerr_p), no_suffix_p = !rep_NILP(nosuf_p);
 
-    VALUE name = sym_nil, path;
-    VALUE dir = LISP_NULL, try = LISP_NULL;
+    repv name = Qnil, path;
+    repv dir = rep_NULL, try = rep_NULL;
 
 #ifdef HAVE_DYNAMIC_LOADING
-    bool trying_dl = FALSE;
+    rep_bool trying_dl = rep_FALSE;
 #endif
 
-    GC_root gc_file, gc_name, gc_path, gc_dir, gc_try;
+    rep_GC_root gc_file, gc_name, gc_path, gc_dir, gc_try;
 
-    DECLARE1(file, STRINGP);
-    if(NILP(nopath_p))
+    rep_DECLARE1(file, rep_STRINGP);
+    if(rep_NILP(nopath_p))
     {
-	path = cmd_symbol_value(sym_load_path, sym_nil);
+	path = Fsymbol_value(Qload_path, Qnil);
 	if(!path)
-	    return(LISP_NULL);
+	    return(rep_NULL);
     }
     else
-	path = cmd_cons(null_string(), sym_nil);
+	path = Fcons(rep_null_string(), Qnil);
 
-    PUSHGC(gc_name, name);
-    PUSHGC(gc_file, file);
-    PUSHGC(gc_path, path);
-    PUSHGC(gc_dir, dir);
-    PUSHGC(gc_try, try);
+    rep_PUSHGC(gc_name, name);
+    rep_PUSHGC(gc_file, file);
+    rep_PUSHGC(gc_path, path);
+    rep_PUSHGC(gc_dir, dir);
+    rep_PUSHGC(gc_try, try);
 
     /* Scan the path for the file to load. */
 research:
-    while(NILP(name) && CONSP(path))
+    while(rep_NILP(name) && rep_CONSP(path))
     {
-	dir = cmd_file_name_as_directory(STRINGP(VCAR(path))
-					 ? VCAR(path)
-					 : null_string());
-	if(dir == LISP_NULL || !STRINGP(dir))
+	dir = Ffile_name_as_directory(rep_STRINGP(rep_CAR(path))
+					 ? rep_CAR(path)
+					 : rep_null_string());
+	if(dir == rep_NULL || !rep_STRINGP(dir))
 	    goto path_error;
 
 	if(!no_suffix_p)
 	{
-	    VALUE tem;
+	    repv tem;
 	    int i;
-	    static char *lisp_suffixes[3] = { ".jl", ".jlc", ".jld" };
-	    char **suffixes;
-
-#ifdef HAVE_DYNAMIC_LOADING
-	    static char *dl_suffixes[1] = { "." DYNAMIC_FILE_SUFFIX };
-	    suffixes = (trying_dl) ? dl_suffixes : lisp_suffixes;
-	    if(trying_dl)
-		i = 0;
-	    else
-#else
-	    suffixes = lisp_suffixes;
-#endif
-
-#ifdef DUMPED
+	    static char *suffixes[3] = { ".jl", ".jlc", ".jld" };
+#ifdef rep_DUMPED
 	    i = 2;
 #else
 	    i = 1;
 #endif
+#ifdef HAVE_DYNAMIC_LOADING
+	    if(trying_dl)
+		i = 0;
+#endif
 	    for(; i >= 0; i--)
 	    {
-		try = concat3(VSTR(dir), VSTR(file), suffixes[i]);
-		tem = cmd_file_exists_p(try);
+#ifdef HAVE_DYNAMIC_LOADING
+		if (trying_dl)
+		    try = rep_concat4(rep_STR(dir), "lib", rep_STR(file), ".la");
+		else
+#endif
+		    try = rep_concat3(rep_STR(dir), rep_STR(file), suffixes[i]);
+		tem = Ffile_exists_p(try);
 		if(!tem)
 		    goto path_error;
-		if(!NILP(tem))
+		if(!rep_NILP(tem))
 		{
-		    if(!NILP(name))
+		    if(!rep_NILP(name))
 		    {
-			if(file_newer_than(try, name))
+			if(rep_file_newer_than(try, name))
 			{
-			    messagef("Warning: %s newer than %s, using %s",
-				     VSTR(try), VSTR(name), VSTR(try));
+			    if (rep_message_fun != 0)
+				(*rep_message_fun)(rep_messagef,"Warning: %s newer than %s, using %s", rep_STR(try), rep_STR(name), rep_STR(try));
 			    name = try;
 			}
 		    }
@@ -1666,107 +1613,107 @@ research:
 		}
 	    }
 	}
-	if(NILP(name))
+	if(rep_NILP(name))
 	{
 	    /* Try without a suffix */
-	    VALUE tem;
-	    try = concat2(VSTR(dir), VSTR(file));
-	    tem = cmd_file_exists_p(try);
+	    repv tem;
+	    try = rep_concat2(rep_STR(dir), rep_STR(file));
+	    tem = Ffile_exists_p(try);
 	    if(!tem)
 		goto path_error;
-	    if(!NILP(tem))
+	    if(!rep_NILP(tem))
 		name = try;
 	}
-	path = VCDR(path);
-	TEST_INT;
-	if(INT_P)
+	path = rep_CDR(path);
+	rep_TEST_INT;
+	if(rep_INTERRUPTP)
 	    goto path_error;
     }
 
 #ifdef HAVE_DYNAMIC_LOADING
-    if(NILP(name) && !trying_dl)
+    if(rep_NILP(name) && !trying_dl)
     {
-	if(NILP(nopath_p))
+	if(rep_NILP(nopath_p))
 	{
-	    path = cmd_symbol_value(sym_dl_load_path, sym_nil);
+	    path = Fsymbol_value(Qdl_load_path, Qnil);
 	    if(!path)
-		return LISP_NULL;
+		return rep_NULL;
 	}
 	else
-	    path = LIST_1(null_string());
-	trying_dl = TRUE;
+	    path = rep_LIST_1(rep_null_string());
+	trying_dl = rep_TRUE;
 	goto research;
     }
 #endif
 
 path_error:
-    POPGC; POPGC; POPGC; POPGC; POPGC;
+    rep_POPGC; rep_POPGC; rep_POPGC; rep_POPGC; rep_POPGC;
 
-    if(NILP(name))
+    if(rep_NILP(name))
     {
 	if(!no_error_p)
-	    return signal_file_error(file);
+	    return rep_signal_file_error(file);
 	else
-	    return sym_nil;
+	    return Qnil;
     }
 
 #ifdef HAVE_DYNAMIC_LOADING
     if(trying_dl)
-	return open_dl_library(name) ? sym_t : LISP_NULL;
+	return rep_open_dl_library(name) ? Qt : rep_NULL;
     else
 #endif
     {
-	VALUE stream;
-	GC_root gc_stream;
+	repv stream;
+	rep_GC_root gc_stream;
 
-	VALUE tem;
+	repv tem;
 	int c;
 
-	PUSHGC(gc_file, file);
-	stream = cmd_open_file(name, sym_read);
-	if(!stream || !FILEP(stream))
+	rep_PUSHGC(gc_file, file);
+	stream = Fopen_file(name, Qread);
+	if(!stream || !rep_FILEP(stream))
 	{
-	    POPGC;
-       	    return LISP_NULL;
+	    rep_POPGC;
+       	    return rep_NULL;
 	}
 
-	PUSHGC(gc_stream, stream);
-	c = stream_getc(stream);
-	while((c != EOF) && (tem = readl(stream, &c)))
+	rep_PUSHGC(gc_stream, stream);
+	c = rep_stream_getc(stream);
+	while((c != EOF) && (tem = rep_readl(stream, &c)))
 	{
-	    TEST_INT;
-	    if(INT_P || !cmd_eval(tem))
+	    rep_TEST_INT;
+	    if(rep_INTERRUPTP || !Feval(tem))
 	    {
-		POPGC; POPGC;
-		return LISP_NULL;
+		rep_POPGC; rep_POPGC;
+		return rep_NULL;
 	    }
 	}
-	POPGC;
+	rep_POPGC;
 
 	/* Loading succeeded. Look for an applicable item in
 	   the after-load-alist. */
     again:
-	tem = cmd_symbol_value(sym_after_load_alist, sym_t);
-	if(tem != LISP_NULL && CONSP(tem))
+	tem = Fsymbol_value(Qafter_load_alist, Qt);
+	if(tem != rep_NULL && rep_CONSP(tem))
 	{
-	    tem = cmd_assoc(file, tem);
-	    if(tem != LISP_NULL && CONSP(tem))
+	    tem = Fassoc(file, tem);
+	    if(tem != rep_NULL && rep_CONSP(tem))
 	    {
 		/* Delete this entry */
-		cmd_set(sym_after_load_alist,
-			cmd_delq(tem, cmd_symbol_value
-				 (sym_after_load_alist, sym_t)));
+		Fset(Qafter_load_alist,
+			Fdelq(tem, Fsymbol_value
+				 (Qafter_load_alist, Qt)));
 
 		/* Then evaluate it */
-		cmd_progn(VCDR(tem));
+		Fprogn(rep_CDR(tem));
 
 		/* Try for another entry */
 		goto again;
 	    }
 	}
-	POPGC;
+	rep_POPGC;
 
-	return sym_t;
+	return Qt;
     }
 }
 
@@ -1775,76 +1722,72 @@ path_error:
  */
 
 #define APPLY_OP(op)					\
-    if(CONSP(args) && INTP(VCAR(args)))			\
+    if(rep_CONSP(args) && rep_INTP(rep_CAR(args)))			\
     {							\
-	long sum = VINT(VCAR(args));			\
+	long sum = rep_INT(rep_CAR(args));			\
 	int i = 2;					\
-	args = VCDR(args);				\
-	while(CONSP(args))				\
+	args = rep_CDR(args);				\
+	while(rep_CONSP(args))				\
 	{						\
-	    if(!INTP(VCAR(args)))			\
-		return signal_arg_error(VCAR(args), i);	\
-	    sum = sum op VINT(VCAR(args));		\
-	    args = VCDR(args);				\
+	    if(!rep_INTP(rep_CAR(args)))			\
+		return rep_signal_arg_error(rep_CAR(args), i);	\
+	    sum = sum op rep_INT(rep_CAR(args));		\
+	    args = rep_CDR(args);				\
 	    i++;					\
-	    TEST_INT;					\
-	    if(INT_P)					\
-		return(LISP_NULL);			\
+	    rep_TEST_INT;					\
+	    if(rep_INTERRUPTP)					\
+		return(rep_NULL);			\
 	}						\
-	return(MAKE_INT(sum));				\
+	return(rep_MAKE_INT(sum));				\
     }							\
-    return (CONSP(args)					\
-	    ? signal_arg_error(VCAR(args), 1)		\
-	    : signal_missing_arg(1));
+    return (rep_CONSP(args)					\
+	    ? rep_signal_arg_error(rep_CAR(args), 1)		\
+	    : rep_signal_missing_arg(1));
 
-_PR VALUE cmd_plus(VALUE);
-DEFUN("+", cmd_plus, subr_plus, (VALUE args), V_SubrN, DOC_plus) /*
-::doc:plus::
+DEFUN("+", Fplus, Splus, (repv args), rep_SubrN) /*
+::doc:S+::
 + NUMBERS...
 
 Adds all NUMBERS together. If no arguments are given returns 0.
 ::end:: */
 {
-    if(NILP(args))
-	return MAKE_INT(0);
+    if(rep_NILP(args))
+	return rep_MAKE_INT(0);
     APPLY_OP( + )
 }
 
-_PR VALUE cmd_minus(VALUE);
-DEFUN("-", cmd_minus, subr_minus, (VALUE args), V_SubrN, DOC_minus) /*
-::doc:minus::
+DEFUN("-", Fminus, Sminus, (repv args), rep_SubrN) /*
+::doc:S-::
 - NUMBER [NUMBERS...]
 
 Either returns the negation of NUMBER or the value of NUMBER minus
 NUMBERS
 ::end:: */
 {
-    if(CONSP(args))
+    if(rep_CONSP(args))
     {
-	if(!CONSP(VCDR(args)))
-	    return(MAKE_INT(-VINT(VCAR(args))));
+	if(!rep_CONSP(rep_CDR(args)))
+	    return(rep_MAKE_INT(-rep_INT(rep_CAR(args))));
 	else
 	    APPLY_OP( - )
     }
-    return signal_missing_arg(1);
+    return rep_signal_missing_arg(1);
 }
 
-_PR VALUE cmd_product(VALUE);
-DEFUN("*", cmd_product, subr_product, (VALUE args), V_SubrN, DOC_product) /*
-::doc:product::
+DEFUN("*", Fproduct, Sproduct, (repv args), rep_SubrN) /*
+::doc:S*::
 * NUMBERS...
 
 Multiplies all NUMBERS together. If no numbers are given returns 1.
 ::end:: */
 {
-    if(NILP(args))
-	return MAKE_INT(1);
+    if(rep_NILP(args))
+	return rep_MAKE_INT(1);
     APPLY_OP( * )
 }
 
-_PR VALUE cmd_divide(VALUE);
-DEFUN("/", cmd_divide, subr_divide, (VALUE args), V_SubrN, DOC_divide) /*
-::doc:divide::
+DEFUN("/", Fdivide, Sdivide, (repv args), rep_SubrN) /*
+::doc:S/::
 / NUMBERS...
 
 Divides NUMBERS (in left-to-right order), ie,
@@ -1852,48 +1795,46 @@ Divides NUMBERS (in left-to-right order), ie,
    => 10
 ::end:: */
 {
-    if(CONSP(args) && INTP(VCAR(args)))
+    if(rep_CONSP(args) && rep_INTP(rep_CAR(args)))
     {
-	long sum = VINT(VCAR(args));
+	long sum = rep_INT(rep_CAR(args));
 	int i = 1;
-	args = VCDR(args);
-	while(CONSP(args))
+	args = rep_CDR(args);
+	while(rep_CONSP(args))
 	{
-	    if(!INTP(VCAR(args)))
-	       return signal_arg_error(VCAR(args), i);
-	    if(VINT(VCAR(args)) == 0)
-		return cmd_signal(sym_arith_error, LIST_1(VAL(&div_zero)));
-	    sum = sum / VINT(VCAR(args));
-	    args = VCDR(args);
+	    if(!rep_INTP(rep_CAR(args)))
+	       return rep_signal_arg_error(rep_CAR(args), i);
+	    if(rep_INT(rep_CAR(args)) == 0)
+		return Fsignal(Qarith_error, rep_LIST_1(rep_VAL(&div_zero)));
+	    sum = sum / rep_INT(rep_CAR(args));
+	    args = rep_CDR(args);
 	    i++;
-	    TEST_INT;
-	    if(INT_P)
-		return(LISP_NULL);
+	    rep_TEST_INT;
+	    if(rep_INTERRUPTP)
+		return(rep_NULL);
 	}
-	return(MAKE_INT(sum));
+	return(rep_MAKE_INT(sum));
     }
-    return (CONSP(args)
-	    ? signal_arg_error(VCAR(args), 1) : signal_missing_arg(1));
+    return (rep_CONSP(args)
+	    ? rep_signal_arg_error(rep_CAR(args), 1) : rep_signal_missing_arg(1));
 }
 
-_PR VALUE cmd_remainder(VALUE n1, VALUE n2);
-DEFUN("%", cmd_remainder, subr_remainder, (VALUE n1, VALUE n2), V_Subr2, DOC_remainder) /*
-::doc:remainder::
+DEFUN("%", Fremainder, Sremainder, (repv n1, repv n2), rep_Subr2) /*
+::doc:S%::
 % DIVIDEND DIVISOR
 
 Returns the integer remainder after dividing DIVIDEND by DIVISOR.
 ::end:: */
 {
-    DECLARE1(n1, INTP);
-    DECLARE2(n2, INTP);
-    if(VINT(n2) == 0)
-	return cmd_signal(sym_arith_error, LIST_1(VAL(&div_zero)));
-    return MAKE_INT(VINT(n1) % VINT(n2));
+    rep_DECLARE1(n1, rep_INTP);
+    rep_DECLARE2(n2, rep_INTP);
+    if(rep_INT(n2) == 0)
+	return Fsignal(Qarith_error, rep_LIST_1(rep_VAL(&div_zero)));
+    return rep_MAKE_INT(rep_INT(n1) % rep_INT(n2));
 }
 
-_PR VALUE cmd_mod(VALUE n1, VALUE n2);
-DEFUN("mod", cmd_mod, subr_mod, (VALUE n1, VALUE n2), V_Subr2, DOC_mod) /*
-::doc:mod::
+DEFUN("mod", Fmod, Smod, (repv n1, repv n2), rep_Subr2) /*
+::doc:Smod::
 mod DIVIDEND DIVISOR
 
 Returns the value of DIVIDEND modulo DIVISOR; unlike the % (remainder)
@@ -1907,48 +1848,45 @@ and that floating point division is used.
 ::end:: */
 {
     long tem;
-    DECLARE1(n1, INTP);
-    DECLARE2(n2, INTP);
-    if(VINT(n2) == 0)
-	return cmd_signal(sym_arith_error, LIST_1(VAL(&div_zero)));
+    rep_DECLARE1(n1, rep_INTP);
+    rep_DECLARE2(n2, rep_INTP);
+    if(rep_INT(n2) == 0)
+	return Fsignal(Qarith_error, rep_LIST_1(rep_VAL(&div_zero)));
 
     /* This code from GNU Emacs */
-    tem = VINT(n1) % VINT(n2);
+    tem = rep_INT(n1) % rep_INT(n2);
     /* If the "remainder" comes out with the wrong sign, fix it.  */
-    if (VINT(n2) < 0 ? tem > 0 : tem < 0)
-	tem += VINT(n2);
+    if (rep_INT(n2) < 0 ? tem > 0 : tem < 0)
+	tem += rep_INT(n2);
 
-    return MAKE_INT(tem);
+    return rep_MAKE_INT(tem);
 }
 
-_PR VALUE cmd_lognot(VALUE);
-DEFUN("lognot", cmd_lognot, subr_lognot, (VALUE num), V_Subr1, DOC_lognot) /*
-::doc:lognot::
+DEFUN("lognot", Flognot, Slognot, (repv num), rep_Subr1) /*
+::doc:Slognot::
 lognot NUMBER
 
 Returns the bitwise logical `not' of NUMBER.
 ::end:: */
 {
-    DECLARE1(num, INTP);
-    return(MAKE_INT(~VINT(num)));
+    rep_DECLARE1(num, rep_INTP);
+    return(rep_MAKE_INT(~rep_INT(num)));
 }
 
-_PR VALUE cmd_not(VALUE);
-DEFUN("not", cmd_not, subr_not, (VALUE arg), V_Subr1, DOC_not) /*
-::doc:not::
+DEFUN("not", Fnot, Snot, (repv arg), rep_Subr1) /*
+::doc:Snot::
 not ARG
 
 If ARG is nil returns t, else returns nil.
 ::end:: */
 {
-    if(NILP(arg))
-	return(sym_t);
-    return(sym_nil);
+    if(rep_NILP(arg))
+	return(Qt);
+    return(Qnil);
 }
 
-_PR VALUE cmd_logior(VALUE);
-DEFUN("logior", cmd_logior, subr_logior, (VALUE args), V_SubrN, DOC_logior) /*
-::doc:logior::
+DEFUN("logior", Flogior, Slogior, (repv args), rep_SubrN) /*
+::doc:Slogior::
 logior NUMBERS...
 
 Returns the bitwise logical `inclusive-or' of its arguments.
@@ -1957,9 +1895,8 @@ Returns the bitwise logical `inclusive-or' of its arguments.
     APPLY_OP( | )
 }
 
-_PR VALUE cmd_logxor(VALUE);
-DEFUN("logxor", cmd_logxor, subr_logxor, (VALUE args), V_SubrN, DOC_logxor) /*
-::doc:logxor::
+DEFUN("logxor", Flogxor, Slogxor, (repv args), rep_SubrN) /*
+::doc:Slogxor::
 logxor NUMBERS...
 
 Returns the bitwise logical `exclusive-or' of its arguments.
@@ -1968,9 +1905,8 @@ Returns the bitwise logical `exclusive-or' of its arguments.
     APPLY_OP( ^ )
 }
 
-_PR VALUE cmd_logand(VALUE);
-DEFUN("logand", cmd_logand, subr_logand, (VALUE args), V_SubrN, DOC_logand) /*
-::doc:logand::
+DEFUN("logand", Flogand, Slogand, (repv args), rep_SubrN) /*
+::doc:Slogand::
 logand NUMBERS...
 
 Returns the bitwise logical `and' of its arguments.
@@ -1979,9 +1915,8 @@ Returns the bitwise logical `and' of its arguments.
     APPLY_OP( & )
 }
 
-_PR VALUE cmd_equal(VALUE, VALUE);
-DEFUN("equal", cmd_equal, subr_equal, (VALUE val1, VALUE val2), V_Subr2, DOC_equal) /*
-::doc:equal::
+DEFUN("equal", Fequal, Sequal, (repv val1, repv val2), rep_Subr2) /*
+::doc:Sequal::
 equal VALUE1 VALUE2
 
 Compares VALUE1 and VALUE2, compares the actual structure of the objects not
@@ -1990,39 +1925,36 @@ strings built from the same characters in the same order even if the strings'
 location in memory is different.
 ::end:: */
 {
-    return (value_cmp(val1, val2) == 0) ? sym_t : sym_nil;
+    return (rep_value_cmp(val1, val2) == 0) ? Qt : Qnil;
 }
 
-_PR VALUE cmd_eq(VALUE, VALUE);
-DEFUN("eq", cmd_eq, subr_eq, (VALUE val1, VALUE val2), V_Subr2, DOC_eq) /*
-::doc:eq::
+DEFUN("eq", Feq, Seq, (repv val1, repv val2), rep_Subr2) /*
+::doc:Seq::
 eq VALUE1 VALUE2
 
 Returns t if VALUE1 and VALUE2 are one and the same object. Note that
 this may or may not be true for numbers of the same value (see `eql').
 ::end:: */
 {
-    return (val1 == val2) ? sym_t : sym_nil;
+    return (val1 == val2) ? Qt : Qnil;
 }
 
-_PR VALUE cmd_eql(VALUE arg1, VALUE arg2);
-DEFUN("eql", cmd_eql, subr_eql, (VALUE arg1, VALUE arg2), V_Subr2, DOC_eql) /*
-::doc:eql::
+DEFUN("eql", Feql, Seql, (repv arg1, repv arg2), rep_Subr2) /*
+::doc:Seql::
 eql ARG1 ARG2
 Similar to `eq' except that numbers (integers, characters) with the same
 value will always be considered `eql' (this may or may not be the case
 with `eq'.
 ::end:: */
 {
-    if(INTP(arg1) && INTP(arg2))
-	return(VINT(arg1) == VINT(arg2) ? sym_t : sym_nil);
+    if(rep_INTP(arg1) && rep_INTP(arg2))
+	return(rep_INT(arg1) == rep_INT(arg2) ? Qt : Qnil);
     else
-	return(arg1 == arg2 ? sym_t : sym_nil);
+	return(arg1 == arg2 ? Qt : Qnil);
 }
 
-_PR VALUE cmd_string_head_eq(VALUE, VALUE);
-DEFUN("string-head-eq", cmd_string_head_eq, subr_string_head_eq, (VALUE str1, VALUE str2), V_Subr2, DOC_string_head_eq) /*
-::doc:string_head_eq::
+DEFUN("string-head-eq", Fstring_head_eq, Sstring_head_eq, (repv str1, repv str2), rep_Subr2) /*
+::doc:Sstring-head-eq::
 string-head-eq STRING1 STRING2
 
 Returns t if STRING2 matches the beginning of STRING1, ie,
@@ -2033,74 +1965,71 @@ Returns t if STRING2 matches the beginning of STRING1, ie,
 ::end:: */
 {
     u_char *s1, *s2;
-    DECLARE1(str1, STRINGP);
-    DECLARE2(str2, STRINGP);
-    s1 = VSTR(str1);
-    s2 = VSTR(str2);
+    rep_DECLARE1(str1, rep_STRINGP);
+    rep_DECLARE2(str2, rep_STRINGP);
+    s1 = rep_STR(str1);
+    s2 = rep_STR(str2);
     while(*s1 && *s2)
     {
 	if(*s1++ != *s2++)
-	    return(sym_nil);
+	    return(Qnil);
     }
     if(*s1 || (*s1 == *s2))
-	return(sym_t);
-    return(sym_nil);
+	return(Qt);
+    return(Qnil);
 }
 
-_PR VALUE cmd_num_eq(VALUE num1, VALUE num2);
-DEFUN("=", cmd_num_eq, subr_num_eq, (VALUE num1, VALUE num2), V_Subr2, DOC_num_eq) /*
-::doc:num_eq::
+DEFUN("=", Fnum_eq, Snum_eq, (repv num1, repv num2), rep_Subr2) /*
+::doc:S=::
 = NUMBER1 NUMBER2
 
 Returns t if NUMBER1 and NUMBER2 are equal.
 ::end:: */
 {
-    DECLARE1(num1, INTP);
-    DECLARE2(num2, INTP);
-    if(VINT(num1) == VINT(num2))
-	return(sym_t);
-    return(sym_nil);
+    rep_DECLARE1(num1, rep_INTP);
+    rep_DECLARE2(num2, rep_INTP);
+    if(rep_INT(num1) == rep_INT(num2))
+	return(Qt);
+    return(Qnil);
 }
 
-_PR VALUE cmd_num_noteq(VALUE num1, VALUE num2);
-DEFUN("/=", cmd_num_noteq, subr_num_noteq, (VALUE num1, VALUE num2), V_Subr2, DOC_num_noteq) /*
-::doc:num_noteq::
+DEFUN("/=", Fnum_noteq, Snum_noteq, (repv num1, repv num2), rep_Subr2) /*
+::doc:S/=::
 /= NUMBER1 NUMBER2
 
 Returns t if NUMBER1 and NUMBER2 are unequal.
 ::end:: */
 {
-    DECLARE1(num1, INTP);
-    DECLARE2(num2, INTP);
-    if(VINT(num1) != VINT(num2))
-	return(sym_t);
-    return(sym_nil);
+    rep_DECLARE1(num1, rep_INTP);
+    rep_DECLARE2(num2, rep_INTP);
+    if(rep_INT(num1) != rep_INT(num2))
+	return(Qt);
+    return(Qnil);
 }
 
 #define APPLY_COMPARISON(op)				\
-    if(CONSP(args) && CONSP(VCDR(args)))		\
+    if(rep_CONSP(args) && rep_CONSP(rep_CDR(args)))		\
     {							\
-	VALUE pred = VCAR(args);			\
+	repv pred = rep_CAR(args);			\
 	int i = 2;					\
-	args = VCDR(args);				\
-	while(CONSP(args))				\
+	args = rep_CDR(args);				\
+	while(rep_CONSP(args))				\
 	{						\
-	    if(!(value_cmp(pred, VCAR(args)) op 0))	\
-		return sym_nil;				\
-	    pred = VCAR(args);				\
-	    args = VCDR(args);				\
+	    if(!(rep_value_cmp(pred, rep_CAR(args)) op 0))	\
+		return Qnil;				\
+	    pred = rep_CAR(args);				\
+	    args = rep_CDR(args);				\
 	    i++;					\
-	    TEST_INT;					\
-	    if(INT_P)					\
-		return(LISP_NULL);			\
+	    rep_TEST_INT;					\
+	    if(rep_INTERRUPTP)					\
+		return(rep_NULL);			\
 	}						\
-	return sym_t;					\
+	return Qt;					\
     }							\
-    return signal_missing_arg(CONSP(args) ? 2 : 1);					\
+    return rep_signal_missing_arg(rep_CONSP(args) ? 2 : 1);					\
 
-_PR VALUE cmd_gtthan(VALUE);
-DEFUN(">", cmd_gtthan, subr_gtthan, (VALUE args), V_SubrN, DOC_gtthan) /*
-::doc:gtthan::
+DEFUN(">", Fgtthan, Sgtthan, (repv args), rep_SubrN) /*
+::doc:S>::
 > ARG1 ARG2 [ARG3 ...]
 
 Returns t if ARG1 is greater than ARG2, and if ARG2 is greater than ARG3,
@@ -2111,9 +2040,8 @@ strings, positions, marks, etc as well.
     APPLY_COMPARISON(>)
 }
 
-_PR VALUE cmd_gethan(VALUE);
-DEFUN(">=", cmd_gethan, subr_gethan, (VALUE args), V_SubrN, DOC_gethan) /*
-::doc:gethan::
+DEFUN(">=", Fgethan, Sgethan, (repv args), rep_SubrN) /*
+::doc:S>=::
 >= ARG1 ARG2 [ARG3 ...]
 
 Returns t if ARG1 is greater-or-equal than ARG2. Note that this command
@@ -2123,9 +2051,8 @@ isn't limited to numbers, it can do strings, positions, marks, etc as well.
     APPLY_COMPARISON(>=)
 }
 
-_PR VALUE cmd_ltthan(VALUE);
-DEFUN("<", cmd_ltthan, subr_ltthan, (VALUE args), V_SubrN, DOC_ltthan) /*
-::doc:ltthan::
+DEFUN("<", Fltthan, Sltthan, (repv args), rep_SubrN) /*
+::doc:S<::
 < ARG1 ARG2 [ARG3 ...]
 
 Returns t if ARG1 is less than ARG2. Note that this command isn't limited to
@@ -2135,9 +2062,8 @@ numbers, it can do strings, positions, marks, etc as well.
     APPLY_COMPARISON(<)
 }
 
-_PR VALUE cmd_lethan(VALUE);
-DEFUN("<=", cmd_lethan, subr_lethan, (VALUE args), V_SubrN, DOC_lethan) /*
-::doc:lethan::
+DEFUN("<=", Flethan, Slethan, (repv args), rep_SubrN) /*
+::doc:S<=::
 <= ARG1 ARG2 [ARG3 ...]
 
 Returns t if ARG1 is less-or-equal than ARG2. Note that this command isn't
@@ -2147,420 +2073,355 @@ limited to numbers, it can do strings, positions, marks, etc as well.
     APPLY_COMPARISON(<=)
 }
 
-_PR VALUE cmd_max(VALUE);
-DEFUN("max", cmd_max, subr_max, (VALUE args), V_SubrN, DOC_max) /*
-::doc:max::
+DEFUN("max", Fmax, Smax, (repv args), rep_SubrN) /*
+::doc:Smax::
 max ARGS...
 
 Returns the greatest of its arguments. There must be at least two
 arguments.
 ::end:: */
 {
-    VALUE max;
-    if(!CONSP(args) || !CONSP(VCDR(args)))
-	return signal_missing_arg(CONSP(args) ? 2 : 1);
-    max = VCAR(args);
-    args = VCDR(args);
-    while(CONSP(args))
+    repv max;
+    if(!rep_CONSP(args) || !rep_CONSP(rep_CDR(args)))
+	return rep_signal_missing_arg(rep_CONSP(args) ? 2 : 1);
+    max = rep_CAR(args);
+    args = rep_CDR(args);
+    while(rep_CONSP(args))
     {
-	VALUE tem = VCAR(args);
-	args = VCDR(args);
-	max = (value_cmp(max, tem) >= 0) ? max : tem;
-	TEST_INT;
-	if(INT_P)
-	    return LISP_NULL;
+	repv tem = rep_CAR(args);
+	args = rep_CDR(args);
+	max = (rep_value_cmp(max, tem) >= 0) ? max : tem;
+	rep_TEST_INT;
+	if(rep_INTERRUPTP)
+	    return rep_NULL;
     }
     return max;
 }
 
-_PR VALUE cmd_min(VALUE);
-DEFUN("min", cmd_min, subr_min, (VALUE args), V_SubrN, DOC_min) /*
-::doc:min::
+DEFUN("min", Fmin, Smin, (repv args), rep_SubrN) /*
+::doc:Smin::
 min ARGS...
 
 Returns the smallest of its arguments. There must be at least two
 arguments.
 ::end:: */
 {
-    VALUE min;
-    if(!CONSP(args) || !CONSP(VCDR(args)))
-	return signal_missing_arg(CONSP(args) ? 2 : 1);
-    min = VCAR(args);
-    args = VCDR(args);
-    while(CONSP(args))
+    repv min;
+    if(!rep_CONSP(args) || !rep_CONSP(rep_CDR(args)))
+	return rep_signal_missing_arg(rep_CONSP(args) ? 2 : 1);
+    min = rep_CAR(args);
+    args = rep_CDR(args);
+    while(rep_CONSP(args))
     {
-	VALUE tem = VCAR(args);
-	args = VCDR(args);
-	min = (value_cmp(min, tem) <= 0) ? min : tem;
-	TEST_INT;
-	if(INT_P)
-	    return LISP_NULL;
+	repv tem = rep_CAR(args);
+	args = rep_CDR(args);
+	min = (rep_value_cmp(min, tem) <= 0) ? min : tem;
+	rep_TEST_INT;
+	if(rep_INTERRUPTP)
+	    return rep_NULL;
     }
     return min;
 }
 
-_PR VALUE cmd_plus1(VALUE);
-DEFUN("1+", cmd_plus1, subr_plus1, (VALUE num), V_Subr1, DOC_plus1) /*
-::doc:plus1::
+DEFUN("1+", Fplus1, Splus1, (repv num), rep_Subr1) /*
+::doc:S1+::
 1+ NUMBER
 
 Return NUMBER plus 1.
 ::end:: */
 {
-    DECLARE1(num, INTP);
-    return(MAKE_INT(VINT(num) + 1));
+    rep_DECLARE1(num, rep_INTP);
+    return(rep_MAKE_INT(rep_INT(num) + 1));
 }
 
-_PR VALUE cmd_sub1(VALUE);
-DEFUN("1-", cmd_sub1, subr_sub1, (VALUE num), V_Subr1, DOC_sub1) /*
-::doc:sub1::
+DEFUN("1-", Fsub1, Ssub1, (repv num), rep_Subr1) /*
+::doc:S1-::
 1- NUMBER
 
 Return NUMBER minus 1.
 ::end:: */
 {
-    DECLARE1(num, INTP);
-    return(MAKE_INT(VINT(num) - 1));
+    rep_DECLARE1(num, rep_INTP);
+    return(rep_MAKE_INT(rep_INT(num) - 1));
 }
 
-_PR VALUE cmd_lsh(VALUE, VALUE);
-DEFUN("lsh", cmd_lsh, subr_lsh, (VALUE num, VALUE shift), V_Subr2, DOC_lsh) /*
-::doc:lsh::
+DEFUN("lsh", Flsh, Slsh, (repv num, repv shift), rep_Subr2) /*
+::doc:Slsh::
 lsh NUMBER COUNT
 
 Shift the bits in NUMBER by COUNT bits to the left, a negative COUNT means
 shift right.
 ::end:: */
 {
-    DECLARE1(num, INTP);
-    DECLARE2(shift, INTP);
-    if(VINT(shift) > 0)
-	return(MAKE_INT(VINT(num) << VINT(shift)));
+    rep_DECLARE1(num, rep_INTP);
+    rep_DECLARE2(shift, rep_INTP);
+    if(rep_INT(shift) > 0)
+	return(rep_MAKE_INT(rep_INT(num) << rep_INT(shift)));
     /* ensure that a zero is in the top bit. */
-    return(MAKE_INT((VINT(num) >> -VINT(shift)) & 0x7fffffff));
+    return(rep_MAKE_INT((rep_INT(num) >> -rep_INT(shift)) & 0x7fffffff));
 }
 
-_PR VALUE cmd_ash(VALUE, VALUE);
-DEFUN("ash", cmd_ash, subr_ash, (VALUE num, VALUE shift), V_Subr2, DOC_ash) /*
-::doc:ash::
+DEFUN("ash", Fash, Sash, (repv num, repv shift), rep_Subr2) /*
+::doc:Sash::
 ash NUMBER COUNT
 
 Use an arithmetic shift to shift the bits in NUMBER by COUNT bits to the left,
 a negative COUNT means shift right.
 ::end:: */
 {
-    DECLARE1(num, INTP);
-    DECLARE2(shift, INTP);
-    if(VINT(shift) > 0)
-	return(MAKE_INT(VINT(num) << VINT(shift)));
-    return(MAKE_INT(VINT(num) >> -VINT(shift)));
+    rep_DECLARE1(num, rep_INTP);
+    rep_DECLARE2(shift, rep_INTP);
+    if(rep_INT(shift) > 0)
+	return(rep_MAKE_INT(rep_INT(num) << rep_INT(shift)));
+    return(rep_MAKE_INT(rep_INT(num) >> -rep_INT(shift)));
 }
 
-_PR VALUE cmd_zerop(VALUE);
-DEFUN("zerop", cmd_zerop, subr_zerop, (VALUE num), V_Subr1, DOC_zerop) /*
-::doc:zerop::
+DEFUN("zerop", Fzerop, Szerop, (repv num), rep_Subr1) /*
+::doc:Szerop::
 zerop NUMBER
 
 t if NUMBER is zero.
 ::end:: */
 {
-    if(INTP(num) && (VINT(num) == 0))
-	return(sym_t);
-    return(sym_nil);
+    if(rep_INTP(num) && (rep_INT(num) == 0))
+	return(Qt);
+    return(Qnil);
 }
 
-_PR VALUE cmd_null(VALUE);
-DEFUN("null", cmd_null, subr_null, (VALUE arg), V_Subr1, DOC_null) /*
-::doc:null::
+DEFUN("null", Fnull, Snull, (repv arg), rep_Subr1) /*
+::doc:Snull::
 null ARG
 
 Returns t if ARG is nil.
 ::end:: */
 {
-    return NILP(arg) ? sym_t : sym_nil;
+    return rep_NILP(arg) ? Qt : Qnil;
 }
 
-_PR VALUE cmd_atom(VALUE);
-DEFUN("atom", cmd_atom, subr_atom, (VALUE arg), V_Subr1, DOC_atom) /*
-::doc:atom::
+DEFUN("atom", Fatom, Satom, (repv arg), rep_Subr1) /*
+::doc:Satom::
 atom ARG
 
 Returns t if ARG is not a cons-cell.
 ::end:: */
 {
-    return CONSP(arg) ? sym_nil : sym_t;
+    return rep_CONSP(arg) ? Qnil : Qt;
 }
 
-_PR VALUE cmd_consp(VALUE);
-DEFUN("consp", cmd_consp, subr_consp, (VALUE arg), V_Subr1, DOC_consp) /*
-::doc:consp::
+DEFUN("consp", Fconsp, Sconsp, (repv arg), rep_Subr1) /*
+::doc:Sconsp::
 consp ARG
 
 Returns t if ARG is a cons-cell.
 ::end:: */
 {
-    return CONSP(arg) ? sym_t : sym_nil;
+    return rep_CONSP(arg) ? Qt : Qnil;
 }
 
-_PR VALUE cmd_listp(VALUE);
-DEFUN("listp", cmd_listp, subr_listp, (VALUE arg), V_Subr1, DOC_listp) /*
-::doc:listp::
+DEFUN("listp", Flistp, Slistp, (repv arg), rep_Subr1) /*
+::doc:Slistp::
 listp ARG
 
 Returns t if ARG is a list, (either a cons-cell or nil).
 ::end:: */
 {
-    return LISTP(arg) ? sym_t : sym_nil;
+    return rep_LISTP(arg) ? Qt : Qnil;
 }
 
-_PR VALUE cmd_numberp(VALUE);
-DEFUN("numberp", cmd_numberp, subr_numberp, (VALUE arg), V_Subr1, DOC_numberp) /*
-::doc:numberp::
+DEFUN("numberp", Fnumberp, Snumberp, (repv arg), rep_Subr1) /*
+::doc:Snumberp::
 numberp ARG
 
 Return t if ARG is a number.
 ::end:: */
 {
-    return INTP(arg) ? sym_t : sym_nil;
+    return rep_INTP(arg) ? Qt : Qnil;
 }
 
-_PR VALUE cmd_integerp(VALUE);
-DEFUN("integerp", cmd_integerp, subr_integerp, (VALUE arg), V_Subr1, DOC_integerp) /*
-::doc:integerp::
+DEFUN("integerp", Fintegerp, Sintegerp, (repv arg), rep_Subr1) /*
+::doc:Sintegerp::
 integerp ARG
 
 Return t if ARG is a integer.
 ::end:: */
 {
-    return INTP(arg) ? sym_t : sym_nil;
+    return rep_INTP(arg) ? Qt : Qnil;
 }
 
-_PR VALUE cmd_stringp(VALUE);
-DEFUN("stringp", cmd_stringp, subr_stringp, (VALUE arg), V_Subr1, DOC_stringp) /*
-::doc:stringp::
+DEFUN("stringp", Fstringp, Sstringp, (repv arg), rep_Subr1) /*
+::doc:Sstringp::
 stringp ARG
 
 Returns t is ARG is a string.
 ::end:: */
 {
-    return STRINGP(arg) ? sym_t : sym_nil;
+    return rep_STRINGP(arg) ? Qt : Qnil;
 }
 
-_PR VALUE cmd_vectorp(VALUE);
-DEFUN("vectorp", cmd_vectorp, subr_vectorp, (VALUE arg), V_Subr1, DOC_vectorp) /*
-::doc:vectorp::
+DEFUN("vectorp", Fvectorp, Svectorp, (repv arg), rep_Subr1) /*
+::doc:Svectorp::
 vectorp ARG
 
 Returns t if ARG is a vector.
 ::end:: */
 {
-    return VECTORP(arg) ? sym_t : sym_nil;
+    return rep_VECTORP(arg) ? Qt : Qnil;
 }
 
-_PR VALUE cmd_bytecodep(VALUE);
-DEFUN("bytecodep", cmd_bytecodep, subr_bytecodep, (VALUE arg), V_Subr1, DOC_bytecodep) /*
-::doc:bytecodep::
+DEFUN("bytecodep", Fbytecodep, Sbytecodep, (repv arg), rep_Subr1) /*
+::doc:Sbytecodep::
 bytecodep ARG
 
 Returns t if ARG is a byte code subroutine (i.e. compiled Lisp code).
 ::end:: */
 {
-    return COMPILEDP(arg) ? sym_t : sym_nil;
+    return rep_COMPILEDP(arg) ? Qt : Qnil;
 }
 
-_PR VALUE cmd_functionp(VALUE);
-DEFUN("functionp", cmd_functionp, subr_functionp, (VALUE arg), V_Subr1, DOC_functionp) /*
-::doc:functionp::
+DEFUN("functionp", Ffunctionp, Sfunctionp, (repv arg), rep_Subr1) /*
+::doc:Sfunctionp::
 functionp ARG
 
 Returns t if ARG is a function (ie, a symbol or a list whose car is the
 symbol `lambda'
 ::end:: */
 {
-    if(SYMBOLP(arg))
+    if(rep_SYMBOLP(arg))
     {
-	if(!(arg = VSYM(arg)->function))
-	    return(sym_nil);
+	if(!(arg = rep_SYM(arg)->function))
+	    return(Qnil);
     }
-    switch(VTYPE(arg))
+    switch(rep_TYPE(arg))
     {
-    case V_Subr0:
-    case V_Subr1:
-    case V_Subr2:
-    case V_Subr3:
-    case V_Subr4:
-    case V_Subr5:
-    case V_SubrN:
-    case V_Compiled:
-	return(sym_t);
-    case V_Cons:
-	arg = VCAR(arg);
-	if((arg == sym_lambda) || (arg == sym_autoload))
-	    return(sym_t);
+    case rep_Subr0:
+    case rep_Subr1:
+    case rep_Subr2:
+    case rep_Subr3:
+    case rep_Subr4:
+    case rep_Subr5:
+    case rep_SubrN:
+    case rep_Compiled:
+	return(Qt);
+    case rep_Cons:
+	arg = rep_CAR(arg);
+	if((arg == Qlambda) || (arg == Qautoload))
+	    return(Qt);
 	/* FALL THROUGH */
     default:
-	return(sym_nil);
+	return(Qnil);
     }
 }
 
-_PR VALUE cmd_macrop(VALUE);
-DEFUN("macrop", cmd_macrop, subr_macrop, (VALUE arg), V_Subr1, DOC_macrop) /*
-::doc:macrop::
+DEFUN("macrop", Fmacrop, Smacrop, (repv arg), rep_Subr1) /*
+::doc:Smacrop::
 macrop ARG
 
 Returns t if ARG is a macro.
 ::end:: */
 {
-    if(SYMBOLP(arg)
-       && (arg = VSYM(arg)->function) == LISP_NULL)
-	return sym_nil;
-    if((CONSP(arg) && VCAR(arg) == sym_macro)
-       || (COMPILEDP(arg) && COMPILED_MACRO_P(arg)))
-	return sym_t;
+    if(rep_SYMBOLP(arg)
+       && (arg = rep_SYM(arg)->function) == rep_NULL)
+	return Qnil;
+    if((rep_CONSP(arg) && rep_CAR(arg) == Qmacro)
+       || (rep_COMPILEDP(arg) && rep_COMPILED_MACRO_P(arg)))
+	return Qt;
     else
-	return sym_nil;
+	return Qnil;
 }
 	
-_PR VALUE cmd_special_form_p(VALUE);
-DEFUN("special-form-p", cmd_special_form_p, subr_special_form_p, (VALUE arg), V_Subr1, DOC_special_form_p) /*
-::doc:special_form_p::
+DEFUN("special-form-p", Fspecial_form_p, Sspecial_form_p, (repv arg), rep_Subr1) /*
+::doc:Sspecial-form-p::
 special-form-p ARG
 
 Returns t if ARG is a special-form.
 ::end:: */
 {
-    if(SYMBOLP(arg))
+    if(rep_SYMBOLP(arg))
     {
-	if(!(arg = VSYM(arg)->function))
-	     return(sym_nil);
+	if(!(arg = rep_SYM(arg)->function))
+	     return(Qnil);
     }
-    if(VTYPEP(arg, V_SF))
-	return(sym_t);
-    return(sym_nil);
+    if(rep_TYPEP(arg, rep_SF))
+	return(Qt);
+    return(Qnil);
 }
 
-_PR VALUE cmd_subrp(VALUE arg);
-DEFUN("subrp", cmd_subrp, subr_subrp, (VALUE arg), V_Subr1, DOC_subrp) /*
-::doc:subrp::
+DEFUN("subrp", Fsubrp, Ssubrp, (repv arg), rep_Subr1) /*
+::doc:Ssubrp::
 subrp ARG
 
 Returns t if arg is a primitive function.
 ::end:: */
 {
-    switch(VTYPE(arg))
+    switch(rep_TYPE(arg))
     {
-    case V_Subr0:
-    case V_Subr1:
-    case V_Subr2:
-    case V_Subr3:
-    case V_Subr4:
-    case V_Subr5:
-    case V_SubrN:
-    case V_SF:
-    case V_Var:
-	return(sym_t);
+    case rep_Subr0:
+    case rep_Subr1:
+    case rep_Subr2:
+    case rep_Subr3:
+    case rep_Subr4:
+    case rep_Subr5:
+    case rep_SubrN:
+    case rep_SF:
+    case rep_Var:
+	return(Qt);
     default:
-	return(sym_nil);
+	return(Qnil);
     }
 }
 
-_PR VALUE cmd_sequencep(VALUE arg);
-DEFUN("sequencep", cmd_sequencep, subr_sequencep, (VALUE arg), V_Subr1, DOC_sequencep) /*
-::doc:sequencep::
+DEFUN("sequencep", Fsequencep, Ssequencep, (repv arg), rep_Subr1) /*
+::doc:Ssequencep::
 sequencep ARG
 
 Returns t is ARG is a sequence (a list, vector or string).
 ::end:: */
 {
-    if(LISTP(arg) || VECTORP(arg) || STRINGP(arg) || COMPILEDP(arg))
-	return sym_t;
+    if(rep_LISTP(arg) || rep_VECTORP(arg) || rep_STRINGP(arg) || rep_COMPILEDP(arg))
+	return Qt;
     else
-	return sym_nil;
+	return Qnil;
 }
 
-_PR VALUE cmd_subr_documentation(VALUE subr, VALUE useVar);
-DEFUN("subr-documentation", cmd_subr_documentation, subr_subr_documentation, (VALUE subr, VALUE useVar), V_Subr2, DOC_subr_documentation) /*
-::doc:subr_documentation::
-subr-documentation SUBR [USE-VAR]
-
-Returns the doc-string associated with SUBR.
-::end:: */
-{
-    if(SYMBOLP(subr))
-    {
-	if(NILP(useVar))
-	{
-	    if(VSYM(subr)->function)
-		subr = VSYM(subr)->function;
-	}
-	else
-	{
-	    if(VSYM(subr)->value)
-		subr = VSYM(subr)->value;
-	}
-    }
-    switch(VTYPE(subr))
-    {
-    case V_Subr0:
-    case V_Subr1:
-    case V_Subr2:
-    case V_Subr3:
-    case V_Subr4:
-    case V_Subr5:
-    case V_SubrN:
-    case V_SF:
-    case V_Var:
-	return VSUBR(subr)->doc_index;
-
-    case V_Compiled:
-	return COMPILED_DOC(subr);
-
-    default:
-	return(sym_nil);
-    }
-}
-
-_PR VALUE cmd_subr_name(VALUE subr, VALUE useVar);
-DEFUN("subr-name", cmd_subr_name, subr_subr_name, (VALUE subr, VALUE useVar), V_Subr2, DOC_subr_name) /*
-::doc:subr_name::
+DEFUN("subr-name", Fsubr_name, Ssubr_name, (repv subr, repv useVar), rep_Subr2) /*
+::doc:Ssubr-name::
 subr-name SUBR [USE-VAR]
 
 Returns the name (a string) associated with SUBR.
 ::end:: */
 {
-    if(SYMBOLP(subr))
+    if(rep_SYMBOLP(subr))
     {
-	if(NILP(useVar))
+	if(rep_NILP(useVar))
 	{
-	    if(VSYM(subr)->function)
-		subr = VSYM(subr)->function;
+	    if(rep_SYM(subr)->function)
+		subr = rep_SYM(subr)->function;
 	}
 	else
 	{
-	    if(VSYM(subr)->value)
-		subr = VSYM(subr)->value;
+	    if(rep_SYM(subr)->value)
+		subr = rep_SYM(subr)->value;
 	}
     }
-    switch(VTYPE(subr))
+    switch(rep_TYPE(subr))
     {
-    case V_Subr0:
-    case V_Subr1:
-    case V_Subr2:
-    case V_Subr3:
-    case V_Subr4:
-    case V_Subr5:
-    case V_SubrN:
-    case V_SF:
-    case V_Var:
-	return(VSUBR(subr)->name);
+    case rep_Subr0:
+    case rep_Subr1:
+    case rep_Subr2:
+    case rep_Subr3:
+    case rep_Subr4:
+    case rep_Subr5:
+    case rep_SubrN:
+    case rep_SF:
+    case rep_Var:
+	return(rep_SUBR(subr)->name);
     default:
-	return(sym_nil);
+	return(Qnil);
     }
 }
 
-_PR VALUE cmd_call_hook(VALUE hook, VALUE arg_list, VALUE type);
-DEFUN("call-hook", cmd_call_hook, subr_call_hook, (VALUE hook, VALUE arg_list, VALUE type), V_Subr3, DOC_call_hook) /*
-::doc:call_hook::
+DEFUN("call-hook", Fcall_hook, Scall_hook, (repv hook, repv arg_list, repv type), rep_Subr3) /*
+::doc:Scall-hook::
 call-hook HOOK ARG-LIST [TYPE]
 
 Call the hook named by the symbol HOOK, passing all functions the arguments
@@ -2576,38 +2437,37 @@ In all cases the value returned by the last-evaluated function is
 returned.
 ::end:: */
 {
-    GC_root gc_hook, gc_arg_list, gc_type;
-    VALUE res = sym_nil;
-    DECLARE2(arg_list, LISTP);
-    if(!LISTP(hook))
+    rep_GC_root gc_hook, gc_arg_list, gc_type;
+    repv res = Qnil;
+    rep_DECLARE2(arg_list, rep_LISTP);
+    if(!rep_LISTP(hook))
     {
-	DECLARE1(hook, SYMBOLP);
-	hook = cmd_symbol_value(hook, sym_t);
-	if(VOIDP(hook) || NILP(hook))
-	    return sym_nil;
+	rep_DECLARE1(hook, rep_SYMBOLP);
+	hook = Fsymbol_value(hook, Qt);
+	if(rep_VOIDP(hook) || rep_NILP(hook))
+	    return Qnil;
     }
-    PUSHGC(gc_hook, hook);
-    PUSHGC(gc_arg_list, arg_list);
-    PUSHGC(gc_type, type);
-    while(CONSP(hook))
+    rep_PUSHGC(gc_hook, hook);
+    rep_PUSHGC(gc_arg_list, arg_list);
+    rep_PUSHGC(gc_type, type);
+    while(rep_CONSP(hook))
     {
-	res = cmd_funcall(cmd_cons(VCAR(hook), arg_list));
-	hook = VCDR(hook);
-	TEST_INT;
-	if(INT_P)
-	    res = LISP_NULL;
-	if(res == LISP_NULL
-	   || (type == sym_and && NILP(res))
-	   || (type == sym_or && !NILP(res)))
+	res = Ffuncall(Fcons(rep_CAR(hook), arg_list));
+	hook = rep_CDR(hook);
+	rep_TEST_INT;
+	if(rep_INTERRUPTP)
+	    res = rep_NULL;
+	if(res == rep_NULL
+	   || (type == Qand && rep_NILP(res))
+	   || (type == Qor && !rep_NILP(res)))
 	    break;
     }
-    POPGC; POPGC; POPGC;
+    rep_POPGC; rep_POPGC; rep_POPGC;
     return res;
 }
 
-_PR VALUE cmd_catch(VALUE);
-DEFUN("catch", cmd_catch, subr_catch, (VALUE args), V_SF, DOC_catch) /*
-::doc:catch::
+DEFUN("catch", Fcatch, Scatch, (repv args), rep_SF) /*
+::doc:Scatch::
 catch TAG FORMS...
 
 Evaluates FORMS, non-local exits are allowed with `(throw TAG)'.
@@ -2628,52 +2488,50 @@ There are several pre-defined `catch'es which are,
      Kills the editor.
 ::end:: */
     /* Non-local exits don't bother with jmp_buf's and the like, they just
-       unwind normally through all levels of recursion with a LISP_NULL result.
+       unwind normally through all levels of recursion with a rep_NULL result.
        This is slow but it's easy to work with.  */
 {
-    if(CONSP(args))
+    if(rep_CONSP(args))
     {
-	VALUE tag, res = LISP_NULL;
-	GC_root gc_args, gc_tag;
-	PUSHGC(gc_args, args);
-	tag = cmd_eval(VCAR(args));
+	repv tag, res = rep_NULL;
+	rep_GC_root gc_args, gc_tag;
+	rep_PUSHGC(gc_args, args);
+	tag = Feval(rep_CAR(args));
 	if(tag)
 	{
-	    PUSHGC(gc_tag, tag);
-	    if(!(res = cmd_progn(VCDR(args))))
+	    rep_PUSHGC(gc_tag, tag);
+	    if(!(res = Fprogn(rep_CDR(args))))
 	    {
-		if(throw_value && (VCAR(throw_value) == tag))
+		if(rep_throw_value && (rep_CAR(rep_throw_value) == tag))
 		{
-		    res = VCDR(throw_value);
-		    throw_value = LISP_NULL;
+		    res = rep_CDR(rep_throw_value);
+		    rep_throw_value = rep_NULL;
 		}
 	    }
-	    POPGC;
+	    rep_POPGC;
 	}
-	POPGC;
+	rep_POPGC;
 	return(res);
     }
-    return signal_missing_arg(1);
+    return rep_signal_missing_arg(1);
 }
 
-_PR VALUE cmd_throw(VALUE, VALUE);
-DEFUN("throw", cmd_throw, subr_throw, (VALUE tag, VALUE val), V_Subr2, DOC_throw) /*
-::doc:throw::
-throw TAG VALUE
+DEFUN("throw", Fthrow, Sthrow, (repv tag, repv val), rep_Subr2) /*
+::doc:Sthrow::
+throw TAG repv
 
 Performs a non-local exit to the `catch' waiting for TAG and return
-VALUE from it. TAG and VALUE are both evaluated fully.
+repv from it. TAG and repv are both evaluated fully.
 ::end:: */
 {
-    /* Only one thing can use `throw_value' at once.  */
-    if(!throw_value)
-	throw_value = cmd_cons(tag, val);
-    return(LISP_NULL);
+    /* Only one thing can use `rep_throw_value' at once.  */
+    if(!rep_throw_value)
+	rep_throw_value = Fcons(tag, val);
+    return(rep_NULL);
 }
 
-_PR VALUE cmd_unwind_protect(VALUE);
-DEFUN("unwind-protect", cmd_unwind_protect, subr_unwind_protect, (VALUE args), V_SF, DOC_unwind_protect) /*
-::doc:unwind_protect::
+DEFUN("unwind-protect", Funwind_protect, Sunwind_protect, (repv args), rep_SF) /*
+::doc:Sunwind-protect::
 unwind-protect BODY CLEANUP-FORMS...
 
 Eval and return the value of BODY guaranteeing that the CLEANUP-FORMS will
@@ -2681,180 +2539,296 @@ be evalled no matter what happens (ie, error, non-local exit, etc) while
 BODY is being evaluated.
 ::end:: */
 {
-    if(CONSP(args))
+    if(rep_CONSP(args))
     {
-	VALUE res, throwval;
-	GC_root gc_args, gc_res, gc_throwval;
-	PUSHGC(gc_args, args);
-	res = cmd_eval(VCAR(args));
-	PUSHGC(gc_res, res);
-	throwval = throw_value;
-	throw_value = LISP_NULL;
-	PUSHGC(gc_throwval, throwval);
-	if(!cmd_progn(VCDR(args)))
-	    res = LISP_NULL;
+	repv res, throwval;
+	rep_GC_root gc_args, gc_res, gc_throwval;
+	rep_PUSHGC(gc_args, args);
+	res = Feval(rep_CAR(args));
+	rep_PUSHGC(gc_res, res);
+	throwval = rep_throw_value;
+	rep_throw_value = rep_NULL;
+	rep_PUSHGC(gc_throwval, throwval);
+	if(!Fprogn(rep_CDR(args)))
+	    res = rep_NULL;
 	/* Only reinstall the old throw if it's actually an error and there
 	   was no error in the cleanup forms. This way the newest error
 	   takes precedence. */
-	if(throwval != 0 && throw_value == 0)
-	    throw_value = throwval;
-	POPGC; POPGC; POPGC;
+	if(throwval != 0 && rep_throw_value == 0)
+	    rep_throw_value = throwval;
+	rep_POPGC; rep_POPGC; rep_POPGC;
 	return(res);
     }
-    return signal_missing_arg(1);
+    return rep_signal_missing_arg(1);
+}
+
+DEFUN("with-object", Fwith_object, Swith_object, (repv args), rep_SF) /*
+::doc:Swith-object::
+with-object ARG FORMS...
+
+Evaluate ARG and make its value ``current'' in some way meaningful for
+the data type, evaluate all FORMS, then return to the old current value
+of whatever was changed. Return the value of the last FORM evaluated.
+::end:: */
+{
+    repv res;
+    if(rep_CONSP(args))
+    {
+	rep_GC_root gc_args;
+	rep_PUSHGC(gc_args, args);
+	res = Feval(rep_CAR(args));
+	if (res != rep_NULL)
+	{
+	    repv handle = rep_bind_object(res);
+	    if (handle != rep_NULL)
+	    {
+		rep_GC_root gc_handle;
+		rep_PUSHGC(gc_handle, handle);
+		res = Fprogn(rep_CDR(args));
+		rep_POPGC;
+		rep_PUSHGC(gc_handle, res);
+		rep_unbind_object(handle);
+		rep_POPGC;
+	    }
+	    else
+		res = rep_NULL;
+	}
+	rep_POPGC;
+    }
+    else
+	res = rep_signal_arg_error(res, 1);
+    return res;
+}
+
+DEFUN("featurep", Ffeaturep, Sfeaturep, (repv feature), rep_Subr1) /*
+::doc:Sfeaturep::
+featurep FEATURE
+
+Return non-nil if feature FEATURE has already been loaded.
+::end:: */
+{
+    repv value;
+    rep_DECLARE1 (feature, rep_SYMBOLP);
+    value = Fsymbol_value (Qfeatures, Qnil);
+    if (value != rep_NULL)
+	return Fmemq (feature, value);
+    else
+	return rep_NULL;
+}
+
+DEFUN("provide", Fprovide, Sprovide, (repv feature), rep_Subr1) /*
+::doc:Sprovide::
+provide FEATURE
+
+Show that the feature FEATURE (a symbol) has been loaded.
+::end:: */
+{
+    repv value;
+    rep_DECLARE1 (feature, rep_SYMBOLP);
+    value = Fsymbol_value (Qfeatures, Qnil);
+    if (value != rep_NULL)
+    {
+	repv tem = Fmemq (feature, value);
+	if (tem && tem == Qnil)
+	{
+	    value = Fcons (feature, value);
+	    Fset (Qfeatures, value);
+	}
+	return feature;
+    }
+    return rep_NULL;
+}
+
+DEFUN_INT("require", Frequire, Srequire, (repv feature, repv file), rep_Subr2,
+	  "SFeature to load:") /*
+::doc:Srequire::
+require FEATURE [FILE]
+
+If FEATURE (a symbol) has not already been loaded, load it. The file
+loaded is either FILE (if given), or the print name of FEATURE.
+::end:: */
+{
+    repv tem;
+    rep_DECLARE1 (feature, rep_SYMBOLP);
+    tem = Ffeaturep (feature);
+    if (tem && tem == Qnil)
+    {
+	if (!rep_STRINGP(file))
+	    file = rep_SYM(feature)->name;
+	return Fload (file, Qnil, Qnil, Qnil);
+    }
+    return feature;
 }
 
 void
-lispcmds_init(void)
+rep_lispcmds_init(void)
 {
-    ADD_SUBR(subr_quote);
-    ADD_SUBR(subr_defmacro);
-    ADD_SUBR(subr_defun);
-    ADD_SUBR(subr_defvar);
-    ADD_SUBR(subr_defconst);
-    ADD_SUBR(subr_car);
-    ADD_SUBR(subr_cdr);
-    ADD_SUBR(subr_list);
-    ADD_SUBR(subr_list_star);
-    ADD_SUBR(subr_make_list);
-    ADD_SUBR(subr_append);
-    ADD_SUBR(subr_nconc);
-    ADD_SUBR(subr_rplaca);
-    ADD_SUBR(subr_rplacd);
-    ADD_SUBR(subr_reverse);
-    ADD_SUBR(subr_nreverse);
-    ADD_SUBR(subr_assoc);
-    ADD_SUBR(subr_assq);
-    ADD_SUBR(subr_rassoc);
-    ADD_SUBR(subr_rassq);
-    ADD_SUBR(subr_nth);
-    ADD_SUBR(subr_nthcdr);
-    ADD_SUBR(subr_last);
-    ADD_SUBR(subr_mapcar);
-    ADD_SUBR(subr_mapc);
-    ADD_SUBR(subr_filter);
-    ADD_SUBR(subr_member);
-    ADD_SUBR(subr_memq);
-    ADD_SUBR(subr_delete);
-    ADD_SUBR(subr_delq);
-    ADD_SUBR(subr_delete_if);
-    ADD_SUBR(subr_delete_if_not);
-    ADD_SUBR(subr_vector);
-    ADD_SUBR(subr_make_vector);
-    ADD_SUBR(subr_arrayp);
-    ADD_SUBR(subr_aset);
-    ADD_SUBR(subr_aref);
-    ADD_SUBR(subr_make_string);
-    ADD_SUBR(subr_substring);
-    ADD_SUBR(subr_concat);
-    ADD_SUBR(subr_length);
-    ADD_SUBR(subr_copy_sequence);
-    ADD_SUBR(subr_elt);
-    ADD_SUBR(subr_prog1);
-    ADD_SUBR(subr_prog2);
-    ADD_SUBR(subr_while);
-    ADD_SUBR(subr_cond);
-    ADD_SUBR(subr_if);
-    ADD_SUBR(subr_and);
-    ADD_SUBR(subr_or);
-    ADD_SUBR(subr_apply);
-    ADD_SUBR_INT(subr_load);
-    ADD_SUBR(subr_plus);
-    ADD_SUBR(subr_minus);
-    ADD_SUBR(subr_product);
-    ADD_SUBR(subr_divide);
-    ADD_SUBR(subr_remainder);
-    ADD_SUBR(subr_mod);
-    ADD_SUBR(subr_lognot);
-    ADD_SUBR(subr_not);
-    ADD_SUBR(subr_logior);
-    ADD_SUBR(subr_logxor);
-    ADD_SUBR(subr_logand);
-    ADD_SUBR(subr_equal);
-    ADD_SUBR(subr_eq);
-    ADD_SUBR(subr_eql);
-    ADD_SUBR(subr_string_head_eq);
-    ADD_SUBR(subr_num_eq);
-    ADD_SUBR(subr_num_noteq);
-    ADD_SUBR(subr_gtthan);
-    ADD_SUBR(subr_gethan);
-    ADD_SUBR(subr_ltthan);
-    ADD_SUBR(subr_lethan);
-    ADD_SUBR(subr_max);
-    ADD_SUBR(subr_min);
-    ADD_SUBR(subr_plus1);
-    ADD_SUBR(subr_sub1);
-    ADD_SUBR(subr_lsh);
-    ADD_SUBR(subr_ash);
-    ADD_SUBR(subr_zerop);
-    ADD_SUBR(subr_null);
-    ADD_SUBR(subr_atom);
-    ADD_SUBR(subr_consp);
-    ADD_SUBR(subr_listp);
-    ADD_SUBR(subr_numberp);
-    ADD_SUBR(subr_integerp);
-    ADD_SUBR(subr_stringp);
-    ADD_SUBR(subr_vectorp);
-    ADD_SUBR(subr_bytecodep);
-    ADD_SUBR(subr_functionp);
-    ADD_SUBR(subr_macrop);
-    ADD_SUBR(subr_special_form_p);
-    ADD_SUBR(subr_subrp);
-    ADD_SUBR(subr_subr_documentation);
-    ADD_SUBR(subr_sequencep);
-    ADD_SUBR(subr_subr_name);
-    ADD_SUBR(subr_call_hook);
-    ADD_SUBR(subr_catch);
-    ADD_SUBR(subr_throw);
-    ADD_SUBR(subr_unwind_protect);
+    rep_ADD_SUBR(Squote);
+    rep_ADD_SUBR(Sdefmacro);
+    rep_ADD_SUBR(Sdefun);
+    rep_ADD_SUBR(Sdefvar);
+    rep_ADD_SUBR(Sdefconst);
+    rep_ADD_SUBR(Scar);
+    rep_ADD_SUBR(Scdr);
+    rep_ADD_SUBR(Slist);
+    rep_ADD_SUBR(Slist_star);
+    rep_ADD_SUBR(Smake_list);
+    rep_ADD_SUBR(Sappend);
+    rep_ADD_SUBR(Snconc);
+    rep_ADD_SUBR(Srplaca);
+    rep_ADD_SUBR(Srplacd);
+    rep_ADD_SUBR(Sreverse);
+    rep_ADD_SUBR(Snreverse);
+    rep_ADD_SUBR(Sassoc);
+    rep_ADD_SUBR(Sassq);
+    rep_ADD_SUBR(Srassoc);
+    rep_ADD_SUBR(Srassq);
+    rep_ADD_SUBR(Snth);
+    rep_ADD_SUBR(Snthcdr);
+    rep_ADD_SUBR(Slast);
+    rep_ADD_SUBR(Smapcar);
+    rep_ADD_SUBR(Smapc);
+    rep_ADD_SUBR(Sfilter);
+    rep_ADD_SUBR(Smember);
+    rep_ADD_SUBR(Smemq);
+    rep_ADD_SUBR(Sdelete);
+    rep_ADD_SUBR(Sdelq);
+    rep_ADD_SUBR(Sdelete_if);
+    rep_ADD_SUBR(Sdelete_if_not);
+    rep_ADD_SUBR(Svector);
+    rep_ADD_SUBR(Smake_vector);
+    rep_ADD_SUBR(Sarrayp);
+    rep_ADD_SUBR(Saset);
+    rep_ADD_SUBR(Saref);
+    rep_ADD_SUBR(Smake_string);
+    rep_ADD_SUBR(Ssubstring);
+    rep_ADD_SUBR(Sconcat);
+    rep_ADD_SUBR(Slength);
+    rep_ADD_SUBR(Scopy_sequence);
+    rep_ADD_SUBR(Selt);
+    rep_ADD_SUBR(Sprog1);
+    rep_ADD_SUBR(Sprog2);
+    rep_ADD_SUBR(Swhile);
+    rep_ADD_SUBR(Scond);
+    rep_ADD_SUBR(Sif);
+    rep_ADD_SUBR(Sand);
+    rep_ADD_SUBR(Sor);
+    rep_ADD_SUBR(Sapply);
+    rep_ADD_SUBR_INT(Sload);
+    rep_ADD_SUBR(Splus);
+    rep_ADD_SUBR(Sminus);
+    rep_ADD_SUBR(Sproduct);
+    rep_ADD_SUBR(Sdivide);
+    rep_ADD_SUBR(Sremainder);
+    rep_ADD_SUBR(Smod);
+    rep_ADD_SUBR(Slognot);
+    rep_ADD_SUBR(Snot);
+    rep_ADD_SUBR(Slogior);
+    rep_ADD_SUBR(Slogxor);
+    rep_ADD_SUBR(Slogand);
+    rep_ADD_SUBR(Sequal);
+    rep_ADD_SUBR(Seq);
+    rep_ADD_SUBR(Seql);
+    rep_ADD_SUBR(Sstring_head_eq);
+    rep_ADD_SUBR(Snum_eq);
+    rep_ADD_SUBR(Snum_noteq);
+    rep_ADD_SUBR(Sgtthan);
+    rep_ADD_SUBR(Sgethan);
+    rep_ADD_SUBR(Sltthan);
+    rep_ADD_SUBR(Slethan);
+    rep_ADD_SUBR(Smax);
+    rep_ADD_SUBR(Smin);
+    rep_ADD_SUBR(Splus1);
+    rep_ADD_SUBR(Ssub1);
+    rep_ADD_SUBR(Slsh);
+    rep_ADD_SUBR(Sash);
+    rep_ADD_SUBR(Szerop);
+    rep_ADD_SUBR(Snull);
+    rep_ADD_SUBR(Satom);
+    rep_ADD_SUBR(Sconsp);
+    rep_ADD_SUBR(Slistp);
+    rep_ADD_SUBR(Snumberp);
+    rep_ADD_SUBR(Sintegerp);
+    rep_ADD_SUBR(Sstringp);
+    rep_ADD_SUBR(Svectorp);
+    rep_ADD_SUBR(Sbytecodep);
+    rep_ADD_SUBR(Sfunctionp);
+    rep_ADD_SUBR(Smacrop);
+    rep_ADD_SUBR(Sspecial_form_p);
+    rep_ADD_SUBR(Ssubrp);
+    rep_ADD_SUBR(Ssequencep);
+    rep_ADD_SUBR(Ssubr_name);
+    rep_ADD_SUBR(Scall_hook);
+    rep_ADD_SUBR(Scatch);
+    rep_ADD_SUBR(Sthrow);
+    rep_ADD_SUBR(Sunwind_protect);
+    rep_ADD_SUBR(Swith_object);
+    rep_ADD_SUBR(Sfeaturep);
+    rep_ADD_SUBR(Sprovide);
+    rep_ADD_SUBR_INT(Srequire);
 
-    INTERN(jade_directory); DOC(jade_directory);
-    if(getenv("JADEDIR") != 0)
-	VSYM(sym_jade_directory)->value = string_dup(getenv("JADEDIR"));
+    rep_INTERN(features);
+    rep_SYM(Qfeatures)->value = Qnil;
+
+    rep_INTERN(rep_directory);
+    if(getenv("REPDIR") != 0)
+	rep_SYM(Qrep_directory)->value = rep_string_dup(getenv("REPDIR"));
     else
-	VSYM(sym_jade_directory)->value = VAL(&default_jade_directory);
+	rep_SYM(Qrep_directory)->value = rep_VAL(&default_rep_directory);
 
-    INTERN(lisp_lib_directory); DOC(lisp_lib_directory);
-    if(getenv("JADELISPLIB") != 0)
-	VSYM(sym_lisp_lib_directory)->value
-	    = string_dup(getenv("JADELISPLIB"));
+    rep_INTERN(lisp_lib_directory);
+    if(getenv("REPLISPDIR") != 0)
+	rep_SYM(Qlisp_lib_directory)->value = rep_string_dup(getenv("REPLISPDIR"));
     else
-	VSYM(sym_lisp_lib_directory)->value
-	    = concat2(VSTR(VSYM(sym_jade_directory)->value),
-		      LISP_LIB_DIR_SUFFIX);
+	rep_SYM(Qlisp_lib_directory)->value = rep_string_dup(REP_LISP_DIRECTORY);
 
-    INTERN(site_lisp_directory); DOC(site_lisp_directory);
-    if(getenv("JADESITELISP") != 0)
-	VSYM(sym_site_lisp_directory)->value
-	    = string_dup(getenv("JADESITELISP"));
+    rep_INTERN(site_lisp_directory);
+    if(getenv("REPSITELISPDIR") != 0)
+	rep_SYM(Qsite_lisp_directory)->value
+	    = rep_string_dup(getenv("REPSITELISPDIR"));
     else
-	VSYM(sym_site_lisp_directory)->value
-	    = concat2(VSTR(VSYM(sym_jade_directory)->value),
-		      SITE_LISP_DIR_SUFFIX);
+	rep_SYM(Qsite_lisp_directory)->value
+	    = rep_concat2(rep_STR(rep_SYM(Qrep_directory)->value), "/site-lisp");
 
-    INTERN(exec_directory); DOC(exec_directory);
-    if(getenv("JADEEXECDIR") != 0)
-	VSYM(sym_exec_directory)->value = string_dup(getenv("JADEEXECDIR"));
+    rep_INTERN(exec_directory);
+    if(getenv("REPEXECDIR") != 0)
+	rep_SYM(Qexec_directory)->value = rep_string_dup(getenv("REPEXECDIR"));
     else
-	VSYM(sym_exec_directory)->value = string_dup(JADE_EXEC_DIR);
+	rep_SYM(Qexec_directory)->value = rep_string_dup(REP_EXEC_DIRECTORY);
 
-    INTERN(documentation_file); DOC(documentation_file);
-    if(getenv("JADEDOCFILE") != 0)
-	VSYM(sym_documentation_file)->value
-	    = string_dup(getenv("JADEDOCFILE"));
+    rep_INTERN(documentation_file);
+    if(getenv("REPDOCFILE") != 0)
+	rep_SYM(Qdocumentation_file)->value = rep_string_dup(getenv("REPDOCFILE"));
     else
-	VSYM(sym_documentation_file)->value
-	    = concat2(VSTR(VSYM(sym_jade_directory)->value), DOC_FILE_SUFFIX);
+	rep_SYM(Qdocumentation_file)->value = rep_string_dup(REP_DOC_FILE);
 
-    INTERN(load_path); DOC(load_path);
-    VSYM(sym_load_path)->value = list_2(VSYM(sym_lisp_lib_directory)->value,
-					VSYM(sym_site_lisp_directory)->value);
+    rep_INTERN(documentation_files);
+    rep_SYM(Qdocumentation_files)->value
+	= Fcons (rep_SYM(Qdocumentation_file)->value, Qnil);
 
-    INTERN(dl_load_path); DOC(dl_load_path);
-    VSYM(sym_dl_load_path)->value = LIST_1(VSYM(sym_exec_directory)->value);
+    rep_INTERN(load_path);
+    rep_SYM(Qload_path)->value = rep_list_2(rep_SYM(Qlisp_lib_directory)->value,
+					rep_SYM(Qsite_lisp_directory)->value);
 
-    INTERN(after_load_alist); DOC(after_load_alist);
-    VSYM(sym_after_load_alist)->value = sym_nil;
+    rep_INTERN(dl_load_path);
+    rep_SYM(Qdl_load_path)->value = Qnil;
+    {
+	char *ptr = getenv("LD_LIBRARY_PATH");
+	while (ptr != 0 && *ptr != 0)
+	{
+	    char *end = strchr(ptr, ':');
+	    rep_SYM(Qdl_load_path)->value
+		= Fcons(end ? rep_string_dupn(ptr, end - ptr)
+			: rep_string_dup(ptr), rep_SYM(Qdl_load_path)->value);
+	    ptr = end ? end + 1 : 0;
+	}
+    }
+    rep_SYM(Qdl_load_path)->value
+	= Fcons(rep_SYM(Qexec_directory)->value,
+		Fnreverse(rep_SYM(Qdl_load_path)->value));
 
-    INTERN(or); INTERN(and);
+    rep_INTERN(after_load_alist);
+    rep_SYM(Qafter_load_alist)->value = Qnil;
+
+    rep_INTERN(or); rep_INTERN(and);
 }

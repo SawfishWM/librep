@@ -45,8 +45,8 @@
 ;;; stack needed is calculated by the compiler.
 
 ;; Instruction set version
-(defconst bytecode-major 4)
-(defconst bytecode-minor 1)
+(defconst bytecode-major 5)
+(defconst bytecode-minor 0)
 
 ;; Opcodes
 (defconst op-call 0x08)			;call (stk[n] stk[n-1] ... stk[0])
@@ -160,22 +160,9 @@
 (defconst op-pushi 0x9f)
 (defconst op-pushi-pair 0xa0)
 
-(defconst op-set-current-buffer 0xb0)
-(defconst op-bind-buffer 0xb1)
-(defconst op-current-buffer 0xb2)
-(defconst op-bufferp 0xb3)
-(defconst op-markp 0xb4)
-(defconst op-windowp 0xb5)
-(defconst op-bind-window 0xb6)
-
-(defconst op-viewp 0xb7)
-(defconst op-bind-view 0xb8)
-(defconst op-current-view 0xb9)
-(defconst op-swap2 0xba)		;s[0]=s[1], s[1]=s[2], s[2]=s[0]
-
+(defconst op-bindobj 0xb0)
+(defconst op-swap2 0xba)
 (defconst op-mod 0xbb)
-(defconst op-pos 0xbc)
-(defconst op-posp 0xbd)
 
 (defconst op-last-before-jmps 0xf7)
 

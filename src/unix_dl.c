@@ -18,40 +18,34 @@
    along with Jade; see the file COPYING.	If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-#include "jade.h"
-#include <lib/jade_protos.h>
-
-_PR bool find_c_symbol(void *, char **, void **);
+#include "repint.h"
 
 #ifdef HAVE_DYNAMIC_LOADING
-
-_PR void *open_dl_library(VALUE file_name);
-_PR void mark_dl_data(void);
-_PR void kill_dl_libraries(void);
 
 #ifdef HAVE_DLFCN_H
 # include <dlfcn.h>
 #endif
 
 #include <assert.h>
+#include <string.h>
 
 struct dl_lib_info {
     struct dl_lib_info *next;
-    VALUE file_name;
+    repv file_name;
     void *handle;
 };
 
 static struct dl_lib_info *dl_list;
 
 static struct dl_lib_info *
-find_dl(VALUE file)
+find_dl(repv file)
 {
     struct dl_lib_info *x = dl_list;
-    assert(STRINGP(file));
+    assert(rep_STRINGP(file));
     while(x != 0)
     {
-	assert(STRINGP(x->file_name));
-	if(!strcmp(VSTR(file), VSTR(x->file_name)))
+	assert(rep_STRINGP(x->file_name));
+	if(!strcmp(rep_STR(file), rep_STR(x->file_name)))
 	    return x;
 	x = x->next;
     }
@@ -59,109 +53,157 @@ find_dl(VALUE file)
 }
 
 void *
-open_dl_library(VALUE file_name)
+rep_open_dl_library(repv file_name)
 {
     struct dl_lib_info *x = find_dl(file_name);
     if(x == 0)
     {
-	Lisp_XSubr **functions;
-	VALUE (*init_func)(VALUE);
-	void *handle = dlopen(VSTR(file_name), RTLD_LAZY);
-	if(handle == 0)
-	{
-	    char *err = dlerror();
-	    if(err != 0)
-		cmd_signal(sym_error, LIST_1(string_dup(err)));
-	    return 0;
-	}
-	x = sys_alloc(sizeof(struct dl_lib_info));
-	if(x == 0)
-	{
-	    mem_error();
-	    return 0;
-	}
-	x->file_name = file_name;
-	x->handle = handle;
+	/* We're trying to open a _libtool_ dl object. i.e it's a
+	   file ending in .la that contains a dlname=FOO line
+	   pointing to the actual DL object (in the same directory). */
 
-	init_func = dlsym(handle, "jade_init");
-	if(init_func != 0)
+	char buf[256];
+	char *dlname = 0;
+	FILE *fh = fopen(rep_STR(file_name), "r");
+	if (fh == 0)
 	{
-	    VALUE ret = init_func(file_name);
-	    if(ret == LISP_NULL)
+	    rep_signal_file_error(file_name);
+	    return 0;
+	}
+	while (fgets(buf, sizeof(buf), fh))
+	{
+	    if (strncmp("dlname='", buf, sizeof("dlname='") - 1) == 0)
 	    {
-		/* error. abort abort.. */
-		sys_free(x);
+		char *ptr = buf + sizeof("dlname='") - 1;
+		u_char *base;
+		char *end = strchr(ptr, '\'');
+		if (end == 0)
+		    break;
+		*end = 0;
+		base = strrchr(rep_STR(file_name), '/');
+		if (base == 0)
+		    dlname = ptr;
+		else
+		{
+		    char tem[256];
+		    base++;
+		    memcpy(tem, rep_STR(file_name), base - rep_STR(file_name));
+		    strcpy(tem + (base - rep_STR(file_name)), ptr);
+		    strcpy(buf, tem);
+		    dlname = buf;
+		}
+		break;
+	    }
+	}
+	fclose(fh);
+	if (!dlname)
+	{
+	    Fsignal(Qerror,
+		       rep_LIST_2(rep_string_dup("Can't find dlname in .la object"),
+			      file_name));
+	}
+	else
+	{
+	    rep_xsubr **functions;
+	    repv (*init_func)(repv);
+	    void *handle = dlopen(dlname, RTLD_LAZY);
+	    if(handle == 0)
+	    {
+		char *err = dlerror();
+		if(err != 0)
+		    Fsignal(Qerror, rep_LIST_1(rep_string_dup(err)));
+		return 0;
+	    }
+	    x = rep_alloc(sizeof(struct dl_lib_info));
+	    if(x == 0)
+	    {
+		rep_mem_error();
 		dlclose(handle);
 		return 0;
 	    }
-	}
+	    x->file_name = file_name;
+	    x->handle = handle;
 
-	functions = dlsym(handle, "jade_subrs");
-	if(functions != 0)
-	{
-	    while(*functions != 0)
+	    init_func = dlsym(handle, "rep_dl_init");
+	    if(init_func != 0)
 	    {
-		add_subr(*functions);
-		functions++;
+		repv ret = init_func(file_name);
+		if(ret == rep_NULL)
+		{
+		    /* error. abort abort.. */
+		    rep_free(x);
+		    dlclose(handle);
+		    return 0;
+		}
 	    }
-	}
 
-	x->next = dl_list;
-	dl_list = x;
+	    functions = dlsym(handle, "rep_dl_subrs");
+	    if(functions != 0)
+	    {
+		while(*functions != 0)
+		{
+		    rep_add_subr(*functions);
+		    functions++;
+		}
+	    }
+
+	    x->next = dl_list;
+	    dl_list = x;
+	}
     }
     return x;
 }
 
 void
-mark_dl_data(void)
+rep_mark_dl_data(void)
 {
     struct dl_lib_info *x = dl_list;
     while(x != 0)
     {
-	MARKVAL(x->file_name);
+	rep_MARKVAL(x->file_name);
 	x = x->next;
     }
 }
 
 void
-kill_dl_libraries(void)
+rep_kill_dl_libraries(void)
 {
     struct dl_lib_info *x = dl_list;
     dl_list = 0;
     while(x != 0)
     {
 	struct dl_lib_info *next = x->next;
-	void (*exit_func)(void) = dlsym(x->handle, "jade_kill");
+	void (*exit_func)(void) = dlsym(x->handle, "rep_dl_kill");
 	if(exit_func != 0)
 	    exit_func();
 	dlclose(x->handle);
-	sys_free(x);
+	rep_free(x);
 	x = next;
     }
 }
 
 /* Attempt to find the name and address of the nearest symbol before or
    equal to PTR */
-bool
-find_c_symbol(void *ptr, char **symbol_name_p, void **symbol_addr_p)
+rep_bool
+rep_find_c_symbol(void *ptr, char **symbol_name_p, void **symbol_addr_p)
 {
     Dl_info info;
     if(dladdr(ptr, &info) != 0)
     {
 	*symbol_name_p = (char *)info.dli_sname;
 	*symbol_addr_p = info.dli_saddr;
-	return TRUE;
+	return rep_TRUE;
     }
     else
-	return FALSE;
+	return rep_FALSE;
 }
 	
 #else /* HAVE_DYNAMIC_LOADING */
 
-bool
-find_c_symbol(void *ptr, char **name_p, void **addr_p)
+rep_bool
+rep_find_c_symbol(void *ptr, char **name_p, void **addr_p)
 {
-    return FALSE;
+    return rep_FALSE;
 }
 
 #endif /* !HAVE_DYNAMIC_LOADING */

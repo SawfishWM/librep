@@ -18,8 +18,7 @@
    along with Jade; see the file COPYING.	If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-#include "jade.h"
-#include <lib/jade_protos.h>
+#include "repint.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -54,35 +53,6 @@
 # define PATH_MAX 256
 #endif
 
-_PR u_long sys_file_length(VALUE file);
-_PR VALUE sys_file_name_absolute_p(VALUE file);
-_PR VALUE sys_expand_file_name(VALUE file);
-_PR VALUE sys_canonical_file_name(VALUE file);
-_PR VALUE sys_file_name_nondirectory(VALUE file);
-_PR VALUE sys_file_name_directory(VALUE file);
-_PR VALUE sys_file_name_as_directory(VALUE file);
-_PR VALUE sys_directory_file_name(VALUE file);
-_PR VALUE sys_delete_file(VALUE file);
-_PR VALUE sys_rename_file(VALUE old, VALUE new);
-_PR VALUE sys_make_directory(VALUE dir);
-_PR VALUE sys_delete_directory(VALUE dir);
-_PR VALUE sys_copy_file(VALUE src, VALUE dst);
-_PR VALUE sys_file_readable_p(VALUE file);
-_PR VALUE sys_file_writable_p(VALUE file);
-_PR VALUE sys_file_exists_p(VALUE file);
-_PR VALUE sys_file_regular_p(VALUE file);
-_PR VALUE sys_file_directory_p(VALUE file);
-_PR VALUE sys_file_symlink_p(VALUE file);
-_PR VALUE sys_file_owner_p(VALUE file);
-_PR VALUE sys_file_nlinks(VALUE file);
-_PR VALUE sys_file_size(VALUE file);
-_PR VALUE sys_file_modes(VALUE file);
-_PR VALUE sys_set_file_modes(VALUE file, VALUE modes);
-_PR VALUE sys_file_modes_as_string(VALUE file);
-_PR VALUE sys_file_modtime(VALUE file);
-_PR VALUE sys_directory_files(VALUE dir_name);
-_PR VALUE sys_getpwd(void);
-
 
 /* Support functions */
 
@@ -96,17 +66,17 @@ file_part(char *name)
 }
 
 static struct stat *
-stat_file(VALUE file)
+stat_file(repv file)
 {
     static struct stat statbuf;
-    if(stat(VSTR(file), &statbuf) == 0)
+    if(stat(rep_STR(file), &statbuf) == 0)
 	return &statbuf;
     else
 	return 0;
 }
 
 u_long
-sys_file_length(VALUE file)
+rep_file_length(repv file)
 {
     struct stat *st = stat_file(file);
     if(st != 0)
@@ -118,19 +88,19 @@ sys_file_length(VALUE file)
 
 /* File ops */
 
-VALUE
-sys_file_name_absolute_p(VALUE file)
+repv
+rep_file_name_absolute_p(repv file)
 {
-    return (((VSTR(file)[0] == '/') || (VSTR(file)[0] == '~'))
-	    ? sym_t : sym_nil);
+    return (((rep_STR(file)[0] == '/') || (rep_STR(file)[0] == '~'))
+	    ? Qt : Qnil);
 }
 
-VALUE
-sys_expand_file_name(VALUE file)
+repv
+rep_expand_file_name(repv file)
 {
     char buf[PATH_MAX];
     char *optr = buf;
-    char *iptr = VSTR(file);
+    char *iptr = rep_STR(file);
     while(*iptr != 0)
     {
 	char *end;
@@ -159,7 +129,7 @@ sys_expand_file_name(VALUE file)
 			back--;
 		    while(back > buf && back[-1] != '/')
 			back--;
-		    if(back >= buf && *back != '/')
+		    if(back < optr && back >= buf && *back != '/')
 			optr = back;
 		    else
 		    {
@@ -192,20 +162,20 @@ sys_expand_file_name(VALUE file)
 	    *optr++ = *iptr++;
     }
 
-    if(optr - buf != STRING_LEN(file)
-       || memcmp(VSTR(file), buf, optr - buf) != 0)
-	return string_dupn(buf, optr - buf);
+    if(optr - buf != rep_STRING_LEN(file)
+       || memcmp(rep_STR(file), buf, optr - buf) != 0)
+	return rep_string_dupn(buf, optr - buf);
     else
 	return file;
 }
 
-VALUE
-sys_canonical_file_name(VALUE file)
+repv
+rep_canonical_file_name(repv file)
 {
     char buf[PATH_MAX];
-    if(realpath(VSTR(file), buf) != 0)
+    if(realpath(rep_STR(file), buf) != 0)
     {
-	bool slashed = (VSTR(file)[strlen(VSTR(file)) - 1] == '/');
+	rep_bool slashed = (rep_STR(file)[strlen(rep_STR(file)) - 1] == '/');
 	int len = strlen(buf);
 	if (slashed && buf[len-1] != '/')
 	{
@@ -214,7 +184,7 @@ sys_canonical_file_name(VALUE file)
 	}
 	else if(!slashed && len > 0 && buf[len-1] == '/')
 	    buf[len--] = 0;
-	return string_dupn(buf, len);
+	return rep_string_dupn(buf, len);
     }
     else
     {
@@ -223,46 +193,46 @@ sys_canonical_file_name(VALUE file)
     }
 }
 
-VALUE
-sys_file_name_nondirectory(VALUE file)
+repv
+rep_file_name_nondirectory(repv file)
 {
-    u_char *tem = file_part(VSTR(file));
-    return tem == VSTR(file) ? file : string_dup(tem);
+    u_char *tem = file_part(rep_STR(file));
+    return tem == rep_STR(file) ? file : rep_string_dup(tem);
 }
 
-VALUE
-sys_file_name_directory(VALUE file)
+repv
+rep_file_name_directory(repv file)
 {
-    int len = file_part(VSTR(file)) - VSTR(file);
-    return string_dupn(VSTR(file), len);
+    int len = file_part(rep_STR(file)) - rep_STR(file);
+    return rep_string_dupn(rep_STR(file), len);
 }
 
-VALUE
-sys_file_name_as_directory(VALUE file)
+repv
+rep_file_name_as_directory(repv file)
 {
-    int len = STRING_LEN(file);
-    if(file_part(VSTR(file)) == VSTR(file) + len)
+    int len = rep_STRING_LEN(file);
+    if(file_part(rep_STR(file)) == rep_STR(file) + len)
     {
 	/* It's already a directory */
 	return file;
     }
     else
     {
-	VALUE new = string_dupn(VSTR(file), len + 1);
+	repv new = rep_string_dupn(rep_STR(file), len + 1);
 	if(new)
 	{
-	    VSTR(new)[len] = '/';
-	    VSTR(new)[len+1] = 0;
+	    rep_STR(new)[len] = '/';
+	    rep_STR(new)[len+1] = 0;
 	}
 	return new;
     }
 }
 
-VALUE
-sys_directory_file_name(VALUE file)
+repv
+rep_directory_file_name(repv file)
 {
-    int len = STRING_LEN(file);
-    if(file_part(VSTR(file)) != VSTR(file) + len)
+    int len = rep_STRING_LEN(file);
+    if(file_part(rep_STR(file)) != rep_STR(file) + len)
     {
 	/* There's a file part. Just return the initial string? */
 	return file;
@@ -270,198 +240,198 @@ sys_directory_file_name(VALUE file)
     else
     {
 	if(len == 0)
-	    return VAL(&dot);
+	    return rep_VAL(&dot);
 	else if(len == 1)
 	    return file;
 	else
 	    /* Chop the trailing "/" */
-	    return string_dupn(VSTR(file), len - 1);
+	    return rep_string_dupn(rep_STR(file), len - 1);
     }
 }
 
-VALUE
-sys_delete_file(VALUE file)
+repv
+rep_delete_file(repv file)
 {
-    if(unlink(VSTR(file)) == 0)
-	return sym_t;
+    if(unlink(rep_STR(file)) == 0)
+	return Qt;
     else
-	return signal_file_error(file);
+	return rep_signal_file_error(file);
 }
 
-VALUE
-sys_rename_file(VALUE old, VALUE new)
+repv
+rep_rename_file(repv old, repv new)
 {
-    if(rename(VSTR(old), VSTR(new)) != -1)
-	return sym_t;
+    if(rename(rep_STR(old), rep_STR(new)) != -1)
+	return Qt;
     else
-	return signal_file_error(list_2(old, new));
+	return rep_signal_file_error(rep_list_2(old, new));
 }
 
-VALUE
-sys_make_directory(VALUE dir)
+repv
+rep_make_directory(repv dir)
 {
-    if(mkdir(VSTR(dir), S_IRWXU | S_IRWXG | S_IRWXO) == 0)
-	return sym_t;
+    if(mkdir(rep_STR(dir), S_IRWXU | S_IRWXG | S_IRWXO) == 0)
+	return Qt;
     else
-	return signal_file_error(dir);
+	return rep_signal_file_error(dir);
 }
 
-VALUE
-sys_delete_directory(VALUE dir)
+repv
+rep_delete_directory(repv dir)
 {
-    if(rmdir(VSTR(dir)) == 0)
-	return sym_t;
+    if(rmdir(rep_STR(dir)) == 0)
+	return Qt;
     else
-	return signal_file_error(dir);
+	return rep_signal_file_error(dir);
 }
 
-VALUE
-sys_copy_file(VALUE src, VALUE dst)
+repv
+rep_copy_file(repv src, repv dst)
 {
-    VALUE res = sym_t;
+    repv res = Qt;
     int srcf;
-    srcf = open(VSTR(src), O_RDONLY);
+    srcf = open(rep_STR(src), O_RDONLY);
     if(srcf != -1)
     {
-	int dstf = open(VSTR(dst), O_WRONLY | O_CREAT | O_TRUNC, 0666);
+	int dstf = open(rep_STR(dst), O_WRONLY | O_CREAT | O_TRUNC, 0666);
 	if(dstf != -1)
 	{
 	    struct stat statb;
 	    int rd;
 	    if(fstat(srcf, &statb) == 0)
-		chmod(VSTR(dst), statb.st_mode);
+		chmod(rep_STR(dst), statb.st_mode);
 	    do {
 		u_char buf[BUFSIZ];
 		int wr;
 		rd = read(srcf, buf, BUFSIZ);
 		if(rd < 0)
 		{
-		    res = signal_file_error(src);
+		    res = rep_signal_file_error(src);
 		    break;
 		}
 		wr = write(dstf, buf, rd);
 		if(wr != rd)
 		{
-		    res = signal_file_error(dst);
+		    res = rep_signal_file_error(dst);
 		    break;
 		}
 	    } while(rd != 0);
 	    close(dstf);
 	}
 	else
-	    res = signal_file_error(dst);
+	    res = rep_signal_file_error(dst);
 	close(srcf);
     }
     else
-	res = signal_file_error(src);
+	res = rep_signal_file_error(src);
     return res;
 }
 
-VALUE
-sys_file_readable_p(VALUE file)
+repv
+rep_file_readable_p(repv file)
 {
-    return access(VSTR(file), R_OK) == 0 ? sym_t : sym_nil;
+    return access(rep_STR(file), R_OK) == 0 ? Qt : Qnil;
 }
 
-VALUE
-sys_file_writable_p(VALUE file)
+repv
+rep_file_writable_p(repv file)
 {
-    return access(VSTR(file), W_OK) == 0 ? sym_t : sym_nil;
+    return access(rep_STR(file), W_OK) == 0 ? Qt : Qnil;
 }
 
-VALUE
-sys_file_exists_p(VALUE file)
+repv
+rep_file_exists_p(repv file)
 {
-    return access(VSTR(file), F_OK) == 0 ? sym_t : sym_nil;
+    return access(rep_STR(file), F_OK) == 0 ? Qt : Qnil;
 }
 
-VALUE
-sys_file_regular_p(VALUE file)
-{
-    struct stat *st = stat_file(file);
-    if(st != 0)
-	return S_ISREG(st->st_mode) ? sym_t : sym_nil;
-    else
-	return sym_nil;
-}
-
-VALUE
-sys_file_directory_p(VALUE file)
+repv
+rep_file_regular_p(repv file)
 {
     struct stat *st = stat_file(file);
     if(st != 0)
-	return S_ISDIR(st->st_mode) ? sym_t : sym_nil;
+	return S_ISREG(st->st_mode) ? Qt : Qnil;
     else
-	return sym_nil;
+	return Qnil;
 }
 
-VALUE
-sys_file_symlink_p(VALUE file)
+repv
+rep_file_directory_p(repv file)
+{
+    struct stat *st = stat_file(file);
+    if(st != 0)
+	return S_ISDIR(st->st_mode) ? Qt : Qnil;
+    else
+	return Qnil;
+}
+
+repv
+rep_file_symlink_p(repv file)
 {
     struct stat st;
-    if(lstat(VSTR(file), &st) == 0)
-	return S_ISLNK(st.st_mode) ? sym_t : sym_nil;
+    if(lstat(rep_STR(file), &st) == 0)
+	return S_ISLNK(st.st_mode) ? Qt : Qnil;
     else
-	return sym_nil;
+	return Qnil;
 }
 
-VALUE
-sys_file_owner_p(VALUE file)
+repv
+rep_file_owner_p(repv file)
 {
     struct stat *st = stat_file(file);
     if(st != 0)
 	return ((st->st_uid == geteuid() && st->st_gid == getegid())
-		? sym_t : sym_nil);
+		? Qt : Qnil);
     else
-	return sym_nil;
+	return Qnil;
 }
 
-VALUE
-sys_file_nlinks(VALUE file)
+repv
+rep_file_nlinks(repv file)
 {
     struct stat *st = stat_file(file);
     if(st != 0)
-	return MAKE_INT(st->st_nlink);
+	return rep_MAKE_INT(st->st_nlink);
     else
-	return sym_nil;
+	return Qnil;
 }
 
-VALUE
-sys_file_size(VALUE file)
+repv
+rep_file_size(repv file)
 {
     struct stat *st = stat_file(file);
     if(st != 0)
-	return MAKE_INT(st->st_size);
+	return rep_MAKE_INT(st->st_size);
     else
-	return sym_nil;
+	return Qnil;
 }
 
-VALUE
-sys_file_modes(VALUE file)
+repv
+rep_file_modes(repv file)
 {
     struct stat *st = stat_file(file);
     if(st != 0)
-	return MAKE_INT(st->st_mode & 07777);
+	return rep_MAKE_INT(st->st_mode & 07777);
     else
-	return sym_nil;
+	return Qnil;
 }
 
-VALUE
-sys_set_file_modes(VALUE file, VALUE modes)
+repv
+rep_set_file_modes(repv file, repv modes)
 {
-    DECLARE2(modes, INTP);
-    if(chmod(VSTR(file), VINT(modes)) == 0)
+    rep_DECLARE2(modes, rep_INTP);
+    if(chmod(rep_STR(file), rep_INT(modes)) == 0)
 	return modes;
     else
-	return signal_file_error(file);
+	return rep_signal_file_error(file);
 }
 
-VALUE
-sys_file_modes_as_string(VALUE file)
+repv
+rep_file_modes_as_string(repv file)
 {
     struct stat *st = stat_file(file);
-    VALUE string = cmd_make_string(MAKE_INT(10), MAKE_INT('-'));
-    if(st != 0 && string && STRINGP(string))
+    repv string = Fmake_string(rep_MAKE_INT(10), rep_MAKE_INT('-'));
+    if(st != 0 && string && rep_STRINGP(string))
     {
 	ulong perms = st->st_mode;
 	int i;
@@ -472,14 +442,14 @@ sys_file_modes_as_string(VALUE file)
 	else if(S_ISCHR(perms))	    c = 'c';
 	else if(S_ISFIFO(perms))    c = 'p';
 	else if(S_ISSOCK(perms))    c = 's';
-	VSTR(string)[0] = c;
+	rep_STR(string)[0] = c;
 	for(i = 0; i < 3; i++)
 	{
 	    u_long xperms = perms >> ((2 - i) * 3);
 	    if(xperms & 4)
-		VSTR(string)[1+i*3] = 'r';
+		rep_STR(string)[1+i*3] = 'r';
 	    if(xperms & 2)
-		VSTR(string)[2+i*3] = 'w';
+		rep_STR(string)[2+i*3] = 'w';
 	    c = (xperms & 1) ? 'x' : 0;
 	    if(perms & (04000 >> i))
 	    {
@@ -488,53 +458,53 @@ sys_file_modes_as_string(VALUE file)
 		c = extra_bits[i] | (c & 0x20);
 	    }
 	    if(c != 0)
-		VSTR(string)[3+i*3] = c;
+		rep_STR(string)[3+i*3] = c;
 	}
     }
     return string;
 }
 
-VALUE
-sys_file_modtime(VALUE file)
+repv
+rep_file_modtime(repv file)
 {
     struct stat *st = stat_file(file);
     if(st != 0)
-	return MAKE_TIME(st->st_mtime);
+	return rep_MAKE_TIME(st->st_mtime);
     else
 	/* Really this should return nil */
-	return MAKE_TIME(0);
+	return rep_MAKE_TIME(0);
 }
 
-VALUE
-sys_directory_files(VALUE dir_name)
+repv
+rep_directory_files(repv dir_name)
 {
     DIR *dir;
-    if(*VSTR(dir_name) == 0)
-	dir_name = VAL(&dot);
-    dir = opendir(VSTR(dir_name));
+    if(*rep_STR(dir_name) == 0)
+	dir_name = rep_VAL(&dot);
+    dir = opendir(rep_STR(dir_name));
     if(dir)
     {
-	VALUE list = sym_nil;
+	repv list = Qnil;
 	struct dirent *de;
 	while((de = readdir(dir)))
 	{
-	    VALUE name = string_dupn(de->d_name, NAMLEN(de));
-	    list = cmd_cons(name, list);
-	    if(name == LISP_NULL || list == LISP_NULL)
+	    repv name = rep_string_dupn(de->d_name, NAMLEN(de));
+	    list = Fcons(name, list);
+	    if(name == rep_NULL || list == rep_NULL)
 	    {
-		mem_error();
+		rep_mem_error();
 		closedir(dir);
-		return LISP_NULL;
+		return rep_NULL;
 	    }
 	}
 	closedir(dir);
 	return list;
     }
-    return cmd_signal(sym_file_error, list_2(lookup_errno(), dir_name));
+    return Fsignal(Qfile_error, rep_list_2(rep_lookup_errno(), dir_name));
 }
 
-VALUE
-sys_getpwd(void)
+repv
+rep_getpwd(void)
 {
     char buf[PATH_MAX];
 #ifdef HAVE_GETCWD
@@ -542,7 +512,7 @@ sys_getpwd(void)
 #else
     if(!getwd(buf))
 #endif
-	return signal_file_error(sym_nil);
+	return rep_signal_file_error(Qnil);
     else
     {
 	/* Ensure that it ends with "/" */
@@ -552,6 +522,6 @@ sys_getpwd(void)
 	    buf[len++] = '/';
 	    buf[len] = 0;
 	}
-	return string_dupn(buf, len);
+	return rep_string_dupn(buf, len);
     }
 }
