@@ -181,6 +181,24 @@ if test $dl_ok = dl; then
               [AC_DEFINE(DLSYM_NEED_USCORE)
 	       AC_MSG_RESULT(yes)],
 	      [AC_MSG_RESULT(no)])
+
+  dnl RTLD_GLOBAL is broken for Tru64 UNIX V5.0 and V5.0A, such that
+  dnl   xh = dlopen("libx.so", RTLD_GLOBAL|RTLD_LAZY); /* provides func */
+  dnl   yh = dlopen("liby.so", RTLD_GLOBAL|RTLD_LAZY); /* provides func */
+  dnl   yf = dlsym(yh, "func"); /* Error: returns func from libx.so */
+  dnl It's hard to test for this apart from the version string, so
+  dnl that's what we use.
+  case ${host} in
+    *-dec-osf5*)
+      AC_MSG_CHECKING([for broken RTLD_GLOBAL on Tru64])
+      if /usr/sbin/sizer -v | grep -E -q -e 'UNIX [[TVX]]5\.0A? '; then
+	  AC_DEFINE(BROKEN_RTLD_GLOBAL)
+	  AC_MSG_RESULT(yes)
+      else
+	  AC_MSG_RESULT(no)
+      fi
+      ;;
+  esac
 fi
 
 if test $dl_ok != no; then
