@@ -1,3 +1,9 @@
+1998-09-09  John Harper  <john@dcs.warwick.ac.uk>
+
+	* ispell.jl (ispell-add-word-to-dictionary): new command
+	(ispell-cleanup-before-exit): added to the before-exit hook,
+	saves the dictionary and kills the process
+
 1998-09-08  John Harper  <john@dcs.warwick.ac.uk>
 
 	* ispell.jl (ispell-minor-mode): spell-checking in idle-time
