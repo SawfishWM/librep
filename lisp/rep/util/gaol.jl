@@ -17,18 +17,21 @@
 ;; along with librep; see the file COPYING.  If not, write to
 ;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-(define-structure gaol (export gaol-rebuild-environment
-			       gaol-replace-function
-			       gaol-add-special
-			       gaol-add-file-handler
-			       gaol-replace-file-handler
+(define-structure gaol (export gaol-define
+			       gaol-define-special
+			       gaol-define-file-handler
 			       make-gaol
 			       gaol-eval
-			       gaol-load)
+			       gaol-load
+			       gaol-open
+
+			       ;; obsolete
+			       gaol-rebuild-environment
+			       gaol-replace-function
+			       gaol-add-special)
 
   (open rep structure-internals)
 
-
 ;;; configuration/variables
 
   ;; list of all safe functions (only those imported into this
@@ -45,21 +48,21 @@
       call-with-error-handlers cons consp copy-sequence copy-stream
       current-time current-time-string default-boundp default-value
       defconst define define-value defmacro defsubst defun defvar
-      delete delete-if delete-if-not delete-timer delq digit-char-p
-      documentation elt eq eql equal error eval eval-when-compile
-      expand-last-match featurep filter fix-time flet fmakunbound
+      delete delete-if delete-if-not delq digit-char-p
+      elt eq eql equal error eval eval-when-compile
+      expand-last-match featurep filter fix-time
       format funcall function functionp garbage-collect gensym get
       get-output-stream-string getenv identity if integerp interactive
       lambda last length let let* letrec list list* logand logior
-      lognot logxor lower-case-p lsh macroexpand macrolet macrop
+      lognot logxor lower-case-p lsh macroexpand macrop
       make-closure make-list make-string make-string-input-stream
-      make-string-output-stream make-symbol make-timer make-vector
+      make-string-output-stream make-symbol make-vector
       makunbound mapc mapcar match-end match-start max member memq
       message min mod nconc nop not nreverse nth nthcdr null numberp or
       prin1 prin1-to-string princ print prog1 prog2 progn put quote
       quote-regexp random rassoc rassq read read-char read-chars
       read-from-string read-line reverse rplaca rplacd sequencep set
-      set-default set-timer setcar setcdr setplist setq setq-default
+      set-default setcar setcdr setplist setq setq-default
       signal sit-for sleep-for sort space-char-p special-form-p
       special-variable-p streamp string-equal string-head-eq
       string-lessp string-looking-at string-match string< string=
@@ -82,67 +85,52 @@
       string-lower-case-p string-capitalized-p string-upcase string-downcase
       capitalize-string mapconcat
 
-      make-table make-weak-table string-hash symbol-hash eq-hash
-      equal-hash tablep table-ref table-set table-unset table-walk
+      ;; make-timer delete-timer set-timer
+      ;; make-table make-weak-table string-hash symbol-hash eq-hash
+      ;; equal-hash tablep table-ref table-set table-unset table-walk
 
       downcase-table flatten-table upcase-table operating-system
       rep-version))
 
-  ;; alist mapping functions to their safe versions
-  (define gaol-redefined-functions)
+  ;; table containing all variables accessible by gaolled code
+  (define gaol-structure nil)
 
   ;; list of accessible special variables
   (define gaol-safe-specials
-    '(file-handler-alist load-filename macro-environment))
+    (list 'file-handler-alist 'load-filename 'macro-environment))
 
   ;; list of file handlers that may be called. These functions shouldn't
   ;; be added to the function environment, since that would allow _any_
   ;; file operation to be performed
   (define gaol-safe-file-handlers '(tilde-file-handler tar-file-handler))
 
-  ;; alist of (HANDLER . SYMBOL)
-  (define gaol-redefined-file-handlers nil)
-
+  ;; alist of file handlers
   (define file-handler-env nil)
 
-
 ;;; building the actual environments
 
-  ;; this structure exports all its bindings, these are the bindings
-  ;; that are visible to gaolled code (since the gaolled code will
-  ;; be evaluated in a structure that imports this structure)
-  (define gaol-structure nil)
-  (define gaol-needs-rebuilding t)
-
-  (defun gaol-rebuild-environment ()
-    (when gaol-needs-rebuilding
-      (setq file-handler-env
-	    (nconc (mapcar (lambda (sym)
-			     (cons sym t)) gaol-safe-file-handlers)
-		   (mapcar (lambda (cell)
-			     (cons (car cell)
-				   (symbol-value (cdr cell))))
-			   gaol-redefined-file-handlers)))
-      (unless gaol-structure
-	(setq gaol-structure (%make-structure))
-	(%name-structure gaol-structure '%gaol-structure)
-	(%structure-exports-all gaol-structure t))
-      (mapc (lambda (sym)
-	      (%structure-set
-	       gaol-structure sym (%structure-ref (%current-structure) sym)))
+  ;; initialization
+  (define (build-structure)
+    (unless gaol-structure
+      (setq gaol-structure (%make-structure))
+      (%name-structure gaol-structure '%gaol)
+      (%structure-exports-all gaol-structure t)
+      (mapc (lambda (var)
+	      (%structure-set gaol-structure var
+			      (%structure-ref (%current-structure) var)))
 	    gaol-safe-functions)
-      (mapc (lambda (cell)
-	      (%structure-set gaol-structure (car cell) (cdr cell)))
-	    gaol-redefined-functions)
-      (setq gaol-needs-rebuilding nil)))
+      (setq file-handler-env (mapcar (lambda (sym)
+				       (cons sym t))
+				     gaol-safe-file-handlers))))
 
   (defun make-gaol ()
-    (gaol-rebuild-environment)
+    (build-structure)
     (let ((gaol (%make-structure
-		 '() (lambda () (%open-structures '(%gaol-structure))))))
+		 '() (lambda () (%open-structures '(%gaol))))))
       (set-file-handler-environment file-handler-env gaol)
       (set-special-environment gaol-safe-specials gaol)
       (%structure-install-vm gaol nil)
+      (call-hook '*make-gaol-hook* (list gaol))
       gaol))
 
   (define default-gaol (let (gaol)
@@ -151,42 +139,33 @@
 			     (setq gaol (make-gaol)))
 			   gaol)))
 
-
 ;;; public environment mutators
 
-  (defun gaol-replace-function (fun def)
-    (let ((cell (assq fun gaol-redefined-functions)))
-      (unless (and cell (eq (cdr cell) def))
-	(setq gaol-needs-rebuilding t))
-      (if cell
-	  (rplacd cell def)
-	(setq gaol-redefined-functions (nconc gaol-redefined-functions
-					      (list (cons fun def)))))))
+  (define (gaol-define var value)
+    (build-structure)
+    (%structure-set gaol-structure var value))
 
-  (defun gaol-add-special (var)
+  (define (gaol-define-special var)
+    (build-structure)
     (unless (memq var gaol-safe-specials)
       ;; use nconc to affect existing environments
       (setq gaol-safe-specials (nconc gaol-safe-specials (list var)))))
 
-  (defun gaol-add-file-handler (fun)
-    (unless (memq fun gaol-safe-file-handlers)
-      (setq gaol-needs-rebuilding t)
-      (setq gaol-safe-file-handlers
-	    (nconc gaol-safe-file-handlers (list fun)))))
-
-  (defun gaol-replace-file-handler (fun def)
-    (let ((cell (assq fun gaol-redefined-file-handlers)))
-      (unless (and cell (eq (cdr cell) def))
-	(setq gaol-needs-rebuilding t))
+  (define (gaol-define-file-handler name fun)
+    (build-structure)
+    (let ((cell (assq name file-handler-env)))
       (if cell
-	  (rplacd cell def)
-	(setq gaol-redefined-file-handlers (nconc gaol-redefined-file-handlers
-						  (list (cons fun def)))))))
+	  (rplacd cell fun)
+	(setq file-handler-env (nconc file-handler-env
+				      (list (cons name fun)))))))
 
-
+  (define (gaol-open struct)
+    (build-structure)
+    (eval `(,%open-structures '(,struct)) gaol-structure))
+
 ;;; evaluating in the restricted environment
 
-  (defun load-in (filename struct)
+  (define (load-in filename struct)
     (let ((file (open-file filename 'read)))
       (unwind-protect
 	  (condition-case nil
@@ -196,8 +175,14 @@
 	    (end-of-stream))
 	(close-file file))))
 
-  (defun gaol-eval (form &optional gaol)
+  (define (gaol-eval form &optional gaol)
     (eval form (or gaol (default-gaol))))
 
-  (defun gaol-load (file &optional gaol)
-    (load-in file (or gaol (default-gaol)))))
+  (define (gaol-load file &optional gaol)
+    (load-in file (or gaol (default-gaol))))
+
+;;; compatibility
+
+  (define (gaol-rebuild-environment))
+  (define gaol-replace-function gaol-define)
+  (define gaol-add-special gaol-define-special))
