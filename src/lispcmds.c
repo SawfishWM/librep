@@ -30,11 +30,11 @@
 
 _PR void lispcmds_init(void);
 _PR VALUE sym_or, sym_and;
-_PR VALUE sym_load_path, sym_after_load_alist, sym_lisp_lib_dir;
+_PR VALUE sym_load_path, sym_after_load_alist, sym_lisp_lib_directory;
 _PR VALUE sym_dl_load_path;
-_PR VALUE sym_site_lisp_dir, sym_documentation_file;
+_PR VALUE sym_site_lisp_directory, sym_documentation_file;
 
-DEFSTRING(default_jade_dir, QUOTE(JADE_DIR));
+DEFSTRING(default_jade_directory, JADE_DIR);
 DEFSTRING(div_zero, "Divide by zero");
 
 DEFSYM(or, "or");
@@ -42,9 +42,9 @@ DEFSYM(and, "and");
 DEFSYM(load_path, "load-path");
 DEFSYM(dl_load_path, "dl-load-path");
 DEFSYM(after_load_alist, "after-load-alist");
-DEFSYM(jade_dir, "jade-dir");
-DEFSYM(lisp_lib_dir, "lisp-lib-dir");
-DEFSYM(site_lisp_dir, "site-lisp-dir");
+DEFSYM(jade_directory, "jade-directory");
+DEFSYM(lisp_lib_directory, "lisp-lib-directory");
+DEFSYM(site_lisp_directory, "site-lisp-directory");
 DEFSYM(exec_directory, "exec-directory");
 DEFSYM(documentation_file, "documentation-file"); /*
 ::doc:load_path::
@@ -60,13 +60,13 @@ A list of (LIBRARY FORMS...). Whenever the `load' command reads a file
 of Lisp code LIBRARY, it executes each of FORMS. Note that LIBRARY must
 exactly match the FILE argument given to `load'.
 ::end::
-::doc:jade_dir::
+::doc:jade_directory::
 The directory in which all of Jade's installed data files live.
 ::end::
-::doc:lisp_lib_dir::
+::doc:lisp_lib_directory::
 The name of the directory in which the standard lisp files live.
 ::end::
-::doc:site_lisp_dir::
+::doc:site_lisp_directory::
 The name of the directory in which site-specific Lisp files are stored.
 ::end::
 ::doc:exec_directory::
@@ -2808,31 +2808,35 @@ lispcmds_init(void)
     ADD_SUBR(subr_throw);
     ADD_SUBR(subr_unwind_protect);
 
-    INTERN(jade_dir); DOC(jade_dir);
+    INTERN(jade_directory); DOC(jade_directory);
     if(getenv("JADEDIR") != 0)
-	VSYM(sym_jade_dir)->value = string_dup(getenv("JADEDIR"));
+	VSYM(sym_jade_directory)->value = string_dup(getenv("JADEDIR"));
     else
-	VSYM(sym_jade_dir)->value = VAL(&default_jade_dir);
+	VSYM(sym_jade_directory)->value = VAL(&default_jade_directory);
 
-    INTERN(lisp_lib_dir); DOC(lisp_lib_dir);
+    INTERN(lisp_lib_directory); DOC(lisp_lib_directory);
     if(getenv("JADELISPLIB") != 0)
-	VSYM(sym_lisp_lib_dir)->value = string_dup(getenv("JADELISPLIB"));
+	VSYM(sym_lisp_lib_directory)->value
+	    = string_dup(getenv("JADELISPLIB"));
     else
-	VSYM(sym_lisp_lib_dir)->value
-	    = concat2(VSTR(VSYM(sym_jade_dir)->value), LISP_LIB_DIR_SUFFIX);
+	VSYM(sym_lisp_lib_directory)->value
+	    = concat2(VSTR(VSYM(sym_jade_directory)->value),
+		      LISP_LIB_DIR_SUFFIX);
 
-    INTERN(site_lisp_dir); DOC(site_lisp_dir);
+    INTERN(site_lisp_directory); DOC(site_lisp_directory);
     if(getenv("JADESITELISP") != 0)
-	VSYM(sym_site_lisp_dir)->value = string_dup(getenv("JADESITELISP"));
+	VSYM(sym_site_lisp_directory)->value
+	    = string_dup(getenv("JADESITELISP"));
     else
-	VSYM(sym_site_lisp_dir)->value
-	    = concat2(VSTR(VSYM(sym_jade_dir)->value), SITE_LISP_DIR_SUFFIX);
+	VSYM(sym_site_lisp_directory)->value
+	    = concat2(VSTR(VSYM(sym_jade_directory)->value),
+		      SITE_LISP_DIR_SUFFIX);
 
     INTERN(exec_directory); DOC(exec_directory);
     if(getenv("JADEEXECDIR") != 0)
 	VSYM(sym_exec_directory)->value = string_dup(getenv("JADEEXECDIR"));
     else
-	VSYM(sym_exec_directory)->value = string_dup(EXEC_DIR);
+	VSYM(sym_exec_directory)->value = string_dup(JADE_EXEC_DIR);
 
     INTERN(documentation_file); DOC(documentation_file);
     if(getenv("JADEDOCFILE") != 0)
@@ -2840,11 +2844,11 @@ lispcmds_init(void)
 	    = string_dup(getenv("JADEDOCFILE"));
     else
 	VSYM(sym_documentation_file)->value
-	    = concat2(VSTR(VSYM(sym_jade_dir)->value), DOC_FILE_SUFFIX);
+	    = concat2(VSTR(VSYM(sym_jade_directory)->value), DOC_FILE_SUFFIX);
 
     INTERN(load_path); DOC(load_path);
-    VSYM(sym_load_path)->value = list_2(VSYM(sym_lisp_lib_dir)->value,
-					VSYM(sym_site_lisp_dir)->value);
+    VSYM(sym_load_path)->value = list_2(VSYM(sym_lisp_lib_directory)->value,
+					VSYM(sym_site_lisp_directory)->value);
 
     INTERN(dl_load_path); DOC(dl_load_path);
     VSYM(sym_dl_load_path)->value = LIST_1(VSYM(sym_exec_directory)->value);
