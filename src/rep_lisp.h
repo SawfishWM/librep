@@ -130,8 +130,7 @@ typedef struct lisp_cons_block {
 #define CONS_VAL(x)	(((VALUE)(x)) | VALUE_IS_CONS_OR_INT)
 
 /* Get a pointer to a cons cell from a VALUE. */
-#define VCONS(v)	((Lisp_Cons *)((v) & ~(VALUE_CONS_MARK_BIT \
-					       | VALUE_IS_CONS_OR_INT)))
+#define VCONS(v)	((Lisp_Cons *)((v) & ~VALUE_IS_CONS_OR_INT))
 
 /* Get the car or cdr from a cons VALUE. */
 #define VCAR(v)		(VCONS(v)->car)
