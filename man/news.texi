@@ -3,6 +3,82 @@
 @appendix News
 @cindex News
 
+@heading 0.14
+
+@itemize @bullet
+
+@item New module @code{rep.util.md5}, has two functions for generating
+MD5 message digests (of files or strings)
+
+@item Changes to the @code{rep.io.sockets} function:
+
+In the @code{socket-server} function the @var{host} and/or @var{port}
+arguments may be false, meaning to listen on all addresses and to
+choose a random unused port.
+
+New functions @code{socket-peer-address} and @code{socket-peer-port},
+these always returns the details of the far end of the connetion.
+@code{socket-address} and @code{socket-port} have been changed to
+always return the details of the local connection point.
+
+@item New function in @code{rep.system} module, @code{crypt}. A wrapper
+for the system's @code{crypt} function (if it has one)
+
+@item New function in @code{rep.threads} mdoule,
+@code{make-suspended-thread}
+
+@item New module @code{rep.net.rpc}, provides a text-stream based RPC
+mechanism for Lisp programs. Similar in some ways to untyped CORBA.
+(This is still in the experimental stage -- its interface may change in
+forthcoming releases)
+
+@item New functions in @code{rep.data} module, @code{list->vector} and
+@code{vector->list}
+
+@item New macro @code{define-special-form}. A combination of
+@code{defvar} and @code{setq} -- it always makes the variable special
+and it always sets it to the given value
+
+@item New module @code{rep.test.framework} implementing @code{assert},
+@code{check} and @code{test} macros. This provides a framework for
+implementing unit tests in Lisp modules (such that running the
+interpreter with the @samp{--check} option will run all tests that have
+been set up to be autoloaded
+
+@item Bug fixes:
+@itemize @minus
+
+@item When reading from strings, don't choke on zero bytes
+
+@item When writing into sockets, be aware that the socket is
+in non-blocking mode
+
+@item SDBM and GDBM modules now close any open databases before the
+interpreter exits
+
+@item Fixed the @code{rep_parse_number} function not to require a
+terminating null character in the string when parsing bignums
+
+@item Only define @code{Qrep_lang_interpreter} once
+
+@item Don't assign vm registers to physical registers on 68000
+architectures -- it's been reported to crash
+
+@item When running asynchronous subprocesses, open and initialize the
+pty slave before forking to avoid a race condition with the child
+process
+
+@item Flush symbols from the module cache at another point
+
+@item Fixes for Unixware
+
+@item When compiling non-top-level @code{defvar} forms, add any doc
+string they have to the database
+
+@end itemize
+@end itemize
+
+
 @heading 0.13.5
 
 @itemize @bullet
