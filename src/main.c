@@ -124,19 +124,24 @@ main(int argc, char **argv)
 
     if(!initmem())
 	return(10);
-#if 0
-    main_strmem.sm_FreesBeforeFlush = 3;	/* reasonable? */
-#endif
     sm_init(&main_strmem);
-    values_init();
-    if(symbols_init())
+
+    pre_values_init();
+    if(pre_symbols_init())
     {
+#ifdef DUMPED
+	/* Must initialise dumped out symbols before interning _any_
+	   symbols by hand. */
+	dumped_init();
+#endif
+	symbols_init();
 	rc = sys_init(argc, argv);
 	symbols_kill();
     }
     else
 	rc = 5;
     values_kill();
+
     sm_kill(&main_strmem);
     killmem();
     return(rc);
@@ -150,7 +155,7 @@ inner_main(int argc, char **argv)
 {
     int rc = 5;
 
-    values_init2();
+    values_init();
     lisp_init();
     lispcmds_init();
     lispmach_init();
