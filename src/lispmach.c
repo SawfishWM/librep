@@ -357,6 +357,71 @@ list_ref (repv list, int elt)
 
 #endif /* THREADED_VM */
 
+/* Register optimization. [ stolen from ocaml-3.00/byterun/interp.c ]
+
+   Some compilers underestimate the use of the local variables representing
+   the abstract machine registers, and don't put them in hardware registers,
+   which slows down the interpreter considerably.
+   For GCC, I have hand-assigned hardware registers for several architectures.
+*/
+
+#ifdef __GNUC__
+#ifdef __mips__
+#define PC_REG asm("$16")
+#define SP_REG asm("$17")
+#define BP_REG asm("$18")
+#endif
+#ifdef __sparc__
+#define PC_REG asm("%l0")
+#define SP_REG asm("%l1")
+#define BP_REG asm("%l2")
+#endif
+#ifdef __alpha__
+#ifdef __CRAY__
+#define PC_REG asm("r9")
+#define SP_REG asm("r10")
+#define BP_REG asm("r11")
+#else
+#define PC_REG asm("$9")
+#define SP_REG asm("$10")
+#define BP_REG asm("$11")
+#endif
+#endif
+#ifdef __i386__
+#define PC_REG asm("%esi")
+#define SP_REG asm("%edi")
+#endif
+#if defined(PPC) || defined(_POWER) || defined(_IBMR2)
+#define PC_REG asm("26")
+#define SP_REG asm("27")
+#define BP_REG asm("28")
+#endif
+#ifdef __hppa__
+#define PC_REG asm("%r18")
+#define SP_REG asm("%r17")
+#define BP_REG asm("%r16")
+#endif
+#ifdef __mc68000__
+#define PC_REG asm("a5")
+#define SP_REG asm("a4")
+#endif
+#ifdef __arm__
+#define PC_REG asm("r9")
+#define SP_REG asm("r8")
+#define BP_REG asm("r7")
+#endif
+#endif
+
+#ifndef PC_REG
+#define PC_REG
+#endif
+#ifndef SP_REG
+#define SP_REG
+#endif
+#ifndef BP_REG
+#define BP_REG
+#endif
+
 DEFSTRING(max_depth, "max-lisp-depth exceeded, possible infinite recursion?");
 
 DEFUN("jade-byte-code", Fjade_byte_code, Sjade_byte_code,
@@ -374,7 +439,6 @@ of byte code. See the functions `compile-file', `compile-directory' and
 `compile-lisp-lib' for more details.
 ::end:: */
 {
-    register u_char *pc;
     rep_GC_root gc_code, gc_consts;
     /* The `gcv_N' field is only filled in with the stack-size when there's
        a chance of gc.	*/
@@ -395,9 +459,10 @@ of byte code. See the functions `compile-file', `compile-directory' and
     /* Jump to this label when tail-calling but the current stack
        is insufficiently large */
 again_stack: {
-    register repv *stackp;
+    register u_char *pc PC_REG;
+    register repv *stackp SP_REG;
     repv *stackbase;
-    register repv *bindp;
+    register repv *bindp BP_REG;
     repv *bindbase;
 
 #if defined (__GNUC__)
