@@ -1,3 +1,14 @@
+2000-03-01  John Harper  <john@dcs.warwick.ac.uk>
+
+	* repgdbm.c: new file, binding for GDBM. Mostly compatible with
+	sdbm binding
+
+	* repdoc.c: use GDBM instead of SDBM
+
+	* values.c (rep_box_string): new function, create a lisp string
+	from a malloc-allocated string (and assume responsibility for
+	its memory)
+
 2000-02-29  John Harper  <john@dcs.warwick.ac.uk>
 
 	* symbols.c (symbol_print): try harder to never print something

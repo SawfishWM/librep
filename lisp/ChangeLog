@@ -1,3 +1,7 @@
+2000-03-01  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp-doc.jl: use GDBM instead of SDBM (no data size limits)
+
 2000-02-29  John Harper  <john@dcs.warwick.ac.uk>
 
 	* define.jl: bug fixes -- handle interactive decls and doc
