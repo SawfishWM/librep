@@ -741,7 +741,9 @@
 	       ;; something always gets bound
 	       (let ((tem (gensym)))
 		 (note-binding tem)
-		 (tag-binding tem 'heap-allocated)))
+		 (tag-binding tem 'heap-allocated)
+		 ;; avoid `unused variable' warnings
+		 (note-binding-referenced tem)))
 	     ;; Loop over all but the last handler
 	     (while (consp (cdr handlers))
 	       (if (consp (car handlers))
