@@ -271,13 +271,12 @@ rep_init(char *prog_name, int *argc, char ***argv,
 void
 rep_kill(void)
 {
-#ifdef HAVE_DYNAMIC_LOADING
-    rep_kill_dl_libraries();
-#endif
-
     rep_sys_os_kill();
     rep_find_kill();
     rep_files_kill();
+#ifdef HAVE_DYNAMIC_LOADING
+    rep_kill_dl_libraries();
+#endif
     rep_lispmach_kill();
     rep_db_kill();
     rep_symbols_kill();
