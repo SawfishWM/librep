@@ -979,7 +979,7 @@ again:
 	case OP_UNBINDALL:
 	    gc_stackbase.count = STK_USE;
 	    bindstack = unbind_all_but_one (bindstack);
-	    impurity = 0;
+	    impurity = bound_specials (bindstack);
 	    break;
 
 	case OP_BOUNDP:
