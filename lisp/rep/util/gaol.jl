@@ -33,26 +33,32 @@
     default-value defconst define defmacro defsubst defun defvar delete
     delete-if delete-if-not delete-timer delq digit-char-p
     documentation elt eq eql equal error eval eval-when-compile
-    expand-last-match featurep filter fix-time flet fmakunbound
-    format funcall function functionp garbage-collect gensym get
+    expand-last-match featurep filter fix-time flet fmakunbound format
+    funcall function functionp garbage-collect gensym get
     get-output-stream-string getenv identity if integerp interactive
-    lambda last length let let* letrec list list* logand logior lognot logxor
-    lower-case-p lsh macroexpand macrolet macrop make-closure make-list
-    make-string make-string-input-stream make-string-output-stream
-    make-symbol make-timer make-vector makunbound mapc mapcar match-end
-    match-start max member memq message min mod nconc nop not nreverse
-    nth nthcdr null numberp or prin1 prin1-to-string princ print prog1
-    prog2 progn put quote quote-regexp random rassoc rassq read
-    read-char read-chars read-from-string read-line reverse rplaca
-    rplacd sequencep set set-default set-timer setcar setcdr setplist
-    setq setq-default signal sit-for sleep-for sort space-char-p
-    special-form-p special-variable-p streamp string-equal
-    string-head-eq string-lessp string-looking-at string-match string<
-    string= stringp subr-name subrp substring
-    symbol-name symbol-plist symbol-value symbolp system-name throw
-    time-later-p translate-string unless unwind-protect upper-case-p
-    user-full-name user-login-name vector vectorp when while
-    with-internal-definitions with-object write zerop))
+    lambda last length let let* letrec list list* logand logior lognot
+    logxor lower-case-p lsh macroexpand macrolet macrop make-closure
+    make-list make-string make-string-input-stream
+    make-string-output-stream make-symbol make-timer make-vector
+    makunbound mapc mapcar match-end match-start max member memq
+    message min mod nconc nop not nreverse nth nthcdr null numberp or
+    prin1 prin1-to-string princ print prog1 prog2 progn put quote
+    quote-regexp random rassoc rassq read read-char read-chars
+    read-from-string read-line reverse rplaca rplacd sequencep set
+    set-default set-timer setcar setcdr setplist setq setq-default
+    signal sit-for sleep-for sort space-char-p special-form-p
+    special-variable-p streamp string-equal string-head-eq string-lessp
+    string-looking-at string-match string< string= stringp subr-name
+    subrp substring symbol-name symbol-plist symbol-value symbolp
+    system-name throw time-later-p translate-string unless
+    unwind-protect upper-case-p user-full-name user-login-name vector
+    vectorp when while with-internal-definitions with-object write
+    zerop remainder quotient modulo floor ceiling truncate round exp
+    log sin cos tan asin acos atan sqrt expt gcd fixnump rationalp
+    realp exactp inexactp exact->inexact inexact->exact numerator
+    denominator positivep negativep oddp evenp abs lcm make-table
+    make-weak-table string-hash symbol-hash eq-hash equal-hash tablep
+    table-ref table-set table-unset table-walk))
 
 ;; alist mapping functions to their safe versions
 (defvar gaol-redefined-functions
@@ -64,7 +70,7 @@
     operating-system rep-version upcase-table load-filename macro-environment))
 
 ;; features that the restricted code may ask for
-(defvar gaol-safe-features '(timers))
+(defvar gaol-safe-features '(timers tables))
 
 ;; list of file handlers that may be called. These functions shouldn't
 ;; be added to the function environment, since that would allow _any_
