@@ -660,9 +660,10 @@ string INPUT."
   "Returns t when FILE1 was modified more recently than FILE2."
   (time-later-p (file-modtime file1) (file-modtime file2)))
 
+(defun setcar (cell x) (rplaca cell x) x)
+(defun setcdr (cell x) (rplacd cell x) x)
+
 ;; Some function pseudonyms
-(define-value 'setcar rplaca)
-(define-value 'setcdr rplacd)
 (define-value 'string= equal)
 (define-value 'string< <)
 
