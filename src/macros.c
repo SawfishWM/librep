@@ -61,8 +61,8 @@ symbol_value_in_structure (repv structure, repv sym)
 
 DEFUN("macroexpand-1", Fmacroexpand_1, Smacroexpand_1,
       (repv form, repv env), rep_Subr2) /*
-::doc:macroexpand::
-macroexpand FORM [ENVIRONMENT]
+::doc:macroexpand-1::
+macroexpand-1 FORM [ENVIRONMENT]
 
 If FORM is a macro call, expand it once and return the resulting form.
 
