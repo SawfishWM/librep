@@ -232,6 +232,7 @@ rep_init_from_dump(char *prog_name, int *argc, char ***argv,
 	    rep_dumped_init (dump_file);
 
 	rep_symbols_init();
+	rep_numbers_init ();
 
 	rep_values_init();
 	rep_lisp_init();
