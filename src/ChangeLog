@@ -1,3 +1,12 @@
+2000-01-08  John Harper  <john@dcs.warwick.ac.uk>
+
+	* Makefile.in: only include ../intl objects in libgettext.la if
+	USE_INCLUDED_LIBINTL is set to `yes'. Also ensure that
+	libgettext.la exports its symbols
+
+	* gettext.c: if LIBC_GETTEXT is defined remove the gnu_
+	prefixes to libintl function invocations
+
 2000-01-07  John Harper  <john@dcs.warwick.ac.uk>
 
 	* debug-buffer.c: don't generate stack backtraces if gcc's
