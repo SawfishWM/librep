@@ -42,6 +42,7 @@ _PR void db_free(void *db);
 _PR void db_vprintf(void *_db, char *fmt, va_list args);
 _PR void db_printf(void *db, char *fmt, ...);
 _PR void db_print_backtrace(void *_db, char *fun);
+_PR void *db_return_address(void);
 _PR void db_spew(void *_db);
 _PR void db_spew_all(void);
 _PR void db_kill(void);
@@ -146,14 +147,38 @@ db_print_backtrace(void *_db, char *fun)
     STACK_PROBE(24); STACK_PROBE(25); STACK_PROBE(26); STACK_PROBE(27);
     STACK_PROBE(28); STACK_PROBE(29); STACK_PROBE(30); STACK_PROBE(31);
 
-    db_printf(_db, "\n Backtrace in `%s':", fun);
+    db_printf(_db, "\n Backtrace in `%s':\n", fun);
     for(i = 1; i < 32 && stack[i] != 0; i++)
     {
 	if(i % 4 == 0)
 	    db_printf(_db, "\n#%-2d  ", i);
+#ifdef DB_RESOLVE_SYMBOLS
+	if(stack[i] == 0)
+	    db_printf(_db, "(nil)  ");
+	else
+	{
+	    char *name;
+	    void *addr;
+	    if(find_c_symbol(stack[i], &name, &addr))
+		db_printf(_db, "<%s+%d>  ", name, stack[i] - addr);
+	    else
+		db_printf(_db, "0x%08lx  ", stack[i]);
+	}
+#else
 	db_printf(_db, "0x%08lx  ", stack[i]);
+#endif
     }
     db_printf(_db, "\n");
+#endif
+}
+
+void *
+db_return_address(void)
+{
+#if defined(__GNUC__)
+    return __builtin_return_address(1);
+#else
+    return 0;
 #endif
 }
 
