@@ -25,13 +25,13 @@ AC_CONFIG_HEADER(config.h src/rep.h)
 AC_CONFIG_AUX_DIR(etc)
 
 dnl Release versioning info
-version="0.6"
+version="0.6.1"
 
 dnl libtool versioning info: `CURRENT:REVISION:AGE'. CURRENT is the
 dnl current interface id, REVISION is the version number of this
 dnl implementation, AGE defines the first interface id also supported
 dnl (i.e. all interfaces between CURRENT-AGE and CURRENT are supported)
-libversion="4:0:2"
+libversion="4:1:2"
 
 makefile_template="Makefile.in:Makedefs.in"
 output_files="src/Makefile:Makedefs.in:src/Makefile.in\
@@ -47,6 +47,9 @@ replispdir='${repdir}/${version}/lisp'
 repexecdir='${libexecdir}/rep/${version}/${host_type}'
 repcommonexecdir='${libexecdir}/rep/${host_type}'
 repdocfile='${repdir}/${version}/DOC'
+
+EXTRA_LIBOBJS=""
+AC_SUBST(EXTRA_LIBOBJS)
 
 dnl Checks for programs.
 AC_PROG_CC
@@ -74,7 +77,7 @@ doug_lea_malloc=yes
 AC_CHECK_FUNC(malloc_get_state, , doug_lea_malloc=no)
 AC_CHECK_FUNC(malloc_set_state, , doug_lea_malloc=no)
 if test "$doug_lea_malloc" = "no"; then
-  LIBOBJS="${LIBOBJS} dlmalloc.o"
+  EXTRA_LIBOBJS="${EXTRA_LIBOBJS} dlmalloc.o"
 else
   AC_DEFINE(LIBC_MALLOC)
 fi
