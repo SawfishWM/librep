@@ -1,3 +1,15 @@
+2000-07-07  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.c (rep_mem_error): made this just print a message abort
+	(). Too many functions don't check the return value of
+	allocators (such as Fcons). Perhaps have a mode where rep_alloc
+	loops until it can allocate the memory..?
+
+	* numbers.c (rep_foldl): new function, as rep_number_foldl, but
+	doesn't check that arguments are numeric, used by Fmin and Fmax
+
+	* values.c (rep_allocate_cons): fixed type error
+
 2000-07-05  John Harper  <john@dcs.warwick.ac.uk>
 
 	* repint.h: allocate cons cells in blocks of 8k instead of 4k

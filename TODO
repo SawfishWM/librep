@@ -83,7 +83,7 @@ Outstanding bugs
 
  + document in manual: current-utime, new read syntaxes
 
- + make rep_call_lispn () public?
+ + make public when libversion changes: rep_call_lispn, rep_foldl
 
 
 General programming tasks:
