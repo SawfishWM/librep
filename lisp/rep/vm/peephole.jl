@@ -489,6 +489,19 @@
 		  (rplacd tem label)))
 	      (setq keep-going t)))
 
+	   ;; {jpt,jpn} X; jmp Y; X: --> {jnp,jtp} Y; X:
+	   ;; {jtp,jnp} X; jmp Y; X: --> {jpn,jpt} Y; X:
+	   ((and (eq (car insn1) 'jmp)
+		 (memq (car insn0) '(jpt jpn jtp jnp))
+		 (eq (cadr insn0) insn2))
+	    (rplaca insn1 (case (car insn0)
+			    ((jpt) 'jnp)
+			    ((jpn) 'jtp)
+			    ((jtp) 'jpn)
+			    ((jnp) 'jpt)))
+	    (del-0)
+	    (setq keep-going t))
+
 	   ;; <const>; jmp X; ... X: <cond. jmp> Y --> whatever
 	   ;;
 	   ;; [ this should be handled already, by (1) changing the

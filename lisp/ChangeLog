@@ -1,3 +1,9 @@
+2000-11-21  John Harper  <jsh@eazel.com>
+
+	* rep/vm/peephole.jl (peephole-optimizer): added transformation
+	`{jpt,jpn,jtp,jnp} X; jmp Y; X: --> {jnp,jtp,jpn.jpt} Y; X:',
+	can help some `do' loops e.g.
+
 2000-11-12  John Harper  <jsh@eazel.com>
 
 	* rep/util/repl.jl (completion-generator): pass this function
