@@ -246,9 +246,9 @@ hash(u_char *str)
     return(value);
 }
 
-DEFUN("make-rep_obarray", Fmake_obarray, Smake_obarray, (repv size), rep_Subr1) /*
+DEFUN("make-obarray", Fmake_obarray, Smake_obarray, (repv size), rep_Subr1) /*
 ::doc:Smake-obarray::
-make-rep_obarray SIZE
+make-obarray SIZE
 
 Creates a new structure for storing symbols in. This is basically a vector
 with a few slight differences (all elements initialised to a special value).
@@ -405,6 +405,8 @@ values look for one of those first.
 /* Second argument (NO-ERR) means don't signal an error if the value is
    void. */
 {
+    /* Some of this function is hardcoded into the OP_REFQ
+       instruction in lispmach.c */
     repv val = rep_void_value;
     rep_DECLARE1(sym, rep_SYMBOLP);
 
@@ -434,6 +436,8 @@ in the current buffer or `make-variable-buffer-local' has been called on
 SYMBOL the buffer-local value in the current buffer is set. Returns repv.
 ::end:: */
 {
+    /* Some of this function is hardcoded into the OP_SETQ
+       instruction in lispmach.c */
     rep_DECLARE1(sym, rep_SYMBOLP);
     if(rep_SYM(sym)->car & rep_SF_CONSTANT)
 	return(Fsignal(Qsetting_constant, rep_LIST_1(sym)));
