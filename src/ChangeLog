@@ -1,3 +1,8 @@
+2000-01-15  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_files.c (rep_expand_file_name): merge contiguous slashes
+	in filenames, instead of assuming they represent a new root
+
 2000-01-12  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep_lisp.h (rep_guardian): new data type (cell16)
