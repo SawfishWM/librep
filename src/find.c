@@ -313,13 +313,110 @@ backward_char(long count, TX *tx, Pos *pos)
 }
 
 
-/* Regexp stuff. */
+/* Compiling regexps. */
 
-/* We cache the most recently compiled regexp (until GC, at least) */
-static VALUE last_regexp;
-static regexp *last_compiled_regexp;
+/* A linked list is used to store all recently-used regexps in MRU
+   order. At GC the regexps at the tail of the list are freed to
+   satisfy the size limit.
+
+   It might be better to use a hash-table. But by experience it seems
+   that the cache is usually quite small, and therefore searching the
+   list each compilation isn't too bad (and it makes the gc easier).
+
+   Also, the hit-ratio is very good (as I'm typing this, ~0.97) */
+
+struct cached_regexp {
+    struct cached_regexp *next;
+    VALUE regexp;
+    regexp *compiled;
+};
+
+static struct cached_regexp *cached_regexps;	/* should be a hash table? */
 static int regexp_hits, regexp_misses;
+static int regexp_cache_limit = 1024;
 
+_PR VALUE sym_regexp_error;
+DEFSYM(regexp_error, "regexp-error");
+DEFSTRING(err_regexp_error, "Regexp error");
+
+static regexp *
+compile_regexp(VALUE re)
+{
+    struct cached_regexp **x = &cached_regexps;
+    int re_len = STRING_LEN(re);
+    while(*x != 0)
+    {
+	if(STRING_LEN((*x)->regexp) == re_len
+	   && memcmp(VSTR((*x)->regexp), VSTR(re), re_len) == 0)
+	{
+	    /* Found it. Move this node to the head of the list. Then
+	       return the compiled copy. */
+	    struct cached_regexp *this = *x;
+	    if(x != &cached_regexps)
+	    {
+		*x = this->next;
+		this->next = cached_regexps;
+		cached_regexps = this;
+	    }
+	    regexp_hits++;
+	    return this->compiled;
+	}
+	x = &((*x)->next);
+    }
+
+    /* No cached copy. Compile it, then add it to the cache. */
+    {
+	struct cached_regexp *this;
+	regexp *compiled = regcomp(VSTR(re));
+	if(compiled != 0)
+	{
+	    this = str_alloc(sizeof(struct cached_regexp));
+	    if(this != 0)
+	    {
+		this->regexp = re;
+		this->compiled = compiled;
+		this->next = cached_regexps;
+		cached_regexps = this;
+		regexp_misses++;
+		data_after_gc += (sizeof(struct cached_regexp)
+				  + compiled->regsize);
+		return compiled;
+	    }
+	}
+	return 0;
+    }
+}
+
+/* Called at GC */
+static void
+release_cached_regexp(void)
+{
+    u_long total = 0;
+    struct cached_regexp *x = cached_regexps;
+    while(x != 0 && total < regexp_cache_limit)
+    {
+	total += sizeof(struct cached_regexp) + x->compiled->regsize;
+	x = x->next;
+    }
+    if(x != 0)
+    {
+	/* Free all following regexps */
+	struct cached_regexp *tem = x->next;
+	x->next = 0;
+	x = tem;
+	while(x != 0)
+	{
+	    tem = x->next;
+	    free(x->compiled);
+	    str_free(x);
+	    x = tem;
+	}
+    }
+}
+
+
+/* Storing regexp context. */
+	
 /* Storage for remembering where the last match was.
    last_match_data is the string or buffer that was matched against.
    last_matches is a copy of the subexpression data of the last match.  */
@@ -329,44 +426,6 @@ static regsubs last_matches;
 
 static struct saved_regexp_data *saved_matches;
 
-_PR VALUE sym_regexp_error;
-DEFSYM(regexp_error, "regexp-error");
-DEFSTRING(err_regexp_error, "Regexp error");
-
-static regexp *
-compile_regexp(VALUE re)
-{
-    if(last_compiled_regexp != 0
-       && last_regexp != 0
-       && STRING_LEN(last_regexp) == STRING_LEN(re)
-       && memcmp(VSTR(last_regexp), VSTR(re), STRING_LEN(re)) == 0)
-    {
-	regexp_hits++;
-	return last_compiled_regexp;
-    }
-    else
-    {
-	regexp_misses++;
-	if(last_regexp != 0)
-	    free(last_compiled_regexp);
-	last_compiled_regexp = regcomp(VSTR(re));
-	if(last_compiled_regexp != 0)
-	    last_regexp = re;
-	return last_compiled_regexp;
-    }
-}
-
-static void
-release_cached_regexp(void)
-{
-    if(last_regexp != 0)
-    {
-	last_regexp = 0;
-	free(last_compiled_regexp);
-	last_compiled_regexp = 0;
-    }
-}
-	
 static void
 update_last_match(VALUE data, regexp *prog)
 {
@@ -381,11 +440,8 @@ mark_regexp_data(void)
 {
     struct saved_regexp_data *sd;
 
-    if(last_regexp != 0)
-    {
-	/* Don't keep cached REs through GC. */
-	release_cached_regexp();
-    }
+    /* Don't keep too many cached REs through GC. */
+    release_cached_regexp();
 
     if(last_match_type == reg_tx)
     {
@@ -448,6 +504,9 @@ pop_regexp_data(void)
     last_match_data = sd->data;
     memcpy(&last_matches, &sd->matches, sizeof(regsubs));
 }
+
+
+/* Matching and searching */
 
 _PR VALUE cmd_re_search_forward(VALUE re, VALUE pos, VALUE tx, VALUE nocase_p);
 DEFUN("re-search-forward", cmd_re_search_forward, subr_re_search_forward, (VALUE re, VALUE pos, VALUE tx, VALUE nocase_p), V_Subr4, DOC_re_search_forward) /*
@@ -988,6 +1047,38 @@ error:
     return(res);
 }
 
+_PR VALUE cmd_regexp_cache_control(VALUE limit);
+DEFUN("regexp-cache-control", cmd_regexp_cache_control,
+      subr_regexp_cache_control, (VALUE limit), V_Subr1,
+      DOC_regexp_cache_control) /*
+::doc:regexp_cache_control::
+regexp-cache-control [SOFT-LIMIT]
+
+If SOFT-LIMIT is defined, it specifies the maximum number of bytes that
+the regexp cache may occupy after garbage collection.
+
+Returns (SOFT-LIMIT CURRENT-SIZE CURRENT-ENTRIES HITS MISSES).
+::end:: */
+{
+    int current_size = 0, current_items = 0;
+    struct cached_regexp *x;
+
+    if(INTP(limit) && VINT(limit) >= 0)
+	regexp_cache_limit = VINT(limit);
+
+    x = cached_regexps;
+    while(x != 0)
+    {
+	current_items++;
+	current_size += sizeof(struct cached_regexp) + x->compiled->regsize;
+	x = x->next;
+    }
+
+    return list_5(MAKE_INT(regexp_cache_limit),
+		  MAKE_INT(current_size), MAKE_INT(current_items),
+		  MAKE_INT(regexp_hits), MAKE_INT(regexp_misses));
+}	  
+
 void
 regerror(char *err)
 {
@@ -1016,6 +1107,7 @@ find_init(void)
     ADD_SUBR(subr_match_start);
     ADD_SUBR(subr_match_end);
     ADD_SUBR(subr_quote_regexp);
+    ADD_SUBR(subr_regexp_cache_control);
 }
 
 void
