@@ -21,11 +21,6 @@
 #ifndef REPINT_SUBRS_H
 #define REPINT_SUBRS_H
 
-/* from continuations.c */
-extern char *rep_stack_bottom;
-extern void rep_continuations_init (void);
-extern void rep_continuations_kill (void);
-
 /* from files.c */
 extern void rep_files_init(void);
 extern void rep_files_kill(void);
@@ -56,6 +51,9 @@ extern void rep_lispcmds_init(void);
 /* from lispmach.c */
 extern void rep_lispmach_init(void);
 extern void rep_lispmach_kill(void);
+
+/* from main.c */
+extern char *rep_stack_bottom;
 
 /* from misc.c */
 #ifndef HAVE_STPCPY

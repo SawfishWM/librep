@@ -23,10 +23,6 @@
 
 #include <stdarg.h>
 
-/* from continuations.c */
-extern int rep_continuation_type;
-extern repv Fcall_cc (repv fun);
-
 /* from debug-buffer.c */
 extern void *rep_db_alloc(char *name, int size);
 extern void rep_db_free(void *db);
