@@ -127,6 +127,7 @@ DEFSYM(term_interrupt, "term-interrupt");
 
 DEFSYM(debug_on_error, "debug-on-error");
 DEFSYM(backtrace_on_error, "backtrace-on-error");
+DEFSYM(backtrace_verbosely, "backtrace-verbosely");
 DEFSYM(debug_macros, "debug-macros");
 DEFSYM(error_handler_function, "error-handler-function"); /*
 ::doc:debug-on-error::
@@ -928,13 +929,12 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 			return rep_MAKE_INT (c);
 		    }
 		    c2 = rep_stream_getc (strm);
-		    if (c2 == EOF)
-			return Fsignal(Qpremature_end_of_stream, rep_LIST_1(strm));
-		    if (!isalpha (c2))
+		    if (!isalpha (c2) || c2 == EOF)
 		    {
-			*c_p = c2;
+			*c_p = EOF;
 			return rep_MAKE_INT (c);
 		    }
+
 		    c = tolower (c);
 		    c2 = tolower (c2);
 		    for (i = 0; char_names[i].name != 0; i++)
@@ -2520,20 +2520,60 @@ ARGLIST had been evaluated or not before being put into the stack.
 ::end:: */
 {
     struct rep_Call *lc = rep_call_stack;
+    repv verbosely = Fsymbol_value (Qbacktrace_verbosely, Qt);
+    repv old_print_escape = Fsymbol_value (Qprint_escape, Qt);
 
     if(rep_NILP(strm) && !(strm = Fsymbol_value(Qstandard_output, Qnil)))
 	return rep_signal_arg_error (strm, 1);
 
+    Fset (Qprint_escape, Qt);
+
     while (lc != 0)
     {
-	rep_stream_putc(strm, '\n');
-	rep_print_val(strm, lc->fun);
-	rep_stream_putc(strm, ' ');
-	rep_print_val(strm, lc->args);
-	rep_stream_putc(strm, ' ');
-	rep_print_val(strm, lc->args_evalled_p);
+	repv function_name = Qnil;
+	if (rep_FUNARGP (lc->fun))
+	{
+	    if (rep_STRINGP (rep_FUNARG (lc->fun)->name))
+		function_name = rep_FUNARG (lc->fun)->name;
+	}
+	else if (Fsubrp (lc->fun) != Qnil)
+	{
+	    if (rep_STRINGP (rep_XSUBR (lc->fun)->name))
+		function_name = rep_XSUBR (lc->fun)->name;
+	}
+
+	if (function_name != Qnil)
+	{
+	    rep_stream_puts (strm, "\n(", -1, rep_FALSE);
+	    rep_princ_val (strm, function_name);
+
+	    if (verbosely != Qnil && !rep_VOIDP (lc->args))
+	    {
+		repv args = lc->args;
+		while (rep_CONSP (args) && !rep_INTERRUPTP)
+		{
+		    rep_stream_putc (strm, ' ');
+		    rep_print_val (strm, rep_CAR (args));
+		    args = rep_CDR (args);
+		    rep_TEST_INT;
+		}
+		if (!rep_INTERRUPTP && args != Qnil)
+		{
+		    rep_stream_puts (strm, " . ", -1, rep_FALSE);
+		    rep_print_val (strm, args);
+		}
+	    }
+	    else
+		rep_stream_puts (strm, " ...", -1, rep_FALSE);
+
+	    rep_stream_putc (strm, ')');
+
+	}
 	lc = lc->next;
     }
+
+    Fset (Qprint_escape, old_print_escape);
+
     return Qt;
 }
 
@@ -2667,6 +2707,8 @@ rep_lisp_init(void)
     Fset (Qdebug_on_error, Qnil);
     rep_INTERN_SPECIAL(backtrace_on_error);
     Fset (Qbacktrace_on_error, Qnil);
+    rep_INTERN_SPECIAL(backtrace_verbosely);
+    Fset (Qbacktrace_verbosely, Qnil);
     rep_INTERN_SPECIAL(debug_macros);
     Fset (Qdebug_macros, Qnil);
     rep_INTERN_SPECIAL(error_handler_function);
