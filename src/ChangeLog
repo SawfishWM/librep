@@ -1,5 +1,10 @@
 2000-07-28  John Harper  <john@dcs.warwick.ac.uk>
 
+	* lispcmds.c (rep_lispcmds_init): check REP_LOAD_PATH and
+	REP_DL_LOAD_PATH for colon-separated directories to prepend to
+	load-path and dl-load-path respectively. Don't add
+	LD_LIBRARY_PATH anymore
+
 	* lispmach.c: reimplemented bytecode profiling
 
 	* lispcmds.c (Fload_file, Fload_dl_file): abstracted from
