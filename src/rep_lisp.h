@@ -578,7 +578,7 @@ typedef struct {
 /* Other definitions */
 
 /* Macros for other types */
-#define VMARK(v)	((Mark *)VPTR(v))
+#define VMARK(v)	((Lisp_Mark *)VPTR(v))
 #define VTX(v)		((TX *)VPTR(v))
 #define VBUFFER(v)	VTX(v)
 #define VPROC(v)	((struct Proc *)VPTR(v))
