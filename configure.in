@@ -18,6 +18,8 @@ dnl  You should have received a copy of the GNU General Public License
 dnl  along with Jade; see the file COPYING.  If not, write to
 dnl  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
+AC_REVISION($Revision$)
+
 AC_INIT(src/jade.h)
 AC_CONFIG_HEADER(config.h)
 
@@ -147,3 +149,9 @@ AC_SUBST(HAVE_X11)
 
 dnl Build all files
 AC_OUTPUT(${output_files})
+
+dnl If it doesn't look like GNU Make is being used, give a friendly warning
+tem=`make --version | grep GNU`
+if `test "$tem" = ""`; then
+  AC_MSG_WARN([You need to use GNU Make when compiling Jade])
+fi
