@@ -18,13 +18,13 @@ AC_DEFUN(AM_PATH_REP,
   rep_version=`$rep_config --version`
   if test $? -eq 0; then
     rep_major=`echo $rep_version \
-	| sed -e 's/\([[0-9]]\+\)\.\([[0-9]]\+\)\(\.\([[0-9]]\+\)\)\?/\1/'`
+	| sed -e 's/\([[0-9]]*\)\..*/\1/'`
     rep_minor=`echo $rep_version \
-	| sed -e 's/\([[0-9]]\+\)\.\([[0-9]]\+\)\(\.\([[0-9]]\+\)\)\?/\2/'`
+	| sed -e 's/\([[0-9]]*\)\.\([[0-9]]*\).*/\2/'`
     min_rep_major=`echo $min_rep_version \
-	| sed -e 's/\([[0-9]]\+\)\.\([[0-9]]\+\)/\1/'`
+	| sed -e 's/\([[0-9]]*\)\..*/\1/'`
     min_rep_minor=`echo $min_rep_version \
-	| sed -e 's/\([[0-9]]\+\)\.\([[0-9]]\+\)/\2/'`
+	| sed -e 's/\([[0-9]]*\)\.\([[0-9]]*\).*/\2/'`
     if test '(' $rep_major -gt $min_rep_major ')' \
 	-o '(' $rep_major -eq $min_rep_major \
 	       -a $rep_minor -ge $min_rep_minor ')';
