@@ -630,6 +630,18 @@ exist that have not already been returned."
   (%structure-ref (%current-structure) name))
 
 
+;; default error handler
+
+(defun default-error-handler (err data)
+  (beep)
+  (write t (format nil "*** %s: %s"
+		   (or (get err 'error-message) err)
+		   (mapconcat (lambda (x)
+				(format nil "%s" x)) data ", "))))
+
+(defvar error-handler-function default-error-handler)
+
+
 ;; entry point
 
 ;; null i18n function until gettext is loaded
