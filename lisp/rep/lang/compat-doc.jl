@@ -33,19 +33,23 @@
 	    add-documentation-params)
 
     (open rep
+	  rep.structures
 	  rep.lang.doc)
 
   ;; make this appear as the old module 'lisp-doc
   (define-structure-alias lisp-doc rep.lang.compat-doc)
 
+  (define (infer-structure sym)
+    (locate-binding sym (list *user-structure*)))
+
   (define (documentation symbol #!optional value)
-    (rep.lang.doc#documentation symbol nil value))
+    (rep.lang.doc#documentation symbol (infer-structure symbol) value))
 
   (define (document-var symbol string)
-    (document-variable symbol nil string))
+    (document-variable symbol (infer-structure symbol) string))
 
   (define (add-documentation symbol string)
     (rep.lang.doc#add-documentation symbol nil string))
 
   (define (add-documentation-params name param-list)
-    (rep.lang.doc#add-documentation-params n ame nil param-list)))
+    (rep.lang.doc#add-documentation-params name nil param-list)))
