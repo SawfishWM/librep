@@ -106,8 +106,8 @@ DEFSYM(amp_aux, "&aux");
    (TAG . VALUE).
    An error is the above with TAG=sym_error and VALUE a list of relevant
    data. */
-_PR VALUE throw_value;
-VALUE throw_value;
+_PR volatile VALUE throw_value;
+volatile VALUE throw_value;
 
 /* This cons cell is used for interrupts. We don't know if it's safe to
    call cmd_cons() (maybe in gc?) so this is always valid.  */
@@ -2048,7 +2048,7 @@ lisp_init(void)
     INTERN(standard_input); INTERN(standard_output);
     INTERN(debug_entry); INTERN(debug_exit); INTERN(debug_error_entry);
     INTERN(amp_optional); INTERN(amp_rest); INTERN(amp_aux);
-    mark_static(&throw_value);
+    mark_static((VALUE *)&throw_value);
     ADD_SUBR(subr_eval);
     ADD_SUBR(subr_funcall);
     ADD_SUBR(subr_progn);
