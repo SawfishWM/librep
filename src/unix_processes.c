@@ -695,7 +695,7 @@ proc_mark(VALUE pr)
     MARKVAL(VPROC(pr)->pr_ConnType);
 }
 
-void
+static void
 proc_sweep(void)
 {
     struct Proc *pr;
