@@ -103,15 +103,15 @@
 (defconst op-land 0x5f)
 (defconst op-equal 0x60)
 (defconst op-eq 0x61)
-(defconst op-num-eq 0x62)
-(defconst op-num-noteq 0x63)
+(defconst op-unused1 0x62)
+(defconst op-unused2 0x63)
 (defconst op-gt 0x64)
 (defconst op-ge 0x65)
 (defconst op-lt 0x66)
 (defconst op-le 0x67)
 (defconst op-inc 0x68)
 (defconst op-dec 0x69)
-(defconst op-lsh 0x6a)
+(defconst op-ash 0x6a)
 (defconst op-zerop 0x6b)
 (defconst op-null 0x6c)
 (defconst op-atom 0x6d)
@@ -292,8 +292,8 @@
 (defvar comp-side-effect-free-insns
   (list* op-refq op-refn op-refg op-ref op-nth op-nthcdr op-aref
 	 op-length op-add op-neg op-sub op-mul op-div op-rem op-lnot
-	 op-not op-lor op-land op-num-eq op-num-noteq op-gt op-ge op-lt
-	 op-le op-inc op-dec op-lsh op-boundp op-get op-reverse op-assoc
+	 op-not op-lor op-land op-gt op-ge op-lt
+	 op-le op-inc op-dec op-ash op-boundp op-get op-reverse op-assoc
 	 op-assq op-rassoc op-rassq op-last op-copy-sequence op-lxor
 	 op-max op-min op-mod op-make-closure op-enclose op-quotient
 	 op-floor op-ceiling op-truncate op-round op-exp op-log

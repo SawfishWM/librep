@@ -36,8 +36,8 @@
    "pop" "push\tnil" "push\tt" "cons" "car" "cdr" "rplaca" "rplacd"
    "nth" "nthcdr" "aset" "aref" "length" "eval" "add" "neg" "sub"	; 0x50
    "mul" "div" "rem" "lnot" "not" "lor" "land"
-   "equal" "eq" "num-eq" "num-not-eq" "gt" "ge" "lt" "le"	; 0x60
-   "inc" "dec" "lsh" "zerop" "null" "atom" "consp" "listp"
+   "equal" "eq" nil nil "gt" "ge" "lt" "le"	; 0x60
+   "inc" "dec" "ash" "zerop" "null" "atom" "consp" "listp"
    "numberp" "stringp" "vectorp" "catch" "throw" "binderr" "return" "unbindall"	; 0x70
    "boundp" "symbolp" "get" "put" "errorpro" "signal" "quotient" "reverse"
    "nreverse" "assoc" "assq" "rassoc" "rassq" "last" "mapcar" "mapc" ; 0x80
@@ -127,7 +127,7 @@ Disassembly:\n"
 	    (setq i (1+ i)
 		  arg (aref code-string i)))
 	   (t
-	    (setq arg (logior (lsh (aref code-string (1+ i)) 8)
+	    (setq arg (logior (ash (aref code-string (1+ i)) 8)
 			      (aref code-string (+ i 2)))
 		  i (+ i 2))))
 	  (cond
@@ -162,7 +162,7 @@ Disassembly:\n"
 	   ((= op op-bindspec)
 	    (format stream "bindspec [%d] %S" arg (aref consts arg)))))
 	 ((> c op-last-before-jmps)
-	  (setq arg (logior (lsh (aref code-string (1+ i)) 8)
+	  (setq arg (logior (ash (aref code-string (1+ i)) 8)
 			    (aref code-string (+ i 2)))
 		op c
 		i (+ i 2))
@@ -174,7 +174,7 @@ Disassembly:\n"
 	    (setq arg (- (- 256 arg))))
 	  (format stream (aref disassembler-opcodes c) arg))
 	 ((or (= c op-pushi-pair-neg) (= c op-pushi-pair-pos))
-	  (setq arg (logior (lsh (aref code-string (1+ i)) 8)
+	  (setq arg (logior (ash (aref code-string (1+ i)) 8)
 			    (aref code-string (+ i 2))))
 	  (setq i (+ i 2))
 	  (when (= c op-pushi-pair-neg)
