@@ -119,7 +119,6 @@ function definition are both void and it has a nil property-list.
 	rep_SYM(sym)->next = rep_NULL;
 	rep_SYM(sym)->car = rep_Symbol;
 	rep_SYM(sym)->name = name;
-	rep_SYM(sym)->value = rep_void_value;
 	rep_SYM(sym)->prop_list = Qnil;
 	rep_used_symbols++;
 	rep_data_after_gc += sizeof(rep_symbol);
@@ -201,7 +200,7 @@ symbol_print(repv strm, repv obj)
 	case ' ': case '\t': case '\n': case '\f':
 	case '(': case ')': case '[': case ']':
 	case '\'': case '"': case ';': case '\\':
-	case '|':
+	case '|': case '#':
 	    rep_stream_putc(strm, (int)'\\');
 	    all_digits = rep_FALSE;
 	    break;
@@ -223,31 +222,6 @@ symbol_print(repv strm, repv obj)
 	}
 	rep_stream_putc(strm, (int)c);
     }
-}
-
-repv
-rep_add_subr(rep_xsubr *subr)
-{
-    repv sym = Fintern(subr->name, rep_obarray);
-    if(sym)
-    {
-	rep_SYM(sym)->value = rep_VAL(subr);
-	rep_SYM(sym)->car |= rep_SF_DEFVAR;
-    }
-    return(sym);
-}
-
-repv
-rep_add_const_num(repv name, long num)
-{
-    repv sym = Fintern(name, rep_obarray);
-    if(sym)
-    {
-	rep_SYM(sym)->car |= rep_SF_SPECIAL;
-	rep_SYM(sym)->value = rep_MAKE_INT(num);
-	rep_SYM(sym)->car |= rep_SF_CONSTANT;
-    }
-    return(sym);
 }
 
 void
@@ -405,6 +379,7 @@ current environment.
     f->env = rep_env;
     f->special_env = rep_special_env;
     f->fh_env = rep_fh_env;
+    f->structure = rep_structure;
     f->next = funargs;
     funargs = f;
     return rep_VAL (f);
@@ -667,7 +642,7 @@ variable will be set (if necessary) not the local value.
 	if(!rep_NILP(tmp))
 	{
 	    /* Variable is bound, see if it's an autoload defn to overwrite. */
-	    repv val = rep_SYM(sym)->value;
+	    repv val = Fsymbol_value (sym, Qt);
 	    if (rep_FUNARGP(val))
 		val = rep_FUNARG(val)->fun;
 	    if(rep_CONSP(val) && rep_CAR(val) == Qautoload)
@@ -683,6 +658,15 @@ variable will be set (if necessary) not the local value.
 	    return Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
 	}
 
+	/* if initially making it special, check for a lexical binding
+	   in the current module */
+	if (!(rep_SYM(sym)->car & rep_SF_SPECIAL))
+	{
+	    repv tem = rep_get_initial_special_value (sym);
+	    if (tem)
+		val = tem;
+	}
+
 	/* Only set the [default] value if its not boundp or
 	   the definition is weak and we're currently unrestricted */
 	if(rep_NILP(tmp)
@@ -690,7 +674,7 @@ variable will be set (if necessary) not the local value.
 	       && !(rep_SYM(sym)->car & rep_SF_WEAK_MOD)
 	       && rep_CDR(rep_special_env) == Qt))
 	{
-	    rep_SYM(sym)->value = val;
+	    F_structure_set (rep_specials_structure, sym, val);
 	}
 
 	rep_SYM(sym)->car |= rep_SF_SPECIAL | rep_SF_DEFVAR;
@@ -771,7 +755,7 @@ values look for one of those first.
 		if (tem != Qnil)
 		    val = rep_CDR (tem);
 		else
-		    val = rep_SYM(sym)->value;
+		    val = F_structure_ref (rep_specials_structure, sym);
 	    }
 	}
     }
@@ -782,7 +766,7 @@ values look for one of those first.
 	if (rep_CONSP(tem))
 	    val = rep_CDR(tem);
 	else if (tem == Qt)
-	    val = rep_SYM(sym)->value;
+	    val = F_structure_ref (rep_structure, sym);
     }
 
     if (rep_SYM(sym)->car & rep_SF_DEBUG)
@@ -814,7 +798,7 @@ SYMBOL in buffers or windows which do not have their own local value.
 	if (tem != Qnil)
 	    val = rep_CDR (tem);
 	else
-	    val = rep_SYM(sym)->value;
+	    val = F_structure_ref (rep_specials_structure, sym);
     }
 
     if(no_err == Qnil && rep_VOIDP(val))
@@ -836,9 +820,6 @@ SYMBOL the buffer-local value in the current buffer is set. Returns repv.
     /* Some of this function is hardcoded into the OP_SETQ
        instruction in lispmach.c */
     rep_DECLARE1(sym, rep_SYMBOLP);
-
-    if (rep_SYM(sym)->car & rep_SF_CONSTANT)
-	return Fsignal(Qsetting_constant, rep_LIST_1(sym));
 
     if (rep_SYM(sym)->car & rep_SF_SPECIAL)
     {
@@ -863,10 +844,10 @@ SYMBOL the buffer-local value in the current buffer is set. Returns repv.
 	    if (tem != Qnil)
 		rep_CDR (tem) = val;
 	    else
-		rep_SYM(sym)->value = val;
+		val = F_structure_set (rep_specials_structure, sym, val);
 	}
 	else
-	    return Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
+	    val = Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
     }
     else
     {
@@ -875,35 +856,11 @@ SYMBOL the buffer-local value in the current buffer is set. Returns repv.
 	if (rep_CONSP(tem))
 	    rep_CDR(tem) = val;
 	else if (tem == Qt)
-	    rep_SYM(sym)->value = val;
+	    val = F_structure_set (rep_structure, sym, val);
 	else
-	    return Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
+	    val = Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
     }
     return val;
-}
-
-DEFUN("mark-symbol-defined", Fmark_symbol_defined,
-      Smark_symbol_defined, (repv sym), rep_Subr1) /*
-::doc:mark-symbol-defined::
-mark-symbol-defined SYMBOL
-::end:: */
-{
-    int spec;
-    rep_DECLARE1(sym, rep_SYMBOLP);
-    spec = search_special_environment (sym);
-    if (spec)
-    {
-	rep_SYM(sym)->car |= rep_SF_DEFVAR;
-	if (rep_CDR(rep_special_env) == Qt
-	    && (rep_SYM(sym)->car & rep_SF_WEAK))
-	{
-	    rep_SYM(sym)->car &= ~rep_SF_WEAK;
-	    rep_SYM(sym)->car |= rep_SF_WEAK_MOD;
-	}
-	return sym;
-    }
-    else
-	return Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
 }
 
 DEFUN("set-default", Fset_default, Sset_default,
@@ -918,9 +875,6 @@ Sets the default value of SYMBOL to VALUE, then returns VALUE.
 
     rep_DECLARE1(sym, rep_SYMBOLP);
 
-    if (rep_SYM(sym)->car & rep_SF_CONSTANT)
-	return Fsignal(Qsetting_constant, rep_LIST_1(sym));
-
     spec = search_special_environment (sym);
     if (spec)
     {
@@ -933,7 +887,7 @@ Sets the default value of SYMBOL to VALUE, then returns VALUE.
 	if (tem != Qnil)
 	    rep_CDR (tem) = val;
 	else
-	    rep_SYM(sym)->value = val;
+	    val = F_structure_set (rep_specials_structure, sym, val);
 	rep_SYM(sym)->car |= rep_SF_SPECIAL;
     }
     else
@@ -982,7 +936,10 @@ Returns t if SYMBOL has a default value.
     if (tem != Qnil)
 	return rep_VOIDP (rep_CDR (tem));
     else
-	return (rep_VOIDP (rep_SYM (sym)->value)) ? Qnil : Qt;
+    {
+	tem = F_structure_ref (rep_specials_structure, sym);
+	return rep_VOIDP (tem) ? Qnil : Qt;
+    }
 }
 
 DEFUN("boundp", Fboundp, Sboundp, (repv sym), rep_Subr1) /*
@@ -1200,34 +1157,6 @@ next:
     return rep_NULL;
 }
 
-DEFUN("set-const-variable", Fset_const_variable, Sset_const_variable, (repv sym, repv stat), rep_Subr2) /*
-::doc:set-const-variable::
-set-const-variable SYMBOL
-
-Flags that the value of SYMBOL may not be changed.
-::end:: */
-{
-    rep_DECLARE1(sym, rep_SYMBOLP);
-    if(rep_NILP(stat))
-	rep_SYM(sym)->car |= rep_SF_CONSTANT;
-    else
-	rep_SYM(sym)->car &= ~rep_SF_CONSTANT;
-    return(sym);
-}
-
-DEFUN("const-variable-p", Fconst_variable_p, Sconst_variable_p, (repv sym), rep_Subr1) /*
-::doc:const-variable-p::
-const-variable-p SYMBOL
-
-Return t is `set-const-variable' has been called on SYMBOL.
-::end:: */
-{
-    rep_DECLARE1(sym, rep_SYMBOLP);
-    if(rep_SYM(sym)->car & rep_SF_CONSTANT)
-	return(Qt);
-    return(Qnil);
-}
-
 DEFUN("make-variable-special", Fmake_variable_special,
       Smake_variable_special, (repv sym), rep_Subr1)
 {
@@ -1315,19 +1244,21 @@ rep_symbols_init(void)
        all fields in case it was dumped. */
     Qnil = Fintern(rep_VAL(&str_nil), rep_obarray);
     rep_mark_static(&Qnil);
-    rep_SYM(Qnil)->value = Qnil;
     rep_SYM(Qnil)->prop_list = Qnil;
-    rep_SYM(Qnil)->car |= rep_SF_CONSTANT | rep_SF_SPECIAL;
+    rep_INTERN(t);
 
-    rep_INTERN_SPECIAL(t);
-    rep_SYM(Qt)->value = Qt;
-    rep_SYM(Qt)->car |= rep_SF_CONSTANT;
+    rep_pre_structures_init ();
 
     rep_USE_DEFAULT_ENV;
     rep_special_bindings = Qnil;
     rep_mark_static (&rep_env);
     rep_mark_static (&rep_special_env);
     rep_mark_static (&rep_special_bindings);
+
+    F_structure_set (rep_structure, Qnil, Qnil);
+    F_structure_set (rep_structure, Qt, Qt);
+    Fmake_binding_immutable (Qnil);
+    Fmake_binding_immutable (Qt);
 
     rep_INTERN(documentation);
     rep_INTERN(permanent_local);
@@ -1347,7 +1278,6 @@ rep_symbols_init(void)
     rep_ADD_SUBR(Sdefvar);
     rep_ADD_SUBR(Ssymbol_value);
     rep_ADD_SUBR_INT(Sset);
-    rep_ADD_SUBR(Smark_symbol_defined);
     rep_ADD_SUBR(Ssetplist);
     rep_ADD_SUBR(Ssymbol_name);
     rep_ADD_SUBR(Sdefault_value);
@@ -1362,8 +1292,6 @@ rep_symbols_init(void)
     rep_ADD_SUBR(Sget);
     rep_ADD_SUBR(Sput);
     rep_ADD_SUBR(Sapropos);
-    rep_ADD_SUBR(Sset_const_variable);
-    rep_ADD_SUBR(Sconst_variable_p);
     rep_ADD_SUBR(Smake_variable_special);
     rep_ADD_SUBR(Sspecial_variable_p);
     rep_ADD_SUBR_INT(Strace);
