@@ -203,6 +203,7 @@ rep_dl_init(void)
     rep_mark_static (&completions);
 #ifdef HAVE_LIBREADLINE
     rl_completion_entry_function = (void *) completion_generator;
+    rl_basic_quote_characters = "\"";
     init_bouncing_parens();
 #endif
     return Qreadline;
