@@ -1817,33 +1817,75 @@ one.
 }
 
 repv
+rep_call_lispn (repv fun, int argc, repv *argv)
+{
+    if (rep_FUNARGP (fun) && rep_COMPILEDP (rep_FUNARG (fun)->fun)
+	&& rep_bytecode_interpreter != 0)
+    {
+	/* Call to bytecode, avoid consing argument list */
+
+	struct rep_Call lc;
+	repv ret;
+
+	lc.fun = fun;
+	lc.args = rep_void_value;
+	lc.args_evalled_p = Qt;
+	rep_PUSH_CALL (lc);
+	rep_USE_FUNARG (fun);
+	ret = rep_bytecode_interpreter (rep_FUNARG (fun)->fun, argc, argv);
+	rep_POP_CALL (lc);
+	return ret;
+    }
+    else
+    {
+	repv args = Qnil;
+	argv += argc;
+	while (argc-- > 0)
+	    args = Fcons (*(--argv), args);
+	return rep_funcall (fun, args, rep_FALSE);
+    }
+}
+
+repv
 rep_call_lisp0(repv function)
 {
-    return rep_funcall(function, Qnil, rep_FALSE);
+    return rep_call_lispn (function, 0, 0);
 }
 
 repv
 rep_call_lisp1(repv function, repv arg1)
 {
-    return rep_funcall(function, rep_LIST_1(arg1), rep_FALSE);
+    return rep_call_lispn (function, 1, &arg1);
 }
 
 repv
 rep_call_lisp2(repv function, repv arg1, repv arg2)
 {
-    return rep_funcall(function, rep_LIST_2(arg1, arg2), rep_FALSE);
+    repv vec[2];
+    vec[0] = arg1;
+    vec[1] = arg2;
+    return rep_call_lispn (function, 2, vec);
 }
 
 repv
 rep_call_lisp3(repv function, repv arg1, repv arg2, repv arg3)
 {
-    return rep_funcall(function, rep_LIST_3(arg1, arg2, arg3), rep_FALSE);
+    repv vec[3];
+    vec[0] = arg1;
+    vec[1] = arg2;
+    vec[2] = arg3;
+    return rep_call_lispn (function, 3, vec);
 }
 
 repv
 rep_call_lisp4(repv function, repv arg1, repv arg2, repv arg3, repv arg4)
 {
-    return rep_funcall(function, rep_LIST_4(arg1, arg2, arg3, arg4), rep_FALSE);
+    repv vec[4];
+    vec[0] = arg1;
+    vec[1] = arg2;
+    vec[2] = arg3;
+    vec[4] = arg4;
+    return rep_call_lispn (function, 4, vec);
 }
 
 void
