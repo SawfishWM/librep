@@ -24,6 +24,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #ifdef NEED_MEMORY_H
 # include <memory.h>
@@ -1996,6 +1997,49 @@ Returns t if STRING2 matches the beginning of STRING1, ie,
     return(Qnil);
 }
 
+DEFUN("string-equal", Fstring_equal, Sstring_equal, (repv str1, repv str2), rep_Subr2) /*
+::doc:Sstring-equal::
+string-equal STRING1 STRING2
+
+Returns t if STRING1 and STRING2 are the same, ignoring case.
+::end:: */
+{
+    u_char *s1, *s2;
+    rep_DECLARE1(str1, rep_STRINGP);
+    rep_DECLARE2(str2, rep_STRINGP);
+    s1 = rep_STR(str1);
+    s2 = rep_STR(str2);
+    while(*s1 && *s2)
+    {
+	if (toupper (*s1) != toupper (*s2))
+	    return Qnil;
+	s1++; s2++;
+    }
+    return (*s1 || *s2) ? Qnil : Qt;
+}
+
+DEFUN("string-lessp", Fstring_lessp, Sstring_lessp, (repv str1, repv str2), rep_Subr2) /*
+::doc:Sstring-lessp::
+string-lessp STRING1 STRING2
+
+Returns t if STRING1 is `less' than STRING2, ignoring case.
+::end:: */
+{
+    u_char *s1, *s2;
+    rep_DECLARE1(str1, rep_STRINGP);
+    rep_DECLARE2(str2, rep_STRINGP);
+    s1 = rep_STR(str1);
+    s2 = rep_STR(str2);
+    while(*s1 && *s2)
+    {
+	if (toupper (*s1) != toupper (*s2))
+	    return (toupper (*s1) < toupper (*s2)) ? Qt : Qnil;
+	s1++; s2++;
+    }
+    return *s2 ? Qt : Qnil;
+}
+
+
 DEFUN("=", Fnum_eq, Snum_eq, (repv num1, repv num2), rep_Subr2) /*
 ::doc:S=::
 = NUMBER1 NUMBER2
@@ -2688,6 +2732,8 @@ rep_lispcmds_init(void)
     rep_ADD_SUBR(Seq);
     rep_ADD_SUBR(Seql);
     rep_ADD_SUBR(Sstring_head_eq);
+    rep_ADD_SUBR(Sstring_equal);
+    rep_ADD_SUBR(Sstring_lessp);
     rep_ADD_SUBR(Snum_eq);
     rep_ADD_SUBR(Snum_noteq);
     rep_ADD_SUBR(Sgtthan);
