@@ -390,6 +390,8 @@
 	  ;; use setq
 	  (progn
 	    (setq sym (compiler-constant-value sym))
+	    (unless (symbolp sym)
+	      (compiler-error "trying to set value of a non-symbol: %s" sym))
 	    (compile-form-1 val)
 	    (emit-insn '(dup))
 	    (increment-stack)

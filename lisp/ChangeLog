@@ -1,3 +1,8 @@
+2001-08-16  John Harper  <jsh@pixelslut.com>
+
+	* rep/vm/compiler/rep.jl (compile-set): raise an error if
+	trying to set value of a non-symbol
+
 2001-08-13  John Harper  <jsh@pixelslut.com>
 
 	* rep/vm/compiler/rep.jl (compile-letrec): when compiling the
