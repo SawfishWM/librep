@@ -421,7 +421,8 @@ is one of these that form is compiled.")
 				  (setq form (compile-form form))))
 				(when form
 				  (print form dst-file))))
-			  (end-of-stream)))
+			  (end-of-stream
+			   (write dst-file ?\n))))
 		    (close-file dst-file)
 		    (close-file src-file))
 		(error
