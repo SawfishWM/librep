@@ -75,8 +75,10 @@
   (define (field-index rt field)
     (do ((i 0 (1+ i))
 	 (fields (record-type-fields rt) (cdr fields)))
-	((eq (car fields) field) i)))
-
+	((eq (car fields) field) i)
+      (and (null fields) (error "No such field: %s, %s"
+				(record-type-name rt) field))))
+  
   (define (field-ref rt record index)
     (aref (datum-ref record rt) index))
 
