@@ -131,6 +131,14 @@ search_environment (repv sym)
 
 /* Lisp VM. */
 
+static inline repv
+list_ref (repv list, int elt)
+{
+    while (rep_CONSP(list) && elt-- > 0)
+	list = rep_CDR(list);
+    return rep_CONSP(list) ? rep_CAR(list) : Qnil;
+}
+
 #define TOP	    (*stackp)
 #define RET_POP	    (*stackp--)
 #define POP	    (stackp--)
@@ -1033,6 +1041,62 @@ of byte code. See the functions `compile-file', `compile-directory' and
 	case OP_PUSHIWP:
 	    FETCH2(arg);
 	    PUSH(rep_MAKE_INT(arg));
+	    goto fetch;
+
+	case OP_CAAR:
+	    tmp = TOP;
+	    if (rep_CONSP(tmp) && rep_CONSP(rep_CAR(tmp)))
+		TOP = rep_CAAR(tmp);
+	    else
+		TOP = Qnil;
+	    goto fetch;
+
+	case OP_CADR:
+	    tmp = TOP;
+	    if (rep_CONSP(tmp) && rep_CONSP(rep_CDR(tmp)))
+		TOP = rep_CADR(tmp);
+	    else
+		TOP = Qnil;
+	    goto fetch;
+
+	case OP_CDAR:
+	    tmp = TOP;
+	    if (rep_CONSP(tmp) && rep_CONSP(rep_CAR(tmp)))
+		TOP = rep_CDAR(tmp);
+	    else
+		TOP = Qnil;
+	    goto fetch;
+
+	case OP_CDDR:
+	    tmp = TOP;
+	    if (rep_CONSP(tmp) && rep_CONSP(rep_CDR(tmp)))
+		TOP = rep_CDDR(tmp);
+	    else
+		TOP = Qnil;
+	    goto fetch;
+
+	case OP_CADDR:
+	    TOP = list_ref (TOP, 2);
+	    goto fetch;
+
+	case OP_CADDDR:
+	    TOP = list_ref (TOP, 3);
+	    goto fetch;
+
+	case OP_CADDDDR:
+	    TOP = list_ref (TOP, 4);
+	    goto fetch;
+
+	case OP_CADDDDDR:
+	    TOP = list_ref (TOP, 5);
+	    goto fetch;
+
+	case OP_CADDDDDDR:
+	    TOP = list_ref (TOP, 6);
+	    goto fetch;
+
+	case OP_CADDDDDDDR:
+	    TOP = list_ref (TOP, 7);
 	    goto fetch;
 
 	case OP_BINDOBJ:
