@@ -22,9 +22,9 @@
 
 (load "lisp")
 (load "loadkeys")
-(load "autoload.jl")	; don't want any compiled version
 (load "windows")
 (load "buffers")
+(load "autoload.jl")	; don't want any compiled version
 (load "modes")
 (load "edit")
 (load "rcs-hooks")
@@ -58,17 +58,19 @@
 (let
     (arg)
   (while (setq arg (car command-line-args))
+    (setq command-line-args (cdr command-line-args))
     (cond
       ((equal "-f" arg)
-	(setq command-line-args (cdr command-line-args))
-	(funcall (read-from-string (car command-line-args))))
+       (setq arg (car command-line-args)
+	     command-line-args (cdr command-line-args))
+       (funcall (read-from-string arg)))
       ((equal "-l" arg)
-	(setq command-line-args (cdr command-line-args))
-	(load (car command-line-args)))
+       (setq arg (car command-line-args)
+	     command-line-args (cdr command-line-args))
+       (load arg))
       ((equal "-q" arg)
-	(throw 'quit 0))
+       (throw 'quit 0))
       (t
-	(set-current-buffer (open-file arg))))
-    (setq command-line-args (cdr command-line-args))))
+       (find-file arg)))))
 
 (message (version-and-build-string))
