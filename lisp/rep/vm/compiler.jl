@@ -408,7 +408,16 @@ don't macroexpand the form before compiling.")
 			(setq form (read src-file))
 			(unless (or (memq (car form) comp-top-level-unexpanded)
 				    (memq (car form) comp-top-level-compiled))
-			  (setq form (macroexpand form comp-macro-env)))
+			  (setq form (macroexpand
+				      ;; prevent expansion of top-level
+				      ;; macro forms we want to see ourselves
+				      form (list* '(defun . nil)
+						  '(defmacro . nil)
+						  '(defsubst . nil)
+						  '(defvar . nil)
+						  '(defconst . nil)
+						  '(define-value . nil)
+						  comp-macro-env))))
 			(cond
 			 ((eq (car form) 'defun)
 			  (comp-remember-fun (nth 1 form) (nth 2 form)))
@@ -456,7 +465,6 @@ don't macroexpand the form before compiling.")
 			(while (setq form (car input-forms))
 			  (if (memq (car form) comp-top-level-unexpanded)
 			      (setq form (comp-compile-top-form form))
-			    ;; just in case?
 			    (when (memq (car form) comp-top-level-compiled)
 			      ;; Compile this form
 			      (setq form (compile-form form))))
