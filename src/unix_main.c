@@ -275,6 +275,17 @@ rep_deregister_input_fd(int fd)
 }
 
 void
+rep_map_inputs (void (*fun)(int fd, void (*callback)(int)))
+{
+    int i;
+    for (i = 0; i < FD_SETSIZE; i++)
+    {
+	if (input_actions[i] != 0)
+	    fun (i, input_actions[i]);
+    }
+}
+
+void
 rep_mark_input_pending(int fd)
 {
     if(!FD_ISSET(fd, &input_pending))
@@ -698,6 +709,7 @@ rep_pre_sys_os_init(void)
     FD_ZERO(&input_pending);
 
     /* First the error signals */
+#ifndef IGNORE_FATAL_SIGNALS
 #ifdef SIGFPE
     if(signal(SIGFPE, fatal_signal_handler) == SIG_IGN)
 	signal(SIGFPE, SIG_IGN);
@@ -721,6 +733,7 @@ rep_pre_sys_os_init(void)
 #ifdef SIGABRT
     if(signal(SIGABRT, fatal_signal_handler) == SIG_IGN)
 	signal(SIGABRT, SIG_IGN);
+#endif
 #endif
 
     /* Install the interrupt handler */
