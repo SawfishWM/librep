@@ -12,6 +12,7 @@ Group: Development/Languages
 Source: ftp.dcs.warwick.ac.uk:/people/John.Harper/librep/librep-%{ver}.tar.gz
 URL: http://www.dcs.warwick.ac.uk/~john/sw/librep.html
 Packager: John Harper <john@dcs.warwick.ac.uk>
+Buildroot: /var/tmp/%{nam}-root
 
 %description
 This is an Emacs Lisp-like runtime library for UNIX. It contains a LISP
@@ -35,9 +36,14 @@ Link libraries and C header files for librep development.
 make CFLAGS="$RPM_OPT_FLAGS"
 
 %install
-rm -f %{_prefix}/info/librep*
-make install
-gzip -9nf %{_prefix}/info/librep*
+rm -rf $RPM_BUILD_ROOT
+make install \
+    prefix=$RPM_BUILD_ROOT/%{_prefix} \
+    aclocaldir=$RPM_BUILD_ROOT/%{_prefix}/share/aclocal
+gzip -9nf $RPM_BUILD_ROOT/%{_prefix}/info/librep*
+
+%clean
+rm -rf $RPM_BUILD_ROOT
 
 %files
 %doc NEWS README etc/TODO
@@ -67,3 +73,7 @@ ldconfig
 
 %postun
 ldconfig
+
+%changelog
+* Mon Sep 13 1999 Aron Griffis <agriffis@bigfoot.com>
+- 0.5 spec file update: added buildroot
