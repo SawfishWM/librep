@@ -1,5 +1,8 @@
 1999-03-02  John Harper  <john@dcs.warwick.ac.uk>
 
+	* main.c (rep_get_option): new function, searches the
+	command-line-args variable for a specified option
+
 	* main.c (get_main_options): new option `--interp', this sets
 	the LISP variable interpreted-mode
 	* lispcmds.c (Fload): if interpreted-mode is non-nil, don't

@@ -49,7 +49,7 @@ librep.la : $(OBJS)
 	$(LIBTOOL) $(CC) $(LDFLAGS) -o $@ $^ -rpath $(libdir)
 
 rep : $(REP_OBJS) librep.la $(LIBOBJS)
-	$(LIBTOOL) $(CC) -export-dynamic $(CPPFLAGS) $(CFLAGS) -o $@ \
+	$(LIBTOOL) $(CC) $(CPPFLAGS) $(CFLAGS) -o $@ \
 	  $(REP_OBJS) librep.la $(LIBOBJS) $(LIBS)
 
 install : all installdirs

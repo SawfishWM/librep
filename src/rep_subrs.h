@@ -277,6 +277,7 @@ extern repv Fmake_byte_code_subr(repv args);
 extern void rep_init(char *prog_name, int *argc, char ***argv,
 		     void (*sys_symbols)(void), void (*sys_usage)(void));
 extern void rep_kill(void);
+extern rep_bool rep_get_option (char *option, repv *argp);
 extern rep_bool rep_on_idle(long since_last_event);
 extern rep_bool rep_handle_input_exception(repv *result_p);
 extern void *rep_common_db;
