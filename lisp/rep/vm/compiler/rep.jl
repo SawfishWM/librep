@@ -268,6 +268,7 @@
       `(progn
 	 (when ,doc
 	   (put ',name 'variable-documentation ,doc))
+	 (make-variable-special ',name)
 	 (unless (boundp ',name)
 	   (setq ,name ,value)))))
   (put 'defvar 'rep-compile-transform trans-defvar)
