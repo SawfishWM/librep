@@ -31,7 +31,7 @@
    "setq" nil nil nil nil nil nil nil	 ; 0x20
    "list" nil nil nil nil nil nil nil
    "bind" nil nil nil nil nil nil nil	 ; 0x30
-   nil nil nil nil nil nil nil nil
+   "refn" nil nil nil nil nil nil nil
    "ref" "set" "dset" "enclose" "init-bind" "unbind" "dup" "swap"	; 0x40
    "pop" "push\tnil" "push\tt" "cons" "car" "cdr" "rplaca" "rplacd"
    "nth" "nthcdr" "aset" "aref" "length" "eval" "add" "neg" "sub"	; 0x50
@@ -53,7 +53,7 @@
    nil nil nil nil nil nil nil nil	 ; 0xd0
    nil nil nil nil nil nil nil nil
    nil nil nil nil nil nil nil nil	 ; 0xe0
-   nil nil nil nil nil nil nil nil
+   "setn" nil nil nil nil nil nil nil
    nil nil nil nil nil nil nil nil	 ; 0xf0
    "ejmp\t%d" "jpn\t%d" "jpt\t%d" "jmp\t%d" "jn\t%d" "jt\t%d" "jnp\t%d" "jtp\t%d" ])
 
@@ -117,7 +117,8 @@ Disassembly:\n"
 	(setq c (aref code-string i))
 	(format stream "\n%s%d\t\t" indent i)
 	(cond
-	 ((< c op-last-with-args)
+	 ((or (< c op-last-with-args)
+	      (and (>= c op-first-with-args-2) (<= c op-last-with-args-2)))
 	  (setq op (logand c 0xf8))
 	  (cond
 	   ((< (logand c 0x07) 6)
@@ -149,7 +150,17 @@ Disassembly:\n"
 	   ((= op op-list)
 	    (format stream "list\t#%d" arg))
 	   ((= op op-bind)
-	    (format stream "bind\t[%d] %S" arg (aref consts arg)))))
+	    (format stream "bind\t[%d] %S" arg (aref consts arg)))
+	   ((= op op-refn)
+	    (format stream "refn\t#%d" arg))
+	   ((= op op-setn)
+	    (format stream "setn\t#%d" arg))
+	   ((= op op-refg)
+	    (format stream "refg\t[%d] %S" arg (aref consts arg)))
+	   ((= op op-setg)
+	    (format stream "setg\t[%d] %S" arg (aref consts arg)))
+	   ((= op op-bindspec)
+	    (format stream "bindspec [%d] %S" arg (aref consts arg)))))
 	 ((> c op-last-before-jmps)
 	  (setq arg (logior (lsh (aref code-string (1+ i)) 8)
 			    (aref code-string (+ i 2)))
