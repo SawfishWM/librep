@@ -2116,7 +2116,7 @@ result to be inexact.
 }
 
 DEFUN("string->number", Fstring_to_number,
-      Sstring_to_number, (repv string, repv radix), rep_Subr2) /*
+      Sstring_to_number, (repv string, repv radix_), rep_Subr2) /*
 ::doc:string->number::
 string->number STRING [RADIX]
 
@@ -2126,15 +2126,50 @@ number is parsed from that base, otherwise base 10 is assumed.
 {
     int type = 0;
     int sign = 1;
+    int force_exactness = 0;
+    int radix;
     u_char *ptr;
     repv ret;
 
     rep_DECLARE1 (string, rep_STRINGP);
-    if (radix == Qnil)
-	radix = rep_MAKE_INT (10);
-    rep_DECLARE (2, radix, rep_INTP (radix) && rep_INT (radix) > 0);
+    if (radix_ == Qnil)
+	radix_ = rep_MAKE_INT (10);
+    rep_DECLARE (2, radix_, rep_INTP (radix_) && rep_INT (radix_) > 0);
 
     ptr = rep_STR (string);
+    radix = rep_INT (radix_);
+
+    while (*ptr == '#')
+    {
+	switch (ptr[1])
+	{
+	case 'b': case 'B':
+	    radix = 2;
+	    break;
+
+	case 'o': case 'O':
+	    radix = 8;
+	    break;
+
+	case 'd': case 'D':
+	    radix = 10;
+	    break;
+
+	case 'x': case 'X':
+	    radix = 16;
+	    break;
+
+	case 'e': case 'E':
+	    force_exactness = +1;
+	    break;
+
+	case 'i': case 'I':
+	    force_exactness = -1;
+	    break;
+	}
+	ptr += 2;
+    }
+
     if (*ptr == '-' || *ptr == '+')
     {
 	if (*ptr == '-')
@@ -2142,21 +2177,22 @@ number is parsed from that base, otherwise base 10 is assumed.
 	ptr++;
     }
 
-    /* XXX handle scheme-like explicit radix prefixes.. */
-
     if (strchr (ptr, '/'))
 	type = rep_NUMBER_RATIONAL;
-    else if (rep_INT (radix) == 10)
+    else if (radix == 10)
     {
 	if (strchr (ptr, '.') || strchr (ptr, 'e') || strchr (ptr, 'E'))
 	    type = rep_NUMBER_FLOAT;
     }
 
     ret = rep_parse_number (ptr, rep_STRING_LEN (string)
-			    - (ptr - rep_STR (string)),
-			    rep_INT (radix), sign, type);
+			    - (ptr - rep_STR (string)), radix, sign, type);
     if (ret == rep_NULL)
 	ret = Qnil;
+    else if (force_exactness > 0)
+	ret = Finexact_to_exact (ret);
+    else if (force_exactness < 0)
+	ret = Fexact_to_inexact (ret);
 
     return ret;
 }

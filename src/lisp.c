@@ -349,7 +349,10 @@ read_symbol(repv strm, int *c_p)
     /* For parsing numbers, while radix != zero, it might still be
        an integer that we're reading. */
     int radix = -1, sign = 1, nfirst = 0;
-    rep_bool exact = rep_TRUE, rational = rep_FALSE, exponent = rep_FALSE;
+    rep_bool exact = rep_TRUE, rational = rep_FALSE;
+    rep_bool exponent = rep_FALSE, had_sign = rep_FALSE;
+    rep_bool expecting_prefix = rep_FALSE;
+    int force_exactness = 0;
 
     if (buffer == rep_NULL)
     {
@@ -374,8 +377,14 @@ read_symbol(repv strm, int *c_p)
 	case ' ':  case '\t': case '\n': case '\f':
 	case '(':  case ')':  case '[':  case ']':
 	case '\'': case '"':  case ';':  case ',':
-	case '`':  case '#':
+	case '`':
 	    goto done;
+
+	case '#':
+	    if (radix == 0)
+		goto done;
+	    else
+		goto number;
 
 	case '\\':
 	    radix = 0;
@@ -400,16 +409,62 @@ read_symbol(repv strm, int *c_p)
 	default:
 	    if(radix != 0)
 	    {
-		/* It still may be a number that we're parsing */
-		if(i == 0 && (c == '-' || c == '+'))
+	    number:
+		if (expecting_prefix)
 		{
-		    /* A leading sign */
-		    sign = (c == '-') ? -1 : 1;
+		    switch (c)
+		    {
+		    case 'b': case 'B':
+			radix = 2;
+			break;
+
+		    case 'o': case 'O':
+			radix = 8;
+			break;
+
+		    case 'd': case 'D':
+			radix = 10;
+			break;
+
+		    case 'x': case 'X':
+			radix = 16;
+			break;
+
+		    case 'e': case 'E':
+			force_exactness = +1;
+			break;
+
+		    case 'i': case 'I':
+			force_exactness = -1;
+			break;
+
+		    default:
+			radix = 0;
+		    }
+		    expecting_prefix = rep_FALSE;
+		    nfirst = i + 1;
+		}
+		/* It still may be a number that we're parsing */
+		else if (i == nfirst && (c == '-' || c == '+' || c == '#'))
+		{
+		    if (c == '#')
+		    {
+			if (had_sign)
+			    radix = 0;	/* not a number? */
+			else
+			    expecting_prefix = rep_TRUE;
+		    }
+		    else
+		    {
+			/* A leading sign */
+			sign = (c == '-') ? -1 : 1;
+			had_sign = rep_TRUE;
+		    }
 		    nfirst = i + 1;
 		}
 		else
 		{
-		    switch(radix)
+		    switch (radix)
 		    {
 		    case -1:
 			/* Deduce the base next (or that we're not
@@ -455,7 +510,7 @@ read_symbol(repv strm, int *c_p)
 			switch (c)
 			{
 			case '.':
-			    if (exact && !rational)
+			    if (exact && radix == 10 && !rational)
 				exact = rep_FALSE;
 			    else
 				radix = 0;
@@ -473,8 +528,8 @@ read_symbol(repv strm, int *c_p)
 				goto do_default;
 			    break;
 
-			case 'e': case 'E':
-			    if (radix != 16)
+			case 'e': case 'E':	/* XXX all scheme exp chars */
+			    if (radix == 10)
 			    {
 				if (!rational && !exponent)
 				{
@@ -516,6 +571,10 @@ done:
 				       : rational ? rep_NUMBER_RATIONAL : 0);
 	if (result == rep_NULL)
 	    goto intern;
+	if (force_exactness > 0)
+	    result = Finexact_to_exact (result);
+	else if (force_exactness < 0)
+	    result = Fexact_to_inexact (result);
     }
     else
     {
@@ -876,11 +935,18 @@ rep_readl(repv strm, register int *c_p)
 		*c_p = rep_stream_getc (strm);
 		return form;
 
+	    case 'b': case 'B': case 'o': case 'O':
+	    case 'd': case 'D': case 'x': case 'X':
+	    case 'e': case 'E': case 'i': case 'I':
+		rep_stream_ungetc (strm, *c_p);
+		*c_p = '#';
+		goto identifier;
+
 	    default: error:
 		return Fsignal(Qinvalid_read_syntax, rep_LIST_1(strm));
 	    }
 
-	default:
+	default: identifier:
 	    form = read_symbol(strm, c_p);
 	    if (form && *c_p == '#' && rep_SYMBOLP (form))
 	    {
