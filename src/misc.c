@@ -602,22 +602,33 @@ rep_misc_init(void)
     rep_ADD_SUBR(Schar_downcase);
     rep_ADD_SUBR_INT(Ssystem);
 
-    rep_INTERN_SPECIAL(upcase_table);
-    rep_SYM(Qupcase_table)->value = rep_make_string(257);
-    rep_INTERN_SPECIAL(downcase_table);
-    rep_SYM(Qdowncase_table)->value = rep_make_string(257);
-    for(i = 0; i < 256; i++)
     {
-	rep_STR(rep_SYM(Qupcase_table)->value)[i] = toupper(i);
-	rep_STR(rep_SYM(Qdowncase_table)->value)[i] = tolower(i);
-    }
-    rep_STR(rep_SYM(Qupcase_table)->value)[256] = 0;
-    rep_STR(rep_SYM(Qdowncase_table)->value)[256] = 0;
+	repv up = rep_make_string (257);
+	repv down = rep_make_string (257);
 
-    rep_INTERN_SPECIAL(flatten_table);
-    rep_SYM(Qflatten_table)->value = rep_make_string(12);
-    for(i = 0; i < 10; i++)
-	rep_STR(rep_SYM(Qflatten_table)->value)[i] = i;
-    rep_STR(rep_SYM(Qflatten_table)->value)[10] = ' ';
-    rep_STR(rep_SYM(Qflatten_table)->value)[11] = 0;
+	for(i = 0; i < 256; i++)
+	{
+	    rep_STR(up)[i] = toupper(i);
+	    rep_STR(down)[i] = tolower(i);
+	}
+	rep_STR(up)[256] = 0;
+	rep_STR(down)[256] = 0;
+
+	rep_INTERN_SPECIAL(upcase_table);
+	rep_INTERN_SPECIAL(downcase_table);
+	Fset (Qupcase_table, up);
+	Fset (Qdowncase_table, down);
+    }
+
+    {
+	repv flatten = rep_make_string (12);
+
+	for(i = 0; i < 10; i++)
+	    rep_STR(flatten)[i] = i;
+	rep_STR(flatten)[10] = ' ';
+	rep_STR(flatten)[11] = 0;
+
+	rep_INTERN_SPECIAL(flatten_table);
+	Fset (Qflatten_table, flatten);
+    }
 }
