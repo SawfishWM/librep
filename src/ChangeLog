@@ -1,3 +1,8 @@
+Fri Jun 19 00:06:20 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_files.c (sys_directory_file_name): don't remove the
+	trailing slash in a single character string (i.e. "/")
+
 Thu Jun 18 23:50:37 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_main.c (handle_input, cmd_sit_for, sys_accept_output):
