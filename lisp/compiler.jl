@@ -353,9 +353,10 @@ is one of these that form is compiled.")
 	  (when (setq src-file (open-file file-name 'read))
 	    (unwind-protect
 		;; Pass 1. Scan for top-level definitions in the file.
+		;; Also eval require forms (for macro defs)
 		(condition-case nil
 		    (while t
-		      (setq form (read src-file))
+		      (setq form (macroexpand (read src-file) comp-macro-env))
 		      (cond
 		       ((eq (car form) 'defun)
 			(comp-remember-fun (nth 1 form) (nth 2 form)))
@@ -377,7 +378,9 @@ is one of these that form is compiled.")
 			(comp-remember-var (nth 1 form))
 			(setq comp-const-env (cons (cons (nth 1 form)
 							 (nth 2 form))
-						   comp-const-env)))))
+						   comp-const-env)))
+		       ((eq (car form) 'require)
+			(eval form))))
 		  (end-of-stream))
 	      (close-file src-file))
 	    (when (and (setq src-file (open-file file-name 'read))
@@ -918,9 +921,11 @@ that files which shouldn't be compiled aren't."
       (cdr (assq form comp-const-env))))))
 
 (defun comp-constant-function-p (form)
+  (setq form (macroexpand form comp-macro-env))
   (or (memq (car form) '(lambda function))))
 
 (defun comp-constant-function-value (form)
+  (setq form (macroexpand form comp-macro-env))
   (cond ((eq (car form) 'lambda)
 	 form)
 	((eq (car form) 'function)
