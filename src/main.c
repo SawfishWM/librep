@@ -495,6 +495,16 @@ original level.
     return rep_MAKE_INT(rep_recurse_depth);
 }
 
+void
+rep_deprecated (rep_bool *seen, const char *desc)
+{
+    if (!*seen)
+    {
+	fprintf (stderr, "rep: using deprecated feature - %s\n", desc);
+	*seen = rep_TRUE;
+    }
+}
+
 static void
 rep_main_init(void)
 {
