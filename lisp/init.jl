@@ -71,7 +71,7 @@ documentation DOC-STRING (optional) and body BODY."
 	 (setq body (list 'quote (cons 'lambda body)))))
   (list 'setq symbol (list 'make-closure body (symbol-name symbol))))
 
-(defmacro defconst (symbol . args)
+(defmacro defconst (symbol value . rest)
   "defconst NAME VALUE [DOC-STRING]
 
 Define a constant NAME whose (default) value is VALUE. If NAME is
@@ -81,7 +81,7 @@ Constants are treated specially by the Lisp compiler, basically they
 are hard-coded into the byte-code."
 
   (list 'progn
-	(list* 'define-value (list 'quote symbol) args)
+	(list* 'define-value (list 'quote symbol) (list 'quote value) rest)
 	(list 'make-binding-immutable (list 'quote symbol))))
 
 (defmacro defsubst (symbol . body)
