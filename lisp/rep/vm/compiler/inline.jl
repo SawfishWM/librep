@@ -38,7 +38,7 @@
   (define inline-depth (make-fluid 0))		;depth of lambda-inlining
   (defconst max-inline-depth 8)
 
-  (defun push-inline-args (lambda-list args &optional pushed-args-already tester)
+  (defun push-inline-args (lambda-list args #!optional pushed-args-already tester)
     (let
 	((arg-count 0))
       (if (not pushed-args-already)
@@ -64,26 +64,29 @@
 	    (setq bind-stack (cons (cons lambda-list args-left) bind-stack))
 	    (setq args-left 0))
 	   ((consp lambda-list)
-	    (if (memq (car lambda-list) '(&optional &rest))
-		(setq state (car lambda-list))
-	      (cond
-	       ((eq state 'required)
-		(if (zerop args-left)
-		    (compiler-error "Required arg missing" (car lambda-list))
-		  (setq bind-stack (cons (car lambda-list) bind-stack)
-			args-left (1- args-left))))
-	       ((eq state '&optional)
-		(if (zerop args-left)
-		    (progn
-		      (emit-insn '(push ()))
-		      (increment-stack))
-		  (setq args-left (1- args-left)))
-		(setq bind-stack (cons (car lambda-list) bind-stack)))
-	       ((eq state '&rest)
-		(setq bind-stack (cons (cons (car lambda-list) args-left)
-				       bind-stack)
-		      args-left 0
-		      state '*done*))))))
+	    (case (car lambda-list)
+	      ((#!optional &optional) (setq state 'optional))
+	      ((#!rest &rest) (setq state 'rest))
+	      ;; XXX implement keyword params
+	      ((#!key) (compiler-error "Can't inline #!key parameters"))
+	      (t (case state
+		   ((required)
+		    (if (zerop args-left)
+			(compiler-error "Required arg missing" (car lambda-list))
+		      (setq bind-stack (cons (car lambda-list) bind-stack)
+			    args-left (1- args-left))))
+		   ((optional)
+		    (if (zerop args-left)
+			(progn
+			  (emit-insn '(push ()))
+			  (increment-stack))
+		      (setq args-left (1- args-left)))
+		    (setq bind-stack (cons (car lambda-list) bind-stack)))
+		   ((rest)
+		    (setq bind-stack (cons (cons (car lambda-list) args-left)
+					   bind-stack)
+			  args-left 0
+			  state '*done*)))))))
 	  (setq lambda-list (cdr lambda-list)))
 	(when (> args-left 0)
 	  (compiler-warning 'parameters
@@ -116,7 +119,7 @@
   ;; If PUSHED-ARGS-ALREADY is true it should be a count of the number
   ;; of arguments pushed onto the stack (in reverse order). In this case,
   ;; ARGS is ignored
-  (defun compile-lambda-inline (fun args &optional pushed-args-already
+  (defun compile-lambda-inline (fun args #!optional pushed-args-already
 				return-follows name)
     (setq fun (compiler-macroexpand fun))
     (when (>= (fluid-set inline-depth (1+ (fluid inline-depth)))
