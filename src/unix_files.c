@@ -348,9 +348,9 @@ sys_file_directory_p(VALUE file)
 VALUE
 sys_file_symlink_p(VALUE file)
 {
-    struct stat *st = stat_file(file);
-    if(st != 0)
-	return S_ISLNK(st->st_mode) ? sym_t : sym_nil;
+    struct stat st;
+    if(lstat(VSTR(file), &st) == 0)
+	return S_ISLNK(st.st_mode) ? sym_t : sym_nil;
     else
 	return sym_nil;
 }
@@ -436,7 +436,7 @@ sys_file_modes_as_string(VALUE file)
 	    {
 		static char extra_bits[3] = { 'S', 'S', 'T' };
 		/* Rampant abuse of ASCII knowledge :-) */
-		c = extra_bits[i] | ((c & 0x20) ^ 0x20);
+		c = extra_bits[i] | (c & 0x20);
 	    }
 	    if(c != 0)
 		VSTR(string)[3+i*3] = c;
