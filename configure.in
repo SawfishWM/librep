@@ -31,7 +31,7 @@ dnl libtool versioning info: `CURRENT:REVISION:AGE'. CURRENT is the
 dnl current interface id, REVISION is the version number of this
 dnl implementation, AGE defines the first interface id also supported
 dnl (i.e. all interfaces between CURRENT-AGE and CURRENT are supported)
-libversion="4:3:2"
+libversion="4:4:2"
 
 makefile_template="Makefile.in:Makedefs.in"
 output_files="src/Makefile:Makedefs.in:src/Makefile.in\
