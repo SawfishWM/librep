@@ -733,7 +733,8 @@ that files which shouldn't be compiled aren't."
 			   (nconc (comp-get-lambda-vars args) comp-bindings)))
 		       (compile-form (cons 'progn body))))
       (make-byte-code-subr args (nth 1 form) (nth 2 form) (nth 3 form)
-			   doc interactive macrop))))
+			   (and (not comp-write-docs) doc)
+			   interactive macrop))))
 
 ;; Return t if FORM is a constant
 (defun comp-constant-p (form)
