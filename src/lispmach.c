@@ -338,14 +338,6 @@ again:
 	    rep_bool was_closed;
 
 	CASE_OP_ARG(OP_CALL)
-#ifdef MINSTACK
-	    if(STK_SIZE <= MINSTACK)
-	    {
-		STK_WARN("lisp-code");
-		TOP = Fsignal(Qstack_error, Qnil);
-		goto quit;
-	    }
-#endif
 	    /* args are still available above the top of the stack,
 	       this just makes things a bit easier. */
 	    POPN(arg);
