@@ -23,6 +23,7 @@
 #include "revision.h"
 
 #include <string.h>
+#include <limits.h>
 
 _PR int main(int, char **);
 _PR int inner_main(int, char **);
@@ -129,6 +130,12 @@ main(int argc, char **argv)
     if(sizeof(PTR_SIZED_INT) != sizeof(void *))
     {
 	fputs("jade: sizeof(PTR_SIZED_INT) != sizeof(void *); aborting\n",
+	      stderr);
+	return 100;
+    }
+    if(PTR_SIZED_INT_BITS != sizeof(PTR_SIZED_INT) * CHAR_BIT)
+    {
+	fputs("jade: PTR_SIZED_INT_BITS incorrectly defined; aborting\n",
 	      stderr);
 	return 100;
     }
