@@ -42,8 +42,9 @@
 	  (setq sym (caar args))
 	  (setq def `(lambda ,(cdar args)
 		       ,(define-scan-internals (cdr args)))))
+      ;; (define foo bar)
       (setq sym (car args))
-      (setq def (cadr args)))
+      (setq def (define-scan-form (cadr args))))
     (cons sym def)))
 
 (defun define-scan-internals (body)
@@ -100,7 +101,15 @@
      form)
 
     ((lambda)
-     (list 'lambda (nth 1 form) (define-scan-internals (nthcdr 2 form))))
+     (list* 'lambda (nth 1 form) (define-scan-body (nthcdr 2 form))))
+
+    ((defun)
+     (list 'defun (nth 1 form) (nth 2 form)
+	   (define-scan-internals (nthcdr 3 form))))
+
+    ((defvar)
+     (list* 'defvar (nth 1 form) (define-scan-form (nth 2 form))
+	    (nthcdr 3 form)))
 
     (t
      (if (consp form)
