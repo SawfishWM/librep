@@ -1,5 +1,15 @@
 Mon Jun  1 11:26:39 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* mail-headers.jl (mail-parse-address): some reorganisation to
+	allow parsing of address without domains
+	(mail-format-address): allow nil NAME
+	(mail-insert-address-list): new function
+
+	* rm-misc.jl (rm-reply): use message's header cache where
+	possible
+
+	* rm-restrict.jl (rm-rule:attribute): quote the symbol argument
+
 	* read-mail.jl (rm-append-inbox, rm-rebuild-folder): fixed
 
 	* read-mail.jl (rm-open-mailbox, rm-close-mailbox,
