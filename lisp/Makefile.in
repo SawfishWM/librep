@@ -32,6 +32,8 @@ all : lisp
 
 lisp : ../src/.libexec
 	$(COMPILE_ENV) $(rep_prog) --batch --no-rc \
+	  -l rep.vm.compiler -f compile-assembler
+	$(COMPILE_ENV) $(rep_prog) --batch --no-rc \
 	  -l rep.vm.compiler -f compile-compiler
 	$(COMPILE_ENV) $(rep_prog) --batch --no-rc \
 	  -l rep.vm.compiler -f compile-lisp-lib
