@@ -312,6 +312,7 @@ again:
 	    int arg;
 	    repv tmp, tmp2;
 	    struct rep_Call lc;
+	    rep_bool was_closed;
 
 	CASE_OP_ARG(OP_CALL)
 #ifdef MINSTACK
@@ -332,10 +333,16 @@ again:
 	    rep_PUSH_CALL (lc);
 	    gc_stackbase.count = STK_USE;
 
+	    was_closed = rep_FALSE;
+	    if (rep_FUNARGP(tmp))
+	    {
+		rep_USE_FUNARG(tmp);
+		tmp = rep_FUNARG(tmp)->fun;
+		was_closed = rep_TRUE;
+	    }
+
 	    switch(rep_TYPE(tmp))
 	    {
-		rep_bool was_closed;
-
 	    case rep_Subr0:
 		TOP = rep_SUBR0FUN(tmp)();
 		break;
@@ -448,13 +455,6 @@ again:
 		while(arg--)
 		    tmp2 = Fcons(RET_POP, tmp2);
 		lc.args = tmp2;
-		was_closed = rep_FALSE;
-		if (rep_FUNARGP(tmp))
-		{
-		    rep_USE_FUNARG(tmp);
-		    tmp = rep_FUNARG(tmp)->fun;
-		    was_closed = rep_TRUE;
-		}
 		if (rep_CONSP(tmp))
 		{
 		    if(was_closed && rep_CAR(tmp) == Qlambda)
