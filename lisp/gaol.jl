@@ -66,9 +66,12 @@
       quotient modulo floor ceiling truncate round exp log sin cos tan
       asin acos atan sqrt expt gcd fixnump rationalp realp exactp
       inexactp exact->inexact inexact->exact numerator denominator
-      positivep negativep oddp evenp abs lcm make-table make-weak-table
-      string-hash symbol-hash eq-hash equal-hash tablep table-ref
-      table-set table-unset table-walk
+      positivep negativep oddp evenp abs lcm
+      string->number number->string mapconcat string-upper-case-p
+      string-lower-case-p string-capitalized-p string-upcase string-downcase
+      capitalize-string
+      make-table make-weak-table string-hash symbol-hash eq-hash
+      equal-hash tablep table-ref table-set table-unset table-walk
       downcase-table flatten-table upcase-table operating-system rep-version))
 
   ;; alist mapping functions to their safe versions
