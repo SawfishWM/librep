@@ -1,3 +1,7 @@
+2004-10-06  John Harper  <jsh@unfactored.org>
+
+	* rep/util/repl.jl: added ,compile-file command
+
 2004-02-21  John Harper  <jsh@unfactored.org>
 
 	* rep/xml/reader.jl (read-exclam-body): swallow the closing '>'

@@ -345,6 +345,13 @@
    "[STRUCT ...]")
 
   (define-repl-command
+   'compile-file
+   (lambda args
+     (require 'rep.vm.compiler)
+     (mapc compile-file args))
+   "\"FILENAME\" ...")
+
+  (define-repl-command
    'new
    (lambda (name)
      (declare (bound %open-structures))
