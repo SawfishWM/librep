@@ -1484,15 +1484,6 @@ again:
 	    result = eval_lambda (fun, arglist, eval_args,
 				  rep_FALSE, tail_posn);
 	}
-	else if(car == Qmacro)
-	{
-	    /* A macro. This could occur if autoloading from
-	       a macro definition. Try to accommodate.. */
-	    if(eval_args)
-		goto invalid;		/* can't expand from evaluated args */
-	    fun = lc.fun = rep_CDR(fun);
-	    goto again;
-	}
 	else if(closure && car == Qautoload)
 	{
 	    rep_USE_FUNARG(closure);
