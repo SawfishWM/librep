@@ -640,7 +640,12 @@ extern void rep_unix_set_fd_cloexec(int fd);
 extern void rep_sig_restart(int sig, rep_bool flag);
 extern repv rep_event_loop(void);
 extern repv rep_sit_for(u_long timeout_msecs);
-extern repv rep_accept_input(u_long timeout_msecs, void *callback);
+extern repv rep_accept_input_for_callbacks (u_long timeout_msecs,
+					    int ncallbacks,
+					    void (**callbacks)(int));
+extern repv rep_accept_input_for_fds (u_long timeout_msecs,
+				      int nfds, int *fds);
+extern repv rep_accept_input(u_long timeout_msecs, void (*callback)(int));
 extern rep_bool rep_poll_input(int fd);
 
 #ifdef DEBUG_SYS_ALLOC
@@ -694,6 +699,7 @@ extern repv Fprocess_connection_type(repv proc);
 extern repv Fset_process_connection_type(repv proc, repv type);
 extern repv Factive_processes(void);
 extern repv Faccept_process_output(repv secs, repv msecs);
+void rep_register_process_input_handler (void (*handler)(int));
 
 #endif /* rep_HAVE_UNIX */
 
