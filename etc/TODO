@@ -44,11 +44,7 @@ Outstanding bugs
  ! revert-buffer'ing a Dired buffer doesn't work---it loads the
    directory contents into the buffer as _binary_ data!
 
- ! reconnection to timed out FTP sessions isn't transparent
-
  ! {x,y}-scroll-step-ratio should be made into normal variables
-
- ! cursor doesn't change to a box when out of focus
 
  ! It's relatively easy to blow the stack when regexp matching. Try
    searching for `/\*(.|\n)*\*/' in a C file with reasonable large

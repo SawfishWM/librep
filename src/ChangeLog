@@ -1,3 +1,42 @@
+1998-09-04  John Harper  <john@dcs.warwick.ac.uk>
+
+	* faces.c (mouse-cursor-face): new variable
+	* x11_main.c (sys_recolor_cursor): new function
+
+	* faces.c (mark_merged_faces): mark both glyph buffers
+	(faces_init): check for success of colour allocations,
+	returning failure if unsuccessful
+
+	* main.c (common_db): debug buffer for misc. uses
+	(inner_main): move faces_init later, move the error printing
+	code later so it catches more errors (not just from the init
+	script)
+
+	* redisplay.c (redisplay_lock): mutex variable to prevent
+	redisplay being entered more than once concurrently
+
+	* x11_main.c: added "-visual" option and "visual" resource to
+	allow the visual to be specified
+	(use_options): if specified, find the named visual with the
+	most bitplanes. Allocate a colormap when using a non-default
+	visual
+	(sys_make_color): use the first x11_display in the list
+	(x11_handle_async_input): only do anything if redisplay_lock
+	isn't set
+
+	* x11_windows.c (sys_new_window): use XCreateWindow so the
+	visual may be specified
+
+	* x11_windowsys.h (struct x11_display): added `visual', `depth'
+	and `colormap' fields
+
+	* unix_processes.c (get_pty): possibly check both /dev/ptmx and
+	/dev/ptyXX (if they both exist), in that order
+
+	* debug-buffer.c (db_print_frame): new function, print the
+	current call backtrace (gcc only)
+	(db_spew): ignore buffer if empty
+
 1998-09-02  John Harper  <john@dcs.warwick.ac.uk>
 
 	* edit.h (Merged_Face): new structure, pared down version of
