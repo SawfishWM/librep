@@ -324,29 +324,25 @@ rep_unix_set_fd_cloexec(int fd)
 void
 rep_sig_restart(int sig, rep_bool flag)
 {
-#ifdef HAVE_SIGINTERRUPT
+#if defined (HAVE_SIGINTERRUPT)
     siginterrupt (sig, !flag);
 #else
     struct sigaction act;
     sigaction (sig, 0, &act);
     if(flag)
     {
-# ifdef SA_RESTART
+# if defined (SA_RESTART)
 	act.sa_flags |= SA_RESTART;
-# else
-#  ifdef SA_INTERRUPT
+# elif defined (SA_INTERRUPT)
 	act.sa_flags &= ~SA_INTERRUPT;
-#  endif
 # endif
     }
     else
     {
-# ifdef SA_RESTART
+# if defined (SA_RESTART)
 	act.sa_flags &= ~SA_RESTART;
-# else
-#  ifdef SA_INTERRUPT
+# elif defined (SA_INTERRUPT)
 	act.sa_flags |= SA_INTERRUPT;
-#  endif
 # endif
     }
     sigaction(sig, &act, 0);
@@ -725,16 +721,32 @@ fatal_signal_handler(int sig)
 static RETSIGTYPE
 interrupt_signal_handler(int sig)
 {
-    rep_throw_value = rep_int_cell;
-    signal(SIGINT, interrupt_signal_handler);
+    if (rep_throw_value == rep_int_cell)
+    {
+	signal (sig, SIG_DFL);
+	raise (sig);
+    }
+    else
+    {
+	rep_throw_value = rep_int_cell;
+	signal (sig, interrupt_signal_handler);
+    }
 }
 
 /* Invoked by trappable termination signals */
 static RETSIGTYPE
 termination_signal_handler(int sig)
 {
-    rep_throw_value = rep_term_cell;
-    signal(sig, termination_signal_handler);
+    if (rep_throw_value == rep_term_cell)
+    {
+	signal (sig, SIG_DFL);
+	raise (sig);
+    }
+    else
+    {
+	rep_throw_value = rep_term_cell;
+	signal (sig, termination_signal_handler);
+    }
 }
 
 /* Invoked by SIGUSR1 or SIGUSR2 */
