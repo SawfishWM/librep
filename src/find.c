@@ -330,13 +330,15 @@ static regtype last_match_type;
 static VALUE last_match_data;
 static regsubs last_matches;
 
-static DEFSYM(regexp_error, "regexp-error");
+_PR VALUE sym_regexp_error;
+DEFSYM(regexp_error, "regexp-error");
 DEFSTRING(err_regexp_error, "Regexp error");
 
 static regexp *
 compile_regexp(VALUE re)
 {
-    if(last_regexp != 0
+    if(last_compiled_regexp != 0
+       && last_regexp != 0
        && STRING_LEN(last_regexp) == STRING_LEN(re)
        && memcmp(VSTR(last_regexp), VSTR(re), STRING_LEN(re)) == 0)
     {
