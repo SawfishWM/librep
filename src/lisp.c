@@ -1255,15 +1255,12 @@ DEFSTRING(invl_autoload, "Can only autoload from symbols");
    This function tries to load FILE, then returns the value of SYMBOL
    if successful, or rep_NULL for some kind of error.
 
-   Alternatively, for `(autoload SYMBOL SYMBOL-2 ...)' tries to intern
-   the structure called SYMBOL-2
-
    IMPORTANT: to ensure security, closure FUNARG must be active when
    this function is called. */
 repv
 rep_load_autoload(repv funarg)
 {
-    repv aload_def, fun, file;
+    repv aload_def, fun, file, load;
 
     if (!rep_FUNARGP(funarg))
     {
@@ -1277,8 +1274,7 @@ rep_load_autoload(repv funarg)
     if (!rep_CONSP(aload_def)
 	|| !rep_SYMBOLP(rep_CAR(aload_def))
 	|| !rep_CONSP(rep_CDR(aload_def))
-	|| !(rep_STRINGP(rep_CAR(rep_CDR(aload_def)))
-	     || rep_SYMBOLP(rep_CAR(rep_CDR(aload_def)))))
+	|| !rep_STRINGP(rep_CAR(rep_CDR(aload_def))))
     {
 	return Fsignal(Qinvalid_autoload,
 		       rep_list_2(aload_def, rep_VAL(&invl_autoload)));
@@ -1287,59 +1283,32 @@ rep_load_autoload(repv funarg)
     fun = rep_CAR(aload_def);
     file = rep_CAR(rep_CDR(aload_def));
 
-    if (rep_STRINGP (file))
+    /* loading a file */
+
+    /* Check if the current environment is allowed to load */
+    load = Fsymbol_value (Qload, Qnil);
+    if (load != rep_NULL)
     {
-	/* loading a file */
+	rep_GC_root gc_fun, gc_funarg;
+	repv tmp;
 
-	/* Check if the current environment is allowed to load */
-	repv load = Fsymbol_value (Qload, Qnil);
-	if (load != rep_NULL)
-	{
-	    rep_GC_root gc_fun, gc_funarg;
-	    repv tmp;
+	/* trash the autoload defn, so we don't keep trying to
+	   autoload indefinitely. */
+	rep_CDR(aload_def) = Qnil;
 
-	    /* trash the autoload defn, so we don't keep trying to
-	       autoload indefinitely. */
-	    rep_CDR(aload_def) = Qnil;
+	rep_PUSHGC(gc_funarg, funarg);
+	rep_PUSHGC(gc_fun, fun);
+	/* call through the value instead of just Fload'ing */
+	tmp = rep_call_lisp2 (load, file, Qt);
+	rep_POPGC; rep_POPGC;
 
-	    rep_PUSHGC(gc_funarg, funarg);
-	    rep_PUSHGC(gc_fun, fun);
-	    /* call through the value instead of just Fload'ing */
-	    tmp = rep_call_lisp2 (load, file, Qt);
-	    rep_POPGC; rep_POPGC;
+	if (!tmp)
+	    return rep_NULL;
 
-	    if (!tmp)
-		return rep_NULL;
-
-	    fun = Fsymbol_value (fun, Qnil);
-	}
-	else
-	    fun = rep_NULL;
+	fun = Fsymbol_value (fun, Qnil);
     }
     else
-    {
-	/* a symbol naming a structure to intern */
-
-	/* Check if the current environment is allowed to load */
-	repv load = Fsymbol_value (Qrequire, Qnil);
-	if (load != rep_NULL)
-	{
-	    rep_GC_root gc_fun, gc_funarg;
-	    repv tmp;
-
-	    rep_PUSHGC (gc_funarg, funarg);
-	    rep_PUSHGC (gc_fun, fun);
-	    tmp = rep_call_lisp1 (load, file);
-	    rep_POPGC; rep_POPGC;
-
-	    if (!tmp)
-		return rep_NULL;
-
-	    fun = Fsymbol_value (fun, Qnil);
-	}
-	else
-	    fun = rep_NULL;
-    }
+	fun = rep_NULL;
 
     if (fun != rep_NULL)
     {
