@@ -31,8 +31,6 @@
 ;; file each time. It would be better to untar the entire contents
 ;; somewhere, and then clean up later..)
 
-;; It needs to use GNU tar (for the compression options)
-
 (declare (unsafe-for-call/cc))
 
 (define-structure rep.io.file-handlers.tar ()
@@ -45,13 +43,21 @@
 	  rep.system
 	  rep.util.date)
 
+;; Warning!
+
+;; Before using any more tar options, make sure that the `emulate-gnu-tar'
+;; script can support them.
+
 
 ;; configuration
 
 (defvar tarfh-gnu-tar-program "tar"
   "Location of GNU tar program.")
 
-(defvar tarfh-alternative-gnu-tar-programs '("gtar"))
+(defvar tarfh-alternative-gnu-tar-programs
+  (list "gnutar" "gtar"
+	(expand-file-name
+	 "rep-emulate-gnu-tar" exec-directory)))
 
 ;; Initialised to the current tar version
 (defvar tarfh-gnu-tar-version nil)
@@ -63,7 +69,11 @@
 
 ;; Hairy regexp matching tar `--list --verbose' output
 (defvar tarfh-list-regexp (concat "([a-zA-Z-]+)\\s+(\\w+)/(\\w+)\\s+(\\d+)\\s+"
-				  "([0-9-]+\\s+[0-9:]+)\\s+([^\n]+)"))
+				  ;; GNU tar output
+				  "([0-9-]+\\s+[0-9:]+"
+				  ;; solaris tar output
+				  "|\\w\\w\\w\\s+\\d+\\s+\\d+:\\d+\\s+\\d+)"
+				  "\\s+([^\n]+)"))
 
 ;; Map list file types to symbols
 (defvar tarfh-list-type-alist '((?- . file) (?d . directory)

@@ -1,3 +1,12 @@
+2001-03-12  John Harper  <jsh@eazel.com>
+
+	* rep/io/file-handlers/tar.jl
+	(tarfh-alternative-gnu-tar-programs): added `gnutar' and the
+	GNU tar emulation script to this list
+
+	(tarfh-list-regexp): hacked this to also recognize the date
+	format used by Solaris tar
+
 2001-02-13  John Harper  <jsh@eazel.com>
 
 	* rep.jl (debug-entry, debug-exit, debug-error-entry): declare
