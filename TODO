@@ -107,9 +107,7 @@ General programming tasks:
    case catch cond condition-case defvar lambda prog1 progn quote setq
    unwind-protect while with-object
 
- - eliminate tail calls in interpreted code
-
-   also, subrs can't be called tail recursively (e.g. call/cc apply ..?)
+ - subrs can't be called tail recursively (e.g. call/cc apply ..?)
 
  - add a hygienic macro facility
 

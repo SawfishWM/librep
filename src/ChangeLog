@@ -1,5 +1,27 @@
 2000-05-29  John Harper  <john@dcs.warwick.ac.uk>
 
+	Work to make the interpreter tail recursive:
+
+	* lisp.c: special form subrs are now called with two repv
+	arguments, the list of parameters and a boolean marking whether
+	or not they occur in a function's tail position
+
+	(rep_eval, funcall): new functions, as Feval or rep_funcall,
+	but with an extra arg passing in tail position
+
+	(rep_apply): new function
+
+	(eval): where possible to tail call (tail position is t,
+	called object is a closure) package the closure and evaluated
+	arguments, then throw them back to the innermost
+	non-tail-position lambda application
+
+	(eval_lambda): when catching a tail call throw, and this is the
+	innermost non-tail-position, unpackage the call and evaluate it
+
+	* symbols.c, lispcmds.c: use rep_eval instead of Feval, support
+	tail position arguments
+
 	* lisp.c (rep_readl): fix bug when reading `#!' when not at the
 	start of a file
 
