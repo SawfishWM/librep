@@ -78,7 +78,7 @@ typedef unsigned rep_PTR_SIZED_INT repv;
 #define rep_VALUE_CONS_MARK_BIT	1
 #define rep_VALUE_IS_INT	2
 #define rep_VALUE_INT_SHIFT	2
-#define rep_CELL_ALIGNMENT	4
+#define rep_CELL_ALIGNMENT	rep_PTR_SIZED_INT_SIZEOF
 
 #if rep_CELL_ALIGNMENT <= rep_MALLOC_ALIGNMENT
   /* Allocate SIZE bytes of memory, aligned to NORMAL_ALIGNMENT */
@@ -99,11 +99,12 @@ typedef unsigned rep_PTR_SIZED_INT repv;
 #ifdef __GNUC__
 # define rep_ALIGN_CELL(d) d __attribute__ ((aligned (rep_CELL_ALIGNMENT)))
 #elif defined (__digital__) && defined (__unix__) && defined (__DECC)
-# if rep_CELL_ALIGNMENT >= 4
+# if rep_CELL_ALIGNMENT >= rep_PTR_SIZED_INT_SIZEOF
+   /* "the C compiler aligns an int (32 bits) on a 4-byte boundary and
+      a long (64 bits) on an 8-byte boundary" (Tru64 Programmer's Guide) */
 #  define rep_ALIGN_CELL(d) d
 # else
-#  error Cell alignment has changed (previously it was 4), and rep_lisp.h
-#  error must be updated for Tru64!
+#  error "You need to fix alignment for Tru64"
 # endif
 #else
 /* # warning Lets hope your compiler aligns to 4 byte boundaries.. */
