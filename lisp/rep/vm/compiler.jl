@@ -238,19 +238,21 @@ value when given the same inputs. Used when constant folding.")
       ;; Scan the lambda-list for the number of required and optional
       ;; arguments, and whether there's a &rest clause
       (while args
-	(if (memq (car args) '(&optional &rest &aux))
-	    (cond
-	     ((eq (car args) '&optional)
-	      (setq state 'optional
-		    optional 0
-		    args (cdr args)))
-	     ((eq (car args) '&rest)
-	      (setq args nil
-		    rest t))
-	     ((eq (car args) '&aux)
-	      (setq args nil)))
-	  (set state (1+ (symbol-value state)))
-	  (setq args (cdr args))))
+	(if (symbolp args)
+	    ;; (foo . bar)
+	    (setq rest t)
+	  (if (memq (car args) '(&optional &rest &aux))
+	      (cond
+	       ((eq (car args) '&optional)
+		(setq state 'optional)
+		(setq optional 0))
+	       ((eq (car args) '&rest)
+		(setq args nil)
+		(setq rest t))
+	       ((eq (car args) '&aux)
+		(setq args nil)))
+	    (set state (1+ (symbol-value state)))))
+	  (setq args (cdr args)))
       (setq comp-defuns (cons (list name required optional rest)
 			      comp-defuns)))))
 
@@ -840,11 +842,17 @@ that files which shouldn't be compiled aren't."
       (setq body (cdr body)))))
 
 ;; Remove all keywords from a lambda list ARGS, returning the list of
-;; variables that would be bound
-(defmacro comp-get-lambda-vars (args)
-  (list 'filter '(lambda (x)
-		   (not (memq x '(&optional &rest &aux))))
-	args))
+;; variables that would be bound (in the order they would be bound)
+(defun comp-get-lambda-vars (args)
+  (let
+      (vars)
+    (while args
+      (if (symbolp args)
+	  (setq vars (cons args vars))
+	(unless (memq (car args) '(&optional &rest &aux))
+	  (setq vars (cons (car args) vars))))
+      (setq args (cdr args)))
+    (nreverse vars)))
 
 ;; From LST, `(lambda (ARGS) [DOC-STRING] BODY ...)' returns a byte-code
 ;; vector
@@ -1305,30 +1313,35 @@ that files which shouldn't be compiled aren't."
 	 (comp-spec-bindings comp-spec-bindings)
 	 (comp-lex-bindings comp-lex-bindings))
       (mapc comp-test-varbind (comp-get-lambda-vars lambda-list))
-      (while (consp lambda-list)
-	(if (memq (car lambda-list) '(&optional &rest &aux))
-	    (setq state (car lambda-list))
-	  (cond
-	   ((eq state 'required)
-	    (if (zerop args-left)
-		(comp-error "Required arg missing" (car lambda-list))
-	      (setq bind-stack (cons (car lambda-list) bind-stack)
-		    args-left (1- args-left))))
-	   ((eq state '&optional)
-	    (if (zerop args-left)
-		(progn
-		  (comp-write-op op-nil)
-		  (comp-inc-stack))
-	      (setq args-left (1- args-left)))
-	    (setq bind-stack (cons (car lambda-list) bind-stack)))
-	   ((eq state '&rest)
-	    (setq bind-stack (cons (cons (car lambda-list) args-left)
-				   bind-stack)
-		  args-left 0
-		  state '&aux))
-	   ((eq state '&aux)
-	    (setq bind-stack (cons (cons (car lambda-list) nil)
-				   bind-stack)))))
+      (while lambda-list
+	(cond
+	 ((symbolp lambda-list)
+	  (setq bind-stack (cons (cons lambda-list args-left) bind-stack))
+	  (setq args-left 0))
+	 ((consp lambda-list)
+	  (if (memq (car lambda-list) '(&optional &rest &aux))
+	      (setq state (car lambda-list))
+	    (cond
+	     ((eq state 'required)
+	      (if (zerop args-left)
+		  (comp-error "Required arg missing" (car lambda-list))
+		(setq bind-stack (cons (car lambda-list) bind-stack)
+		      args-left (1- args-left))))
+	     ((eq state '&optional)
+	      (if (zerop args-left)
+		  (progn
+		    (comp-write-op op-nil)
+		    (comp-inc-stack))
+		(setq args-left (1- args-left)))
+	      (setq bind-stack (cons (car lambda-list) bind-stack)))
+	     ((eq state '&rest)
+	      (setq bind-stack (cons (cons (car lambda-list) args-left)
+				     bind-stack)
+		    args-left 0
+		    state '&aux))
+	     ((eq state '&aux)
+	      (setq bind-stack (cons (cons (car lambda-list) nil)
+				     bind-stack)))))))
 	(setq lambda-list (cdr lambda-list)))
       (when (> args-left 0)
 	(comp-warning "%d unused parameters to inline lambda" args-left))
