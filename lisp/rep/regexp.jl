@@ -23,6 +23,8 @@
 
 (declare (in-module rep.regexp))
 
+(open-structures '(rep.data))
+
 (defun string-replace (regexp template string)
   "Return the string created by replacing all matches of REGEXP in STRING
 with the result of expanding TEMPLATE using the `expand-last-match'
