@@ -58,12 +58,21 @@
 		((string-match "^\\s*r\\w*\\s+" input)
 		 (do-set-result
 		  (eval (read-from-string (substring input (match-end))))))
+		((string-match "^\\s*u" input)
+		 (fluid-set last do-up)
+		 (do-up))
+		((string-match "^\\s*d" input)
+		 (fluid-set last do-down)
+		 (do-down))
 		((string-match "^\\s*p\\w*\\s+" input)
-		 (format standard-error "%S\n"
-			 (eval-in-frame
-			  (read-from-string (substring input (match-end))))))
+		 (condition-case data
+		     (format standard-error "%S\n"
+			     (eval-in-frame
+			      (read-from-string
+			       (substring input (match-end)))))
+		   (error (default-error-handler (car data) (cdr data)))))
 		((string-match "^\\s*b" input)
-		 (do-backtrace 0))
+		 (do-backtrace))
 		((string-match "^\\s*f" input)
 		 (format standard-error "<%d> %S\n" (fluid depth) (fluid obj)))
 		((string-match "^\\s*l" input)
@@ -88,7 +97,8 @@ commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM',
 	((data (debug-frame-environment (fluid frame-pointer))))
       (when data
 	(mapc (lambda (cell)
-		(format standard-error "%16s %S\n" (car cell) (cdr cell)))
+		(format standard-error "%16s %S\n"
+			(symbol-name (car cell)) (cdr cell)))
 	      (car data)))))
 
   (defun eval-in-frame (form)
@@ -127,10 +137,21 @@ commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM',
   (defun do-continue ()
     (throw 'debug (cons 3 (fluid obj))))
 
-  ;; DEPTH is the number of stack frames to discard
-  (defun do-backtrace (depth)
+  (defun do-backtrace ()
     (backtrace standard-output)
-    (write standard-output ?\n))
+    (write standard-output #\newline))
+
+  (defun do-up ()
+    (when (fluid frame-pointer)
+      (let ((fp (debug-inner-frame (fluid frame-pointer))))
+	(when fp
+	  (fluid-set frame-pointer fp)))))
+
+  (defun do-down ()
+    (when (fluid frame-pointer)
+      (let ((fp (debug-outer-frame (fluid frame-pointer))))
+	(when fp
+	  (fluid-set frame-pointer fp)))))
 
 ;;; initialize debug hooks (special variables)
 
