@@ -195,7 +195,7 @@
 		   ;; instruction with constant
 		   (emit-insn (car insn) (get-const-id (cadr insn))))
 
-		  ((memq (car insn) '(ejmp jpn jpt jmp jn jt jnp jtp))
+		  ((memq (car insn) byte-jmp-insns)
 		   (emit-jmp (car insn) (cadr insn)))
 
 		  (t (apply emit-insn insn)))

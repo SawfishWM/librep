@@ -27,6 +27,7 @@
 
     (open rep
 	  rep.lang.doc
+	  rep.vm.bytecodes
 	  rep.vm.compiler.modules
 	  rep.vm.compiler.utils
 	  rep.vm.compiler.basic
@@ -63,21 +64,6 @@
   (define top-level-unexpanded
     '(defun defmacro defvar defconst defsubst require
       declare eval-when-compile define-structure structure))
-
-  ;; XXX move to rep.vm.bytecodes
-
-  (define byte-nth-insns '((0 . car)
-                          (1 . cadr)
-                          (2 . caddr)
-                          (3 . cadddr)
-                          (4 . caddddr)
-                          (5 . cadddddr)
-                          (6 . caddddddr)
-                          (7 . cadddddddr)))
-
-  (define byte-nthcdr-insns '((0 . ())
-                             (1 . cdr)
-                             (2 . cddr)))
 
 
 ;;; pass 1 support

@@ -58,8 +58,7 @@ expanded an arbitrary number of times."
 
 	      (cond ((bytecodep (car body))
 		     (setq body (car body)))
-		    (t
-		     (setq body (list 'quote (cons 'lambda body)))))
+		    (t (setq body (list 'quote (cons 'lambda body)))))
 	      (list '%define symbol
 		    (list 'cons
 			  (list 'quote 'macro)
@@ -75,8 +74,7 @@ documentation DOC-STRING (optional) and body BODY."
 
   (cond ((bytecodep (car body))
 	 (setq body (car body)))
-	(t
-	 (setq body (list 'quote (cons 'lambda body)))))
+	(t (setq body (list 'quote (cons 'lambda body)))))
   (list '%define symbol (list 'make-closure body (symbol-name symbol))))
 
 (defmacro defconst (symbol value . rest)
