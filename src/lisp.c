@@ -537,7 +537,9 @@ read_symbol(repv strm, int *c_p)
     }
 done:
     buf[i] = 0;
-    if (radix > 0 && nfirst < i)
+    if (i == 0)
+	result = Fsignal (Qinvalid_read_syntax, rep_LIST_1 (strm));
+    else if (radix > 0 && nfirst < i)
     {
 	/* It was a number of some sort */
 	if (radix == 1)
