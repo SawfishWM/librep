@@ -44,8 +44,6 @@ _PR void lisp_prin(VALUE, VALUE);
 _PR void string_princ(VALUE, VALUE);
 _PR void string_print(VALUE, VALUE);
 
-_PR VALUE find_member_by_index(VALUE, int);
-_PR VALUE move_down_list(VALUE, int);
 _PR int list_length(VALUE);
 _PR VALUE copy_list(VALUE);
 _PR VALUE handle_var_int(VALUE, int *);
@@ -1535,34 +1533,6 @@ string_print(VALUE strm, VALUE obj)
 	}
     }
     stream_putc(strm, '\"');
-}
-
-VALUE
-find_member_by_index(VALUE list, int index)
-{
-    while((--index) && CONSP(list))
-    {
-	list = VCDR(list);
-	TEST_INT;
-	if(INT_P)
-	    return(sym_nil);
-    }
-    if(CONSP(list))
-	return(VCAR(list));
-    return(sym_nil);
-}
-
-VALUE
-move_down_list(VALUE list, int nodes)
-{
-    while((nodes--) && CONSP(list))
-    {
-	list = VCDR(list);
-	TEST_INT;
-	if(INT_P)
-	    return LISP_NULL;
-    }
-    return(list);
 }
 
 int
