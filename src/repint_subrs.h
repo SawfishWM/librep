@@ -90,6 +90,7 @@ extern repv rep_default_structure, rep_specials_structure;
 extern repv F_make_structure (repv, repv, repv, repv);
 extern repv F_structure_ref (repv, repv);
 extern repv F_structure_set (repv, repv, repv);
+extern repv F_structure_bound_p (repv, repv);
 extern repv F_external_structure_ref (repv, repv);
 extern repv rep_get_initial_special_value (repv sym);
 extern void rep_pre_structures_init (void);
