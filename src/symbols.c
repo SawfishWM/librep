@@ -53,7 +53,7 @@ static rep_funarg *funargs;
 DEFSYM(nil, "nil");
 DEFSYM(t, "t");
 
-DEFSYM(variable_documentation, "variable-documentation");
+DEFSYM(documentation, "documentation");
 DEFSYM(permanent_local, "permanent-local");
 
 /* Function vectors to implement local symbols through. */
@@ -678,7 +678,7 @@ variable will be set (if necessary) not the local value.
 
 	if(rep_CONSP(rep_CDR(rep_CDR(args))))
 	{
-	    if (!Fput(sym, Qvariable_documentation,
+	    if (!Fput(sym, Qdocumentation,
 		      rep_CAR(rep_CDR(rep_CDR(args)))))
 		return rep_NULL;
 	}
@@ -1420,7 +1420,7 @@ rep_symbols_init(void)
     rep_SYM(Qt)->value = Qt;
     rep_SYM(Qt)->car |= rep_SF_CONSTANT;
 
-    rep_INTERN(variable_documentation);
+    rep_INTERN(documentation);
     rep_INTERN(permanent_local);
     rep_ADD_SUBR(Smake_symbol);
     rep_ADD_SUBR(Smake_obarray);
