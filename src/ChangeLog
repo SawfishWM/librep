@@ -1,3 +1,20 @@
+Thu Jun 11 16:44:42 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_main.c (wait_for_input, handle_input, sys_event_loop,
+	sys_sit_for, sys_accept_input): use local copies of the master
+	fd set to allow recursive use of sys_accept_input
+
+Wed Jun 10 20:49:05 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* misc.c (cmd_sit_for): new function, wait for input or a
+	timeout
+
+	* unix_main.c (sys_event_loop): split into separate parts to
+	allow new functions sys_sit_for and sys_accept_input
+
+	* unix_processes.c (cmd_accept_process_output): new function,
+	accept and process output, or timeout
+
 Mon Jun  8 14:50:17 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lisp.c (read_symbol): don't accept `0x' as a hex. number
