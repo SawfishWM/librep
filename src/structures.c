@@ -439,6 +439,27 @@ lookup_or_add (rep_struct *s, repv var)
     return n;
 }
 
+static void
+remove_binding (rep_struct *s, repv var)
+{
+    if (s->total_buckets != 0)
+    {
+	rep_struct_node **n;
+	for (n = &(s->buckets[rep_STRUCT_HASH (var, s->total_buckets)]);
+	     *n != 0; n = &((*n)->next))
+	{
+	    if ((*n)->symbol == var)
+	    {
+		rep_struct_node *next = (*n)->next;
+		rep_free (*n);
+		*n = next;
+		cache_invalidate_symbol (var);
+		return;
+	    }
+	}
+    }
+}
+
 /* Scan for a binding of symbol VAR under structure S, or return null. This
    also searches the exports of any structures that S has opened */
 static rep_struct_node *
@@ -677,14 +698,22 @@ STRUCTURE to VALUE. If no such binding exists, one will be created.
 
     s = rep_STRUCTURE (structure);
 
-    n = lookup_or_add (s, var);
-    if (!n->is_constant)
+    if (!rep_VOIDP (value))
     {
-	n->binding = value;
-	return value;
+	n = lookup_or_add (s, var);
+	if (!n->is_constant)
+	{
+	    n->binding = value;
+	    return value;
+	}
+	else
+	    return Fsignal(Qsetting_constant, rep_LIST_1(var));
     }
     else
-	return Fsignal(Qsetting_constant, rep_LIST_1(var));
+    {
+	remove_binding (s, var);
+	return Qnil;
+    }
 }
 
 DEFUN ("%external-structure-ref", F_external_structure_ref,
@@ -1292,6 +1321,7 @@ rep_get_initial_special_value (repv sym)
 	    if (!rep_VOIDP (old))
 	    {
 		F_structure_set (s, sym, rep_void_value);
+		cache_invalidate_symbol (sym);
 		return old;
 	    }
 	}
