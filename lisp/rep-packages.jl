@@ -107,7 +107,7 @@
 
 	  ;; init.jl
 	  setcar setcdr string= string< nop identity interactive _
-	  caar cdar cadr cddr
+	  member-if caar cdar cadr cddr
 	  caaar cdaar cadar cddar caadr cdadr caddr cdddr
 	  caaaar cadaar caadar caddar caaadr cadadr caaddr cadddr
 	  cdaaar cddaar cdadar cdddar cdaadr cddadr cdaddr cddddr
