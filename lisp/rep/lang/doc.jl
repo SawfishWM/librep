@@ -39,7 +39,8 @@
     (let ((output (make-string-output-stream)))
       ;; Print the arg list (one at a time)
       (while (consp lambda-list)
-	(let ((arg-name (symbol-name (car lambda-list))))
+	(let ((arg-name (symbol-name (or (caar lambda-list)
+					 (car lambda-list)))))
 	  ;; Unless the it's a lambda-list keyword, print in capitals
 	  (unless (memq (car lambda-list)
 			'(#!optional #!key #!rest &optional &rest))

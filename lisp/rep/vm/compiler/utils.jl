@@ -147,7 +147,7 @@
 		   (aset count 2 t)))
 	      (if (numberp state)
 		  (aset count state (1+ (aref count state)))
-		(setq keys (cons (car args) keys)))))
+		(setq keys (cons (or (caar args) (car args)) keys)))))
 	  (setq args (cdr args)))
 	(fluid-set defuns (cons (list name (aref count 0)
 				      (aref count 1) (aref count 2) keys)
@@ -285,7 +285,7 @@
 	(if (symbolp args)
 	    (setq vars (cons args vars))
 	  (unless (memq (car args) '(#!optional #!key #!rest &optional &rest))
-	    (setq vars (cons (car args) vars))))
+	    (setq vars (cons (or (caar args) (car args)) vars))))
 	(setq args (cdr args)))
       (nreverse vars)))
 

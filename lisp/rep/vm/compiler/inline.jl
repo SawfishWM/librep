@@ -77,11 +77,14 @@
 			    args-left (1- args-left))))
 		   ((optional)
 		    (if (zerop args-left)
-			(progn
-			  (emit-insn '(push ()))
+			(let ((def (cdar lambda-list)))
+			  (if def
+			      (emit-insn `(push ,(car def)))
+			    (emit-insn '(push ())))
 			  (increment-stack))
 		      (setq args-left (1- args-left)))
-		    (setq bind-stack (cons (car lambda-list) bind-stack)))
+		    (setq bind-stack (cons (or (caar lambda-list)
+					       (car lambda-list)) bind-stack)))
 		   ((rest)
 		    (setq bind-stack (cons (cons (car lambda-list) args-left)
 					   bind-stack)
