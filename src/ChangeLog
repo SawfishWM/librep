@@ -1,3 +1,13 @@
+1998-11-12  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_main.c (sys_mark_input_pending): new function, records
+	that an input fd has input read but not yet handled (and
+	therefore needs to be disposed of next time round the event
+	loop)
+	* x11_main.c (x11_handle_input): when working asynchronously,
+	ensure that any events read but not handled cause
+	sys_mark_input_pending to be called
+
 1998-11-11  John Harper  <john@dcs.warwick.ac.uk>
 
 	* windows.c (cmd_make_window): set the w_CurrVW field
