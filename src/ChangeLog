@@ -1,3 +1,12 @@
+1998-07-16  John Harper  <john@dcs.warwick.ac.uk>
+
+	* x11_windowsys.h (struct x11_display): added last_click and
+	last_click_button fields, for tracking double-clicks
+	* x11_keys.c (translate_event): now takes an x11_display
+	structure as an extra argument, only accepts double clicks if
+	they're from the _same_ mouse button as the first click
+	* x11_main.c: pass extra arg to translate_event
+
 1998-07-12  John Harper  <john@dcs.warwick.ac.uk>
 
 	* redisplay.c (patch_display): fix warning about relative

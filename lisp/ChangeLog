@@ -1,3 +1,9 @@
+1998-07-17  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compiler.jl (comp-compile-lambda): if a list-style
+	interactive decl. is found, see if it might be worth compiling
+	it (if the function is in the `comp-top-level-compiled' list)
+
 1998-07-10  John Harper  <john@dcs.warwick.ac.uk>
 
 	* read-mail.jl (read-mail-folder): before adding the new folder
