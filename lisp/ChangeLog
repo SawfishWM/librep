@@ -1,3 +1,19 @@
+1998-08-11  John Harper  <john@dcs.warwick.ac.uk>
+
+	* find-autoloads.jl (autoload-do-magic): allow macros to have
+	autoload tags
+	* rm-restrict.jl (defrule): added autoload tag
+
+	* buffers.jl (kill-buffer): fix bug (taking the new current
+	buffer from the buffer-list of the current view, not the view
+	being altered)
+
+	* rm-restrict.jl (sender-alias): new rule, tests if a message
+	was sent by an address in a named alias
+
+	* completion.jl (completion-column-extra): new variable,
+	controls the column width in completion listings
+
 1998-08-10  John Harper  <john@dcs.warwick.ac.uk>
 
 	* completion.jl: new file, generalises the old code in
