@@ -459,8 +459,7 @@
 	(compile-body body)
 	(emit-insn (bytecode unbind))
 	(decrement-b-stack))))
-; XXX disabled since it seems to cause segmentation faults..?
-;  (put 'fluid-let 'rep-compile-fun compile-fluid-let)
+  (put 'fluid-let 'rep-compile-fun compile-fluid-let)
 
   (defun compile-cond (form &optional return-follows)
     (let
