@@ -1,3 +1,8 @@
+2001-01-27  John Harper  <jsh@eazel.com>
+
+	* rep/i18n/xgettext.jl (scan): fixed typo when scanning
+	`lambda' forms (was scanning the car (!?) instead of the cddr)
+
 2001-01-14  John Harper  <jsh@eazel.com>
 
 	* rep/util/gaol.jl (gaol-safe-functions): added listp

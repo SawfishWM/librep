@@ -89,7 +89,7 @@
 	   (mapc (lambda (f)
 		   (scan-list f)) (cdr form)))
 
-	  ((lambda) (scan (car form)))
+	  ((lambda) (scan-list (cddr form)))
 
 	  ((defun defmacro defsubst defvar defconst)
 	   (when (includedp (car form))
