@@ -1,3 +1,7 @@
+1999-08-22  John Harper  <john@dcs.warwick.ac.uk>
+
+	* version 0.3
+
 1999-08-21  John Harper  <john@dcs.warwick.ac.uk>
 
 	* compiler.jl (compile-batch): new command line option
