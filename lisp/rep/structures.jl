@@ -29,9 +29,11 @@
 (make-structure nil nil nil '%interfaces)
 
 (defun make-interface (name sig)
+  "Create an interface called NAME exporting the list of symbols SIG."
   (structure-define (get-structure '%interfaces) name sig))
 
 (defun parse-interface (sig)
+  "Return the list of symbols described by the module interface SIG."
   (cond ((null sig) '())
 	((eq (car sig) 'export)
 	 (cdr sig))
@@ -46,6 +48,22 @@
 	   (%structure-ref interfaces sig)))))
 
 (defun alias-structure (from to)
+  "Create an alias of the structure called FROM as the name TO."
   (name-structure (get-structure from) to))
 
-(export-bindings '(make-interface parse-interface alias-structure))
+(defun locate-binding (var imported)
+  "Return the name of the structure binding VAR, using the list of module
+names IMPORTED as the search start points."
+  (when imported
+    (let ((tem (structure-exports-p (get-structure (car imported)) var)))
+      (cond ((null tem)
+	     (locate-binding var (cdr imported)))
+	    ((eq tem 'external)
+	     ;; this module exports it, but it doesn't define
+	     ;; it, so search its imports
+	     (locate-binding var (structure-imports
+				  (get-structure (car imported)))))
+	    (t (car imported))))))
+
+(export-bindings '(make-interface parse-interface
+		   alias-structure locate-binding))
