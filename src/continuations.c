@@ -1079,7 +1079,7 @@ u_long
 rep_max_sleep_for (void)
 {
     rep_barrier *root = root_barrier;
-    if (root->active == 0)
+    if (root == 0 || root->active == 0)
     {
 	/* not using threads, sleep as long as you like..
 	   XXX grr.. using ULONG_MAX doesn't work on solaris*/
