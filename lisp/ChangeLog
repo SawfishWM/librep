@@ -1,3 +1,8 @@
+1998-10-26  John Harper  <john@dcs.warwick.ac.uk>
+
+	* dump.jl (dump-output-strings): output a zero in the new
+	`next' field of the Lisp_String structure
+
 1998-10-24  John Harper  <john@dcs.warwick.ac.uk>
 
 	* completion.jl (completion-setup-view): when not creating a
