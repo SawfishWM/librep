@@ -1,3 +1,26 @@
+1998-10-26  John Harper  <john@dcs.warwick.ac.uk>
+
+	* dlmalloc.c: enable __morecore_hook when JADE is defined, set
+	the default value to __jade_morecore
+	* ralloc.c: include "dlmalloc.h" or <malloc.h> when necessary
+
+	* dlmalloc.c, dlmalloc.h: use Doug Lea's malloc instead of GNU
+	malloc, it seems to use a lot less memory
+	* stringmem.c, stringmem.h: removed these two files, all
+	allocation is done by standard malloc now, dlmalloc.c seems to
+	handle it a lot better..
+
+	* buffers.c, edit.c, edit.h, find.c, jade.h, lisp.c, lisp.h,
+	lispcmds.c, main.c, misc.c, streams.c, unix_defs.c, unix_dl.c,
+	unix_main.c, unix_processes.c, values.c, windows.c, x11_main.c,
+	x11_misc.c: use sys_alloc (i.e. malloc) instead of sm_alloc or
+	str_alloc (and other associated functions)
+
+1998-10-25  John Harper  <john@dcs.warwick.ac.uk>
+
+	* ralloc.c: more fixes in non-emacs section for when
+	DOUG_LEA_MALLOC isn't defined (and therefore using gmalloc)
+
 1998-10-24  John Harper  <john@dcs.warwick.ac.uk>
 
 	* Makefile.in: use the JADE_LIBOBJS variable, extra objects for
