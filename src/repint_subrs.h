@@ -59,6 +59,11 @@ extern rep_xsubr Slambda;
 extern repv Qload_filename;
 extern repv Fcall_with_exception_handler (repv, repv);
 extern void rep_lispcmds_init(void);
+extern repv Flist_star (int argc, repv *argv);
+extern repv Fnconc_ (int argc, repv *argv);
+extern repv Fappend (int argc, repv *argv);
+extern repv Fvector (int argc, repv *argv);
+extern repv Fconcat (int, repv *);
 
 /* from lispmach.c */
 extern repv Qbytecode_error;

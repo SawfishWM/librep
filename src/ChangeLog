@@ -1,3 +1,13 @@
+2002-10-05  John Harper  <jsh@unfactored.org>
+
+	* rep_lisp.h, lispmach.h, lisp.c: support rep_SubrV functions
+	(rep_SubrN type with a special bit set). These take a counted
+	array of arguments. Is often more efficient to call (no
+	consing)
+
+	* lispcmds.c (Flist, Flist_star, Fappend, Fnconc, Fvector,
+	Fconcat): rewritten to be SubrV instead of SubrN
+
 2002-10-04  John Harper  <jsh@unfactored.org>
 
 	* lispcmds.c (Fconcat): changed to use two passes, one to

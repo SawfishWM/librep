@@ -1590,7 +1590,19 @@ again:
     case rep_SubrN:
 	if (closure)
 	    rep_USE_FUNARG(closure);
-	result = rep_SUBRNFUN(fun)(arglist);
+	if (!rep_SUBR_VEC_P (fun))
+	    result = rep_SUBRNFUN(fun)(arglist);
+	else
+	{
+	    int length;
+	    repv *vec;
+
+	    length = rep_list_length (arglist);
+	    vec = alloca (length * sizeof (repv));
+	    copy_to_vector (arglist, length, vec);
+
+	    result = rep_SUBRVFUN (fun) (length, vec);
+	}
 	break;
 
     case rep_Subr0:
@@ -1889,7 +1901,12 @@ eval(repv obj, repv tail_posn)
 			if (!rep_CONSP (args))
 			    ret = rep_signal_missing_arg (1);
 			else
-			    rep_CDR (args) = Flist_star (rep_CDR (args));
+			{
+			    int len = rep_list_length (rep_CDR (args));
+			    repv *vec = alloca (len * sizeof (repv));
+			    copy_to_vector (rep_CDR (args), len, vec);
+			    rep_CDR (args) = Flist_star (len, vec);
+			}
 		    }
 		    else
 			args = Fcons (funcobj, args);
@@ -2365,6 +2382,18 @@ rep_copy_list(repv list)
     }
     *last = list;
     return result;
+}
+
+/* FIXME: required by sawfish; remove at some point */
+repv Fnconc (repv args)
+{
+    int len;
+    repv *vec;
+
+    len = rep_list_length (args);
+    vec = alloca (len * sizeof (repv));
+    copy_to_vector (args, len, vec);
+    return Fnconc_ (len, vec);
 }
 
 /* Used to assign a list of argument values into separate variables.

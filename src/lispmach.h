@@ -715,15 +715,22 @@ again: {
 		    break;
 
 		case rep_SubrN:
-		    tmp2 = Qnil;
-		    POPN(- ((int) arg)); /* reclaim my args */
-		    while(arg-- != 0)
+		    if (rep_SUBR_VEC_P (tmp))
 		    {
-			repv x; POP1 (x);
-			tmp2 = inline_Fcons(x, tmp2);
+			TOP = rep_SUBRVFUN (tmp) (arg, stackp + 1);
 		    }
-		    lc.args = tmp2;
-		    TOP = rep_SUBRNFUN(tmp)(tmp2);
+		    else
+		    {
+			tmp2 = Qnil;
+			POPN(- ((int) arg)); /* reclaim my args */
+			while(arg-- != 0)
+			{
+			    repv x; POP1 (x);
+			    tmp2 = inline_Fcons(x, tmp2);
+			}
+			lc.args = tmp2;
+			TOP = rep_SUBRNFUN(tmp)(tmp2);
+		    }
 		    break;
 
 		case rep_Compiled:

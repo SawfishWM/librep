@@ -143,29 +143,25 @@ is nil.
     return(Qnil);
 }
 
-DEFUN("list", Flist, Slist, (repv args), rep_SubrN) /*
+DEFUN("list", Flist, Slist, (int argc, repv *argv), rep_SubrV) /*
 ::doc:rep.data#list::
 list ARGS...
 
 Returns a new list with elements ARGS...
 ::end:: */
 {
-    repv res = Qnil;
-    repv *ptr = &res;
-    while(rep_CONSP(args))
+    repv lst = Qnil;
+    int i;
+
+    for (i = argc - 1; i >= 0; i--)
     {
-	if(!(*ptr = Fcons(rep_CAR(args), Qnil)))
-	    return rep_NULL;
-	ptr = &rep_CDR(*ptr);
-	args = rep_CDR(args);
-	rep_TEST_INT;
-	if(rep_INTERRUPTP)
-	    return rep_NULL;
+	lst = Fcons (argv[i], lst);
     }
-    return res;
+
+    return lst;
 }
 
-DEFUN("list*", Flist_star, Slist_star, (repv args), rep_SubrN) /*
+DEFUN("list*", Flist_star, Slist_star, (int argc, repv *argv), rep_SubrV) /*
 ::doc:rep.data#list*::
 list* ARG1 ARG2 ... ARGN
 
@@ -173,24 +169,19 @@ Returns a new list (ARG1 ARG2 ... ARGN-1 . ARGN). That is, the same as from
 `list' but the last argument is dotted to the last but one argument.
 ::end:: */
 {
-    repv res = Qnil;
-    repv *ptr = &res;
-    while(rep_CONSP(args))
+    repv lst;
+    int i;
+
+    if (argc == 0)
+	return Qnil;
+
+    lst = argv[argc - 1];
+    for (i = argc - 2; i >= 0; i--)
     {
-	if(rep_CONSP(rep_CDR(args)))
-	{
-	    if(!(*ptr = Fcons(rep_CAR(args), Qnil)))
-		return rep_NULL;
-	}
-	else
-	    *ptr = rep_CAR(args);
-	ptr = &rep_CDR(*ptr);
-	args = rep_CDR(args);
-	rep_TEST_INT;
-	if(rep_INTERRUPTP)
-	    return rep_NULL;
+	lst = Fcons (argv[i], lst);
     }
-    return res;
+
+    return lst;
 }
 
 DEFUN("make-list", Fmake_list, Smake_list, (repv len, repv init), rep_Subr2) /*
@@ -211,7 +202,7 @@ INITIAL-repv, or nil.
     return(list);
 }
 
-DEFUN("append", Fappend, Sappend, (repv args), rep_SubrN) /*
+DEFUN("append", Fappend, Sappend, (int argc, repv *argv), rep_SubrV) /*
 ::doc:rep.data#append::
 append LISTS...
 
@@ -219,35 +210,35 @@ Non-destructively concatenates each of it's argument LISTS... into one
 new list which is returned.
 ::end:: */
 {
-    int i = 1;
-    repv res = Qnil;
-    repv *resend = &res;
-    while(rep_CONSP(args))
+    int i;
+    repv res = Qnil, *res_end = &res;
+
+    for (i = 0; i < argc; i++)
     {
-	if(!rep_LISTP(rep_CAR(args)) && rep_CDR (args) != Qnil)
-	    return rep_signal_arg_error(rep_CAR(args), i);
-	if(rep_CONSP(rep_CAR(args)) && rep_CONSP(rep_CDR(args)))
+	if (i != argc - 1)
 	{
-	    /* Only make a new copy if there's another list after this
-	       one. */
-	    *resend = rep_copy_list(rep_CAR(args));
+	    if (!rep_LISTP(argv[i]))
+		return rep_signal_arg_error (argv[i], i + 1);
+
+	    /* Only make a new copy if there's another list after this one. */
+	    *res_end = rep_copy_list (argv[i]);
 	}
 	else
-	    *resend = rep_CAR(args);	/* Use the old object */
-	while(rep_CONSP(*resend))
+	    *res_end = argv[i];
+
+	while (rep_CONSP (*res_end))
 	{
 	    rep_TEST_INT;
-	    if(rep_INTERRUPTP)
+	    if (rep_INTERRUPTP)
 		return rep_NULL;
-	    resend = &(rep_CDR(*resend));
+	    res_end = rep_CDRLOC (*res_end);
 	}
-	args = rep_CDR(args);
-	i++;
     }
-    return(res);
+
+    return res;
 }
 
-DEFUN("nconc", Fnconc, Snconc, (repv args), rep_SubrN) /*
+DEFUN("nconc", Fnconc_, Snconc, (int argc, repv *argv), rep_SubrV) /*
 ::doc:rep.data#nconc::
 nconc LISTS...
 
@@ -256,33 +247,32 @@ list. Every LIST but the last is modified so that it's last cdr points
 to the beginning of the next list. Returns the new list.
 ::end:: */
 {
-    int i = 1;
-    repv res = Qnil;
-    repv *resend = &res;
-    while(rep_CONSP(args))
+    int i;
+    repv res = Qnil, *res_end = &res;
+
+    for (i = 0; i < argc; i++)
     {
-	repv tmp = rep_CAR(args);
-	if(!rep_LISTP(tmp) && rep_CDR (args) != Qnil)
-	    return rep_signal_arg_error(tmp, i);
-	if(rep_CONSP(tmp))
+	if (i != argc - 1)
 	{
-	    if(!rep_CONS_WRITABLE_P(tmp))
-		return Fsignal(Qsetting_constant, rep_LIST_1(tmp));
-	    *resend = tmp;
-	    while(rep_CONSP(rep_CDR(tmp)))
-	    {
-		rep_TEST_INT;
-		if(rep_INTERRUPTP)
-		    return rep_NULL;
-		tmp = rep_CDR(tmp);
-	    }
-	    resend = &rep_CDR(tmp);
+	    if (!rep_LISTP (argv[i]))
+		return rep_signal_arg_error (argv[i], i + 1);
+
+	    if (!rep_CONS_WRITABLE_P (argv[i]))
+		return Fsignal (Qsetting_constant, rep_LIST_1 (argv[i]));
 	}
-	else
-	    *resend = tmp;
-	args = rep_CDR(args);
+
+	*res_end = argv[i];
+
+	while (rep_CONSP (*res_end))
+	{
+	    rep_TEST_INT;
+	    if (rep_INTERRUPTP)
+		return rep_NULL;
+	    res_end = rep_CDRLOC (*res_end);
+	}
     }
-    return(res);
+
+    return res;
 }
 
 DEFUN("rplaca", Frplaca, Srplaca, (repv cons, repv car), rep_Subr2) /*
@@ -815,28 +805,21 @@ applied to that element, ie,
     return list;
 }
 
-DEFUN("vector", Fvector, Svector, (repv args), rep_SubrN) /*
+DEFUN("vector", Fvector, Svector, (int argc, repv *argv), rep_SubrV) /*
 ::doc:rep.data#vector::
 vector ARGS...
 
 Returns a new vector with ARGS... as its elements.
 ::end:: */
 {
-    repv res = rep_make_vector(rep_list_length(args));
-    if(res)
+    repv vec = rep_make_vector (argc);
+
+    if(vec != rep_NULL)
     {
-	int i = 0;
-	while(rep_CONSP(args))
-	{
-	    rep_VECTI(res, i) = rep_CAR(args);
-	    args = rep_CDR(args);
-	    i++;
-	    rep_TEST_INT;
-	    if(rep_INTERRUPTP)
-		return(rep_NULL);
-	}
+	memcpy (rep_VECT (vec)->array, argv, argc * sizeof (repv));
     }
-    return(res);
+
+    return vec;
 }
 
 DEFUN("make-vector", Fmake_vector, Smake_vector, (repv size, repv init), rep_Subr2) /*
@@ -985,7 +968,7 @@ All indices start at zero.
 	return(rep_string_dupn(rep_STR(string) + rep_INT(start), slen - rep_INT(start)));
 }
 
-DEFUN("concat", Fconcat, Sconcat, (repv args), rep_SubrN) /*
+DEFUN("concat", Fconcat, Sconcat, (int argc, repv *argv), rep_SubrV) /*
 ::doc:rep.data#concat::
 concat ARGS...
 
@@ -994,17 +977,16 @@ a character or a list or vector of characters.
 ::end:: */
 {
     u_int length;
-    repv tem, elt;
-    repv string;
+    repv elt, string;
     u_char *ptr;
+    int i;
 
     /* Pass 1. calculate the length of the new string. */
 
     length = 0;
-    tem = args;
-    while (rep_CONSP (tem))
+    for (i = 0; i < argc; i++)
     {
-	elt = rep_CAR (tem);
+	elt = argv[i];
 
 	if (rep_INTP (elt))
 	{
@@ -1027,11 +1009,6 @@ a character or a list or vector of characters.
 		break;
 	    }
 	}
-	tem = rep_CDR (tem);
-
-	rep_TEST_INT;
-	if(rep_INTERRUPTP)
-	    return rep_NULL;
     }
 
     if (length == 0)
@@ -1042,10 +1019,9 @@ a character or a list or vector of characters.
     ptr = rep_STR (string);
 
     /* Pass2: copy in the data */
-    tem = args;
-    while (rep_CONSP (tem))
+    for (i = 0; i < argc; i++)
     {
-	elt = rep_CAR (tem);
+	elt = argv[i];
 
 	if (rep_INTP (elt))
 	{
@@ -1053,16 +1029,16 @@ a character or a list or vector of characters.
 	}
 	else if (rep_CONSP (elt))
 	{
-	    repv tem2 = elt, c;
+	    repv tem = elt, c;
 
-	    while (rep_CONSP (tem2))
+	    while (rep_CONSP (tem))
 	    {
-		c = rep_CAR (tem2);
+		c = rep_CAR (tem);
 
 		if (rep_INTP (c))
 		    *ptr++ = rep_INT (c);
 
-		tem2 = rep_CDR (tem2);
+		tem = rep_CDR (tem);
 	    }
 	}
 	else
@@ -1087,8 +1063,6 @@ a character or a list or vector of characters.
 		break;
 	    }
 	}
-
-	tem = rep_CDR (tem);
     }
 
     if (rep_STRING_LEN (string) != (ptr - rep_STR (string)))
@@ -2043,8 +2017,10 @@ DEFSTRING(jlc, ".jlc");
 static void
 add_path (const char *env, repv var)
 {
-    repv list = Qnil;
-    char *ptr = getenv (env);
+    repv list = Qnil, vec[2];
+    char *ptr;
+
+    ptr = getenv (env);
     while (ptr != 0 && *ptr != 0)
     {
 	char *end = strchr (ptr, ':');
@@ -2052,8 +2028,10 @@ add_path (const char *env, repv var)
 		      : rep_string_dup (ptr), list);
 	ptr = end ? end + 1 : 0;
     }
-    Fset (var, Fnconc (rep_list_2 (Fnreverse (list),
-				   Fsymbol_value (var, Qt))));
+
+    vec[0] = Fnreverse (list);
+    vec[1] = Fsymbol_value (var, Qt);
+    Fset (var, Fnconc_ (2, vec));
 }
 
 void

@@ -560,6 +560,7 @@ typedef struct {
 	repv (*fun3)(repv, repv, repv);
 	repv (*fun4)(repv, repv, repv, repv);
 	repv (*fun5)(repv, repv, repv, repv, repv);
+	repv (*funv)(int, repv *);
     } fun;
     repv name;
     repv int_spec;
@@ -572,6 +573,12 @@ typedef struct {
     repv int_spec;			/* put this in plist? */
 } rep_xsubr;
 
+/* If set in rep_SubrN types, it'll be passed a vector of args,
+   instead of a list */
+#define rep_SUBR_VEC      (1 << (rep_CELL8_TYPE_BITS + 0))
+#define rep_SUBR_VEC_P(v) (rep_SUBR(v)->car & rep_SUBR_VEC)
+#define rep_SubrV         (rep_SubrN | rep_SUBR_VEC)
+
 #define rep_XSUBR(v)	((rep_xsubr *) rep_PTR(v))
 #define rep_SUBR(v)	((rep_subr *) rep_PTR(v))
 #define rep_SUBR0FUN(v)	(rep_SUBR(v)->fun.fun0)
@@ -581,6 +588,7 @@ typedef struct {
 #define rep_SUBR4FUN(v)	(rep_SUBR(v)->fun.fun4)
 #define rep_SUBR5FUN(v)	(rep_SUBR(v)->fun.fun5)
 #define rep_SUBRNFUN(v)	(rep_SUBR(v)->fun.fun1)
+#define rep_SUBRVFUN(v)	(rep_SUBR(v)->fun.funv)
 #define rep_SFFUN(v)	(rep_SUBR(v)->fun.fun2)
 
 
