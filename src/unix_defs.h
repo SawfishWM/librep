@@ -47,8 +47,8 @@
 #endif
 #define sys_memory_init() (1)
 
-/* For the client/server stuff. */
-#define JADE_SOCK_NAME ".Jade_rendezvous"
+/* For the client/server stuff. %s is host name */
+#define JADE_SOCK_NAME ".jade-%s"
 
 enum server_request {
     req_find_file = 0,
