@@ -1,5 +1,9 @@
 1998-08-26  John Harper  <john@dcs.warwick.ac.uk>
 
+	* info.jl (info-menu-face, info-xref-face): new variables
+
+	* maildefs.jl (mail-highlight-face): new variable
+
 	* buffers.jl (buffer-read-only-p, set-buffer-read-only):
 	implemented in lisp now
 

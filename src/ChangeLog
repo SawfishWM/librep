@@ -1,5 +1,13 @@
 1998-08-26  John Harper  <john@dcs.warwick.ac.uk>
 
+	* extent.c (find_extent): record cache miss statistics
+
+	* x11_windows.c (sys_set_font): for the specified font, try to
+	load a bold version as well. This is done by querying the full
+	name, then replacing the third component by `bold'
+	(sys_draw_glyphs): handle the bold attribute by swapping fonts
+	* x11_windowsys.c (w_WindowSys): new field ws_BoldFont
+
 	* extent.c: new file, extents allow property lists to be
 	maintained for buffer regions (also local variables). In fact
 	the old style buffer-local values are now a special case of
