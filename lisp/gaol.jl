@@ -30,7 +30,7 @@
     cdar cddr char-downcase char-upcase closurep complete-string concat
     cond condition-case cons consp const-variable-p copy-sequence
     copy-stream current-time current-time-string default-boundp
-    default-value defconst defmacro defsubst defun defvar delete
+    default-value defconst define defmacro defsubst defun defvar delete
     delete-if delete-if-not delete-timer delq digit-char-p
     documentation elt eq eql equal error eval eval-when-compile
     expand-last-match featurep filter fix-time flet fmakunbound
@@ -52,7 +52,7 @@
     symbol-name symbol-plist symbol-value symbolp system-name throw
     time-later-p translate-string unless unwind-protect upper-case-p
     user-full-name user-login-name vector vectorp when while
-    with-object write zerop))
+    with-internal-definitions with-object write zerop))
 
 ;; alist mapping functions to their safe versions
 (defvar gaol-redefined-functions
