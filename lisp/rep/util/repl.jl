@@ -27,7 +27,8 @@
 	    make-repl
 	    repl-struct
 	    repl-pending
-	    repl-iterate)
+	    repl-iterate
+	    repl-completions)
 
     (open rep
 	  rep.structures
@@ -122,6 +123,10 @@
 		     (repl-eval x)
 		     t)
 		 (void-value nil)))))
+
+  (define (repl-completions repl word)
+    (let-fluids ((current-repl repl))
+      (rl-completion-generator word)))
 
   (define (error-handler err data)
     (write standard-error
