@@ -27,7 +27,6 @@ typedef struct rep_dbm_struct {
 
 static rep_dbm *dbm_chain;
 
-DEFSYM(gdbm, "gdbm");
 DEFSYM(insert, "insert");
 DEFSYM(replace, "replace");
 
@@ -234,10 +233,15 @@ dbm_compare (repv v1, repv v2)
 repv
 rep_dl_init (void)
 {
+    repv tem;
     dbm_type = rep_register_new_type ("gdbm", dbm_compare,
 				      dbm_print, dbm_print,
 				      dbm_sweep, dbm_mark,
 				      0, 0, 0, 0, 0, 0, 0);
+    rep_INTERN (insert);
+    rep_INTERN (replace);
+
+    tem = rep_push_structure ("gdbm");
     rep_ADD_SUBR(Sgdbm_open);
     rep_ADD_SUBR(Sgdbm_close);
     rep_ADD_SUBR(Sgdbm_fetch);
@@ -245,9 +249,5 @@ rep_dl_init (void)
     rep_ADD_SUBR(Sgdbm_delete);
     rep_ADD_SUBR(Sgdbm_walk);
     rep_ADD_SUBR(Sgdbmp);
-
-    rep_INTERN (gdbm);
-    rep_INTERN (insert);
-    rep_INTERN (replace);
-    return Qgdbm;
+    return rep_pop_structure (tem);
 }

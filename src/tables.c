@@ -57,8 +57,6 @@ struct table_struct {
 static int table_type;
 static table *all_tables;
 
-DEFSYM(tables, "tables");
-
 /* ensure X is +ve and in an int */
 #define TRUNC(x) (((x) << (rep_VALUE_INT_SHIFT+1)) >> (rep_VALUE_INT_SHIFT+1))
 
@@ -439,6 +437,12 @@ rep_dl_init (void)
     table_type = rep_register_new_type ("table", 0, table_print, table_print,
 					table_sweep, table_mark,
 					0, 0, 0, 0, 0, 0, 0);
+    tem = Fsymbol_value (Qafter_gc_hook, Qt);
+    if (rep_VOIDP (tem))
+	tem = Qnil;
+    Fset (Qafter_gc_hook, Fcons (rep_VAL(&Stables_after_gc), tem));
+
+    tem = rep_push_structure ("tables");
     rep_ADD_SUBR(Smake_table);
     rep_ADD_SUBR(Smake_weak_table);
     rep_ADD_SUBR(Sstring_hash);
@@ -450,12 +454,6 @@ rep_dl_init (void)
     rep_ADD_SUBR(Stable_set);
     rep_ADD_SUBR(Stable_unset);
     rep_ADD_SUBR(Stable_walk);
-
-    tem = Fsymbol_value (Qafter_gc_hook, Qt);
-    if (rep_VOIDP (tem))
-	tem = Qnil;
-    Fset (Qafter_gc_hook, Fcons (rep_VAL(&Stables_after_gc), tem));
-
-    rep_INTERN (tables);
-    return Qtables;
+    rep_ADD_INTERNAL_SUBR(Stables_after_gc);
+    return rep_pop_structure (tem);
 }

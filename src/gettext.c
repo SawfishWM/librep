@@ -33,8 +33,6 @@ extern char *gnu_gettext (const char *msgid);
 extern char *gnu_textdomain (const char *domainname);
 extern char *gnu_bindtextdomain (const char *domainname, const char *dirname);
 
-DEFSYM(gettext, "gettext");
-
 DEFUN("_", Fgettext, Sgettext, (repv in), rep_Subr1)
 {
     char *out;
@@ -79,10 +77,9 @@ DEFUN("textdomain", Ftextdomain, Stextdomain, (repv dom), rep_Subr1)
 repv
 rep_dl_init(void)
 {
+    repv tem = rep_push_structure ("gettext");
     rep_ADD_SUBR(Sgettext);
     rep_ADD_SUBR(Sbindtextdomain);
     rep_ADD_SUBR(Stextdomain);
-
-    rep_INTERN(gettext);
-    return Qgettext;
+    return rep_pop_structure (tem);
 }

@@ -80,8 +80,6 @@ static int pipe_fds[2];
 /* Contains SIGALRM */
 static sigset_t alrm_sigset;
 
-DEFSYM(timers, "timers");
-
 
 
 static RETSIGTYPE
@@ -358,6 +356,7 @@ timer_print (repv stream, repv arg)
 repv
 rep_dl_init (void)
 {
+    repv tem;
     timer_type = rep_register_new_type ("timer", 0, timer_print, timer_print,
 					timer_sweep, timer_mark,
 					timer_mark_active, 0, 0, 0, 0, 0, 0);
@@ -370,12 +369,11 @@ rep_dl_init (void)
     sigaddset (&alrm_sigset, SIGALRM);
     rep_sig_restart (SIGALRM, rep_TRUE);
 
+    tem = rep_push_structure ("timers");
     rep_ADD_SUBR(Smake_timer);
     rep_ADD_SUBR(Sdelete_timer);
     rep_ADD_SUBR(Sset_timer);
-
-    rep_INTERN (timers);
-    return Qtimers;
+    return rep_pop_structure (tem);
 }
 
 void

@@ -29,7 +29,6 @@
 # include <readline/history.h>
 #endif
 
-DEFSYM(readline, "readline");
 DEFSYM(rl_completion_generator, "rl-completion-generator");
 DEFSYM(boundp, "boundp");
 
@@ -194,8 +193,7 @@ DEFUN("readline", Freadline, Sreadline, (repv prompt_), rep_Subr1)
 repv
 rep_dl_init(void)
 {
-    rep_ADD_SUBR(Sreadline);
-    rep_INTERN(readline);
+    repv tem;
     rep_INTERN_SPECIAL(rl_completion_generator);
     rep_INTERN(boundp);
     completions = Qnil;
@@ -205,5 +203,7 @@ rep_dl_init(void)
     rl_basic_quote_characters = "\"";
     init_bouncing_parens();
 #endif
-    return Qreadline;
+    tem = rep_push_structure ("readline");
+    rep_ADD_SUBR(Sreadline);
+    return rep_pop_structure (tem);
 }
