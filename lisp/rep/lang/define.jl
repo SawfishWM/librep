@@ -142,14 +142,24 @@
 
 ;;;###autoload
 (defmacro define (&rest args)
-  (let
-      ((def (define-parse args)))
+  (let ((def (define-parse args)))
     (if (eq (cadr def) 'lambda)
-	(list* 'defun (car def) (let ((body (cddr def)))
+	`(defun ,(car def) ,@(let ((body (cddr def)))
+			       (if (eq (caadr body) 'progn)
+				   (cons (car body) (cdadr body))
+				 body)))
+      `(define-value ',(car def) ,(cdr def)))))
+
+;;;###autoload
+(defmacro define-macro (&rest args)
+  (let ((def (define-parse args)))
+    (if (eq (cadr def) 'lambda)
+	`(defmacro ,(car def) ,@(let ((body (cddr def)))
 				  (if (eq (caadr body) 'progn)
 				      (cons (car body) (cdadr body))
 				    body)))
-      (list 'define-value (list 'quote (car def)) (cdr def)))))
+      ;; can only expand to defmacro forms (for the compiler's sake)
+      (error "Macros must be constant lambdas: %s" (car def)))))
 
 ;;;###autoload
 (defmacro with-internal-definitions (&rest body)
