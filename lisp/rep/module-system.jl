@@ -28,11 +28,11 @@
 		   rep.data))
 
 ;; rename the bindings required by exported macros
-(setq %make-structure make-structure)
-(setq %make-interface make-interface)
-(setq %parse-interface parse-interface)
-(setq %external-structure-ref external-structure-ref)
-(setq %alias-structure alias-structure)
+(%define %make-structure make-structure)
+(%define %make-interface make-interface)
+(%define %parse-interface parse-interface)
+(%define %external-structure-ref external-structure-ref)
+(%define %alias-structure alias-structure)
 
 
 ;; module syntax
@@ -99,15 +99,6 @@ the interface and configuration clause syntaxes respectively."
   "Create a secondary name TO for the structure called FROM."
   (list '%alias-structure (list 'quote from) (list 'quote to)))
 
-
-;; helper definitions
-
-(defmacro structure-open names
-  (list '%open-structures (list 'quote names)))
-
-(defmacro structure-access names
-  (list '%access-structures (list 'quote names)))
-
 (defmacro structure-ref (struct-name var-name)
   "Evaluates to the current value of the global binding of symbol
 VAR-NAME in the module called STRUCT-NAME. This structure must
@@ -121,14 +112,32 @@ When read, the syntax `FOO#BAR' expands to `(structure-ref FOO BAR)'."
 
 ;; `%meta' structure used for configuring modules
 
+;; helper definitions
+(defmacro structure-open names
+  (list '%open-structures (list 'quote names)))
+(defmacro structure-access names
+  (list '%access-structures (list 'quote names)))
+(defmacro set-binds ()
+  (list '%structure-set-binds (list '%current-structure) ''t))
+(defmacro export-all ()
+  (list '%structure-exports-all (list '%current-structure) ''t))
+
 (let ((meta-struct (make-structure '(open %open-structures
 				     access %access-structures
-				     quote) nil nil '%meta)))
-  (structure-set meta-struct 'quote quote)
-  (structure-set meta-struct 'open structure-open)
-  (structure-set meta-struct '%open-structures open-structures)
-  (structure-set meta-struct 'access structure-access)
-  (structure-set meta-struct '%access-structures access-structures))
+				     set-binds %structure-set-binds
+				     export-all %structure-exports-all
+				     %current-structure quote)
+				   nil nil '%meta)))
+  (structure-define meta-struct 'quote quote)
+  (structure-define meta-struct 'open structure-open)
+  (structure-define meta-struct '%open-structures open-structures)
+  (structure-define meta-struct 'access structure-access)
+  (structure-define meta-struct '%access-structures access-structures)
+  (structure-define meta-struct 'set-binds set-binds)
+  (structure-define meta-struct '%structure-set-binds structure-set-binds)
+  (structure-define meta-struct 'export-all export-all)
+  (structure-define meta-struct '%structure-exports-all structure-exports-all)
+  (structure-define meta-struct '%current-structure current-structure))
 
 
 ;; exports
