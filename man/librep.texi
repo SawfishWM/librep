@@ -3,10 +3,10 @@
 @settitle librep Manual
 @footnotestyle end
 
-@set EDITION 1.1
-@set VERSION 0.12
-@set UPDATED 3 June 2000
-@set UPDATE-MONTH June 2000
+@set EDITION 1.2
+@set VERSION 0.13
+@set UPDATED 8 September 2000
+@set UPDATE-MONTH September 2000
 
 @ifinfo
 @direntry
@@ -73,6 +73,7 @@ last updated @value{UPDATED} for librep version @value{VERSION}.
 
 * Invocation::                  How to start the interpreter
 * The language::                The Lisp dialect implemented
+* The REPL::                    The interactive environment
 * librep Internals::		Embedding librep in other programs
 
 * Reporting bugs::              How to contact the maintainers
@@ -130,7 +131,7 @@ promises regarding the reliability of this software.
 @cindex Introduction
 
 @code{librep} is a dialect of Lisp, designed to be used both as an
-extension language for applications, and for use as a general
+extension language for applications and as a general purpose
 programming language. It was originally written to be mostly-compatible
 with Emacs Lisp, but has subsequently diverged markedly. Its aim is to
 combine the best features of Scheme and Common Lisp and provide an
@@ -272,11 +273,14 @@ exec rep "$0" "$@@"
 @end example
 
 
-@node The language, librep Internals, Invocation, Top
+@node The language, The REPL, Invocation, Top
 @include lang.texi
 
 
-@node librep Internals, Reporting bugs, The language, Top
+@node The REPL, librep Internals, The language, Top
+@include repl.texi
+
+@node librep Internals, Reporting bugs, The REPL, Top
 @include interface.texi
 
 

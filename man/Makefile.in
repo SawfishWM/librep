@@ -22,7 +22,7 @@ top_srcdir=@top_srcdir@
 srcdir=@srcdir@
 VPATH=@srcdir@:@top_srcdir@
 
-SRCS = librep.texi lang.texi news.texi interface.texi
+SRCS = librep.texi lang.texi repl.texi news.texi interface.texi
 
 all : librep.info ../NEWS
 

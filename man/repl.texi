@@ -1,0 +1,175 @@
+@c The REPL -*-Texinfo-*-
+
+@chapter The REPL
+@cindex The REPL
+@cindex Read-eval-print loop
+
+When you invoke the stand-alone librep interpreter without giving it a
+script to interpret it starts the system in interactive mode. This
+means that the @dfn{REPL} is entered---the read-eval-print loop.
+
+The REPL works as its name suggests. It reads Lisp forms from the
+console, evaluates them, and then prints the result back to the
+console. Here is an example REPL session:
+
+@lisp
+user> (+ 1 1)
+2
+user> (cons 'a 'b)
+(a . b)
+@end lisp
+
+@noindent
+The @samp{user>} string is the prompt that the REPL prints when it is
+waiting for an input form. This form may span several lines, e.g.:
+
+@lisp
+user> (cons 'a
+'b)
+(a . b)
+@end lisp
+
+@noindent
+The prompt above contains the string @samp{user}. This is the name of
+the module that the form will be evaluated in (@pxref{Modules}).
+
+As well as allowing arbitrary Lisp forms to be entered and evaluated,
+the REPL provides a rich set of meta-commands, these are used to
+configure and inspect the state of the system, as well as providing
+convenient shortcuts for common operations.
+
+A meta-command is differentiated from a normal Lisp form by preceding
+it a comma (@samp{,}) character. The name of the command should follow
+the comma, with any argument forms after that. Note that unlike normal
+Lisp forms, no parentheses are used to mark the command application.
+
+For example the @code{whereis} meta-command searches all loaded modules
+for those exporting a particular symbol. It might be used as follows:
+
+@example
+user> ,whereis string-match
+string-match is exported by: rep.regexp
+@end example
+
+@noindent
+The following table lists all currently supported meta-commands:
+
+@table @code
+@item access @var{struct} @dots{}
+Add the modules named @var{struct} @dots{} to the list of structures
+whose exported definitions may be accessed by the current module (using
+the @code{structure-ref} special form).
+
+@item accessible
+Print the names of the modules whose contents may be accessed using the
+@code{structure-ref} form from the current module.
+
+@item apropos "@var{regexp}"
+Print the definitions in the scope of the current module whose names
+match the regular expression @var{regexp}.
+
+@item bindings
+Print all bindings in the current module.
+
+@item collect
+Run the garbage collector.
+
+@item compile [@var{struct} @dots{}]
+Compile any uncompiled functions in the modules named @var{struct}
+@dots{}. If no named modules are given, use the current module.
+
+@item compile-proc @var{procedure} @dots{}
+Compile the functions called @var{procedure} @dots{} in the current
+module.
+
+@item describe @var{symbol}
+Look for documentation describing the current meaning of @var{symbol},
+if any is found, print it.
+
+@item dis @var{form}
+Disassemble the bytecode form or compiled function that is the result
+of evaluating @var{form}.
+
+@item expand @var{form}
+Print @var{form} with any outermost macro calls recursively expanded.
+
+@item exports
+Print the names of the variables exported from the current module.
+
+@item help
+List all REPL commands.
+
+@item imports
+Print the names of the modules imported by the current module.
+
+@item in @var{struct} [@var{form}]
+If @var{form} is given, temporarily switch to the module called
+@var{struct}, evaluate @var{form} printing the result, then switch back
+to the original module.
+
+If @var{form} isn't given, simply switch the current module to be
+@var{struct}.
+
+@item interfaces
+Print all defined module interfaces, and their definitions.
+
+@item load @var{struct} @dots{}
+Attempt to load the module called @var{struct}.
+
+@item load-file "@var{filename}" @dots{}
+Load the file of Lisp forms called @var{filename}.
+
+@item locate @var{symbol}
+Recursively scan from the current module for the module providing the
+binding of @var{symbol}. 
+
+@item new @var{struct}
+Create a new module called @var{struct}, and set it as the current
+module. It will import the @code{rep.module-system} module, but nothing
+else (i.e. no actual language).
+
+@item open @var{struct} @dots{}
+Import the modules called @var{struct} @dots{} to the current module.
+This is analogous to the @code{open} clause in the configuration form
+of the module's definition.
+
+@item profile @var{form}
+Evaluate @var{form}, recording information about the frequency and
+duration of the calls it makes to subroutines (and the calls they make,
+and so on). This information is tabulated and printed after the
+evaluation has finished.
+
+@item quit
+Terminate the Lisp interpreter.
+
+@item reload @var{struct} @dots{}
+Reload the modules called @var{struct} @dots{}. If modules of these
+names had previously been loaded, they will be deallocated when there
+are no remaining references to them.
+
+Note that importing the interface of one module into another does not
+create object references between the two modules (the references are
+purely symbolic). However, each closure (i.e. function) created in a
+module does contain a reference to the module it was created in.
+
+@item step @var{form}
+Evaluate @var{form} in single-step mode (using the debugger).
+
+@item structures
+Print the names of all currently defined modules.
+
+@item time @var{form}
+Evaluate the form @var{form}, print the result and the time it took to
+perform the evaluation.
+
+@item unload @var{struct} @dots{}
+Attempt to unload the modules called @var{struct} @dots{}. As with
+reloading, unloading a module only removes the link between the module
+name and the module body. Only once no more references exist to
+the module bodu will it be freed.
+
+@item whereis @var{symbol}
+Scan all loaded modules for those that export a binding of
+@var{symbol}, and print the results.
+@end table
+
