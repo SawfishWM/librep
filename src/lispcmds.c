@@ -893,6 +893,7 @@ can only contain characters (ie, integers).
 	{
 	    rep_DECLARE3(new, rep_INTP);
 	    rep_STR(array)[rep_INT(index)] = (u_char)rep_INT(new);
+	    rep_string_modified (array);
 	    return(new);
 	}
     }

@@ -460,6 +460,7 @@ Note that the STRING really is modified, no copy is made!
 	register u_char c = *str;
 	*str++ = (c < tablen) ? rep_STR(table)[c] : c;
     }
+    rep_string_modified (string);
     return(string);
 }
 
