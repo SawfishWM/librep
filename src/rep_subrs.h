@@ -52,6 +52,7 @@ extern u_long rep_max_sleep_for (void);
 /* from datums.c */
 extern repv Fmake_datum (repv, repv, repv);
 extern repv Fdatum_ref (repv, repv);
+extern repv Fdatum_set (repv, repv, repv);
 extern repv Fhas_type_p (repv, repv);
 
 /* from debug-buffer.c */
