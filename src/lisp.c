@@ -860,8 +860,7 @@ load_autoload(VALUE fun, VALUE aload_def)
 	    u_long old_msg_len;
 	    save_message(curr_win, &old_msg, &old_msg_len);
 	    messagef("Loading %s...", VSTR(VCAR(autoload)));
-	    refresh_message(curr_win);
-	    cmd_flush_output();
+	    cmd_redisplay(sym_nil);
 
 	    PUSHGC(gc_fun, fun); PUSHGC(gc_aload_def, aload_def);
 	    VCAR(aload_def) = sym_nil;
@@ -869,8 +868,7 @@ load_autoload(VALUE fun, VALUE aload_def)
 	    POPGC; POPGC;
 
 	    messagef("Loading %s...done.", VSTR(VCAR(autoload)));
-	    refresh_message(curr_win);
-	    cmd_flush_output();
+	    cmd_redisplay(sym_nil);
 	    restore_message(curr_win, old_msg, old_msg_len);
 
 	    if(tmp && !NILP(tmp))
@@ -1888,7 +1886,6 @@ void
 handle_error(VALUE error, VALUE data)
 {
     VALUE errstr;
-    cursor(curr_vw, CURS_OFF);
     cmd_beep();
     if(!(errstr = cmd_get(error, sym_error_message)) || !STRINGP(errstr))
 	errstr = VAL(&unknown_err);
@@ -1913,8 +1910,6 @@ handle_error(VALUE error, VALUE data)
     default:
 	cmd_format(list_3(sym_t, VAL(&n_err_fmt), errstr));
     }
-    refresh_world();
-    cursor(curr_vw, CURS_ON);
 }
 
 VALUE
