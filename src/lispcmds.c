@@ -1567,8 +1567,16 @@ again:
 		Fset(Qafter_load_alist,
 		     Fdelq(tem, Fsymbol_value (Qafter_load_alist, Qt)));
 	    
-		/* Then evaluate it */
-		Fprogn(rep_CDR(tem), Qnil);
+		/* Then call it */
+		tem = rep_CDR (tem);
+		while (rep_CONSP (tem) && !rep_INTERRUPTP)
+		{
+		    rep_GC_root gc_tem;
+		    rep_PUSHGC (gc_tem, tem);
+		    rep_call_lisp0 (rep_CAR (tem));
+		    rep_POPGC;
+		    tem = rep_CDR (tem);
+		}
 
 		/* Try for another entry */
 		goto again;
