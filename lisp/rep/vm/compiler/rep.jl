@@ -62,14 +62,15 @@
   ;; List of symbols, when the car of a top-level form is a member of this
   ;; list, don't macroexpand the form before compiling.
   (define top-level-unexpanded
-    '(defun defmacro defvar defconst defsubst require
+    '(defun defmacro defvar defconst defsubst %define require
       declare eval-when-compile define-structure structure))
 
 
 ;;; pass 1 support
 
-  (defun pass-1 (forms)
-    (lift-progns (mapcar do-pass-1 forms)))
+  (defun pass-1 (forms) (add-progns (pass-1* forms)))
+
+  (defun pass-1* (forms) (lift-progns (mapcar do-pass-1 forms)))
 
   ;; flatten progn forms into their container
   (defun lift-progns (forms)
@@ -79,6 +80,22 @@
 	    ((eq (caar rest) 'progn)
 	     (loop (cdr rest) (append (cdar rest) out)))
 	    (t (loop (cdr rest) (cons (car rest) out))))))
+
+  ;; merge `non-top-level' forms into progn blocks. These will then
+  ;; get compiled into single run-byte-code forms
+  (defun add-progns (forms)
+    (let loop ((rest forms))
+      (cond ((null rest) forms)
+	    ((memq (caar rest) top-level-unexpanded) (loop (cdr rest)))
+	    (t (unless (eq (caar rest) 'progn)
+		 (rplaca rest (list 'progn (car rest))))
+	       (if (and (cadr rest)
+			(not (memq (caadr rest) top-level-unexpanded)))
+		   (progn
+		     (rplaca rest (nconc (car rest) (list (cadr rest))))
+		     (rplacd rest (cddr rest))
+		     (loop rest))
+		 (loop (cdr rest)))))))
 
   (defun do-pass-1 (form)
     (unless (or (memq (car form) top-level-unexpanded)
@@ -127,7 +144,7 @@
 	 (eval (nth 1 form))))
 
       ((progn)
-       (setq form (cons 'progn (pass-1 (cdr form)))))
+       (setq form (cons 'progn (pass-1* (cdr form)))))
 
       ;; put bare forms into progns so they can be merged in pass-1
       (t (unless (memq (car form) top-level-unexpanded)
