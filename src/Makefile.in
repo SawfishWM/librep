@@ -97,6 +97,9 @@ doc-strings.h : makedoc
 	./makedoc DOC.bare doc-strings.h $(SRCS)
 	cp DOC.bare ../DOC
 
+build.h : doc-strings.h
+	./build-info
+
 stripproto : stripproto.o
 	$(CC) $(LDFLAGS) -o $@ stripproto.o $(EXTRA_LIBS)
 
@@ -117,7 +120,7 @@ nobak :
 	-rm -f *~
 
 clean : nobak
-	-rm -f *.o jade_protos.h doc-strings.h core
+	-rm -f *.o jade_protos.h doc-strings.h build.h core
 
 realclean : clean
 	-rm -f jade jadeclient DOC.bare makedoc stripproto
@@ -139,7 +142,7 @@ lisp.o		: $(HDRS)
 lispcmds.o	: $(HDRS)
 lispmach.o	: $(HDRS) bytecodes.h
 main.o		: $(HDRS)
-misc.o		: $(HDRS)
+misc.o		: $(HDRS) build.h
 movement.o	: $(HDRS)
 refresh.o	: $(HDRS)
 render.o	: $(HDRS)
