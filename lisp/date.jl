@@ -57,15 +57,6 @@ the current year, i.e. 1997 -> \"19\", 2001 -> \"20\".")
 (defconst date-vec-timezone 8)
 (defconst date-vec-epoch-time 9)
 
-;; DAY is from 1.., MONTH from 0..11, YEAR as normal, returns 0..6 (0=sunday)
-(defun date-day-of-week (day month year)
-  ;; this algorithm is from Dr. Dobb's journal (April '95) by Kim S. Larsen
-  (when (<= month 2)
-    (setq month (+ month 12))
-    (setq year (1- year)))
-  (mod (+ day (* 2 month) (/ (* 3 (1+ month)) 5) (/ year 4)
-	  (- (/ year 100)) (/ year 400)) 7))
-
 ;; Parse the date header at position POINT in STRING, returns vector
 ;; [DAY-ABBREV DAY MONTH-ABBREV MONTH YEAR HOUR MINUTE SECOND TZ-STRING TIME_T]
 (defun parse-date (string &optional point)
@@ -76,7 +67,7 @@ character in the string. This will parse dates in RFC-822 mail messages."
       ((day-abbrev "")
        (day -1)
        (month-abbrev "")
-       (month 0)
+       (month -1)
        (year -1)
        (hour 0)
        (minute 0)
@@ -166,13 +157,11 @@ character in the string. This will parse dates in RFC-822 mail messages."
     (when (< year 0)
       (setq year (read-from-string (current-time-string nil "%Y"))))
 
-    (when (< day 0)
-      (setq day 0))
+    (when (< month 0)
+      (setq month (read-from-string (current-time-string nil "%m"))))
 
-    (when (and (string= day-abbrev "")
-	       (> day 0) (> year 0) (> month 0))
-      (setq day-abbrev (aref ["Sun" "Mon" "Tue" "Wed" "Thu" "Fri" "Sat"]
-			     (date-day-of-week day (1- month) year))))
+    (when (< day 0)
+      (setq day (read-from-string (current-time-string nil "%d"))))
 
     ;; Use Gauss' algorithm (?) to find seconds since 1970
     ;; This subroutine is copied from my VMM operating system,
@@ -197,5 +186,15 @@ character in the string. This will parse dates in RFC-822 mail messages."
 					     (- timezone)
 					     (* 60 hour)))))
       (setq time_t (fix-time (cons total-days total-seconds))))
+
+    (when (and (string= day-abbrev "") time_t)
+      ;; January 1, 1970 was a Thursday
+      (let
+	  ((dow (% (+ (car time_t) 4) 7)))
+	(when (< dow 0)
+	  (setq dow (+ dow 7)))
+	(setq day-abbrev
+	      (aref ["Sun" "Mon" "Tue" "Wed" "Thu" "Fri" "Sat"] dow))))
+
     (vector day-abbrev day month-abbrev month
 	    year hour minute second timezone time_t)))
