@@ -783,11 +783,11 @@
 	   ((eq op 'file-readable-p)
 	    (and file (/= (logand (aref file remote-rep-file-modes)
 				  (if (remote-rep-file-owner-p session file)
-				      0400 0004)) 0)))
+				      #o400 #o004)) 0)))
 	   ((eq op 'file-writable-p)
 	    (and file (/= (logand (aref file remote-rep-file-modes)
 				  (if (remote-rep-file-owner-p session file)
-				      0200 0002)) 0)))
+				      #o200 #o002)) 0)))
 	   (t
 	    (error "Unsupported rep-remote op: %s %s" op args))))))))))
 

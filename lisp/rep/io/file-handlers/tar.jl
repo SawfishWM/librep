@@ -225,7 +225,7 @@
 		       (if (lower-case-p (aref string (+ point 2))) 1 0))
 		    (* tuple 3))
 	       (if (memq (aref string (+ point 2)) '(?s ?S ?t ?T))
-		   (ash 01000 tuple)
+		   (ash #o1000 tuple)
 		 0)))))
       (aset file-struct tarfh-file-modes
 	    (+ (tuple-function 1 2)
@@ -469,7 +469,7 @@
        ((eq op 'file-readable-p)
 	(and file (/= (logand (tarfh-file-get-modes file)
 			      (if (tarfh-file-owner-p file)
-				  0400 0004)) 0)))
+				  #o400 #o004)) 0)))
        ((eq op 'file-writable-p)
 	nil)
        ((eq op 'read-symlink)

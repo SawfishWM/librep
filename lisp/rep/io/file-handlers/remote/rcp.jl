@@ -89,7 +89,7 @@
    ((eq op 'file-size)
     0)
    ((eq op 'file-modes)
-    0644)
+    #o644)
    ((eq op 'file-modes-as-string)
     (make-string 10 ?*))
    ((eq op 'file-modtime)
