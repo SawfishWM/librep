@@ -2076,6 +2076,11 @@ Raise the exception represented by the cons cell DATA.
     return rep_NULL;
 }
 
+/* XXX compatibility */
+repv Fthrow (repv tag, repv value) {
+    return Fraise_exception (Fcons (tag, value));
+}
+
 DEFSTRING(jl, ".jl");
 DEFSTRING(jlc, ".jlc");
 
