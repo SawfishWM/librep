@@ -121,15 +121,22 @@ match the FILE argument to `load'."
 (defun load-all (file)
   "Try to load files called FILE (or FILE.jl, etc) from all directories in the
 LISP load path (except the current directory)."
-  (mapc (lambda (dir)
-	  (unless (member dir '("." ""))
-	    (let
-		((full-name (expand-file-name file dir)))
-	      (when (or (file-exists-p full-name)
-			(file-exists-p (concat full-name ".jl"))
-			(file-exists-p (concat full-name ".jlc")))
-		(load full-name nil t)))))
-	load-path))
+  (letrec
+      ((loop (lambda (dirs)
+	       ;; Normally the last entry in load-path is `.' We don't
+	       ;; want to use that. But can't just check if each item
+	       ;; is the current directory since sometimes rep is run
+	       ;; with REPLISPDIR=.
+	       (when dirs
+		 (when (or (cdr dirs) (not (member (car dirs) '("." ""))))
+		   (let
+		       ((full-name (expand-file-name file (car dirs))))
+		     (when (or (file-exists-p full-name)
+			       (file-exists-p (concat full-name ".jl"))
+			       (file-exists-p (concat full-name ".jlc")))
+		       (load full-name nil t))))
+		 (loop (cdr dirs))))))
+    (loop load-path)))
 
 (defmacro eval-when-compile (form)
   "FORM is evaluated at compile-time *only*. The evaluated value is inserted
