@@ -92,6 +92,7 @@ extern void rep_sys_os_init(void);
 extern void rep_sys_os_kill(void);
 
 /* from unix_processes.c */
+extern repv rep_system(char *command);
 extern void rep_sigchld_restart(rep_bool);
 extern void rep_proc_init(void);
 extern void rep_proc_kill(void);

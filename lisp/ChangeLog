@@ -1,3 +1,22 @@
+1999-06-06  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compiler.jl: generate an intermediate form between Lisp forms
+	and bytecodes, a list of instructions and labels. Then run an
+	optimisation pass (peephole) over the intermediate code before
+	assembling it to bytecodes
+	* compiler-opt.jl: new file, implements the low-level
+	optimisations. Does peephole and constant-vector layout
+	optimisations
+
+	* bytecodes.jl: op-setq now pops the value from the stack.
+	Deleted op-pushi-pair, replaced by op-pushi-neg and
+	op-pushi-pair-pos, for pushing negative and positive values
+	respectively
+	* disassembler.jl: updated for new opcodes
+
+	* pwd-prompt.jl: new file, implement pwd-prompt function for
+	the console
+
 1999-06-03  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep.jl: loading a script implies --batch (but not when loaded

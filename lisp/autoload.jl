@@ -44,4 +44,5 @@
 (autoload 'remote-ftp-add-passwd "remote-ftp" t)
 (put 'rcp 'remote-backend 'remote-rcp-handler)
 (autoload 'remote-rcp-handler "remote-rcp")
+(autoload 'pwd-prompt "pwd-prompt")
 ;;; ::autoload-end::

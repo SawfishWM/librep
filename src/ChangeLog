@@ -1,3 +1,27 @@
+1999-06-06  John Harper  <john@dcs.warwick.ac.uk>
+
+	* bytecodes.h: OP_SETQ now pops the value from the stack.
+	Deleted OP_PUSHIW, replaced by OP_PUSHIWN and OP_PUSHIWP, for
+	pushing negative and positive values respectively
+
+	* unix_dl.c (rep_kill_dl_libraries): never call dlclose, it's
+	not possible to know if any references to the library still
+	exist
+
+	* unix_main.c (rep_map_inputs): new function, call a specified
+	function for all registered (fd, callback) pairs
+
+	* misc.c (Fsystem): new function, execute a shell command
+	* unix_processes.c (rep_system): back-end of Fsystem
+
+	* lisp.c (rep_readl): don't return nil on EOF, instead signal
+	an end-of-stream error
+	* lispcmds.c (Fload): catch any end-of-stream error's signalled
+	while reading the file
+
+	* files.c (Fclose_file): when closing a file with
+	rep_LFF_DONT_CLOSE set, freopen it onto /dev/null
+
 1999-06-03  John Harper  <john@dcs.warwick.ac.uk>
 
 	* misc.c (default_beep): new function, echo ^G, used to

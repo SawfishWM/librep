@@ -504,6 +504,7 @@ extern void (*rep_deregister_input_fd_fun)(int fd);
 extern void rep_sleep_for(long secs, long msecs);
 extern void rep_register_input_fd(int fd, void (*callback)(int fd));
 extern void rep_deregister_input_fd(int fd);
+extern void rep_map_inputs (void (*fun)(int fd, void (*callback)(int)));
 extern void rep_mark_input_pending(int fd);
 extern void rep_unix_set_fd_nonblocking(int fd);
 extern void rep_unix_set_fd_blocking(int fd);
