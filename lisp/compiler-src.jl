@@ -55,7 +55,7 @@
 			     (throw 'exit form)))
 			 (cdr form))))
 	;; Now we have ARGS, the constant [folded] arguments from FORM
-	(setq form (apply (eval (car form)) args))
+	(setq form (apply (compiler-symbol-value (car form)) args))
 	;; If the folded version is a symbol or a list, quote it to preserve
 	;; its constant-ness
 	(if (or (symbolp form) (consp form))
