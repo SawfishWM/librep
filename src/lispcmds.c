@@ -37,7 +37,7 @@ DEFSYM(and, "and");
 DEFSYM(load_path, "load-path");
 DEFSYM(dl_load_path, "dl-load-path");
 DEFSYM(after_load_alist, "after-load-alist");
-DEFSYM(features, "features");
+DEFSYM(provide, "provide");
 DEFSYM(rep_directory, "rep-directory");
 DEFSYM(lisp_lib_directory, "lisp-lib-directory");
 DEFSYM(site_lisp_directory, "site-lisp-directory");
@@ -58,10 +58,6 @@ List of directories searched for dynamically loaded object files.
 A list of (LIBRARY FORMS...). Whenever the `load' command reads a file
 of Lisp code LIBRARY, it executes each of FORMS. Note that LIBRARY must
 exactly match the FILE argument given to `load'.
-::end::
-::doc:Vfeatures::
-A list of symbols defining which ``features'' Jade currently has loaded.
-This is used by the `featurep', `provide' and `require' functions.
 ::end::
 ::doc:Vrep-directory::
 The directory in which all installed data files live.
@@ -103,6 +99,19 @@ Returns ARG.
     return rep_signal_missing_arg(1);
 }
 
+DEFUN("function", Ffunction, Sfunction, (repv args), rep_SF) /*
+::doc:Sfunction::
+function ARG
+#'ARG
+
+Returns closure of ARG.
+::end:: */
+{
+    if(rep_CONSP(args))
+	return Fmake_closure (rep_CAR(args));
+    return rep_signal_missing_arg(1);
+}
+
 DEFUN("defmacro", Fdefmacro, Sdefmacro, (repv args), rep_SF) /*
 ::doc:Sdefmacro::
 defmacro NAME LAMBDA-LIST [DOC-STRING] BODY...
@@ -133,14 +142,10 @@ code has not been compiled).
     if(!rep_CONSP(args))
 	return rep_signal_missing_arg(2);
     if(!rep_COMPILEDP(rep_CAR(args)))
-	args = Fcons(Qmacro, Fcons(Qlambda, args));
+	args = Fcons(Qlambda, args);
     else
-    {
 	args = rep_CAR(args);
-	if(!rep_COMPILED_MACRO_P(args))
-	    return rep_signal_arg_error(args, 2);
-    }
-    return (Ffset(name, args) != rep_NULL) ? name : rep_NULL;
+    return Ffset(name, Fcons (Qmacro, Fmake_closure (args))) ? name : rep_NULL;
 }
 
 DEFUN("defun", Fdefun, Sdefun, (repv args), rep_SF) /*
@@ -164,20 +169,16 @@ value is,
     if(!rep_COMPILEDP(rep_CAR(args)))
 	args = Fcons(Qlambda, args);
     else
-    {
 	args = rep_CAR(args);
-	if(rep_COMPILED_MACRO_P(args))
-	    return rep_signal_arg_error(args, 2);
-    }
-    return (Ffset(name, args) != rep_NULL) ? name : rep_NULL;
+    return Ffset(name, Fmake_closure (args)) ? name : rep_NULL;
 }
 
 DEFUN("defvar", Fdefvar, Sdefvar, (repv args), rep_SF) /*
 ::doc:Sdefvar::
-defvar NAME DEFAULT-repv [DOC-STRING]
+defvar NAME DEFAULT-VALUE [DOC-STRING]
 
 Define a variable called NAME whose standard value is DEFAULT-
-repv. If NAME is already bound to a value (that's not an autoload
+VALUE. If NAME is already bound to a value (that's not an autoload
 definition) it is left as it is.
 
 If the symbol NAME is marked buffer-local the *default value* of the
@@ -203,12 +204,43 @@ variable will be set (if necessary) not the local value.
 	       && rep_CAR(rep_SYM(sym)->value) == Qautoload)
 		tmp = Qnil;
 	}
-	if(rep_NILP(tmp) && !Fset_default(sym, val))
-	    return rep_NULL;
-	if(rep_CONSP(rep_CDR(rep_CDR(args)))
-	   && !Fput(sym, Qvariable_documentation,
-		       rep_CAR(rep_CDR(rep_CDR(args)))))
-	    return rep_NULL;
+	rep_SYM(sym)->car |= rep_SF_SPECIAL;
+	if(rep_NILP(tmp) || (rep_SYM(sym)->car & rep_SF_WEAK))
+	{
+	    if (!Fset_default(sym, val))
+		return rep_NULL;
+	    if (rep_CDR(rep_special_env) == Qt
+		&& (rep_SYM(sym)->car & rep_SF_WEAK))
+	    {
+		/* defvar'ing a weak variable from an unrestricted
+		   environment removes the weak status, but marks
+		   it as `was weak, but now strong'. This prevents
+		   exploits such as:
+
+			[restricted special environment]
+			(setq special-var "/bin/rm")
+
+			[unrestricted environment]
+			(defvar special-var "ls")
+
+			[back in restricted environment]
+			(setq special-var "/bin/rm")
+			   --> error
+
+		   Setting the variable the first time (since it's
+		   unbound) adds it to the restricted environment,
+		   but defvar'ing effectively removes it */
+
+		rep_SYM(sym)->car &= ~rep_SF_WEAK;
+		rep_SYM(sym)->car |= rep_SF_WEAK_MOD;
+	    }
+	}
+	if(rep_CONSP(rep_CDR(rep_CDR(args))))
+	{
+	    if (!Fput(sym, Qvariable_documentation,
+		      rep_CAR(rep_CDR(rep_CDR(args)))))
+		return rep_NULL;
+	}
 	return sym;
     }
     else
@@ -1537,9 +1569,9 @@ load_file_exists_p (repv name)
     return tem;
 }
 
-DEFUN_INT("load", Fload, Sload, (repv file, repv noerr_p, repv nopath_p, repv nosuf_p), rep_Subr4, "fLisp file to load:") /*
+DEFUN_INT("load", Fload, Sload, (repv file, repv noerr_p, repv nopath_p, repv nosuf_p, repv in_env), rep_Subr5, "fLisp file to load:") /*
 ::doc:Sload::
-load FILE [NO-rep_ERROR-P] [NO-PATH-P] [NO-SUFFIX-P]
+load FILE [NO-ERROR] [NO-PATH] [NO-SUFFIX] [IN-CURRENT-ENVIRONMENT]
 
 Attempt to open and then read-and-eval the file of Lisp code FILE.
 
@@ -1547,17 +1579,22 @@ For each directory named in the variable `load-path' tries the value of
 FILE with `.jlc' (compiled-lisp) appended to it, then with `.jl' appended
 to it, finally tries FILE without modification.
 
-If NO-rep_ERROR-P is non-nil no error is signalled if FILE can't be found.
-If NO-PATH-P is non-nil the `load-path' variable is not used, just the value
-of FILE.
-If NO-SUFFIX-P is non-nil no suffixes are appended to FILE.
+If NO-ERROR is non-nil no error is signalled if FILE can't be found. If
+NO-PATH is non-nil the `load-path' variable is not used, just the value
+of FILE. If NO-SUFFIX is non-nil no suffixes are appended to FILE.
+
+If IN-CURRENT-ENVIRONMENT is non-nil then the forms contained by FILE
+are evaluated within the current lexical environment; by default a new
+environment is created for each file loaded.
 
 If the compiled version is older than it's source code, the source code is
 loaded and a warning is displayed.
 ::end:: */
 {
     /* Avoid the need to protect these args from GC. */
-    rep_bool no_error_p = !rep_NILP(noerr_p), no_suffix_p = !rep_NILP(nosuf_p);
+    rep_bool no_error_p = !rep_NILP(noerr_p);
+    rep_bool no_suffix_p = !rep_NILP(nosuf_p);
+    rep_bool in_current_env = !rep_NILP(in_env);
 
     repv name = Qnil, path;
     repv dir = rep_NULL, try = rep_NULL;
@@ -1689,6 +1726,7 @@ path_error:
     {
 	repv stream, bindings = Qnil;
 	rep_GC_root gc_stream, gc_bindings;
+	struct rep_Call lc;
 
 	repv tem;
 	int c;
@@ -1704,6 +1742,20 @@ path_error:
 	bindings = rep_bind_symbol (bindings, Qload_filename, name);
 	rep_PUSHGC(gc_stream, stream);
 	rep_PUSHGC(gc_bindings, bindings);
+
+	/* Create the lexical environment for the file. */
+	lc.fun = Qnil;
+	lc.args = Qnil;
+	lc.args_evalled_p = Qnil;
+	rep_PUSH_CALL(lc);
+
+	if (!in_current_env)
+	{
+	    rep_env = Qnil;
+	    rep_fenv = Qt;
+	    rep_special_env = Fcons (Qnil, Qt);
+	}
+
 	c = rep_stream_getc(stream);
 	while((c != EOF) && (tem = rep_readl(stream, &c)))
 	{
@@ -1711,6 +1763,7 @@ path_error:
 	    if(rep_INTERRUPTP || !Feval(tem))
 	    {
 		rep_unbind_symbols (bindings);
+		rep_POP_CALL(lc);
 		rep_POPGC; rep_POPGC; rep_POPGC;
 		return rep_NULL;
 	    }
@@ -1723,6 +1776,7 @@ path_error:
 	    /* lose the end-of-stream error. */
 	    rep_throw_value = rep_NULL;
 	}
+	rep_POP_CALL(lc);
 	rep_POPGC; rep_POPGC;
 	rep_unbind_symbols (bindings);
 	Fclose_file (stream);
@@ -2337,13 +2391,15 @@ symbol `lambda'
     case rep_Subr4:
     case rep_Subr5:
     case rep_SubrN:
-    case rep_Compiled:
+    case rep_Funarg:
 	return(Qt);
+
     case rep_Cons:
 	arg = rep_CAR(arg);
-	if((arg == Qlambda) || (arg == Qautoload))
+	if(arg == Qautoload)
 	    return(Qt);
 	/* FALL THROUGH */
+
     default:
 	return(Qnil);
     }
@@ -2359,8 +2415,7 @@ Returns t if ARG is a macro.
     if(rep_SYMBOLP(arg)
        && (arg = rep_SYM(arg)->function) == rep_NULL)
 	return Qnil;
-    if((rep_CONSP(arg) && rep_CAR(arg) == Qmacro)
-       || (rep_COMPILEDP(arg) && rep_COMPILED_MACRO_P(arg)))
+    if(rep_CONSP(arg) && rep_CAR(arg) == Qmacro)
 	return Qt;
     else
 	return Qnil;
@@ -2637,70 +2692,11 @@ of whatever was changed. Return the value of the last FORM evaluated.
     return res;
 }
 
-DEFUN("featurep", Ffeaturep, Sfeaturep, (repv feature), rep_Subr1) /*
-::doc:Sfeaturep::
-featurep FEATURE
-
-Return non-nil if feature FEATURE has already been loaded.
-::end:: */
-{
-    repv value;
-    rep_DECLARE1 (feature, rep_SYMBOLP);
-    value = Fsymbol_value (Qfeatures, Qnil);
-    if (value != rep_NULL)
-	return Fmemq (feature, value);
-    else
-	return rep_NULL;
-}
-
-DEFUN("provide", Fprovide, Sprovide, (repv feature), rep_Subr1) /*
-::doc:Sprovide::
-provide FEATURE
-
-Show that the feature FEATURE (a symbol) has been loaded.
-::end:: */
-{
-    repv value;
-    rep_DECLARE1 (feature, rep_SYMBOLP);
-    value = Fsymbol_value (Qfeatures, Qnil);
-    if (value != rep_NULL)
-    {
-	repv tem = Fmemq (feature, value);
-	if (tem && tem == Qnil)
-	{
-	    value = Fcons (feature, value);
-	    Fset (Qfeatures, value);
-	}
-	return feature;
-    }
-    return rep_NULL;
-}
-
-DEFUN_INT("require", Frequire, Srequire, (repv feature, repv file), rep_Subr2,
-	  "SFeature to load:") /*
-::doc:Srequire::
-require FEATURE [FILE]
-
-If FEATURE (a symbol) has not already been loaded, load it. The file
-loaded is either FILE (if given), or the print name of FEATURE.
-::end:: */
-{
-    repv tem;
-    rep_DECLARE1 (feature, rep_SYMBOLP);
-    tem = Ffeaturep (feature);
-    if (tem && tem == Qnil)
-    {
-	if (!rep_STRINGP(file))
-	    file = rep_SYM(feature)->name;
-	return Fload (file, Qnil, Qnil, Qnil);
-    }
-    return feature;
-}
-
 void
 rep_lispcmds_init(void)
 {
     rep_ADD_SUBR(Squote);
+    rep_ADD_SUBR(Sfunction);
     rep_ADD_SUBR(Sdefmacro);
     rep_ADD_SUBR(Sdefun);
     rep_ADD_SUBR(Sdefvar);
@@ -2800,26 +2796,22 @@ rep_lispcmds_init(void)
     rep_ADD_SUBR(Sthrow);
     rep_ADD_SUBR(Sunwind_protect);
     rep_ADD_SUBR(Swith_object);
-    rep_ADD_SUBR(Sfeaturep);
-    rep_ADD_SUBR(Sprovide);
-    rep_ADD_SUBR_INT(Srequire);
 
-    rep_INTERN(features);
-    rep_SYM(Qfeatures)->value = Qnil;
+    rep_INTERN(provide);
 
-    rep_INTERN(rep_directory);
+    rep_INTERN_SPECIAL(rep_directory);
     if(getenv("REPDIR") != 0)
 	rep_SYM(Qrep_directory)->value = rep_string_dup(getenv("REPDIR"));
     else
 	rep_SYM(Qrep_directory)->value = rep_VAL(&default_rep_directory);
 
-    rep_INTERN(lisp_lib_directory);
+    rep_INTERN_SPECIAL(lisp_lib_directory);
     if(getenv("REPLISPDIR") != 0)
 	rep_SYM(Qlisp_lib_directory)->value = rep_string_dup(getenv("REPLISPDIR"));
     else
 	rep_SYM(Qlisp_lib_directory)->value = rep_string_dup(REP_LISP_DIRECTORY);
 
-    rep_INTERN(site_lisp_directory);
+    rep_INTERN_SPECIAL(site_lisp_directory);
     if(getenv("REPSITELISPDIR") != 0)
 	rep_SYM(Qsite_lisp_directory)->value
 	    = rep_string_dup(getenv("REPSITELISPDIR"));
@@ -2827,28 +2819,28 @@ rep_lispcmds_init(void)
 	rep_SYM(Qsite_lisp_directory)->value
 	    = rep_concat2(rep_STR(rep_SYM(Qrep_directory)->value), "/site-lisp");
 
-    rep_INTERN(exec_directory);
+    rep_INTERN_SPECIAL(exec_directory);
     if(getenv("REPEXECDIR") != 0)
 	rep_SYM(Qexec_directory)->value = rep_string_dup(getenv("REPEXECDIR"));
     else
 	rep_SYM(Qexec_directory)->value = rep_string_dup(REP_EXEC_DIRECTORY);
 
-    rep_INTERN(documentation_file);
+    rep_INTERN_SPECIAL(documentation_file);
     if(getenv("REPDOCFILE") != 0)
 	rep_SYM(Qdocumentation_file)->value = rep_string_dup(getenv("REPDOCFILE"));
     else
 	rep_SYM(Qdocumentation_file)->value = rep_string_dup(REP_DOC_FILE);
 
-    rep_INTERN(documentation_files);
+    rep_INTERN_SPECIAL(documentation_files);
     rep_SYM(Qdocumentation_files)->value
 	= Fcons (rep_SYM(Qdocumentation_file)->value, Qnil);
 
-    rep_INTERN(load_path);
+    rep_INTERN_SPECIAL(load_path);
     rep_SYM(Qload_path)->value = rep_list_3(rep_SYM(Qlisp_lib_directory)->value,
 					rep_SYM(Qsite_lisp_directory)->value,
 					rep_null_string ());
 
-    rep_INTERN(dl_load_path);
+    rep_INTERN_SPECIAL(dl_load_path);
     rep_SYM(Qdl_load_path)->value = Qnil;
     {
 	char *ptr = getenv("LD_LIBRARY_PATH");
@@ -2866,13 +2858,13 @@ rep_lispcmds_init(void)
 		Fcons (rep_string_dup (REP_COMMON_EXEC_DIRECTORY),
 		       Fnreverse(rep_SYM(Qdl_load_path)->value)));
 
-    rep_INTERN(after_load_alist);
+    rep_INTERN_SPECIAL(after_load_alist);
     rep_SYM(Qafter_load_alist)->value = Qnil;
 
     rep_INTERN(or); rep_INTERN(and);
 
-    rep_INTERN(dl_load_reloc_now);
+    rep_INTERN_SPECIAL(dl_load_reloc_now);
     rep_SYM(Qdl_load_reloc_now)->value = Qnil;
 
-    rep_INTERN(load_filename);
+    rep_INTERN_SPECIAL(load_filename);
 }
