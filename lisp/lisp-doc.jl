@@ -18,12 +18,15 @@
 ;;; along with Jade; see the file COPYING.  If not, write to
 ;;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-(structure (export describe-lambda-list
-		   describe-value
-		   documentation
-		   document-var
-		   add-documentation)
-  (open rep)
+(define-structure lisp-doc (export describe-lambda-list
+				   describe-value
+				   doc-file-ref
+				   doc-file-set
+				   documentation
+				   document-var
+				   add-documentation
+				   add-documentation-params)
+    (open rep)
 
   (defun describe-lambda-list (lambda-list)
     (let ((output (make-string-output-stream)))
@@ -62,11 +65,40 @@ NAME is non-nil, then it should be the symbol that is associated with VALUE."
       (when (bytecodep value)
 	(setq type (concat "Compiled " type)))
       (format standard-output "%s: " type)
-      (if (eq (car value) 'lambda)
-	  (format standard-output "\(%s%s\)\n" (or name value)
-		  (describe-lambda-list
-		   (nth (if (eq (car value) 'macro) 2 1) value)))
-	(format standard-output "%s\n" (or name value)))))
+      (let ((arg-doc (cond ((eq (car value) 'lambda)
+			    (describe-lambda-list (cadr value)))
+			   ((bytecodep value)
+			    (cond ((listp (aref value 0))
+				   (describe-lambda-list (aref value 0)))
+				  ((and name (symbolp name))
+				   (doc-file-ref
+				    (concat 0 (symbol-name name)))))))))
+	(format standard-output
+		"\(%s%s\)\n" (or name value) (or arg-doc "")))))
+
+
+;;; GDBM doc-file access
+
+  (defun doc-file-ref (key)
+    (require 'gdbm)
+    (catch 'done
+      (mapc (lambda (file)
+	      (let ((db (gdbm-open file 'read)))
+		(when db
+		  (unwind-protect
+		      (let ((value (gdbm-fetch db key)))
+			(when value
+			  (throw 'done value)))
+		    (gdbm-close db))))) documentation-files)
+      nil))
+
+  (defun doc-file-set (key value)
+    (require 'gdbm)
+    (let ((db (gdbm-open documentation-file 'append)))
+      (when db
+	(unwind-protect
+	    (gdbm-store db key value 'replace)
+	  (gdbm-close db)))))
 
 
 ;;; Accessing doc strings
@@ -74,8 +106,7 @@ NAME is non-nil, then it should be the symbol that is associated with VALUE."
   (defun documentation (symbol &optional value)
     "Returns the documentation-string for SYMBOL."
     (catch 'exit
-      (let
-	  (doc dbm)
+      (let (doc)
 	;; First check for in-core documentation
 	(when (setq doc (get symbol 'documentation))
 	  (throw 'exit doc))
@@ -88,16 +119,7 @@ NAME is non-nil, then it should be the symbol that is associated with VALUE."
 	    (when (stringp doc)
 	      (throw 'exit doc))))
 	;; Then for doc strings in the databases
-	(require 'gdbm)
-	(mapc (lambda (file)
-		(setq dbm (gdbm-open file 'read))
-		(when dbm
-		  (unwind-protect
-		      (setq doc (gdbm-fetch dbm (symbol-name symbol)))
-		    (gdbm-close dbm))
-		  (when doc
-		    (throw 'exit doc))))
-	      documentation-files))))
+	(doc-file-ref (symbol-name symbol)))))
   
   (defun document-var (symbol doc-string)
     "Sets the `documentation' property of SYMBOL to DOC-STRING."
@@ -106,9 +128,9 @@ NAME is non-nil, then it should be the symbol that is associated with VALUE."
 
   (defun add-documentation (symbol string)
     "Adds a documentation string STRING to the file of such strings."
-    (require 'gdbm)
-    (let
-	((dbm (gdbm-open documentation-file 'append)))
-      (unwind-protect
-	  (gdbm-store dbm (symbol-name symbol) string 'replace)
-	(gdbm-close dbm)))))
+    (doc-file-set (symbol-name symbol) string))
+
+  (defun add-documentation-params (name param-list)
+    "Records that function NAME (a symbol) has argument list PARAM-LIST."
+    (doc-file-set (concat 0 (symbol-name name))
+		  (describe-lambda-list param-list))))
