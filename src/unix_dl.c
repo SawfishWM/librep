@@ -286,8 +286,12 @@ rep_open_dl_library(repv file_name)
 	if (!dlname)
 	{
 	    char err[256];
+#ifdef HAVE_SNPRINTF
 	    snprintf (err, sizeof (err), "Can't find dlname in %s",
 		      rep_STR (file_name));
+#else
+	    sprintf (err, "Can't find dlname in %s", rep_STR (file_name));
+#endif
 	    signal_error (err);
 	}
 	else
