@@ -65,65 +65,64 @@ _PR void streams_init(void);
 _PR void streams_kill(void);
 
 static int
-pos_getc(TX *tx, POS *pos)
+pos_getc(TX *tx, VALUE *pos)
 {
     int c = EOF;
-    if(pos->pos_Line < tx->tx_LogicalEnd)
+    long row = VROW(*pos);
+    long col = VCOL(*pos);
+    if(row < tx->tx_LogicalEnd)
     {
-	LINE *ln = tx->tx_Lines + pos->pos_Line;
-	if(pos->pos_Col >= (ln->ln_Strlen - 1))
+	LINE *ln = tx->tx_Lines + row;
+	if(col >= (ln->ln_Strlen - 1))
 	{
-	    if(++pos->pos_Line == tx->tx_LogicalEnd)
+	    if(++row == tx->tx_LogicalEnd)
+		--row;
+	    else
 	    {
-		--pos->pos_Line;
-		return(EOF);
+		col = 0;
+		c = '\n';
 	    }
-	    pos->pos_Col = 0;
-	    return('\n');
-	}
-	c = ln->ln_Line[pos->pos_Col++];
-    }
-    return(c);
-}
-
-static int
-pos_putc(TX *tx, POS *pos, int c)
-{
-    int rc = EOF;
-    if(!read_only(tx) && pad_pos(tx, pos))
-    {
-	u_char tmps[2];
-	tmps[0] = (u_char)c;
-	tmps[1] = 0;
-	if(iscntrl(c))
-	{
-	    if(insert_string(tx, tmps, 1, pos))
-		rc = 1;
 	}
 	else
-	{
-	    POS start = *pos;
-	    if(insert_str_n(tx, tmps, 1, pos))
-	    {
-		undo_record_insertion(tx, &start, pos);
-		flag_insertion(tx, &start, pos);
-		rc = 1;
-	    }
-	}
+	    c = ln->ln_Line[col++];
     }
-    return(rc);
+    *pos = make_pos(col, row);
+    return c;
 }
 
 static int
-pos_puts(TX *tx, POS *pos, u_char *buf, int bufLen)
+pos_putc(TX *tx, VALUE *pos, int c)
 {
     int rc = EOF;
-    if(!read_only(tx) && pad_pos(tx, pos))
+    if(!read_only(tx) && pad_pos(tx, *pos))
     {
-	if(insert_string(tx, buf, bufLen, pos))
-	    rc = bufLen;
+	u_char tmps[2];
+	VALUE end;
+	tmps[0] = (u_char)c;
+	tmps[1] = 0;
+	end = insert_string(tx, tmps, 1, *pos);
+	if(end != NULL)
+	{
+	    *pos = end;
+	    rc = 1;
+	}
     }
-    return(rc);
+    return rc;
+}
+
+static int
+pos_puts(TX *tx, VALUE *pos, u_char *buf, int bufLen)
+{
+    if(!read_only(tx) && pad_pos(tx, *pos))
+    {
+	VALUE end = insert_string(tx, buf, bufLen, *pos);
+	if(end != NULL)
+	{
+	    *pos = end;
+	    return bufLen;
+	}
+    }
+    return EOF;
 }
 
 int
@@ -147,12 +146,11 @@ stream_getc(VALUE stream)
 	if(!VMARK(stream)->mk_Resident)
 	    cmd_signal(sym_invalid_stream, list_2(stream, MKSTR("Marks used as streams must be resident")));
 	else
-	    c = pos_getc(VMARK(stream)->mk_File.tx,
-			 &VPOS(VMARK(stream)->mk_Pos));
+	    c = pos_getc(VMARK(stream)->mk_File.tx, &VMARK(stream)->mk_Pos);
 	break;
 
     case V_TX:
-	c = pos_getc(VTX(stream), get_tx_cursor(VTX(stream)));
+	c = pos_getc(VTX(stream), get_tx_cursor_ptr(VTX(stream)));
 	break;
 
     case V_Cons:
@@ -168,7 +166,7 @@ stream_getc(VALUE stream)
 	}
 	else if(BUFFERP(res) && POSP(VCDR(stream)))
 	{
-	    c = pos_getc(VTX(res), &VPOS(VCDR(stream)));
+	    c = pos_getc(VTX(res), &VCDR(stream));
 	    break;
 	}
 	else if(res != sym_lambda)
@@ -205,12 +203,18 @@ stream_getc(VALUE stream)
    Never call this unless you *have* *successfully* read from the stream
    previously. (few checks are performed here, I assume they were made in
    streamgetc()).  */
-#define POS_UNGETC(p,tx) \
-    if(--((p)->pos_Col) < 0) \
-    { \
-	(p)->pos_Line--; \
-	(p)->pos_Col = (tx)->tx_Lines[(p)->pos_Line].ln_Strlen - 1; \
-    }
+
+#define POS_UNGETC(p, tx)				\
+    do {						\
+	long row = VROW(p), col = VCOL(p);		\
+	if(--col < 0)					\
+	{						\
+	    row--;					\
+	    col = (tx)->tx_Lines[row].ln_Strlen - 1;	\
+	}						\
+	(p) = make_pos(col, row);			\
+    } while(0)
+
 int
 stream_ungetc(VALUE stream, int c)
 {
@@ -220,7 +224,7 @@ stream_ungetc(VALUE stream, int c)
 	return(rc);
     switch(VTYPE(stream))
     {
-	POS *pos;
+	VALUE *ptr;
 	VALUE tmp;
 	int oldgci;
 
@@ -230,14 +234,13 @@ stream_ungetc(VALUE stream, int c)
 	break;
 
     case V_Mark:
-	pos = &VPOS(VMARK(stream)->mk_Pos);
-	POS_UNGETC(pos, VMARK(stream)->mk_File.tx)
+	POS_UNGETC(VMARK(stream)->mk_Pos, VMARK(stream)->mk_File.tx);
 	rc = TRUE;
 	break;
 
     case V_TX:
-	pos = get_tx_cursor(VTX(stream));
-	POS_UNGETC(pos, VTX(stream))
+	ptr = get_tx_cursor_ptr(VTX(stream));
+	POS_UNGETC(*ptr, VTX(stream));
 	rc = TRUE;
 	break;
 
@@ -251,7 +254,8 @@ stream_ungetc(VALUE stream, int c)
 	}
 	else if(BUFFERP(tmp) && POSP(VCDR(stream)))
 	{
-	    POS_UNGETC(&VPOS(VCDR(stream)), VTX(tmp));
+	    ptr = &VCDR(stream);
+	    POS_UNGETC(*ptr, VTX(tmp));
 	    rc = TRUE;
 	    break;
 	}
@@ -281,7 +285,6 @@ stream_putc(VALUE stream, int c)
 	VALUE args, res, new;
 	int len;
 	u_char tmps[2];
-	POS pos;
 
     case V_File:
 	if(VFILE(stream)->lf_Name)
@@ -295,15 +298,11 @@ stream_putc(VALUE stream, int c)
 	if(!VMARK(stream)->mk_Resident)
 	    cmd_signal(sym_invalid_stream, list_2(stream, MKSTR("Marks used as streams must be resident")));
 	else
-	{
-	    pos = VPOS(VMARK(stream)->mk_Pos);
-	    rc = pos_putc(VMARK(stream)->mk_File.tx, &pos, c);
-	}
+	    rc = pos_putc(VMARK(stream)->mk_File.tx, &VMARK(stream)->mk_Pos, c);
 	break;
 
     case V_TX:
-	pos = *(get_tx_cursor(VTX(stream)));
-	rc = pos_putc(VTX(stream), &pos, c);
+	rc = pos_putc(VTX(stream), get_tx_cursor_ptr(VTX(stream)), c);
 	break;
 
     case V_Cons:
@@ -332,11 +331,10 @@ stream_putc(VALUE stream, int c)
 	else if(BUFFERP(args))
 	{
 	    if(POSP(VCDR(stream)))
-		rc = pos_putc(VTX(args), &VPOS(VCDR(stream)), c);
+		rc = pos_putc(VTX(args), &VCDR(stream), c);
 	    else
 	    {
-		pos.pos_Line = VTX(args)->tx_LogicalEnd - 1;
-		pos.pos_Col = VTX(args)->tx_Lines[pos.pos_Line].ln_Strlen - 1;
+		VALUE pos = cmd_restriction_end(args);
 		rc = pos_putc(VTX(args), &pos, c);
 	    }
 	    break;
@@ -411,7 +409,6 @@ stream_puts(VALUE stream, u_char *buf, int bufLen, bool isValString)
     {
 	VALUE args, res, new;
 	int len, newlen;
-	POS pos;
 
     case V_File:
 	if(VFILE(stream)->lf_Name)
@@ -425,15 +422,12 @@ stream_puts(VALUE stream, u_char *buf, int bufLen, bool isValString)
 	if(!VMARK(stream)->mk_Resident)
 	    cmd_signal(sym_invalid_stream, list_2(stream, MKSTR("Marks used as streams must be resident")));
 	else
-	{
-	    pos = VPOS(VMARK(stream)->mk_Pos);
-	    rc = pos_puts(VMARK(stream)->mk_File.tx, &pos, buf, bufLen);
-	}
+	    rc = pos_puts(VMARK(stream)->mk_File.tx, &VMARK(stream)->mk_Pos,
+			  buf, bufLen);
 	break;
 
     case V_TX:
-	pos = *(get_tx_cursor(VTX(stream)));
-	rc = pos_puts(VTX(stream), &pos, buf, bufLen);
+	rc = pos_puts(VTX(stream), get_tx_cursor_ptr(VTX(stream)), buf, bufLen);
 	break;
 
     case V_Cons:
@@ -469,11 +463,10 @@ stream_puts(VALUE stream, u_char *buf, int bufLen, bool isValString)
 	else if(BUFFERP(args))
 	{
 	    if(POSP(VCDR(stream)))
-		rc = pos_puts(VTX(args), &VPOS(VCDR(stream)), buf, bufLen);
+		rc = pos_puts(VTX(args), &VCDR(stream), buf, bufLen);
 	    else
 	    {
-		pos.pos_Line = VTX(args)->tx_LogicalEnd - 1;
-		pos.pos_Col = VTX(args)->tx_Lines[pos.pos_Line].ln_Strlen - 1;
+		VALUE pos = cmd_restriction_end(args);
 		rc = pos_puts(VTX(args), &pos, buf, bufLen);
 	    }
 	    break;
@@ -1308,6 +1301,25 @@ Returns the file object representing the editor's standard output.
     return(stdout_file);
 }
 
+_PR VALUE cmd_stderr_file(void);
+DEFUN("stderr-file", cmd_stderr_file, subr_stderr_file, (void), V_Subr0, DOC_stderr_file) /*
+::doc:stderr_file::
+stderr-file
+
+Returns the file object representing the editor's standard output.
+::end:: */
+{
+    static VALUE stderr_file;
+    if(stderr_file)
+	return(stderr_file);
+    stderr_file = cmd_open(sym_nil, sym_nil, sym_nil);
+    VFILE(stderr_file)->lf_Name = MKSTR("<stderr>");
+    VFILE(stderr_file)->lf_File = stderr;
+    VFILE(stderr_file)->lf_Flags |= LFF_DONT_CLOSE;
+    mark_static(&stderr_file);
+    return(stderr_file);
+}
+
 void
 streams_init(void)
 {
@@ -1334,6 +1346,7 @@ streams_init(void)
     ADD_SUBR(subr_read_file_until);
     ADD_SUBR(subr_stdin_file);
     ADD_SUBR(subr_stdout_file);
+    ADD_SUBR(subr_stderr_file);
 }
 
 void
