@@ -150,6 +150,7 @@ regcomp(exp)
     r->reganch = 0;
     r->regmust = NULL;
     r->regmlen = 0;
+    r->regsize = sizeof(regexp) + (unsigned)regsize;
     scan = r->program + 1;	/* First BRANCH. */
     if (OP(regnext(scan)) == END) {	/* Only one top-level choice. */
 	scan = OPERAND(scan);

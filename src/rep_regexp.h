@@ -38,6 +38,7 @@ typedef struct regexp {
 	char reganch;		/* Internal use only. */
 	char *regmust;		/* Internal use only. */
 	int regmlen;		/* Internal use only. */
+	int regsize;		/* actual size of regexp structure */
 	char program[1];	/* Unwarranted chumminess with compiler. */
 } regexp;
 
