@@ -1,3 +1,17 @@
+1998-07-31  John Harper  <john@dcs.warwick.ac.uk>
+
+	* shell.jl (shell-output-filter, shell-output-limit,
+	shell-echos, shell-last-output): new variables
+	(shell-filter): new function, the default output stream
+	(shell-enter-line): uses telnet.jl's method: if at the end of
+	the buffer, send everything after the position of the last
+	output, otherwise resort to prompt-matching
+
+	* telnet.jl: moved most of the funky output-filtering to
+	shell.jl, password prompt grabbing is now done via the
+	shell-output-filter variable. Also use the shell's send-line
+	function exclusively
+
 1998-07-17  John Harper  <john@dcs.warwick.ac.uk>
 
 	* compiler.jl (comp-compile-lambda): if a list-style
