@@ -1,3 +1,18 @@
+1998-09-21  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispmach.c, bytecodes.h: changed op-set and op-fset to use
+	the CALL_2 macro. This means that there arguments are in the
+	reverse order to what they used to be, and they leave a value
+	on the stack
+
+	* extent.c (find_extent): when searching the cache for
+	"near-enough" extents, use the global position of the cached
+	extent, not the position local to its parent
+	(cmd_move_extent): use unlink_extent not several calls to
+	unlink_extent_fragment
+	(adjust_extents_XX): more fixes to these functions, in
+	addition, make sure that they invalidate the cache
+
 1998-09-17  John Harper  <john@dcs.warwick.ac.uk>
 
 	* streams.c (cmd_format): make the "0" flag work with the %s

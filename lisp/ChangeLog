@@ -1,3 +1,59 @@
+1998-09-21  John Harper  <john@dcs.warwick.ac.uk>
+
+	* mail-dir.jl: aliases are now kept in the mail-address-list
+	variable, they're records with :name and :net-alias fields.
+	This involved changing a few function names..
+
+	* mail-dir-summary.jl: removed the address/alias distinction
+	and added an edit command, this dumps you to a buffer
+	containing a pretty-printed copy of the record, you edit the
+	record (i.e. adding any new fields or whatever) then commit the
+	changes with C-c C-c
+
+	* compiler.jl, dump.jl: only print the name of the source file
+	in the header, not all the useless stuff I used to
+
+	* compiler.jl, bytecodes.jl: op-set and op-fset are now more
+	regular
+
+	* summary.jl (summary-get-index): return nil if the item
+	specified isn't actually displayed
+	(summary-highlight-index): only delete the extent of the
+	highlighted line
+	(summary-update): call delete-all-extents
+	(summary-update-item, summary-goto-item): only proceed if the
+	item is actually displayed
+
+	* read-mail.jl (rm-format-alist): moved the documentation of
+	the default format conversions here (instead of
+	rm-summary-format) 
+	(rm-saved-flags): list of message properties that should be
+	saved with the message (in the x-jade-flags-v1 header) when
+	they're non-nil
+	(rm-auto-delete-rules): deleted
+	(rm-after-import-rules, rm-after-parse-rules): new variables
+	(rm-set-flag, rm-clear-flag, rm-test-flag): deleted
+	(rm-message-put, rm-message-get): replace the flag functions,
+	now a alist of properties for each message
+	(rm-status-alist): map non-nil message properties to strings to
+	put into the staus line
+
+	* rm-restrict.jl: add a load more standard functions as rules,
+	basically all conditionals and most arithmetic operators
+	(defrule): rule bodies may now have more than a single form
+	(put, get): `rules' to access the messsage's plist
+	(attribute): now just a synonym for `get'
+
+	* rm-thread.jl (rm-sort-predicates): added a predicate `score',
+	this sorts by the value of each message's `score' property
+
+	* rm-summary.jl (rm-summary-print-item): if the message has a
+	`summary-face' property use it as the face of the summary line
+
+	* rm-misc.jl, rm-output.jl: use message properties not flags
+
+	* mail-dir.jl: minor fixes for last set of changes
+
 1998-09-18  John Harper  <john@dcs.warwick.ac.uk>
 
 	* mail-dir.jl: made the database a lot more general. Each

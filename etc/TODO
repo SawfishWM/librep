@@ -42,9 +42,9 @@ Outstanding bugs
    comments.
 
  ! Deleting text doesn't delete extents contained within the deletion
-
  ! The extent position updating code doesn't always work; try splitting
    a line which contains an extent and its child
+   [ 19-9-98: hopefully both these bugs have been fixed now.. ]
 
 
 General programming tasks:
@@ -69,7 +69,8 @@ General programming tasks:
    reference of lines in a buffer)
 
  + Clean up the mail-dir interface. Maybe turn it into a fully-fledged
-   address book
+   address book (not very hard, just easier access to non-standard
+   fields)
 
    Also store things like message id of last message sent/received to
    this person (all message id's ever sent/received?), what else..?
@@ -78,30 +79,13 @@ General programming tasks:
 
  - Mail reader extensions
 
-   Add score-oriented sorting; this means that restriction rules
-   can set the attributes of messages, i.e.
+   Allow sorting by more than one predicate. i.e. ``if scores are
+   equal, compare by date'' kind of thing
 
-	(defrule scorer ()
-	  (if (not (attribute 'replied))
-	      (score-plus 5))
-	  ...
-
-   or something. This can be generalised to include other extrinsic
-   attributes of messages, e.g.
-
-	(defrule foo ()
-	  (if (sender "important-addr")
-	      (set summary-foreground "red"))
-	  ...
-
-   This then means that rules aren't only predicates, each folder will
-   need a list of rules to run on each message apart from the rules
-   used to select whether or not to display the message. Also it means
-   that the body of a rule should be able to have more than a single
-   form.
-
-   Note that for scoring, we really want to use an ordered list of sort
-   predicates, i.e. if scores equal, sort by date, ...
+   Should re-run the after-parse rules when the message properties
+   change. E.g. if the rule sets the summary-face depending on whether
+   the message is unread or not, when the message becomes read we want
+   the face to return to normal
 
  - Syntax highlighting
 
