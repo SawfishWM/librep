@@ -23,10 +23,10 @@ usage (void)
 	   stderr);
 }
 
-static void
+static repv
 inner_main (repv arg)
 {
-    rep_load_environment (rep_string_dup ("rep"));
+    return rep_load_environment (rep_string_dup ("rep"));
 }
 
 int
