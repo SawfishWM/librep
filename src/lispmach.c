@@ -65,7 +65,7 @@ unbind_one_level(VALUE bind_stack)
 	    {
 		/* (BUFFER . VIEW)
 		   reinstall BUFFER in VIEW */
-		swap_buffers_tmp(VVIEW(VCDR(item)), VTX(VCAR(item)));
+		swap_buffers(VVIEW(VCDR(item)), VTX(VCAR(item)));
 	    }
 	    else if(CONSP(VCAR(item)))
 	    {
@@ -953,7 +953,7 @@ fetch:
 		signal_arg_error(tmp, 1);
 		goto error;
 	    }
-	    tmp = VAL(swap_buffers_tmp(curr_vw, VTX(tmp)));
+	    tmp = VAL(swap_buffers(curr_vw, VTX(tmp)));
 	    bindstack = cmd_cons(cmd_cons(tmp, VAL(curr_vw)), bindstack);
 	    break;
 
