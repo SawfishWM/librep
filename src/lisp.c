@@ -2285,7 +2285,8 @@ rep_lisp_init(void)
     rep_INTERN(autoload); rep_INTERN(function);
     rep_INTERN(structure_ref);
     rep_INTERN_SPECIAL(standard_input); rep_INTERN_SPECIAL(standard_output);
-    rep_INTERN(debug_entry); rep_INTERN(debug_exit); rep_INTERN(debug_error_entry);
+    rep_INTERN_SPECIAL(debug_entry); rep_INTERN_SPECIAL(debug_exit);
+    rep_INTERN_SPECIAL(debug_error_entry);
     rep_INTERN(amp_optional); rep_INTERN(amp_rest); rep_INTERN(amp_aux);
     rep_mark_static((repv *)&rep_throw_value);
     rep_ADD_INTERNAL_SUBR (S_scheme_bool_printer);
