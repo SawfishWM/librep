@@ -86,49 +86,8 @@
 
   (define pair? (make-predicate consp))
 
-  (define (car pair)
-    (if (consp pair)
-	(rep#car pair)
-      (error "taking car of non-pair object")))
-    
-  (define (cdr pair)
-    (if (consp pair)
-	(rep#cdr pair)
-      (error "taking cdr of non-pair object")))
-
   (define set-car! rplaca)
   (define set-cdr! rplacd)
-
-  (define (caar x) (car (car x)))
-  (define (cdar x) (cdr (car x)))
-  (define (cadr x) (car (cdr x)))
-  (define (cddr x) (cdr (cdr x)))
-  
-  (define (caaar x) (car (caar x)))
-  (define (cdaar x) (cdr (caar x)))
-  (define (cadar x) (car (cdar x)))
-  (define (cddar x) (cdr (cdar x)))
-  (define (caadr x) (car (cadr x)))
-  (define (cdadr x) (cdr (cadr x)))
-  (define (caddr x) (car (cddr x)))
-  (define (cdddr x) (cdr (cddr x)))
-  
-  (define (caaaar x) (caar (caar x)))
-  (define (cadaar x) (cadr (caar x)))
-  (define (caadar x) (caar (cdar x)))
-  (define (caddar x) (cadr (cdar x)))
-  (define (caaadr x) (caar (cadr x)))
-  (define (cadadr x) (cadr (cadr x)))
-  (define (caaddr x) (caar (cddr x)))
-  (define (cadddr x) (cadr (cddr x)))
-  (define (cdaaar x) (cdar (caar x)))
-  (define (cddaar x) (cddr (caar x)))
-  (define (cdadar x) (cdar (cdar x)))
-  (define (cdddar x) (cddr (cdar x)))
-  (define (cdaadr x) (cdar (cadr x)))
-  (define (cddadr x) (cddr (cadr x)))
-  (define (cdaddr x) (cdar (cddr x)))
-  (define (cddddr x) (cddr (cddr x)))
 
 ;;; lists
 
@@ -136,13 +95,12 @@
 
   (define (list? x)
     (let loop ((slow x)
-	       (fast (rep#cdr x)))
+	       (fast (cdr x)))
       (cond ((null slow) #t)
 	    ((rep#not (consp slow)) #f)
 	    ((eq slow fast) #f)
-	    (t (loop (rep#cdr slow) (rep#cddr fast))))))
+	    (t (loop (cdr slow) (cddr fast))))))
 
-  ;; XXX return nil if I > (length LST)
   (define (list-tail lst i) (nthcdr i lst))
   (define (list-ref lst i) (nth i lst))
 
@@ -163,7 +121,7 @@
 ;;; symbols
 
   (define (symbol? arg)
-    (cond ((memq arg '(#f #t)) #f)
+    (cond ((rep#memq arg '(#f #t)) #f)
 	  ((symbolp arg) #t)
 	  (t #f)))
     
@@ -249,15 +207,15 @@
   (define string-ci<? (make-predicate string-lessp))
   (define string-ci>? (make-predicate
 		       (lambda args
-			 (not (or (apply string-equal args)
-				  (apply string-lessp args))))))
+			 (rep#not (or (apply string-equal args)
+				      (apply string-lessp args))))))
   (define string-ci<=? (make-predicate
 			(lambda args
 			  (or (apply string-lessp args)
 			      (apply string-equal args)))))
   (define string-ci>=? (make-predicate
 			(lambda args
-			  (not (apply string-lessp args)))))
+			  (rep#not (apply string-lessp args)))))
 
   (define string-append concat)
 
