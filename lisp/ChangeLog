@@ -1,3 +1,11 @@
+Sun Jun 21 01:17:47 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* gzip.jl (auto-compression-alist, auto-compression-mode):
+	generalised this code, also allow it to be explicitly enabled
+	and disabled
+
+	* info.jl: minor changes for modified gzip.jl
+
 Sat Jun 20 16:15:41 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rm-restrict.jl (rm-apply-rule): new function, allows a rule

@@ -1,3 +1,9 @@
+Sun Jun 21 01:14:21 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_processes.c (cmd_call_process): ensure that the
+	INPUT-FILE parameter is a _local_ file name (signal an error if
+	it points to a remote file)
+
 Fri Jun 19 00:06:20 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_files.c (sys_directory_file_name): don't remove the

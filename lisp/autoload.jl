@@ -189,4 +189,5 @@
 (autoload 'remote-rcp-handler "remote-rcp")
 (autoload 'define-rule "rm-restrict" t)
 (autoload 'rm-archive-folder "rm-output" t)
+(autoload 'auto-compression-mode "gzip" t)
 ;;; ::autoload-end::
