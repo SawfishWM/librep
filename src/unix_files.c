@@ -462,10 +462,10 @@ sys_file_modtime(VALUE file)
 {
     struct stat *st = stat_file(file);
     if(st != 0)
-	return MAKE_LONG_INT(st->st_mtime);
+	return MAKE_TIME(st->st_mtime);
     else
 	/* Really this should return nil */
-	return MAKE_LONG_INT(0);
+	return MAKE_TIME(0);
 }
 
 VALUE
