@@ -1,5 +1,32 @@
 Sun Apr 26 13:39:17 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* buffers.jl (mildly-special-buffer): deleted this variable
+	(kill-buffer): don't destroy-buffer, just remove it from all
+	buffer-list's. Moved remove-buffer into this function
+	(bury-buffer): use mapc, and fixed to handle views as well as
+	windows
+	(add-buffer): moved here from windows.jl
+	(rotate-buffers-forward, rotate-buffers-backward): deleted
+	(find-file): check if the file being opened has changed, if
+	it's already buffered
+	(check-changes, save-some-buffers): don't look for
+	special-ness, but whether the buffer has no file-name
+	* windows.jl (add-buffer, remove-buffer): deleted
+	* loadkeys.jl: remove references to rotate-buffers-forward and
+	rotate-buffer-backward 
+
+	* modes.jl (kill-mode): renamed as fundamental-mode, since this
+	is what it really does, given an interactive decl
+
+	* compile.jl (compile-parse-errors): fix line numbers being out
+	by one
+
+	* buffer-menu.jl, compile.jl, compiler.jl, cvs.jl, debug.jl,
+	disassembler.jl, gdb.jl, help.jl, info.jl, init.jl, keymap.jl,
+	miranda.jl, prompt.jl, rcs.jl, read-mail.jl, send-mail.jl,
+	shell.jl, summary.jl, telnet.jl: various fixes for loss of
+	buffer-special functions, etc.
+
 	* buffers.jl (open-buffer): always call add-buffer, not just
 	when having to create the buffer
 

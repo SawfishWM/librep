@@ -1,3 +1,17 @@
+Sun Apr 26 19:23:28 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* redisplay.c, glyphs.c: another attempt to fix a display bug
+
+	* edit.h (TXFF_SPECIAL): deleted this flag
+
+	* buffers.c (destroy-buffer): deleted this function, let
+	buffers be garbage collected as other objects are
+	(buffer-modified-p): don't look at the TXFF_SPECIAL flag
+	(set-buffer-special, buffer-special-p): deleted
+
+	* views.c (update_status_buffer): ignore TXFF_SPECIAL, give
+	read-only flag higher priority than modified flag
+
 Fri Apr 24 11:35:03 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_processes.c (cmd_active_processes): new function, return
