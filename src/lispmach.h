@@ -211,15 +211,9 @@ list_ref (repv list, int elt)
 #define FETCH	    (*pc++)
 #define FETCH2(var) ((var) = (FETCH << ARG_SHIFT), (var) += FETCH)
 
-#ifdef BE_PARANOID
-# define LOST_ARGV argptr = argc
-#else
-# define LOST_ARGV
-#endif
-
 #define SYNC_GC				\
     do {				\
-	UPDATE; LOST_ARGV;		\
+	UPDATE;				\
 	gc_stack.count = STK_USE;	\
 	gc_bindstack.count = BIND_USE;	\
     } while (0)
@@ -398,7 +392,7 @@ list_ref (repv list, int elt)
  &&TAG(OP_FLUID_SET), &&TAG(OP_FLUID_BIND), &&TAG(OP_MEMQL), &&TAG(OP_NUM_EQ), /*C0*/ \
  &&TAG(OP_TEST_SCM), &&TAG(OP_TEST_SCM_F), &&TAG(OP__DEFINE), &&TAG(OP_SPEC_BIND), \
  &&TAG(OP_SET), &&TAG(OP_REQUIRED_ARG), &&TAG(OP_OPTIONAL_ARG), &&TAG(OP_REST_ARG), /*C8*/ \
- &&TAG(OP_NOT_ZERO_P), &&TAG(OP_KEYWORD_ARG), &&TAG(OP_OPTIONAL_ARG_WITH_DEFAULT), &&TAG(OP_KEYWORD_ARG_WITH_DEFAULT),	\
+ &&TAG(OP_NOT_ZERO_P), &&TAG(OP_KEYWORD_ARG), &&TAG(OP_OPTIONAL_ARG_), &&TAG(OP_KEYWORD_ARG_),	\
 										\
  &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, /*D0*/	\
  &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT,		\
@@ -509,7 +503,7 @@ vm (repv code, repv consts, int argc, repv *argv,
     rep_GC_root gc_code, gc_consts;
     /* The `gcv_N' field is only filled in with the stack-size when there's
        a chance of gc.	*/
-    rep_GC_n_roots gc_stack, gc_bindstack, gc_slots;
+    rep_GC_n_roots gc_stack, gc_bindstack, gc_slots, gc_argv;
     repv *stack, *bindstack, *slots;
 
     /* Actual reusable size of the argv array. I did try reusing the passed
@@ -534,12 +528,36 @@ vm (repv code, repv consts, int argc, repv *argv,
     slots = alloca (sizeof (repv) * (s_stkreq));
     repv_bzero (slots, s_stkreq);
 
+#ifdef SLOW_GC_PROTECT
     rep_PUSHGC(gc_code, code);
     rep_PUSHGC(gc_consts, consts);
     rep_PUSHGCN(gc_bindstack, bindstack, 0);
     rep_PUSHGCN(gc_stack, stack + 1, 0);
     rep_PUSHGCN(gc_slots, slots, s_stkreq);
+    rep_PUSHGCN(gc_argv, argv, argc);
+#else
+    /* avoid multiple accesses to global variables
+       [ this ordering is known by popping code at end of fn ] */
+    gc_code.ptr = &code;
+    gc_consts.ptr = &consts;
+    gc_bindstack.first= bindstack;
+    gc_stack.first = stack + 1;
+    gc_slots.first = slots;
+    gc_slots.count = s_stkreq;
+    gc_argv.first = argv;
+    gc_argv.count = argc;
 
+    gc_code.next = &gc_consts;
+    gc_consts.next = rep_gc_root_stack;
+    rep_gc_root_stack = &gc_code;
+
+    gc_bindstack.next = &gc_stack;
+    gc_stack.next = &gc_slots;
+    gc_slots.next = &gc_argv;
+    gc_argv.next = rep_gc_n_roots_stack;
+    rep_gc_n_roots_stack = &gc_bindstack;
+#endif
+    
     /* Jump to this label when tail-calling */
 again: {
     register u_char *pc PC_REG;
@@ -779,6 +797,8 @@ again: {
 				gc_stack.first = stack + 1;
 				gc_slots.first = slots;
 				gc_slots.count = s_stkreq;
+				gc_argv.first = argv;
+				gc_argv.count = argc;
 				goto again;
 			    }
 			}
@@ -2032,30 +2052,47 @@ again: {
 	BEGIN_INSN (OP_KEYWORD_ARG)
 	    int i;
 	    POP1 (tmp);
-	    tmp2 = Qnil;
-	do_keyword_arg:
 	    for (i = argptr; i < argc - 1; i += 2)
 	    {
-		if (argv[i] == tmp && argv[i+1] != rep_NULL)
+		if (argv[i] == tmp)
 		{
-		    tmp2 = argv[i+1];
+		    PUSH (argv[i+1]);
 		    argv[i] = argv[i+1] = rep_NULL;
-		    break;
+		    SAFE_NEXT;
 		}
 	    }
-	    PUSH (tmp2);
+	    PUSH (Qnil);
 	    SAFE_NEXT;
 	END_INSN
 
-	BEGIN_INSN (OP_OPTIONAL_ARG_WITH_DEFAULT)
+	BEGIN_INSN (OP_OPTIONAL_ARG_)
+	    if (argptr < argc)
+	    {
+		PUSH (argv[argptr++]);
+		PUSH (Qt);
+	    }
+	    else
+	    {
+		PUSH (Qnil);
+	    }
+	    SAFE_NEXT;
+	END_INSN
+
+	BEGIN_INSN (OP_KEYWORD_ARG_)
+	    int i;
 	    POP1 (tmp);
-	    PUSH ((argptr < argc) ? argv[argptr++] : tmp);
+	    for (i = argptr; i < argc - 1; i += 2)
+	    {
+		if (argv[i]== tmp)
+		{
+		    PUSH (argv[i+1]);
+		    PUSH (Qt);
+		    argv[i] = argv[i+1] = rep_NULL;
+		    SAFE_NEXT;
+		}
+	    }
+	    PUSH (Qnil);
 	    SAFE_NEXT;
-	END_INSN
-
-	BEGIN_INSN (OP_KEYWORD_ARG_WITH_DEFAULT)
-	    POP2 (tmp2, tmp);
-	    goto do_keyword_arg;
 	END_INSN
 
 	/* Jump instructions follow */
@@ -2214,6 +2251,8 @@ quit:
     /* only use this var to save declaring another */
     code = TOP;
 
+    SYNC_GC;
+
     /* close the register scope */ }
 
     /* moved to after the execution, to avoid needing to gc protect argv */
@@ -2222,6 +2261,13 @@ quit:
     rep_MAY_YIELD;
 
     rep_lisp_depth--;
-    rep_POPGCN; rep_POPGCN; rep_POPGCN; rep_POPGC; rep_POPGC;
+
+#ifdef SLOW_GC_PROTECT
+    rep_POPGCN; rep_POPGCN; rep_POPGCN; rep_POPGCN; rep_POPGC; rep_POPGC;
+#else
+    rep_gc_root_stack = gc_consts.next;
+    rep_gc_n_roots_stack = gc_argv.next;
+#endif
+
     return code;
 }
