@@ -152,6 +152,7 @@ static void read_from_one_fd(struct Proc *pr, int fd);
 static void read_from_process(int);
 _PR int	 write_to_process(VALUE, u_char *, int);
 _PR void proc_mark(VALUE);
+_PR void mark_active_processes(void);
 _PR void proc_prin(VALUE, VALUE);
 _PR void sigchld_restart(bool);
 _PR void proc_init(void);
@@ -218,7 +219,7 @@ proc_notification(void)
 	notify_chain = pr->pr_NotifyNext;
 	pr->pr_NotifyNext = NULL;
 	if(pr->pr_NotifyFun && !NILP(pr->pr_NotifyFun))
-	    funcall(pr->pr_NotifyFun, sym_nil, FALSE);
+	    call_lisp1(pr->pr_NotifyFun, VAL(pr));
     }
     return TRUE;
 }
@@ -407,7 +408,8 @@ signal_process(struct Proc *pr, int sig, bool do_grp)
 }
 
 /* This is only called during GC, when the process isn't being referenced.
-   it will already have been taken out of the chain.  */
+   it will already have been taken out of the chain. Also active processes
+   should have been marked anyway. */
 static void
 kill_process(struct Proc *pr)
 {
@@ -833,6 +835,18 @@ proc_mark(VALUE pr)
     MARKVAL(VPROC(pr)->pr_Args);
     MARKVAL(VPROC(pr)->pr_Dir);
     MARKVAL(VPROC(pr)->pr_ConnType);
+}
+
+void
+mark_active_processes(void)
+{
+    struct Proc *pr = process_chain;
+    while(pr != 0)
+    {
+	if(PR_ACTIVE_P(pr))
+	    MARKVAL(VAL(pr));
+	pr = pr->pr_Next;
+    }
 }
 
 static void
@@ -1603,6 +1617,30 @@ This function can only be used when PROCESS is not in use.
     return(type);
 }
 
+_PR VALUE cmd_active_processes(void);
+DEFUN("active-processes", cmd_active_processes, subr_active_processes, (void),
+      V_Subr0, DOC_active_processes) /*
+::doc:active_processes::
+active-processes
+
+Return a list containing all active process objects.
+::end:: */
+{
+    VALUE head = sym_nil;
+    VALUE *ptr = &head;
+    struct Proc *p = process_chain;
+    while(p != 0)
+    {
+	if(PR_ACTIVE_P(p))
+	{
+	    *ptr = cmd_cons(VAL(p), sym_nil);
+	    ptr = &(VCDR(*ptr));
+	}
+	p = p->pr_Next;
+    }
+    return head;
+}
+
 /* Turns on or off restarted system calls */
 void
 sigchld_restart(bool flag)
@@ -1682,6 +1720,7 @@ proc_init(void)
     ADD_SUBR(subr_set_process_dir);
     ADD_SUBR(subr_process_connection_type);
     ADD_SUBR(subr_set_process_connection_type);
+    ADD_SUBR(subr_active_processes);
 
     /* Initialise the type information. */
     data_types[V_Process].compare = ptr_cmp;
