@@ -186,26 +186,31 @@ symbol_print(repv strm, repv obj)
 {
     u_char *s = rep_STR(rep_SYM(obj)->name);
     u_char c;
+    rep_bool all_digits = isdigit (*s);
+
     while((c = *s++))
     {
 	switch(c)
 	{
-	case ' ':
-	case '\t':
-	case '\n':
-	case '\f':
-	case '(':
-	case ')':
-	case '[':
-	case ']':
-	case '\'':
-	case '"':
-	case ';':
-	case '\\':
+	case ' ': case '\t': case '\n': case '\f':
+	case '(': case ')': case '[': case ']':
+	case '\'': case '"': case ';': case '\\':
 	case '|':
 	    rep_stream_putc(strm, (int)'\\');
+	    all_digits = rep_FALSE;
 	    break;
+
+	case '.': case '/': case 'e': case 'E':
+	    if (all_digits)
+	    {
+		rep_stream_putc (strm, (int) '\\');
+		all_digits = rep_FALSE;
+	    }
+	    break;
+
 	default:
+	    if (!isdigit (c))
+		all_digits = rep_FALSE;
 	    if(iscntrl(c))
 		rep_stream_putc(strm, (int)'\\');
 	    break;
