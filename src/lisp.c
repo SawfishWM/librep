@@ -2263,7 +2263,9 @@ rep_copy_list(repv list)
     return result;
 }
 
-/* Used to assign a list of argument values into separate variables. */
+/* Used to assign a list of argument values into separate variables.
+   Note that optional args without values _are not_ initialized to nil,
+   the caller of this function should do that.. */
 rep_bool
 rep_assign_args (repv list, int required, int total, ...)
 {
