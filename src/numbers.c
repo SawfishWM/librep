@@ -2166,6 +2166,9 @@ number is parsed from that base, otherwise base 10 is assumed.
 	case 'i': case 'I':
 	    force_exactness = -1;
 	    break;
+
+	default:
+	    return Qnil;
 	}
 	ptr += 2;
     }
