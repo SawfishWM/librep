@@ -69,6 +69,14 @@
 	   (error-handler-function (car data) (cdr data))
 	   (setq input nil)))))))
 
+(defun rl-completion-generator (w)
+  (apropos w (lambda (x)
+	       (condition-case nil
+		   (progn
+		     (eval x (%intern-structure *repl-in-struct*))
+		     t)
+		 (void-value nil)))))
+
 (put 'in 'repl-command
      (lambda (struct &optional form)
        (if form
