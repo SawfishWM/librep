@@ -2829,7 +2829,7 @@ in base 10.
 
 /* Random number generation */
 
-#if defined (HAVE_GMP) && defined (HAVE_GMP_RANDINIT)
+#if defined (HAVE_GMP) && defined (HAVE_GMP_RANDINIT) && __GNU_MP__ >= 4
 
 static gmp_randstate_t random_state;
 

@@ -1,3 +1,8 @@
+2002-06-25  John Harper  <jsh@unfactored.org>
+
+	* numbers.c: only use GMP random numbers with version 4 and
+	later
+
 2002-06-20  John Harper  <jsh@unfactored.org>
 
 	* version 0.16	 
