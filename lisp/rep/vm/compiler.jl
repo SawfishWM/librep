@@ -30,6 +30,7 @@
 	    compile-lisp-lib
 	    compile-lib-batch
 	    compile-batch
+	    compile-assembler
 	    compile-compiler
 	    compile-function
 	    compile-form
@@ -47,20 +48,20 @@
 
   (define-structure-alias compiler rep.vm.compiler)
 
+  (define assembler-sources '(rep.vm.peephole
+			      rep.vm.assembler
+			      rep.vm.bytecodes
+			      rep.vm.bytecode-defs))
+
   (define compiler-sources '(rep.vm.compiler
 			     rep.vm.compiler.basic
 			     rep.vm.compiler.bindings
 			     rep.vm.compiler.inline
 			     rep.vm.compiler.lap
 			     rep.vm.compiler.modules
-			     rep.vm.compiler.opt
 			     rep.vm.compiler.rep
 			     rep.vm.compiler.src
-			     rep.vm.compiler.utils
-			     rep.vm.assembler
-			     rep.vm.bytecodes
-			     rep.vm.bytecode-defs
-			     rep.data.sort))
+			     rep.vm.compiler.utils))
 
   ;; regexp matching library files not to compile
   (define lib-exclude-re "\\bautoload\\.jl$|^CVS$")
@@ -339,9 +340,7 @@ that files which shouldn't be compiled aren't."
     (compile-file (car command-line-args))
     (setq command-line-args (cdr command-line-args))))
 
-;; Used when bootstrapping from the Makefile, recompiles compiler.jl if
-;; it's out of date
-(defun compile-compiler ()
+(defun bootstrap (sources)
   (let ((*compiler-write-docs* t))
     (mapc (lambda (package)
 	    (let ((file (expand-file-name
@@ -350,4 +349,9 @@ that files which shouldn't be compiled aren't."
 	      (when (or (not (file-exists-p (concat file ?c)))
 			(file-newer-than-file-p file (concat file ?c)))
 		(compile-file file))))
-	  compiler-sources))))
+	  sources)))
+  
+;; Used when bootstrapping from the Makefile, recompiles compiler.jl if
+;; it's out of date
+(defun compile-compiler () (bootstrap compiler-sources))
+(defun compile-assembler () (bootstrap assembler-sources)))
