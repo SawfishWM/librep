@@ -1,5 +1,10 @@
 2000-09-19  John Harper  <john@dcs.warwick.ac.uk>
 
+	* rep/net/domain-name.jl: new file, some domain name functions
+	(from TITAN)
+
+	* rep/regexp.jl (string-split): new function
+
 	* rep.jl, rep/user.jl, rep/io/files.jl,
 	rep/vm/compiler/modules.jl: *root-structure* is now replaced by
 	*user-structure*
