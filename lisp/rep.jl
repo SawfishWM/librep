@@ -49,9 +49,8 @@
   "Standard stream for error output.")
 
 ;; null i18n function until gettext is loaded
-(unless (boundp '_)
-  (defun _ (arg) arg)
-  (export-bindings '(_)))
+(defun _ (arg) arg)
+(export-bindings '(_))
 
 (export-bindings (parse-interface '(compound-interface
 				    (structure-interface rep.lang.interpreter)
