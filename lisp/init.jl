@@ -438,18 +438,24 @@ is non-nil in which case it is added at the end."
   "Returns t if the function FUN is stored in the hook called HOOK-SYMBOL."
   (and (boundp hook-symbol) (memq fun (symbol-value hook-symbol))))
 
-(defun eval-after-load (library form)
-  "Arrange for FORM to be evaluated immediately after the library of Lisp code
+(defun call-after-load (library thunk)
+  "Arrange for THUNK to be called immediately after the library of Lisp code
 LIBRARY has been read by the `load' function. Note that LIBRARY must exactly
 match the FILE argument to `load'."
   (let ((tem (assoc library after-load-alist)))
     (if tem
-	(rplacd tem (cons form (cdr tem)))
-      (setq after-load-alist (cons (cons library (list form))
+	(rplacd tem (cons thunk (cdr tem)))
+      (setq after-load-alist (cons (cons library (list thunk))
 				   after-load-alist)))))
 
+(defun eval-after-load (library form)
+  "Arrange for FORM to be evaluated immediately after the library of Lisp code
+LIBRARY has been read by the `load' function. Note that LIBRARY must exactly
+match the FILE argument to `load'."
+  (call-after-load library (lambda () (eval form *root-structure*))))
+
 
-;; loading / features
+;; loading
 
 (defun load-all (file &optional callback)
   "Try to load files called FILE (or FILE.jl, etc) from all directories in the
@@ -640,9 +646,9 @@ deallocated by the garbage collector, or `nil' if no such objects
 exist that have not already been returned."
   (let
       ((g (make-primitive-guardian)))
-    (lambda (&optional arg)
-      (if arg
-	  (primitive-guardian-push g arg)
+    (lambda args
+      (if args
+	  (primitive-guardian-push g (car args))
 	(primitive-guardian-pop g)))))
 
 
