@@ -119,6 +119,7 @@ char *alloca ();
 #include <stdlib.h>
 #include <assert.h>
 #include <setjmp.h>
+#include <limits.h>
 
 #ifdef NEED_MEMORY_H
 # include <memory.h>
@@ -945,6 +946,8 @@ make_thread (repv thunk, repv name)
 {
     repv ret;
     rep_thread *t = new_thread (name);
+    rep_GC_root gc_thunk;
+
     thread_save_environ (t);
 
     if (root_barrier->active == 0)
@@ -959,7 +962,9 @@ make_thread (repv thunk, repv name)
 	root_barrier->active = x;
     }
 
+    rep_PUSHGC (gc_thunk, thunk);
     ret = primitive_call_cc (inner_make_thread, t);
+    rep_POPGC;
     if (ret == -1)
 	return t;
     else
@@ -982,7 +987,7 @@ make_thread (repv thunk, repv name)
     }
 }
 
-static void
+static rep_bool
 thread_yield (void)
 {
     struct timeval now;
@@ -1019,7 +1024,12 @@ thread_yield (void)
     }
 
     if (root_barrier->head != old_head)
+    {
 	thread_invoke ();
+	return rep_TRUE;
+    }
+    else
+	return rep_FALSE;
 }
 
 static void
@@ -1066,6 +1076,37 @@ thread_queue_length (rep_barrier *root)
 	for (ptr = root->head->next; ptr != 0; ptr = ptr->next)
 	    len++;
 	return len;
+    }
+}
+
+u_long
+rep_max_sleep_for (void)
+{
+    rep_barrier *root = root_barrier;
+    if (root->active == 0)
+    {
+	/* not using threads, sleep as long as you like.. */
+	return ULONG_MAX;
+    }
+    else if (root->head != 0 && root->head->next != 0)
+    {
+	/* other threads ready to run, don't sleep */
+	return 0;
+    }
+    else if (root->susp_head != 0)
+    {
+	/* other threads sleeping, how long until the first wakes? */
+	struct timeval now;
+	long msecs;
+	gettimeofday (&now, 0);
+	msecs = ((root->susp_head->run_at.tv_sec - now.tv_sec) * 1000
+		 + (root->susp_head->run_at.tv_usec - now.tv_usec) / 1000);
+	return MAX (msecs, 0);
+    }
+    else
+    {
+	/* whatever.. */
+	return ULONG_MAX;
     }
 }
 
@@ -1365,8 +1406,7 @@ Pass control away from the current thread if other threads are waiting
 to run.
 ::end:: */
 {
-    thread_yield ();
-    return Qnil;
+    return thread_yield () ? Qt : Qnil;
 }
 
 DEFUN("thread-delete", Fthread_delete, Sthread_delete, (repv th), rep_Subr1) /*
