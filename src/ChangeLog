@@ -1,3 +1,7 @@
+1999-09-14  John Harper  <john@dcs.warwick.ac.uk>
+
+	* regexp.c (regrepeat): workaround a bug in GCC 2.95 on sparcs
+	
 1999-09-12  John Harper  <john@dcs.warwick.ac.uk>
 
 	* version 0.5
