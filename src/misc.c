@@ -367,6 +367,36 @@ Jade was built.
     return VAL(&build_id_string);
 }
 
+_PR VALUE cmd_random(VALUE arg);
+DEFUN("random", cmd_random, subr_random, (VALUE arg), V_Subr1, DOC_random) /*
+::doc:random::
+random [LIMIT]
+
+Produce a pseudo-random number between zero and LIMIT (or the largest positive
+integer representable). If LIMIT is the symbol `t' the generator is seeded
+with the current time of day.
+::end:: */
+{
+    u_long limit, divisor, val;
+    if(arg == sym_t)
+    {
+	srand(time(0));
+	return sym_t;
+    }
+
+    if(INTP(arg))
+	limit = VINT(arg);
+    else
+	limit = LISP_MAX_INT;
+    divisor = MAX(1, RAND_MAX / limit);
+    do {
+	/* XXX: what if RAND_MAX < limit, we're fucked */
+	val = rand() / divisor;
+    } while(val >= limit);
+
+    return MAKE_INT(val);
+}
+
 void
 misc_init(void)
 {
@@ -402,4 +432,6 @@ misc_init(void)
     ADD_SUBR(subr_minor_version_number);
     ADD_SUBR(subr_version_string);
     ADD_SUBR(subr_build_id_string);
+
+    ADD_SUBR(subr_random);
 }
