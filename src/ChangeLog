@@ -1,3 +1,9 @@
+2001-09-15  John Harper  <jsh@unfactored.org>
+
+	* numbers.c (promote_to): don't canonicalize the created
+	rational, since it's denominator is known to be 1 (suggested by
+	Kevin Ryde <user42@zip.com.au>)
+
 2001-09-14  John Harper  <jsh@unfactored.org>
 
 	Integrated patch from Tom Bates <Tom.Bates@compaq.com> to fix

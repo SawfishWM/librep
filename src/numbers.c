@@ -351,7 +351,6 @@ promote_to (repv in, int type)
 	    rep_number_q *q = make_number (rep_NUMBER_RATIONAL);
 	    mpq_init (q->q);
 	    mpq_set_si (q->q, rep_INT(in), 1);
-	    mpq_canonicalize (q->q);
 	    return rep_VAL (q);
 	}
 #endif
