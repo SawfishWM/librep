@@ -144,16 +144,9 @@
 
 ;;; evaluating in the restricted environment
 
-  ;; create a piece of code that when evaluate will evaluate FORM in
-  ;; a secure environment
-  (defun gaol-trampoline (form)
-    (gaol-rebuild-environment)
-    `(save-environment
-      (set-environment t)
-      (%eval-in-structure ',form ',gaol-structure)))
-
   (defun gaol-eval (form)
-    (eval (gaol-trampoline form)))
+    (gaol-rebuild-environment)
+    (%eval-in-structure form gaol-structure))
 
   (defun gaol-load (file &optional no-error no-path-is-ignored no-suffix)
-    (gaol-eval `(,(symbol-value 'load) ',file ',no-error t ',no-suffix t))))
+    (gaol-eval `(,load ',file ',no-error t ',no-suffix t))))
