@@ -565,11 +565,10 @@ that files which shouldn't be compiled aren't."
        (cond
 	((const-variable-p form)
 	 ;; A constant already interned
-	 (comp-write-op op-push (comp-add-constant (symbol-value form)))
-	 (comp-inc-stack))
+	 (comp-compile-constant (symbol-value form)))
 	((setq val (assq form comp-const-env))
 	 ;; A constant from this file
-	 (comp-compile-form (cdr val)))
+	 (comp-compile-constant (cdr val)))
 	(t
 	 ;; Not a constant
 	 (comp-write-op op-refq (comp-add-constant form))
@@ -641,6 +640,22 @@ that files which shouldn't be compiled aren't."
     (comp-write-op op-nil))
    ((eq form t)
     (comp-write-op op-t))
+   ((and (integerp form) (<= form 32767) (>= form -32768))
+    ;; use one of the pushi instructions
+    (cond ((zerop form)
+	   (comp-write-op op-pushi-0))
+	  ((= form 1)
+	   (comp-write-op op-pushi-1))
+	  ((= form 2)
+	   (comp-write-op op-pushi-2))
+	  ((= form -1)
+	   (comp-write-op op-pushi-minus-1))
+	  ((= form -2)
+	   (comp-write-op op-pushi-minus-2))
+	  ((and (<= form 127) (>= form -128))
+	   (comp-write-raw-op op-pushi (logand form 255)))
+	  (t
+	   (comp-write-raw-op op-pushi-pair (lsh form -8) (logand form 255)))))
    (t
     (comp-write-op op-push (comp-add-constant form))))
   (comp-inc-stack))
@@ -768,6 +783,11 @@ that files which shouldn't be compiled aren't."
     (comp-byte-out (logand arg 0xff)))
    (t
     (comp-error "Opcode overflow!"))))
+
+(defun comp-write-raw-op (byte0 &optional byte1 byte2)
+  (comp-byte-out byte0)
+  (and byte1 (comp-byte-out byte1))
+  (and byte2 (comp-byte-out byte2)))
 
 ;; Output a branch instruction to the label LABEL, if LABEL has not been
 ;; located yet this branch is recorded for later backpatching.
