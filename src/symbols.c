@@ -64,7 +64,6 @@ repv rep_obarray;
 /* Plist storage */
 static repv plist_structure;
 
-DEFSYM(nil, "nil");
 DEFSYM(t, "t");
 
 DEFSYM(documentation, "documentation");
@@ -304,8 +303,7 @@ OBARRAY, then return it.
 {
     repv sym;
     rep_DECLARE1(name, rep_STRINGP);
-    if(!(sym = Ffind_symbol(name, ob))
-       || (rep_NILP(sym) && strcmp(rep_STR(name), "nil")))
+    if(!(sym = Ffind_symbol(name, ob)) || (rep_NILP(sym)))
     {
 	sym = Fmake_symbol(name);
 	if(sym)
@@ -1304,25 +1302,14 @@ rep_symbols_init(void)
 {
     repv tem;
 
-    /* Fiddly details of initialising the first symbol. We initialise
-       all fields in case it was dumped. */
-    Qnil = Fintern(rep_VAL(&str_nil), rep_obarray);
-    rep_mark_static(&Qnil);
+    rep_pre_datums_init ();		/* initializes Qnil */
     rep_INTERN(t);
-
     rep_pre_structures_init ();
 
     rep_USE_DEFAULT_ENV;
     rep_special_bindings = Qnil;
     rep_mark_static (&rep_env);
     rep_mark_static (&rep_special_bindings);
-
-    tem = rep_push_structure ("rep.lang.interpreter");
-    Fstructure_set (rep_structure, Qnil, Qnil);
-    Fstructure_set (rep_structure, Qt, Qt);
-    Fmake_binding_immutable (Qnil);
-    Fmake_binding_immutable (Qt);
-    rep_pop_structure (tem);
 
     plist_structure = Fmake_structure (Qnil, Qnil, Qnil, Qnil);
     rep_mark_static (&plist_structure);
