@@ -1178,32 +1178,6 @@ Return the element of SEQUENCE at position INDEX (counting from zero).
 	return(Faref(seq, index));
 }
 
-DEFUN("prog1", Fprog1, Sprog1, (repv args, repv tail_posn), rep_SF) /*
-::doc:prog1::
-prog1 FORM1 FORMS...
-
-First evals FORM1 then FORMS, returns the value that FORM1 gave.
-::end:: */
-{
-    if(rep_CONSP(args))
-    {
-	repv res;
-	rep_GC_root gc_args, gc_res;
-	rep_PUSHGC(gc_args, args);
-	res = rep_eval(rep_CAR(args), Qnil);
-	if(res)
-	{
-	    rep_PUSHGC(gc_res, res);
-	    if(!Fprogn(rep_CDR(args), Qnil))
-		res = rep_NULL;
-	    rep_POPGC;
-	}
-	rep_POPGC;
-	return(res);
-    }
-    return rep_signal_missing_arg(1);
-}
-
 DEFUN("cond", Fcond, Scond, (repv args, repv tail_posn), rep_SF) /*
 ::doc:cond::
 cond (CONDITION FORMS... ) ...
@@ -2129,45 +2103,6 @@ undefined whether or not CLEANUP-FORMS will be evaluated.
     return rep_signal_missing_arg(1);
 }
 
-DEFUN("with-object", Fwith_object, Swith_object,
-      (repv args, repv tail_posn), rep_SF) /*
-::doc:with-object::
-with-object ARG FORMS...
-
-Evaluate ARG and make its value ``current'' in some way meaningful for
-the data type, evaluate all FORMS, then return to the old current value
-of whatever was changed. Return the value of the last FORM evaluated.
-::end:: */
-{
-    repv res;
-    if(rep_CONSP(args))
-    {
-	rep_GC_root gc_args;
-	rep_PUSHGC(gc_args, args);
-	res = rep_eval(rep_CAR(args), Qnil);
-	if (res != rep_NULL)
-	{
-	    repv handle = rep_bind_object(res);
-	    if (handle != rep_NULL)
-	    {
-		rep_GC_root gc_handle;
-		rep_PUSHGC(gc_handle, handle);
-		res = Fprogn(rep_CDR(args), Qnil);
-		rep_POPGC;
-		rep_PUSHGC(gc_handle, res);
-		rep_unbind_object(handle);
-		rep_POPGC;
-	    }
-	    else
-		res = rep_NULL;
-	}
-	rep_POPGC;
-    }
-    else
-	res = rep_signal_arg_error(res, 1);
-    return res;
-}
-
 DEFSTRING(jl, ".jl");
 DEFSTRING(jlc, ".jlc");
 
@@ -2215,7 +2150,6 @@ rep_lispcmds_init(void)
     rep_ADD_SUBR(Slength);
     rep_ADD_SUBR(Scopy_sequence);
     rep_ADD_SUBR(Selt);
-    rep_ADD_SUBR(Sprog1);
     rep_ADD_SUBR(Scond);
     rep_ADD_SUBR(Scase);
     rep_ADD_SUBR(Sapply);
@@ -2249,7 +2183,6 @@ rep_lispcmds_init(void)
     rep_ADD_SUBR(Scatch);
     rep_ADD_SUBR(Sthrow);
     rep_ADD_SUBR(Sunwind_protect);
-    rep_ADD_SUBR(Swith_object);
 
     rep_INTERN(provide);
 
