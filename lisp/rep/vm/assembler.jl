@@ -97,9 +97,7 @@
 
       (define (emit-insn insn &optional arg)
 	(let ((op (bytecode-ref insn)))
-	  (if (and (>= op (bytecode last-with-args))
-		   (not (and (>= op (bytecode first-with-args-2))
-			     (< op (bytecode last-with-args-2)))))
+	  (if (>= op (bytecode last-with-args))
 	      (progn
 		;; ``normal'' one-byte insn encoding
 		(emit-byte op)
@@ -194,7 +192,7 @@
 
 		  ((eq (car insn) 'push-label) (emit-push-label (cadr insn)))
 
-		  ((memq (car insn) '(refq setq refg setg bindspec))
+		  ((memq (car insn) '(refg setg))
 		   ;; instruction with constant
 		   (emit-insn (car insn) (get-const-id (cadr insn))))
 

@@ -35,8 +35,8 @@
     (open rep)
 
   ;; Instruction set version
-  (defconst bytecode-major 10)
-  (defconst bytecode-minor 1)
+  (defconst bytecode-major 11)
+  (defconst bytecode-minor 0)
 
   ;; macro to get a named bytecode
   (defmacro bytecode (name)
@@ -47,26 +47,21 @@
 	(error "No such instruction: %s" name)))
 
   (define bytecode-alist
-    '((call . #x08)			;call (stk[n] stk[n-1] ... stk[0])
+    '((slot-ref . #x00)
+      (call . #x08)			;call (stk[n] stk[n-1] ... stk[0])
 					; pops n values, replacing the
 					; function with the result.
       (push . #x10)			;pushes constant # n
-      (refq . #x18)			;pushes val of symbol n (in c-v)
-      (setq . #x20)			;sets sym n (in c-v) to stk[0]; pop
-      (list . #x28)			;makes top n items into a list
+      (refg . #x18)			;pushes val of symbol n (in c-v)
+      (setg . #x20)			;sets sym n (in c-v) to stk[0]; pop
+      (setn . #x28)
+      (slot-set . #x30)
       (refn . #x38)
-      (setn . #xe8)
-      (refg . #xe0)
-      (setg . #xd8)
-      (bindspec . #xd0)
 
       (last-with-args . #x3f)
 
-      (first-with-args-2 . #xd0)
-      (last-with-args-2 . #xef)
-
       (ref . #x40)			;replace symbol with it's value
-      (set . #x41)
+      (%set . #x41)
       (fluid-ref . #x42)
       (enclose . #x43)
       (init-bind . #x44)		;initialise a new set of bindings
@@ -209,8 +204,13 @@
 
       (test-scm . #xc4)
       (test-scm-f . #xc5)
-
       (%define . #xc6)
+      (spec-bind . #xc7)
+      (set . #xc8)
+
+      (required-arg . #xc9)
+      (optional-arg . #xca)
+      (rest-arg . #xcb)
 
       (last-before-jmps . #xf7)
 
@@ -235,12 +235,12 @@
   ;; pointer. i.e. +1 means the instruction always increases the net
   ;; stack position by one
   (define byte-insn-stack-delta
-    [nil nil nil nil nil nil nil nil	;#x00
+    [+1  nil nil nil nil nil nil nil	;#x00
      nil nil nil nil nil nil nil nil
      +1  nil nil nil nil nil nil nil	;#x10
      +1  nil nil nil nil nil nil nil
      -1  nil nil nil nil nil nil nil	;#x20
-     nil nil nil nil nil nil nil nil
+     -1  nil nil nil nil nil nil nil
      -1  nil nil nil nil nil nil nil	;#x30
      +1  nil nil nil nil nil nil nil
      0   -1  0   0   0   0   +1  0	;#x40
@@ -259,11 +259,11 @@
      0   0   0   0   0   0   0   0
      -1  0   0   0   0   0   0   0	;#xb0
      0   -1  0   -1  -1  0   0   nil
-     -1  -2  -1  -1  0   0   -1  nil	;#xc0
+     -1  -2  -1  -1  0   0   -1  -2	;#xc0
+     -1  +1  +1  +1  nil nil nil nil
+     nil nil nil nil nil nil nil nil	;#xd0
      nil nil nil nil nil nil nil nil
-     -1  nil nil nil nil nil nil nil	;#xd0
-     -1  nil nil nil nil nil nil nil
-     +1  nil nil nil nil nil nil nil	;#xe0
+     -1  nil nil nil nil nil nil nil	;#xe0
      -1  nil nil nil nil nil nil nil
      nil nil nil nil nil nil nil nil	;#xf0
      -1  nil nil 0   -1  -1  nil nil]))

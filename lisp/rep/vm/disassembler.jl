@@ -32,15 +32,15 @@
 
   ;; Lookup table of strings naming instructions
   (define disassembler-opcodes
-   [ nil nil nil nil nil nil nil nil	; #x00
+   [ "slot-ref" nil nil nil nil nil nil nil	; #x00
      "call" nil nil nil nil nil nil nil
      "push" nil nil nil nil nil nil nil	; #x10
-     "refq" nil nil nil nil nil nil nil
-     "setq" nil nil nil nil nil nil nil	; #x20
-     "list" nil nil nil nil nil nil nil
-     nil nil nil nil nil nil nil nil	; #x30
+     "refg" nil nil nil nil nil nil nil
+     "setg" nil nil nil nil nil nil nil	; #x20
+     "setn" nil nil nil nil nil nil nil
+     "slot-set" nil nil nil nil nil nil nil	; #x30
      "refn" nil nil nil nil nil nil nil
-     "ref" "set" "fluid-ref" "enclose"
+     "ref" "%set" "fluid-ref" "enclose"
      "init-bind" "unbind" "dup" "swap"	; #x40
      "pop" "push\t()" "push\tt" "cons"
      "car" "cdr" "rplaca" "rplacd"
@@ -71,12 +71,12 @@
      "sqrt" "expt" "swap2" "mod"
      "make-closure" "unbindall-0" "closurep" "pop-all"
      "fluid-set" "fluid-bind" "memql" "num-eq"
-     "test-scm" "test-scm-f" "%define" nil	; #xc0
-     nil nil nil nil nil nil nil nil
+     "test-scm" "test-scm-f" "%define" "spec-bind"	; #xc0
+     "set" "required-arg" "optional-arg" "rest-arg" nil nil nil nil
      nil nil nil nil nil nil nil nil	; #xd0
      nil nil nil nil nil nil nil nil
      nil nil nil nil nil nil nil nil	; #xe0
-     "setn" nil nil nil nil nil nil nil
+     nil nil nil nil nil nil nil nil
      nil nil nil nil nil nil nil nil	; #xf0
      "ejmp\t%d" "jpn\t%d" "jpt\t%d" "jmp\t%d" "jn\t%d" "jt\t%d" "jnp\t%d" "jtp\t%d" ])
 
@@ -90,9 +90,7 @@
 	(setq c (aref code-string i))
 	(format stream "\n%s%d\t\t" indent i)
 	(cond
-	 ((or (< c (bytecode last-with-args))
-	      (and (>= c (bytecode first-with-args-2))
-		   (<= c (bytecode last-with-args-2))))
+	 ((< c (bytecode last-with-args))
 	  (setq op (logand c #xf8))
 	  (cond
 	   ((< (logand c #x07) 6)
@@ -116,24 +114,20 @@
 		    (format stream "push\t[%d] bytecode...\n" arg)
 		    (disassemble argobj stream (1+ depth)))
 		(format stream "push\t[%d] %S" arg (aref consts arg)))))
-	   ((= op (bytecode refq))
-	    (format stream "refq\t[%d] %S" arg (aref consts arg)))
-	   ((= op (bytecode setq))
-	    (format stream "setq\t[%d] %S" arg (aref consts arg)))
-	   ((= op (bytecode list))
-	    (format stream "list\t#%d" arg))
 	   ((= op (bytecode bind))
 	    (format stream "bind\t[%d] %S" arg (aref consts arg)))
 	   ((= op (bytecode refn))
 	    (format stream "refn\t#%d" arg))
 	   ((= op (bytecode setn))
 	    (format stream "setn\t#%d" arg))
+	   ((= op (bytecode slot-ref))
+	    (format stream "slot-ref #%d" arg))
+	   ((= op (bytecode slot-set))
+	    (format stream "slot-set #%d" arg))
 	   ((= op (bytecode refg))
 	    (format stream "refg\t[%d] %S" arg (aref consts arg)))
 	   ((= op (bytecode setg))
-	    (format stream "setg\t[%d] %S" arg (aref consts arg)))
-	   ((= op (bytecode bindspec))
-	    (format stream "bindspec [%d] %S" arg (aref consts arg)))))
+	    (format stream "setg\t[%d] %S" arg (aref consts arg)))))
 	 ((> c (bytecode last-before-jmps))
 	  (setq arg (logior (ash (aref code-string (1+ i)) 8)
 			    (aref code-string (+ i 2)))
@@ -197,29 +191,19 @@
 	      consts (nth 2 arg)
 	      stack (nth 3 arg)))
        (t
-	(setq code-string (aref arg 1)
-	      consts (aref arg 2))
+	(setq code-string (aref arg 0)
+	      consts (aref arg 1))
 	(when (zerop depth)
-	  (let ((spec (aref arg 0)))
-	    (if (listp spec)
-		(format stream "Arguments: %s\n" spec)
-	      (write stream "Arguments: ")
-	      (unless (zerop (logand spec #xfff))
-		(format stream "%s required " (logand spec #xfff)))
-	      (unless (zerop (logand (ash spec -12) #xfff))
-		(format stream "%s optional " (logand (ash spec -12) #xfff)))
-	      (unless (zerop (ash spec -24))
-		(write stream "1 rest arg"))
-	      (write stream #\newline)))
-	  (let ((spec (and (> (length arg) 5) (aref arg 5)))
-		(doc (and (> (length arg) 4) (aref arg 4))))
+	  (let ((spec (and (> (length arg) 4) (aref arg 4)))
+		(doc (and (> (length arg) 3) (aref arg 3))))
 	    (when spec
 	      (format stream "Interactive spec: %S\n" spec))
 	    (when doc
 	      (format stream "Doc string: %S\n" doc)))
-	  (setq stack (aref arg 3)))))
+	  (setq stack (aref arg 2)))))
       (when (zerop depth)
-	(format stream "%d bytes, %d constants, and (%d,%d) stack slots\n"
+	(format stream "%d bytes, %d constants, and (%d,%d,%d) stack slots\n"
 		(length code-string) (length consts)
-		(logand stack #xffff) (ash stack -16)))
+		(logand stack #x3ff) (logand (ash stack -10) #x3ff)
+		(ash stack -20)))
       (disassemble-1 code-string consts stream depth))))

@@ -110,6 +110,7 @@
   (define byte-side-effect-free-insns
     (list* (bytecode refq)
 	   (bytecode refn)
+	   (bytecode slot-ref)
 	   (bytecode refg)
 	   (bytecode ref)
 	   (bytecode nth)
@@ -190,13 +191,15 @@
   (define byte-varref-insns
     (list (bytecode refq)
 	  (bytecode refn)
-	  (bytecode refg)))
+	  (bytecode refg)
+	  (bytecode slot-ref)))
 
   ;; list of all varset instructions
   (define byte-varset-insns
     (list (bytecode setq)
 	  (bytecode setn)
-	  (bytecode setg)))
+	  (bytecode setg)
+	  (bytecode slot-set)))
 
   ;; list of all varbind instructions
   (define byte-varbind-insns

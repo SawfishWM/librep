@@ -21,8 +21,8 @@
 #ifndef BYTECODES_H
 #define BYTECODES_H
 
-#define BYTECODE_MAJOR_VERSION 10
-#define BYTECODE_MINOR_VERSION 1
+#define BYTECODE_MAJOR_VERSION 11
+#define BYTECODE_MINOR_VERSION 0
 
 /* Number of bits encoded in each extra opcode forming the argument. */
 #define ARG_SHIFT    8
@@ -44,6 +44,17 @@
 
 /* Opcodes which have an argument encoded in them */
 
+#define OP_SLOT_REF 0x00
+
+#define OP_SLOT_REF_0 0x00
+#define OP_SLOT_REF_1 0x01
+#define OP_SLOT_REF_2 0x02
+#define OP_SLOT_REF_3 0x03
+#define OP_SLOT_REF_4 0x04
+#define OP_SLOT_REF_5 0x05
+#define OP_SLOT_REF_6 0x06
+#define OP_SLOT_REF_7 0x07
+
 /* Call function on top of stack with following ARG parameters. Leave
    result on stack. */
 #define OP_CALL 0x08
@@ -51,15 +62,26 @@
 /* Push const[ARG] onto the stack. */
 #define OP_PUSH 0x10
 
-/* Push the symbol-value of the symbol const[ARG] onto the stack. */
-#define OP_REFQ 0x18
+/* Push the value of the symbol const[ARG] onto the stack. */
+#define OP_REFG 0x18
 
-/* Set the symbol-value of symbol const[ARG] to the value on the
+/* Set the value of symbol const[ARG] to the value on the
    stack. Pops the value off the stack. */
-#define OP_SETQ 0x20
+#define OP_SETG 0x20
 
-/* Push the list formed from the top ARG values on the stack. */
-#define OP_LIST 0x28
+/* Sets the ARG'th value in the lexical environment. Pops value */
+#define OP_SETN 0x28
+
+#define OP_SLOT_SET 0x30
+
+#define OP_SLOT_SET_0 0x30
+#define OP_SLOT_SET_1 0x31
+#define OP_SLOT_SET_2 0x32
+#define OP_SLOT_SET_3 0x33
+#define OP_SLOT_SET_4 0x34
+#define OP_SLOT_SET_5 0x35
+#define OP_SLOT_SET_6 0x36
+#define OP_SLOT_SET_7 0x37
 
 /* Pushes the ARG'th value in the lexical environment */
 #define OP_REFN 0x38
@@ -73,25 +95,13 @@
 #define OP_REFN_6 0x3e
 #define OP_REFN_7 0x3f
 
-/* Sets the ARG'th value in the lexical environment. Pops value */
-#define OP_SETN 0xe8
-
-/* Pushes the global lexical value of symbol const[ARG] */
-#define OP_REFG 0xe0
-
-/* Pops the stack, and sets the global lexical value of symbol const[ARG] */
-#define OP_SETG 0xd8
-
-/* Pops the stack, does a special binding to symbol const[ARG] */
-#define OP_BINDSPEC 0xd0
-
 #define OP_LAST_WITH_ARGS 0x3f
 
 
 /* Opcodes without arguments. */
 
 #define OP_REF 0x40			/* push (symbol-value pop) */
-#define OP_SET 0x41			/* call-2 set */
+#define OP__SET 0x41			/* (set stk[1] stk[0]); pop; pop */
 #define OP_FLUID_REF 0x42		/* call-1 fluid-ref */
 #define OP_ENCLOSE 0x43			/* push (make-closure pop[1] nil) */
 #define OP_INIT_BIND 0x44		/* new-binding-set */
@@ -241,11 +251,15 @@
 
 #define OP_MEMQL 0xc2			/* call-2 memql */
 #define OP_NUM_EQ 0xc3
-
 #define OP_TEST_SCM 0xc4
 #define OP_TEST_SCM_F 0xc5
-
 #define OP__DEFINE 0xc6
+#define OP_SPEC_BIND 0xc7
+#define OP_SET 0xc8
+
+#define OP_REQUIRED_ARG 0xc9
+#define OP_OPTIONAL_ARG 0xca
+#define OP_REST_ARG 0xcb
 
 
 /* Jump opcodes */
