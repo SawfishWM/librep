@@ -143,7 +143,7 @@ hash_string (register u_char *ptr)
 }
 
 DEFUN("string-hash", Fstring_hash, Sstring_hash, (repv string), rep_Subr1) /*
-::doc:string-hash::
+::doc:rep.data.tables#string-hash::
 string-hash STRING
 
 Return a positive fixnum somehow related to the contents of STRING,
@@ -155,7 +155,7 @@ such that (string= X Y) implies (= (string-hash X) (string-hash Y)).
 }
 
 DEFUN("symbol-hash", Fsymbol_hash, Ssymbol_hash, (repv sym), rep_Subr1) /*
-::doc:symbol-hash::
+::doc:rep.data.tables#symbol-hash::
 symbol-hash SYMBOL
 
 Return a positive fixnum somehow related to the name of SYMBOL.
@@ -166,7 +166,7 @@ Return a positive fixnum somehow related to the name of SYMBOL.
 }
 
 DEFUN("eq-hash", Feq_hash, Seq_hash, (repv value), rep_Subr1) /*
-::doc:eq-hash::
+::doc:rep.data.tables#eq-hash::
 eq-hash ARG
 
 Return a positive fixnum somehow related to object ARG, such that (eq X
@@ -179,7 +179,7 @@ Y) implies (= (eq-hash X) (eq-hash Y)).
 
 /* XXX This is probably _very_ sub-optimal.. */
 DEFUN("equal-hash", Fequal_hash, Sequal_hash, (repv x, repv n_), rep_Subr2) /*
-::doc:equal-hash::
+::doc:rep.data.tables#equal-hash::
 equal-hash ARG
 
 Return a positive fixnum somehow related to ARG, such that (equal X Y)
@@ -232,7 +232,7 @@ implies (= (equal-hash X) (equal-hash Y)).
 
 DEFUN("make-table", Fmake_table, Smake_table,
       (repv hash_fun, repv cmp_fun, repv is_weak), rep_Subr3) /*
-::doc:make-table::
+::doc:rep.data.tables#make-table::
 make-table HASH-FUNCTION COMPARE-FUNCTION
 
 Create and return a new hash table. When storing and referencing keys
@@ -261,7 +261,7 @@ compare two keys (should return true if the keys are considered equal).
 
 DEFUN("make-weak-table", Fmake_weak_table, Smake_weak_table,
       (repv hash_fun, repv cmp_fun), rep_Subr2) /*
-::doc:make-weak-table::
+::doc:rep.data.tables#make-weak-table::
 make-weak-table HASH-FUNCTION COMPARE-FUNCTION
 
 Similar to `make-table, except that key-value pairs stored in the table
@@ -277,7 +277,7 @@ it being garbage collected.
 }
 
 DEFUN("tablep", Ftablep, Stablep, (repv arg), rep_Subr1) /*
-::doc:tablep::
+::doc:rep.data.tables#tablep::
 tablep ARG
 
 Return true if ARG is a hash table.
@@ -344,7 +344,7 @@ lookup (repv tab, repv key)
 }
 
 DEFUN("table-ref", Ftable_ref, Stable_ref, (repv tab, repv key), rep_Subr2) /*
-::doc:table-ref::
+::doc:rep.data.tables#table-ref::
 table-ref TABLE KEY
 
 Return the value stored in hash table TABLE indexed by object KEY.
@@ -359,7 +359,7 @@ Returns false if no such value exists.
 
 DEFUN("table-bound-p", Ftable_bound_p,
       Stable_bound_p, (repv tab, repv key), rep_Subr2) /*
-::doc:table-bound-p::
+::doc:rep.data.tables#table-bound-p::
 table-bound-p TABLE KEY
 
 Returns true if the hash table TABLE contains a value associated with
@@ -374,7 +374,7 @@ KEY.
 
 DEFUN("table-set", Ftable_set, Stable_set,
       (repv tab, repv key, repv value), rep_Subr3) /*
-::doc:table-set::
+::doc:rep.data.tables#table-set::
 table-set TABLE KEY VALUE
 
 Associate VALUE with KEY in hash table TABLE. Returns VALUE.
@@ -442,7 +442,7 @@ Associate VALUE with KEY in hash table TABLE. Returns VALUE.
 
 DEFUN("table-unset", Ftable_unset, Stable_unset,
       (repv tab, repv key), rep_Subr2) /*
-::doc:table-unset::
+::doc:rep.data.tables#table-unset::
 table-unset TABLE KEY
 
 Remove any value stored in TABLE associated with KEY.
@@ -471,7 +471,7 @@ Remove any value stored in TABLE associated with KEY.
 
 DEFUN("table-walk", Ftable_walk, Stable_walk,
       (repv fun, repv tab), rep_Subr2) /*
-::doc:table-walk::
+::doc:rep.data.tables#table-walk::
 table-walk FUNCTION TABLE
 
 Call FUNCTION for every key-value pair stored in hash table TABLE. For

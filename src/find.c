@@ -249,7 +249,7 @@ rep_pop_regexp_data(void)
 /* Simple string matching */
 
 DEFUN("string-match", Fstring_match, Sstring_match, (repv re, repv str, repv start, repv nocasep), rep_Subr4) /*
-::doc:string-match::
+::doc:rep.regexp#string-match::
 string-match REGEXP STRING [START] [IGNORE-CASE-P]
 
 Return t if REGEXP matches STRING. Updates the match data.
@@ -283,7 +283,7 @@ still case-significant.
 }
 
 DEFUN("string-looking-at", Fstring_looking_at, Sstring_looking_at, (repv re, repv string, repv start, repv nocasep), rep_Subr4) /*
-::doc:string-looking-at::
+::doc:rep.regexp#string-looking-at::
 string-looking-at REGEXP STRING [START] [IGNORE-CASE-P]
 
 Returns t if REGEXP matches the STRING (starting at character START).
@@ -313,7 +313,7 @@ Updates the match data.
 }
 
 DEFUN("expand-last-match", Fexpand_last_match, Sexpand_last_match, (repv template), rep_Subr1) /*
-::doc:expand-last-match::
+::doc:rep.regexp#expand-last-match::
 expand-last-match TEMPLATE-STRING
 
 Expand the saved expressions from the most recent successfully matched
@@ -337,7 +337,7 @@ the following escape sequences,
 }
 
 DEFUN("match-start", Fmatch_start, Smatch_start, (repv exp), rep_Subr1) /*
-::doc:match-start::
+::doc:rep.regexp#match-start::
 match-start [EXPRESSION-INDEX]
 
 Return the position which the EXPRESSION-INDEX'th parenthesised expression
@@ -372,7 +372,7 @@ buffer, or an integer if the last match was in a string (i.e. regexp-match).
 }
 	
 DEFUN("match-end", Fmatch_end, Smatch_end, (repv exp), rep_Subr1) /*
-::doc:match-end::
+::doc:rep.regexp#match-end::
 match-end [EXPRESSION-INDEX]
 
 Return the position which the EXPRESSION-INDEX'th parenthesised expression
@@ -407,7 +407,7 @@ buffer, or an integer if the last match was in a string (i.e. regexp-match).
 }
 
 DEFUN("quote-regexp", Fquote_regexp, Squote_regexp, (repv str), rep_Subr1) /*
-::doc:quote-regexp::
+::doc:rep.regexp#quote-regexp::
 quote-regexp STRING
 
 Returns a new version of STRING, any characters which the regexp routines
@@ -477,7 +477,7 @@ error:
 
 DEFUN("regexp-cache-control", Fregexp_cache_control,
       Sregexp_cache_control, (repv limit), rep_Subr1) /*
-::doc:regexp-cache-control::
+::doc:rep.regexp#regexp-cache-control::
 regexp-cache-control [SOFT-LIMIT]
 
 If SOFT-LIMIT is defined, it specifies the maximum number of bytes that

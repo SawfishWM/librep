@@ -720,7 +720,7 @@ rep_print_allocations(void)
 
 DEFUN("unix-print-allocations", Funix_print_allocations,
       Sunix_print_allocations, (void), rep_Subr0) /*
-::doc:unix-print-allocations::
+::doc:rep.lang.debug#unix-print-allocations::
 unix-print-allocations
 
 Output a list of all allocated memory blocks to standard error.

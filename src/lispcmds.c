@@ -93,7 +93,7 @@ set to the name of the file being loaded.
 ::end:: */
 
 DEFUN("quote", Fquote, Squote, (repv args, repv tail_posn), rep_SF) /*
-::doc:quote::
+::doc:rep.lang.interpreter#quote::
 quote ARG
 'ARG
 
@@ -106,7 +106,7 @@ Returns ARG.
 }
 
 DEFUN("lambda", Flambda, Slambda, (repv args, repv tail_posn), rep_SF) /*
-::doc:lambda::
+::doc:rep.lang.interpreter#lambda::
 lambda LAMBDA-LIST BODY...
 
 Evaluates to an anonymous function.
@@ -119,7 +119,7 @@ Evaluates to an anonymous function.
 }
 
 DEFUN("car", Fcar, Scar, (repv cons), rep_Subr1) /*
-::doc:car::
+::doc:rep.data#car::
 car CONS-CELL
 
 Returns the value stored in the car slot of CONS-CELL, or nil if CONS-CELL
@@ -131,7 +131,7 @@ is nil.
     return(Qnil);
 }
 DEFUN("cdr", Fcdr, Scdr, (repv cons), rep_Subr1) /*
-::doc:cdr::
+::doc:rep.data#cdr::
 cdr CONS-CELL
 
 Returns the value stored in the cdr slot of CONS-CELL, or nil if CONS-CELL
@@ -144,7 +144,7 @@ is nil.
 }
 
 DEFUN("list", Flist, Slist, (repv args), rep_SubrN) /*
-::doc:list::
+::doc:rep.data#list::
 list ARGS...
 
 Returns a new list with elements ARGS...
@@ -166,7 +166,7 @@ Returns a new list with elements ARGS...
 }
 
 DEFUN("list*", Flist_star, Slist_star, (repv args), rep_SubrN) /*
-::doc:list*::
+::doc:rep.data#list*::
 list* ARG1 ARG2 ... ARGN
 
 Returns a new list (ARG1 ARG2 ... ARGN-1 . ARGN). That is, the same as from
@@ -194,7 +194,7 @@ Returns a new list (ARG1 ARG2 ... ARGN-1 . ARGN). That is, the same as from
 }
 
 DEFUN("make-list", Fmake_list, Smake_list, (repv len, repv init), rep_Subr2) /*
-::doc:make-list::
+::doc:rep.data#make-list::
 make-list LENGTH [INITIAL-repv]
 
 Returns a new list with LENGTH members, each of which is initialised to
@@ -212,7 +212,7 @@ INITIAL-repv, or nil.
 }
 
 DEFUN("append", Fappend, Sappend, (repv args), rep_SubrN) /*
-::doc:append::
+::doc:rep.data#append::
 append LISTS...
 
 Non-destructively concatenates each of it's argument LISTS... into one
@@ -248,7 +248,7 @@ new list which is returned.
 }
 
 DEFUN("nconc", Fnconc, Snconc, (repv args), rep_SubrN) /*
-::doc:nconc::
+::doc:rep.data#nconc::
 nconc LISTS...
 
 Destructively concatenates each of it's argument LISTS... into one new
@@ -286,7 +286,7 @@ to the beginning of the next list. Returns the new list.
 }
 
 DEFUN("rplaca", Frplaca, Srplaca, (repv cons, repv car), rep_Subr2) /*
-::doc:rplaca::
+::doc:rep.data#rplaca::
 rplaca CONS-CELL NEW-CAR
 
 Sets the value of the car slot in CONS-CELL to NEW-CAR.
@@ -301,7 +301,7 @@ Returns the CONS-CELL.
 }
 
 DEFUN("rplacd", Frplacd, Srplacd, (repv cons, repv cdr), rep_Subr2) /*
-::doc:rplacd::
+::doc:rep.data#rplacd::
 rplacd CONS-CELL NEW-CDR
 
 Sets the value of the cdr slot in CONS-CELL to NEW-CDR.
@@ -316,7 +316,7 @@ Returns the CONS-CELL.
 }
 
 DEFUN("reverse", Freverse, Sreverse, (repv head), rep_Subr1) /*
-::doc:reverse::
+::doc:rep.data#reverse::
 reverse LIST
 
 Returns a new list which is a copy of LIST except that the members are in
@@ -337,7 +337,7 @@ reverse order.
 }
 
 DEFUN("nreverse", Fnreverse, Snreverse, (repv head), rep_Subr1) /*
-::doc:nreverse::
+::doc:rep.data#nreverse::
 nreverse LIST
 
 Returns LIST altered so that it's members are in reverse order to what they
@@ -366,7 +366,7 @@ were. This function is destructive towards it's argument.
 }
 
 DEFUN("assoc", Fassoc, Sassoc, (repv elt, repv list), rep_Subr2) /*
-::doc:assoc::
+::doc:rep.data#assoc::
 assoc ELT ASSOC-LIST
 
 Searches ASSOC-LIST for a list whose first element is ELT. `assoc' uses
@@ -392,7 +392,7 @@ For example,
 }
 
 DEFUN("assq", Fassq, Sassq, (repv elt, repv list), rep_Subr2) /*
-::doc:assq::
+::doc:rep.data#assq::
 assq ELT ASSOC-LIST
 
 Searches ASSOC-LIST for a list whose first element is ELT. `assq' uses `eq'
@@ -415,7 +415,7 @@ association.
 }
 
 DEFUN("rassoc", Frassoc, Srassoc, (repv elt, repv list), rep_Subr2) /*
-::doc:rassoc::
+::doc:rep.data#rassoc::
 rassoc ELT ASSOC-LIST
 
 Searches ASSOC-LIST for a cons-cell whose cdr element is `equal' to ELT. 
@@ -440,7 +440,7 @@ For example,
 }
 
 DEFUN("rassq", Frassq, Srassq, (repv elt, repv list), rep_Subr2) /*
-::doc:rassq::
+::doc:rep.data#rassq::
 rassq ELT ASSOC-LIST
 
 Searches ASSOC-LIST for a cons-cell whose cdr is `eq' to ELT.
@@ -462,7 +462,7 @@ Returns the first matching cons-cell, else nil.
 }
 
 DEFUN("nth", Fnth, Snth, (repv index, repv list), rep_Subr2) /*
-::doc:nth::
+::doc:rep.data#nth::
 nth INDEX LIST
 
 Returns the INDEXth element of LIST. The first element has an INDEX of zero.
@@ -485,7 +485,7 @@ Returns the INDEXth element of LIST. The first element has an INDEX of zero.
 }
 
 DEFUN("nthcdr", Fnthcdr, Snthcdr, (repv index, repv list), rep_Subr2) /*
-::doc:nthcdr::
+::doc:rep.data#nthcdr::
 nthcdr INDEX LIST
 
 Returns the INDEXth cdr of LIST. The first is INDEX zero.
@@ -508,7 +508,7 @@ Returns the INDEXth cdr of LIST. The first is INDEX zero.
 }
 
 DEFUN("last", Flast, Slast, (repv list), rep_Subr1) /*
-::doc:last::
+::doc:rep.data#last::
 last LIST
 
 Returns the last element of LIST.
@@ -530,7 +530,7 @@ Returns the last element of LIST.
 }
 
 DEFUN("mapcar", Fmapcar, Smapcar, (repv fun, repv list), rep_Subr2) /*
-::doc:mapcar::
+::doc:rep.data#mapcar::
 mapcar FUNCTION LIST
 
 Calls FUNCTION-NAME with each element of LIST as an argument in turn and
@@ -565,7 +565,7 @@ returns a new list constructed from the results, ie,
 }
 
 DEFUN("mapc", Fmapc, Smapc, (repv fun, repv list), rep_Subr2) /*
-::doc:mapc::
+::doc:rep.data#mapc::
 mapc FUNCTION LIST
 
 Applies FUNCTION to each element in LIST, discards the results.
@@ -588,7 +588,7 @@ Applies FUNCTION to each element in LIST, discards the results.
 }
 
 DEFUN("filter", Ffilter, Sfilter, (repv pred, repv list), rep_Subr2) /*
-::doc:filter::
+::doc:rep.data#filter::
 filter PREDICATE LIST
 
 Return a new list, consisting of the elements in LIST which the function
@@ -627,7 +627,7 @@ PREDICATE returns t when applied to; i.e. something like
 }
 
 DEFUN("member", Fmember, Smember, (repv elt, repv list), rep_Subr2) /*
-::doc:member::
+::doc:rep.data#member::
 member ELT LIST
 
 If ELT is a member of list LIST then return the tail of the list starting
@@ -651,7 +651,7 @@ from the matched ELT, ie,
 }
 
 DEFUN("memq", Fmemq, Smemq, (repv elt, repv list), rep_Subr2) /*
-::doc:memq::
+::doc:rep.data#memq::
 memq ELT LIST
 
 If ELT is a member of list LIST then return the tail of the list starting
@@ -675,7 +675,7 @@ from the matched ELT, ie,
 }
 
 DEFUN("memql", Fmemql, Smemql, (repv elt, repv list), rep_Subr2) /*
-::doc:memql::
+::doc:rep.data#memql::
 memql ELT LIST
 
 If ELT is a member of list LIST then return the tail of the list starting
@@ -702,7 +702,7 @@ from the matched ELT. `memql' uses `eql' to compare list items.
 }
 
 DEFUN("delete", Fdelete, Sdelete, (repv elt, repv list), rep_Subr2) /*
-::doc:delete::
+::doc:rep.data#delete::
 delete ELT LIST
 
 Returns LIST with any members `equal' to ELT destructively removed.
@@ -724,7 +724,7 @@ Returns LIST with any members `equal' to ELT destructively removed.
 }
 
 DEFUN("delq", Fdelq, Sdelq, (repv elt, repv list), rep_Subr2) /*
-::doc:delq::
+::doc:rep.data#delq::
 delq ELT LIST
 
 Returns LIST with any members `eq' to ELT destructively removed.
@@ -746,7 +746,7 @@ Returns LIST with any members `eq' to ELT destructively removed.
 }
 
 DEFUN("delete-if", Fdelete_if, Sdelete_if, (repv pred, repv list), rep_Subr2) /*
-::doc:delete-if::
+::doc:rep.data#delete-if::
 delete-if FUNCTION LIST
 
 Similar to `delete' except that a predicate function, FUNCTION-NAME, is
@@ -781,7 +781,7 @@ applied to that element, ie,
 }
 
 DEFUN("delete-if-not", Fdelete_if_not, Sdelete_if_not, (repv pred, repv list), rep_Subr2) /*
-::doc:delete-if-not::
+::doc:rep.data#delete-if-not::
 delete-if-not FUNCTION LIST
 
 Similar to `delete' except that a predicate function, FUNCTION-NAME, is
@@ -816,7 +816,7 @@ applied to that element, ie,
 }
 
 DEFUN("vector", Fvector, Svector, (repv args), rep_SubrN) /*
-::doc:vector::
+::doc:rep.data#vector::
 vector ARGS...
 
 Returns a new vector with ARGS... as its elements.
@@ -840,7 +840,7 @@ Returns a new vector with ARGS... as its elements.
 }
 
 DEFUN("make-vector", Fmake_vector, Smake_vector, (repv size, repv init), rep_Subr2) /*
-::doc:make-vector::
+::doc:rep.data#make-vector::
 make-vector SIZE [INITIAL-repv]
 
 Creates a new vector of size SIZE. If INITIAL-repv is provided each element
@@ -864,7 +864,7 @@ will be set to that value, else they will all be nil.
 }
 
 DEFUN("arrayp", Farrayp, Sarrayp, (repv arg), rep_Subr1) /*
-::doc:arrayp::
+::doc:rep.data#arrayp::
 arrayp ARG
 
 Returns t when ARG is an array.
@@ -874,7 +874,7 @@ Returns t when ARG is an array.
 }
 
 DEFUN("aset", Faset, Saset, (repv array, repv index, repv new), rep_Subr3) /*
-::doc:aset::
+::doc:rep.data#aset::
 aset ARRAY INDEX NEW-VALUE
 
 Sets element number INDEX (a positive integer) of ARRAY (can be a vector
@@ -912,7 +912,7 @@ can only contain characters (ie, integers).
 }
 
 DEFUN("aref", Faref, Saref, (repv array, repv index), rep_Subr2) /*
-::doc:aref::
+::doc:rep.data#aref::
 aref ARRAY INDEX
 
 Returns the INDEXth (a non-negative integer) element of ARRAY, which
@@ -938,7 +938,7 @@ can be a vector or a string. INDEX starts at zero.
 }
 
 DEFUN("make-string", Fmake_string, Smake_string, (repv len, repv init), rep_Subr2) /*
-::doc:make-string::
+::doc:rep.data#make-string::
 make-string LENGTH [INITIAL-repv]
 
 Returns a new string of length LENGTH, each character is initialised to
@@ -959,7 +959,7 @@ INITIAL-repv, or to space if INITIAL-repv is not given.
 }
 
 DEFUN("substring", Fsubstring, Ssubstring, (repv string, repv start, repv end), rep_Subr3) /*
-::doc:substring::
+::doc:rep.data#substring::
 substring STRING START [END]
 
 Returns the portion of STRING starting at character number START and ending
@@ -1004,7 +1004,7 @@ extend_concat(u_char **buf, int *bufLen, int i, int addLen)
     return(rep_FALSE);
 }
 DEFUN("concat", Fconcat, Sconcat, (repv args), rep_SubrN) /*
-::doc:concat::
+::doc:rep.data#concat::
 concat ARGS...
 
 Concatenates all ARGS... into a single string, each argument can be a string,
@@ -1090,7 +1090,7 @@ error:
 }
 
 DEFUN("length", Flength, Slength, (repv sequence), rep_Subr1) /*
-::doc:length::
+::doc:rep.data#length::
 length SEQUENCE
 
 Returns the number of elements in SEQUENCE (a string, list or vector).
@@ -1126,7 +1126,7 @@ Returns the number of elements in SEQUENCE (a string, list or vector).
 }
 
 DEFUN("copy-sequence", Fcopy_sequence, Scopy_sequence, (repv seq), rep_Subr1) /*
-::doc:copy-sequence::
+::doc:rep.data#copy-sequence::
 copy-sequence SEQUENCE
 
 Returns a new sequence whose elements are eq to those in SEQUENCE.
@@ -1172,7 +1172,7 @@ Returns a new sequence whose elements are eq to those in SEQUENCE.
 }
 
 DEFUN("elt", Felt, Selt, (repv seq, repv index), rep_Subr2) /*
-::doc:elt::
+::doc:rep.data#elt::
 elt SEQUENCE INDEX
 
 Return the element of SEQUENCE at position INDEX (counting from zero).
@@ -1185,7 +1185,7 @@ Return the element of SEQUENCE at position INDEX (counting from zero).
 }
 
 DEFUN("cond", Fcond, Scond, (repv args, repv tail_posn), rep_SF) /*
-::doc:cond::
+::doc:rep.lang.interpreter#cond::
 cond (CONDITION FORMS... ) ...
 
 Find the first CONDITION which has a value of t when eval'ed, then perform
@@ -1243,7 +1243,7 @@ load_file_exists_p (repv name)
 
 DEFUN ("load-file", Fload_file, Sload_file,
        (repv name, repv structure), rep_Subr2) /*
-::doc:load-file::
+::doc:rep.io.files#load-file::
 load-file FILENAME [STRUCTURE]
 
 Load the file of Lisp forms called FILENAME (no suffixes are added, or
@@ -1343,7 +1343,7 @@ DEFUN ("load-dl-file", Fload_dl_file, Sload_dl_file,
 }
 
 DEFUN_INT("load", Fload, Sload, (repv file, repv noerr_p, repv nopath_p, repv nosuf_p, repv unused), rep_Subr5, "fLisp file to load:") /*
-::doc:load::
+::doc:rep.io.files#load::
 load FILE [NO-ERROR] [NO-PATH] [NO-SUFFIX]
 
 Attempt to open and then read-and-eval the file of Lisp code FILE.
@@ -1552,7 +1552,7 @@ again:
 }
 
 DEFUN("equal", Fequal, Sequal, (repv val1, repv val2), rep_Subr2) /*
-::doc:equal::
+::doc:rep.data#equal::
 equal VALUE1 VALUE2
 
 Compares VALUE1 and VALUE2, compares the actual structure of the objects not
@@ -1565,7 +1565,7 @@ location in memory is different.
 }
 
 DEFUN("eq", Feq, Seq, (repv val1, repv val2), rep_Subr2) /*
-::doc:eq::
+::doc:rep.data#eq::
 eq VALUE1 VALUE2
 
 Returns t if VALUE1 and VALUE2 are one and the same object. Note that
@@ -1576,7 +1576,7 @@ this may or may not be true for numbers of the same value (see `eql').
 }
 
 DEFUN("not", Fnot, Snot, (repv arg), rep_Subr1) /*
-::doc:not::
+::doc:rep.data#not::
 not ARG
 
 If ARG is nil returns t, else returns nil.
@@ -1588,7 +1588,7 @@ If ARG is nil returns t, else returns nil.
 }
 
 DEFUN("string-head-eq", Fstring_head_eq, Sstring_head_eq, (repv str1, repv str2), rep_Subr2) /*
-::doc:string-head-eq::
+::doc:rep.data#string-head-eq::
 string-head-eq STRING1 STRING2
 
 Returns t if STRING2 matches the beginning of STRING1, ie,
@@ -1614,7 +1614,7 @@ Returns t if STRING2 matches the beginning of STRING1, ie,
 }
 
 DEFUN("string-equal", Fstring_equal, Sstring_equal, (repv str1, repv str2), rep_Subr2) /*
-::doc:string-equal::
+::doc:rep.data#string-equal::
 string-equal STRING1 STRING2
 
 Returns t if STRING1 and STRING2 are the same, ignoring case.
@@ -1635,7 +1635,7 @@ Returns t if STRING1 and STRING2 are the same, ignoring case.
 }
 
 DEFUN("string-lessp", Fstring_lessp, Sstring_lessp, (repv str1, repv str2), rep_Subr2) /*
-::doc:string-lessp::
+::doc:rep.data#string-lessp::
 string-lessp STRING1 STRING2
 
 Returns t if STRING1 is `less' than STRING2, ignoring case.
@@ -1684,7 +1684,7 @@ Returns t if STRING1 is `less' than STRING2, ignoring case.
     return rep_signal_missing_arg(rep_CONSP(args) ? 2 : 1);
 
 DEFUN("=", Fnum_eq, Snum_eq, (repv args), rep_SubrN) /*
-::doc:=::
+::doc:rep.data#=::
 = ARG1 ARG2 [ARG3 ...]
 
 Returns t if each value is the same as every other value. (Using
@@ -1696,7 +1696,7 @@ ignored.)
 }
 
 DEFUN("/=", Fnum_noteq, Snum_noteq, (repv args), rep_SubrN) /*
-::doc::/=::
+::doc:rep.data#:/=::
 /= ARG1 ARG2 ...
 
 Returns t if each value is different from every other value. (Using
@@ -1712,7 +1712,7 @@ ignored.)
 }
 
 DEFUN(">", Fgtthan, Sgtthan, (repv args), rep_SubrN) /*
-::doc:>::
+::doc:rep.data#>::
 > ARG1 ARG2 [ARG3 ...]
 
 Returns t if ARG1 is greater than ARG2, and if ARG2 is greater than ARG3,
@@ -1724,7 +1724,7 @@ strings, positions, marks, etc as well.
 }
 
 DEFUN(">=", Fgethan, Sgethan, (repv args), rep_SubrN) /*
-::doc:>=::
+::doc:rep.data#>=::
 >= ARG1 ARG2 [ARG3 ...]
 
 Returns t if ARG1 is greater-or-equal than ARG2. Note that this command
@@ -1735,7 +1735,7 @@ isn't limited to numbers, it can do strings, positions, marks, etc as well.
 }
 
 DEFUN("<", Fltthan, Sltthan, (repv args), rep_SubrN) /*
-::doc:<::
+::doc:rep.data#<::
 < ARG1 ARG2 [ARG3 ...]
 
 Returns t if ARG1 is less than ARG2. Note that this command isn't limited to
@@ -1746,7 +1746,7 @@ numbers, it can do strings, positions, marks, etc as well.
 }
 
 DEFUN("<=", Flethan, Slethan, (repv args), rep_SubrN) /*
-::doc:<=::
+::doc:rep.data#<=::
 <= ARG1 ARG2 [ARG3 ...]
 
 Returns t if ARG1 is less-or-equal than ARG2. Note that this command isn't
@@ -1757,7 +1757,7 @@ limited to numbers, it can do strings, positions, marks, etc as well.
 }
 
 DEFUN("null", Fnull, Snull, (repv arg), rep_Subr1) /*
-::doc:null::
+::doc:rep.data#null::
 null ARG
 
 Returns t if ARG is nil.
@@ -1767,7 +1767,7 @@ Returns t if ARG is nil.
 }
 
 DEFUN("atom", Fatom, Satom, (repv arg), rep_Subr1) /*
-::doc:atom::
+::doc:rep.data#atom::
 atom ARG
 
 Returns t if ARG is not a cons-cell.
@@ -1777,7 +1777,7 @@ Returns t if ARG is not a cons-cell.
 }
 
 DEFUN("consp", Fconsp, Sconsp, (repv arg), rep_Subr1) /*
-::doc:consp::
+::doc:rep.data#consp::
 consp ARG
 
 Returns t if ARG is a cons-cell.
@@ -1787,7 +1787,7 @@ Returns t if ARG is a cons-cell.
 }
 
 DEFUN("listp", Flistp, Slistp, (repv arg), rep_Subr1) /*
-::doc:listp::
+::doc:rep.data#listp::
 listp ARG
 
 Returns t if ARG is a list, (either a cons-cell or nil).
@@ -1797,7 +1797,7 @@ Returns t if ARG is a list, (either a cons-cell or nil).
 }
 
 DEFUN("stringp", Fstringp, Sstringp, (repv arg), rep_Subr1) /*
-::doc:stringp::
+::doc:rep.data#stringp::
 stringp ARG
 
 Returns t is ARG is a string.
@@ -1807,7 +1807,7 @@ Returns t is ARG is a string.
 }
 
 DEFUN("vectorp", Fvectorp, Svectorp, (repv arg), rep_Subr1) /*
-::doc:vectorp::
+::doc:rep.data#vectorp::
 vectorp ARG
 
 Returns t if ARG is a vector.
@@ -1817,7 +1817,7 @@ Returns t if ARG is a vector.
 }
 
 DEFUN("functionp", Ffunctionp, Sfunctionp, (repv arg), rep_Subr1) /*
-::doc:functionp::
+::doc:rep.lang.interpreter#functionp::
 functionp ARG
 
 Returns t if ARG is a function.
@@ -1847,7 +1847,7 @@ Returns t if ARG is a function.
 }
 
 DEFUN("macrop", Fmacrop, Smacrop, (repv arg), rep_Subr1) /*
-::doc:macrop::
+::doc:rep.lang.interpreter#macrop::
 macrop ARG
 
 Returns t if ARG is a macro.
@@ -1860,7 +1860,7 @@ Returns t if ARG is a macro.
 }
 	
 DEFUN("special-form-p", Fspecial_form_p, Sspecial_form_p, (repv arg), rep_Subr1) /*
-::doc:special-form-p::
+::doc:rep.lang.interpreter#special-form-p::
 special-form-p ARG
 
 Returns t if ARG is a special-form.
@@ -1872,7 +1872,7 @@ Returns t if ARG is a special-form.
 }
 
 DEFUN("subrp", Fsubrp, Ssubrp, (repv arg), rep_Subr1) /*
-::doc:subrp::
+::doc:rep.lang.interpreter#subrp::
 subrp ARG
 
 Returns t if arg is a primitive function.
@@ -1895,7 +1895,7 @@ Returns t if arg is a primitive function.
 }
 
 DEFUN("sequencep", Fsequencep, Ssequencep, (repv arg), rep_Subr1) /*
-::doc:sequencep::
+::doc:rep.data#sequencep::
 sequencep ARG
 
 Returns t is ARG is a sequence (a list, vector or string).
@@ -1908,7 +1908,7 @@ Returns t is ARG is a sequence (a list, vector or string).
 }
 
 DEFUN("subr-name", Fsubr_name, Ssubr_name, (repv subr, repv useVar), rep_Subr2) /*
-::doc:subr-name::
+::doc:rep.lang.interpreter#subr-name::
 subr-name SUBR [USE-VAR]
 
 Returns the name (a string) associated with SUBR.
@@ -1931,7 +1931,7 @@ Returns the name (a string) associated with SUBR.
 }
 
 DEFUN("call-hook", Fcall_hook, Scall_hook, (repv hook, repv arg_list, repv type), rep_Subr3) /*
-::doc:call-hook::
+::doc:rep.system#call-hook::
 call-hook HOOK ARG-LIST [TYPE]
 
 Call the hook named by the symbol HOOK, passing all functions the arguments
@@ -1979,7 +1979,7 @@ returned.
 DEFUN("call-with-exception-handler", Fcall_with_exception_handler,
       Scall_with_exception_handler, (repv thunk, repv handler_thunk),
       rep_Subr2) /*
-::doc:call-with-exception-handler::
+::doc:rep.lang.interpreter#call-with-exception-handler::
 call-with-exception-handler THUNK HANDLER-THUNK
 
 Call THUNK and return its value. However if an exception of any form
@@ -2011,7 +2011,7 @@ and return its value.
 
 DEFUN("raise-exception", Fraise_exception,
       Sraise_exception, (repv ex), rep_Subr1) /*
-::doc:raise-exception::
+::doc:rep.lang.interpreter#raise-exception::
 raise-exception DATA
 
 Raise the exception represented by the cons cell DATA.

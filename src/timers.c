@@ -236,7 +236,7 @@ timer_fd_handler (int fd)
 
 DEFUN("make-timer", Fmake_timer, Smake_timer,
       (repv fun, repv secs, repv msecs), rep_Subr3) /*
-::doc:make-timer::
+::doc:rep.io.timers#make-timer::
 make-timer FUNCTION [SECONDS] [MILLISECONDS]
 
 Create and return a new one-shot timer object. After SECONDS*1000 +
@@ -259,7 +259,7 @@ to re-enable it.
 }
 
 DEFUN("delete-timer", Fdelete_timer, Sdelete_timer, (repv timer), rep_Subr1) /*
-::doc:delete-timer::
+::doc:rep.io.timers#delete-timer::
 delete-timer TIMER
 
 Prevent the one-shot timer TIMER from firing (i.e. calling the function
@@ -274,7 +274,7 @@ no effect.
 
 DEFUN("set-timer", Fset_timer, Sset_timer,
       (repv timer, repv secs, repv msecs), rep_Subr3) /*
-::doc:set-timer::
+::doc:rep.io.timers#set-timer::
 set-timer TIMER [SECONDS] [MILLISECONDS]
 
 Restart the one-shot timer TIMER. If SECONDS and/or MILLISECONDS is

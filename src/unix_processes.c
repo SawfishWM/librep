@@ -1038,7 +1038,7 @@ proc_puts(repv stream, void *data, int len, rep_bool is_lisp)
 }
 
 DEFUN("make-process", Fmake_process, Smake_process, (repv stream, repv fun, repv dir, repv prog, repv args), rep_Subr5) /*
-::doc:make-process::
+::doc:rep.io.processes#make-process::
 make-process [OUTPUT-STREAM] [FUN] [DIR] [PROGRAM] [ARGS]
 
 Creates a new process-object, OUTPUT-STREAM is where all output from this
@@ -1092,7 +1092,7 @@ If the DIR parameter is nil it will be inherited from the
 }
 
 DEFUN("start-process", Fstart_process, Sstart_process, (repv arg_list), rep_SubrN) /*
-::doc:start-process::
+::doc:rep.io.processes#start-process::
 start-process [PROCESS] [PROGRAM] [ARGS...]
 
 Starts a process running on process-object PROCESS. The child-process runs
@@ -1166,7 +1166,7 @@ set in the PROCESS prior to calling this function.
 }
 
 DEFUN("call-process", Fcall_process, Scall_process, (repv arg_list), rep_SubrN) /*
-::doc:call-process::
+::doc:rep.io.processes#call-process::
 call-process [PROCESS] [IN-FILE] [PROGRAM] [ARGS...]
 
 Starts a process running on process-object PROCESS. Waits for the child to
@@ -1286,7 +1286,7 @@ do_signal_command(repv proc, int signal, repv signal_group)
 }
 
 DEFUN("interrupt-process", Finterrupt_process, Sinterrupt_process, (repv proc, repv grp), rep_Subr2) /*
-::doc:interrupt-process::
+::doc:rep.io.processes#interrupt-process::
 interrupt-process PROCESS [SIGNAL-GROUP]
 
 Interrupt the asynchronous process PROCESS. If SIGNAL-GROUP is t, interrupt
@@ -1297,7 +1297,7 @@ all child processes of PROCESS (it's process group).
 }
 
 DEFUN("kill-process", Fkill_process, Skill_process, (repv proc, repv grp), rep_Subr2) /*
-::doc:kill-process::
+::doc:rep.io.processes#kill-process::
 kill-process PROCESS [SIGNAL-GROUP]
 
 Kill the asynchronous process PROCESS. If SIGNAL-GROUP is t, kill all
@@ -1308,7 +1308,7 @@ child processes of PROCESS (it's process group).
 }
 
 DEFUN("stop-process", Fstop_process, Sstop_process, (repv proc, repv grp), rep_Subr2) /*
-::doc:stop-process::
+::doc:rep.io.processes#stop-process::
 stop-process PROCESS [SIGNAL-GROUP]
 
 Suspends execution of PROCESS, see `continue-process'. If SIGNAL-GROUP is
@@ -1319,7 +1319,7 @@ non-nil also suspends the processes in the process group of PROCESS.
 }
 
 DEFUN("continue-process", Fcontinue_process, Scontinue_process, (repv proc, repv grp), rep_Subr2) /*
-::doc:continue-process::
+::doc:rep.io.processes#continue-process::
 continue-process PROCESS [SIGNAL-GROUP]
 
 Restarts PROCESS after it has been stopped (via `stop-process'). If
@@ -1347,7 +1347,7 @@ PROCESS.
 
 DEFUN("signal-process", Fsignal_process, Ssignal_process,
       (repv proc, repv sig, repv grp), rep_Subr3) /*
-::doc:signal_process::
+::doc:rep.io.processes#signal_process::
 signal-process PROCESS SIGNAL [SIGNAL-GROUP]
 
 Sends the signal SIGNAL to the process PROCESS. If SIGNAL-GROUP is
@@ -1515,7 +1515,7 @@ the symbol `INT' for the UNIX SIGINT signal.
 }
 
 DEFUN("process-exit-status", Fprocess_exit_status, Sprocess_exit_status, (repv proc), rep_Subr1) /*
-::doc:process-exit-status::
+::doc:rep.io.processes#process-exit-status::
 process-exit-status PROCESS
 
 Returns the unprocessed exit-status of the last process to be run on the
@@ -1533,7 +1533,7 @@ process-object PROCESS. If PROCESS is currently running, return nil.
 }
 
 DEFUN("process-exit-value", Fprocess_exit_value, Sprocess_exit_value, (repv proc), rep_Subr1) /*
-::doc:process-exit-value::
+::doc:rep.io.processes#process-exit-value::
 process-exit-value PROCESS
 
 Returns the return-value of the last process to be run on PROCESS, or nil if:
@@ -1551,7 +1551,7 @@ Returns the return-value of the last process to be run on PROCESS, or nil if:
 }
 
 DEFUN("process-id", Fprocess_id, Sprocess_id, (repv proc), rep_Subr1) /*
-::doc:process-id::
+::doc:rep.io.processes#process-id::
 process-id [PROCESS]
 
 If PROCESS is running or stopped, return the process-identifier associated
@@ -1573,7 +1573,7 @@ If PROCESS is nil, return the process id of the Lisp interpreter.
 }
 
 DEFUN("process-running-p", Fprocess_running_p, Sprocess_running_p, (repv proc), rep_Subr1) /*
-::doc:process-running-p::
+::doc:rep.io.processes#process-running-p::
 process-running-p PROCESS
 
 Return t if PROCESS is running.
@@ -1589,7 +1589,7 @@ Return t if PROCESS is running.
 }
 
 DEFUN("process-stopped-p", Fprocess_stopped_p, Sprocess_stopped_p, (repv proc), rep_Subr1) /*
-::doc:process-stopped-p::
+::doc:rep.io.processes#process-stopped-p::
 process-stopped-p PROCESS
 
 Return t if PROCESS has been stopped.
@@ -1605,7 +1605,7 @@ Return t if PROCESS has been stopped.
 }
 
 DEFUN("process-in-use-p", Fprocess_in_use_p, Sprocess_in_use_p, (repv proc), rep_Subr1) /*
-::doc:process-in-use-p::
+::doc:rep.io.processes#process-in-use-p::
 process-in-use-p PROCESS
 
 Similar to `process-running-p' except that this returns t even when the
@@ -1622,7 +1622,7 @@ process has stopped.
 }
 
 DEFUN("processp", Fprocessp, Sprocessp, (repv arg), rep_Subr1) /*
-::doc:process-p::
+::doc:rep.io.processes#process-p::
 processp ARG
 
 Return t is ARG is a process-object.
@@ -1634,7 +1634,7 @@ Return t is ARG is a process-object.
 }
 
 DEFUN("process-prog", Fprocess_prog, Sprocess_prog, (repv proc), rep_Subr1) /*
-::doc:process-prog::
+::doc:rep.io.processes#process-prog::
 process-prog PROCESS
 
 Return the name of the program in PROCESS.
@@ -1647,7 +1647,7 @@ Return the name of the program in PROCESS.
 }
 
 DEFUN("set-process-prog", Fset_process_prog, Sset_process_prog, (repv proc, repv prog), rep_Subr2) /*
-::doc:set-process-prog::
+::doc:rep.io.processes#set-process-prog::
 set-process-prog PROCESS PROGRAM
 
 Sets the name of the program to run on PROCESS to FILE.
@@ -1660,7 +1660,7 @@ Sets the name of the program to run on PROCESS to FILE.
 }
 
 DEFUN("process-args", Fprocess_args, Sprocess_args, (repv proc), rep_Subr1) /*
-::doc:process-args::
+::doc:rep.io.processes#process-args::
 process-args PROCESS
 
 Return the list of arguments to PROCESS.
@@ -1673,7 +1673,7 @@ Return the list of arguments to PROCESS.
 }
 
 DEFUN("set-process-args", Fset_process_args, Sset_process_args, (repv proc, repv args), rep_Subr2) /*
-::doc:set-process-args::
+::doc:rep.io.processes#set-process-args::
 set-process-args PROCESS ARG-LIST
 
 Set the arguments to PROCESS.
@@ -1687,7 +1687,7 @@ Set the arguments to PROCESS.
 }
 
 DEFUN("process-output-stream", Fprocess_output_stream, Sprocess_output_stream, (repv proc), rep_Subr1) /*
-::doc:process-output-stream::
+::doc:rep.io.processes#process-output-stream::
 process-output-stream PROCESS
 
 Return the stream to which all output from PROCESS is sent.
@@ -1700,7 +1700,7 @@ Return the stream to which all output from PROCESS is sent.
 }
 
 DEFUN("set-process-output-stream", Fset_process_output_stream, Sset_process_output_stream, (repv proc, repv stream), rep_Subr2) /*
-::doc:set-process-output-stream::
+::doc:rep.io.processes#set-process-output-stream::
 set-process-output-stream PROCESS STREAM
 
 Set the output-stream of PROCESS to STREAM. nil means discard all output.
@@ -1712,7 +1712,7 @@ Set the output-stream of PROCESS to STREAM. nil means discard all output.
 }
 
 DEFUN("process-error-stream", Fprocess_error_stream, Sprocess_error_stream, (repv proc), rep_Subr1) /*
-::doc:process-error-stream::
+::doc:rep.io.processes#process-error-stream::
 process-error-stream PROCESS
 
 Return the stream to which all standard-error output from PROCESS is sent.
@@ -1725,7 +1725,7 @@ Return the stream to which all standard-error output from PROCESS is sent.
 }
 
 DEFUN("set-process-error-stream", Fset_process_error_stream, Sset_process_error_stream, (repv proc, repv stream), rep_Subr2) /*
-::doc:set-process-error-stream::
+::doc:rep.io.processes#set-process-error-stream::
 set-process-error-stream PROCESS STREAM
 
 Set the error-stream of PROCESS to STREAM. nil means discard all output.
@@ -1739,7 +1739,7 @@ Note that this currently only works correctly with pipe connections.
 }
 
 DEFUN("process-function", Fprocess_function, Sprocess_function, (repv proc), rep_Subr1) /*
-::doc:process-function::
+::doc:rep.io.processes#process-function::
 process-function PROCESS
 
 Return the function which is called when PROCESS changes state (i.e. it
@@ -1753,7 +1753,7 @@ exits or is stopped).
 }
 
 DEFUN("set-process-function", Fset_process_function, Sset_process_function, (repv proc, repv fn), rep_Subr2) /*
-::doc:set-process-function::
+::doc:rep.io.processes#set-process-function::
 set-process-function PROCESS FUNCTION
 
 Set the function which is called when PROCESS changes state to FUNCTION.
@@ -1765,7 +1765,7 @@ Set the function which is called when PROCESS changes state to FUNCTION.
 }
 
 DEFUN("process-dir", Fprocess_dir, Sprocess_dir, (repv proc), rep_Subr1) /*
-::doc:process-dir::
+::doc:rep.io.processes#process-dir::
 process-dir PROCESS
 
 Return the name of the directory which becomes the working directory of
@@ -1779,7 +1779,7 @@ PROCESS when it is started.
 }
 
 DEFUN("set-process-dir", Fset_process_dir, Sset_process_dir, (repv proc, repv dir), rep_Subr2) /*
-::doc:set-process-dir::
+::doc:rep.io.processes#set-process-dir::
 set-process-dir PROCESS DIR
 
 Set the directory of PROCESS to DIR.
@@ -1802,7 +1802,7 @@ Set the directory of PROCESS to DIR.
 }
 
 DEFUN("process-connection-type", Fprocess_connection_type, Sprocess_connection_type, (repv proc), rep_Subr1) /*
-::doc:process-connection-type::
+::doc:rep.io.processes#process-connection-type::
 process-connection-type PROCESS
 
 Returns a symbol defining the type of stream (i.e. pipe, pty, or
@@ -1816,7 +1816,7 @@ socketpair) used to connect PROCESS with its physical process.
 }
 
 DEFUN("set-process-connection-type", Fset_process_connection_type, Sset_process_connection_type, (repv proc, repv type), rep_Subr2) /*
-::doc:set-process-connection-type::
+::doc:rep.io.processes#set-process-connection-type::
 set-process-connection-type PROCESS TYPE
 
 Define how PROCESS communicates with it's child process, TYPE may be
@@ -1842,7 +1842,7 @@ process error output to be differentiated.
 
 DEFUN("active-processes", Factive_processes, Sactive_processes, (void),
       rep_Subr0) /*
-::doc:active-processes::
+::doc:rep.io.processes#active-processes::
 active-processes
 
 Return a list containing all active process objects.
@@ -1876,7 +1876,7 @@ rep_register_process_input_handler (void (*handler)(int))
 
 DEFUN("accept-process-output", Faccept_process_output,
       Saccept_process_output, (repv secs, repv msecs), rep_Subr2) /*
-::doc:accept-process-output::
+::doc:rep.io.processes#accept-process-output::
 accept-process-output [SECONDS] [MILLISECONDS]
 
 Wait SECONDS plus MILLISECONDS for output from any asynchronous subprocesses.
@@ -1905,7 +1905,7 @@ Note that output includes notification of process termination.
 DEFUN("accept-process-output-1", Faccept_process_output_1,
       Saccept_process_output_1,
       (repv process, repv secs, repv msecs), rep_Subr3) /*
-::doc:accept-process-output-1::
+::doc:rep.io.processes#accept-process-output-1::
 accept-process-output-1 PROCESS [SECONDS] [MILLISECONDS]
 
 Wait SECONDS plus MILLISECONDS for output from the asynchronous

@@ -84,7 +84,7 @@ datum_print (repv stream, repv arg)
 
 DEFUN ("make-datum", Fmake_datum,
        Smake_datum, (repv value, repv id), rep_Subr2) /*
-::doc:make-datum::
+::doc:rep.data.datums#make-datum::
 make-datum VALUE ID
 
 Create and return a new data object of type ID (an arbitrary value), it
@@ -96,7 +96,7 @@ will have object VALUE associated with it.
 
 DEFUN ("define-datum-printer", Fdefine_datum_printer,
        Sdefine_datum_printer, (repv id, repv printer), rep_Subr2) /*
-::doc:define-datum-printer::
+::doc:rep.data.datums#define-datum-printer::
 define-datum-printer ID PRINTER
 
 Register a custom printer for all datums with type ID. When these
@@ -113,7 +113,7 @@ arguments, the datum and the stream to print to.
 }
 
 DEFUN ("datum-ref", Fdatum_ref, Sdatum_ref, (repv obj, repv id), rep_Subr2) /*
-::doc:datum-ref::
+::doc:rep.data.datums#datum-ref::
 datum-ref DATUM ID
 
 If data object DATUM has type ID, return its associated value, else
@@ -126,7 +126,7 @@ signal an error.
 
 DEFUN ("datum-set", Fdatum_set, Sdatum_set,
        (repv obj, repv id, repv value), rep_Subr3) /*
-::doc:datum-set::
+::doc:rep.data.datums#datum-set::
 datum-set DATUM ID VALUE
 
 If data object DATUM has type ID, modify its associated value to be
@@ -140,7 +140,7 @@ VALUE, else signal an error.
 
 DEFUN ("has-type-p", Fhas_type_p,
        Shas_type_p, (repv arg, repv id), rep_Subr2) /*
-::doc:has-type-p::
+::doc:rep.data.datums#has-type-p::
 has-type-p ARG ID
 
 Return `t' if object ARG has data type ID (and thus was initially

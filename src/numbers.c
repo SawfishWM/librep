@@ -1640,7 +1640,7 @@ rep_integer_gcd (repv x, repv y)
 }
 
 DEFUN("+", Fplus, Splus, (repv args), rep_SubrN) /*
-::doc:+::
+::doc:rep.lang.math#+::
 + NUMBERS...
 
 Adds all NUMBERS together. If no arguments are given returns 0.
@@ -1653,7 +1653,7 @@ Adds all NUMBERS together. If no arguments are given returns 0.
 }
 
 DEFUN("-", Fminus, Sminus, (repv args), rep_SubrN) /*
-::doc:-::
+::doc:rep.lang.math#-::
 - NUMBER [NUMBERS...]
 
 Either returns the negation of NUMBER or the value of NUMBER minus
@@ -1669,7 +1669,7 @@ NUMBERS
 }
 
 DEFUN("*", Fproduct, Sproduct, (repv args), rep_SubrN) /*
-::doc:*::
+::doc:rep.lang.math#*::
 * NUMBERS...
 
 Multiplies all NUMBERS together. If no numbers are given returns 1.
@@ -1682,7 +1682,7 @@ Multiplies all NUMBERS together. If no numbers are given returns 1.
 }
 
 DEFUN("/", Fdivide, Sdivide, (repv args), rep_SubrN) /*
-::doc:/::
+::doc:rep.lang.math#/::
 / NUMBERS...
 
 Divides NUMBERS (in left-to-right order).
@@ -1696,7 +1696,7 @@ Divides NUMBERS (in left-to-right order).
 }
 
 DEFUN("remainder", Fremainder, Sremainder, (repv n1, repv n2), rep_Subr2) /*
-::doc:remainder::
+::doc:rep.lang.math#remainder::
 remainder DIVIDEND DIVISOR
 
 Returns the integer remainder after dividing DIVIDEND by DIVISOR.
@@ -1735,7 +1735,7 @@ Returns the integer remainder after dividing DIVIDEND by DIVISOR.
 }
 
 DEFUN("mod", Fmod, Smod, (repv n1, repv n2), rep_Subr2) /*
-::doc:mod::
+::doc:rep.lang.math#mod::
 mod DIVIDEND DIVISOR
 
 Returns the value of DIVIDEND modulo DIVISOR; unlike the % (remainder)
@@ -1797,7 +1797,7 @@ and that floating point division is used.
 }
 
 DEFUN("quotient", Fquotient, Squotient, (repv x, repv y), rep_Subr2) /*
-::doc:quotient::
+::doc:rep.lang.math#quotient::
 quotient DIVIDEND DIVISOR
 
 Returns the integer quotient from dividing integers DIVIDEND and
@@ -1825,7 +1825,7 @@ DIVISOR.
 }
 
 DEFUN("lognot", Flognot, Slognot, (repv num), rep_Subr1) /*
-::doc:lognot::
+::doc:rep.lang.math#lognot::
 lognot NUMBER
 
 Returns the bitwise logical `not' of NUMBER.
@@ -1836,7 +1836,7 @@ Returns the bitwise logical `not' of NUMBER.
 }
 
 DEFUN("logior", Flogior, Slogior, (repv args), rep_SubrN) /*
-::doc:logior::
+::doc:rep.lang.math#logior::
 logior NUMBERS...
 
 Returns the bitwise logical `inclusive-or' of its arguments.
@@ -1849,7 +1849,7 @@ Returns the bitwise logical `inclusive-or' of its arguments.
 }
 
 DEFUN("logxor", Flogxor, Slogxor, (repv args), rep_SubrN) /*
-::doc:logxor::
+::doc:rep.lang.math#logxor::
 logxor NUMBERS...
 
 Returns the bitwise logical `exclusive-or' of its arguments.
@@ -1859,7 +1859,7 @@ Returns the bitwise logical `exclusive-or' of its arguments.
 }
 
 DEFUN("logand", Flogand, Slogand, (repv args), rep_SubrN) /*
-::doc:logand::
+::doc:rep.lang.math#logand::
 logand NUMBERS...
 
 Returns the bitwise logical `and' of its arguments.
@@ -1869,7 +1869,7 @@ Returns the bitwise logical `and' of its arguments.
 }
 
 DEFUN("eql", Feql, Seql, (repv arg1, repv arg2), rep_Subr2) /*
-::doc:eql::
+::doc:rep.data#eql::
 eql ARG1 ARG2
 
 Similar to `eq' except that numbers with the same value will always be
@@ -1887,7 +1887,7 @@ same, they will be considered `eql'.
 }
 
 DEFUN("zerop", Fzerop, Szerop, (repv num), rep_Subr1) /*
-::doc:zerop::
+::doc:rep.lang.math#zerop::
 zerop NUMBER
 
 Return t if NUMBER is zero.
@@ -1920,7 +1920,7 @@ Return t if NUMBER is zero.
 }
 
 DEFUN("1+", Fplus1, Splus1, (repv num), rep_Subr1) /*
-::doc:1+::
+::doc:rep.lang.math#1+::
 1+ NUMBER
 
 Return NUMBER plus 1.
@@ -1964,7 +1964,7 @@ Return NUMBER plus 1.
 }
 
 DEFUN("1-", Fsub1, Ssub1, (repv num), rep_Subr1) /*
-::doc:1-::
+::doc:rep.lang.math#1-::
 1- NUMBER
 
 Return NUMBER minus 1.
@@ -2008,7 +2008,7 @@ Return NUMBER minus 1.
 }
 
 DEFUN("ash", Fash, Sash, (repv num, repv shift), rep_Subr2) /*
-::doc:ash::
+::doc:rep.lang.math#ash::
 ash NUMBER COUNT
 
 Use an arithmetic shift to shift the bits in NUMBER by COUNT bits to
@@ -2077,7 +2077,7 @@ Both NUMBER and COUNT must be integers.
 }
 
 DEFUN("floor", Ffloor, Sfloor, (repv arg), rep_Subr1) /*
-::doc:floor::
+::doc:rep.lang.math#floor::
 floor NUMBER
 
 Round NUMBER downwards to the nearest integer less than or equal to
@@ -2103,7 +2103,7 @@ NUMBER.
 }	
 
 DEFUN("ceiling", Fceiling, Sceiling, (repv arg), rep_Subr1) /*
-::doc:ceiling::
+::doc:rep.lang.math#ceiling::
 ceiling NUMBER
 
 Round NUMBER upwards to the nearest integer greater than or equal to
@@ -2129,7 +2129,7 @@ NUMBER.
 }
 
 DEFUN("truncate", Ftruncate, Struncate, (repv arg), rep_Subr1) /*
-::doc:truncate::
+::doc:rep.lang.math#truncate::
 truncate NUMBER
 
 Round NUMBER to the nearest integer between NUMBER and zero.
@@ -2163,7 +2163,7 @@ Round NUMBER to the nearest integer between NUMBER and zero.
 }
 
 DEFUN("round", Fround, Sround, (repv arg), rep_Subr1) /*
-::doc:round::
+::doc:rep.lang.math#round::
 round NUMBER
 
 Round NUMBER to the nearest integer. Halfway cases are rounded to the
@@ -2203,7 +2203,7 @@ nearest even integer.
 }
 
 DEFUN("exp", Fexp, Sexp, (repv arg), rep_Subr1) /*
-::doc:exp::
+::doc:rep.lang.math#exp::
 exp X
 
 Return `e' (the base of natural logarithms) raised to the power X.
@@ -2214,7 +2214,7 @@ Return `e' (the base of natural logarithms) raised to the power X.
 }
 
 DEFUN("log", Flog, Slog, (repv arg), rep_Subr1) /*
-::doc:log::
+::doc:rep.lang.math#log::
 log X
 
 Return the natural logarithm of X. An arithmetic error is signalled if
@@ -2231,7 +2231,7 @@ X is less than zero.
 }
 
 DEFUN("sin", Fsin, Ssin, (repv arg), rep_Subr1) /*
-::doc:sin::
+::doc:rep.lang.math#sin::
 sin X
 
 Returns the sine of X, in radians.
@@ -2242,7 +2242,7 @@ Returns the sine of X, in radians.
 }
 
 DEFUN("cos", Fcos, Scos, (repv arg), rep_Subr1) /*
-::doc:cos::
+::doc:rep.lang.math#cos::
 cos X
 
 Returns the cosine of X, in radians.
@@ -2253,7 +2253,7 @@ Returns the cosine of X, in radians.
 }
 
 DEFUN("tan", Ftan, Stan, (repv arg), rep_Subr1) /*
-::doc:tan::
+::doc:rep.lang.math#tan::
 tan X
 
 Returns the tangent of X, in radians.
@@ -2264,7 +2264,7 @@ Returns the tangent of X, in radians.
 }
 
 DEFUN("asin", Fasin, Sasin, (repv arg), rep_Subr1) /*
-::doc:asin::
+::doc:rep.lang.math#asin::
 asin X
 
 Return the arc sine of X (the value whose sine is X), in radians.
@@ -2280,7 +2280,7 @@ Return the arc sine of X (the value whose sine is X), in radians.
 }
 
 DEFUN("acos", Facos, Sacos, (repv arg), rep_Subr1) /*
-::doc:acos::
+::doc:rep.lang.math#acos::
 acos X
 
 Return the arc cosine of X (the value whose cosine is X), in radians.
@@ -2296,7 +2296,7 @@ Return the arc cosine of X (the value whose cosine is X), in radians.
 }
 
 DEFUN("atan", Fatan, Satan, (repv y, repv x), rep_Subr2) /*
-::doc:atan::
+::doc:rep.lang.math#atan::
 atan X
 
 Returns the arc tangent of X (the value whose tangent is X), in
@@ -2318,7 +2318,7 @@ be zero.
 }
 
 DEFUN("sqrt", Fsqrt, Ssqrt, (repv arg), rep_Subr1) /*
-::doc:sqrt::
+::doc:rep.lang.math#sqrt::
 sqrt X
 
 Returns the nonnegative square root of X. If X is negative, signals an
@@ -2335,7 +2335,7 @@ arithmetic error (should return a complex number).
 }
 
 DEFUN("expt", Fexpt, Sexpt, (repv arg1, repv arg2), rep_Subr2) /*
-::doc:expt::
+::doc:rep.lang.math#expt::
 expt X Y
 
 Returns X raised to the power Y.
@@ -2390,7 +2390,7 @@ signalled (mathematically should return a complex number).
 }
 
 DEFUN("gcd", Fgcd, Sgcd, (repv args), rep_SubrN) /*
-::doc:gcd::
+::doc:rep.lang.math#gcd::
 gcd ...
 
 Return the greatest common divisor of the integer arguments. The result
@@ -2409,7 +2409,7 @@ is always non-negative. Returns 0 with arguments.
 }
 
 DEFUN("numberp", Fnumberp, Snumberp, (repv arg), rep_Subr1) /*
-::doc:numberp::
+::doc:rep.lang.math#numberp::
 numberp ARG
 
 Return t if ARG is a number.
@@ -2419,7 +2419,7 @@ Return t if ARG is a number.
 }
 
 DEFUN("integerp", Fintegerp, Sintegerp, (repv arg), rep_Subr1) /*
-::doc:integerp::
+::doc:rep.lang.math#integerp::
 integerp ARG
 
 Return t if ARG is a integer.
@@ -2444,7 +2444,7 @@ Return t if ARG is a integer.
 }
 
 DEFUN("fixnump", Ffixnump, Sfixnump, (repv arg), rep_Subr1) /*
-::doc:fixnump::
+::doc:rep.lang.math#fixnump::
 fixnump ARG
 
 Return t if ARG is a fixnum (i.e. an integer that fits in a Lisp
@@ -2455,7 +2455,7 @@ pointer).
 }
 
 DEFUN("exactp", Fexactp, Sexactp, (repv arg), rep_Subr1) /*
-::doc:exactp::
+::doc:rep.lang.math#exactp::
 exactp ARG
 
 Return t if ARG is an exact number.
@@ -2467,7 +2467,7 @@ Return t if ARG is an exact number.
 
 DEFUN("exact->inexact", Fexact_to_inexact,
       Sexact_to_inexact, (repv arg), rep_Subr1) /*
-::doc:exact->inexact::
+::doc:rep.lang.math#exact->inexact::
 exact->inexact X
 
 Returns an inexact (i.e. floating point) representation of X.
@@ -2482,7 +2482,7 @@ Returns an inexact (i.e. floating point) representation of X.
 
 DEFUN("inexact->exact", Finexact_to_exact,
       Sinexact_to_exact, (repv arg), rep_Subr1) /*
-::doc:inexact->exact::
+::doc:rep.lang.math#inexact->exact::
 inexact->exact X
 
 Returns an exact representation of X. This may involve a loss of
@@ -2517,7 +2517,7 @@ accuracy.
 }
 
 DEFUN("numerator", Fnumerator, Snumerator, (repv x), rep_Subr1) /*
-::doc:numerator::
+::doc:rep.lang.math#numerator::
 numerator X
 
 Return the numerator of rational number X.
@@ -2539,7 +2539,7 @@ Return the numerator of rational number X.
 }
 
 DEFUN("denominator", Fdenominator, Sdenominator, (repv x), rep_Subr1) /*
-::doc:denominator::
+::doc:rep.lang.math#denominator::
 denominator X
 
 Return the denominator of rational number X.
@@ -2561,7 +2561,7 @@ Return the denominator of rational number X.
 }
 
 DEFUN("max", Fmax, Smax, (repv args), rep_SubrN) /*
-::doc:max::
+::doc:rep.lang.math#max::
 max ARGS...
 
 Returns the greatest of its arguments. There must be at least two
@@ -2573,7 +2573,7 @@ result to be inexact.
 }
 
 DEFUN("min", Fmin, Smin, (repv args), rep_SubrN) /*
-::doc:min::
+::doc:rep.lang.math#min::
 min ARGS...
 
 Returns the smallest of its arguments. There must be at least two
@@ -2586,7 +2586,7 @@ result to be inexact.
 
 DEFUN("string->number", Fstring_to_number,
       Sstring_to_number, (repv string, repv radix_), rep_Subr2) /*
-::doc:string->number::
+::doc:rep.lang.math#string->number::
 string->number STRING [RADIX]
 
 Return the number represented by STRING. If RADIX is specified, the
@@ -2671,7 +2671,7 @@ number is parsed from that base, otherwise base 10 is assumed.
 
 DEFUN("number->string", Fnumber_to_string,
       Snumber_to_string, (repv z, repv radix), rep_Subr2) /*
-::doc:number->string::
+::doc:rep.lang.math#number->string::
 number->string Z [RADIX]
 
 Return a string containing a printed representation of the number Z. If

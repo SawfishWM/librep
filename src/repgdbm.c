@@ -33,7 +33,7 @@ DEFSYM(no_lock, "no-lock");
 
 DEFUN("gdbm-open", Fgdbm_open, Sgdbm_open,
       (repv file, repv type, repv mode, repv flags), rep_Subr4) /*
-::doc:gdbm-open::
+::doc:rep.io.db.gdbm#gdbm-open::
 gdbm-open PATH ACCESS-TYPE [MODE] [FLAGS]
 ::end:: */
 {
@@ -83,7 +83,7 @@ gdbm-open PATH ACCESS-TYPE [MODE] [FLAGS]
 }
 
 DEFUN("gdbm-close", Fgdbm_close, Sgdbm_close, (repv dbm), rep_Subr1) /*
-::doc:gdbm-close::
+::doc:rep.io.db.gdbm#gdbm-close::
 gdbm-close DBM
 ::end:: */
 {
@@ -97,7 +97,7 @@ gdbm-close DBM
 }
 
 DEFUN("gdbm-fetch", Fgdbm_fetch, Sgdbm_fetch, (repv dbm, repv key), rep_Subr2) /*
-::doc:gdbm-fetch::
+::doc:rep.io.db.gdbm#gdbm-fetch::
 gdbm-fetch DBM KEY
 ::end:: */
 {
@@ -119,7 +119,7 @@ gdbm-fetch DBM KEY
 }
 
 DEFUN("gdbm-store", Fgdbm_store, Sgdbm_store, (repv dbm, repv key, repv val, repv flags), rep_Subr4) /*
-::doc:gdbm-store::
+::doc:rep.io.db.gdbm#gdbm-store::
 gdbm-store DBM KEY VALUE [FLAGS]
 ::end:: */
 {
@@ -138,7 +138,7 @@ gdbm-store DBM KEY VALUE [FLAGS]
 }
 
 DEFUN("gdbm-delete", Fgdbm_delete, Sgdbm_delete, (repv dbm, repv key), rep_Subr2) /*
-::doc:gdbm-delete::
+::doc:rep.io.db.gdbm#gdbm-delete::
 gdbm-delete DBM KEY
 ::end:: */
 {
@@ -151,7 +151,7 @@ gdbm-delete DBM KEY
 }
 
 DEFUN("gdbm-walk", Fgdbm_walk, Sgdbm_walk, (repv fun, repv dbm), rep_Subr2) /*
-::doc:gdbm-walk::
+::doc:rep.io.db.gdbm#gdbm-walk::
 gdbm-walk DBM FUN
 ::end:: */
 {
@@ -177,7 +177,7 @@ gdbm-walk DBM FUN
 }
 
 DEFUN("gdbmp", Fgdbmp, Sgdbmp, (repv arg), rep_Subr1) /*
-::doc:gdbmp::
+::doc:rep.io.db.gdbm#gdbmp::
 gdbmp ARG
 
 Returns t if ARG is an gdbm object (created by `gdbm-open').

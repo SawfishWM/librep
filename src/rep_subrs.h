@@ -201,6 +201,8 @@ extern repv Fstep(repv);
 extern repv Fsignal(repv error, repv data);
 extern repv Fbacktrace(repv strm);
 extern repv Vmax_lisp_depth(repv val);
+extern int rep_list_length(repv);
+extern rep_bool rep_assign_args (repv list, int required, int total, ...);
 
 /* from lispcmds.c */
 extern repv Qor, Qand;

@@ -53,7 +53,7 @@ search_special_bindings (repv sym)
 
 
 DEFUN ("make-fluid", Fmake_fluid, Smake_fluid, (repv value), rep_Subr1) /*
-::doc:make-fluid::
+::doc:rep.lang.interpreter#make-fluid::
 make-fluid [VALUE]
 
 Create and return an object representing a `fluid' value--an anonymous
@@ -68,7 +68,7 @@ it is the symbol `nil'.
 
 /* hardcoded in lispmach.c */
 DEFUN ("fluid", Ffluid, Sfluid, (repv f), rep_Subr1) /*
-::doc:fluid::
+::doc:rep.lang.interpreter#fluid::
 fluid FLUID
 
 Return the value of the most recently created binding of the fluid
@@ -87,7 +87,7 @@ variable object FLUID.
 
 /* hardcoded in lispmach.c */
 DEFUN ("fluid-set", Ffluid_set, Sfluid_set, (repv f, repv v), rep_Subr2) /*
-::doc:fluid-set::
+::doc:rep.lang.interpreter#fluid-set::
 fluid-set FLUID VALUE
 
 Set the value of the most recently created binding of the fluid
@@ -107,7 +107,7 @@ variable object FLUID to VALUE.
 
 DEFUN ("with-fluids", Fwith_fluids, Swith_fluids,
        (repv fluids, repv values, repv thunk), rep_Subr3) /*
-::doc:with-fluids::
+::doc:rep.lang.interpreter#with-fluids::
 with-fluids FLUIDS VALUES THUNK
 
 Call THUNK and return the value that it returns with new bindings

@@ -105,7 +105,7 @@ DEFUN("run-byte-code", Frun_byte_code, Srun_byte_code,
 }
 
 DEFUN("validate-byte-code", Fvalidate_byte_code, Svalidate_byte_code, (repv bc_major, repv bc_minor), rep_Subr2) /*
-::doc:validate-byte-code::
+::doc:rep.vm.interpreter#validate-byte-code::
 validate-byte-code BC-MAJOR BC-MINOR
 
 Check that byte codes from instruction set BC-MAJOR.BC-MINOR, may be
@@ -126,7 +126,7 @@ executed. If not, an error will be signalled.
 }
 
 DEFUN("make-byte-code-subr", Fmake_byte_code_subr, Smake_byte_code_subr, (repv args), rep_SubrN) /*
-::doc:make-byte-code-subr::
+::doc:rep.vm.interpreter#make-byte-code-subr::
 make-byte-code-subr CODE CONSTANTS STACK [DOC] [INTERACTIVE]
 
 Return an object that can be used as the function value of a symbol.
@@ -176,7 +176,7 @@ Return an object that can be used as the function value of a symbol.
 }
 
 DEFUN("bytecodep", Fbytecodep, Sbytecodep, (repv arg), rep_Subr1) /*
-::doc:bytecodep::
+::doc:rep.vm.interpreter#bytecodep::
 bytecodep ARG
 
 Returns t if ARG is a byte code subroutine (i.e. compiled Lisp code).

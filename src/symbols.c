@@ -98,7 +98,7 @@ repv rep_scm_t, rep_scm_f;
 /* Symbol management */
 
 DEFUN("make-symbol", Fmake_symbol, Smake_symbol, (repv name), rep_Subr1) /*
-::doc:make-symbol::
+::doc:rep.lang.symbols#make-symbol::
 make-symbol NAME
 
 Returns a new, uninterned, symbol with print-name NAME. It's value and
@@ -235,7 +235,7 @@ hash(u_char *str)
 }
 
 DEFUN("make-obarray", Fmake_obarray, Smake_obarray, (repv size), rep_Subr1) /*
-::doc:make-obarray::
+::doc:rep.lang.symbols#make-obarray::
 make-obarray SIZE
 
 Creates a new structure for storing symbols in. This is basically a vector
@@ -247,7 +247,7 @@ with a few slight differences (all elements initialised to a special value).
 }
 
 DEFUN("find-symbol", Ffind_symbol, Sfind_symbol, (repv name, repv ob), rep_Subr2) /*
-::doc:find-symbol::
+::doc:rep.lang.symbols#find-symbol::
 find-symbol NAME [OBARRAY]
 
 Returns the symbol with print-name NAME, found by searching OBARRAY (or
@@ -273,7 +273,7 @@ the default `rep_obarray' if nil), or nil if no such symbol exists.
 DEFSTRING(already_interned, "Symbol is already interned");
 
 DEFUN("intern-symbol", Fintern_symbol, Sintern_symbol, (repv sym, repv ob), rep_Subr2) /*
-::doc:intern-symbol::
+::doc:rep.lang.symbols#intern-symbol::
 intern-symbol SYMBOL [OBARRAY]
 
 Stores SYMBOL in OBARRAY (or the default). If SYMBOL has already been interned
@@ -298,7 +298,7 @@ somewhere an error is signalled.
 }
 
 DEFUN("intern", Fintern, Sintern, (repv name, repv ob), rep_Subr2) /*
-::doc:intern::
+::doc:rep.lang.symbols#intern::
 intern NAME [OBARRAY]
 
 If a symbol with print-name exists in OBARRAY (or the default) return it.
@@ -318,7 +318,7 @@ OBARRAY, then return it.
 }
 
 DEFUN("unintern", Funintern, Sunintern, (repv sym, repv ob), rep_Subr2) /*
-::doc:unintern::
+::doc:rep.lang.symbols#unintern::
 unintern SYMBOL [OBARRAY]
 
 Removes SYMBOL from OBARRAY (or the default). Use this with caution.
@@ -353,7 +353,7 @@ Removes SYMBOL from OBARRAY (or the default). Use this with caution.
 
 DEFUN("make-closure", Fmake_closure, Smake_closure,
       (repv fun, repv name), rep_Subr2) /*
-::doc:make-closure::
+::doc:rep.lang.interpreter#make-closure::
 make-closure FUNCTION &optional NAME
 
 Return a functional object which makes the closure of FUNCTION and the
@@ -390,7 +390,7 @@ current environment.
 
 DEFUN("closure-function", Fclosure_function,
       Sclosure_function, (repv funarg), rep_Subr1) /*
-::doc:closure-function::
+::doc:rep.lang.interpreter#closure-function::
 closure-function FUNARG
 
 Return the function value associated with the closure FUNARG.
@@ -402,7 +402,7 @@ Return the function value associated with the closure FUNARG.
 
 DEFUN("set-closure-function", Fset_closure_function,
       Sset_closure_function, (repv funarg, repv fun), rep_Subr2) /*
-::doc:set-closure-function::
+::doc:rep.lang.interpreter#set-closure-function::
 set-closure-function FUNARG FUNCTION
 
 Set the function value in the closure FUNARG to FUNCTION.
@@ -415,7 +415,7 @@ Set the function value in the closure FUNARG to FUNCTION.
 
 DEFUN("closure-structure", Fclosure_structure,
       Sclosure_structure, (repv funarg), rep_Subr1) /*
-::doc:closure-function::
+::doc:rep.lang.interpreter#closure-function::
 closure-function FUNARG
 
 Return the structure associated with the closure FUNARG.
@@ -436,7 +436,7 @@ DEFUN ("set-closure-structure", Fset_closure_structure,
 
 DEFUN("closure-name", Fclosure_name,
       Sclosure_name, (repv funarg), rep_Subr1) /*
-::doc:closure-name::
+::doc:rep.lang.interpreter#closure-name::
 closure-name FUNARG
 
 Return the name associated with the closure FUNARG.
@@ -447,7 +447,7 @@ Return the name associated with the closure FUNARG.
 }
 
 DEFUN("closurep", Fclosurep, Sclosurep, (repv arg), rep_Subr1) /*
-::doc:closurep::
+::doc:rep.lang.interpreter#closurep::
 funargp ARG
 
 Returns t if ARG is a closure
@@ -458,7 +458,7 @@ Returns t if ARG is a closure
 
 DEFUN("set-special-environment", Fset_special_environment,
       Sset_special_environment, (repv env, repv structure), rep_Subr2) /*
-::doc:set-special-environment::
+::doc:rep.lang.interpreter#set-special-environment::
 set-special-environment ENV STRUCTURE
 ::end:: */
 {
@@ -665,7 +665,7 @@ rep_add_binding_to_env (repv env, repv sym, repv value)
 /* More lisp functions */
 
 DEFUN("defvar", Fdefvar, Sdefvar, (repv args, repv tail_posn), rep_SF) /*
-::doc:defvar::
+::doc:rep.lang.symbols#defvar::
 defvar NAME DEFAULT-VALUE [DOC-STRING]
 
 Define a special variable called NAME whose standard value is DEFAULT-
@@ -798,7 +798,7 @@ variable will be set (if necessary) not the local value.)
 }
 
 DEFUN("symbol-value", Fsymbol_value, Ssymbol_value, (repv sym, repv no_err), rep_Subr2) /*
-::doc:symbol-value::
+::doc:rep.lang.symbols#symbol-value::
 symbol-value SYMBOL
 
 Returns the value of SYMBOL, if SYMBOL is flagged as having buffer-local
@@ -852,7 +852,7 @@ values look for one of those first.
 
 DEFUN("default-value", Fdefault_value, Sdefault_value,
       (repv sym, repv no_err), rep_Subr2) /*
-::doc:default-value::
+::doc:rep.lang.symbols#default-value::
 default-value SYMBOL
 
 Returns the default value of the symbol SYMBOL. This will be the value of
@@ -935,7 +935,7 @@ repv Fset (repv s, repv v) { return do_set (s, v, Fstructure_define); };
 
 DEFUN_INT("set", Freal_set, Sset, (repv s, repv v), rep_Subr2,
 	  "vVariable:" rep_DS_NL "xNew value of %s:") /*
-::doc:set::
+::doc:rep.lang.symbols#set::
 set SYMBOL repv
 
 Sets the value of SYMBOL to repv. If SYMBOL has a buffer-local binding
@@ -948,7 +948,7 @@ SYMBOL the buffer-local value in the current buffer is set. Returns repv.
 
 DEFUN("set-default", Fset_default, Sset_default,
       (repv sym, repv val), rep_Subr2) /*
-::doc:set-default::
+::doc:rep.lang.symbols#set-default::
 set-default SYMBOL VALUE
 
 Sets the default value of SYMBOL to VALUE, then returns VALUE.
@@ -980,7 +980,7 @@ Sets the default value of SYMBOL to VALUE, then returns VALUE.
 }
 
 DEFUN("setplist", Fsetplist, Ssetplist, (repv sym, repv prop), rep_Subr2) /*
-::doc:setplist::
+::doc:rep.lang.symbols#setplist::
 setplist SYMBOL PROP-LIST
 
 Sets the property list of SYMBOL to PROP-LIST, returns PROP-LIST.
@@ -997,7 +997,7 @@ Sets the property list of SYMBOL to PROP-LIST, returns PROP-LIST.
 }
 
 DEFUN("symbol-name", Fsymbol_name, Ssymbol_name, (repv sym), rep_Subr1) /*
-::doc:symbol-name::
+::doc:rep.lang.symbols#symbol-name::
 symbol-name SYMBOL
 
 Returns the print-name of SYMBOL.
@@ -1008,7 +1008,7 @@ Returns the print-name of SYMBOL.
 }
 
 DEFUN("default-boundp", Fdefault_boundp, Sdefault_boundp, (repv sym), rep_Subr1) /*
-::doc:default-boundp::
+::doc:rep.lang.symbols#default-boundp::
 default-boundp SYMBOL
 
 Returns t if SYMBOL has a default value.
@@ -1031,7 +1031,7 @@ Returns t if SYMBOL has a default value.
 }
 
 DEFUN("boundp", Fboundp, Sboundp, (repv sym), rep_Subr1) /*
-::doc:boundp::
+::doc:rep.lang.symbols#boundp::
 boundp SYMBOL
 
 Returns t if SYMBOL has a value as a variable.
@@ -1042,7 +1042,7 @@ Returns t if SYMBOL has a value as a variable.
 }
 
 DEFUN("symbol-plist", Fsymbol_plist, Ssymbol_plist, (repv sym), rep_Subr1) /*
-::doc:symbol-plist::
+::doc:rep.lang.symbols#symbol-plist::
 symbol-plist SYMBOL
 
 Returns the property-list of SYMBOL.
@@ -1060,7 +1060,7 @@ Returns the property-list of SYMBOL.
 }
 
 DEFUN("gensym", Fgensym, Sgensym, (void), rep_Subr0) /*
-::doc:gensym::
+::doc:rep.lang.symbols#gensym::
 gensym
 
 Returns a new (non-interned) symbol with a unique print name.
@@ -1078,7 +1078,7 @@ Returns a new (non-interned) symbol with a unique print name.
 }
 
 DEFUN("symbolp", Fsymbolp, Ssymbolp, (repv sym), rep_Subr1) /*
-::doc:symbolp::
+::doc:rep.lang.symbols#symbolp::
 symbolp ARG
 
 Returns t if ARG is a symbol.
@@ -1088,7 +1088,7 @@ Returns t if ARG is a symbol.
 }
 
 DEFUN("setq", Fsetq, Ssetq, (repv args, repv tail_posn), rep_SF) /*
-::doc:setq::
+::doc:rep.lang.symbols#setq::
 setq [SYMBOL FORM] ...
 
 Sets the value of each SYMBOL to the value of its corresponding FORM
@@ -1115,7 +1115,7 @@ end:
 }
 
 DEFUN ("%define", F_define, S_define, (repv form,  repv tail_posn), rep_SF) /*
-::doc:%define::
+::doc:rep.lang.symbols#%define::
 %define SYMBOL FORM
 
 Evaluate FORM, then create a top-level binding of SYMBOL whose value is
@@ -1142,7 +1142,7 @@ be overwritten.
 }
 
 DEFUN("makunbound", Fmakunbound, Smakunbound, (repv sym), rep_Subr1) /*
-::doc:makunbound::
+::doc:rep.lang.symbols#makunbound::
 makunbound SYMBOL
 
 Make SYMBOL have no value as a variable.
@@ -1152,7 +1152,7 @@ Make SYMBOL have no value as a variable.
 }
 
 DEFUN("get", Fget, Sget, (repv sym, repv prop), rep_Subr2) /*
-::doc:get::
+::doc:rep.lang.symbols#get::
 get SYMBOL PROPERTY
 
 Returns the value of SYMBOL's property PROPERTY. See `put'.
@@ -1177,7 +1177,7 @@ Returns the value of SYMBOL's property PROPERTY. See `put'.
 }
 
 DEFUN("put", Fput, Sput, (repv sym, repv prop, repv val), rep_Subr3) /*
-::doc:put::
+::doc:rep.lang.symbols#put::
 put SYMBOL PROPERTY repv
 
 Sets the value of SYMBOL's property PROPERTY to repv, this value can be
@@ -1217,7 +1217,7 @@ retrieved with the `get' function.
 }
 
 DEFUN("apropos", Fapropos, Sapropos, (repv re, repv pred, repv ob), rep_Subr3) /*
-::doc:apropos::
+::doc:rep.lang.symbols#apropos::
 apropos REGEXP [PREDICATE] [OBARRAY]
 
 Returns a list of symbols from OBARRAY (or the default) whose print-name
@@ -1270,7 +1270,7 @@ next:
 
 DEFUN("make-variable-special", Fmake_variable_special,
       Smake_variable_special, (repv sym), rep_Subr1) /*
-::doc:make-variable-special::
+::doc:rep.lang.symbols#make-variable-special::
 make-variable-special SYMBOL
 
 Mark SYMBOL as being a special (dynamically-bound) variable.
@@ -1293,7 +1293,7 @@ Mark SYMBOL as being a special (dynamically-bound) variable.
 
 DEFUN("special-variable-p", Fspecial_variable_p, Sspecial_variable_p,
       (repv sym), rep_Subr1) /*
-::doc:special-variable-p::
+::doc:rep.lang.symbols#special-variable-p::
 special-variable-p SYMBOL
 
 Returns t if SYMBOL is a special variable (dynamically scoped).
@@ -1304,7 +1304,7 @@ Returns t if SYMBOL is a special variable (dynamically scoped).
 }
 
 DEFUN_INT("trace", Ftrace, Strace, (repv sym), rep_Subr1, "aFunction to trace") /*
-::doc:trace::
+::doc:rep.lang.debug#trace::
 trace SYMBOL
 
 Flag that whenever SYMBOL is evaluated (as a variable or a function) the
@@ -1317,7 +1317,7 @@ debugger is entered.
 }
 
 DEFUN_INT("untrace", Funtrace, Suntrace, (repv sym), rep_Subr1, "aFunction to untrace") /*
-::doc:untrace::
+::doc:rep.lang.debug#untrace::
 untrace SYMBOL
 
 Cancel the effect of (trace SYMBOL).
@@ -1329,7 +1329,7 @@ Cancel the effect of (trace SYMBOL).
 }
 
 DEFUN("obarray", Fobarray, Sobarray, (repv val), rep_Subr1) /*
-::doc:obarray::
+::doc:rep.lang.symbols#obarray::
 obarray [NEW-VALUE]
 ::end:: */
 {
@@ -1342,7 +1342,7 @@ obarray [NEW-VALUE]
 }
 
 DEFUN("make-keyword", Fmake_keyword, Smake_keyword, (repv in), rep_Subr1) /*
-::doc:make-keyword::
+::doc:rep.lang.symbols#make-keyword::
 make-keyword SYMBOL
 
 Return the keyword symbol that should be used in argument lists to
@@ -1369,7 +1369,7 @@ signalled if SYMBOL is itself a keyword.
 }
 
 DEFUN ("keywordp", Fkeywordp, Skeywordp, (repv arg), rep_Subr1) /*
-::doc:keywordp::
+::doc:rep.lang.symbols#keywordp::
 keywordp ARG
 
 Return true if ARG is a keyword symbol.
@@ -1428,7 +1428,7 @@ rep_symbols_init(void)
     rep_ADD_SUBR(Sintern_symbol);
     rep_ADD_SUBR(Sintern);
     rep_ADD_SUBR(Sunintern);
-        rep_ADD_SUBR(Sdefvar);
+    rep_ADD_SUBR(Sdefvar);
     rep_ADD_SUBR(Ssymbol_value);
     rep_ADD_SUBR_INT(Sset);
     rep_ADD_SUBR(Ssetplist);
@@ -1449,6 +1449,8 @@ rep_symbols_init(void)
     rep_ADD_SUBR(Smake_variable_special);
     rep_ADD_SUBR(Sspecial_variable_p);
     rep_ADD_SUBR(Sobarray);
+    rep_ADD_SUBR(Smake_keyword);
+    rep_ADD_SUBR(Skeywordp);
     rep_pop_structure (tem);
 
     tem = rep_push_structure ("rep.lang.interpreter");
@@ -1460,8 +1462,6 @@ rep_symbols_init(void)
     rep_ADD_SUBR(Sclosure_name);
     rep_ADD_SUBR(Sclosurep);
     rep_ADD_SUBR(Sset_special_environment);
-    rep_ADD_SUBR(Smake_keyword);
-    rep_ADD_SUBR(Skeywordp);
     rep_pop_structure (tem);
 
     tem = rep_push_structure ("rep.lang.debug");

@@ -48,7 +48,6 @@ extern repv rep_eval (repv form, repv tail_posn);
 extern void rep_lisp_prin(repv, repv);
 extern void rep_string_princ(repv, repv);
 extern void rep_string_print(repv, repv);
-extern int rep_list_length(repv);
 extern repv rep_copy_list(repv);
 extern rep_bool rep_compare_error(repv error, repv handler);
 extern void rep_lisp_init(void);

@@ -467,7 +467,7 @@ rep_top_level_exit (void)
 }
 
 DEFUN_INT("recursive-edit", Frecursive_edit, Srecursive_edit, (void), rep_Subr0, "") /*
-::doc:recursive-edit::
+::doc:rep.system#recursive-edit::
 recursive-edit
 
 Enter a new recursive-edit.
@@ -514,7 +514,7 @@ again:
 }
 
 DEFUN("recursion-depth", Frecursion_depth, Srecursion_depth, (void), rep_Subr0) /*
-::doc:recursion-depth::
+::doc:rep.system#recursion-depth::
 recursion-depth
 
 Returns the number of recursive-edit's deep we are, zero signifies the

@@ -604,7 +604,7 @@ get_cont (repv arg)
 
 DEFUN("continuation-callable-p", Fcontinuation_callable_p,
       Scontinuation_callable_p, (repv cont), rep_Subr1) /*
-::doc:continuation-callable-p::
+::doc:rep.lang.interpreter#continuation-callable-p::
 continuation-callable-p CONTINUATION
 
 Returns `t' if the continuation object CONTINUATION from the current
@@ -757,7 +757,7 @@ inner_call_cc (rep_continuation *c, void *data)
 }
 
 DEFUN("call/cc", Fcall_cc, Scall_cc, (repv fun), rep_Subr1) /*
-::doc:call/cc::
+::doc:rep.lang.interpreter#call/cc::
 call/cc FUNCTION
 
 Invoke FUNCTION with a single parameter, the continuation function of
@@ -1421,7 +1421,7 @@ call_with_outwards (void *data_)
 
 DEFUN("call-with-object", Fcall_with_object,
       Scall_with_object, (repv arg, repv thunk), rep_Subr2) /*
-::call-with-object::
+::doc:rep.lang.interpreter#call-with-object::
 call-with-object ARG THUNK
 
 Call the zero-parameter function THUNK, with object ARG temporarily
@@ -1454,7 +1454,7 @@ unbound. If THUNK is subsequently reentered, ARG will be rebound.
 
 DEFUN("call-with-dynamic-root", Fcall_with_dynamic_root,
       Scall_with_dynamic_root, (repv thunk), rep_Subr1) /*
-::doc:call-with-dynamic-root::
+::doc:rep.lang.interpreter#call-with-dynamic-root::
 call-with-dynamic-root THUNK
 
 Call the zero-parameter function THUNK, as the root of a new execution
@@ -1484,7 +1484,7 @@ call_out (void *data_)
 
 DEFUN("call-with-barrier", Fcall_with_barrier, Scall_with_barrier,
       (repv thunk, repv closed, repv in, repv out), rep_Subr4) /*
-::doc:call-with-barrier::
+::doc:rep.lang.interpreter#call-with-barrier::
 call-with-barrier THUNK CLOSED [IN-THUNK] [OUT-THUNK]
 
 Call THUNK inside a new execution environment. If CLOSED is non-`nil'
@@ -1512,7 +1512,7 @@ The value of this function is the value returned by THUNK.
 }
 
 DEFUN("make-thread", Fmake_thread, Smake_thread, (repv thunk, repv name), rep_Subr2) /*
-::doc:make-thread::
+::doc:rep.threads#make-thread::
 make-thread THUNK [NAME]
 
 Create and return an object representing a new thread of execution. The
@@ -1528,7 +1528,7 @@ parameters.
 }
 
 DEFUN("thread-yield", Fthread_yield, Sthread_yield, (void), rep_Subr0) /*
-::doc:thread-yield::
+::doc:rep.threads#thread-yield::
 thread-yield
 
 Pass control away from the current thread if other threads are waiting
@@ -1543,7 +1543,7 @@ to run.
 }
 
 DEFUN("thread-delete", Fthread_delete, Sthread_delete, (repv th), rep_Subr1) /*
-::doc:thread-delete::
+::doc:rep.threads#thread-delete::
 thread-delete [THREAD]
 
 Mark THREAD (or the current thread), as being deleted. It will not be
@@ -1565,7 +1565,7 @@ thread results forces the containing dynamic root to be closed.
 
 DEFUN("thread-suspend", Fthread_suspend,
       Sthread_suspend, (repv th, repv msecs), rep_Subr2) /*
-::doc:thread-suspend::
+::doc:rep.threads#thread-suspend::
 thread-suspend [THREAD] [MSECS]
 
 Mark THREAD (or the current thread) as being suspended. It will not be
@@ -1596,7 +1596,7 @@ thread_join_poller (rep_thread *t, void *arg)
 
 DEFUN("thread-join", Fthread_join,
       Sthread_join, (repv th, repv msecs, repv def), rep_Subr3) /*
-::doc:thread-join::
+::doc:rep.threads#thread-join::
 thread-join THREAD [MSECS] [DEFAULT-VALUE]
 
 Suspend the current thread until THREAD has exited, or MSECS
@@ -1625,7 +1625,7 @@ the last form it evaluated, else return DEFAULT-VALUE.
 }
 
 DEFUN("thread-wake", Fthread_wake, Sthread_wake, (repv th), rep_Subr1) /*
-::doc:thread-wake::
+::doc:rep.threads#thread-wake::
 thread-wake [THREAD]
 
 If THREAD (or the current thread) is currently suspended, mark it as
@@ -1644,7 +1644,7 @@ being runnable once more.
 }
 
 DEFUN("threadp", Fthreadp, Sthreadp, (repv arg), rep_Subr1) /*
-::doc:threadp::
+::doc:rep.threads#threadp::
 threadp ARG
 
 Return `t' if ARG is a thread object.
@@ -1659,7 +1659,7 @@ Return `t' if ARG is a thread object.
 
 DEFUN("thread-suspended-p", Fthread_suspended_p,
       Sthread_suspended_p, (repv th), rep_Subr1) /*
-::doc:thread-suspended-p::
+::doc:rep.threads#thread-suspended-p::
 thread-suspended-p THREAD
 
 Return `t' if THREAD is currently suspended from running.
@@ -1675,7 +1675,7 @@ Return `t' if THREAD is currently suspended from running.
 
 DEFUN("thread-exited-p", Fthread_exited_p,
       Sthread_exited_p, (repv th), rep_Subr1) /*
-::doc:thread-exited-p::
+::doc:rep.threads#thread-exited-p::
 thread-exited-p THREAD
 
 Return `t' if THREAD has exited.
@@ -1691,7 +1691,7 @@ Return `t' if THREAD has exited.
 
 DEFUN("current-thread", Fcurrent_thread,
       Scurrent_thread, (repv depth_), rep_Subr1) /*
-::doc:current-thread::
+::doc:rep.threads#current-thread::
 current-thread [DEPTH]
 
 Return the currently executing thread, or `nil' if threaded execution
@@ -1711,7 +1711,7 @@ is not currently taking place.
 }
 
 DEFUN("all-threads", Fall_threads, Sall_threads, (repv depth_), rep_Subr1) /*
-::doc:all-threads::
+::doc:rep.threads#all-threads::
 all-threads [DEPTH]
 
 Return a list of all threads.
@@ -1738,7 +1738,7 @@ Return a list of all threads.
 }
 
 DEFUN("thread-forbid", Fthread_forbid, Sthread_forbid, (void), rep_Subr0) /*
-::doc:thread-forbid::
+::doc:rep.threads#thread-forbid::
 thread-forbid
 
 Increment the thread preemption lock. When greather than zero all
@@ -1751,7 +1751,7 @@ as this function returns.
 }
 
 DEFUN("thread-permit", Fthread_permit, Sthread_permit, (void), rep_Subr0) /*
-::doc:thread-permit::
+::doc:rep.threads#thread-permit::
 thread-permit
 
 Decrement the thread preemption lock. When greather than zero all
@@ -1764,7 +1764,7 @@ as this function returns.
 }
 
 DEFUN("thread-name", Fthread_name, Sthread_name, (repv th), rep_Subr1) /*
-::doc:thread-name:
+::doc:rep.threads#thread-name:
 thread-name THREAD
 
 Return the name of the thread THREAD.

@@ -129,6 +129,8 @@ DEFSYM(_root_structure_, "*root-structure*");
 DEFSYM(rep_structures, "rep.structures");
 DEFSYM(rep_lang_interpreter, "rep.lang.interpreter");
 DEFSYM(rep_vm_interpreter, "rep.vm.interpreter");
+DEFSYM(external, "external");
+DEFSYM(local, "local");
 
 static rep_struct_node *lookup_or_add (rep_struct *s, repv var);
 
@@ -626,7 +628,7 @@ rep_search_imports (rep_struct *s, repv var)
 
 DEFUN("get-structure", Fget_structure,
       Sget_structure, (repv name), rep_Subr1) /*
-::doc:get-structure::
+::doc:rep.structures#get-structure::
 get-structure NAME
 
 Return the structure called NAME (a symbol), or return `nil' if no
@@ -641,7 +643,7 @@ such structure.
 
 DEFUN("name-structure", Fname_structure,
       Sname_structure, (repv structure, repv name), rep_Subr2) /*
-::doc:name-structure::
+::doc:rep.structures#name-structure::
 name-structure STRUCTURE NAME
 
 Assign the name NAME (a symbol) to structure object STRUCTURE.
@@ -670,7 +672,7 @@ Assign the name NAME (a symbol) to structure object STRUCTURE.
 /* environment of thunks are modified! */
 DEFUN ("make-structure", Fmake_structure, Smake_structure,
        (repv sig, repv header_thunk, repv body_thunk, repv name), rep_Subr4) /*
-::doc:make-structure::
+::doc:rep.structures#make-structure::
 make-structure INTERFACE CONFIG-THUNK BODY-THUNK [NAME]
 
 Create and return a new structure. If NAME is a non-nil symbol the
@@ -765,7 +767,7 @@ BODY-THUNK may be modified by this function!
 
 DEFUN ("%structure-ref", F_structure_ref,
        S_structure_ref, (repv structure, repv var), rep_Subr2) /*
-::doc:%structure-ref::
+::doc:rep.structures#%structure-ref::
 %structure-ref STRUCTURE VAR
 
 Return the value of the binding of symbol VAR in structure object
@@ -791,7 +793,7 @@ Returns a void value if no such binding.
 
 DEFUN ("structure-bound-p", Fstructure_bound_p,
        Sstructure_bound_p, (repv structure, repv var), rep_Subr2) /*
-::doc:structure-bound-p::
+::doc:rep.structures#structure-bound-p::
 structure-bound-p STRUCTURE VAR
 
 Return `t' if symbol VAR has a non-void binding in STRUCTURE.
@@ -805,7 +807,7 @@ Return `t' if symbol VAR has a non-void binding in STRUCTURE.
 
 DEFUN ("structure-set", Fstructure_set, Sstructure_set,
        (repv structure, repv var, repv value), rep_Subr3) /*
-::doc:structure-set::
+::doc:rep.structures#structure-set::
 structure-set STRUCTURE VAR VALUE
 
 Set the value of the binding of symbol VAR in structure object
@@ -848,7 +850,7 @@ STRUCTURE to VALUE. If no such binding exists, an error is signalled.
 
 DEFUN ("structure-define", Fstructure_define, Sstructure_define,
        (repv structure, repv var, repv value), rep_Subr3) /*
-::doc:structure-define::
+::doc:rep.structures#structure-define::
 structure-define STRUCTURE VAR VALUE
 
 Set the value of the binding of symbol VAR in structure object
@@ -883,7 +885,7 @@ STRUCTURE to VALUE. If no such binding exists, one is created.
 
 DEFUN ("external-structure-ref", Fexternal_structure_ref,
        Sexternal_structure_ref, (repv name, repv var), rep_Subr2) /*
-::doc:external-structure-ref::
+::doc:rep.structures#external-structure-ref::
 external-structure-ref STRUCT-NAME VAR
 
 Return the value of the binding of symbol VAR within the structure
@@ -916,7 +918,7 @@ Signals an error if no such binding exists.
 
 DEFUN ("structure-name", Fstructure_name,
        Sstructure_name, (repv structure), rep_Subr1) /*
-::doc:structure-name::
+::doc:rep.structures#structure-name::
 structure-name STRUCTURE
 
 Returns the name of structure object STRUCTURE.
@@ -928,7 +930,7 @@ Returns the name of structure object STRUCTURE.
 
 DEFUN ("structure-interface", Fstructure_interface,
        Sstructure_interface, (repv structure), rep_Subr1) /*
-::doc:structure-interface::
+::doc:rep.structures#structure-interface::
 structure-interface STRUCTURE
 
 Returns the interface of structure object STRUCTURE.
@@ -954,10 +956,10 @@ Returns the interface of structure object STRUCTURE.
 
 DEFUN ("structure-exports-p", Fstructure_exports_p,
        Sstructure_exports_p, (repv structure, repv var), rep_Subr2) /*
-::doc:structure-exports-p::
+::doc:rep.structures#structure-exports-p::
 structure-exports-p STRUCTURE VAR
 
-Returns `t' if structure object STRUCTURE exports a binding of symbol
+Returns true if structure object STRUCTURE exports a binding of symbol
 VAR.
 ::end:: */
 {
@@ -966,15 +968,15 @@ VAR.
     rep_DECLARE2 (var, rep_SYMBOLP);
     n = lookup (rep_STRUCTURE (structure), var);
     if (n != 0)
-	return n->is_exported ? Qt : Qnil;
+	return n->is_exported ? Qlocal : Qnil;
     else
 	return (structure_exports_inherited_p
-		(rep_STRUCTURE (structure), var) ? Qt : Qnil);
+		(rep_STRUCTURE (structure), var) ? Qexternal : Qnil);
 }
 
 DEFUN ("structure-imports", Fstructure_imports,
        Sstructure_imports, (repv structure), rep_Subr1) /*
-::doc:structure-imports::
+::doc:rep.structures#structure-imports::
 structure-imports STRUCTURE
 
 Returns the list of structure names opened by structure object
@@ -987,7 +989,7 @@ STRUCTURE.
 
 DEFUN ("structure-accessible", Fstructure_accessible,
        Sstructure_accessible, (repv structure), rep_Subr1) /*
-::doc:structure-accessible::
+::doc:rep.structures#structure-accessible::
 structure-accessible STRUCTURE
 
 Returns the list of structure names accessed by structure object
@@ -1000,7 +1002,7 @@ STRUCTURE.
 
 DEFUN ("set-interface", Fset_interface,
        Sset_interface, (repv structure, repv sig), rep_Subr2) /*
-::doc:set-interface::
+::doc:rep.structures#set-interface::
 set-interface STRUCTURE INTERFACE
 
 Set the interface of structure object STRUCTURE to INTERFACE.
@@ -1036,7 +1038,7 @@ Set the interface of structure object STRUCTURE to INTERFACE.
 
 DEFUN("structure-file", Fstructure_file,
       Sstructure_file, (repv name), rep_Subr1) /*
-::doc:structure-file::
+::doc:rep.structures#structure-file::
 structure-file NAME
 
 Return a string that would be used to locate a structure called NAME (a
@@ -1051,7 +1053,7 @@ symbol).
 
 DEFUN("intern-structure", Fintern_structure,
       Sintern_structure, (repv name), rep_Subr1) /*
-::doc:intern-structure::
+::doc:rep.structures#intern-structure::
 intern-structure STRUCT-NAME
 
 Return the structure called STRUCT-NAME. If no such structure exists,
@@ -1101,7 +1103,7 @@ DEFSTRING (no_struct, "No such structure");
 
 DEFUN ("open-structures", Fopen_structures,
        Sopen_structures, (repv args), rep_Subr1) /*
-::doc:open-structures::
+::doc:rep.structures#open-structures::
 open-structures STRUCT-NAMES
 
 Mark that the current structures has opened the list of structures
@@ -1138,7 +1140,7 @@ named in the list STRUCT-NAMES.
 
 DEFUN ("access-structures", Faccess_structures,
        Saccess_structures, (repv args), rep_Subr1) /*
-::doc:access-structures::
+::doc:rep.structures#access-structures::
 access-structures STRUCT-NAMES
 
 Mark that the current structures may access the list of structures
@@ -1173,7 +1175,7 @@ named in the list STRUCT-NAMES.
 
 DEFUN ("current-structure", Fcurrent_structure,
       Scurrent_structure, (void), rep_Subr0) /*
-::doc:current-structure::
+::doc:rep.structures#current-structure::
 current-structure
 
 Return the current structure object.
@@ -1183,7 +1185,7 @@ Return the current structure object.
 }
 
 DEFUN ("structurep", Fstructurep, Sstructurep, (repv arg), rep_Subr1) /*
-::doc:structurep::
+::doc:rep.structures#structurep::
 structurep ARG
 
 Return `t' if ARG is a structure object.
@@ -1194,7 +1196,7 @@ Return `t' if ARG is a structure object.
 
 DEFUN ("eval", Freal_eval, Seval_real,
        (repv form, repv structure, repv env), rep_Subr3) /*
-::doc:eval::
+::doc:rep.structures#eval::
 eval FORM [STRUCTURE]
 
 Return the result of evaluating FORM inside structure object STRUCTURE
@@ -1225,7 +1227,7 @@ Return the result of evaluating FORM inside structure object STRUCTURE
 
 DEFUN ("structure-walk", Fstructure_walk,
        Sstructure_walk, (repv fun, repv structure), rep_Subr2) /*
-::doc:structure-walk::
+::doc:rep.structures#structure-walk::
 structure-walk FUNCTION STRUCTURE
 
 Call FUNCTION for each binding in structure object STRUCTURE. The
@@ -1281,7 +1283,7 @@ DEFUN ("structure-stats", Fstructure_stats,
 
 DEFUN ("make-binding-immutable", Fmake_binding_immutable,
        Smake_binding_immutable, (repv var), rep_Subr1) /*
-::doc:make-binding-immutable::
+::doc:rep.structures#make-binding-immutable::
 make-binding-immutable VAR
 
 Flag that the binding of symbol VAR in the current structure may not be
@@ -1302,7 +1304,7 @@ changed.
 
 DEFUN ("binding-immutable-p", Fbinding_immutable_p,
        Sbinding_immutable_p, (repv var, repv structure), rep_Subr2) /*
-::doc:binding-immutable-p::
+::doc:rep.structures#binding-immutable-p::
 binding-immutable-p VAR [STRUCTURE]
 
 Return `t' if the binding of symbol VAR in the STRUCTURE has been made
@@ -1346,7 +1348,7 @@ DEFUN ("export-bindings", Fexport_bindings,
 /* features */
 
 DEFUN("featurep", Ffeaturep, Sfeaturep, (repv feature), rep_Subr1) /*
-::doc:featurep::
+::doc:rep.structures#featurep::
 featurep FEATURE
 
 Return non-nil if feature FEATURE has already been loaded by the current
@@ -1360,7 +1362,7 @@ structure.
 }
 
 DEFUN("provide", Fprovide, Sprovide, (repv feature), rep_Subr1) /*
-::doc:provide::
+::doc:rep.structures#provide::
 provide FEATURE
 
 Show that the feature FEATURE (a symbol) has been loaded in the current
@@ -1381,7 +1383,7 @@ structure.
 
 DEFUN_INT("require", Frequire, Srequire, (repv feature), rep_Subr1,
 	  "SFeature to load:") /*
-::doc:require::
+::doc:rep.structures#require::
 require FEATURE
 
 If FEATURE (a symbol) has not already been loaded, load it. The file
@@ -1672,6 +1674,8 @@ rep_structures_init (void)
     rep_INTERN (rep_structures);
     rep_INTERN (rep_lang_interpreter);
     rep_INTERN (rep_vm_interpreter);
+    rep_INTERN (external);
+    rep_INTERN (local);
 
     rep_mark_static (&rep_structure);
     rep_mark_static (&rep_default_structure);
