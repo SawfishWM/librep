@@ -105,7 +105,7 @@ results have been received.")
 
   (define (ispell-stop)
     "Kill any subprocesses being used internally to run Ispell."
-    (accept-process-output 0)		;in case the process already died
+    (accept-process-output-1 process 0)	;in case the process already died
     (when process
       (ispell-save-dictionary)
       (if (eq (process-connection-type process) 'pty)
@@ -113,7 +113,7 @@ results have been received.")
 	;; Not so successful..
 	(interrupt-process process))
       (let ((counter 0))
-	(while (and (accept-process-output *ispell-timeout*) process)
+	(while (and (accept-process-output-1 process *ispell-timeout*) process)
 	  (if (< counter 2)
 	      (interrupt-process process)
 	    (kill-process process))
@@ -129,7 +129,7 @@ results have been received.")
 	;; Flush any pending output
 	(output-filter nil)
 	(while (and (not out) process
-		    (not (accept-process-output *ispell-timeout*))))
+		    (not (accept-process-output-1 process *ispell-timeout*))))
 	(or out (error "Ispell timed out waiting for output")))))
 
   ;; put in the before-exit-hook
