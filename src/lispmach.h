@@ -455,6 +455,11 @@ list_ref (repv list, int elt)
 #define SP_REG asm("27")
 #define SLOTS_REG asm("28")
 #endif
+#if defined (__ppc__) || defined (__powerpc__)
+#define PC_REG asm("r26")
+#define SP_REG asm("r27")
+#define SLOTS_REG asm("r28")
+#endif
 #ifdef __hppa__
 #define PC_REG asm("%r18")
 #define SP_REG asm("%r17")

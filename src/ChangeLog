@@ -1,3 +1,9 @@
+2003-09-03  John Harper  <jsh@unfactored.org>
+
+	* unix_dl.c: fixes for Mac OS X
+
+	* lispmach.h: added ppc register assignments
+
 2003-07-26  John Harper  <jsh@unfactored.org>
 
 	* ffi.c: bug fixes; implemented code to compare types and

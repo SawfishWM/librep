@@ -88,6 +88,9 @@ char *alloca ();
 #   define RTLD_NOW 0
 #  endif
 # endif
+# if ! defined (RTLD_DEFAULT)
+#  define RTLD_DEFAULT ((void *) 0)
+# endif
 # if defined (BROKEN_RTLD_GLOBAL)
 #  undef RTLD_GLOBAL
 #  define RTLD_GLOBAL 0
@@ -210,7 +213,7 @@ load_requires (char *ptr)
 }
 
 static void
-signal_error (char *msg)
+signal_error (const char *msg)
 {
     if (Qerror != 0)
 	Fsignal (Qerror, rep_LIST_1 (rep_string_dup (msg)));
@@ -354,7 +357,7 @@ rep_intern_dl_library (repv file_name)
 
 	if(handle == NULL)
 	{
-	    char *err;
+	    const char *err;
 #ifdef HAVE_DLERROR
 	    err = dlerror();
 #else
