@@ -41,16 +41,7 @@ call it. Otherwise exactly the same as defun."
 	      ''compile-fun ''comp-compile-inline-function)))
 
 
-;; Convenient conditional macros, all defined using cond
-
-(defmacro if (condition then-form &rest else-forms)
-  "Eval CONDITION, if it is non-nil then eval THEN-FORM and return it's 
-result, else do an implicit progn with the ELSE-FORMS returning its value."
-  (cond
-   ((null else-forms)
-    (list 'cond (list condition then-form)))
-   (t
-    (list 'cond (list condition then-form) (cons 't else-forms)))))
+;; Convenient conditional macros, defined using cond
 
 (defmacro when (condition &rest forms)
   "Evaluates CONDITION, if it is non-nil an implicit progn is performed
@@ -61,25 +52,6 @@ with FORMS."
   "Evaluates CONDITION, if it is nil an implicit progn is performed with
 FORMS."
   (list 'cond (cons condition nil) (cons 't forms)))
-
-(defmacro or (&rest forms)
-  "Evaluates each member of FORMS in turn until one returns t, the result of
-which is returned. If none are t then return nil."
-  (cons 'cond (mapcar #'list forms)))
-
-(defmacro and (&rest forms &aux slot list)
-  "Evaluates each member of FORMS in turn, until one returns nil, and returns
-nil. If none return nil then the value of the last form evaluated is
-returned."
-  (while forms
-    (if slot
-	(progn
-	  (setcdr slot (cons (list 'cond (list (car forms))) nil))
-	  (setq slot (car (cdr (car (cdr slot))))))
-      (setq list (list 'cond (list (car forms)))
-	    slot (car (cdr list))))
-    (setq forms (cdr forms)))
-  list)
 
 
 ;; Feature definition
