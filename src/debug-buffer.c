@@ -39,6 +39,7 @@ struct debug_buf {
 
 _PR void *db_alloc(char *name, int size);
 _PR void db_free(void *db);
+_PR void db_vprintf(void *_db, char *fmt, va_list args);
 _PR void db_printf(void *db, char *fmt, ...);
 _PR void db_spew(void *_db);
 _PR void db_spew_all(void);
@@ -83,14 +84,11 @@ db_free(void *_db)
 }
 
 void
-db_printf(void *_db, char *fmt, ...)
+db_vprintf(void *_db, char *fmt, va_list args)
 {
-    va_list args;
     char buf[256];
     int length;
     struct debug_buf *db = _db;
-
-    va_start(args, fmt);
 
     vsprintf(buf, fmt, args);
     length = strlen(buf);
@@ -108,7 +106,14 @@ db_printf(void *_db, char *fmt, ...)
 	memcpy(db->data + db->ptr, buf, length);
 	db->ptr += length;
     }
+}
 
+void
+db_printf(void *_db, char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    db_vprintf(_db, fmt, args);
     va_end(args);
 }
 
