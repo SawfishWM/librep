@@ -1,3 +1,12 @@
+1999-08-06  John Harper  <john@dcs.warwick.ac.uk>
+
+	* main.c (rep_handle_input_exception): if Qerror_mode is
+	`top-level', then only the top-level event loop handles errors,
+	if it's `exit' then errors cause the interpreter to exit.
+	Qinterrupt_mode works similarly for user interrupts
+
+	* unix_main.c: make SIGINT, SIGTERM and SIGHUP non-restartable
+
 1999-08-03  John Harper  <john@dcs.warwick.ac.uk>
 
 	* version 0.1

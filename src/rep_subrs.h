@@ -290,6 +290,7 @@ extern repv Qidle_hook;
 extern void (*rep_on_termination_fun)(void);
 extern repv Qexit, Qquit, Qtop_level, Qcommand_line_args;
 extern repv Qbatch_mode, Qinterpreted_mode, Qprogram_name;
+extern repv Qerror_mode, Qinterrupt_mode;
 extern repv Frecursive_edit(void);
 extern repv Frecursion_depth(void);
 extern repv Fget_command_line_option (repv, repv);
