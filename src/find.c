@@ -164,7 +164,7 @@ static rep_regtype last_match_type;
 static repv last_match_data;
 static rep_regsubs last_matches;
 
-static struct rep_saved_regexp_data *saved_matches;
+struct rep_saved_regexp_data *rep_saved_matches;
 
 void
 rep_update_last_match(repv data, rep_regexp *prog)
@@ -194,7 +194,7 @@ rep_mark_regexp_data(void)
     }
     rep_MARKVAL(last_match_data);
 
-    for(sd = saved_matches; sd != 0; sd = sd->next)
+    for(sd = rep_saved_matches; sd != 0; sd = sd->next)
     {
 	if(sd->type == rep_reg_obj)
 	{
@@ -231,15 +231,15 @@ rep_push_regexp_data(struct rep_saved_regexp_data *sd)
     sd->type = last_match_type;
     sd->data = last_match_data;
     memcpy(&sd->matches, &last_matches, sizeof(rep_regsubs));
-    sd->next = saved_matches;
-    saved_matches = sd;
+    sd->next = rep_saved_matches;
+    rep_saved_matches = sd;
 }
 
 void
 rep_pop_regexp_data(void)
 {
-    struct rep_saved_regexp_data *sd = saved_matches;
-    saved_matches = sd->next;
+    struct rep_saved_regexp_data *sd = rep_saved_matches;
+    rep_saved_matches = sd->next;
     last_match_type = sd->type;
     last_match_data = sd->data;
     memcpy(&last_matches, &sd->matches, sizeof(rep_regsubs));
