@@ -93,7 +93,7 @@ their position in that file.")
 
 
 (defvar comp-top-level-compiled
-  '(if cond when unless let let* catch unwind-protect error-protect
+  '(if cond when unless let let* catch unwind-protect condition-case
     with-buffer with-window with-view progn prog1 prog2 while and or)
   "List of symbols, when the name of the function called by a top-level form
 is one of these that form is compiled.")
@@ -122,7 +122,7 @@ is one of these that form is compiled.")
 	(close src-file))
       (when (and (setq src-file (open file-name "r"))
 		 (setq dst-file (open (concat file-name ?c) "w")))
-	(error-protect
+	(condition-case error-info
 	    (unwind-protect
 		(progn
 		  ;; Pass 2. The actual compile
@@ -465,6 +465,9 @@ that files which shouldn't be compiled aren't."
 				  comp-output))
 	  label (cdr label))))
 
+(defmacro comp-get-label-addr (label)
+  (list 'car label))
+
 ;; Output one opcode and its optional argument
 (defun comp-write-op (opcode &optional arg)
   (cond
@@ -687,41 +690,163 @@ that files which shouldn't be compiled aren't."
 
 (put 'catch 'compile-fun 'comp-compile-catch)
 (defun comp-compile-catch (form)
-  (comp-compile-constant (compile-form (cons 'progn (nthcdr 2 form))))
-  (comp-compile-constant (nth 1 form))
-  (comp-write-op op-catch-kludge)
-  (comp-dec-stack))
+  (let
+      ((catch-label (comp-make-label))
+       (start-label (comp-make-label))
+       (end-label (comp-make-label)))
+    ;;		jmp start
+    (comp-compile-jmp op-jmp start-label)
+
+    ;; catch:
+    ;;		catch TAG
+    ;;		ejmp end
+    (comp-inc-stack)			;enter with one arg on stack
+    (comp-set-label catch-label)
+    (comp-compile-form (nth 1 form))
+    (comp-write-op op-catch)
+    (comp-dec-stack)
+    (comp-compile-jmp op-ejmp end-label)
+    (comp-dec-stack)
+
+    ;; start:
+    ;;		push #catch
+    ;;		binderr
+    ;;		FORMS...
+    ;;		unbind
+    ;; end:
+    (comp-set-label start-label)
+    (comp-compile-constant (comp-get-label-addr catch-label))
+    (comp-write-op op-binderr)
+    (comp-dec-stack)
+    (comp-compile-body (nthcdr 2 form))
+    (comp-write-op op-unbind)
+    (comp-set-label end-label)))
 
 (put 'unwind-protect 'compile-fun 'comp-compile-unwind-pro)
 (defun comp-compile-unwind-pro (form)
-  (comp-compile-constant (compile-form (cons 'progn (nthcdr 2 form))))
-  (comp-write-op op-unwind-pro)
-  (comp-dec-stack)
-  (comp-compile-form (nth 1 form))
-  (comp-write-op op-unbind))
-
-(put 'error-protect 'compile-fun 'comp-compile-error-protect)
-(defun comp-compile-error-protect (form)
   (let
-      ((i 0))
-    (setq form (cdr form))
-    (unless (consp form)
-      (comp-error "No FORM to `error-protect'" form))
-    (comp-compile-constant (compile-form (car form)))
-    (setq form (cdr form))
-    (while (consp form)
-      (let
-	  ((handler (car form)))
-	(unless (consp handler)
-	  (comp-error "Badly formed handler to `error-protect'" form))
-	(comp-compile-constant (list (car handler)
-				     (compile-form (cons 'progn
-							 (cdr handler)))))
-	(setq form (cdr form)
-	      i (1+ i))))
-    (comp-compile-constant (1+ i))
-    (comp-write-op op-error-pro)
-    (comp-dec-stack i)))
+      ((cleanup-label (comp-make-label))
+       (start-label (comp-make-label))
+       (end-label (comp-make-label)))
+
+    ;;		jmp start
+    (comp-compile-jmp op-jmp start-label)
+
+    ;; cleanup:
+    ;;		CLEANUP-FORMS
+    ;;		pop
+    ;;		ejmp end
+    ;; [overall, stack +1]
+    (comp-inc-stack)
+    (comp-inc-stack)
+    (comp-set-label cleanup-label)
+    (comp-compile-body (nthcdr 2 form))
+    (comp-write-op op-pop)
+    (comp-compile-jmp op-ejmp end-label)
+    (comp-dec-stack 2)
+
+    ;; start:
+    ;;		push #cleanup
+    ;;		binderr
+    ;;		FORM
+    ;;		unbind
+    ;;		nil
+    ;;		jmp cleanup
+    ;; [overall, stack +2]
+    (comp-set-label start-label)
+    (comp-compile-constant (comp-get-label-addr cleanup-label))
+    (comp-write-op op-binderr)
+    (comp-dec-stack)
+    (comp-compile-form (nth 1 form))
+    (comp-write-op op-unbind)
+    (comp-write-op op-nil)
+    (comp-dec-stack)
+    (comp-compile-jmp op-jmp cleanup-label)
+
+    ;; end:
+    (comp-set-label end-label)))
+
+(put 'condition-case 'compile-fun 'comp-compile-condition-case)
+(defun comp-compile-condition-case (form)
+  (let
+      ((cleanup-label (comp-make-label))
+       (start-label (comp-make-label))
+       (end-label (comp-make-label))
+       (handlers (nthcdr 3 form)))
+
+    ;;		jmp start
+    ;; cleanup:
+    (comp-compile-jmp op-jmp start-label)
+    (comp-set-label cleanup-label)
+
+    (comp-inc-stack)			;reach here with two items on stack
+    (comp-inc-stack)
+    (if (consp handlers)
+	(progn
+	  ;; Loop over all but the last handler
+	  (while (consp (cdr handlers))
+	    (if (consp (car handlers))
+		(let
+		    ((next-label (comp-make-label)))
+		  ;;		push CONDITIONS
+		  ;;		errorpro
+		  ;;		jtp next
+		  ;;		HANDLER
+		  ;;		jmp end
+		  ;; next:
+		  (comp-compile-constant (car (car handlers)))
+		  (comp-write-op op-errorpro)
+		  (comp-dec-stack)
+		  (comp-compile-jmp op-jtp next-label)
+		  (comp-dec-stack)
+		  (comp-compile-body (cdr (car handlers)))
+		  (comp-compile-jmp op-jmp end-label)
+		  (comp-set-label next-label))
+	      (comp-error "Badly formed condition-case handler"))
+	    (setq handlers (cdr handlers)))
+	  ;; The last handler
+	  (if (consp (car handlers))
+	      (let
+		  ((pc-label (comp-make-label)))
+		;;		push CONDITIONS
+		;;		errorpro
+		;;		ejmp pc
+		;; pc:		HANDLER
+		;;		jmp end
+		(comp-compile-constant (car (car handlers)))
+		(comp-write-op op-errorpro)
+		(comp-dec-stack)
+		(comp-compile-jmp op-ejmp pc-label)
+		(comp-set-label pc-label)
+		(comp-dec-stack)
+		(comp-compile-body (cdr (car handlers)))
+		(comp-compile-jmp op-jmp end-label))
+	    (comp-error "Badly formed condition-case handler")))
+      (comp-error "No handlers in condition-case"))
+    (comp-dec-stack)
+    (comp-dec-stack)
+
+    ;; start:
+    ;;		push VAR
+    ;;		push cleanup
+    ;;		binderr
+    ;;		FORM
+    (comp-set-label start-label)
+    (comp-compile-constant (nth 1 form))
+    (comp-compile-constant (comp-get-label-addr cleanup-label))
+    (comp-write-op op-binderr)
+    (comp-dec-stack)
+    (comp-compile-form (nth 2 form))
+
+    ;; end:
+    ;;		unbind			;unbind error handler or VAR
+    ;;		swap			;result<->VAR
+    ;;		pop			;pop VAR
+    (comp-set-label end-label)
+    (comp-write-op op-unbind)
+    (comp-write-op op-swap)
+    (comp-write-op op-pop)
+    (comp-dec-stack)))
 
 (put 'list 'compile-fun 'comp-compile-list)
 (defun comp-compile-list (form)
