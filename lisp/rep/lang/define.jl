@@ -41,11 +41,12 @@
 ;; within a with-internal-definitions block) [the reason for this
 ;; ugliness is to avoid redefining lambda]
 
-;; returns (SYM . DEF)
+;; returns (SYM DEF [DOC])
 (defun define-parse (args)
   (if (consp (car args))
       (define-parse `(,(caar args) (lambda ,(cdar args) ,@(cdr args))))
-    (cons (car args) (define-scan-form (cadr args)))))
+    (list* (car args) (define-scan-form (cadr args))
+	   (and (stringp (caddr args)) (list (caddr args))))))
 
 (defun define-scan-internals (body)
   (let
@@ -56,7 +57,7 @@
     (if defs
 	(list* 'letrec
 	       (mapcar (lambda (def)
-			 (list (car def) (cdr def))) (nreverse defs))
+			 (list (car def) (cadr def))) (nreverse defs))
 	       (define-scan-body body))
       (let ((new-body (define-scan-body body)))
 	(if (null (cdr new-body))
@@ -145,23 +146,33 @@
 ;;;###autoload
 (defmacro define (#!rest args)
   (let ((def (define-parse args)))
-    (if (eq (cadr def) 'lambda)
-	`(defun ,(car def) ,@(let ((body (cddr def)))
-			       (if (eq (caadr body) 'progn)
-				   (cons (car body) (cdadr body))
-				 body)))
-      `(%define ,(car def) ,(cdr def)))))
+    (let ((var (car def))
+	  (value (cadr def))
+	  (doc (caddr def)))
+      (if (eq (car value) 'lambda)
+	  `(defun ,var ,(cadr value)
+	     ,@(and doc (list doc))
+	     ,@(let ((body (cddr value)))
+		 (if (and (eq (car body) 'progn) (null (cdr body)))
+		     (cdar body)
+		   body)))
+	(cons '%define def)))))
 
 ;;;###autoload
 (defmacro define-macro (#!rest args)
   (let ((def (define-parse args)))
-    (if (eq (cadr def) 'lambda)
-	`(defmacro ,(car def) ,@(let ((body (cddr def)))
-				  (if (eq (caadr body) 'progn)
-				      (cons (car body) (cdadr body))
-				    body)))
-      ;; can only expand to defmacro forms (for the compiler's sake)
-      (error "Macros must be constant lambdas: %s" (car def)))))
+    (let ((var (car def))
+	  (value (cadr def))
+	  (doc (caddr def)))
+      (if (eq (car value) 'lambda)
+	  `(defmacro ,var ,(cadr value)
+	     ,@(and doc (list doc))
+	     ,@(let ((body (cddr value)))
+		 (if (and (eq (car body) 'progn) (null (cdr body)))
+		     (cdar body)
+		   body)))
+	;; can only expand to defmacro forms (for the compiler's sake)
+	(error "Macros must be constant lambdas: %s" (car def))))))
 
 ;;;###autoload
 (defmacro with-internal-definitions (#!rest body)
