@@ -225,12 +225,6 @@ General programming tasks:
    2. optimize the search (binary search if all clauses have same type
       and are orderable?)
 
- - Implement weak-pairs or equivalent
-
-   could use normal cons types for this, but allocate from a `weak'
-   freelist, then only gc has to differentiate between weak and
-   non-weak pairs
-
  - Use two passes for `concat'; the first pass calculates the new
    string's length, the second builds it
 

@@ -1019,6 +1019,9 @@ last garbage-collection is greater than `garbage-threshold'.
     /* move and mark any guarded objects that became inaccessible */
     run_guardians ();
 
+    /* look for dead weak references */
+    rep_scan_weak_refs ();
+
     /* Finished marking, start sweeping. */
 
     rep_sweep_tuples ();

@@ -1,3 +1,11 @@
+2001-08-23  John Harper  <jsh@pixelslut.com>
+
+	* weak-refs.c: new file, provide simple weak-reference cells
+
+	* main.c (rep_init_from_dump): call rep_weak_refs_init ()
+	* values.c (Fgarbage_collect): call rep_scan_weak_refs () after
+	calling run_guardians ()
+
 2001-08-13  John Harper  <jsh@pixelslut.com>
 
 	* continuations.c (Fthread_suspend): reversed test to check if

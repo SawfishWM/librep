@@ -24,7 +24,7 @@ VPATH=@srcdir@:@top_srcdir@
 COMMON_SRCS =	continuations.c datums.c debug-buffer.c files.c find.c \
 		fluids.c lisp.c lispcmds.c lispmach.c macros.c main.c \
 		message.c misc.c numbers.c origin.c regexp.c regsub.c \
-		streams.c structures.c symbols.c tuples.c values.c
+		streams.c structures.c symbols.c tuples.c values.c weak-refs.c
 UNIX_SRCS =	unix_dl.c unix_files.c unix_main.c unix_processes.c
 
 INSTALL_HDRS = rep.h rep_lisp.h rep_regexp.h rep_subrs.h

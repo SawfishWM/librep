@@ -150,6 +150,13 @@ extern void rep_values_init(void);
 extern void rep_values_kill (void);
 extern void rep_dumped_init(char *file);
 
+/* from weak-refs.c */
+extern repv Fmake_weak_ref (repv value);
+extern repv Fweak_ref (repv ref);
+extern repv Fweak_ref_set (repv ref, repv value);
+extern void rep_scan_weak_refs (void);
+extern void rep_weak_refs_init (void);
+
 #ifdef rep_HAVE_UNIX
 
 /* from unix_dl.c */
