@@ -1,3 +1,8 @@
+2001-12-14  John Harper  <jsh@unfactored.org>
+
+	* rep/io/streams.jl (format-hooks-alist): initialize this
+	correctly, so the function values are added, not their names
+
 2001-10-28  John Harper  <jsh@unfactored.org>
 
 	* version 0.15.2
