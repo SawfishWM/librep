@@ -44,7 +44,6 @@ extern repv Fthread_suspended_p (repv thread);
 extern repv Fthread_exited_p (repv thread);
 extern repv Fcurrent_thread (repv depth);
 extern repv Fall_threads (repv depth);
-extern repv Fthread_queue_length (repv depth);
 extern repv Fthread_forbid (void);
 extern repv Fthread_permit (void);
 extern repv Fthread_name (repv th);

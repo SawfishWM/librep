@@ -1,5 +1,11 @@
 2000-02-08  John Harper  <john@dcs.warwick.ac.uk>
 
+	* continuations.c (Fthread_queue_length): deleted this
+	function, it's pretty useless
+
+	* readline.c (rep_dl_init): set rl_basic_quote_characters to
+	include only the double-quote character (from Matt Krai)
+
 	* continuations.c (rep_max_sleep_for): new function, returns
 	the maximum number of milliseconds that the current thread may
 	sleep for
