@@ -221,4 +221,7 @@
 (autoload 'get-mail-alias "mail-dir" t)
 (autoload 'insert-mail-item "mail-dir" t)
 (autoload 'list-mail-dir "mail-dir-summary" t)
+(autoload 'mime-encode-attach-file "mime-encode" t)
+(autoload 'mime-encode-attach-buffer "mime-encode" t)
+(autoload-variable 'mime-encode-keymap "mime-encode")
 ;;; ::autoload-end::

@@ -1,8 +1,17 @@
 1998-10-11  John Harper  <john@dcs.warwick.ac.uk>
 
+	* rm-misc.jl (rm-reply): uses the rm-get-msg-header function
+	instead of mail-get-header. This works with decoded MIME
+	messages
+
+	* send-mail.jl: bind `C-c C-m' to the mime-encode-keymap
+
 	* send-mail.jl (mail-send-hook): defvar'd this hook
 
 	* mime-encode.jl: initial attempt at creating MIME messages
+
+	* mime-decode.jl: minor fixes
+	(mime-current-part): new function
 
 1998-10-09  John Harper  <john@dcs.warwick.ac.uk>
 
