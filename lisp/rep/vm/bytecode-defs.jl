@@ -198,6 +198,8 @@
       (pop-all . 0xbf)
       (fluid-set . 0xc0)
       (fluid-bind . 0xc1)
+      (memql . 0xc2)
+      (num-eq . 0xc3)
 
       (last-before-jmps . 0xf7)
 
@@ -246,7 +248,7 @@
      0   0   0   0   0   0   0   0
      -1  0   0   0   0   0   0   0	;0xb0
      0   -1  0   -1  -1  0   0   nil
-     -1  -2  nil nil nil nil nil nil	;0xc0
+     -1  -2  -1  -1  nil nil nil nil	;0xc0
      nil nil nil nil nil nil nil nil
      -1  nil nil nil nil nil nil nil	;0xd0
      -1  nil nil nil nil nil nil nil

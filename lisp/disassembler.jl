@@ -63,7 +63,7 @@
      "log" "sin" "cos" "tan"		; 0xb0
      "sqrt" "expt" "swap2" "mod"
      "make-closure" "unbindall-0" "closurep" "pop-all"
-     "fluid-set" "fluid-bind" nil nil nil nil nil nil	; 0xc0
+     "fluid-set" "fluid-bind" "memql" "num-eq" nil nil nil nil	; 0xc0
      nil nil nil nil nil nil nil nil
      nil nil nil nil nil nil nil nil	; 0xd0
      nil nil nil nil nil nil nil nil
