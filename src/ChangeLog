@@ -1,3 +1,7 @@
+2001-11-14  John Harper  <jsh@unfactored.org>
+
+	* files.c (Ffile_ttyp): new function
+
 2001-10-28  John Harper  <jsh@unfactored.org>
 
 	* version 0.15.2
