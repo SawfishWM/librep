@@ -106,7 +106,10 @@ static void
 shutdown_socket (rep_socket *s)
 {
     if (s->sock != 0)
+    {
 	close (s->sock);
+	rep_deregister_input_fd (s->sock);
+    }
 
     DB (("shutdown socket fd %d\n", s->sock));
 
@@ -118,10 +121,8 @@ static void
 delete_socket (rep_socket *s)
 {
     if (SOCKET_IS_ACTIVE (s))
-    {
 	shutdown_socket (s);
-	rep_deregister_input_fd (s->sock);
-    }
+
     rep_FREE_CELL (s);
 }
 
@@ -163,7 +164,6 @@ client_socket_output (int fd)
     {
 	/* assume EOF  */
 
-	rep_deregister_input_fd (fd);
 	shutdown_socket (s);
 	if (s->sentinel != Qnil)
 	    rep_call_lisp1 (s->sentinel, rep_VAL (s));
@@ -602,7 +602,7 @@ socket_print (repv stream, repv arg)
 }
 
 
-/* init */
+/* dl hooks */
 
 repv
 rep_dl_init (void)
@@ -628,4 +628,13 @@ rep_dl_init (void)
     rep_register_process_input_handler (server_socket_output);
 
     return rep_pop_structure (tem);
+}
+
+void
+rep_dl_kill (void)
+{
+    rep_socket *s;
+    for (s = socket_list; s != 0; s = s->next)
+	shutdown_socket (s);
+    socket_list = 0;
 }
