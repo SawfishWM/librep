@@ -795,16 +795,16 @@
   (put 'condition-case 'rep-compile-fun compile-condition-case)
 
   (defun compile-list (form)
-    (let
-	((count 0))
+    (let ((count 0))
       (setq form (cdr form))
       (while (consp form)
 	(compile-form-1 (car form))
-	(setq
-	 count (1+ count)
-	 form (cdr form)))
-      (emit-insn (bytecode list) count)
-      (decrement-stack (1- count))))
+	(setq count (1+ count))
+	(setq form (cdr form)))
+      (if (zerop count)
+	  (compile-constant '())
+	(emit-insn (bytecode list) count)
+	(decrement-stack (1- count)))))
   (put 'list 'rep-compile-fun compile-list)
 
   ;; Funcall normally translates to a single call instruction. However,
