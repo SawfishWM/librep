@@ -52,6 +52,8 @@
 	    note-declaration)
 
     (open rep
+	  rep.io.streams
+	  rep.io.files
 	  rep.vm.compiler.modules
 	  rep.vm.compiler.bindings
 	  rep.vm.compiler.basic
@@ -183,9 +185,7 @@
 	       (null (memq name (fluid defines)))
 	       (not (has-local-binding-p name))
 	       (null (assq name (fluid defuns)))
-	       (not (special-variable-p name))
-	       (not (boundp name))
-	       (not (locate-variable name)))
+	       (not (compiler-boundp name)))
       (compiler-warning
        'bindings "Reference to undeclared free variable: %s" name)))
 
@@ -197,7 +197,8 @@
 	  ((has-local-binding-p name)
 	   (compiler-warning
 	    'shadowing "Binding to %s shadows earlier binding" name))
-	  ((and (boundp name) (functionp (symbol-value name)))
+	  ((and (compiler-boundp name)
+		(functionp (compiler-symbol-value name)))
 	   (compiler-warning
 	    'shadowing "Binding to %s shadows pre-defined value" name))))
 
@@ -209,10 +210,10 @@
       (catch 'return
 	(let
 	    ((decl (assq name (fluid defuns))))
-	  (when (and (null decl) (or (boundp name)
-				     (assq name (fluid inline-env))))
+	  (when (and (null decl) (or (assq name (fluid inline-env))
+				     (compiler-boundp name)))
 	    (setq decl (or (cdr (assq name (fluid inline-env)))
-			   (symbol-value name)))
+			   (compiler-symbol-value name)))
 	    (when (or (subrp decl)
 		      (and (closurep decl)
 			   (eq (car (closure-function decl)) 'autoload)))
