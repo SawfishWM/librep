@@ -1,3 +1,9 @@
+2000-08-15  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep/vm/compiler/unscheme.jl, rep/vm/compiler/scheme.jl: when
+	copying rep-compile-fun properties, also copy
+	rep-compile-opcode if it's present
+
 2000-08-13  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep/vm/compiler/opt.jl: new patterns, `push 0; num-eq ->
