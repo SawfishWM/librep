@@ -299,7 +299,8 @@
     ;; XXX this is wrong, but easy..!
     (eq (car form) 'quote))
    ((symbolp form)
-    (or (assq form (fluid const-env))
+    (or (keywordp form)
+	(assq form (fluid const-env))
 	(compiler-binding-immutable-p form)))
    ;; Assume self-evaluating
    (t t)))
@@ -311,9 +312,10 @@
     ;; only quote
     (nth 1 form))
    ((symbolp form)
-    (if (compiler-binding-immutable-p form)
-	(compiler-symbol-value form)
-      (cdr (assq form (fluid const-env)))))
+    (cond ((keywordp form) form)
+	  ((compiler-binding-immutable-p form)
+	   (compiler-symbol-value form))
+	  (t (cdr (assq form (fluid const-env))))))
    (t form)))
 
 (defun constant-function-p (form)
