@@ -10,6 +10,14 @@ and more long-term ideas are marked -
 Outstanding bugs
 ================
 
+ ! case uses eq comparison, should use eql or equal?
+
+ ! scheme define/lambda doesn't splice begin forms
+
+ ! fluid-let custom compiler is disabled
+
+ ! can't do numerator/denominator of flonums
+
  ! ref cache can thrash when switching structures quickly
 
    also, the first level lookup of foo#bar isn't cached
@@ -90,6 +98,8 @@ General programming tasks:
    unwind-protect while with-object
 
  - eliminate tail calls in interpreted code
+
+   also, subrs can't be called tail recursively (e.g. call/cc apply ..?)
 
  - add a hygienic macro facility
 

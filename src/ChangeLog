@@ -1,3 +1,52 @@
+2000-04-24  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispmach.c: if GNU CC is detected, then build an indirectly
+	threaded interpreter using its computed goto, and label
+	address, features. Initially from Ceri Storey, completed by me
+
+	* main.c, lisp.c, lispmach.c: call Fgarbage_collect with nil
+	arg not t
+
+2000-04-23  John Harper  <john@dcs.warwick.ac.uk>
+
+	* repint.h (rep_struct): new flag `export_all'. When set, _all_
+	local bindings in the structure are exported automatically
+
+	* structures.c: handle the `export_all' structure flag
+	(rep_structure_exports_all): new function
+
+	[ Note that this auto-export feature is intended for
+	dynamically defined modules, e.g. the *root-structure* of
+	extensible programs. ]
+
+2000-04-22  John Harper  <john@dcs.warwick.ac.uk>
+
+	* macros.c: set macro-environment to nil initially
+
+	* symbols.c (Fclosure_structure): new function, for the
+	compiler
+
+	* numbers.c (Fintegerp): return t for inexact integers (i.e.
+	floats with no fractional part)
+
+2000-04-21  John Harper  <john@dcs.warwick.ac.uk>
+
+	* misc.c (Qoperating_system, Qrep_version, Qrep_interface_id,
+	Qrep_build_id, Qupcase_table, Qdowncase_table, Qflatten_table):
+	now lexically bound
+
+	* bytecodes.h, lispmach.c (OP_FLUID_REF, OP_FLUID_SET,
+	OP_FLUID_BIND): new insns
+
+	* fluids.c: new file, provides anonymous dynamic bindings
+	* main.c: call rep_fluids_init ()
+
+	* numbers.c (Frealp, Finexactp, Frationalp): deleted, in lisp
+
+2000-04-20  John Harper  <john@dcs.warwick.ac.uk>
+
+	* numbers.c: don't produce exact results from inexact inputs
+
 2000-04-18  John Harper  <john@dcs.warwick.ac.uk>
 
 	More work to reduce VM consing, increases performance

@@ -1,3 +1,69 @@
+2000-04-24  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep-repl.jl: new commands `,compile' and `,compile-proc'
+
+	* init.jl, scheme.jl, scheme-data.jl: added cons accessors c....r
+
+	* compiler.jl: export compile-module
+	(compile-function): ignore already compiled functions, don't
+	signal an error. And fix the method of testing for compiledness
+
+	* compiler-modules.jl (compile-module): new function, compile
+	all non-compiled functions in a named structure
+
+2000-04-23  John Harper  <john@dcs.warwick.ac.uk>
+
+	* records.jl: implements record-like data structures. Based on
+	the Scheme48 record interface
+
+2000-04-22  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compiler.jl (compile-function): this now works properly since
+	it respects the structure that the closure is made in
+
+	* compiler-utils.jl (compiler-constant-p): don't check that the
+	`quote' symbol is from the `rep' structure (kludge)
+
+	* compiler-scheme.jl, compiler-rep.jl: at top-level, splice in
+	`begin' and `progn' forms, allows macros to expand to blocks of
+	top-level definitions
+
+	* compiler-modules.jl: track the current language being
+	compiled, also provides a means for telling the compiler which
+	module is being compiled in
+
+	* compiler-basic.jl (compile-lambda): removed the SEQUENCER
+	arg, use the compiler-sequencer language property
+
+	* compiler-utils.jl (compiler-constant-p,
+	compiler-constant-value): accept all numeric types
+
+	* compiler-const.jl (compile-constant): only emit fixnums using
+	immediate push insns
+
+2000-04-21  John Harper  <john@dcs.warwick.ac.uk>
+
+	* queues.jl: new file, implement the scheme48 queue interface
+
+	* init.jl (fluid-let): new macro
+
+	* debug.jl: rewritten to use fluid instead of special variables
+
+	* bytecode-defs.jl, disassembler.jl (fluid-ref, fluid-set,
+	fluid-bind): new insns
+
+	* compiler.jl, compiler-vars.jl, compiler-utils.jl,
+	compiler-src.jl, compiler-scheme.jl, compiler-rep.jl,
+	compiler-opt.jl, compiler-modules.jl, compiler-lap.jl,
+	compiler-inline.jl, compiler-const.jl, compiler-bindings.jl,
+	compiler-basic.jl: rewritten to use fluid instead of special
+	variables
+
+	* symbol-table.jl: new file, wrapper around anonymous
+	structures for efficient symbol tables
+
+	* init.jl (realp, rationalp, inexactp): new functions
+
 2000-04-18  John Harper  <john@dcs.warwick.ac.uk>
 
 	* compiler.jl, compiler-vars.jl, compiler-utils.jl,
