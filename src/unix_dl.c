@@ -356,7 +356,7 @@ rep_open_dl_library(repv file_name)
 		}
 		else if (ret && rep_SYMBOLP(ret) && ret != Qt)
 		    x->feature_sym = ret;
-		else if (ret && F_structurep (ret) != Qnil)
+		else if (ret && rep_STRUCTUREP (ret))
 		{
 		    x->structure = ret;
 		    ret = F_structure_name (ret);
