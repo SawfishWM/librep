@@ -3906,18 +3906,19 @@ containing fluid objects, with the values to bind to those fluid
 objects. Once the bindings have been installed, the @var{body @dots{}}
 forms are evaluated, and the bindings removed. The value of the last of
 the @var{body @dots{}} forms is returned.
+@end defmac
 
-Here is an example use of @code{fluid-let}, assuming that the lexical
-variables @code{a} and @code{b} were previously initialized to contain
-references to fluid objects created by @code{make-fluid}.
+Here is an example code fragment using fluid variables and
+@code{fluid-let}:
 
 @lisp
+(define a (make-fluid))
+(define b (make-fluid))
+
 (fluid-let ((a 1)
             (b 2))
-  (+ a b))
-  @result{} 3
+  (+ (fluid a) (fluid b))) @result{} 3
 @end lisp
-@end defmac
 
 
 @node Functions, Macros, Variables, The language

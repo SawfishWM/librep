@@ -1,3 +1,14 @@
+2000-05-15  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.c (Fdebug_frame_environment): only need to return two
+	values now, the saved environment and the saved structure, do
+	this in a cons cell not a list
+
+	* lisp.c (read_symbol): fix bug of allowing first non-zero
+	digit of octal numbers to be 8 or 9
+
+	* unix_dl.c (rep_open_dl_library): ignore null dlname entries
+
 2000-05-13  John Harper  <john@dcs.warwick.ac.uk>
 
 	* structures.c (F_eval_in_structure): optional third arg, the

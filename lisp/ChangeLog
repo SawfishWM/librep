@@ -1,3 +1,8 @@
+2000-05-15  John Harper  <john@dcs.warwick.ac.uk>
+
+	* debug.jl: adapted for new return from debug-frame-environment
+	(but this doesn't work 100%?)
+
 2000-05-14  John Harper  <john@dcs.warwick.ac.uk>
 
 	* init.jl (and): fixed bug `(and 1 nil) => 1'
