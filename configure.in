@@ -378,6 +378,14 @@ AC_ARG_ENABLE(gprof,
  [  --enable-gprof	  Build for gprof (needs --enable-static)],
  [CFLAGS="${CFLAGS} -pg"; LDFLAGS="${LDFLAGS} -pg"])
 
+AC_ARG_ENABLE(full-name-terminator,
+ [  --enable-full-name-terminator=C Full name in gecos field of passwd
+			   file is terminated by first C character],
+ [if test "$enableval" != "no"; then
+   enableval="'$enableval'"
+   AC_DEFINE_UNQUOTED(FULL_NAME_TERMINATOR, $enableval)
+  fi])
+
 dnl Assumption for now
 HAVE_UNIX=1
 AC_DEFINE(rep_HAVE_UNIX, 1)
