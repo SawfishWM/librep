@@ -1,3 +1,7 @@
+2000-09-05  John Harper  <john@dcs.warwick.ac.uk>
+
+	* Makefile.in: lisp depends on ../src/.libexec
+
 2000-09-04  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep/vm/compiler/scheme.jl: when compiling let* and letrec
