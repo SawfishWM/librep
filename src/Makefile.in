@@ -46,7 +46,8 @@ libxsdbm.la : $(SDBM_OBJS)
 	$(LIBTOOL) $(CC) $(LDFLAGS) -o $@ $^ -rpath $(libdir)
 
 librep.la : $(OBJS)
-	$(LIBTOOL) $(CC) $(LDFLAGS) -o $@ $^ -rpath $(libdir)
+	$(LIBTOOL) $(CC) $(LDFLAGS) -version-info $(libversion) \
+	  -o $@ $^ -rpath $(libdir)
 
 rep : $(REP_OBJS) librep.la $(LIBOBJS)
 	$(LIBTOOL) $(CC) $(CPPFLAGS) $(CFLAGS) -o $@ \

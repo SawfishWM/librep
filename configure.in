@@ -24,7 +24,14 @@ AC_INIT(src/rep_subrs.h)
 AC_CONFIG_HEADER(config.h src/rep.h)
 AC_CONFIG_AUX_DIR(etc)
 
-version="0.0"
+dnl Release versioning info
+version="0.1"
+
+dnl libtool versioning info: `CURRENT:REVISION:AGE'. CURRENT is the
+dnl current interface id, REVISION is the version number of this
+dnl implementation, AGE defines the first interface id also supported
+dnl (i.e. all interfaces between CURRENT-AGE and CURRENT are supported)
+libversion="0:0:0"
 
 makefile_template="Makefile.in:Makedefs.in"
 output_files="src/Makefile:Makedefs.in:src/Makefile.in\
@@ -178,6 +185,7 @@ AC_DEFINE(rep_MALLOC_ALIGNMENT, 4)
 
 dnl Nonstandard exported symbols
 AC_SUBST(version)
+AC_SUBST(libversion)
 AC_SUBST(repdir)
 AC_SUBST(repexecdir)
 AC_SUBST(replispdir)
