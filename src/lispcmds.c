@@ -31,6 +31,7 @@
 #endif
 
 DEFSTRING(default_rep_directory, REP_DIRECTORY);
+DEFSTRING(dot, ".");
 
 DEFSYM(or, "or");
 DEFSYM(and, "and");
@@ -1611,6 +1612,7 @@ loaded and a warning is displayed.
     rep_bool no_error_p = !rep_NILP(noerr_p);
     rep_bool no_suffix_p = !rep_NILP(nosuf_p);
     rep_bool in_current_env = !rep_NILP(in_env);
+    rep_bool interp_mode = Fsymbol_value (Qinterpreted_mode, Qt) != Qnil;
 
     repv name = Qnil, path;
     repv dir = rep_NULL, try = rep_NULL;
@@ -1652,7 +1654,7 @@ research:
 	    repv tem;
 	    static char *suffixes[3] = { ".jl", ".jlc" };
 	    int i = 1;
-	    if (!trying_dl && Fsymbol_value (Qinterpreted_mode, Qt) != Qnil)
+	    if (!trying_dl && interp_mode)
 		i = 0;
 	    for(; i >= 0; i--)
 	    {
@@ -2634,8 +2636,9 @@ rep_lispcmds_init(void)
 	  Fcons (Fsymbol_value (Qdocumentation_file, Qt), Qnil));
 
     rep_INTERN_SPECIAL(load_path);
-    Fset (Qload_path, rep_list_2(Fsymbol_value (Qlisp_lib_directory, Qt),
-				 Fsymbol_value (Qsite_lisp_directory, Qt)));
+    Fset (Qload_path, rep_list_3(Fsymbol_value (Qlisp_lib_directory, Qt),
+				 Fsymbol_value (Qsite_lisp_directory, Qt),
+				 rep_VAL(&dot)));
 
     rep_INTERN_SPECIAL(dl_load_path);
     Fset (Qdl_load_path, Qnil);

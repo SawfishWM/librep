@@ -76,10 +76,7 @@
        (throw 'quit 0))
       (t
        (setq batch-mode t)
-       (if (file-exists-p arg)
-	   ;; load with no-path and no-suffix if possible
-	   (load arg nil t t)
-	 (load arg))))))
+       (load arg)))))
 
 (unless batch-mode
   (format standard-output ";; rep %s, Copyright (C) 1999 John Harper\n;; rep comes with ABSOLUTELY NO WARRANTY; for details see the file COPYING\n;; built %s\n" rep-version rep-build-id)
