@@ -605,7 +605,7 @@ static void
 file_prin(repv strm, repv obj)
 {
     rep_stream_puts(strm, "#<file ", -1, rep_FALSE);
-    if(rep_FILE(obj)->name)
+    if(rep_FILE(obj)->name != Qnil)
     {
 	rep_stream_puts(strm, rep_PTR(rep_FILE(obj)->name), -1, rep_TRUE);
 	rep_stream_putc(strm, '>');
