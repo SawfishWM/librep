@@ -21,10 +21,12 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
+(declare (unsafe-for-call/cc))
+
 (define-structure rep.vm.compiler.bindings
 
     (export lex-bindings spec-bindings
-	    lexically-pure
+	    lexically-pure unsafe-for-call/cc
 	    call-with-frame
 	    spec-bound-p
 	    has-local-binding-p
@@ -37,9 +39,9 @@
 	    binding-enclosed-p
 	    note-binding-referenced
 	    binding-referenced-p
+	    note-function-call-made
 	    binding-tail-call-only-p
 	    note-closure-made
-	    note-call/cc
 	    allocate-bindings)
 
     (open rep
@@ -50,6 +52,7 @@
   (define spec-bindings (make-fluid '()))	;list of bound variables
   (define lex-bindings (make-fluid '()))	;alist of bound variables
   (define lexically-pure (make-fluid t))	;any dynamic state?
+  (define unsafe-for-call/cc (make-fluid nil))
 
   (define (spec-bound-p var)
     (or (memq var (fluid defvars))
@@ -126,7 +129,11 @@
 
   ;; note that the outermost binding of VAR has been modified
   (define (note-binding-modified var)
-    (tag-binding var 'modified))
+    (let ((cell (lexical-binding var)))
+      (when cell
+	(tag-cell 'modified cell)
+	(when (cell-tagged-p 'across-funcall cell)
+	  (tag-cell 'exposed cell)))))
 
   (define (binding-modified-p var)
     (binding-tagged-p var 'modified))
@@ -142,6 +149,11 @@
   (define (binding-referenced-p var)
     (binding-tagged-p var 'referenced))
 
+  ;; if a function call is made, it could be to call/cc
+  (define (note-function-call-made)
+    (mapc (lambda (cell)
+	    (tag-cell 'across-funcall cell)) (fluid lex-bindings)))
+
   (define (binding-tail-call-only-p var)
     (not (binding-tagged-p var 'not-tail-call-only)))
 
@@ -149,19 +161,6 @@
   (define (note-closure-made)
     (mapc (lambda (cell)
 	    (tag-cell 'enclosed cell)) (fluid lex-bindings)))
-
-  ;; note that a continuation has been created
-  (define (note-call/cc)
-    ;; all variables in scope must be allocated on heap, otherwise
-    ;; their original values will be reloaded each time the continuation
-    ;; is invoked, even if they were since updated. E.g.
-
-    ;; (let ((x 0))
-    ;;   (call/cc (lambda (c) (setq cont c)))
-    ;;   (setq x (1+ x)))
-
-    (mapc (lambda (cell)
-	    (tag-cell 'heap-allocated cell)) (fluid lex-bindings)))
 
   (define (emit-binding var)
     (if (spec-bound-p var)
@@ -181,8 +180,7 @@
 	   (decrement-stack))
 	  ((lexically-bound-p sym)
 	    ;; The lexical address is known. Use it to avoid scanning
-	   (emit-insn `(lex-set ,sym ,(fluid lex-bindings)))
-	   (note-binding-modified sym))
+	   (emit-insn `(lex-set ,sym ,(fluid lex-bindings))))
 	  (t
 	   ;; No lexical binding, but not special either. Just
 	   ;; update the global value
@@ -208,6 +206,8 @@
 
   (define (heap-binding-p cell)
     (or (cell-tagged-p 'captured cell)
+	(and (not (fluid unsafe-for-call/cc))
+	     (cell-tagged-p 'exposed cell))
 	;; used to tag bindings unconditionally on the heap
 	(cell-tagged-p 'heap-allocated cell)))
 
@@ -319,5 +319,6 @@
 	(loop (cdr vars)))))
   (put 'heap-allocated 'compiler-decl-fun declare-heap-allocated)
 
-  ;; (declare (used-call/cc))
-  (put 'used-call/cc 'compiler-decl-fun note-call/cc))
+  (define (declare-unsafe-for-call/cc)
+    (fluid-set unsafe-for-call/cc t))
+  (put 'unsafe-for-call/cc 'compiler-decl-fun declare-unsafe-for-call/cc))
