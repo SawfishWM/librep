@@ -315,6 +315,9 @@
 /* Define if using LIBC gettext */
 #undef LIBC_GETTEXT
 
+/* Define if you have the <libintl.h> header file. */
+#undef HAVE_LIBINTL_H
+
 /* Define the sizes of long and long long */
 #undef SIZEOF_LONG
 #undef SIZEOF_LONG_LONG

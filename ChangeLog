@@ -1,3 +1,20 @@
+2000-08-01  John Harper  <john@dcs.warwick.ac.uk>
+
+	* intl/intl-compat.c, intl/Makefile.in: removed my edits, intl/
+	has no differences to standard gettext intl/ now
+
+	* autogen.sh: new script
+
+	* configure.in: removed ranlib check, remove aux-dir decl.
+	Added check for <libintl.h> if gettext is in libc
+
+	* etc/regexp.patch, etc/gc-cons: deleted
+
+	* etc/install-sh: moved to top-level directory
+
+	* etc/ltmain.sh, etc/ltconfig, etc/config.sub,
+	etc/config.guess: deleted, use libtoolize to create these
+
 2000-07-29  John Harper  <john@dcs.warwick.ac.uk>
 
 	* configure.in: signal an error if no gmp and --without-gmp

@@ -95,8 +95,6 @@ General programming tasks:
    itself) but really %make-structure should just create the thing
    (with an optional name for printing)
 
- + do something with the define-value ugliness?
-
  + fall back to .jl if .jlc fails with byte-code error
 
  - move the gtk-independent parts of the rep-gtk glue generator and

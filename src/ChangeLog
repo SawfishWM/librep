@@ -1,4 +1,17 @@
+2000-08-01  John Harper  <john@dcs.warwick.ac.uk>
+
+	* gettext.c: if using gettext in ../intl/, define gnu_foo as
+	foo__, removes the need to patch the intl files
+
 2000-07-31  John Harper  <john@dcs.warwick.ac.uk>
+
+	* numbers.c (rep_parse_number): fixed bounds checking of
+	characters for non-base10 conversion
+
+	* lispmach.c: added code to cache the top of the stack in a
+	[register] variable. Only enabled on non-x86 platforms (i.e.
+	those with a reasonable number of registers). Gets about 8%
+	speedup on sparc
 
 	* lisp.c: changed error message for void-value
 
