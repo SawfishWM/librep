@@ -1,3 +1,11 @@
+Wed Apr 22 17:21:07 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* views.c (make_view): try to initialise the vw_BufferList
+	(cmd_make_view): renamed split-view, deleted the BUFFER
+	parameter, made interactive. This replaces open-view
+	(cmd_destroy_view): renamed delete-view, made interactive. This
+	replaces close-view
+
 Tue Apr 21 16:45:05 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_processes.c (get_pty): minor change to order in which

@@ -1,3 +1,12 @@
+Wed Apr 22 17:22:48 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* windows.jl (open-view, close-view): deleted, replaced by
+	split-view and delete-view in views.c
+	(close-other-views): renamed delete-other-views
+	* buffer-menu.jl, buffer-summary.jl, loadkeys.jl, prompt.jl,
+	read-mail.jl: replace open-view by split-view, and close-view
+	by delete-view, etc
+
 Tue Apr 21 11:48:59 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* cvs.jl (cvs-diff-backup, cvs-undo-modification): implemented
