@@ -136,18 +136,21 @@ typedef unsigned rep_PTR_SIZED_INT repv;
    converted to a pointer, i.e. rep_PTR(rep_NULL) == NULL. */
 #define rep_NULL	(0)
 
-#ifndef rep_ALIGN
-# ifdef __GNUC__
-#  define rep_ALIGN(d,x) d __attribute__ ((aligned (x)))
-# else
-#  warning "You may need to define the rep_lisp.h:rep_ALIGN macro!"
-#  define rep_ALIGN(d,x)
-# endif
-#endif
-
 /* Align the variable or struct member D to the necessary cell alignment.
    This is used like: ``rep_ALIGN_CELL(rep_cell foo) = ...'' */
-#define rep_ALIGN_CELL(d) rep_ALIGN(d, rep_CELL_ALIGNMENT)
+#ifdef __GNUC__
+# define rep_ALIGN_CELL(d) d __attribute__ ((aligned (rep_CELL_ALIGNMENT)))
+#elif defined (__digital__) && defined (__unix__) && defined (__DECC)
+# if rep_CELL_ALIGNMENT >= 4
+#  define rep_ALIGN_CELL(d) d
+# else
+#  error Cell alignment has changed (previously it was 4), and rep_lisp.h
+#  error must be updated for Tru64!
+# endif
+#else
+# warning Lets hope your compiler aligns to 4 byte boundaries..
+# define rep_ALIGN_CELL(d) d
+#endif
 
 
 /* Structure of a cell */
