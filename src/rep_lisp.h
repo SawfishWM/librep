@@ -752,9 +752,9 @@ typedef struct rep_gc_n_roots {
 #define DEFUN(name,fsym,ssym,args,type)					\
     DEFSTRING(rep_CONCAT(ssym, __name), name);				\
     extern repv fsym args;						\
-    rep_ALIGN_CELL(rep_xsubr ssym) = { type, fsym,			\
-					rep_VAL(&rep_CONCAT(ssym, __name)), \
-					rep_NULL };			\
+    rep_ALIGN_CELL(rep_xsubr ssym) = { type, (repv (*)()) fsym,		\
+				       rep_VAL(&rep_CONCAT(ssym, __name)), \
+				       rep_NULL };			\
     repv fsym args
 
 /* Same as above but with an extra arg -- an interactive-spec string. */
@@ -762,9 +762,9 @@ typedef struct rep_gc_n_roots {
     DEFSTRING(rep_CONCAT(ssym, __name), name);				\
     DEFSTRING(rep_CONCAT(ssym, __int), interactive);			\
     extern repv fsym args;						\
-    rep_ALIGN_CELL(rep_xsubr ssym) = { type, fsym,			\
-					rep_VAL(&rep_CONCAT(ssym, __name)), \
-					rep_VAL(&rep_CONCAT(ssym, __int)) };\
+    rep_ALIGN_CELL(rep_xsubr ssym) = { type, (repv (*)()) fsym,		\
+				       rep_VAL(&rep_CONCAT(ssym, __name)), \
+				       rep_VAL(&rep_CONCAT(ssym, __int)) };\
     repv fsym args
 
 /* Add a subroutine */    
