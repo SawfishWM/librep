@@ -299,6 +299,22 @@ EXPR form evaluated.
 			       (caddr var)
 			     (car var))) vars))))))
 
+(defmacro while (condition . body)
+  "while CONDITION BODY...
+
+`while' is an imperative looping construct. CONDITION is evaluated, if
+it produces a non-nil value, then the sequence of BODY... forms are
+evaluated using an implicit `progn' statement, and control passes back
+to the beginning of the while form.
+
+When the VALUE of CONDITION is the symbol `nil', the while statement is
+exited, returning an undefined value."
+
+  ((lambda (tem)
+     (list 'let tem '()
+	   (list 'cond (list condition (cons 'progn body) (list tem)))))
+   (gensym)))
+
 (defmacro prog2 args
   "prog2 FORM1 FORM2 [FORMS...]
 
