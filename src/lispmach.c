@@ -206,7 +206,7 @@ list_ref (repv list, int elt)
 /* Non-threaded interpretation, just use a big switch statement in
    a while loop. */
 
-# define BEGIN_DISPATCH switch (FETCH) {
+# define BEGIN_DISPATCH fetch: switch (FETCH) {
 # define END_DISPATCH }
 
 /* Output the case statement for an instruction OP, with an embedded
@@ -516,7 +516,6 @@ again:
 	int arg;
 	repv tmp, tmp2;
 
-    fetch:
 	BEGIN_DISPATCH
 
 	BEGIN_INSN_WITH_ARG (OP_CALL)
