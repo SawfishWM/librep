@@ -148,3 +148,15 @@ is 0)."
 (defun nop ()
   "A do-nothing command."
   (interactive))
+
+
+;; Macros for handling positions
+
+(defmacro pos-col (p)
+  "Return the column pointed to by position P."
+  (list 'cdr p))
+
+(defmacro pos-line (p)
+  "Return the row pointed to by position P."
+  (list 'car p))
+
