@@ -1528,33 +1528,6 @@ that files which shouldn't be compiled aren't."
   (comp-write-op op-unbind))
 (put 'save-environment 'compile-fun comp-compile-save-environment)
 
-(defun comp-compile-defun (form)
-  (comp-remember-fun (nth 1 form) (nth 2 form))
-  (comp-compile-constant (nth 1 form))
-  (comp-write-op op-dup)
-  (comp-inc-stack)
-  (comp-compile-constant (comp-compile-lambda (cons 'lambda (nthcdr 2 form))
-					      (nth 1 form)))
-  (comp-write-op op-enclose)
-  (comp-write-op op-dset)
-  (comp-write-op op-pop)
-  (comp-dec-stack 2))
-(put 'defun 'compile-fun comp-compile-defun)
-
-(defun comp-compile-defmacro (form)
-  (comp-remember-fun (nth 1 form) (nth 2 form))
-  (comp-compile-constant (nth 1 form))
-  (comp-write-op op-dup)
-  (comp-inc-stack)
-  (comp-compile-constant (cons 'macro (comp-compile-lambda
-				       (cons 'lambda (nthcdr 2 form))
-				       (nth 1 form))))
-  (comp-write-op op-enclose)
-  (comp-write-op op-dset)
-  (comp-write-op op-pop)
-  (comp-dec-stack 2))
-(put 'defmacro 'compile-fun comp-compile-defmacro)
-
 (defun comp-compile-cond (form &optional return-follows)
   (let
       ((end-label (comp-make-label))
