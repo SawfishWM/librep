@@ -194,7 +194,7 @@ repv
 rep_dl_init(void)
 {
     repv tem;
-    rep_INTERN_SPECIAL(rl_completion_generator);
+    rep_INTERN(rl_completion_generator);
     rep_INTERN(boundp);
     completions = Qnil;
     rep_mark_static (&completions);
