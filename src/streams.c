@@ -140,7 +140,6 @@ top:
     switch(VTYPE(stream))
     {
 	VALUE res;
-	int oldgci;
 
     case V_File:
 	if(NILP(VFILE(stream)->name))
@@ -189,11 +188,8 @@ top:
 	/* FALL THROUGH */
 
     case V_Symbol:
-	oldgci = gc_inhibit;
-	gc_inhibit = TRUE;
 	if((res = call_lisp0(stream)) && INTP(res))
 	    c = VINT(res);
-	gc_inhibit = oldgci;
 	break;
 
 #ifdef HAVE_SUBPROCESSES
@@ -241,7 +237,6 @@ top:
     {
 	VALUE *ptr;
 	VALUE tmp;
-	int oldgci;
 
     case V_File:
 	if(LOCAL_FILE_P(stream))
@@ -283,11 +278,8 @@ top:
 
     case V_Symbol:
 	tmp = MAKE_INT(c);
-	oldgci = gc_inhibit;
-	gc_inhibit = TRUE;
 	if((tmp = call_lisp1(stream, tmp)) && !NILP(tmp))
 	    rc = TRUE;
-	gc_inhibit = oldgci;
 	break;
     }
     return(rc);
@@ -400,14 +392,8 @@ top:
 	    }
 	    rc = 1;
 	}
-	else
-	{
-	    int oldgci = gc_inhibit;
-	    gc_inhibit = TRUE;
-	    if((res = call_lisp1(stream, MAKE_INT(c))) && !NILP(res))
-		rc = 1;
-	    gc_inhibit = oldgci;
-	}
+	else if((res = call_lisp1(stream, MAKE_INT(c))) && !NILP(res))
+	    rc = 1;
 	break;
 
 #ifdef HAVE_SUBPROCESSES
@@ -535,12 +521,10 @@ top:
 	}
 	else
 	{
-	    int oldgci = gc_inhibit;
 	    if(isValString)
 		args = VAL(data);
 	    else
 		args = string_dupn(buf, bufLen);
-	    gc_inhibit = TRUE;
 	    if((res = call_lisp1(stream, args)) && !NILP(res))
 	    {
 		if(INTP(res))
@@ -548,7 +532,6 @@ top:
 		else
 		    rc = bufLen;
 	    }
-	    gc_inhibit = oldgci;
 	}
 	break;
 
@@ -920,7 +903,7 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
     u_char *fmt, *last_fmt;
     bool mk_str;
     VALUE stream, format, extra_formats = LISP_NULL;
-    GC_root gc_stream, gc_format, gc_extra_formats;
+    GC_root gc_stream, gc_format, gc_args, gc_extra_formats;
     u_char c;
 
     if(!CONSP(args))
@@ -944,6 +927,7 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 
     PUSHGC(gc_stream, stream);
     PUSHGC(gc_format, format);
+    PUSHGC(gc_args, args);
     PUSHGC(gc_extra_formats, extra_formats);
 
     last_fmt = fmt;
@@ -1110,7 +1094,7 @@ end_of_input:
     }
 
 exit:
-    POPGC; POPGC; POPGC;
+    POPGC; POPGC; POPGC; POPGC;
     return(stream);
 }
 

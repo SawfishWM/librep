@@ -1113,7 +1113,7 @@ fetch:
 	    if(INT_P)
 		goto error;
 	    /* Test for gc time */
-	    if((data_after_gc >= gc_threshold) && !gc_inhibit)
+	    if(data_after_gc >= gc_threshold)
 	    {
 		gc_stackbase.count = STK_USE;
 		cmd_garbage_collect(sym_t);

@@ -230,6 +230,8 @@ inner_main(int argc, char **argv)
 	   at all possible. */
 	VALUE stream = cmd_stderr_file();
 	VALUE old_tv = throw_value;
+	GC_root gc_old_tv;
+	PUSHGC(gc_old_tv, old_tv);
 	throw_value = LISP_NULL;
 	if(stream && FILEP(stream))
 	{
@@ -240,6 +242,7 @@ inner_main(int argc, char **argv)
 	else
 	    fputs("jade: error in initialisation\n", stderr);
 	throw_value = old_tv;
+	POPGC;
     }
 
 #ifdef HAVE_DYNAMIC_LOADING

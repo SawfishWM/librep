@@ -261,10 +261,8 @@ typedef struct {
 /* An array of these things, indexed by type code */
 extern Lisp_Type_Data data_types[V_MAX];
 
-/* These are also defined as functions (lower-case'd names)...  */
+/* This is also defined as functions (lower-case'd names)...  */
 #define VALUE_CMP(v1,v2) data_types[VTYPE(v1)].compare(v1,v2)
-#define PRINC_VAL(s,v)	data_types[VTYPE(v)].princ(s,v)
-#define PRINT_VAL(s,v)	data_types[VTYPE(v)].print(s,v)
 
 
 /* Strings */

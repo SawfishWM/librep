@@ -246,13 +246,16 @@ read_list(VALUE strm, register int *c_p)
 {
     VALUE result = sym_nil;
     VALUE last = LISP_NULL;
+    GC_root gc_result;
+    PUSHGC(gc_result, result);
     *c_p = stream_getc(strm);
-    while(1)
+    while(result != LISP_NULL)
     {
 	switch(*c_p)
 	{
 	case EOF:
-	    return cmd_signal(sym_end_of_stream, LIST_1(strm));
+	    result = cmd_signal(sym_end_of_stream, LIST_1(strm));
+	    break;
 
 	case ' ':
 	case '\t':
@@ -275,18 +278,17 @@ read_list(VALUE strm, register int *c_p)
 	    if(last)
 	    {
 		if(!(VCDR(last) = readl(strm, c_p)))
-		    return LISP_NULL;
+		    result = LISP_NULL;
 	    }
 	    else
-	    {
-		return cmd_signal(sym_invalid_read_syntax,
-				  LIST_1(VAL(&nodot)));
-	    }
+		result = cmd_signal(sym_invalid_read_syntax,
+				    LIST_1(VAL(&nodot)));
+	    break;
 
 	case ')':
 	case ']':
 	    *c_p = stream_getc(strm);
-	    return result;
+	    goto end;
 	    
 	default:
 	    {
@@ -296,11 +298,14 @@ read_list(VALUE strm, register int *c_p)
 		else
 		    result = this;
 		if(!(VCAR(this) = readl(strm, c_p)))
-		    return LISP_NULL;
+		    result = LISP_NULL;
 		last = this;
 	    }
 	}
     }
+end:
+    POPGC;
+    return result;
 }
 
 DEFSTRING(buf_overflow, "Internal buffer overflow");
@@ -574,6 +579,7 @@ readl(VALUE strm, register int *c_p)
 	switch(*c_p)
 	{
 	    VALUE form;
+	    GC_root gc_form;
 
 	case EOF:
 	    return sym_nil;
@@ -602,9 +608,15 @@ readl(VALUE strm, register int *c_p)
 	       `X => (backquote X) */
 	    form = cmd_cons(*c_p == '\'' ? sym_quote : sym_backquote,
 			    cmd_cons(sym_nil, sym_nil));
+	    PUSHGC(gc_form, form);
 	    if((*c_p = stream_getc(strm)) == EOF)
+	    {
+		POPGC;
 		goto eof;
-	    if((VCAR(VCDR(form)) = readl(strm, c_p)) != LISP_NULL)
+	    }
+	    VCAR(VCDR(form)) = readl(strm, c_p);
+	    POPGC;
+	    if(VCAR(VCDR(form)) != LISP_NULL)
 		return form;
 	    else
 		return LISP_NULL;
@@ -613,17 +625,24 @@ readl(VALUE strm, register int *c_p)
 	    /* ,@X => (backquote-splice X)
 	       ,X  => (backquote-unquote X) */
 	    form = cmd_cons(sym_backquote_unquote, cmd_cons(sym_nil, sym_nil));
+	    PUSHGC(gc_form, form);
 	    switch((*c_p = stream_getc(strm)))
 	    {
 	    case EOF:
+		POPGC;
 		goto eof;
 
 	    case '@':
 		VCAR(form) = sym_backquote_splice;
 		if((*c_p = stream_getc(strm)) == EOF)
+		{
+		    POPGC;
 		    goto eof;
+		}
 	    }
-	    if((VCAR(VCDR(form)) = readl(strm, c_p)) != LISP_NULL)
+	    VCAR(VCDR(form)) = readl(strm, c_p);
+	    POPGC;
+	    if(VCAR(VCDR(form)) != LISP_NULL)
 		return form;
 	    else
 		return LISP_NULL;
@@ -656,16 +675,22 @@ readl(VALUE strm, register int *c_p)
 	case '#':
 	    switch(*c_p = stream_getc(strm))
 	    {
-		register VALUE form;
 	    case EOF:
 		goto eof;
 	    case '\'':
 		form = cmd_cons(sym_function, cmd_cons(sym_nil, sym_nil));
+		PUSHGC(gc_form, form);
 		if((*c_p = stream_getc(strm)) == EOF)
+		{
+		    POPGC;
 		    goto eof;
-		if(!(VCAR(VCDR(form)) = readl(strm, c_p)))
+		}
+		VCAR(VCDR(form)) = readl(strm, c_p);
+		POPGC;
+		if(VCAR(VCDR(form)) == LISP_NULL)
 		    return LISP_NULL;
-		return form;
+		else
+		    return form;
 	    case '[':
 		{
 		    VALUE vec = read_vector(strm, c_p);
@@ -1006,7 +1031,7 @@ funcall(VALUE fun, VALUE arglist, bool eval_args)
     lc.next = lisp_call_stack;
     lisp_call_stack = &lc;
 
-    if((data_after_gc >= gc_threshold) && !gc_inhibit)
+    if(data_after_gc >= gc_threshold)
 	cmd_garbage_collect(sym_t);
 
 again:
@@ -1307,7 +1332,7 @@ Evaluates FORM and returns its value.
     if(INT_P || !curr_vw)
 	return LISP_NULL;
 
-    if((data_after_gc >= gc_threshold) && !gc_inhibit)
+    if(data_after_gc >= gc_threshold)
     {
 	GC_root gc_obj;
 	PUSHGC(gc_obj, obj);

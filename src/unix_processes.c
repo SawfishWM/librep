@@ -759,6 +759,9 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 
 			if(number > 0)
 			{
+			    GC_root gc_pr;
+			    VALUE vpr = VAL(pr);
+			    PUSHGC(gc_pr, vpr);
 			    if(!done_out && FD_ISSET(pr->pr_Stdout, &copy))
 			    {
 				actual = read(pr->pr_Stdout, buf, 1024);
@@ -801,6 +804,7 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 				    FD_CLR(pr->pr_Stderr, &inputs);
 				}
 			    }
+			    POPGC;
 			}
 #ifdef KLUDGE_SYNCHRONOUS_OUTPUT
 			/* This still doesn't work. The best way to
@@ -1226,6 +1230,8 @@ set in the PROCESS prior to calling this function.
 		    ret = cmd_write_buffer_contents(temp_file, start, end);
 		    if(ret && !NILP(ret))
 		    {
+			GC_root gc_temp_file;
+
 			if(deletep)
 			{
 			    ret = cmd_delete_area(start, end, sym_nil);
@@ -1236,7 +1242,9 @@ set in the PROCESS prior to calling this function.
 			   PROC FILE-NAME REST.. */
 			arg_list = cmd_cons(proc, cmd_cons(temp_file,
 							   arg_list));
+			PUSHGC(gc_temp_file, temp_file);
 			ret = cmd_call_process(arg_list);
+			POPGC;
 		    }
 		error:
 		    unlink(VSTR(temp_file));	/* ignore errors! */
