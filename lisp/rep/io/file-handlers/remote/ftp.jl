@@ -274,7 +274,8 @@ file types.")
 	    (when remote-ftp-display-progress
 	      (format t " %s" (aref session remote-ftp-status))))
 	(error
-	 (when (and (string-match "transient error" (nth 1 data))
+	 (when (and (stringp (nth 1 data))
+		    (string-match "transient error" (nth 1 data))
 		    (not (eq type 'login)))
 	   ;; The session has been killed. Wait for it to die
 	   ;; totally then try to reconnect
@@ -616,7 +617,11 @@ file types.")
 				     (aref cache-entry
 					   remote-ftp-cache-entries))))))
 		   entry args)))
-	  (remote-ftp-command session 'dircache remote-ftp-ls-format dir)
+	  ;; my ftp server (wu-2.6.0(1)) doesn't like being told to
+	  ;; `ls .' -- it recursively lists the top-level directories
+	  (if (string= dir ".")
+	      (remote-ftp-command session 'dircache "ls -la")
+	    (remote-ftp-command session 'dircache remote-ftp-ls-format dir))
 	  (aset session remote-ftp-callback nil))
       ;; entry is still valid, move it to the front of the list
       (aset session remote-ftp-dircache
