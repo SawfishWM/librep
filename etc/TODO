@@ -20,6 +20,15 @@ modules
    (you have to create the autoload stub in the module that the
    function will get loaded into)
 
+ ! environment of macro expanders is not well consistent
+
+   interpreted code closes macros in the usual lexical environment,
+   the compiler closes them in the *root-strcucture* since the
+   lexical environment of the compiled file doesn't exist
+
+   Xerox scheme closes all macros in the `initial environment', this
+   would provide consistency, but would break existing code
+
 
 Outstanding bugs
 ================

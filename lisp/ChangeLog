@@ -1,3 +1,35 @@
+2000-04-09  John Harper  <john@dcs.warwick.ac.uk>
+
+	Changes to make sawmill work with the module system, and to
+	make things in general work more smoothly
+
+	* init.jl: set `*root-structure*' to rep
+	(declare): macro to ignore declarations
+	(defsubst): put the actual function body in the
+	`compiler-inline' property
+
+	* compiler.jl, compiler-vars.jl, compiler-utils.jl,
+	compiler-rep.jl, compiler-modules.jl, compiler-inline.jl:
+	various compiler fixes/improvements to make things work largely
+	as they did before (!)
+
+	Also now supports top-level declarations, currently only
+	`(declare (in-module FOO))' to tell the compiler where to look
+	for bindings outside any actual module definition
+
+	* rep.jl: set `*root-structure*' to user
+
+	* gaol.jl: removed support for redefining `require',
+	miscellaneous fixes
+
+	* define.jl: reverted to handling all let forms specially,
+	macroexpanding them prevents the compiler doing some
+	optimizations
+
+	* threads.jl, string-util.jl, sort.jl, rep-repl.jl,
+	rep-packages.jl, environ.jl, define.jl, debug.jl, backquote.jl:
+	added `(in-module rep)' declaration
+
 2000-04-07  John Harper  <john@dcs.warwick.ac.uk>
 
 	Many changes to support the new module system:
