@@ -1,3 +1,8 @@
+2002-04-21  John Harper  <jsh@unfactored.org>
+
+	* rep/util/autoloader.jl (make-autoloader): propagate arbitrary
+	arguments after the two we're interested in
+
 2002-04-14  John Harper  <jsh@unfactored.org>
 
 	* rep/data/queues.jl: rewritten so that enqueuing is O(1) not

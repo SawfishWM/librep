@@ -29,7 +29,7 @@
     (open rep rep.structures)
 
   ;; (GETTER SYMBOL) => VALUE
-  ;; (SETTER SYMBOL VALUE)
+  ;; (SETTER SYMBOL VALUE [REST...])
 
   ;; used to tag autoload cells (in the car, cdr is module name)
   (define autoload-tag (make-symbol "autoload"))
@@ -40,9 +40,9 @@
   ;; current definition to VALUE
 
   (define (make-autoloader getter setter)
-    (lambda (symbol module)
+    (lambda (symbol module . rest)
       (unless (getter symbol)
-	(setter symbol (cons autoload-tag module)))))
+	(apply setter symbol (cons autoload-tag module) rest))))
 
   ;; Return a function of one arg (SYMBOL) that returns the definition
   ;; of SYMBOL. If an autoload has been installed for that identifier,
