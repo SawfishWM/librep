@@ -235,6 +235,33 @@ string INPUT."
   (call/cc f))
 
 
+;; numeric functions
+
+(defun positivep (x)
+  (> x 0))
+
+(defun negativep (x)
+  (< x 0))
+
+(defun oddp (x)
+  (not (zerop (mod x 2))))
+
+(defun evenp (x)
+  (zerop (mod x 2)))
+
+(defun abs (x)
+  (max x (- x)))
+
+(defun % (x y)
+  (remainder x y))
+
+(defun modulo (x y)
+  (mod x y))
+
+(defun lcm (a b)
+  (quotient (* a b) (gcd a b)))
+
+
 ;; guardian wrapper
 
 (defun make-guardian ()
