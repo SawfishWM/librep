@@ -892,7 +892,7 @@ CONVERSION is a character defining how to convert the corresponding ARG
 to text. The default options are:
 
 	d	Output ARG as a decimal integer
-	x	Output ARG as a hexadecimal integer
+	x, X	Output ARG as a hexadecimal integer
 	o	Output ARG as an octal integer
 	c	Output ARG as a character
 	s	Output the result of `(prin1 ARG)'
@@ -1015,7 +1015,7 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 		{
 		    u_char buf[256], fmt[32], *ptr;
 
-		case 'd': case 'x': case 'o': case 'c':
+		case 'd': case 'x': case 'X': case 'o': case 'c':
 		    fmt[0] = '%';
 		    strncpy(fmt+1, flags_start, flags_end - flags_start);
 		    ptr = fmt+1 + (flags_end - flags_start);
