@@ -765,6 +765,7 @@ that files which shouldn't be compiled aren't."
   (setq form (cdr form))
   (while (and (consp form) (consp (cdr form)))
     (comp-compile-form (car (cdr form)))
+    (comp-test-varref (car form))
     (comp-write-op op-setq (comp-add-constant (car form)))
     (when (consp (nthcdr 2 form))
       (comp-write-op op-pop)
@@ -1220,23 +1221,21 @@ that files which shouldn't be compiled aren't."
 ;; Instruction with no arguments
 (defun comp-compile-0-args (form)
   (when (cdr form)
-    (comp-warning (format nil "Parameters to %s discarded" (car form))))
+    (comp-warning "All parameters to %s ignored" (car form)))
   (comp-write-op (get (car form) 'compile-opcode) 0)
   (comp-inc-stack))
 
 ;; Instruction taking 1 arg on the stack
 (defun comp-compile-1-args (form)
   (when (nthcdr 2 form)
-    (comp-warning (format nil "More than one parameter to %s; rest ignored"
-			  (car form))))
+    (comp-warning "More than one parameter to %s; rest ignored" (car form)))
   (comp-compile-form (nth 1 form))
   (comp-write-op (get (car form) 'compile-opcode) 0))
 
 ;; Instruction taking 2 args on the stack
 (defun comp-compile-2-args (form)
   (when (nthcdr 3 form)
-    (comp-warning (format nil "More than two parameters to %s; rest ignored"
-			  (car form))))
+    (comp-warning "More than two parameters to %s; rest ignored" (car form)))
   (comp-compile-form (nth 1 form))
   (comp-compile-form (nth 2 form))
   (comp-write-op (get (car form) 'compile-opcode) 0)
@@ -1245,8 +1244,7 @@ that files which shouldn't be compiled aren't."
 ;; Instruction taking 3 args on the stack
 (defun comp-compile-3-args (form)
   (when (nthcdr 4 form)
-    (comp-warning (format nil "More than three parameters to %s; rest ignored"
-			  (car form))))
+    (comp-warning "More than three parameters to %s; rest ignored" (car form)))
   (comp-compile-form (nth 1 form))
   (comp-compile-form (nth 2 form))
   (comp-compile-form (nth 3 form))
