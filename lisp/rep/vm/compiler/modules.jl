@@ -202,10 +202,10 @@
 	  (loop out)))))
 
   ;; if OPENED or ACCESSED are `t', the current values are used
-  (defun compile-module-body (body name opened accessed)
+  (defun call-with-module-env (thunk opened accessed)
     (let-fluids ((macro-env (fluid default-macro-env))
-		 (current-module (or name (fluid current-module)))
-		 (current-structure (if name nil (fluid current-structure)))
+		 (current-module (fluid current-module))
+		 (current-structure (fluid current-structure))
 		 (current-language (fluid current-language))
 		 (open-modules (if (eq opened t)
 				   (fluid open-modules)
@@ -220,7 +220,9 @@
 		 (defines nil)
 		 (lexically-pure t)
 		 (output-stream nil))
+      (thunk)))
 
+  (defun compile-module-body-1 (body)
     (find-language-module)
     (let
 	;; find language pass-1 and pass-2 compilers
@@ -236,7 +238,12 @@
 	(setq body (pass-2 body)))
 
       ;; return the compiled representation of the body
-      body)))
+      body))
+
+  (defun compile-module-body (body opened accessed)
+    (call-with-module-env
+     (lambda () (compile-module-body-1 body))
+     opened accessed))
 
   (defun note-require (feature)
     (unless (or (memq feature (fluid open-modules))
@@ -268,7 +275,7 @@
 			     closure))
 		     (fluid macro-env))))
 
-  (defun call-with-module-declared (struct thunk)
+  (defun call-with-structure (thunk struct)
     (let-fluids ((current-module (structure-name struct))
 		 (current-structure struct)
 		 (current-language nil))
@@ -350,29 +357,34 @@
 	    config)
       (setq header (cons '(open rep.module-system) (nreverse header)))
 
-      (setq body (compile-module-body body name opened accessed))
+      (let-fluids ((current-structure nil)
+		   (current-module name))
+	(call-with-module-env
+	 (lambda ()
+	   (setq body (compile-module-body-1 body))
 
-      (if top-level
-	  (if name
-	      `(define-structure ,name ,sig ,config ,@body)
-	    `(structure ,sig ,config ,@body))
-	(compile-form-1 '%make-structure)
-	(compile-form-1 `(%parse-interface ',sig))
-	(if header
-	    (progn
-	      (compile-constant `(lambda () ,@header))
-	      (emit-insn '(enclose)))
-	  (compile-constant nil))
-	(if body
-	    ;; compile non-top-level structure bodies, so that
-	    ;; they can access the active bindings
-	    (compile-lambda-constant `(lambda () ,@body))
-	  (compile-constant nil))
-	(when name
-	  (compile-constant name))
-	(emit-insn `(call ,(if name 4 3)))
-	(note-function-call-made)
-	(decrement-stack (if name 4 3)))))
+	   (if top-level
+	       (if name
+		   `(define-structure ,name ,sig ,config ,@body)
+		 `(structure ,sig ,config ,@body))
+	     (compile-form-1 '%make-structure)
+	     (compile-form-1 `(%parse-interface ',sig))
+	     (if header
+		 (progn
+		   (compile-constant `(lambda () ,@header))
+		   (emit-insn '(enclose)))
+	       (compile-constant nil))
+	     (if body
+		 ;; compile non-top-level structure bodies, so that
+		 ;; they can access the active bindings
+		 (compile-lambda-constant `(lambda () ,@body))
+	       (compile-constant nil))
+	     (when name
+	       (compile-constant name))
+	     (emit-insn `(call ,(if name 4 3)))
+	     (note-function-call-made)
+	     (decrement-stack (if name 4 3))))
+	 opened accessed))))
 
   (defun compile-structure-ref (form)
     (let
@@ -401,10 +413,10 @@
 		 (output-stream nil))
       (let ((body (closure-function function)))
 	(unless (bytecodep body)
-	  (call-with-module-declared
-	   (closure-structure function)
+	  (call-with-structure
 	   (lambda ()
-	     (set-closure-function function (compile-lambda body name)))))
+	     (set-closure-function function (compile-lambda body name)))
+	   (closure-structure function)))
 	function)))
 
   (defun compile-module (struct)
