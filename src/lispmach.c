@@ -438,39 +438,62 @@ list_ref (repv list, int elt)
 DEFSTRING(max_depth, "max-lisp-depth exceeded, possible infinite recursion?");
 
 static repv
-make_bytecode_frame (int lambda, int nargs, repv *args)
+bytecode_binder (repv frame, repv sym, repv value)
 {
-    repv env = rep_env;
-    int i;
+    if (frame == Qnil)
+	frame = rep_NEW_FRAME;
 
-    int min_args = lambda & 0xfff;
-    int max_args = min_args + ((lambda >> 12) & 0xfff);
-    int rest_arg = lambda >> 24;
-
-    if (nargs < min_args)
-	return Fsignal (Qmissing_arg, rep_LIST_1 (rep_MAKE_INT (nargs + 1)));
-
-    if (rest_arg)
+    if (rep_SYM(sym)->car & rep_SF_SPECIAL)
+	return rep_bind_symbol (frame, sym, value);
+    else
     {
-	repv tem = Qnil;
-	for (i = nargs - 1; i >= max_args; i--)
-	    tem = Fcons (args[i], tem);
-	env = Fcons (tem, env);
+	rep_env = Fcons (value, rep_env);
+	return rep_MARK_LEX_BINDING (frame);
     }
+}
 
-    for (i = max_args - 1; i >= min_args; i--)
-	env = Fcons (i < nargs ? args[i] : Qnil, env);
-    for (i = min_args - 1; i >= 0; i--)
-	env = Fcons (args[i], env);
+static repv
+make_bytecode_frame (repv spec, int nargs, repv *args)
+{
+    if (rep_INTP (spec))
+    {
+	int lambda = rep_INT (spec);
+	repv env = rep_env;
+	int i;
 
-    rep_env = env;
-    return rep_MAKE_INT (max_args + (rest_arg ? 1 : 0));
+	int min_args = lambda & 0xfff;
+	int max_args = min_args + ((lambda >> 12) & 0xfff);
+	int rest_arg = lambda >> 24;
+
+	if (nargs < min_args)
+	{
+	    return Fsignal (Qmissing_arg,
+			    rep_LIST_1 (rep_MAKE_INT (nargs + 1)));
+	}
+
+	if (rest_arg)
+	{
+	    repv tem = Qnil;
+	    for (i = nargs - 1; i >= max_args; i--)
+		tem = Fcons (args[i], tem);
+	    env = Fcons (tem, env);
+	}
+
+	for (i = max_args - 1; i >= min_args; i--)
+	    env = Fcons (i < nargs ? args[i] : Qnil, env);
+	for (i = min_args - 1; i >= 0; i--)
+	    env = Fcons (args[i], env);
+
+	rep_env = env;
+	return rep_MAKE_INT (max_args + (rest_arg ? 1 : 0));
+    }
+    else
+	return rep_bind_lambda_list_1 (spec, args, nargs, bytecode_binder);
 }
 
 #define APPLY(subr, nargs, args)					\
     vm (rep_COMPILED_CODE (subr), rep_COMPILED_CONSTANTS (subr),	\
-	make_bytecode_frame (rep_INT (rep_COMPILED_LAMBDA (subr)),	\
-			     nargs, args),				\
+	make_bytecode_frame (rep_COMPILED_LAMBDA (subr), nargs, args),	\
 	rep_INT (rep_COMPILED_STACK (subr)) & 0xffff,			\
 	rep_INT (rep_COMPILED_STACK (subr)) >> 16)
 
@@ -478,7 +501,6 @@ repv
 rep_apply_bytecode (repv subr, int nargs, repv *args)
 {
     assert (rep_COMPILEDP (subr));
-    assert (rep_INTP (rep_COMPILED_LAMBDA (subr)));
     return APPLY (subr, nargs, args);
 }
 
@@ -735,8 +757,7 @@ again:
 			   environments.. */
 
 			bindings = (make_bytecode_frame
-				    (rep_INT (rep_COMPILED_LAMBDA(tmp)),
-				     arg, stackp+1));
+				    (rep_COMPILED_LAMBDA(tmp), arg, stackp+1));
 			if(bindings != rep_NULL)
 			{
 			    int n_req_s, n_req_b;
@@ -1945,8 +1966,6 @@ Return an object that can be used as the function value of a symbol.
     if(len < rep_COMPILED_MIN_SLOTS)
 	return rep_signal_missing_arg(len + 1);
     
-    if(!rep_INTP(rep_CAR(args)))
-	return rep_signal_arg_error(rep_CAR(args), 1);
     obj[0] = rep_CAR(args); args = rep_CDR(args);
     if(!rep_STRINGP(rep_CAR(args)))
 	return rep_signal_arg_error(rep_CAR(args), 2);
