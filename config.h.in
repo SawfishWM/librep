@@ -159,6 +159,9 @@
 /* Define if you have the lrand48() and srand48() functions */
 #define HAVE_LRAND48
 
+/* Define if you have the setitimer() function */
+#define HAVE_SETITIMER
+
 /* Define if you have the <dirent.h> header file.  */
 #undef HAVE_DIRENT_H
 
