@@ -47,6 +47,9 @@ char *alloca ();
 /* Define this to check if the compiler reserves enough stack */
 #undef CHECK_STACK_USAGE
 
+/* Define this to bytecode use histograms */
+#undef BYTECODE_PROFILE
+
 /* Use the threaded interpreter with GNU CC. */
 #ifdef __GNUC__
 # define THREADED_VM 1
@@ -59,6 +62,11 @@ DEFSTRING(unknown_op, "Unknown lisp opcode");
 
 static repv vm (repv code, repv consts, repv frame,
 		int v_stkreq, int b_stkreq);
+
+#ifdef BYTECODE_PROFILE
+static int bytecode_profile[256];
+#endif
+
 
 /* Helper functions
 
@@ -159,17 +167,28 @@ list_ref (repv list, int elt)
 #define BIND_TOP_P	(bindp < bindbase)
 #define BIND_PUSH(x)	(*(++bindp) = (x))
 
-#define ASSERT_STACK_BOUNDS 			\
+#ifdef CHECK_STACK_USAGE
+# define ASSERT_STACK_BOUNDS 			\
     do {					\
 	assert (STK_USE <= v_stkreq);		\
 	assert (BIND_USE <= b_stkreq + 1);	\
     } while (0)
-
-#ifdef CHECK_STACK_USAGE
-# define SAFE_NEXT do { ASSERT_STACK_BOUNDS; X_SAFE_NEXT; } while (0)
 #else
-# define SAFE_NEXT X_SAFE_NEXT
+# define ASSERT_STACK_BOUNDS
 #endif
+
+#ifdef BYTECODE_PROFILE
+# define PROFILE_NEXT do { bytecode_profile[*pc]++; } while (0)
+#else
+# define PROFILE_NEXT
+#endif
+
+#define SAFE_NEXT		\
+    do {			\
+	ASSERT_STACK_BOUNDS;	\
+	PROFILE_NEXT;		\
+	X_SAFE_NEXT;		\
+    } while (0)
 
 #define FETCH	    (*pc++)
 #define FETCH2(var) ((var) = (FETCH << ARG_SHIFT), (var) += FETCH)
@@ -1891,7 +1910,7 @@ again:
 
 	    /* ...or time to switch threads */
 	    rep_MAY_YIELD;
-	    NEXT;
+	    SAFE_NEXT;
 	END_INSN
 
 #ifndef THREADED_VM
@@ -2072,6 +2091,26 @@ Returns t if ARG is a byte code subroutine (i.e. compiled Lisp code).
     return rep_COMPILEDP(arg) ? Qt : Qnil;
 }
 
+#ifdef BYTECODE_PROFILE
+static void
+print_bytecode_profile (void)
+{
+    int i;
+    for (i = 0; i < 256; i++)
+	printf ("%8d %8d\n", i, bytecode_profile[i]);
+}
+
+DEFUN ("bytecode-profile", Fbytecode_profile,
+       Sbytecode_profile, (repv reset), rep_Subr1)
+{
+    if (reset != Qnil)
+	memset (bytecode_profile, 0, sizeof (bytecode_profile));
+    else
+	print_bytecode_profile ();
+    return Qnil;
+}
+#endif
+
 void
 rep_lispmach_init(void)
 {
@@ -2081,6 +2120,10 @@ rep_lispmach_init(void)
     rep_ADD_SUBR(Svalidate_byte_code);
     rep_ADD_SUBR(Smake_byte_code_subr);
     rep_ADD_SUBR(Sbytecodep);
+#ifdef BYTECODE_PROFILE
+    rep_ADD_SUBR(Sbytecode_profile);
+    atexit (print_bytecode_profile);
+#endif
     rep_INTERN(bytecode_error); rep_ERROR(bytecode_error);
     rep_pop_structure (tem);
 }
