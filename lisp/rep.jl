@@ -19,17 +19,16 @@
 ;;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 (defun rep ()
-  (catch 'quit
-    (while t
-      (condition-case error-data
-	  (progn
-	    (write standard-output "? ")
-	    (flush-file standard-output)
-	    (format standard-output " => %S\n" (eval (read standard-input))))
-	(end-of-stream
-	 (throw 'quit 0))
-	(error
-	 (format standard-output "error--> %S\n" error-data))))))
+  (while t
+    (condition-case error-data
+	(progn
+	  (write standard-output "? ")
+	  (flush-file standard-output)
+	  (format standard-output " => %S\n" (eval (read standard-input))))
+      (end-of-stream
+       (throw 'quit 0))
+      (error
+       (format standard-output "error--> %S\n" error-data)))))
 
 (fset 'recursive-edit (symbol-function 'rep))
 
