@@ -201,6 +201,9 @@
       (memql . 0xc2)
       (num-eq . 0xc3)
 
+      (test-scm . 0xc4)
+      (test-scm-f . 0xc5)
+
       (last-before-jmps . 0xf7)
 
 ;;; All jmps take two-byte arguments
@@ -248,7 +251,7 @@
      0   0   0   0   0   0   0   0
      -1  0   0   0   0   0   0   0	;0xb0
      0   -1  0   -1  -1  0   0   nil
-     -1  -2  -1  -1  nil nil nil nil	;0xc0
+     -1  -2  -1  -1  0   0   nil nil	;0xc0
      nil nil nil nil nil nil nil nil
      -1  nil nil nil nil nil nil nil	;0xd0
      -1  nil nil nil nil nil nil nil

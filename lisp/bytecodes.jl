@@ -99,6 +99,8 @@
 	   (bytecode caddddddr)
 	   (bytecode cadddddddr)
 	   (bytecode scm-test)
+	   (bytecode test-scm)
+	   (bytecode test-scm-f)
 	   byte-constant-insns))
 
   ;; list of instructions that can be safely deleted if their result
