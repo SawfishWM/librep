@@ -408,6 +408,12 @@ that files which shouldn't be compiled aren't."
     (setq command-line-args (cdr command-line-args))
     (compile-lisp-lib dir force)))
 
+;; Call like `rep --batch -l compiler -f compile-batch FILES...'
+(defun compile-batch ()
+  (while command-line-args
+    (compile-file (car command-line-args))
+    (setq command-line-args (cdr command-line-args))))
+
 ;; Used when bootstrapping from the Makefile, recompiles compiler.jl if
 ;; it's out of date
 (defun compile-compiler ()
