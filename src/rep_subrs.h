@@ -459,7 +459,7 @@ extern repv rep_bind_symbol(repv, repv, repv);
 extern int rep_unbind_symbols(repv);
 extern repv rep_add_binding_to_env (repv env, repv sym, repv value);
 extern repv rep_obarray;
-extern repv Qnil, Qt;
+extern repv Qt;
 extern repv Qvariable_documentation, Qpermanent_local;
 extern repv rep_void_value;
 extern rep_bool rep_warn_shadowing;

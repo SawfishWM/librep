@@ -108,26 +108,40 @@ and the conventions I've used in this manual.
 @cindex t
 @cindex Boolean values
 
-The two boolean values in Lisp are the symbols @code{nil} (``false'')
-and @code{t} (``true''). Both these symbols always evaluate to
-themselves (so they do not have to be quoted), any attempt to change
-their values is an error.
+In the rep Lisp dialect there is a single data value representing
+boolean ``false''---the empty list, written as @code{()}. All other
+values are considered ``not-false'', i.e. ``true''.
 
-All of the conditional instructions regard @emph{anything} which is not
-@code{nil} as being ``true'' (i.e. non-``false''). The actual symbol
-@code{t} should be used where a ``true'' boolean value is explicitly
+By convention the constants @code{nil} and @code{t} are used to
+represent the canonical boolean values. The constant variable
+@code{nil} evaluates to the empty list (i.e. ``false''), while @code{t}
+evaluates to itself (i.e. not-``false'', therefore ``true'').
+
+Reiterating, all of the conditional operations regard @emph{anything}
+which is not @code{()} as being true (i.e. non-false). The actual
+symbol @code{t} should be used where a true boolean value is explicitly
 stated, to increase the clarity of the code.
 
-This is not the end of the story; @code{nil} actually has another meaning:
-it represents the empty list. This is a consequence of how lists are
-constructed in Lisp, a list of zero elements is stored as the symbol
-@code{nil}.
+So, @code{()}, and its alias @code{nil}, represent both the empty list
+and boolean falsehood. Most Lisp programmers write @code{()} where its
+value as a list should be emphasized, and @code{nil} where its value as
+boolean false is intended. Although neither of these values need be
+quoted (@pxref{Quoting}), most programmers will quote the empty list to
+emphasize that it is a constant value. However @code{nil} should not be
+quoted, doing so would produce the @emph{symbol} @code{nil}, not
+boolean falsehood. For example:
 
-To the Lisp system itself there is absolutely no difference between @code{()}
-(the notation for a list with zero elements) and @code{nil} (the symbol nil).
-When writing code however, the list notation is usually used when the
-programmer regards the value as a list and the @code{nil} notation when
-its value as a boolean is to be emphasised.
+@lisp
+(append '() '()) @result{} ()          ;Emphasize use of empty lists
+
+(not nil) @result{} t                  ;Emphasize use as boolean false
+
+(get 'nil 'color)               ;Use the symbol @code{nil}
+@end lisp
+
+When a function is said to ``return false'', it means that it returns
+the false boolean value, i.e. the empty list. When a function is said
+to ``return true'', this means that any non-false value is returned.
 
 
 @node The Lisp Reader, Notation, nil and t, Intro
@@ -272,7 +286,7 @@ defined at run-time.
 More complex objects may be constructed from these primitive types, for
 example a vector of three elements could be regarded as a type
 @code{triple} if necessary. In general, each separate type provides a
-predicate function which returns @code{t} when applied to an object of
+predicate function which returns true when applied to an object of
 its own type.
 
 Finally, one of the most important differences between Lisp and other
@@ -341,7 +355,7 @@ processes. @xref{Streams}.
 
 @item Void
 The empty type, only used in symbols to represent an undefined value.
-Note that this is not the same as @code{nil}, which is the empty list,
+Note that this is not the same as @code{()}, which is the empty list,
 or false truth value.
 @end table
 
@@ -475,14 +489,14 @@ encounters a description of an object in the format @samp{#<@dots{}>}.
 @cindex Predicates, equality
 
 @defun eq arg1 arg2
-Returns @code{t} when @var{arg1} and @var{arg2} refer to the same
-object. Two objects are the same when they occupy the same place in
-memory and hence modifying one object would alter the other. The
-following Lisp fragments may illustrate this,
+Returns true when @var{arg1} and @var{arg2} refer to the same object.
+Two objects are the same when they occupy the same place in memory and
+hence modifying one object would alter the other. The following Lisp
+fragments may illustrate this,
 
 @lisp
 (eq "foo" "foo")	;the objects are distinct
-    @result{} nil
+    @result{} ()
 
 (eq t t)		;the same object -- the symbol @code{t}
     @result{} t
@@ -495,7 +509,7 @@ objects with the same value, see @code{eql}.
 @defun equal arg1 arg2
 The function @code{equal} compares the structure of the two objects
 @var{arg1} and @var{arg2}. If they are considered to be equivalent then
-@code{t} is returned, otherwise @code{nil} is returned.
+returns true, otherwise returns false.
 
 @lisp
 (equal "foo" "foo")
@@ -505,7 +519,7 @@ The function @code{equal} compares the structure of the two objects
     @result{} t
 
 (equal 42 0)
-    @result{} nil
+    @result{} ()
 
 (equal '(x . y) '(x . y))
     @result{} t
@@ -523,10 +537,10 @@ as @code{eq} does.
     @result{} t
 
 (eql 1 2)
-    @result{} nil
+    @result{} ()
 
 (eql "foo" "foo")
-    @result{} nil
+    @result{} ()
 
 (eql 'x 'x)
     @result{} t
@@ -549,15 +563,15 @@ Unlike the @code{eql} function, inexact and exact numbers will be
 compared by first coercing the exact number to be inexact.
 
 @defun = arg1 arg2 arg3 @dots{} argn
-Returns @code{t} if all arguments represent the same value.
+Returns true if all arguments represent the same value.
 @end defun
 
 @defun /= arg1 arg2 arg3 @dots{} argn
-Returns @code{t} if no two arguments represent the same value.
+Returns true if no two arguments represent the same value.
 @end defun
 
 @defun > arg1 arg2 arg3 @dots{} argn
-Returns @code{t} when @var{arg1} is `greater than' @var{arg2}, and
+Returns true when @var{arg1} is `greater than' @var{arg2}, and
 @var{arg2} is greater than @var{arg3}, and so on, upto @var{argn}.
 @end defun
 
@@ -595,7 +609,7 @@ numbers, any inexact arguments cause the result to be inexact.
 Each type has a corresponding predicate which defines the objects which
 are members of that type. Each predicate function has a single
 parameter, if that parameter is of the correct type it returns
-@code{t}.
+true.
 
 @noindent
 @code{integerp}, @code{numberp}, @code{null}, @code{consp},
@@ -698,7 +712,7 @@ are printed as two integers separated by a @samp{/} character. Inexact
 numbers are printed in their decimal form.
 
 @defun numberp object
-Returns @code{t} if @var{object} is a number.
+Returns true if @var{object} is a number.
 @end defun
 
 @menu
@@ -1005,44 +1019,44 @@ For the documentation of the functions @code{=}, @code{/=}, @code{>},
 @ref{Comparison Predicates}.
 
 @defun exactp object
-Returns @code{t} when @var{object} is an exact number.
+Returns true when @var{object} is an exact number.
 @end defun
 
 @defun inexactp object
-Returns @code{t} when @var{object} is an inexact number.
+Returns true when @var{object} is an inexact number.
 @end defun
 
 @defun integerp object
-Returns @code{t} when @var{object} is an integer.
+Returns true when @var{object} is an integer.
 @end defun
 
 @defun rationalp object
-Returns @code{t} when @var{object} is a rational number (including
+Returns true when @var{object} is a rational number (including
 integers).
 @end defun
 
 @defun realp object
-Returns @code{t} when @var{object} is a real number.
+Returns true when @var{object} is a real number.
 @end defun
 
 @defun oddp x
-Return @code{t} if @var{x} is an odd number.
+Return true if @var{x} is an odd number.
 @end defun
 
 @defun evenp x
-Return @code{t} if @var{x} is an even number.
+Return true if @var{x} is an even number.
 @end defun
 
 @defun positivep x
-Return @code{t} if @var{x} is a number greater than zero.
+Return true if @var{x} is a number greater than zero.
 @end defun
 
 @defun negativep x
-Return @code{t} if @var{x} is a number less than zero.
+Return true if @var{x} is a number less than zero.
 @end defun
 
 @defun zerop x
-Returns @code{t} if @var{x} is equal to zero.
+Returns true if @var{x} is equal to zero.
 @end defun
 
 
@@ -1086,7 +1100,7 @@ escape sequences see @ref{Strings}.
 @end lisp
 
 @defun alpha-char-p character
-This function returns @code{t} when @var{character} is one of the
+This function returns true when @var{character} is one of the
 alphabetic characters.
 
 @lisp
@@ -1097,25 +1111,25 @@ alphabetic characters.
 
 @defun upper-case-p character
 When @var{character} is one of the upper-case characters this function
-returns @code{t}.
+returns true.
 @end defun
 
 @defun lower-case-p character
-Returns @code{t} when @var{character} is lower-case.
+Returns true when @var{character} is lower-case.
 @end defun
 
 @defun digit-char-p character
-This function returns @code{t} when @var{character} is one of the decimal
+This function returns true when @var{character} is one of the decimal
 digit characters.
 @end defun
 
 @defun alphanumericp character
-This function returns @code{t} when @var{character} is either an alphabetic
+This function returns true when @var{character} is either an alphabetic
 character or a decimal digit character.
 @end defun
 
 @defun space-char-p character
-Returns @code{t} when @var{character} is a white-space character (space, tab,
+Returns true when @var{character} is a white-space character (space, tab,
 newline or form feed).
 @end defun
 
@@ -1153,8 +1167,7 @@ A sequence is either an array or a list, where an array is either a vector
 or a string.
 
 @defun sequencep object
-This function returns @code{t} if @var{object} is a sequence, @code{nil}
-otherwise.
+This function returns true if @var{object} is a sequence.
 @end defun
 
 @menu
@@ -1195,15 +1208,14 @@ a cdr of @var{cdr}.
 @end defun
 
 @defun consp object
-This function returns @code{t} if @var{object} is a cons cell and @code{nil}
-otherwise.
+This function returns true if @var{object} is a cons cell.
 
 @lisp
 (consp '(1 . 2))
     @result{} t
 
-(consp nil)
-    @result{} nil
+(consp '())
+    @result{} ()
 
 (consp (cons 1 2))
     @result{} t
@@ -1220,7 +1232,7 @@ In Lisp an @dfn{atom} is any object which is not a cons cell (and is,
 therefore, atomic).
 
 @defun atom object
-Returns @code{t} if @var{object} is an atom (not a cons cell).
+Returns true if @var{object} is an atom (not a cons cell).
 @end defun
 
 Given a cons cell there are a number of operations which can be performed
@@ -1283,16 +1295,15 @@ be split, reversed, concatenated, etc@dots{} very easily.
 
 In Lisp lists are not a primitive type; instead singly-linked lists are
 formed by chaining cons cells together (@pxref{Cons Cells}). The empty
-list is represented by the symbol @code{nil}.
+list is represented by the special value @code{()}.
 
 @defun listp arg
-This functions returns @code{t} when its argument, @var{arg}, is a
-list (i.e. either a cons cell or @code{nil}).
+This functions returns true when its argument, @var{arg}, is a
+list (i.e. either a cons cell or @code{()}).
 @end defun
 
 @defun null arg
-Returns @code{t} if @var{arg} is the symbol @code{nil}, i.e. the empty
-list.
+Returns a true value if @var{arg} is the empty list.
 @end defun
 
 @menu
@@ -1313,8 +1324,8 @@ Each element in a list is given its own cons cell and stored in the car
 of that cell. The list object is then constructed by making the cdr of
 a cell contain the cons cell of the next element (and hence the whole
 tail of the list). The cdr of the cell containing the last element in
-the list is @code{nil}. A list of zero elements is represented by the
-symbol @code{nil}.
+the list is @code{()}. A list of zero elements is represented by the
+@code{()}.
 
 The read syntax of a list is an opening parenthesis, followed by the
 read syntax of zero or more space-separated objects, followed by a
@@ -1327,7 +1338,7 @@ the numbers from zero to four.
 @lisp
 (0 1 2 3 4)
 
-(0 . (1 . (2 . (3 . (4 . nil)))))
+(0 . (1 . (2 . (3 . (4 . ())))))
 
 (0 1 2 . (3 4))
 @end lisp
@@ -1349,7 +1360,7 @@ following diagram represents the list @code{(1 2 3 4)}.
 
 @example
 +-----+-----+   +-----+-----+   +-----+-----+   +-----+-----+
-|  o  |  o----> |  o  |  o----> |  o  |  o----> |  o  |  o----> nil
+|  o  |  o----> |  o  |  o----> |  o  |  o----> |  o  |  o----> ()
 +--|--+-----+   +--|--+-----+   +--|--+-----+   +--|--+-----+
    |               |               |               |
     --> 1           --> 2           --> 3           --> 4
@@ -1359,11 +1370,11 @@ A more complex example, the list @code{((1 2) (foo bar))} can be drawn as,
 
 @example
 +-----+-----+                          +-----+-----+
-|  o  |  o---------------------------> |  o  |  o----> nil
+|  o  |  o---------------------------> |  o  |  o----> ()
 +--|--+-----+                          +--|--+-----+
    |                                      |
 +-----+-----+   +-----+-----+          +-----+-----+   +-----+-----+
-|  o  |  o----> |  o  |  o----> nil    |  o  |  o----> |  o  |  o----> nil
+|  o  |  o----> |  o  |  o----> ()     |  o  |  o----> |  o  |  o----> ()
 +--|--+-----+   +--|--+-----+          +--|--+-----+   +--|--+-----+
    |               |                      |               |
     --> 1           --> 2                  --> foo         --> bar
@@ -1410,7 +1421,7 @@ for a dynamic method of creating lists.
 
 @defun list &rest elements
 This function creates a list out of its arguments, if zero arguments are
-given the empty list, @code{nil}, is returned.
+given the empty list, @code{()}, is returned.
 
 @lisp
 (list 1 2 3)
@@ -1420,7 +1431,7 @@ given the empty list, @code{nil}, is returned.
     @result{} (3 2)
 
 (list)
-    @result{} nil               ;Equivalent to `()'
+    @result{} ()
 @end lisp
 @end defun
 
@@ -1437,17 +1448,17 @@ Creates a new list @code{(@var{arg1} @var{arg2} @dots{} @var{argn-1} .
 @defun make-list length &optional initial-value
 This function creates a list @var{length} elements long. If the
 @var{initial-value} argument is given it defines the value of all
-elements in the list, if it is not defined they are all @code{nil}.
+elements in the list, if it is not defined they are all @code{()}.
 
 @lisp
 (make-list 2)
-    @result{} (nil nil)
+    @result{} (() ())
 
 (make-list 3 t)
     @result{} (t t t)
 
 (make-list 0)
-    @result{} nil
+    @result{} ()
 @end lisp
 @end defun
 
@@ -1461,7 +1472,7 @@ preserves the structure of all its arguments.
     @result{} (1 2 3 4 5)
 
 (append)
-    @result{} nil
+    @result{} ()
 @end lisp
 
 What actually happens is that all arguments but the last are copied,
@@ -1547,7 +1558,7 @@ list. These will usually be faster than a string of @code{car} and
 This function returns the element @var{count} elements down the list,
 therefore to access the first element use a @var{count} of zero (or even
 better the @code{car} function). If there are too few elements in the list
-and no element number @var{count} can be found @code{nil} is returned.
+and no element number @var{count} can be found @code{()} is returned.
 
 @lisp
 (nth 3 '(0 1 2 3 4 5))
@@ -1573,14 +1584,14 @@ returning the last cdr taken.
 
 @defun last list
 This function returns the last element in the list @var{list}. If the
-list has zero elements @code{nil} is returned.
+list has zero elements @code{()} is returned.
 
 @lisp
 (last '(1 2 3))
     @result{} 3
 
 (last '())
-    @result{} nil
+    @result{} ()
 @end lisp
 @end defun
 
@@ -1588,14 +1599,14 @@ list has zero elements @code{nil} is returned.
 This function scans through the list @var{list} until it finds an element
 which is @code{equal} to @var{object}. The tail of the list (the cons cell
 whose car is the matched object) is then returned. If no elements match
-@var{object} then the empty list @code{nil} is returned.
+@var{object} then the empty list @code{()} is returned.
 
 @lisp
 (member 'c '(a b c d e))
     @result{} (c d e)
 
 (member 20 '(1 2))
-    @result{} nil
+    @result{} ()
 @end lisp
 @end defun
 
@@ -1682,8 +1693,8 @@ This function destructively removes all elements of the list @var{list}
 which are @code{equal} to @var{object} then returns the modified list.
 
 @lisp
-(delete t '(nil t nil t nil))
-    @result{} (nil nil nil)
+(delete 1 '(0 1 0 1 0))
+    @result{} (0 0 0)
 @end lisp
 
 When this function is used to remove an element from a list which is stored
@@ -1717,7 +1728,7 @@ Destructively sorts (i.e. by modifying cdrs) the list of values
 sorted list. If @var{predicate} is undefined, the @code{<} function is
 used, sorting the list into ascending order.
 
-@var{predicate} is called with two values, it should return @code{t} if
+@var{predicate} is called with two values, it should return true if
 the first is considered less than the second.
 
 @lisp
@@ -1768,7 +1779,7 @@ a given key for its association.
 @defun assoc key alist
 This function scans the association list @var{alist} for the first element
 whose car is @code{equal} to @var{key}, this element is then returned. If
-no match of @var{key} is found @code{nil} is returned.
+no match of @var{key} is found false is returned.
 
 @lisp
 (assoc 'two '((one . 1) (two . 2) (three . 3)))
@@ -1786,7 +1797,7 @@ are the @emph{same} object!
 
 @lisp
 (assq "foo" '(("bar" . 1) ("foo" . 2)))
-    @result{} nil
+    @result{} ()
 (assoc "foo" '(("bar" . 1) ("foo" . 2)))
     @result{} ("foo" . 2)
 @end lisp
@@ -1795,7 +1806,7 @@ are the @emph{same} object!
 @defun rassoc association alist
 This function searches through @var{alist} until it finds an element whose
 cdr is @code{equal} to @var{association}, that element is then returned.
-@code{nil} will be returned if no elements match.
+false will be returned if no elements match.
 
 @lisp
 (rassoc 2 '((one . 1) (two . 2) (three . 3)))
@@ -1866,7 +1877,7 @@ In general it is best to use vectors when the number of elements to be
 stored is known and lists when the sequence may grow or shrink.
 
 @defun vectorp object
-This function returns @code{t} if its argument, @var{object}, is a vector.
+This function returns true if its argument, @var{object}, is a vector.
 @end defun
 
 @defun vector &rest elements
@@ -1885,11 +1896,11 @@ function.
 @defun make-vector size &optional initial-value
 Returns a new vector, @var{size} elements big. If @var{initial-value} is
 defined each element of the new vector is set to @var{initial-value}, otherwise
-they are all @code{nil}.
+they are all @code{()}.
 
 @lisp
 (make-vector 4)
-    @result{} [nil nil nil nil]
+    @result{} [() () () ()]
 
 (make-vector 2 t)
     @result{} [t t]
@@ -1961,7 +1972,7 @@ an @samp{x} character followed by one or two hex digits.
 @end table
 
 @defun stringp object
-This function returns @code{t} if its argument is a string.
+This function returns true if its argument is a string.
 @end defun
 
 @defun make-string length &optional initial-character
@@ -2018,16 +2029,16 @@ all characters until the end of the string are copied.
 @end defun
 
 @defun string= string1 string2
-This function compares the two strings @var{string1} and @var{string2}---if
-they are made from the same characters in the same order then @code{t} is
-returned, else @code{nil}.
+This function compares the two strings @var{string1} and
+@var{string2}---if they are made from the same characters in the same
+order then true is returned.
 
 @lisp
 (string= "one" "one")
     @result{} t
 
 (string= "one" "two")
-    @result{} nil
+    @result{} ()
 @end lisp
 
 Note that an alternate way to compare strings (or anything!) is to use the
@@ -2035,12 +2046,12 @@ Note that an alternate way to compare strings (or anything!) is to use the
 @end defun
 
 @defun string-equal string1 string2
-Returns non-@code{nil} if @var{string1} and @var{string2} are the same,
+Returns true if @var{string1} and @var{string2} are the same,
 ignoring differences in character case.
 @end defun
 
 @defun string< string1 string2
-This function returns @code{t} if @var{string1} is `less' than @code{string2}.
+This function returns true if @var{string1} is `less' than @code{string2}.
 This is determined by comparing the two strings a character at a time, the
 first pair of characters which do not match each other are then compared
 with a normal `less-than' function.
@@ -2053,7 +2064,7 @@ In @code{librep} the standard @code{<} function understands strings so
     @result{} t
 
 (string< "abc" "abb")
-    @result{} nil
+    @result{} ()
 @end lisp
 @end defun
 
@@ -2071,13 +2082,13 @@ matching in strings.
 @cindex Array functions
 
 @defun arrayp object
-This function returns @code{t} if @var{object} is an array.
+This function returns true if @var{object} is an array.
 @end defun
 
 @defun aref array position
 Returns the element of the array (vector or string) @var{array} @var{position}
 elements from the first element (i.e. the first element is numbered zero).
-If no element exists at @var{position} in @var{array}, @code{nil} is
+If no element exists at @var{position} in @var{array}, false is
 returned.
 
 @lisp
@@ -2111,7 +2122,7 @@ x
 @cindex Sequence functions
 
 @defun sequencep arg
-Returns @code{t} if @var{arg} is a sequence, i.e. a list or an array.
+Returns true if @var{arg} is a sequence, i.e. a list or an array.
 @end defun
 
 @defun length sequence
@@ -2143,7 +2154,7 @@ same objects are used for the elements in both sequences.
 (setq y (copy-sequence x))
     @result{} ("one" "two")
 (eq x y)
-    @result{} nil
+    @result{} ()
 (eq (car x) (car y))
     @result{} t
 @end lisp
@@ -2175,7 +2186,7 @@ provided named variables (@pxref{Variables}) and functions
 (@pxref{Functions}).
 
 @defun symbolp arg
-This function returns @code{t} when its argument is a symbol.
+This function returns true when its argument is a symbol.
 @end defun
 
 @menu
@@ -2300,7 +2311,7 @@ This is the only way of creating an obarray. @code{make-vector} is
 This function scans the specified obarray (@var{obarray} or the value of
 the variable @code{obarray} if @var{obarray} is undefined) for a symbol
 whose name is the string @var{symbol-name}. The value returned is the
-symbol if it can be found or @code{nil} otherwise.
+symbol if it can be found or false otherwise.
 
 @lisp
 (find-symbol "setq")
@@ -2311,10 +2322,9 @@ symbol if it can be found or @code{nil} otherwise.
 @defun apropos regexp &optional predicate obarray
 Returns a list of symbols from the obarray @var{obarray} (or the
 default) whose print name matches the regular expression @var{regexp}
-(@pxref{Regular Expressions}). If @var{predicate} is defined and not
-@code{nil}, each symbol which matches @var{regexp} is applied to the
-function @var{predicate}, if the value is @code{t} it is considered a
-match.
+(@pxref{Regular Expressions}). If @var{predicate} is true, each symbol
+which matches @var{regexp} is applied to the function @var{predicate},
+if the value is true it is considered a match.
 
 The @var{predicate} argument is useful for restricting matches to a
 certain type of symbol, for example only commands.
@@ -2470,14 +2480,14 @@ only one location, the symbol, this is quite safe).
 @defun get symbol property
 This function searches the property list of the symbol @var{symbol} for
 a property @code{equal} to @var{property}. If such a property is found
-it is returned, else the value @code{nil} is returned.
+it is returned, otherwise false is returned.
 
 @lisp
 (get 'if 'lisp-indent)
     @result{} 2
 
 (get 'set 'lisp-indent)
-    @result{} nil
+    @result{} ()
 @end lisp
 @end defun
 
@@ -2730,7 +2740,7 @@ The special forms supported by @code{librep} are: @code{case},
 @code{progn}, @code{quote}, @code{setq}, @code{unwind-protect}.
 
 @defun special-form-p arg
-Returns @code{t} if @var{arg} is a special form.
+Returns true if @var{arg} is a special form.
 
 @lisp
 (special-form-p quote)
@@ -2890,7 +2900,7 @@ is the value of the implicit @code{progn}.
 
 The @var{bindings} argument is a list of the bindings to perform. Each
 binding is either a symbol, in which case that variable is bound to
-@code{nil}, or a list whose car is a symbol. The cdr of this list is a
+@code{()}, or a list whose car is a symbol. The cdr of this list is a
 list of forms which, when evaluated as a @code{progn}, gives the value
 to bind to that variable.
 
@@ -2903,7 +2913,7 @@ to bind to that variable.
   ;; Body forms
   (setq foo (1+ foo))   ;This sets the new binding
   (cons foo bar))
-    @result{} (4 . nil)
+    @result{} (4 . ())
 foo
     @result{} 42        ;The original values is back
 @end lisp
@@ -3121,8 +3131,7 @@ possible for the most recent binding of a variable to be void even though
 the inactive bindings may have values.
 
 @defun boundp variable
-Returns @code{t} if the symbol @var{variable} has a value, @code{nil} if
-its value is void.
+Returns true if the symbol @var{variable} has a value.
 @end defun
 
 @defun makunbound variable
@@ -3139,7 +3148,7 @@ foo
 (makunbound 'foo)
     @result{} foo
 (boundp 'foo)
-    @result{} nil
+    @result{} ()
 foo
     @error{} Value as variable is void: foo
 @end lisp
@@ -3219,7 +3228,7 @@ they are usually named by being stored in lexically scoped variables.
 
 @defun make-fluid &optional value
 Create and return a new fluid, it will have an initial binding of
-@var{value} (or the symbol @code{nil} if @var{value} is undefined).
+@var{value} (or false if @var{value} is undefined).
 @end defun
 
 @defun fluid fluid
@@ -3291,7 +3300,7 @@ built-in functions, the object containing the C code itself is called a
 @dfn{subr}. All other functions are defined in Lisp.
 
 @defun functionp object
-Returns @code{t} if @var{object} is a function (i.e. it can be used
+Returns true if @var{object} is a function (i.e. it can be used
 as the function argument of @code{funcall}.
 
 @lisp
@@ -3299,7 +3308,7 @@ as the function argument of @code{funcall}.
     @result{} t
 
 (functionp setq)
-    @result{} nil
+    @result{} ()
 
 (functionp (lambda (x) (+ x 2)))
    @result{} t
@@ -3307,7 +3316,7 @@ as the function argument of @code{funcall}.
 @end defun
 
 @defun subrp arg
-Returns @code{t} is @var{arg} is a primitive subroutine object.
+Returns true is @var{arg} is a primitive subroutine object.
 @end defun
 
 @defun subr-name subr
@@ -3382,7 +3391,7 @@ following example:
     @result{} t
 
 (functionp '(lambda (x) (1+ x)))
-    @result{} nil
+    @result{} ()
 @end lisp
 
 There are several @dfn{lambda-list keywords} which modify the meaning
@@ -3394,8 +3403,7 @@ begins with an ampersand, they are:
 All variables following this keyword are considered @dfn{optional} (all
 variables before the first keyword are @dfn{required}: an error will be
 signalled if a required argument is undefined in a function call). If
-an optional argument is undefined it will simply be given the value
-@code{nil}.
+an optional argument is undefined it will simply be given the false value.
 
 Note that optional arguments must be specified if a later optional
 argument is also specified. Use @code{nil} to explicitly show that an
@@ -3526,7 +3534,7 @@ Return the closure of @var{arg} and the current lexical environment.
 @end defun
 
 @defun closurep arg
-Returns non-@code{nil} if @var{arg} is a closure.
+Returns true if @var{arg} is a closure.
 @end defun
 
 @defun closure-function closure
@@ -3541,9 +3549,10 @@ Returns the function object associated with the lexical closure
 @cindex Boolean values, predicate functions
 
 In Lisp, a function which returns a boolean `true' or boolean `false'
-value is called a @dfn{predicate}. As is the convention in Lisp a
-value of @code{nil} means false, anything else means true. The symbol
-@code{t} is often used to represent a constant true value.
+value is called a @dfn{predicate}. As is the convention in Lisp a value
+of @code{()} means false, anything else means true. The symbols
+@code{nil} and @code{t} are often used to represent constant false and
+true values (@pxref{nil and t}).
 
 Another Lisp convention is that the names of predicate functions should
 name the quality that the predicate is testing followed by either a
@@ -3657,7 +3666,7 @@ are to be deleted.
 This function is a variant of the @code{delete} function. Instead of
 comparing each element of @var{list} with a specified object, each
 element of @var{list} is applied to the predicate function
-@var{predicate}. If it returns @code{t} (i.e. not @code{nil}) then the
+@var{predicate}. If it returns true then the
 element is destructively removed from @var{list}.
 
 @lisp
@@ -3668,7 +3677,7 @@ element is destructively removed from @var{list}.
 
 @defun delete-if-not predicate list
 This function does the inverse of @code{delete-if}. It applies
-@var{predicate} to each element of @var{list}, if it returns @code{nil}
+@var{predicate} to each element of @var{list}, if it returns false
 then the element is destructively removed from the list.
 
 @lisp
@@ -3682,7 +3691,7 @@ that the original list isn't modified, a new list is created.
 
 @defun filter predicate list
 Return a new list, consisting of the elements in @var{list} which the
-function @var{predicate} returns non-@code{nil} when applied to. This
+function @var{predicate} returns true when applied to. This
 function is equivalent to:
 
 @lisp
@@ -3716,7 +3725,7 @@ them, they may be expanded at @emph{compile-time}. The resulting form
 is then compiled as usual.
 
 @defun macrop arg
-Returns @code{t} if @var{arg} is a macro object.
+Returns true if @var{arg} is a macro object.
 @end defun
 
 @menu
@@ -3753,7 +3762,7 @@ Here is a simple macro definition, it is the definition of the
 
 @lisp
 (defmacro when (condition &rest body)
-  "Evaluates @var{condition}, if it's non-@code{nil} evaluates the @var{body}
+  "Evaluates @var{condition}, if it's true evaluates the @var{body}
 forms."
   (list 'cond (list* condition body)))
 @end lisp
@@ -3848,7 +3857,7 @@ for compilation purposes.
 
 @lisp
 (defmacro when (condition &rest body)
-  "Evaluates @var{condition}, if it's non-@code{nil} evaluates the @var{body}
+  "Evaluates @var{condition}, if it's true evaluates the @var{body}
 forms."
   (list 'if condition (cons 'progn body)))
     @result{} when
@@ -4221,14 +4230,14 @@ example the ``true'' clause of an @code{if} structure).
 All of the @var{forms} are evaluated sequentially (from left-to-right),
 the result of the last evaluated @var{form} is the return value of the
 special form. If no arguments are given to @code{progn} it returns
-@code{nil}.
+false.
 
 @lisp
 (progn 'one (+ 1 1) "three")
     @result{} "three"
 
 (progn)
-    @result{} nil
+    @result{} ()
 @end lisp
 @end defspec
 
@@ -4264,7 +4273,7 @@ performs an implicit progn on the remaining arguments.
 
 Lisp provides a number of conditional constructs, the most complex of
 which (@code{cond}) takes a list of conditions, the first of which
-evaluates to @code{t} (i.e. not-@code{nil}, @pxref{nil and t}) has its
+evaluates to true has its
 associated list of forms evaluated. Theoretically this is the only
 conditional special form necessary---all others can be implemented as
 macros.
@@ -4273,10 +4282,10 @@ macros.
 The @code{if} construct is the nearest thing in Lisp to the @dfn{if-then-else}
 construct found in most programming languages.
 
-First the @var{condition} form is evaluated, if it returns @code{t} (not
-@code{nil}) the @var{true-form} is evaluated and its result returned. Otherwise
-the result of an implicit progn on the @var{else-forms} is returned. If there
-are no @var{else-forms} @code{nil} is returned.
+First the @var{condition} form is evaluated, if it returns true the
+@var{true-form} is evaluated and its result returned. Otherwise the
+result of an implicit progn on the @var{else-forms} is returned. If
+there are no @var{else-forms} false is returned.
 
 Note that one of the @var{true-form} or the @var{else-forms} is completely
 ignored---it is not evaluated.
@@ -4290,9 +4299,9 @@ ignored---it is not evaluated.
 @end defmac
 
 @defmac when condition true-forms@dots{}
-@var{condition} is evaluated, if it is @code{t} the result of an
+@var{condition} is evaluated, if it is true the result of an
 implicit progn on the @var{true-forms} is returned, otherwise
-@code{nil} is returned.
+false is returned.
 
 @lisp
 (when t
@@ -4304,15 +4313,15 @@ implicit progn on the @var{true-forms} is returned, otherwise
 
 @defmac unless condition else-forms@dots{}
 This special form evaluates @var{condition}, if its computed value is
-not @code{nil}, @code{nil} is returned. Otherwise the @var{else-forms}
-are evaluated sequentially, the value of the last is returned.
+true, @code{()} is returned. Otherwise the @var{else-forms} are
+evaluated sequentially, the value of the last is returned.
 @end defmac
 
 @defspec cond clause@dots{}
 The @code{cond} special form is used to choose between an arbitrary
 number of conditions. Each @var{clause} is a list; the car of which is
 a @var{condition}, the cdr is a list of forms to evaluate (in an
-implicit @code{progn} if the @var{condition} evaluates to @code{t}.
+implicit @code{progn} if the @var{condition} evaluates to true.
 This means that each @var{clause} looks something like:
 
 @lisp
@@ -4331,14 +4340,14 @@ and a whole @code{cond} form looks like:
 
 The @var{condition} in each @var{clause} is evaluated in sequence
 (@var{condition-1}, then @var{condition-2}, @dots{}), the first one
-which evaluates to a non-@code{nil} value has an implicit @code{progn}
+which evaluates to a true value has an implicit @code{progn}
 performed on its @var{body-forms}. The value of this @code{progn} is
 also the value of the @code{cond} statement.
 
 If the true @var{condition} has no @var{body-forms} the value returned
 is the value of the @var{condition}. If none of the clauses has a
-non-@code{nil} @var{condition} the value of the @code{cond} statement
-is @code{nil}.
+true @var{condition} the value of the @code{cond} statement
+is false.
 
 Often you want a @dfn{default} clause which has its @var{body-forms}
 evaluated when none of the other clauses are true. The way to do this
@@ -4401,15 +4410,13 @@ There are also a number of special forms which combine conditions together
 by the normal logical rules.
 
 @defmac or forms@dots{}
-The first of the @var{forms} is evaluated, if it is non-@code{nil} its
+The first of the @var{forms} is evaluated, if it is true its
 value is the value of the @code{or} form and no more of @code{forms}
 are evaluated. Otherwise this step is repeated for the next member of
 @var{forms}.
 
 If all of the @var{forms} have been evaluated and none have a
-non-@code{nil} value @code{nil} is the value of the @code{or} form.
-
-If there are no @var{forms} @code{nil} is returned.
+true value the @code{or} form evaluates to false.
 
 @lisp
 (or nil 1 nil (beep))           ;@code{(beep)} won't be evaluated
@@ -4418,16 +4425,16 @@ If there are no @var{forms} @code{nil} is returned.
 @end defmac
 
 @defmac and forms@dots{}
-The first of the @var{forms} is evaluated. If it is @code{nil} no more
-of the @var{forms} are evaluated and @code{nil} is the value of
+The first of the @var{forms} is evaluated. If it is false no more
+of the @var{forms} are evaluated and false is the value of
 the @code{and} statement. Otherwise the next member of @var{forms} is
 evaluated and its value tested. If none of the @var{forms} are
-@code{nil} the computed value of the last member of @var{forms} is
+false the computed value of the last member of @var{forms} is
 returned from the @code{and} form.
 
 @lisp
 (and 1 2 nil (beep))            ;@code{(beep)} won't be evaluated
-    @result{} nil
+    @result{} ()
 
 (and 1 2 3)                     ;All forms are evaluated
     @result{} 3
@@ -4436,7 +4443,7 @@ returned from the @code{and} form.
 
 @defun not object
 This function inverts the truth value of its argument. If @var{object}
-is non-@code{nil}, @code{nil} is returned, otherwise @code{t} is
+is true, false is returned, otherwise true is
 returned.
 
 @lisp
@@ -4444,7 +4451,7 @@ returned.
     @result{} t
 
 (not t)
-    @result{} nil
+    @result{} ()
 
 (not (not 42))
     @result{} t
@@ -4500,11 +4507,11 @@ of the binding is computed. An alternative form is
 binding does not change across loop iterations.
 
 Each iteration begins by evaluating @var{test}, if the result is
-@code{nil}, then the @var{body}@dots{} expressions are evaluated, and
+false, then the @var{body}@dots{} expressions are evaluated, and
 the variables bound to new locations initialized to the results of
 evaluating the associated @var{step} forms.
 
-If the result of evaluating @var{test} is non-@code{nil} then the
+If the result of evaluating @var{test} is true then the
 @var{expr}@dots{} forms are evaluated, and the @code{do} construct
 returns the value of the last @var{expr} form evaluated.
 
@@ -4547,13 +4554,13 @@ Finally, the imperative @code{while} form shown at the start of the
 section is also provided:
 
 @defmac while condition body@dots{}
-The @var{condition} form is evaluated. If it is non-@code{nil} an
+The @var{condition} form is evaluated. If it is true an
 implicit progn is performed on the @var{body} forms and the whole
 procedure is repeated.
 
-This continues until the @var{condition} form evaluates to @code{nil}.
+This continues until the @var{condition} form evaluates to false.
 The value of every @code{while} structure that terminates is
-@code{nil}.
+false.
 @end defmac
 
 
@@ -4653,7 +4660,7 @@ Before exiting, the tag installed by this form is removed.
 @defun throw tag &optional catch-value
 This function transfers the point of control to the catch form with a
 tag which is @code{eq} to @var{tag}. The value returned by this catch
-form is either @var{catch-value} or @code{nil} if @var{catch-value} is
+form is either @var{catch-value} or false if @var{catch-value} is
 undefined.
 
 If there is no catch with a tag of @var{tag} an error is signalled and
@@ -4739,7 +4746,7 @@ example,
     ;; This is the @var{cleanup-form} it will @emph{always}
     ;; be evaluated, despite the @code{throw}.
     (close temporary-file)))
-    @result{} nil
+    @result{} ()
 @end lisp
 
 
@@ -4801,8 +4808,9 @@ handler is invoked.
 While the forms of the error handler are being evaluated the variable
 @var{symbol} is bound to the value @code{(@var{error-symbol} .
 @var{data})} (these were the arguments to the @code{signal} form which
-caused the error). If @var{symbol} is @code{nil}, then the error
-information is not available to the handler.
+caused the error). If @var{symbol} is the symbol @code{nil} (or the
+empty list @code{()}), then the error information is not available to
+the handler.
 
 The special value, the symbol @code{error}, in the car of one of the
 @var{error-handlers} will catch @emph{all} types of errors.
@@ -4973,7 +4981,7 @@ execute within the current thread context (dynamic root). Each thread
 is represented by a lisp object.
 
 @defun threadp arg
-Return @code{t} if lisp object @var{arg} represents a thread of
+Return true if lisp object @var{arg} represents a thread of
 execution in the lisp environment.
 @end defun
 
@@ -4988,7 +4996,7 @@ If @var{name} is defined, it is a string naming the current thread.
 @defun current-thread
 Returns the currently executing thread. If no threads have been created
 yet in the current dynamic root (i.e. there is a single ``implicit''
-thread) then the symbol @code{nil} is returned.
+thread) then false is returned.
 @end defun
 
 @defun all-threads
@@ -5016,7 +5024,7 @@ closed.
 @end defun
 
 @defun thread-deleted-p thread
-Returns @code{t} if @var{thread} has been deleted.
+Returns true if @var{thread} has been deleted.
 @end defun
 
 
@@ -5057,7 +5065,7 @@ active.
 @end defun
 
 @defun thread-suspended-p thread
-Returns @code{t} if @var{thread} is currently suspended.
+Returns true if @var{thread} is currently suspended.
 @end defun
 
 Thread preemption may be forbidden at times, to allow atomic operations
@@ -5094,7 +5102,7 @@ Create and return a mutex object. No thread will own the new mutex.
 @end defun
 
 @defun mutexp arg
-Return @code{t} if @var{arg} is a mutex object.
+Return true if @var{arg} is a mutex object.
 @end defun
 
 @defun obtain-mutex mutex
@@ -5104,13 +5112,13 @@ current thread until the mutex is exclusively available.
 
 @defun maybe-obtain-mutex mutex
 Attempt to obtain mutex @var{mutex} for the current thread without
-blocking. Returns @code{t} if able to obtain the mutex, @code{nil}
+blocking. Returns true if able to obtain the mutex, false
 otherwise.
 @end defun
 
 @defun release-mutex mutex
 Release the mutex object @var{mutex} (which must have previously been
-obtained by the current thread). Returns @code{t} if the mutex has no
+obtained by the current thread). Returns true if the mutex has no
 new owner.
 @end defun
 
@@ -5194,21 +5202,21 @@ and the file still has not been found an error is signalled.
 Next the file is opened for reading and Lisp forms are read from it
 one at a time, each form is evaluated before the next form is read. When
 the end of the file is reached the file has been loaded and this function
-returns @code{t}.
+returns true.
 
 The optional arguments to this function are used to modify its behaviour,
 
 @table @var
 @item no-error
-When this argument is non-@code{nil} no error is signalled if the file
-can not be located. Instead the function returns @code{nil}.
+When this argument is true no error is signalled if the file
+can not be located. Instead the function returns false.
 
 @item no-path
 The variable @code{load-path} is not used, @var{program} must point to
 the file from the current working directory.
 
 @item no-suffix
-When non-@code{nil} no @samp{.jlc} or @samp{.jl} suffixes are applied to
+When true no @samp{.jlc} or @samp{.jl} suffixes are applied to
 the @var{program} argument when locating the file.
 @end table
 
@@ -5221,14 +5229,6 @@ If no Lisp file can be found matching @var{program}, then each
 directory in the variable @code{dl-load-path} is searched for a
 @code{libtool} shared library called @file{@var{program}.la}
 (@pxref{Shared Libraries}).
-
-@lisp
-(load "foobar")
-    @error{} File error: Can't open lisp-file, foobar
-
-(load "foobar" t)
-    @result{} nil
-@end lisp
 @end defun
 
 @defvar load-filename
@@ -5379,7 +5379,7 @@ features
 @end defvar
 
 @defun featurep feature
-Returns non-@code{nil} if the feature @var{feature} has been loaded
+Returns true if the feature @var{feature} has been loaded
 into the current module.
 @end defun
 
@@ -5401,10 +5401,10 @@ This function will check the @code{features} variable to see if @var{feature}
 is already loaded, if so it will return immediately.
 
 If @var{feature} is not present it will be loaded. If @var{file} is
-non-@code{nil} it specifies the first argument to the @code{load}
-function, else the print name of the symbol @var{feature} is used, with
-any @samp{.} characters replaced by the operating system's directory
-separator (@pxref{Module Loading}).
+given it specifies the first argument to the @code{load} function, else
+the print name of the symbol @var{feature} is used, with any @samp{.}
+characters replaced by the operating system's directory separator
+(@pxref{Module Loading}).
 
 @lisp
 ;;;; physics.jl -- the @code{physics} library
@@ -5499,7 +5499,7 @@ Compiles all the Lisp files in the directory called @var{directory} which
 either haven't been compiled or whose compiled version is older than
 the source file (Lisp files are those ending in @samp{.jl}).
 
-If the optional argument @var{force} is non-@code{nil} @emph{all} Lisp files
+If the optional argument @var{force} is true @emph{all} Lisp files
 will be recompiled whatever the status of their compiled version.
 
 The @var{exclude} argument may be a list of filenames, these files will
@@ -5528,7 +5528,7 @@ read syntax includes a preceding @samp{#} character is a @dfn{byte-code
 subr}. These objects represent compiled Lisp functions and macros.
 
 @defun bytecodep arg
-Returns @code{t} if @var{arg} is a byte-code subroutine.
+Returns true if @var{arg} is a byte-code subroutine.
 @end defun
 
 
@@ -5579,7 +5579,7 @@ the compiler that the forms in the program will be evaluated within the
 context of the module called @var{module-name} (a symbol).
 @end table
 
-Declaration forms always evaluate to @code{nil}.
+Declaration forms always evaluate to false.
 @end defmac
 
 A second type of declaration is the @code{eval-when-compile} form, it
@@ -5594,8 +5594,8 @@ The compiler knows to recognize @var{form}s of the pattern
 @var{feature} should be imported at compile-time. Any other @var{form}s
 are simply evaluated in an unspecified environment.
 
-When interpreted @code{eval-when-compile} forms alway evaluate to
-@code{nil}, when compiled they evaluate to the result of evaluating
+When interpreted, @code{eval-when-compile} forms alway evaluate to
+false, when compiled they evaluate to the result of evaluating
 the @var{form} at compile-time.
 @end defmac
 
@@ -5852,7 +5852,7 @@ to be @var{value}. Otherwise, an error is signalled.
 @end defun
 
 @defun has-type-p arg key
-Return non-@code{nil} if @var{arg} has type @var{key}.
+Return true if @var{arg} has type @var{key}.
 @end defun
 
 @defun define-datum-printer key printer
@@ -5891,11 +5891,11 @@ Remove the object at the head of the queue @var{q}, and return it. If
 @end defun
 
 @defun queue-empty-p q
-Return non-@code{nil} if the queue @var{q} is not empty.
+Return true if the queue @var{q} is not empty.
 @end defun
 
 @defun queuep arg
-Return non-@code{nil} if the object @var{arg} is a queue.
+Return true if the object @var{arg} is a queue.
 @end defun
 
 @defun queue->list q
@@ -6015,7 +6015,7 @@ implementation (@pxref{Modules}). Each hash table is represented by a
 lisp object satisfying the @code{tablep} predicate:
 
 @defun tablep arg
-Return @code{t} if @var{arg} is a hash table.
+Return true if @var{arg} is a hash table.
 @end defun
 
 Hash tables may be created by using the @code{make-table} and
@@ -6025,7 +6025,7 @@ Hash tables may be created by using the @code{make-table} and
 Create and return a new hash table. When storing and referencing keys
 it will use the function @var{hash-fun} to map keys to hash codes
 (integers), and the predicate function @var{compare-fun} to compare two
-keys (should return @code{t} if the keys are considered equal).
+keys (should return true if the keys are considered equal).
 @end defun
 
 @defun make-weak-table hash-fun compare-fun
@@ -6040,7 +6040,7 @@ prevent it being garbage collected.
 
 @defun table-ref table key
 Return the value stored in hash table @var{table} indexed by object
-@var{key}. Returns @code{nil} if no such value exists.
+@var{key}. Returns false if no such value exists.
 @end defun
 
 @defun table-set table key value
@@ -6117,7 +6117,7 @@ list of objects associated with the guardian.
 
 @item
 If none of the associated objects have been proved to be inaccessible,
-then return the value @code{nil}.
+then return the value false.
 @end itemize
 @end defun
 
@@ -6140,7 +6140,7 @@ Here is an example use of the guardian system:
 
 ;; remove the sole reference to the object
 (setq x nil)
-   @result{} nil
+   @result{} ()
 
 ;; invoke the garbage collector, this will
 ;; prove that the value added to the
@@ -6154,7 +6154,7 @@ Here is an example use of the guardian system:
 
 ;; no more inaccessible values available
 (G)
-   @result{} nil
+   @result{} ()
 @end lisp
 
 
@@ -6176,15 +6176,15 @@ function, or even a string; the @code{read} function does not need to
 differentiate.
 
 @defun streamp arg
-Return @code{t} if @var{arg} is a stream.
+Return true if @var{arg} is a stream.
 @end defun
 
 @defun input-stream-p arg
-Return @code{t} if @var{arg} is an input stream.
+Return true if @var{arg} is an input stream.
 @end defun
 
 @defun output-stream-p arg
-Return @code{t} if @var{arg} is an output stream.
+Return true if @var{arg} is an output stream.
 @end defun
 
 @menu
@@ -6211,7 +6211,7 @@ which manipulate file objects see @ref{Files}.
 
 @item @var{function}
 Each time an input character is required the @var{function} is called with
-no arguments. It should return the character read (an integer) or @code{nil}
+no arguments. It should return the character read (an integer) or false
 if for some reason no character is available.
 
 @var{function} should also be able to `unread' one character. When this
@@ -6222,7 +6222,7 @@ could be,
 
 @lisp
 (defvar ms-unread-char nil
-  "If non-nil the character which was pushed back.")
+  "If true the character which was pushed back.")
 
 (defun my-stream (&optional unread-char)
   (if unread-char
@@ -6255,7 +6255,7 @@ Returns an input stream which will supply the characters of the string
 @end defun
 
 @defvar standard-input
-The input stream which is used when no other is specified or is @code{nil}.
+The input stream which is used when no other is specified or is false.
 @end defvar
 
 Applications that embed @code{librep}, or dynamically loaded
@@ -6287,7 +6287,7 @@ Writes to the standard input of the process object @var{process}. If
 @item t
 Appends the character(s) to the end of the status line message.
 
-@item nil
+@item ()
 Write to the stream stored in the variable @code{standard-output}.
 @end table
 
@@ -6316,7 +6316,7 @@ was created by @code{make-string-output-stream}).
 
 @defvar standard-output
 This variable contains the output stream which is used when no other
-is specified (or when the given output stream is @code{nil}).
+is specified (or when the given output stream is false).
 @end defvar
 
 @defvar standard-error
@@ -6336,7 +6336,7 @@ extensions, may provide further output stream types.
 
 @defun read-char stream
 Read and return the next character from the input stream @var{stream}. If
-the end of the stream is reached @code{nil} is returned.
+the end of the stream is reached false is returned.
 @end defun
 
 @defun read-line stream
@@ -6345,7 +6345,7 @@ This function reads one line of text from the input stream
 character which terminates the line).
 
 If the end of stream is reached before any characters can be read
-@code{nil} is returned, if the end of stream is reached but some
+false is returned, if the end of stream is reached but some
 characters have been read (but not the newline) these characters are
 made into a string and returned.
 
@@ -6466,7 +6466,7 @@ This defines which control characters @code{print} and @code{prin1}
 will escape (using backslashes). Possible values are:
 
 @table @code
-@item nil
+@item ()
 Only escape double-quote and backslash characters.
 
 @item newlines
@@ -6480,12 +6480,12 @@ with a numeric value less than 32, or greater than 126).
 @end defvar
 
 @defvar print-length
-This variable, if non-@code{nil}, limits the number of elements printed
+This variable, if true, limits the number of elements printed
 from lists.
 @end defvar
 
 @defvar print-level
-This variable, if non-@code{nil}, limits the recursion depth when
+This variable, if true, limits the recursion depth when
 printing lists.
 @end defvar
 
@@ -6500,7 +6500,7 @@ printing lists.
 Writes to a stream, @var{stream}, a string constructed from the
 format string, @var{template}, and list of arguments @var{values}.
 
-If @var{stream} is @code{nil} the resulting string will be returned,
+If @var{stream} is false the resulting string will be returned,
 not written to a stream.
 
 @var{template} is a template for the output string, any @samp{%}
@@ -6578,8 +6578,8 @@ Note that the @var{field-width} and all flags currently have no effect
 on the @samp{S} conversion, (or the @samp{s} conversion when the
 argument isn't a string).
 
-If @var{stream} isn't @code{nil} (i.e. the formatted string is returned) the
-value of @var{stream} is returned.
+If @var{stream} isn't false (in which case the created string is
+returned) the value of @var{stream} is returned.
 
 @lisp
 (format nil "foo %S bar 0x%x" '(x . y) 255)
@@ -6652,7 +6652,7 @@ The names of hooks of this type will normally end in @code{-hook}.
 This function adds a new function @var{function} to the list of
 functions installed in the (list) hook @var{hook} (a symbol).
 
-If @var{at-end} is non-@code{nil} the new function is added at the end
+If @var{at-end} is true the new function is added at the end
 of the hook's list of functions (and therefore will be called last when
 the hook is evaluated), otherwise the new function is added to the
 front of the list.
@@ -6676,9 +6676,9 @@ There are actually three calling conventions for this type of hook,
 differing in how many of the functions in the list actually get called.
 In this simplest form, @emph{all} functions are called. In an
 @code{and} type hook, functions are only invoked while all others have
-returned @code{t}. As soon as the first function in the hook returns
-@code{nil}, no others will be called. Finally, an @code{or} type hook
-aborts when a function returns a non-@code{nil} result.
+returned true. As soon as the first function in the hook returns
+false, no others will be called. Finally, an @code{or} type hook
+aborts when a function returns a true result.
 
 @defun call-hook hook arg-list &optional type
 
@@ -6687,10 +6687,10 @@ arguments in the list @var{arg-list}. Note that @var{hook} may also be
 the actual list of functions to call.
 
 @var{type} defines how the return values of each function in the hook
-are treated. If @var{type} is @code{nil} they are ignored, if
+are treated. If @var{type} is false they are ignored, if
 @var{type} is the symbol @code{and} the hook aborts after a function
-returns @code{nil}, if @var{type} is @code{or} the hook aborts when a
-function returns non-@code{nil}.
+returns false, if @var{type} is @code{or} the hook aborts when a
+function returns true.
 
 In all cases the value returned by the last-evaluated function is
 returned.
@@ -6733,7 +6733,7 @@ file names depends on the operating system. There are several functions
 for manipulating file names.
 
 @defun file-name-absolute-p file-name
-Returns @code{t} when @var{file-name} is not specified relative to the
+Returns true when @var{file-name} is not specified relative to the
 current directory.
 @end defun
 
@@ -6850,7 +6850,7 @@ system's local file structure, and thus which are unavailable to other
 programs.
 
 This function returns either the absolute name of the file
-@var{file-name}, if it is found in the local system, or @code{nil}, if
+@var{file-name}, if it is found in the local system, or false, if
 the file does not.
 
 @lisp
@@ -6858,7 +6858,7 @@ the file does not.
     @result{} "/home/john/src/librep/man/foo"
 
 (local-file-name "/john@@tango:foo")
-    @result{} nil
+    @result{} ()
 @end lisp
 @end defun
 
@@ -6891,7 +6891,7 @@ filing system. Any file object may be used as a stream (either input or
 output) to access the contents of the file (@pxref{Streams}).
 
 @defun filep object
-This function returns @code{t} when its argument is a file object.
+This function returns true when its argument is a file object.
 @end defun
 
 @menu
@@ -6978,10 +6978,10 @@ from.
 
 When called as @code{(seek-file @var{file} @var{offset} [@var{where}])}
 alters the position from which the next byte will be read. @var{where}
-can be one of the symbols:
+can be one of the values:
 
 @table @code
-@item nil
+@item ()
 @var{offset} bytes after the current position.
 
 @item start
@@ -6992,7 +6992,7 @@ can be one of the symbols:
 @end table
 
 Note that not all files may be seekable; if @code{(seek-file
-@var{file})} returns @code{nil}, indicating that the current position
+@var{file})} returns false, indicating that the current position
 is unknown, any attempts to set the current position will also fail.
 @end defun
 
@@ -7003,7 +7003,7 @@ This function flushes any buffered output to the file object
 
 @defun file-binding file
 Returns the name of the file which the file object @var{file} is
-currently bound to. Returns @code{nil} if the file is currently unbound
+currently bound to. Returns false if the file is currently unbound
 (i.e. @code{close-file} was called on it).
 @end defun
 
@@ -7051,32 +7051,32 @@ A number of functions exist which when given the name of a file return
 one of the attributes relating to that file.
 
 @defun file-exists-p file-name
-Returns @code{t} when a file @var{file-name} exists.
+Returns true when a file @var{file-name} exists.
 @end defun
 
 @defun file-regular-p file-name
-Returns @code{t} when the file @var{file-name} is a `normal' file. This means
+Returns true when the file @var{file-name} is a `normal' file. This means
 that it isn't a directory, device, symbolic link or whatever.
 @end defun
 
 @defun file-directory-p file-name
-Returns @code{t} when the file @var{file-name} is a directory.
+Returns true when the file @var{file-name} is a directory.
 @end defun
 
 @defun file-symlink-p file-name
-Returns @code{t} when the file @var{file-name} is a symbolic link.
+Returns true when the file @var{file-name} is a symbolic link.
 @end defun
 
 @defun file-readable-p file-name
-Returns @code{t} when the file @var{file-name} is readable.
+Returns true when the file @var{file-name} is readable.
 @end defun
 
 @defun file-writable-p file-name
-Returns @code{t} when the file @var{file-name} is writable.
+Returns true when the file @var{file-name} is writable.
 @end defun
 
 @defun file-owner-p file-name
-Returns @code{t} when the ownership of the file @var{file-name} is
+Returns true when the ownership of the file @var{file-name} is
 the same as that of any files written by the editor.
 @end defun
 
@@ -7117,7 +7117,7 @@ Returns the system time at the last modification to the file
 @end defun
 
 @defun file-newer-than-file-p file-name1 file-name2
-This function returns @code{t} if the file @var{file-name1} was modified
+This function returns true if the file @var{file-name1} was modified
 more recently than the file @var{file-name2} was.
 @end defun
 
@@ -7357,12 +7357,12 @@ connecting to @var{user@@host}.
 @end defun
 
 @defvar remote-ftp-show-messages
-When non-nil (the default), messages are displayed as FTP commands are
+When true (the default), messages are displayed as FTP commands are
 executed.
 @end defvar
 
 @defvar remote-ftp-display-progress
-When non-nil (the default) display progress of FTP transfers.
+When true (the default) display progress of FTP transfers.
 @end defvar
 
 @defvar remote-ftp-anon-users
@@ -7428,7 +7428,7 @@ Process objects which aren't currently being used to run a subprocess
 store the exit value of the last subprocess which was run on that object.
 
 @defun processp object
-This function returns @code{t} when its argument is a process object.
+This function returns true when its argument is a process object.
 @end defun
 
 The programmer-accessible components of a process object are,
@@ -7738,15 +7738,15 @@ are called.
 @defun accept-process-output &optional seconds milliseconds
 Wait @var{seconds} plus @var{milliseconds} for output from any
 asynchronous subprocesses. If any arrives, process it, then return
-@code{nil}. Otherwise return @code{t}. If either of the arguments is
+false. Otherwise return true. If either of the arguments is
 undefined, they count as zero in the addition.
 @end defun
 
 @defun sit-for &optional seconds milliseconds
 Wait for input to arrive and be processed. No more than @var{seconds}
 seconds plus @var{milliseconds} milliseconds will be waited. If at the
-end of this time no input has arrived, return @code{t}. Otherwise
-return @code{nil} if input was found.
+end of this time no input has arrived, return true. Otherwise
+return false if input was found.
 
 Note that this function is only distinct to
 @code{accept-process-output} when @code{librep} is embedded in another
@@ -7785,15 +7785,15 @@ Predicates exist which test whether a given process object is in one of
 these states.
 
 @defun process-running-p process-object
-Returns @code{t} when @var{process-object} is in the running state.
+Returns true when @var{process-object} is in the running state.
 @end defun
 
 @defun process-stopped-p process-object
-Returns @code{t} when @var{process-object} is in the stopped state.
+Returns true when @var{process-object} is in the stopped state.
 @end defun
 
 @defun process-in-use-p process-object
-Returns @code{t} when @var{process-object} is @emph{not} in the unused
+Returns true when @var{process-object} is @emph{not} in the unused
 state.
 @end defun
 
@@ -7804,7 +7804,7 @@ continue a process running.
 This function suspends execution of the subprocess running on the
 process object @var{process-object}.
 
-If @var{whole-group} is non-@code{nil} all subprocesses in the
+If @var{whole-group} is true all subprocesses in the
 process group of @var{process-object} are stopped.
 @end defun
 
@@ -7812,7 +7812,7 @@ process group of @var{process-object} are stopped.
 Use this function to continue a subprocess executing after it has been
 stopped (by the @code{stop-process} function).
 
-If @var{whole-group} is non-@code{nil} all subprocesses in the
+If @var{whole-group} is true all subprocesses in the
 process group of @var{process-object} are continued.
 @end defun
 
@@ -7849,7 +7849,7 @@ also send signals to the subprocess.
 
 @defun signal-process process signal &optional whole-group
 Send the signal @var{signal} to the process @var{process}; if
-@var{whole-group} is non-@code{nil} the signal is also sent to all
+@var{whole-group} is true the signal is also sent to all
 processes in the process group of @var{process}.
 
 @var{process} may be either a Lisp process object, or an integer
@@ -7862,8 +7862,7 @@ the preceding @code{SIG} removed, for example the @code{SIGINT} signal
 would be sent by using the symbol @code{INT}. If a named signal doesn't
 exist on the current operating system, an error is raised.
 
-Returns @code{t} if the signal was sent successfully, @code{nil}
-otherwise.
+Returns true if the signal was sent successfully.
 @end defun
 
 As with the UNIX @code{kill} system call, @code{signal-process} may
@@ -7886,7 +7885,7 @@ to be run on @var{process-object}.
 
 If no subprocess has been run on @var{process-object}, @var{process-object}
 is currently in the running state or the last subprocess exited abnormally
-(i.e. from a terminal signal) @code{nil} is returned.
+(i.e. from a terminal signal) false is returned.
 @end defun
 
 @defun process-exit-status process-object
@@ -7898,7 +7897,7 @@ function in a C program, use the @code{process-exit-value} to access this
 value.
 
 If no process has been run on @var{process-object}, or the process is currently
-in the running state @code{nil} is returned.
+in the running state false is returned.
 @end defun
 
 
@@ -8059,13 +8058,13 @@ else. This involves quoting regexp meta-characters.
 @end defun
 
 @defun string-match regexp string &optional start ignore-case
-Returns @code{t} if the string @var{string} matches the regular
+Returns true if the string @var{string} matches the regular
 expression @var{regexp}. The string matches if executing the regexp at
 @emph{any} position in the string succeeds.
 
 When defined, @var{start} is the index of the first character to start
 matching at (counting from zero). When @var{ignore-case} is
-non-@code{nil} the case of matched strings are ignored. Note that
+true the case of matched strings are ignored. Note that
 character classes are still case-significant.
 
 @lisp
@@ -8078,7 +8077,7 @@ character classes are still case-significant.
 @end defun
 
 @defun string-looking-at regexp string &optional start ignore-case
-Similar to @code{string-match}, but only returns @code{t} if
+Similar to @code{string-match}, but only returns true if
 @var{string} matches @var{regexp} starting at the character at index
 @var{start} in the string (or the first character if @var{start} is
 undefined).
@@ -8088,7 +8087,7 @@ undefined).
     @result{} t
 
 (string-looking-at "ab+c" "xxxabbbcyyy" 0)
-    @result{} nil
+    @result{} ()
 
 (string-looking-at "ab+c" "xxxabbbcyyy" 3)
     @result{} t
@@ -8097,7 +8096,7 @@ undefined).
 
 @defun match-start &optional n
 Returns the position at which the @var{n}'th parenthesised expression
-started in the last successful regexp match. If @var{n} is @code{nil}
+started in the last successful regexp match. If @var{n} is false
 or zero the position of the start of the whole match is returned
 instead.
 
@@ -8210,7 +8209,7 @@ this.
 @end defun
 
 @defun time-later-p timestamp-1 timestamp-2
-Returns @code{t} if @var{timestamp-1} is later than @var{timestamp-2}.
+Returns true if @var{timestamp-1} is later than @var{timestamp-2}.
 @end defun
 
 On the plus side, this scheme won't wrap around as quickly as UNIX's
@@ -8381,7 +8380,7 @@ The numeric second of the minute.
 
 @item date-vec-timezone
 @vindex date-vec-timezone
-If non-@code{nil}, a string defining the timezone.
+If true, a string defining the timezone.
 
 @item date-vec-epoch-time
 @vindex date-vec-epoch-time
@@ -8535,7 +8534,7 @@ returned string will be as returned by @code{file-name-as-directory}
 @defun getenv variable-name
 This function returns the value (a string) of the environment variable
 called @var{variable-name}. If the specified variable doesn't exist
-@code{nil} is returned.
+false is returned.
 
 @lisp
 (getenv "OSTYPE")
@@ -8546,7 +8545,7 @@ called @var{variable-name}. If the specified variable doesn't exist
 @defun setenv variable-name new-value
 This function sets the value of the environment variable called
 @var{variable-name} to @var{new-value}. @var{new-value} can either be a
-string containing the new contents of the variable or @code{nil}, in
+string containing the new contents of the variable or false, in
 which case the environment variable is deleted.
 @end defun
 
@@ -8601,7 +8600,7 @@ A translation map to convert newline characters to spaces.
 @defun complete-string template list &optional ignore-case
 Return a string whose beginning matches the string @var{template}, and
 is unique in the set of all strings in @var{list} which also match
-@var{template}. If @var{ignore-case} is non-@code{nil}, all matching
+@var{template}. If @var{ignore-case} is true, all matching
 ignores case of characters.
 
 @lisp
@@ -8618,20 +8617,20 @@ Returns t if @var{string-2} matches the beginning of @var{string-1}.
     @result{} t
 
 (string-head-eq "foo" "foobar")
-    @result{} nil
+    @result{} ()
 @end lisp
 @end defun
 
 @defun string-upper-case-p string
-Return @code{t} if @var{string} contains no lower case characters.
+Return true if @var{string} contains no lower case characters.
 @end defun
 
 @defun string-lower-case-p string
-Return @code{t} if @var{string} contains no upper case characters.
+Return true if @var{string} contains no upper case characters.
 @end defun
 
 @defun string-capitalized-p string
-Return @code{t} if the first character of @var{string} is upper case.
+Return true if the first character of @var{string} is upper case.
 @end defun
 
 @defun string-upcase string
@@ -8716,7 +8715,7 @@ list of arguments.
 Returns t if @var{option} was specified on the command line
 (@var{option} is typically a phrase beginning with @samp{--}).
 
-If @var{requires-arg} is non-@code{nil}, the option requires a
+If @var{requires-arg} is true, the option requires a
 parameter, the value of which is returned. If a parameter isn't
 supplied an error is signalled.
 @end defun
@@ -8727,14 +8726,14 @@ supplied an error is signalled.
 (get-command-line-option "--foo" t)
     @result{} "bar"
 command-line-args
-    @result{} nil
+    @result{} ()
 
 (setq command-line-args '("--foo=bar"))
     @result{} ("--foo=bar")
 (get-command-line-option "--foo" t)
     @result{} "bar"
 command-line-args
-    @result{} nil
+    @result{} ()
 @end lisp
 
 
@@ -8881,7 +8880,7 @@ Prints a description of the current Lisp function call stack to
 
 Each line represents a stack frame, the first item is the called
 function, the second is the list of arguments applied to it. The
-third item is @code{t} if the list of arguments as displayed has
+third item is true if the list of arguments as displayed has
 already been evaluated.
 @end defun
 
