@@ -412,7 +412,7 @@ with the current time of day.
 # endif
 #endif
 	/* Ensure VAL is positive (assumes twos-complement) */
-	val &= ~(~0 << (rep_LISP_INT_BITS-1));
+	val &= ~(~0L << (rep_LISP_INT_BITS-1));
 	val /= divisor;
     } while(val >= limit);
 

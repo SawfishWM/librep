@@ -276,7 +276,7 @@ rep_call_file_handler(repv handler, int op, repv sym, int nargs, ...)
     va_start(args, nargs);
     for(i = 0; i < nargs; i++)
     {
-	*ptr = Fcons(va_arg(args, repv), Qnil);
+	*ptr = Fcons((repv)va_arg(args, repv), Qnil);
 	ptr = &rep_CDR(*ptr);
     }
     va_end(args);
