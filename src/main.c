@@ -249,6 +249,7 @@ inner_main(int argc, char **argv)
     find_kill();
     glyphs_kill();
     files_kill();
+    lispmach_kill();
     db_kill();
     return rc;
 }
