@@ -1,3 +1,8 @@
+2000-04-12  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.c (rep_load_autoload): when throwing error, don't refer
+	to uninitialized variable (merged from HEAD)
+
 2000-04-09  John Harper  <john@dcs.warwick.ac.uk>
 
 	* version 0.11.2
