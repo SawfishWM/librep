@@ -69,16 +69,15 @@
 ;;; pass 1 support
 
   (defun pass-1 (forms)
-    ;; merge adjacent progn forms
-    (let loop ((rest (mapcar do-pass-1 forms))
+    (lift-progns (mapcar do-pass-1 forms)))
+
+  ;; flatten progn forms into their container
+  (defun lift-progns (forms)
+    (let loop ((rest (reverse forms))
 	       (out '()))
-      (cond ((null rest)
-	     (nreverse out))
-
-	    ((and (eq (caar out) 'progn) (eq (caar rest) 'progn))
-	     (rplaca out (nconc (car out) (cdar rest)))
-	     (loop (cdr rest) out))
-
+      (cond ((null rest) out)
+	    ((eq (caar rest) 'progn)
+	     (loop (cdr rest) (append (cdar rest) out)))
 	    (t (loop (cdr rest) (cons (car rest) out))))))
 
   (defun do-pass-1 (form)
