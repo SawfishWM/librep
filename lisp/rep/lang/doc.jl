@@ -44,8 +44,7 @@ NAME is non-nil, then it should be the symbol that is associated with VALUE."
       (when (closurep value)
 	(setq value (closure-function value)))
       ;; Check if it's been compiled.
-      (when (or (bytecodep value)
-		(and (consp value) (assq 'jade-byte-code value)))
+      (when (bytecodep value)
 	(setq type (concat "Compiled " type)))
       (format standard-output "%s: \(%s" type (or name value))
       (when (or (eq (car value) 'lambda) (bytecodep value))
