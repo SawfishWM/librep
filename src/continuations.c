@@ -212,7 +212,7 @@ struct rep_continuation_struct {
 
     jmp_buf jmpbuf;
     char *stack_copy, *stack_top, *stack_bottom;
-    size_t stack_size;
+    size_t stack_size, real_size;
 
     rep_barrier *barriers;
     rep_barrier *root;
@@ -232,6 +232,8 @@ struct rep_continuation_struct {
 #define rep_CONTINP(v)	rep_CELL16_TYPEP(v, rep_continuation_type)
 
 #define CF_INVALID	(1 << rep_CELL16_TYPE_BITS)
+
+#define CONTIN_MAX_SLOP 4096
 
 /* the cell16 typecode allocated for continuation objects */
 static int rep_continuation_type;
@@ -452,19 +454,38 @@ common_ancestor (rep_barrier *current, rep_barrier **dest_hist, int dest_depth)
 static void
 save_stack (rep_continuation *c)
 {
+    size_t size;
+
     FLUSH_REGISTER_WINDOWS;
 
 #if STACK_DIRECTION < 0
-    c->stack_size = c->stack_bottom - c->stack_top;
+    size = c->stack_bottom - c->stack_top;
 #else
-    c->stack_size = c->stack_top - c->stack_bottom;
+    size = c->stack_top - c->stack_bottom;
 #endif
-    c->stack_copy = rep_alloc (c->stack_size);
-    rep_data_after_gc += c->stack_size;
+
+    if (c->stack_copy != 0)
+    {
+	if (c->stack_size < size || (c->stack_size - size) > CONTIN_MAX_SLOP)
+	{
+	    rep_free (c->stack_copy);
+	    rep_data_after_gc -= c->stack_size;
+	    c->stack_copy = 0;
+	}
+    }
+
+    if (c->stack_copy == 0)
+    {
+	c->stack_size = size;
+	c->stack_copy = rep_alloc (size);
+	rep_data_after_gc += size;
+    }
+
+    c->real_size = size;
 #if STACK_DIRECTION < 0
-    memcpy (c->stack_copy, c->stack_top, c->stack_size);
+    memcpy (c->stack_copy, c->stack_top, c->real_size);
 #else
-    memcpy (c->stack_copy, c->stack_bottom, c->stack_size);
+    memcpy (c->stack_copy, c->stack_bottom, c->real_size);
 #endif
 }
 
@@ -491,9 +512,9 @@ grow_stack_and_invoke (rep_continuation *c, char *water_mark)
        below the current position. */
 
 #if STACK_DIRECTION < 0
-    memcpy (c->stack_top, c->stack_copy, c->stack_size);
+    memcpy (c->stack_top, c->stack_copy, c->real_size);
 #else
-    memcpy (c->stack_bottom, c->stack_copy, c->stack_size);
+    memcpy (c->stack_bottom, c->stack_copy, c->real_size);
 #endif
 
     longjmp (c->jmpbuf, 1);
@@ -614,10 +635,10 @@ get_stack_top (rep_continuation *c)
 }
 
 static repv
-primitive_call_cc (repv (*callback)(rep_continuation *, void *), void *data)
+primitive_call_cc (repv (*callback)(rep_continuation *, void *), void *data,
+		   rep_continuation *c)
 {
     struct rep_saved_regexp_data re_data;
-    rep_continuation *c;
     repv ret;
 
     if (root_barrier == 0)
@@ -626,12 +647,17 @@ primitive_call_cc (repv (*callback)(rep_continuation *, void *), void *data)
 	return Fsignal (Qerror, rep_LIST_1 (rep_VAL (&no_root)));
     }
 
-    c = rep_ALLOC_CELL (sizeof (rep_continuation));
-    rep_data_after_gc += sizeof (rep_continuation);
-    c->next = continuations;
-    continuations = c;
-    c->car = rep_continuation_type;
+    if (c == 0)
+    {
+	c = rep_ALLOC_CELL (sizeof (rep_continuation));
+	rep_data_after_gc += sizeof (rep_continuation);
+	c->next = continuations;
+	continuations = c;
+	c->stack_copy = 0;
+    }
 
+    c->car = rep_continuation_type;
+    
     if (setjmp (c->jmpbuf))
     {
 	/* back from call/cc */
@@ -708,8 +734,8 @@ primitive_call_cc (repv (*callback)(rep_continuation *, void *), void *data)
 	c->stack_bottom = c->root->point;
 	save_stack (c);
 
-	DB (("call/cc: saved %p; stack_size=%lu (%u)\n",
-	     c, (u_long) c->stack_size, rep_stack_bottom - c->stack_top));
+	DB (("call/cc: saved %p; real_size=%lu (%u)\n",
+	     c, (u_long) c->real_size, rep_stack_bottom - c->stack_top));
 
 	ret = callback (c, data);
 
@@ -741,7 +767,7 @@ control immediately back to the statement following the call to the
 `call/cc' function (even if that stack frame has since been exited).
 ::end:: */
 {
-    return primitive_call_cc (inner_call_cc, (void *) fun);
+    return primitive_call_cc (inner_call_cc, (void *) fun, 0);
 }
 
 
@@ -887,7 +913,7 @@ again:
 	       then invoke the next thread */
 	    active->lock = rep_thread_lock;
 	    thread_save_environ (active);
-	    primitive_call_cc (inner_thread_invoke, active);
+	    primitive_call_cc (inner_thread_invoke, active, active->cont);
 	}
 	else
 	{
@@ -997,13 +1023,13 @@ make_thread (repv thunk, repv name)
 	thread_save_environ (t);
 	/* this continuation will never get called,
 	   but it simplifies things.. */
-	if (primitive_call_cc (inner_make_thread, x) != -1)
+	if (primitive_call_cc (inner_make_thread, x, 0) != -1)
 	    abort ();
 	root_barrier->active = x;
     }
 
     rep_PUSHGC (gc_thunk, thunk);
-    ret = primitive_call_cc (inner_make_thread, t);
+    ret = primitive_call_cc (inner_make_thread, t, 0);
     rep_POPGC;
     if (ret == -1)
 	return t;
