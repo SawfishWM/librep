@@ -261,8 +261,17 @@ check_for_zombies(void)
 			/* Process is dead. */
 			pr->pr_ExitStatus = status;
 			process_run_count--;
-			close_proc_files(pr);
 			PR_SET_STATUS(pr, PR_DEAD);
+
+			/* Try to read any pending output */
+			if(pr->pr_Stdout)
+			    read_from_one_fd(pr, pr->pr_Stdout);
+			if(pr->pr_Stderr && pr->pr_Stderr != pr->pr_Stdout)
+			    read_from_one_fd(pr, pr->pr_Stderr);
+
+			/* Then close the streams */
+			close_proc_files(pr);
+
 			queue_notify(pr);
 		    }
 		    break;
@@ -310,7 +319,7 @@ read_from_one_fd(struct Proc *pr, int fd)
 	    if(!NILP(stream))
 		stream_puts(stream, buf, actual, FALSE);
 	}
-    } while((actual > 0) || (errno == EINTR));
+    } while((actual > 0) || (actual < 0 && errno == EINTR));
 
     if((actual <= 0) && (errno != EWOULDBLOCK) && (errno != EAGAIN))
     {
