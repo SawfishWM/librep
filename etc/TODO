@@ -10,6 +10,8 @@ and more long-term ideas are marked -
 Outstanding bugs
 ================
 
+ ! #'SYMBOL should dereference SYMBOL, not enclose it
+
  ! Putting a breakpoint in a .jaderc file doesn't work correctly; the
    debugger is entered, but the commands don't work
 
@@ -28,9 +30,8 @@ General programming tasks:
 
  - do JIT compilation of bytecode where profitable
 
-   Someone mentioned a GNU VCODE-like system on comp.compilers, maybe
-   this would provide the basis for JIT compilation to native machine
-   code?
+   there's now GNU lightning, a VCODE-like system, using C macros to do
+   portable runtime code generation
 
    Only do this for _heavily_ used bytecode subrs. Measure this by
    adding an extra vector slot, and counting the number of vm

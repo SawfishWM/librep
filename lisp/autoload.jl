@@ -58,4 +58,5 @@
 (autoload 'gaol-add-file-handler "gaol")
 (autoload 'gaol-replace-file-handler "gaol")
 (autoload-macro 'define "define")
+(autoload-macro 'with-internal-definitions "define")
 ;;; ::autoload-end::
