@@ -232,6 +232,7 @@ rep_init_from_dump(char *prog_name, int *argc, char ***argv,
 	    rep_dumped_init (dump_file);
 
 	rep_symbols_init();
+	rep_structures_init ();
 	rep_numbers_init ();
 
 	rep_values_init();
@@ -244,6 +245,7 @@ rep_init_from_dump(char *prog_name, int *argc, char ***argv,
 	rep_misc_init();
 	rep_streams_init();
 	rep_files_init();
+	rep_datums_init();
 	rep_sys_os_init();
 
 	/* XXX Assumes that argc is on the stack. I can't think of
@@ -269,18 +271,28 @@ rep_init_from_dump(char *prog_name, int *argc, char ***argv,
 repv
 rep_load_environment (repv file)
 {
+    repv old = rep_structure;
     repv res = Qnil;
-    rep_GC_root gc_file;
+    rep_GC_root gc_file, gc_old;
 
     rep_PUSHGC (gc_file, file);
+    rep_PUSHGC (gc_old, old);
+
+    /* 1. Do the rep bootstrap in the `rep' structure */
+    rep_structure = rep_default_structure;
     if (rep_dumped_non_constants != rep_NULL)
 	res = Feval (rep_dumped_non_constants);
     if (res != rep_NULL)
 	res = Fload (init_script, Qnil, Qnil, Qnil, Qnil);
+
+    rep_POPGC;
+    rep_structure = old;
+
+    /* 2. Do the caller-local bootstrap in the original structure */
     if (res != rep_NULL && rep_STRINGP(file))
 	res = Fload (file, Qnil, Qnil, Qnil, Qnil);
-    rep_POPGC;
 
+    rep_POPGC;
     return res;
 }
 
