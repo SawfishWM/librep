@@ -47,6 +47,17 @@ char *alloca ();
 #include <stdlib.h>
 #include <assert.h>
 
+/* The number of hash buckets in each rep_obarray, this is a prime number. */
+#define rep_OBSIZE		509
+
+#define rep_SYMBOLBLK_SIZE	405		/* ~8k */
+
+/* Symbol allocation blocks */
+typedef struct rep_symbol_block_struct {
+    struct rep_symbol_block_struct *next;
+    rep_ALIGN_CELL(rep_symbol symbols[rep_SYMBOLBLK_SIZE]);
+} rep_symbol_block;
+
 /* Main storage of symbols.  */
 repv rep_obarray;
 
