@@ -560,7 +560,7 @@ Returns a new copy of POS.
 
 /* Garbage collection */
 
-#define STATIC_ROOTS 128
+#define STATIC_ROOTS 160
 static VALUE *static_roots[STATIC_ROOTS];
 static int next_static_root;
 
