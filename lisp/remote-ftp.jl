@@ -327,9 +327,13 @@ file types.")
 
 (defun remote-ftp-file-modes (file-struct)
   (unless (aref file-struct remote-ftp-file-modes)
-    ;; Magically translate mode-string to numeric value
+    ;; XXX Magically translate mode-string to numeric value
     (aset file-struct remote-ftp-file-modes 0644))
   (aref file-struct remote-ftp-file-modes))
+
+(defun remote-ftp-file-owner-p (session file)
+  (string= (aref session remote-ftp-user)
+	   (aref file remote-ftp-file-user)))
 
 (defun remote-ftp-get-file-details (session filename)
   (let
@@ -444,12 +448,15 @@ file types.")
 	   ((eq op 'file-modtime)
 	    (if file (remote-ftp-file-modtime file) (cons 0 0)))
 	   ((eq op 'file-owner-p)
-	    (and file (string= (aref session remote-ftp-user)
-			       (aref file remote-ftp-file-user))))
+	    (and file (remote-ftp-file-owner-p session file)))
 	   ((eq op 'file-readable-p)
-	    (and file (/= (logand (remote-ftp-file-modes file) 1) 0)))
+	    (and file (/= (logand (remote-ftp-file-modes file)
+				  (if (remote-ftp-file-owner-p session file)
+				      0400 0004)) 0)))
 	   ((eq op 'file-writable-p)
-	    (and file (/= (logand (remote-ftp-file-modes file) 2) 0)))
+	    (and file (/= (logand (remote-ftp-file-modes file)
+				  (if (remote-ftp-file-owner-p session file)
+				      0200 0002)) 0)))
 	   ((eq op 'set-file-modes)
 	    (message "Warning: can't set file modes in FTP session [yet]" t))
 	   (t

@@ -94,7 +94,9 @@ accessed on specific hosts.")
    (and (match-start 2)
 	(substring filename (match-start 2) (match-end 2)))
    (substring filename (match-start 3) (match-end 3))
-   (substring filename (match-end))))
+   (if (< (match-end) (length filename))
+       (substring filename (match-end))
+     ".")))
 
 ;; Create a remote file name. USER may be nil
 (defun remote-join-filename (user host file)
