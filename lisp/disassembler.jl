@@ -82,6 +82,8 @@
       (unless stream
 	(if (featurep 'jade)
 	    (progn
+	      (declare (bound open-buffer clear-buffer goto-other-view
+			      goto-buffer insert start-of-buffer goto))
 	      (setq stream (open-buffer "*disassembly*"))
 	      (clear-buffer stream)
 	      (goto-other-view)

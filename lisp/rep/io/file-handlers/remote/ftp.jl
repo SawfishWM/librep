@@ -301,7 +301,9 @@ file types.")
 	(setq point (match-end))
 	(when remote-ftp-display-progress
 	  (write t (substring output (match-start) (match-end)))
-	  (redisplay)))
+	  (when (featurep 'jade)
+	    (declare (bound redisplay))
+	    (redisplay))))
       (if (string-looking-at remote-ftp-passwd-msgs output point)
 	  ;; Send password
 	  (progn
@@ -369,21 +371,26 @@ file types.")
 
 (defun remote-ftp-show-multi (string start end)
   (if (featurep 'jade)
-      (let
-	  ((buffer (open-buffer "*ftp messages*")))
-	(with-object buffer
-	  (goto (end-of-buffer))
-	  (insert (substring string start end))
-	  (when (and remote-ftp-max-message-lines
-		     (> (pos-line (end-of-buffer))
-			remote-ftp-max-message-lines))
-	    (delete-area (start-of-buffer)
-			 (backward-line remote-ftp-max-message-lines
-					(end-of-buffer)))))
-	(when remote-ftp-show-messages
-	  (with-object (other-view)
-	    (goto-buffer buffer)
-	    (shrink-view-if-larger-than-buffer))))
+      (progn
+	(declare (bound open-buffer goto end-of-buffer insert
+			pos-line delete-area start-of-buffer
+			backward-line goto-buffer other-view
+			shrink-view-if-larger-than-buffer))
+	(let
+	    ((buffer (open-buffer "*ftp messages*")))
+	  (with-object buffer
+	    (goto (end-of-buffer))
+	    (insert (substring string start end))
+	    (when (and remote-ftp-max-message-lines
+		       (> (pos-line (end-of-buffer))
+			  remote-ftp-max-message-lines))
+	      (delete-area (start-of-buffer)
+			   (backward-line remote-ftp-max-message-lines
+					  (end-of-buffer)))))
+	  (when remote-ftp-show-messages
+	    (with-object (other-view)
+	      (goto-buffer buffer)
+	      (shrink-view-if-larger-than-buffer)))))
     (when remote-ftp-show-messages
       (write standard-output (substring string start end)))))
 

@@ -73,10 +73,14 @@
     (when (null (fluid output-stream))
       (if (or batch-mode (not (featurep 'jade)))
 	  (fluid-set output-stream (stdout-file))
+	(declare (bound open-buffer))
 	(fluid-set output-stream (open-buffer "*compilation-output*"))))
     (when (and (featurep 'jade)
-	       (bufferp (fluid output-stream))
-	       (not (eq (current-buffer) (fluid output-stream))))
+	       (progn
+		 (declare (bound bufferp goto-buffer goto
+				 end-of-buffer current-buffer))
+		 (and (bufferp (fluid output-stream))
+		      (not (eq (current-buffer) (fluid output-stream))))))
       (goto-buffer (fluid output-stream))
       (goto (end-of-buffer)))
     (when (fluid current-fun)
