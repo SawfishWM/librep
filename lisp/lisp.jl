@@ -122,7 +122,7 @@ match the FILE argument to `load'."
   "Try to load files called FILE (or FILE.jl, etc) from all directories in the
 LISP load path (except the current directory)."
   (mapc (lambda (dir)
-	  (unless (or (string= dir "") (string= "."))
+	  (unless (or (string= dir "") (string= dir "."))
 	    (let
 		((full-name (expand-file-name file dir)))
 	      (when (or (file-exists-p full-name)
@@ -136,14 +136,14 @@ LISP load path (except the current directory)."
 into the compiled program. When interpreted, nil is returned."
   nil)
 
-(defmacro prin1-to-string (arg)
+(defun prin1-to-string (arg)
   "Return a string representing ARG."
-  (list 'format nil "%S" arg))
+  (format nil "%S" arg))
 
-(defmacro read-from-string (string &optional start)
+(defun read-from-string (string &optional start)
   "Reads an object from STRING, starting at character number START (default
 is 0)."
-  (list 'read (list 'make-string-input-stream string start)))
+  (read (make-string-input-stream string start)))
 
 (defun assoc-regexp (input alist &optional fold-case)
   "Scan ALIST for an element whose car is a regular expression matching the
@@ -158,16 +158,16 @@ string INPUT."
   (time-later-p (file-modtime file1) (file-modtime file2)))
 
 ;; Some function pseudonyms
-(defmacro setcar (&rest args)
-  (cons 'rplaca args))
+(defun setcar (cell value)
+  (rplaca cell value))
 
-(defmacro setcdr (&rest args)
-  (cons 'rplacd args))
+(defun setcdr (cell value)
+  (rplacd cell value))
 
-(defmacro string= (&rest args)
-  (cons 'equal args))
+(defun string= (x y)
+  (equal x y))
 
-(defmacro string< (&rest args)
+(defun string< (&rest args)
   (cons '< args))
 
 (defun error (&rest args)
@@ -196,44 +196,44 @@ string INPUT."
 
 ;; cons accessors
 
-(defmacro caar (x)
-  (list 'car (list 'car x)))
+(defun caar (x)
+  (car (car x)))
 
-(defmacro cdar (x)
-  (list 'cdr (list 'car x)))
+(defun cdar (x)
+  (cdr (car x)))
 
-(defmacro cadr (x)
-  (list 'car (list 'cdr x)))
+(defun cadr (x)
+  (car (cdr x)))
 
-(defmacro cddr (x)
-  (list 'cdr (list 'cdr x)))
+(defun cddr (x)
+  (cdr (cdr x)))
 
-(defmacro caaar (x)
-  (list 'car (list 'car (list 'car x))))
+(defun caaar (x)
+  (car (car (car x))))
 
-(defmacro cdaar (x)
-  (list 'cdr (list 'car (list 'car x))))
+(defun cdaar (x)
+  (cdr (car (car x))))
 
-(defmacro cadar (x)
-  (list 'car (list 'cdr (list 'car x))))
+(defun cadar (x)
+  (car (cdr (car x))))
 
-(defmacro cddar (x)
-  (list 'cdr (list 'cdr (list 'car x))))
+(defun cddar (x)
+  (cdr (cdr (car x))))
 
-(defmacro caadr (x)
-  (list 'car (list 'car (list 'cdr x))))
+(defun caadr (x)
+  (car (car (cdr x))))
 
-(defmacro cdadr (x)
-  (list 'cdr (list 'car (list 'cdr x))))
+(defun cdadr (x)
+  (cdr (car (cdr x))))
 
-(defmacro caddr (x)
-  (list 'car (list 'cdr (list 'cdr x))))
+(defun caddr (x)
+  (car (cdr (cdr x))))
 
-(defmacro cdddr (x)
-  (list 'cdr (list 'cdr (list 'cdr x))))
+(defun cdddr (x)
+  (cdr (cdr (cdr x))))
 
-(defmacro call-with-current-continuation (f)
-  (list 'call/cc f))
+(defun call-with-current-continuation (f)
+  (call/cc f))
 
 
 ;; guardian wrapper
