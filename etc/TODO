@@ -17,6 +17,7 @@ Outstanding bugs
    very well probably..
 
  ! Change most uses of make-buffer to use open-buffer, and only
+   [And another one]
    to open the buffer on demand
 
  ! The new number parsing code accepts ``0x'' as a valid zero. This
