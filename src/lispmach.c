@@ -58,19 +58,25 @@ static u_long byte_code_usage[256];
 #endif
 
 
-/* Bindings */
+/* Helper functions
+
+   Note the careful use of inlining.. the icache is crucial, we want
+   the VM to be as small as possible, so that as much other code as
+   possible fits in cache as well. However, if a helper function is
+   only called once (or maybe is in a crucial path), then inline it..
+
+   The speedup from this (_not_ inlining everything) is _huge_ */
+
 
 /* Unbind one level of the BIND-STACK and return the new head of the stack.
    Each item in the BIND-STACK may be one of:
 	(t . FORM)
 		unwind-protect FORM to always evaluate
-	((SYM . OLD-VAL) ...)
-		list of symbol bindings to undo with rep_unbind_symbols()
-        INTEGER
-		unbind this many function bindings
+	(INTEGER . INTEGER)
+		car special and cdr lexical bindings
 	FUNARG
 		instantiate this closure
-	(PC . STACK-DEPTH)
+	(error . (PC . STACK-DEPTH))
 		not unbound here; install exception handler at PC
 
    returns the number of dynamic bindings removed */
@@ -85,11 +91,13 @@ inline_unbind_object(repv item)
 	    Feval(rep_CDR(item));
 	    return 1;
 	}
-	else if(rep_SYMBOLP(rep_CAR(item)) || rep_CONSP(rep_CAR(item)))
+	else if(rep_INTP(rep_CAR(item)))
 	{
 	    /* A set of symbol bindings (let or let*). */
 	    return rep_unbind_symbols(item);
 	}
+	else if (rep_CAR(item) == Qerror)
+	    return 0;
 	else
 	{
 	    rep_type *t = rep_get_data_type(rep_TYPE(rep_CAR(item)));
@@ -139,7 +147,7 @@ unbind_all (repv stack)
     }
 }
 
-static inline repv
+static repv
 unbind_all_but_one (repv stack)
 {
     if (!rep_CONSP(stack))
@@ -163,7 +171,7 @@ snap_environment (int count)
 }
 
 /* The number of special variables bound by FRAME */
-static inline int
+static int
 bound_specials (repv frame)
 {
     int specials = 0;
@@ -174,6 +182,15 @@ bound_specials (repv frame)
 	frame = rep_CDR(frame);
     }
     return specials;
+}
+
+static repv
+search_special_bindings (repv sym)
+{
+    register repv env = rep_special_bindings;
+    while (env != Qnil && rep_CAAR(env) != sym)
+	env = rep_CDR(env);
+    return env != Qnil ? rep_CAR(env) : env;
 }
 
 
@@ -558,10 +575,46 @@ again:
 	    goto fetch;
 
 	CASE_OP_ARG(OP_REFQ)
+	    /* this instruction is normally only used for special
+	       variables, so optimize the usual path */
+	    tmp = rep_VECT(consts)->array[arg];
+	    if ((rep_SYM(tmp)->car & rep_SF_SPECIAL)
+		&& !(rep_SYM(tmp)->car & rep_SF_LOCAL))
+	    {
+		/* bytecode interpreter is allowed to assume
+		   unrestricted environment.. */
+		repv tem = search_special_bindings (tmp);
+		if (tem != Qnil)
+		    tem = rep_CDR (tem);
+		else
+		    tem = rep_SYM(tmp)->value;
+		if (!rep_VOIDP(tem))
+		{
+		    PUSH (tem);
+		    goto fetch;
+		}
+	    }
+	    /* fall back to common case */
 	    PUSH(Fsymbol_value(rep_VECT(consts)->array[arg], Qnil));
 	    break;
 
 	CASE_OP_ARG(OP_SETQ)
+	    /* this instruction is normally only used for special
+	       variables, so optimize the usual path */
+	    tmp = rep_VECT(consts)->array[arg];
+	    if ((rep_SYM(tmp)->car & rep_SF_SPECIAL)
+		&& !(rep_SYM(tmp)->car & rep_SF_LOCAL))
+	    {
+		/* bytecode interpreter is allowed to assume
+		   unrestricted environment.. */
+		repv tem = search_special_bindings (tmp);
+		if (tem != Qnil)
+		    rep_CDR (tem) = RET_POP;
+		else
+		    rep_SYM(tmp)->value = RET_POP;
+		goto fetch;
+	    }
+	    /* fall back to common case */
 	    Fset(rep_VECT(consts)->array[arg], RET_POP);
 	    break;
 
@@ -576,18 +629,18 @@ again:
 	    tmp = rep_VECT(consts)->array[arg];
 	    tmp2 = RET_POP;
 	    rep_env = Fcons (Fcons (tmp, tmp2), rep_env);
-	    rep_CAR(bindstack) = Fcons (tmp, rep_CAR(bindstack));
+	    rep_CDAR(bindstack) = rep_MAKE_INT(rep_INT(rep_CDAR(bindstack))+1);
 	    goto fetch;
 
 	CASE_OP_ARG(OP_BINDSPEC)
 	    tmp = rep_VECT(consts)->array[arg];
 	    tmp2 = RET_POP;
-	    if (!(rep_SYM(tmp)->car & rep_SF_SPECIAL))
-		rep_SYM(tmp)->car |= rep_SF_SPECIAL;
-	    rep_CAR(bindstack) = rep_bind_symbol(rep_CAR(bindstack),
-						 tmp, tmp2);
+	    /* assuming non-restricted environment */
+	    rep_special_bindings = Fcons (Fcons (tmp, tmp2),
+					  rep_special_bindings);
+	    rep_CAAR(bindstack) = rep_MAKE_INT(rep_INT(rep_CAAR(bindstack))+1);
 	    impurity++;
-	    break;
+	    goto fetch;
 
 	CASE_OP_ARG(OP_REFN)
 	    tmp = snap_environment (arg);
@@ -601,7 +654,6 @@ again:
 
 	CASE_OP_ARG(OP_REFG)
 	    tmp = rep_SYM(rep_VECT(consts)->array[arg])->value;
-	    /* rep_Var types are flagged as special */
 	    if (!rep_VOIDP(tmp))
 	    {
 		PUSH(tmp);
@@ -612,7 +664,6 @@ again:
 
 	CASE_OP_ARG(OP_SETG)
 	    tmp = rep_SYM(rep_VECT(consts)->array[arg])->value;
-	    /* rep_Var types are flagged as special */
 	    rep_SYM(tmp)->value = RET_POP;
 	    goto fetch;
 
@@ -636,7 +687,8 @@ again:
 	    break;
 
 	case OP_INIT_BIND:
-	    bindstack = Fcons(Qnil, bindstack);
+	    bindstack = Fcons(Fcons (rep_MAKE_INT(0), rep_MAKE_INT(0)),
+			      bindstack);
 	    goto fetch;
 
 	case OP_UNBIND:
@@ -981,7 +1033,9 @@ again:
 	       This installs an address in the code string as an
 	       error handler. */
 	    tmp = RET_POP;
-	    bindstack = Fcons(Fcons(tmp, rep_MAKE_INT(STK_USE)), bindstack);
+	    bindstack = Fcons (Fcons (Qerror,
+				      Fcons (tmp, rep_MAKE_INT(STK_USE))),
+			       bindstack);
 	    impurity++;
 	    break;
 
@@ -1359,8 +1413,7 @@ again:
 	    while(rep_CONSP(bindstack))
 	    {
 		repv item = rep_CAR(bindstack);
-		if(!rep_CONSP(item)
-		   || !rep_INTP(rep_CAR(item)) || !rep_INTP(rep_CDR(item)))
+		if(!rep_CONSP(item) || rep_CAR(item) != Qerror)
 		{
 		    rep_GC_root gc_throwval;
 		    repv throwval = rep_throw_value;
@@ -1374,7 +1427,9 @@ again:
 		}
 		else if(rep_throw_value != rep_NULL)
 		{
-		    /* car is an exception-handler, (PC . SP)
+		    item = rep_CDR(item);
+
+		    /* item is an exception-handler, (PC . SP)
 
 		       When the code at PC is called, it will have
 		       the current stack usage set to SP, and then
