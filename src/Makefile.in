@@ -56,6 +56,10 @@ rep : $(REP_OBJS) $(EXTRA_LIBOBJS) librep.la
 	$(LIBTOOL) $(CC) -export-dynamic $(CPPFLAGS) $(CFLAGS) -o $@ \
 	  $(REP_OBJS) librep.la $(EXTRA_LIBOBJS) $(LIBS) $(GMP_LIBS)
 
+srep : $(REP_OBJS) $(EXTRA_LIBOBJS) librep.la
+	$(LIBTOOL) $(CC) -static -export-dynamic $(CPPFLAGS) $(CFLAGS) -o $@ \
+	  $(REP_OBJS) librep.la $(EXTRA_LIBOBJS) $(LIBS) $(GMP_LIBS)
+
 rep-remote : rep-remote.c
 
 rep-xgettext : rep-xgettext.jl rep
@@ -126,7 +130,7 @@ callcc.la : continuations.lo
 
 clean :
 	rm -f *~ *.o *.lo *.la build.h
-	rm -f repdoc core rep rep-remote
+	rm -f repdoc core rep rep-remote srep
 
 realclean : clean
 	rm -f .*.d Makefile rep.h dump.out dumped.s rep-config
