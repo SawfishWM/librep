@@ -50,6 +50,9 @@ DEFSYM(command_line_args, "command-line-args");
 #endif
 static u_char *init_script = INIT_SCRIPT;
 
+_PR bool opt_batch_mode;
+bool opt_batch_mode;
+
 static void
 usage(void)
 {
@@ -59,6 +62,7 @@ usage(void)
 	"    -rc FILE     use FILE instead of `init.jl' to boot from\n"
 	"    -v           print version/revision details\n"
 	"    -log-msgs    print all messages to standard-error as well\n"
+	"    -batch       don't open any windows; process args and exit\n"
 	"and LISP-OPTIONS are,\n"
 	"    -no-rc       don't load .jaderc or site-init files\n"
 	"    -f FUNCTION  call the Lisp function FUNCTION\n"
@@ -88,6 +92,8 @@ get_main_options(int *argc_p, char ***argv_p)
 	}
 	else if(!strcmp("-log-msgs", *argv))
 	    log_messages = TRUE;
+	else if(!strcmp("-batch", *argv))
+	    opt_batch_mode = TRUE;
 	else if(!strcmp("-?", *argv) || !strcmp("-help", *argv))
 	{
 	    usage();
@@ -198,7 +204,8 @@ inner_main(int argc, char **argv)
 	   && (res = cmd_load(arg, sym_nil, sym_nil, sym_nil)))
 	{
 	    rc = 0;
-	    res = sys_event_loop();
+	    if(!opt_batch_mode)
+		res = sys_event_loop();
 	}
 	else if(throw_value && VCAR(throw_value) == sym_quit)
 	{
