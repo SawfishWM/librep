@@ -1128,7 +1128,6 @@ rep_bind_lambda_list(repv lambdaList, repv argList,
     if (!copy_to_vector (argList, evalled_nargs, evalled_args,
 			 eval_args, eval_in_env))
     {
-	rep_POPGC;
 	return rep_NULL;
     }
    
@@ -1480,10 +1479,10 @@ again:
 	    int nargs;
 	    repv *args;
 	    
+	    rep_USE_FUNARG(closure);
+
 	    if (rep_bytecode_interpreter == 0)
 		goto invalid;
-
-	    rep_USE_FUNARG(closure);
 
 	    nargs = rep_list_length (arglist);
 	    args = alloca (sizeof (repv) * nargs);
@@ -1496,7 +1495,7 @@ again:
 	/* FALL THROUGH */
 
     default: invalid:
-	Fsignal(Qinvalid_function, rep_LIST_1(fun));
+	Fsignal(Qinvalid_function, rep_LIST_1(lc.fun));
     }
 
     /* In case I missed a non-local exit somewhere.  */
