@@ -44,6 +44,7 @@ char *alloca ();
 #include <assert.h>
 #include <math.h>
 #include <ctype.h>
+#include <gmp.h>
 
 #ifdef NEED_MEMORY_H
 # include <memory.h>

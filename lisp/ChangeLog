@@ -1,3 +1,16 @@
+2000-02-25  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.jl (positivep, negativep, oddp, evenp, abs, %, modulo,
+	lcm): new functions (some are just pseudonyms)
+
+	* bytecodes.jl (op-quotient, op-floor, op-ceiling, op-truncate,
+	op-round, op-exp, op-log, op-sin, op-cos, op-tan, op-sqrt,
+	op-expt): new instructions
+	* compiler.jl: generate code for math functions
+	* diassembler.jl: grok the math functions
+
+	* sort.jl, date.jl: use `quotient' instead of `/'
+
 2000-02-20  John Harper  <john@dcs.warwick.ac.uk>
 
 	* compiler.jl: remember that define-value defines lexical

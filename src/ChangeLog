@@ -1,3 +1,17 @@
+2000-02-25  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep_lisp.h: new type rep_Number, only the bits in the car are
+	publicly accessible
+	* numbers.c: new file, handles all numeric stuff
+	* values.c: don't register numeric types, mark rep_Number
+	* main.c: call rep_numbers_init ()
+	* lisp.c: parse new number representations correctly
+	* lispcmds.c: moved all arithmetic functions to numbers.c
+
+	* bytecodes.h, lispmach.c (OP_QUOTIENT, OP_FLOOR, OP_CEILING,
+	OP_TRUNCATE, OP_ROUND, OP_EXP, OP_LOG, OP_SIN, OP_COS, OP_TAN,
+	OP_SQRT, OP_EXPT): new instructions
+
 2000-02-23  John Harper  <john@dcs.warwick.ac.uk>
 
 	* continuations.c (rep_max_sleep_for): handle root_barrier == 0

@@ -64,6 +64,11 @@ extern char *stpcpy(char *, const char *);
 #endif
 extern void rep_misc_init(void);
 
+/* from numbers.c */
+extern repv rep_parse_number (char *buf, int len, int radix,
+			      int sign, int type);
+extern void rep_numbers_init (void);
+
 /* from regsub.c */
 extern void rep_default_regsub(int, rep_regsubs *, char *, char *, void *);
 extern int rep_default_regsublen(int, rep_regsubs *, char *, void *);
