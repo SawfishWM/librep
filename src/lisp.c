@@ -31,9 +31,10 @@
 
 _PR VALUE readl(VALUE, int *);
 
-_PR VALUE eval_lambda(VALUE, VALUE, bool);
+_PR VALUE bindlambdalist(VALUE lambdaList, VALUE argList, bool eval_args);
+_PR VALUE eval_lambda(VALUE, VALUE, bool eval_args);
 _PR VALUE load_autoload(VALUE, VALUE);
-_PR VALUE funcall(VALUE, VALUE);
+_PR VALUE funcall(VALUE fun, VALUE arglist, bool eval_args);
 
 _PR VALUE call_lisp0(VALUE);
 _PR VALUE call_lisp1(VALUE, VALUE);
@@ -164,12 +165,20 @@ See `signal'.
 When nil, the debugger isn't entered while expanding macro definitions.
 ::end:: */
 
-_PR VALUE sym_print_escape_newlines, sym_print_length, sym_print_level;
-DEFSYM(print_escape_newlines, "print-escape-newlines");
+_PR VALUE sym_print_escape, sym_print_length, sym_print_level, sym_newlines;
+DEFSYM(print_escape, "print-escape");
 DEFSYM(print_length, "print-length");
-DEFSYM(print_level, "print-level"); /*
-::doc:print_escape_newlines::
-When non-nil `print' escapes newline, form-feed, and tab characters.
+DEFSYM(print_level, "print-level");
+DEFSYM(newlines, "newlines"); /*
+::doc:print_escape::
+Defines which control characters `print' should quote. Acceptable values
+are:
+	nil		Only escape double-quote and backslash
+	newlines	Escape double-quote, backslash, newline,
+			 TAB, and formfeed.
+	t		Escape all control codes (characters with a
+			 value less than 32), and all characters with
+			 a value greater than 126.
 ::end::
 ::doc:print_length::
 The maximum number of list elements to print before abbreviating.
@@ -191,15 +200,16 @@ static int lisp_depth, max_lisp_depth = 500;
 
 DEFSTRING(doc_file, DOC_FILE);
 
-/*
- * All of the read-related functions are now stream based. This will
- * probably add some (much?) overhead but I think it's worth it?
- *
- * The `c' variable which keeps coming up is the lookahead character,
- * since each read*() routine normally has to look at the next character
- * to see if it's what it wants. If not, this char is given to someone
- * else...
- */
+
+/* Reading */
+
+/* All of the read-related functions are now stream based. This will
+   probably add some (much?) overhead but I think it's worth it?
+
+   The `c' variable which keeps coming up is the lookahead character,
+   since each read*() routine normally has to look at the next character
+   to see if it's what it wants. If not, this char is given to someone
+   else... */
 
 DEFSTRING(nodot, "Nothing to dot second element of cons-cell to");
 
@@ -214,7 +224,7 @@ read_list(VALUE strm, register int *c_p)
 	switch(*c_p)
 	{
 	case EOF:
-	    return(cmd_signal(sym_end_of_stream, LIST_1(strm)));
+	    return cmd_signal(sym_end_of_stream, LIST_1(strm));
 
 	case ' ':
 	case '\t':
@@ -241,14 +251,14 @@ read_list(VALUE strm, register int *c_p)
 	    }
 	    else
 	    {
-		return(cmd_signal(sym_invalid_read_syntax,
-				  LIST_1(VAL(&nodot))));
+		return cmd_signal(sym_invalid_read_syntax,
+				  LIST_1(VAL(&nodot)));
 	    }
 
 	case ')':
 	case ']':
 	    *c_p = stream_getc(strm);
-	    return(result);
+	    return result;
 	    
 	default:
 	    {
@@ -306,7 +316,7 @@ read_symbol(VALUE strm, int *c_p)
 	    radix = 0;
 	    c = stream_getc(strm);
 	    if(c == EOF)
-		return(cmd_signal(sym_end_of_stream, LIST_1(strm)));
+		return cmd_signal(sym_end_of_stream, LIST_1(strm));
 	    buf[i++] = c;
 	    break;
 
@@ -319,7 +329,7 @@ read_symbol(VALUE strm, int *c_p)
 		c = stream_getc(strm);
 	    }
 	    if(c == EOF)
-		return(cmd_signal(sym_end_of_stream, LIST_1(strm)));
+		return cmd_signal(sym_end_of_stream, LIST_1(strm));
 	    break;
 
 	default:
@@ -394,7 +404,7 @@ read_symbol(VALUE strm, int *c_p)
     if(i >= SYM_BUF_LEN)
     {
 	/* Guess I'd better fix this! */
-	return(cmd_signal(sym_error, LIST_1(VAL(&buf_overflow))));
+	return cmd_signal(sym_error, LIST_1(VAL(&buf_overflow)));
     }
 done:
     if(radix > 0)
@@ -420,7 +430,7 @@ done:
 	}
     }
     *c_p = c;
-    return(result);
+    return result;
 }
 
 static VALUE
@@ -456,7 +466,7 @@ read_vector(VALUE strm, int *c_p)
     }
     else
 	result = LISP_NULL;
-    return(result);
+    return result;
 }
 
 static VALUE
@@ -486,7 +496,7 @@ read_str(VALUE strm, int *c_p)
 		    bufend = buf + buflen;
 		}
 		else
-		    return(mem_error());
+		    return mem_error();
 	    }
 	    if(c == '\\')
 	    {
@@ -511,16 +521,14 @@ read_str(VALUE strm, int *c_p)
 	    result = string_dupn(buf, cur - buf);
 	}
 	str_free(buf);
-	return(result);
+	return result;
     }
-    return(mem_error());
+    return mem_error();
 }
 
-/*
- * Using the above readlisp*() functions this classifies each type
- * of expression and translates it into a lisp object (VALUE).
- * Returns NULL in case of error.
- */
+/* Using the above readlisp*() functions this classifies each type
+   of expression and translates it into a lisp object (VALUE).
+   Returns NULL in case of error. */
 VALUE
 readl(VALUE strm, register int *c_p)
 {
@@ -528,7 +536,7 @@ readl(VALUE strm, register int *c_p)
     if(STK_SIZE <= MINSTACK)
     {
 	STK_WARN("read");
-	return(cmd_signal(sym_stack_error, sym_nil));
+	return cmd_signal(sym_stack_error, sym_nil);
     }
 #endif
     while(1)
@@ -536,7 +544,7 @@ readl(VALUE strm, register int *c_p)
 	switch(*c_p)
 	{
 	case EOF:
-	    return(sym_nil);
+	    return sym_nil;
 
 	case ' ':
 	case '\t':
@@ -555,7 +563,7 @@ readl(VALUE strm, register int *c_p)
 	    }
 
 	case '\(':
-	    return(read_list(strm, c_p));
+	    return read_list(strm, c_p);
 
 	case '\'':
 	    {
@@ -567,15 +575,15 @@ readl(VALUE strm, register int *c_p)
 		if((*c_p = stream_getc(strm)) == EOF)
 		    goto eof;
 		else if((VCAR(VCDR(form)) = readl(strm, c_p)))
-		    return(form);
+		    return form;
 		return LISP_NULL;
 	    }
 
 	case '[':
-	    return(read_vector(strm, c_p));
+	    return read_vector(strm, c_p);
 
 	case '"':
-	    return(read_str(strm, c_p));
+	    return read_str(strm, c_p);
 
 	case '?':
 	    {
@@ -588,11 +596,11 @@ readl(VALUE strm, register int *c_p)
 		    if((*c_p = stream_getc(strm)) == EOF)
 			goto eof;
 		    else
-			return(MAKE_INT(stream_read_esc(strm, c_p)));
+			return MAKE_INT(stream_read_esc(strm, c_p));
 		    break;
 		default:
 		    *c_p = stream_getc(strm);
-		    return(MAKE_INT(c));
+		    return MAKE_INT(c);
 		}
 	    }
 
@@ -608,24 +616,41 @@ readl(VALUE strm, register int *c_p)
 		    goto eof;
 		if(!(VCAR(VCDR(form)) = readl(strm, c_p)))
 		    return LISP_NULL;
-		return(form);
-	    default:
-		return(cmd_signal(sym_invalid_read_syntax, LIST_1(strm)));
+		return form;
+	    case '[':
+		{
+		    VALUE vec = read_vector(strm, c_p);
+		    if(vec != LISP_NULL)
+		    {
+			if(VVECT_LEN(vec) == COMPILED_NSLOTS)
+			{
+			    VCOMPILED(vec)->car = (VCOMPILED(vec)->car
+						   & ~CELL8_TYPE_MASK)
+						  | V_Compiled;
+			    return vec;
+			}
+			goto error;
+		    }
+		    break;
+		}
+	    default: error:
+		return cmd_signal(sym_invalid_read_syntax, LIST_1(strm));
 	    }
 
 	default:
-	    return(read_symbol(strm, c_p));
+	    return read_symbol(strm, c_p);
 	}
     }
     /* NOT REACHED */
 
 eof:
-    return(cmd_signal(sym_end_of_stream, LIST_1(strm)));
+    return cmd_signal(sym_end_of_stream, LIST_1(strm));
 }
 
-/*
- * Evaluates each element of `list' and builds them into a new list.
- */
+
+/* Evaluating */
+
+/* Evaluates each element of `list' and builds them into a new list. */
 static VALUE
 eval_list(VALUE list)
 {
@@ -659,19 +684,17 @@ eval_list(VALUE list)
     if(result && last && !NILP(list))
 	*last = cmd_eval(list);
     POPGC; POPGC;
-    return(result);
+    return result;
 }
 
-/*
- * format of lambda-lists is something like,
- *
- * [{required-symbols}] [&optional {optional-symbols}] [&rest symbol]
- * [&aux {auxiliary-symbols}]
- *
- * NB: auxiliary symbols are set to nil.
- */
-static VALUE
-bindlambdalist(VALUE lambdaList, VALUE argList, int evalArgs)
+/* format of lambda-lists is something like,
+
+   [{required-symbols}] [&optional {optional-symbols}] [&rest symbol]
+   [&aux {auxiliary-symbols}]
+
+   NB: auxiliary symbols are set to nil. */
+VALUE
+bindlambdalist(VALUE lambdaList, VALUE argList, bool eval_args)
 {
 #define STATE_REQUIRED 1
 #define STATE_OPTIONAL 2
@@ -730,7 +753,7 @@ bindlambdalist(VALUE lambdaList, VALUE argList, int evalArgs)
 	    case STATE_OPTIONAL:
 		if(CONSP(argList))
 		{
-		    if(evalArgs)
+		    if(eval_args)
 		    {
 			if(!(argobj = cmd_eval(VCAR(argList))))
 			    goto error;
@@ -744,7 +767,7 @@ bindlambdalist(VALUE lambdaList, VALUE argList, int evalArgs)
 		boundlist = bind_symbol(boundlist, argspec, argobj);
 		break;
 	    case STATE_REST:
-		if(evalArgs)
+		if(eval_args)
 		{
 		    if(!(argobj = eval_list(argList)))
 			goto error;
@@ -764,7 +787,7 @@ bindlambdalist(VALUE lambdaList, VALUE argList, int evalArgs)
 	}
 	POPGC;
     }
-    return(boundlist);
+    return boundlist;
 
 error:
     POPGC;
@@ -773,7 +796,7 @@ error:
 }
 
 VALUE
-eval_lambda(VALUE lambdaExp, VALUE argList, bool evalArgs)
+eval_lambda(VALUE lambdaExp, VALUE argList, bool eval_args)
 {
     VALUE result = LISP_NULL;
     if(CONSP(VCDR(lambdaExp)))
@@ -783,7 +806,7 @@ eval_lambda(VALUE lambdaExp, VALUE argList, bool evalArgs)
 	PUSHGC(gc_lambdaExp, lambdaExp);
 	PUSHGC(gc_argList, argList);
 	lambdaExp = VCDR(lambdaExp);
-	boundlist = bindlambdalist(VCAR(lambdaExp), argList, evalArgs);
+	boundlist = bindlambdalist(VCAR(lambdaExp), argList, eval_args);
 	if(boundlist)
 	{
 	    GC_root gc_boundlist;
@@ -796,7 +819,7 @@ eval_lambda(VALUE lambdaExp, VALUE argList, bool evalArgs)
 	    result = LISP_NULL;
 	POPGC; POPGC;
     }
-    return(result);
+    return result;
 }
 
 /* Autoloads a function, FUN is the symbol of the function, ALOAD-DEF is
@@ -810,8 +833,8 @@ load_autoload(VALUE fun, VALUE aload_def)
     {
 	/* Unless the function we're calling is a symbol don't bother.
 	   (Because it wouldn't be possible to find the new definition.)  */
-	return(cmd_signal(sym_invalid_autoload,
-			  list_2(fun, VAL(&invl_autoload))));
+	return cmd_signal(sym_invalid_autoload,
+			  list_2(fun, VAL(&invl_autoload)));
     }
     else
     {
@@ -821,7 +844,7 @@ load_autoload(VALUE fun, VALUE aload_def)
 	    /* trash the autoload defn, this way I make sure
 	       that we don't keep trying to autoload a function
 	       indefinitely.  */
-	    GC_root gc_fun;
+	    GC_root gc_fun, gc_aload_def;
 	    VALUE tmp;
 	    u_char *old_msg;
 	    u_long old_msg_len;
@@ -830,10 +853,10 @@ load_autoload(VALUE fun, VALUE aload_def)
 	    refresh_message(curr_win);
 	    cmd_flush_output();
 
-	    PUSHGC(gc_fun, fun);
+	    PUSHGC(gc_fun, fun); PUSHGC(gc_aload_def, aload_def);
 	    VCAR(aload_def) = sym_nil;
 	    tmp = cmd_load(VCAR(autoload), sym_t, sym_nil, sym_nil);
-	    POPGC;
+	    POPGC; POPGC;
 
 	    messagef("Loading %s...done.", VSTR(VCAR(autoload)));
 	    refresh_message(curr_win);
@@ -841,310 +864,16 @@ load_autoload(VALUE fun, VALUE aload_def)
 	    restore_message(curr_win, old_msg, old_msg_len);
 
 	    if(tmp && !NILP(tmp))
-		return(cmd_symbol_function(fun, sym_nil));
+		return cmd_symbol_function(fun, sym_nil);
 	}
-	return(cmd_signal(sym_invalid_autoload, LIST_1(fun)));
+	return cmd_signal(sym_invalid_autoload, LIST_1(fun));
     }
 }
 
 DEFSTRING(max_depth, "max-lisp-depth exceeded, possible infinite recursion?");
-DEFSTRING(void_obj, "Void object to `eval'");
-
-static VALUE
-eval(VALUE obj)
-{
-    VALUE result = LISP_NULL;
-    GC_root gc_obj;
-#ifdef MINSTACK
-    if(STK_SIZE <= MINSTACK)
-    {
-	STK_WARN("eval");
-	return(cmd_signal(sym_stack_error, sym_nil));
-    }
-#endif
-    if(++lisp_depth > max_lisp_depth)
-	cmd_signal(sym_error, LIST_1(VAL(&max_depth)));
-    else if(obj)
-    {
-	switch(VTYPE(obj))
-	{
-	    VALUE funcobj, arglist;
-	    int type;
-	case V_Symbol:
-	    result = cmd_symbol_value(obj, sym_nil);
-	    break;
-
-	case V_Cons:
-again:
-	    funcobj = VCAR(obj);
-	    arglist = VCDR(obj);
-	    if(SYMBOLP(funcobj))
-	    {
-		if(VSYM(funcobj)->car & SF_DEBUG)
-		    single_step_flag = TRUE;
-		funcobj = cmd_symbol_function(funcobj, sym_nil);
-		if(!funcobj)
-		    goto end;
-	    }
-	    switch(type = VTYPE(funcobj))
-	    {
-		VALUE alist, car, args[5];
-		GC_n_roots gc_args;
-		int i, nargs;
-	    case V_Subr0:
-		result = VSUBR0FUN(funcobj)();
-		break;
-
-	    case V_SubrN:
-		PUSHGC(gc_obj, obj);
-		alist = eval_list(arglist);
-		if(alist)
-		    result = VSUBRNFUN(funcobj)(alist);
-		POPGC;
-		break;
-
-	    case V_Subr1:
-		nargs = 1;
-		args[0] = sym_nil;
-		goto do_subr;
-
-	    case V_Subr2:
-		nargs = 2;
-		args[0] = args[1] = sym_nil;
-		goto do_subr;
-
-	    case V_Subr3:
-		nargs = 3;
-		args[0] = args[1] = args[2] = sym_nil;
-		goto do_subr;
-
-	    case V_Subr4:
-		nargs = 4;
-		args[0] = args[1] = args[2] = args[3] = sym_nil;
-		goto do_subr;
-
-	    case V_Subr5:
-		nargs = 5;
-		args[0] = args[1] = args[2] = args[3] = args[4] = sym_nil;
-do_subr:
-		PUSHGCN(gc_args, args, nargs);
-		PUSHGC(gc_obj, obj);
-		for(i = 0; i < nargs; i++)
-		{
-		    if(CONSP(arglist))
-		    {
-			if(!(args[i] = cmd_eval(VCAR(arglist))))
-			{
-			    POPGC; POPGCN;
-			    goto end;
-			}
-			arglist = VCDR(arglist);
-		    }
-		    else
-			break;
-		}
-		POPGC; POPGCN;
-		switch(type)
-		{
-		case V_Subr1:
-		    result = VSUBR1FUN(funcobj)(args[0]);
-		    break;
-		case V_Subr2:
-		    result = VSUBR2FUN(funcobj)(args[0], args[1]);
-		    break;
-		case V_Subr3:
-		    result = VSUBR3FUN(funcobj)(args[0], args[1], args[2]);
-		    break;
-		case V_Subr4:
-		    result = VSUBR4FUN(funcobj)(args[0], args[1],
-						args[2], args[3]);
-		    break;
-		case V_Subr5:
-		    result = VSUBR5FUN(funcobj)(args[0], args[1], args[2],
-						args[3], args[4]);
-		    break;
-		}
-		break;
-
-	    case V_SF:
-		result = VSFFUN(funcobj)(arglist);
-		break;
-
-	    case V_Cons:
-		car = VCAR(funcobj);
-		if(car == sym_lambda)
-		{
-		    struct Lisp_Call lc;
-		    lc.next = lisp_call_stack;
-		    lc.fun = VCAR(obj);
-		    lc.args = arglist;
-		    lc.args_evalled_p = sym_nil;
-		    lisp_call_stack = &lc;
-		    if(!(result = eval_lambda(funcobj, arglist, TRUE))
-		       && throw_value && (VCAR(throw_value) == sym_defun))
-		    {
-			result = VCDR(throw_value);
-			throw_value = LISP_NULL;
-		    }
-		    lisp_call_stack = lc.next;
-		}
-		else if(car == sym_macro)
-		{
-		    funcobj = VCDR(funcobj);
-		    if(CONSP(funcobj) && (VCAR(funcobj) == sym_lambda))
-		    {
-			VALUE form;
-			if(single_step_flag
-			   && (form = cmd_symbol_value(sym_debug_macros, sym_t))
-			   && NILP(form))
-			{
-			    /* Debugging macros gets tedious; don't
-			       bother when debug-macros is nil. */
-			    single_step_flag = FALSE;
-			    form = eval_lambda(funcobj, arglist, FALSE);
-			    single_step_flag = TRUE;
-			}
-			else
-			    form = eval_lambda(funcobj, arglist, FALSE);
-			if(form != LISP_NULL)
-			    result = cmd_eval(form);
-		    }
-		    else
-			cmd_signal(sym_invalid_macro, LIST_1(VCAR(obj)));
-		}
-		else if(car == sym_autoload)
-		{
-		    PUSHGC(gc_obj, obj);
-		    result = load_autoload(VCAR(obj), funcobj);
-		    POPGC;
-		    if(result)
-		    {
-			result = LISP_NULL;
-			goto again;
-		    }
-		}
-		else
-		    cmd_signal(sym_invalid_function, LIST_1(VCAR(obj)));
-		break;
-
-	    default:
-		cmd_signal(sym_invalid_function, LIST_1(VCAR(obj)));
-		break;
-	    }
-	    break;
-
-	case V_Var:
-	    if(!(result = VVARFUN(obj)(LISP_NULL)))
-		cmd_signal(sym_void_value, LIST_1(obj));
-	    break;
-
-	default:
-	    result = obj;
-	    break;
-	}
-    }
-    else
-	cmd_signal(sym_error, LIST_1(VAL(&void_obj)));
-    /* In case I missed a non-local exit somewhere.  */
-    if(result && throw_value)
-	result = LISP_NULL;
-end:
-    lisp_depth--;
-    return(result);
-}
-
-DEFSTRING(no_debug, "No debugger installed");
-
-_PR VALUE cmd_eval(VALUE);
-DEFUN("eval", cmd_eval, subr_eval, (VALUE obj), V_Subr1, DOC_eval) /*
-::doc:eval::
-eval FORM
-
-Evaluates FORM and returns its value.
-::end:: */
-{
-    static int DbDepth;
-    bool newssflag = TRUE;
-    VALUE result;
-
-    TEST_INT;
-    if(INT_P || !curr_vw)
-	return LISP_NULL;
-
-    if((data_after_gc >= gc_threshold) && !gc_inhibit)
-    {
-	GC_root gc_obj;
-	PUSHGC(gc_obj, obj);
-	cmd_garbage_collect(sym_t);
-	POPGC;
-    }
-
-    if(!single_step_flag)
-	return(eval(obj));
-
-    DbDepth++;
-    result = LISP_NULL;
-    if(VSYM(sym_debug_entry)->function)
-    {
-	VALUE dbres;
-	VALUE dbargs = cmd_cons(obj, cmd_cons(MAKE_INT(DbDepth), sym_nil));
-	if(dbargs)
-	{
-	    GC_root gc_dbargs;
-	    PUSHGC(gc_dbargs, dbargs);
-	    single_step_flag = FALSE;
-	    if((dbres = funcall(sym_debug_entry, dbargs)) && CONSP(dbres))
-	    {
-		switch(VINT(VCAR(dbres)))
-		{
-		case 1:
-		    /* single step cdr and following stuff  */
-		    single_step_flag = TRUE;
-		    result = eval(VCDR(dbres));
-		    single_step_flag = FALSE;
-		    break;
-		case 2:
-		    /* run through cdr and step following  */
-		    result = eval(VCDR(dbres));
-		    break;
-		case 3:
-		    /* run cdr and following  */
-		    result = eval(VCDR(dbres));
-		    newssflag = FALSE;
-		    break;
-		case 4:
-		    /* result = cdr  */
-		    single_step_flag = TRUE;
-		    result = VCDR(dbres);
-		    single_step_flag = FALSE;
-		    break;
-		}
-		if(result)
-		{
-		    if(VSYM(sym_debug_exit)->function)
-		    {
-			VCAR(dbargs) = result;
-			if(!(dbres = funcall(sym_debug_exit, dbargs)))
-			    result = LISP_NULL;
-		    }
-		}
-	    }
-	    POPGC;
-	}
-    }
-    else
-    {
-	cmd_signal(sym_error, LIST_1(VAL(&no_debug)));
-	newssflag = FALSE;
-	result = LISP_NULL;
-    }
-    DbDepth--;
-    single_step_flag = newssflag;
-    return(result);
-}
 
 VALUE
-funcall(VALUE fun, VALUE arglist)
+funcall(VALUE fun, VALUE arglist, bool eval_args)
 {
     int type;
     VALUE result = LISP_NULL, origfun = fun;
@@ -1158,24 +887,21 @@ funcall(VALUE fun, VALUE arglist)
     if(STK_SIZE <= MINSTACK)
     {
 	STK_WARN("funcall");
-	return(cmd_signal(sym_stack_error, sym_nil));
+	return cmd_signal(sym_stack_error, sym_nil);
     }
 #endif
 
     if(++lisp_depth > max_lisp_depth)
     {
 	lisp_depth--;
-	return(cmd_signal(sym_error, LIST_1(VAL(&max_depth))));
+	return cmd_signal(sym_error, LIST_1(VAL(&max_depth)));
     }
 
     if((data_after_gc >= gc_threshold) && !gc_inhibit)
-    {
-	PUSHGC(gc_origfun, origfun);
-	PUSHGC(gc_arglist, arglist);
 	cmd_garbage_collect(sym_t);
-	POPGC; POPGC;
-    }
 
+    PUSHGC(gc_origfun, origfun);
+    PUSHGC(gc_arglist, arglist);
 again:
     if(SYMBOLP(fun))
     {
@@ -1189,7 +915,15 @@ again:
     {
 	int i, nargs;
 	VALUE car, argv[5];
+	GC_n_roots gc_argv;
+
     case V_SubrN:
+	if(eval_args)
+	{
+	    arglist = eval_list(arglist);
+	    if(arglist == LISP_NULL)
+		goto end;
+	}
 	result = VSUBRNFUN(fun)(arglist);
 	break;
 
@@ -1220,17 +954,33 @@ again:
     case V_Subr5:
 	nargs = 5;
 	argv[0] = argv[1] = argv[2] = argv[3] = argv[4] = sym_nil;
-do_subr:
+	/* FALL THROUGH */
+
+    do_subr:
+	if(eval_args)
+	    PUSHGCN(gc_argv, argv, nargs);
 	for(i = 0; i < nargs; i++)
 	{
 	    if(CONSP(arglist))
 	    {
-		argv[i] = VCAR(arglist);
+		if(!eval_args)
+		    argv[i] = VCAR(arglist);
+		else
+		{
+		    argv[i] = cmd_eval(VCAR(arglist));
+		    if(argv[i] == LISP_NULL)
+		    {
+			POPGCN;
+			goto end;
+		    }
+		}
 		arglist = VCDR(arglist);
 	    }
 	    else
 		break;
 	}
+	if(eval_args)
+	    POPGCN;
 	switch(type)
 	{
 	case V_Subr1:
@@ -1260,22 +1010,31 @@ do_subr:
 	    lc.next = lisp_call_stack;
 	    lc.fun = origfun;
 	    lc.args = arglist;
-	    lc.args_evalled_p = sym_t;
+	    lc.args_evalled_p = eval_args ? sym_nil : sym_t;
 	    lisp_call_stack = &lc;
-	    if(!(result = eval_lambda(fun, arglist, FALSE))
-	       && throw_value && (VCAR(throw_value) == sym_defun))
+
+	    /* eval_lambda() expanded inline. */
+	    if(CONSP(VCDR(fun)))
 	    {
-		result = VCDR(throw_value);
-		throw_value = LISP_NULL;
+		VALUE boundlist;
+		fun = VCDR(fun);
+		boundlist = bindlambdalist(VCAR(fun), arglist, eval_args);
+		if(boundlist != LISP_NULL)
+		{
+		    GC_root gc_boundlist;
+		    PUSHGC(gc_boundlist, boundlist);
+		    result = cmd_progn(VCDR(fun));
+		    POPGC;
+		    unbind_symbols(boundlist);
+		}
+		else
+		    result = LISP_NULL;
 	    }
 	    lisp_call_stack = lc.next;
 	}
 	else if(car == sym_autoload)
 	{
-	    PUSHGC(gc_origfun, origfun);
-	    PUSHGC(gc_arglist, arglist);
 	    car = load_autoload(origfun, fun);
-	    POPGC; POPGC;
 	    if(car)
 	    {
 		fun = origfun;
@@ -1285,15 +1044,59 @@ do_subr:
 	else
 	    cmd_signal(sym_invalid_function, LIST_1(fun));
 	break;
-    default:
+
+    case V_Compiled:
+	{
+	    VALUE boundlist;
+	    struct Lisp_Call lc;
+
+	    if(COMPILED_MACRO_P(fun))
+		goto invalid;
+
+	    lc.next = lisp_call_stack;
+	    lc.fun = origfun;
+	    lc.args = arglist;
+	    lc.args_evalled_p = eval_args ? sym_nil : sym_t;
+	    lisp_call_stack = &lc;
+
+	    boundlist = bindlambdalist(VVECTI(fun, COMPILED_LAMBDA),
+				       arglist, eval_args);
+	    if(boundlist != LISP_NULL)
+	    {
+		GC_root gc_boundlist;
+		PUSHGC(gc_boundlist, boundlist);
+		result = cmd_jade_byte_code(VVECTI(fun, COMPILED_CODE),
+					    VVECTI(fun, COMPILED_CONSTANTS),
+					    MAKE_INT(COMPILED_STACK(fun)));
+		POPGC;
+		unbind_symbols(boundlist);
+	    }
+	    else
+		result = LISP_NULL;
+	    lisp_call_stack = lc.next;
+	    break;
+	}
+
+    default: invalid:
 	cmd_signal(sym_invalid_function, LIST_1(fun));
     }
+
     /* In case I missed a non-local exit somewhere.  */
-    if(result && throw_value)
+    if(throw_value != LISP_NULL)
 	result = LISP_NULL;
+
 end:
+    POPGC; POPGC;
+
+    if(result == LISP_NULL && throw_value
+       && (VCAR(throw_value) == sym_defun))
+    {
+	result = VCDR(throw_value);
+	throw_value = LISP_NULL;
+    }
+
     lisp_depth--;
-    return(result);
+    return result;
 }
 
 _PR VALUE cmd_funcall(VALUE);
@@ -1301,12 +1104,183 @@ DEFUN("funcall", cmd_funcall, subr_funcall, (VALUE args), V_SubrN, DOC_funcall) 
 ::doc:funcall::
 funcall FUNCTION ARGS...
 
-Calls FUNCTION with arguments ARGS... and returns its result.
+Calls FUNCTION with arguments ARGS... and returns the result.
 ::end:: */
 {
     if(!CONSP(args))
-	return(cmd_signal(sym_bad_arg, list_2(sym_nil, MAKE_INT(1))));
-    return(funcall(VCAR(args), VCDR(args)));
+	return signal_missing_arg(1);
+    else
+	return funcall(VCAR(args), VCDR(args), FALSE);
+}
+
+DEFSTRING(void_obj, "Void object to `eval'");
+
+static VALUE
+eval(VALUE obj)
+{
+    VALUE result = LISP_NULL;
+
+#ifdef MINSTACK
+    if(STK_SIZE <= MINSTACK)
+    {
+	STK_WARN("eval");
+	return cmd_signal(sym_stack_error, sym_nil);
+    }
+#endif
+
+    switch(VTYPE(obj))
+    {
+	VALUE funcobj;
+
+    case V_Symbol:
+	result = cmd_symbol_value(obj, sym_nil);
+	break;
+
+    case V_Cons:
+	funcobj = VCAR(obj);
+	if(SYMBOLP(funcobj))
+	{
+	    if(VSYM(funcobj)->car & SF_DEBUG)
+		single_step_flag = TRUE;
+	    funcobj = cmd_symbol_function(funcobj, sym_nil);
+	    if(funcobj == LISP_NULL)
+		goto end;
+	}
+	if(VCELL8_TYPEP(funcobj, V_SF))
+	{
+	    result = VSFFUN(funcobj)(VCDR(obj));
+	}
+	else if((CONSP(funcobj) && VCAR(funcobj) == sym_macro)
+		|| (COMPILEDP(funcobj) && COMPILED_MACRO_P(funcobj)))
+	{
+	    /* A macro */
+	    VALUE form;
+	    if(single_step_flag
+	       && (form = cmd_symbol_value(sym_debug_macros, sym_t))
+	       && NILP(form))
+	    {
+		/* Debugging macros gets tedious; don't
+		   bother when debug-macros is nil. */
+		single_step_flag = FALSE;
+		form = cmd_macroexpand(obj, sym_nil);
+		single_step_flag = TRUE;
+	    }
+	    else
+		form = cmd_macroexpand(obj, sym_nil);
+	    if(form != LISP_NULL)
+		result = cmd_eval(form);
+	}
+	else
+	    result = funcall(VCAR(obj), VCDR(obj), TRUE);
+	break;
+
+    case V_Var:
+	if(!(result = VVARFUN(obj)(LISP_NULL)))
+	    cmd_signal(sym_void_value, LIST_1(obj));
+	break;
+
+    default:
+	result = obj;
+	break;
+    }
+
+    /* In case I missed a non-local exit somewhere.  */
+    if(throw_value != LISP_NULL)
+	result = LISP_NULL;
+
+end:
+    return result;
+}
+
+DEFSTRING(no_debug, "No debugger installed");
+
+_PR VALUE cmd_eval(VALUE);
+DEFUN("eval", cmd_eval, subr_eval, (VALUE obj), V_Subr1, DOC_eval) /*
+::doc:eval::
+eval FORM
+
+Evaluates FORM and returns its value.
+::end:: */
+{
+    static int DbDepth;
+    bool newssflag = TRUE;
+    VALUE result;
+
+    TEST_INT;
+    if(INT_P || !curr_vw)
+	return LISP_NULL;
+
+    if((data_after_gc >= gc_threshold) && !gc_inhibit)
+    {
+	GC_root gc_obj;
+	PUSHGC(gc_obj, obj);
+	cmd_garbage_collect(sym_t);
+	POPGC;
+    }
+
+    if(!single_step_flag)
+	return eval(obj);
+
+    DbDepth++;
+    result = LISP_NULL;
+    if(VSYM(sym_debug_entry)->function)
+    {
+	VALUE dbres;
+	VALUE dbargs = cmd_cons(obj, cmd_cons(MAKE_INT(DbDepth), sym_nil));
+	if(dbargs)
+	{
+	    GC_root gc_dbargs;
+	    PUSHGC(gc_dbargs, dbargs);
+	    single_step_flag = FALSE;
+	    if((dbres = funcall(sym_debug_entry, dbargs, FALSE))
+	       && CONSP(dbres))
+	    {
+		switch(VINT(VCAR(dbres)))
+		{
+		case 1:
+		    /* single step cdr and following stuff  */
+		    single_step_flag = TRUE;
+		    result = eval(VCDR(dbres));
+		    single_step_flag = FALSE;
+		    break;
+		case 2:
+		    /* run through cdr and step following  */
+		    result = eval(VCDR(dbres));
+		    break;
+		case 3:
+		    /* run cdr and following  */
+		    result = eval(VCDR(dbres));
+		    newssflag = FALSE;
+		    break;
+		case 4:
+		    /* result = cdr  */
+		    single_step_flag = TRUE;
+		    result = VCDR(dbres);
+		    single_step_flag = FALSE;
+		    break;
+		}
+		if(result)
+		{
+		    if(VSYM(sym_debug_exit)->function)
+		    {
+			VCAR(dbargs) = result;
+			if(!(dbres = funcall(sym_debug_exit, dbargs, FALSE)))
+			    result = LISP_NULL;
+		    }
+		}
+	    }
+	    POPGC;
+	}
+    }
+    else
+    {
+	cmd_signal(sym_error, LIST_1(VAL(&no_debug)));
+	newssflag = FALSE;
+	result = LISP_NULL;
+    }
+    DbDepth--;
+    single_step_flag = newssflag;
+    return result;
 }
 
 _PR VALUE cmd_progn(VALUE);
@@ -1332,25 +1306,25 @@ one.
     if(result && !NILP(args))
 	result = cmd_eval(args);
     POPGC;
-    return(result);
+    return result;
 }
 
 VALUE
 call_lisp0(VALUE function)
 {
-    return(funcall(function, sym_nil));
+    return funcall(function, sym_nil, FALSE);
 }
 
 VALUE
 call_lisp1(VALUE function, VALUE arg1)
 {
-    return(funcall(function, LIST_1(arg1)));
+    return funcall(function, LIST_1(arg1), FALSE);
 }
 
 VALUE
 call_lisp2(VALUE function, VALUE arg1, VALUE arg2)
 {
-    return(funcall(function, LIST_2(arg1, arg2)));
+    return funcall(function, LIST_2(arg1, arg2), FALSE);
 }
 
 void
@@ -1412,6 +1386,9 @@ lisp_prin(VALUE strm, VALUE obj)
 	print_level--;
 	break;
 
+    case V_Compiled:
+	stream_putc(strm, '#');
+	/* FALL THROUGH */
     case V_Vector:
 	{
 	    int len = VVECT_LEN(obj);
@@ -1477,36 +1454,53 @@ string_print(VALUE strm, VALUE obj)
     int len = STRING_LEN(obj);
     u_char *s = VSTR(obj);
     u_char c;
-    VALUE escape_newlines = LISP_NULL;
+
+    bool escape_all, escape_newlines;
+    VALUE tem = cmd_symbol_value(sym_print_escape, sym_t);
+    if(tem == sym_newlines)
+	escape_all = FALSE, escape_newlines = TRUE;
+    else if(tem == sym_t)
+	escape_all = TRUE, escape_newlines = TRUE;
+    else
+	escape_all = FALSE, escape_newlines = FALSE;
+
     stream_putc(strm, '\"');
     while(len-- > 0)
     {
-	switch(c = *s++)
+	c = *s++;
+	if(escape_all && (c < 32 || c > 126))
 	{
-	case '\t':
-	case '\n':
-	case '\f':
-	    if(!escape_newlines)
-		escape_newlines = cmd_symbol_value(sym_print_escape_newlines,
-						   sym_t);
-	    if(VOIDP(escape_newlines) || escape_newlines == sym_nil)
+	    stream_putc(strm, '\\');
+	    stream_putc(strm, '0' + c / 64);
+	    stream_putc(strm, '0' + (c % 64) / 8);
+	    stream_putc(strm, '0' + c % 8);
+	}
+	else
+	{
+	    switch(c)
+	    {
+	    case '\t':
+	    case '\n':
+	    case '\f':
+		if(!escape_newlines)
+		    stream_putc(strm, (int)c);
+		else
+		    stream_puts(strm, (c == '\t' ? "\\t"
+				       : ((c == '\n') ? "\\n" : "\\f")),
+				2, FALSE);
+		break;
+
+	    case '\\':
+		stream_puts(strm, "\\\\", 2, FALSE);
+		break;
+
+	    case '"':
+		stream_puts(strm, "\\\"", 2, FALSE);
+		break;
+
+	    default:
 		stream_putc(strm, (int)c);
-	    else
-		stream_puts(strm, (c == '\t' ? "\\t"
-				   : ((c == '\n') ? "\\n" : "\\f")),
-			    2, FALSE);
-	    break;
-
-	case '\\':
-	    stream_puts(strm, "\\\\", 2, FALSE);
-	    break;
-
-	case '"':
-	    stream_puts(strm, "\\\"", 2, FALSE);
-	    break;
-
-	default:
-	    stream_putc(strm, (int)c);
+	    }
 	}
     }
     stream_putc(strm, '\"');
@@ -1522,9 +1516,9 @@ list_length(VALUE list)
 	list = VCDR(list);
 	TEST_INT;
 	if(INT_P)
-	    return(i);
+	    return i;
     }
-    return(i);
+    return i;
 }
 
 VALUE
@@ -1543,7 +1537,7 @@ copy_list(VALUE list)
 	    return LISP_NULL;
     }
     *last = list;
-    return(result);
+    return result;
 }
 
 /* Used for easy handling of `var' objects */
@@ -1584,7 +1578,7 @@ The next form to be evaluated will be done so through the Lisp debugger.
 ::end:: */
 {
     single_step_flag = TRUE;
-    return(sym_t);
+    return sym_t;
 }
 
 _PR VALUE cmd_step(VALUE);
@@ -1600,7 +1594,7 @@ Use the Lisp debugger to evaluate FORM.
     single_step_flag = TRUE;
     res = cmd_eval(form);
     single_step_flag = oldssf;
-    return(res);
+    return res;
 }
 
 _PR VALUE cmd_macroexpand(VALUE, VALUE);
@@ -1627,28 +1621,75 @@ top:
 	    if(!NILP(env) && (tmp = cmd_assq(car, env)) && CONSP(tmp))
 	    {
 		car = VCDR(tmp);
-		form = eval_lambda(car, VCDR(form), FALSE);
-		if(form)
-		    goto top;
 	    }
 	    else
 	    {
 		car = cmd_symbol_function(car, sym_t);
-		if(VOIDP(car) || NILP(car))
-		    goto end;
-		if(CONSP(car) && (VCAR(car) == sym_macro)
-		   && (VCAR(VCDR(car)) == sym_lambda))
+		if(CONSP(car))
 		{
-		    form = eval_lambda(VCDR(car), VCDR(form), FALSE);
-		    if(form)
-			goto top;
+		    if(VCAR(car) != sym_macro)
+			goto end;
+		    car = VCDR(car);
 		}
+	    }
+	    if(VOIDP(car) || NILP(car))
+		goto end;
+	    if(CONSP(car) && VCAR(car) == sym_lambda)
+	    {
+		form = eval_lambda(car, VCDR(form), FALSE);
+
+		if(form == LISP_NULL && throw_value
+		   && (VCAR(throw_value) == sym_defun))
+		{
+		    form = VCDR(throw_value);
+		    throw_value = LISP_NULL;
+		}
+
+		if(form != LISP_NULL)
+		    goto top;
+	    }
+	    else if(COMPILEDP(car) && COMPILED_MACRO_P(car))
+	    {
+		VALUE boundlist;
+		struct Lisp_Call lc;
+
+		lc.next = lisp_call_stack;
+		lc.fun = VCAR(form);
+		lc.args = VCDR(form);
+		lc.args_evalled_p = TRUE;
+		lisp_call_stack = &lc;
+		boundlist = bindlambdalist(VVECTI(car, COMPILED_LAMBDA),
+					   VCDR(form), FALSE);
+		if(boundlist != LISP_NULL)
+		{
+		    GC_root gc_boundlist;
+		    PUSHGC(gc_boundlist, boundlist);
+		    form = cmd_jade_byte_code
+			     (VVECTI(car, COMPILED_CODE),
+			      VVECTI(car, COMPILED_CONSTANTS),
+			      MAKE_INT(COMPILED_STACK(car)));
+		    POPGC;
+		    unbind_symbols(boundlist);
+		}
+		else
+		    form = LISP_NULL;
+		lisp_call_stack = lc.next;
+
+		if(form == LISP_NULL && throw_value
+		   && (VCAR(throw_value) == sym_defun))
+		{
+		    form = VCDR(throw_value);
+		    throw_value = LISP_NULL;
+		}
+
+		if(form != LISP_NULL)
+		    goto top;
 	    }
 	}
     }
 end:
     POPGC; POPGC; POPGC;
-    return(form);
+    return form;
 }
 
 _PR VALUE cmd_get_doc_string(VALUE idx);
@@ -1660,7 +1701,7 @@ Returns the document-string number INDEX.
 ::end:: */
 {
     DECLARE1(idx, INTP);
-    return(cmd_read_file_from_to(VAL(&doc_file), idx, MAKE_INT((int)'\f')));
+    return cmd_read_file_from_to(VAL(&doc_file), idx, MAKE_INT((int)'\f'));
 }
 
 DEFSTRING(no_open_doc, "Can't open doc-file");
@@ -1684,14 +1725,14 @@ it's first character (a number).
 	VALUE idx = MAKE_INT(ftell(docs));
 	if(fwrite(VSTR(str), 1, len, docs) != len)
 	{
-	    return(cmd_signal(sym_file_error, LIST_1(VAL(&no_append_doc))));
+	    return cmd_signal(sym_file_error, LIST_1(VAL(&no_append_doc)));
 	}
 	putc('\f', docs);
 	fclose(docs);
-	return(idx);
+	return idx;
     }
-    return(cmd_signal(sym_file_error,
-		      list_2(VAL(&no_open_doc), VAL(&doc_file))));
+    return cmd_signal(sym_file_error,
+		      list_2(VAL(&no_open_doc), VAL(&doc_file)));
 }
 
 _PR VALUE cmd_signal(VALUE error, VALUE data);
@@ -1725,7 +1766,8 @@ handler.
 	cmd_set(sym_debug_on_error, sym_nil);
 	single_step_flag = FALSE;
 	PUSHGC(gc_on_error, on_error);
-	tmp = funcall(sym_debug_error_entry, cmd_cons(errlist, sym_nil));
+	tmp = funcall(sym_debug_error_entry,
+		      cmd_cons(errlist, sym_nil), FALSE);
 	POPGC;
 	cmd_set(sym_debug_on_error, on_error);
 	if(tmp && (tmp == sym_t))
@@ -1822,7 +1864,7 @@ arguments given to `signal' when the error was raised).
 	}
     }
     POPGC;
-    return(res);
+    return res;
 }
 
 DEFSTRING(unknown_err, "Unknown error");
@@ -1868,7 +1910,7 @@ handle_error(VALUE error, VALUE data)
 VALUE
 signal_arg_error(VALUE obj, int argNum)
 {
-    return(cmd_signal(sym_bad_arg, list_2(obj, MAKE_INT(argNum))));
+    return cmd_signal(sym_bad_arg, list_2(obj, MAKE_INT(argNum)));
 }
 
 VALUE
@@ -1880,7 +1922,7 @@ signal_missing_arg(int argnum)
 VALUE
 mem_error(void)
 {
-    return(cmd_signal(sym_no_memory, sym_nil));
+    return cmd_signal(sym_no_memory, sym_nil);
 }
 
 _PR VALUE cmd_backtrace(VALUE strm);
@@ -1900,7 +1942,7 @@ ARGLIST had been evaluated or not before being put into the stack.
     if(NILP(strm)
        && !(strm = cmd_symbol_value(sym_standard_output, sym_nil)))
     {
-	return(cmd_signal(sym_bad_arg, list_2(strm, MAKE_INT(1))));
+	return cmd_signal(sym_bad_arg, list_2(strm, MAKE_INT(1)));
     }
     lc = lisp_call_stack;
     while(lc)
@@ -1913,18 +1955,19 @@ ARGLIST had been evaluated or not before being put into the stack.
 	print_val(strm, lc->args_evalled_p);
 	lc = lc->next;
     }
-    return(sym_t);
+    return sym_t;
 }
 
 _PR VALUE var_max_lisp_depth(VALUE val);
 DEFUN("max-lisp-depth", var_max_lisp_depth, subr_max_lisp_depth, (VALUE val), V_Var, DOC_max_lisp_depth) /*
 ::doc:max_lisp_depth::
-The maximum number of times that eval and funcall can be called recursively.
+The maximum number of times that funcall can be called recursively.
+
 This is intended to stop infinite recursion, if the default value of 250 is
 too small (you get errors in normal use) set it to something larger.
 ::end:: */
 {
-    return(handle_var_int(val, &max_lisp_depth));
+    return handle_var_int(val, &max_lisp_depth);
 }
 
 void
@@ -1990,13 +2033,14 @@ lisp_init(void)
     term_cell = cmd_cons(sym_term_interrupt, sym_nil);
     mark_static(&term_cell);
 
-    INTERN(print_escape_newlines); 
+    INTERN(print_escape); 
     INTERN(print_length);
     INTERN(print_level);
-    DOC(print_escape_newlines);
+    DOC(print_escape);
     DOC(print_length);
     DOC(print_level);
-    VSYM(sym_print_escape_newlines)->value = sym_nil;
+    VSYM(sym_print_escape)->value = sym_nil;
     VSYM(sym_print_length)->value = sym_nil;
     VSYM(sym_print_level)->value = sym_nil;
+    INTERN(newlines);
 }
