@@ -1,3 +1,11 @@
+Sun May 24 10:24:16 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* x11_main.c: added a `-rv' option to give proper reverse video
+	(get_resources): capitalise resource names when we search under
+	"Jade" (I'm sure this is incorrect, but who knows). Also added
+	a reverseVideo resource
+	* x11_windows.c (sys_new_window): take note of -rv option
+
 Sat May 23 11:28:01 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* keys.c (cmd_make_keytab, cmd_make_keylist): renamed as
