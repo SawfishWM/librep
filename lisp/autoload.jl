@@ -37,6 +37,7 @@
 (autoload 'sort "sort")
 (autoload 'getenv "environ")
 (autoload 'setenv "environ")
+(autoload 'unsetenv "environ")
 (setq file-handler-alist (cons '("^/(([a-zA-Z0-9._-]+)@)?([a-zA-Z0-9._-]+):" . remote-file-handler) file-handler-alist))
 (autoload 'remote-file-handler "remote")
 (put 'ftp 'remote-backend 'remote-ftp-handler)

@@ -1,3 +1,7 @@
+1999-09-14  John Harper  <john@dcs.warwick.ac.uk>
+
+	* environ.jl (unsetenv): new function
+
 1999-09-12  John Harper  <john@dcs.warwick.ac.uk>
 
 	* version 0.5

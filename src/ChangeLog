@@ -1,5 +1,8 @@
 1999-09-14  John Harper  <john@dcs.warwick.ac.uk>
 
+	* unix_processes.c (rep_system): construct environ from
+	process-environment as with start-process and call-process
+
 	* regexp.c (regrepeat): workaround a bug in GCC 2.95 on sparcs
 	
 1999-09-12  John Harper  <john@dcs.warwick.ac.uk>

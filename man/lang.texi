@@ -7153,6 +7153,11 @@ string containing the new contents of the variable or @code{nil}, in
 which case the environment variable is deleted.
 @end defun
 
+@defun unsetenv variable-name
+Deletes any variable in @code{process-environment} named
+@var{variable-name}.
+@end defun
+
 See also @ref{Process Objects} for the description of the
 @code{process-environment} variable.
 
@@ -7323,6 +7328,9 @@ be started.
 
 The @code{stdin}, @code{stdout} and @code{stderr} streams of the shell
 are left as in the interpreter process.
+
+The subprocesses environment is copied from the current value of the
+@code{process-environment} variable.
 @end defun
 
 Note that the exit status is @emph{not} the same as the return code of
