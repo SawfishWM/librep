@@ -1,3 +1,21 @@
+1998-09-18  John Harper  <john@dcs.warwick.ac.uk>
+
+	* mail-dir.jl: made the database a lot more general. Each
+	record is now a one-to-many mapping from keys to values.
+	Currently used keys are :net (email addresses) and :name (real
+	names)
+	* mail-dir-summary.jl: fixed for the new database. Needs a lot
+	of work to allow arbitrary fields to be manipulated
+
+	* rm-restrict.jl: fixed a lot of confusion. The
+	rm-rule-function property was being called rm-rule-symbol in a
+	lot of places
+
+1998-09-17  John Harper  <john@dcs.warwick.ac.uk>
+
+	* read-mail.jl (rm-format-alist): the %D and %M formats don't
+	do %02d formatting anymore, just %d
+
 1998-09-13  John Harper  <john@dcs.warwick.ac.uk>
 
 	* ispell.jl (ispell-ignore-word-hook): new hook, called

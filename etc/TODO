@@ -65,14 +65,43 @@ General programming tasks:
 
  + Test defsubst declared functions when dumped
 
- + Write a buffer compaction function (by improving the locality of
-   reference of lines in a buffer, virtual memory performance will be
-   greatly improved)
+ + Write a buffer compaction function (improve the locality of
+   reference of lines in a buffer)
 
  + Clean up the mail-dir interface. Maybe turn it into a fully-fledged
    address book
 
+   Also store things like message id of last message sent/received to
+   this person (all message id's ever sent/received?), what else..?
+
  + Make swap-del-bs a runtime option, not compile time
+
+ - Mail reader extensions
+
+   Add score-oriented sorting; this means that restriction rules
+   can set the attributes of messages, i.e.
+
+	(defrule scorer ()
+	  (if (not (attribute 'replied))
+	      (score-plus 5))
+	  ...
+
+   or something. This can be generalised to include other extrinsic
+   attributes of messages, e.g.
+
+	(defrule foo ()
+	  (if (sender "important-addr")
+	      (set summary-foreground "red"))
+	  ...
+
+   This then means that rules aren't only predicates, each folder will
+   need a list of rules to run on each message apart from the rules
+   used to select whether or not to display the message. Also it means
+   that the body of a rule should be able to have more than a single
+   form.
+
+   Note that for scoring, we really want to use an ordered list of sort
+   predicates, i.e. if scores equal, sort by date, ...
 
  - Syntax highlighting
 
@@ -128,8 +157,6 @@ General programming tasks:
 
  - Implement an HTML-view mode that renders HTML in one buffer into
    another buffer for viewing
-
- - Ispell support
 
  - Handle MIME encoded messages
 

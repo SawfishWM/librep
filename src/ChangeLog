@@ -1,3 +1,8 @@
+1998-09-17  John Harper  <john@dcs.warwick.ac.uk>
+
+	* streams.c (cmd_format): make the "0" flag work with the %s
+	format
+
 1998-09-13  John Harper  <john@dcs.warwick.ac.uk>
 
 	* x11_windows.c (sys_draw_glyphs): when drawing underlines,
