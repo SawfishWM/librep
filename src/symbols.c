@@ -445,49 +445,6 @@ Returns t if ARG is a closure
     return rep_FUNARGP(arg) ? Qt : Qnil;
 }
 
-DEFUN("save-environment", Fsave_environment,
-      Ssave_environment, (repv args), rep_SF) /*
-::doc:save-environment::
-save-environment FORMS...
-::end:: */
-{
-    repv ret;
-    struct rep_Call lc;
-    lc.fun = Qnil;
-    lc.args = Qnil;
-    lc.args_evalled_p = Qnil;
-    rep_PUSH_CALL(lc);
-    ret = Fprogn (args);
-    rep_POP_CALL(lc);
-    return ret;
-}
-
-DEFUN("set-environment", Fset_environment,
-      Sset_environment, (repv env), rep_Subr1) /*
-::doc:set-environment::
-set-variable-environment ENV
-::end:: */
-{
-    if (rep_call_stack != 0)
-    {
-	if (rep_LISTP (env))
-	{
-	    repv tem;
-	    rep_call_stack->saved_env = env;
-	    tem = Fassq (Qjade_byte_code, env);
-	    if (tem && tem != Qnil)
-	    {
-		tem = rep_CDR (tem);
-		if (rep_CELL8_TYPEP (tem, rep_Subr3))
-		    rep_bytecode_interpreter = rep_SUBR4FUN (tem);
-		else
-		    rep_bytecode_interpreter = 0;
-	    }
-	}
-    }
-    return Qt;
-}
-
 DEFUN("set-special-environment", Fset_special_environment,
       Sset_special_environment, (repv env, repv structure), rep_Subr2) /*
 ::doc:set-special-environment::
@@ -529,25 +486,30 @@ funarg_sweep (void)
     }
 }
 
-/* Returns (SYM . VALUE) if a lexical binding. Returns t if the actual
-   value is in the symbol's function slot */
+/* Returns (SYM . VALUE) if a lexical binding, or nil */
 static repv
 search_environment (repv sym)
 {
-    register repv env = rep_env;
-    while (rep_CONSP(env) && rep_CAR(rep_CAR(env)) != sym)
-	env = rep_CDR(env);
-    return rep_CONSP(env) ? rep_CAR(env) : env;
+    register repv env;
+    for (env = rep_env; env != Qnil; env = rep_CDR (env))
+    {
+	if (rep_CAAR(env) == sym)
+	    return rep_CAR (env);
+    }
+    return Qnil;
 }
 
 /* this is also in lispmach.c */
 static inline repv
 inlined_search_special_bindings (repv sym)
 {
-    register repv env = rep_special_bindings;
-    while (env != Qnil && rep_CAAR(env) != sym)
-	env = rep_CDR(env);
-    return env != Qnil ? rep_CAR(env) : env;
+    register repv env;
+    for (env = rep_special_bindings; env != Qnil; env = rep_CDR (env))
+    {
+	if (rep_CAAR(env) == sym)
+	    return rep_CAR (env);
+    }
+    return Qnil;
 }
 
 static repv
@@ -802,9 +764,9 @@ values look for one of those first.
     {
 	/* lexical variable */
 	repv tem = search_environment (sym);
-	if (rep_CONSP(tem))
+	if (tem != Qnil)
 	    val = rep_CDR(tem);
-	else if (tem == Qt)
+	else
 	    val = F_structure_ref (rep_structure, sym);
     }
 
@@ -896,12 +858,10 @@ SYMBOL the buffer-local value in the current buffer is set. Returns repv.
     {
 	/* lexical binding */
 	repv tem = search_environment (sym);
-	if (rep_CONSP(tem))
+	if (tem != Qnil)
 	    rep_CDR(tem) = val;
-	else if (tem == Qt)
-	    val = F_structure_set (rep_structure, sym, val);
 	else
-	    val = Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
+	    val = F_structure_set (rep_structure, sym, val);
     }
     return val;
 }
@@ -1329,8 +1289,6 @@ rep_symbols_init(void)
     rep_ADD_SUBR(Sclosure_function);
     rep_ADD_SUBR(Sset_closure_function);
     rep_ADD_SUBR(Sclosurep);
-    rep_ADD_SUBR(Ssave_environment);
-    rep_ADD_SUBR(Sset_environment);
     rep_ADD_SUBR(Sset_special_environment);
     rep_ADD_SUBR(Sdefvar);
     rep_ADD_SUBR(Ssymbol_value);
