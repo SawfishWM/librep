@@ -384,7 +384,7 @@ Returns a new cons-cell with car CAR and cdr CDR.
 	{
 	    int i;
 	    allocated_cons += rep_CONSBLK_SIZE;
-	    cb->next = cons_block_chain;
+	    cb->next.p = cons_block_chain;
 	    cons_block_chain = cb;
 	    for(i = 0; i < (rep_CONSBLK_SIZE - 1); i++)
 		cb->cons[i].cdr = rep_CONS_VAL(&cb->cons[i + 1]);
@@ -420,7 +420,7 @@ cons_sweep(void)
     used_cons = 0;
     while(cb != NULL)
     {
-	rep_cons_block *nxt = cb->next;
+	rep_cons_block *nxt = cb->next.p;
 	rep_cons *newfree = NULL, *newfreetail = NULL, *this;
 	int i, newused = 0;
 	for(i = 0, this = cb->cons; i < rep_CONSBLK_SIZE; i++, this++)
@@ -454,7 +454,7 @@ cons_sweep(void)
 		used_cons += newused;
 	    }
 	    /* Have to rebuild the ConsBlk chain as well.  */
-	    cb->next = cons_block_chain;
+	    cb->next.p = cons_block_chain;
 	    cons_block_chain = cb;
 	}
 	cb = nxt;
@@ -1061,7 +1061,7 @@ rep_values_kill(void)
     rep_string *s = strings;
     while(cb != NULL)
     {
-	rep_cons_block *nxt = cb->next;
+	rep_cons_block *nxt = cb->next.p;
 	rep_free(cb);
 	cb = nxt;
     }
