@@ -167,7 +167,7 @@ list_ref (repv list, int elt)
 # define POPN(n)    do { stackp -= (n); RELOAD; } while (0)
 # define POP1(a)    do { (a) = tos; stackp--; RELOAD; } while (0)
 # define POP2(a,b)  do { (a) = tos; (b) = stackp[-1]; stackp -= 2; RELOAD; } while (0)
-# define PUSH(v)    do { UPDATE; tos = (v); *(++stackp) = tos; } while (0)
+# define PUSH(v)    do { UPDATE; tos = (v); ++stackp; } while (0)
 #else
 # define RELOAD
 # define UPDATE
@@ -456,7 +456,7 @@ list_ref (repv list, int elt)
 #  define PC_REG TOS_REG
 # elif !defined (SP_REG)
 #  define SP_REG TOS_REG
-# elif !define (BP_REG)
+# elif !defined (BP_REG)
 #  define BP_REG TOS_REG
 # endif
 # undef TOS_REG
@@ -1878,6 +1878,7 @@ again:
 
 	BEGIN_INSN (OP_POP_ALL)
 	    stackp = stackbase - 1;
+	    RELOAD;
 	    SAFE_NEXT;
 	END_INSN
 
@@ -2072,11 +2073,11 @@ again:
 		       simply continue execution as normal. */
 
 		    stackp = (stackbase - 1) + rep_INT(rep_CDR(item));
+		    RELOAD;
 		    PUSH(rep_throw_value);
 		    rep_throw_value = rep_NULL;
 		    pc = rep_STR(code) + rep_INT(rep_CAR(item));
 		    impurity--;
-		    RELOAD;
 		    SAFE_NEXT;
 		}
 		else
