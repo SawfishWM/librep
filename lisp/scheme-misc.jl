@@ -141,7 +141,7 @@
   (define (peek-char &optional port)
     (or (rep#peek-char (or port standard-input)) eof-object))
 
-  (define (eof-object? obj) (eq obj eof-object))
+  (define eof-object? (make-predicate (lambda (obj) (eq obj eof-object))))
 
 ;;; output
 
