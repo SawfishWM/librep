@@ -1,3 +1,21 @@
+1998-10-27  John Harper  <john@dcs.warwick.ac.uk>
+
+	* values.c (data_types): remove mark_sweep
+	(mark_value): when marking a resident mark, mark the canonical
+	name of the associated buffer (it's required if the mark is
+	made non-resident)
+	* buffers.c (buffer_sweep): call mark_sweep before sweeping
+	buffers, the ordering is important. Only call
+	make_marks_non_resident if there actually are marks in the
+	buffer (this stops us occasionally using freed memory)
+
+	* streams.c (stream_putc, stream_puts): when appending to the
+	window's message, use sys_realloc not str_dupn
+
+	* edit.c (FREE_LL): fix non-r_alloc version
+
+	* buffers.c (mark_cmp): compare non-resident marks correctly
+
 1998-10-26  John Harper  <john@dcs.warwick.ac.uk>
 
 	* dlmalloc.c: enable __morecore_hook when JADE is defined, set
