@@ -10,10 +10,6 @@ and more long-term ideas are marked -
 Before release
 ==============
 
- ! doc strings / interactive decls and define?
-
- ! bytecode backtraces broken?
-
  ! scheme define/lambda doesn't splice begin forms
 
  + do something with the define-value ugliness?
