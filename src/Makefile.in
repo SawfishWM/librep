@@ -38,7 +38,7 @@ sharedstatedir=@sharedstatedir@
 jadedir=@jadedir@
 lispdir=@lispdir@
 dumped_lisp_files=@dumped_lisp_files@
-enable_dumped=@enable_dumped@
+enable_dumped=@opt_enable_dumped@
 
 CC=@CC@
 CPPFLAGS=@CPPFLAGS@
