@@ -267,8 +267,6 @@
 #define OP_OPTIONAL_ARG_ 0xce
 #define OP_KEYWORD_ARG_ 0xcf
 
-#define OP_VOIDP 0xd0
-
 
 /* Jump opcodes */
 
