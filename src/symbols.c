@@ -332,7 +332,7 @@ Removes SYMBOL from OBARRAY (or the default). Use this with caution.
 	return rep_NULL;
     hashid = hash(rep_STR(rep_SYM(sym)->name)) % vsize;
     list = rep_VECT(ob)->array[hashid];
-    rep_VECT(ob)->array[hashid] = rep_NULL;
+    rep_VECT(ob)->array[hashid] = OB_NIL;
     while(rep_SYMBOLP(list))
     {
 	repv nxt = rep_SYM(list)->next;

@@ -1,3 +1,8 @@
+2000-12-04  John Harper  <jsh@eazel.com>
+
+	* symbols.c (Funintern): should use OB_NIL to mark end of
+	symbol buckets, not rep_NULL
+
 2000-11-28  John Harper  <jsh@eazel.com>
 
 	* timers.c (Lisp_Timer): made bitfields unsigned
