@@ -455,6 +455,8 @@ extern repv Foutput_stream_p(repv arg);
 extern repv (*rep_deref_local_symbol_fun)(repv sym);
 extern repv (*rep_set_local_symbol_fun)(repv sym, repv val);
 extern void rep_intern_static(repv *, repv);
+extern repv rep_call_with_closure (repv closure,
+				   repv (*fun)(repv arg), repv arg);
 extern repv rep_bind_symbol(repv, repv, repv);
 extern int rep_unbind_symbols(repv);
 extern repv rep_add_binding_to_env (repv env, repv sym, repv value);

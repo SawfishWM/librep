@@ -1,3 +1,59 @@
+2000-05-25  John Harper  <john@dcs.warwick.ac.uk>
+
+	* symbols.c (rep_call_with_closure): new function
+
+	* repint.h, rep_lisp.h: moved closure macros and all backtrace
+	stuff from rep_lisp.h to repint.h
+
+	* lisp.c (rep_funcall): check if rep_bytecode_interpreter == 0
+	_after_ installing the function's closure
+
+	* symbols.c: lexical environment for interpreted code is now a
+	list of (LEXTAG . (SYMBOL . VALUE)) so that search_environment
+	can ignore bindings from compiled code. LEXTAG is a value that
+	can't appear normally
+	(rep_add_binding_to_env): new function
+
+	* structures.c (F_eval_in_structure): now called Feval (the
+	changes to the environment structure mean that it's usually
+	meaningless to eval within a non-null lexical environment)
+
+	* repint.h: moved some more structure defs here, so that
+	lispmach.c can open-code the `refg' instruction
+
+	* misc.c (Fcurrent_utime): new function, returns the current
+	unix time in microseconds
+	* unix_main.c (rep_utime): new function
+
+	* lispmach.c (Fjade_byte_code): now called Frun_byte_code
+
+	* lispmach.c: many changes, byte code subrs now store parameter
+	spec as an integer (number of <required, optional, rest>
+	parameters), these must now be lexical bindings. This was added
+	since function-call heavy programs were spending too much time
+	in rep_bind_lambda_list_1 (e.g. 17% for qscheme's fibonacci
+	benchmark). The lexical environment of compiled code is no
+	longer an alist (SYMBOL . VALUE); it's now just the list of
+	values
+
+	* lisp.c (copy_to_vector): new function, factored out of
+	rep_bind_lambda_list
+	(rep_bind_lambda_list_1): removed `&aux' code
+	(rep_funcall): obey the new bytecode interpreter calling
+	conventions (passing arg values in an array)
+	(Feval): this is no longer the lisp-visible `eval' function
+
+	* lisp.c (init_scm_booleans): remember to statically mark these
+	objects
+
+	* bytecodes.h (OP_EVAL): deleted
+	(OP_BIND): no longer has an argument, has the OP_EVAL opcode
+
+2000-05-24  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispcmds.c (Fload): gc-protect the file name while opening
+	the file
+
 2000-05-23  John Harper  <john@dcs.warwick.ac.uk>
 
 	* bytecodes.h, lispmach.c (OP_TEST_SCM, OP_TEST_SCM_F): new

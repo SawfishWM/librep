@@ -28,8 +28,7 @@
   (open rep)
 
   ;; given a scheme boolean, convert to a rep boolean
-  (define (%test value)
-    (if (eq value #f) nil t))
+  (define (%test value) (not (eq value #f)))
 
   ;; create a scheme predicate from the rep predicate PRED
   (define (make-predicate pred)

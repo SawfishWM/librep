@@ -1,3 +1,55 @@
+2000-05-25  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compiler-rep.jl: added special handlers for `defun' and
+	`defmacro', otherwise non-top-level calls to these macros don't
+	get compiled properly
+
+	* rep-repl.jl: added `,time' command
+
+	* lisp-doc.jl (describe-value): don't check for calls to
+	jade-byte-code
+
+	* init.jl (eval-after-load): don't use `&aux'
+
+	* dump.jl: don't `set' lexical variables
+
+	* disassembler.jl: understand new opcodes, new parameter list
+	encoding
+
+	* debug.jl: updated for new lexical environment structure (of
+	interpreted code)
+
+	* compiler.jl (compile-form): generate calls to `run-byte-code'
+	instead of `jade-byte-code'
+
+	* compiler-utils.jl (remember-function): don't `set' lexical
+	variables
+	(get-lambda-vars): ignore `&aux' keys
+
+	* compiler-src.jl (fold-constants): use `compiler-symbol-value'
+	instead of `eval' to dereference functions
+
+	* compiler-rep.jl: don't compile calls to `eval'
+	(compile-condition-case): changed this for the modified
+	semantics of the `errorpro' instruction (doesn't require name
+	of variable to bind, always binds the next lexical slot)
+
+	* compiler-opt.jl: added some peephole patterns for changing
+	simple constant add and subtract sequences into `inc' or `dec'
+	instructions
+
+	* compiler-inline.jl: removed all support for `&aux' keyword
+
+	* compiler-bindings.jl (emit-binding): don't emit arg when
+	binding lexically
+
+	* compiler-basic.jl (compile-lambda): generate the new-style
+	byte code subrs (with parameter spec encoded as a fixnum)
+
+	* bytecode-defs.jl: deleted `eval', `bind' is now arg-less (and
+	uses the old eval opcode)
+	* bytecodes.jl (byte-insns-with-constants): removed `bind'
+
 2000-05-23  John Harper  <john@dcs.warwick.ac.uk>
 
 	* scheme-misc.jl (eof-object?): fixed to return #f or #t
