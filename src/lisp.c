@@ -52,6 +52,7 @@ _PR VALUE handle_var_int(VALUE, long *);
 
 _PR void handle_error(VALUE, VALUE);
 _PR VALUE signal_arg_error(VALUE, int);
+_PR VALUE signal_missing_arg(int argnum);
 _PR VALUE mem_error(void);
 
 _PR void lisp_init(void);
@@ -1738,6 +1739,12 @@ VALUE
 signal_arg_error(VALUE obj, int argNum)
 {
     return(cmd_signal(sym_bad_arg, list_2(obj, make_number(argNum))));
+}
+
+VALUE
+signal_missing_arg(int argnum)
+{
+    return cmd_signal(sym_missing_arg, make_number(argnum));
 }
 
 VALUE
