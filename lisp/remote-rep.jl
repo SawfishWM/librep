@@ -107,8 +107,8 @@
 
 (defun remote-rep-open-session (session)
   (let
-      ((process (make-process `(lambda (data)
-				 (remote-rep-output-filter ,session data))
+      ((process (make-process #'(lambda (data)
+				  (remote-rep-output-filter session data))
 			      'remote-rep-sentinel
 			      nil remote-rep-rsh-program
 			      (list "-l" (aref session remote-rep-user)
@@ -512,8 +512,8 @@
 	  ;; construct the callback function to have the new cache entry
 	  ;; as the first argument
 	  (aset session remote-rep-callback
-		`(lambda (&rest args)
-		   (apply 'remote-rep-dircache-callback ,entry args)))
+		#'(lambda (&rest args)
+		    (apply 'remote-rep-dircache-callback entry args)))
 	  (unwind-protect
 	      (condition-case nil
 		  (remote-rep-command session ?D nil dir)

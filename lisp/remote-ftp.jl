@@ -165,8 +165,8 @@ file types.")
 
 (defun remote-ftp-open-session (session)
   (let
-      ((process (make-process `(lambda (data)
-				 (remote-ftp-output-filter ,session data))
+      ((process (make-process #'(lambda (data)
+				  (remote-ftp-output-filter session data))
 			      'remote-ftp-sentinel
 			      nil ftp-program
 			      (append remote-ftp-args
@@ -583,8 +583,8 @@ file types.")
 	  ;; construct the callback function to have the new cache entry
 	  ;; as the first argument
 	  (aset session remote-ftp-callback
-		`(lambda (&rest args)
-		   (apply 'remote-ftp-dircache-callback ,entry args)))
+		#'(lambda (&rest args)
+		    (apply 'remote-ftp-dircache-callback entry args)))
 	  (remote-ftp-command session 'dircache remote-ftp-ls-format dir)
 	  (aset session remote-ftp-callback nil))
       ;; entry is still valid, move it to the front of the list

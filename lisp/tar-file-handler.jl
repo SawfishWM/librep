@@ -252,10 +252,9 @@
 	  ;; add the new (empty) entry for the directory to be read.
 	  (setq entry (vector tarfile (file-modtime tarfile) nil))
 	  (setq tarfh-dir-cache (cons entry tarfh-dir-cache))
-	  (let
-	      ((callback `(lambda (o)
-			    (tarfh-output-function o ,entry))))
-	    (tarfh-call-tar nil callback "--list" tarfile "--verbose"))
+	  (tarfh-call-tar nil #'(lambda (o)
+				  (tarfh-output-function o entry))
+			  "--list" tarfile "--verbose")
 	  (aset entry tarfh-cache-entries
 		(nreverse (aref entry tarfh-cache-entries))))
       ;; entry is still valid, move it to the front of the list
