@@ -435,6 +435,18 @@ Set the function value in the closure FUNARG to FUNCTION.
     return fun;
 }
 
+DEFUN("closure-structure", Fclosure_structure,
+      Sclosure_structure, (repv funarg), rep_Subr1) /*
+::doc:closure-function::
+closure-function FUNARG
+
+Return the structure associated with the closure FUNARG.
+::end:: */
+{
+    rep_DECLARE1(funarg, rep_FUNARGP);
+    return rep_FUNARG(funarg)->structure;
+}
+
 DEFUN("closurep", Fclosurep, Sclosurep, (repv arg), rep_Subr1) /*
 ::doc:closurep::
 funargp ARG
@@ -1290,6 +1302,7 @@ rep_symbols_init(void)
     rep_ADD_SUBR(Smake_closure);
     rep_ADD_SUBR(Sclosure_function);
     rep_ADD_SUBR(Sset_closure_function);
+    rep_ADD_SUBR(Sclosure_structure);
     rep_ADD_SUBR(Sclosurep);
     rep_ADD_SUBR(Sset_special_environment);
     rep_ADD_SUBR(Sdefvar);
