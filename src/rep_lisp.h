@@ -898,6 +898,7 @@ struct rep_Call {
 
 #define rep_FORBID rep_thread_lock++
 #define rep_PERMIT rep_thread_lock--
+#define rep_PREEMPTABLE_P (rep_thread_lock <= 0)
 
 /* rep_TEST_INT is called before testing rep_INTERRUPTP, if necessary the
    target operating system will define it to be something useful.

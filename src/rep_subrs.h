@@ -34,17 +34,19 @@ extern repv Fcontinuation_callable_p (repv cont);
 extern repv Fcall_with_object (repv arg, repv thunk);
 extern repv Fcall_with_dynamic_root (repv thunk);
 extern repv Fcall_with_barrier (repv thunk, repv closed, repv in, repv out);
-extern repv Fmake_thread (repv thunk);
+extern repv Fmake_thread (repv thunk, repv name);
 extern repv Fthread_yield (void);
 extern repv Fthread_delete (repv thread);
 extern repv Fthread_suspend (repv thread, repv msecs);
 extern repv Fthread_wake (repv thread);
 extern repv Ftheadp (repv arg);
 extern repv Fthread_suspended_p (repv thread);
-extern repv Fcurrent_thread (void);
-extern repv Fthread_queue_length (void);
+extern repv Fcurrent_thread (repv depth);
+extern repv Fall_threads (repv depth);
+extern repv Fthread_queue_length (repv depth);
 extern repv Fthread_forbid (void);
 extern repv Fthread_permit (void);
+extern repv Fthread_name (repv th);
 
 /* from debug-buffer.c */
 extern void *rep_db_alloc(char *name, int size);
