@@ -505,19 +505,17 @@ that files which shouldn't be compiled aren't."
 
 (put 'while 'compile-fun 'comp-compile-while)
 (defun comp-compile-while (form)
-  (let*
-      ((tst-label (comp-make-label))
-       (end-label (comp-make-label)))
-    (comp-set-label tst-label)
-    (comp-compile-form (nth 1 form))
-    (comp-compile-jmp op-jnp end-label)
-    (comp-dec-stack)
+  (let
+      ((top-label (comp-make-label))
+       (test-label (comp-make-label)))
+    (comp-compile-jmp op-jmp test-label)
+    (comp-set-label top-label)
     (comp-compile-body (nthcdr 2 form))
     (comp-write-op op-pop)
     (comp-dec-stack)
-    (comp-compile-jmp op-jmp tst-label)
-    (comp-set-label end-label)
-    (comp-inc-stack)))
+    (comp-set-label test-label)
+    (comp-compile-form (nth 1 form))
+    (comp-compile-jmp op-jpt top-label)))
 
 (put 'progn 'compile-fun 'comp-compile-progn)
 (defun comp-compile-progn (form)
