@@ -34,7 +34,17 @@
 (defun tilde-file-handler (op &rest args)
   (cond
    ((eq op 'file-name-absolute-p))	;~FOO always absolute
-   ((memq op '(expand-file-name file-name-nondirectory file-name-directory
+   ((eq op 'expand-file-name)
+    ;; Slightly tricky. It's necessary to remove the tilde, call
+    ;; expand-file-name, then reapply the tilde. This is to ensure
+    ;; that things like "~/foo/../bar" expand to "~/bar"
+    (let
+	((file-name (car args)))
+      (if (string-looking-at "~[^/]*/?" file-name)
+	  (concat (substring file-name (match-start) (match-end))
+		  (expand-file-name (substring file-name (match-end)) "."))
+	file-name)))
+   ((memq op '(file-name-nondirectory file-name-directory
 	       file-name-as-directory directory-file-name))
     ;; Functions of a single file name that we leave alone. By re-calling
     ;; OP the standard action will occur since this handler is now
@@ -51,7 +61,7 @@
     (apply op (tilde-expand (car args)) (cdr args)))
    (t
     ;; Anything else shouldn't have happened
-    (error "Can't expand ~ for %s" (cons op args)))))
+    (error "Can't expand ~ in %s" (cons op args)))))
 
 ;; Runtime initialisation
 (progn
