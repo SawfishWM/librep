@@ -142,10 +142,7 @@ the lisp-lib-directory with .jlc as its suffix."
     (when (setq output-stream (open-file output-file 'write))
       (unwind-protect
 	  (progn
-	    (dump-output-comment
-	     output-stream (format nil "%s, dumped %s by %s@%s"
-				   output-file (current-time-string)
-				   (user-login-name) (system-name)))
+	    (dump-output-comment output-stream output-file)
 	    (dump-output-comment
 	     output-stream (format nil "From: %S" file-list))
 	    ;; Ensure that `nil' gets added as the first symbol, note that
