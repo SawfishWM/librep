@@ -209,4 +209,5 @@
 (autoload 'perl-mode "perl-mode" t)
 (autoload 'thesaurus-lookup-word "thesaurus" t)
 (autoload 'thesaurus-show-words "thesaurus" t)
+(autoload 'dict-lookup "dict" t)
 ;;; ::autoload-end::

@@ -1,3 +1,15 @@
+1998-07-10  John Harper  <john@dcs.warwick.ac.uk>
+
+	* read-mail.jl (read-mail-folder): before adding the new folder
+	to the rm-open-folders list, remove any folders that are no
+	longer pertinent
+	* rm-summary.jl (rm-configure-views): fix the code to ensure
+	that the rm-open-folders list has the correct view for the
+	folder being configured
+
+	* dict.jl (dict-lookup): new file, a simple interface to the
+	dict(1) client (that speaks the Dictionary Server Protocol)
+
 1998-07-09  John Harper  <john@dcs.warwick.ac.uk>
 
 	* thesaurus.jl (thesaurus-lookup-word, thesaurus-show-words):

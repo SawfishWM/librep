@@ -1,3 +1,20 @@
+1998-07-10  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_main.c: deleted all the SIGIO stuff
+	(sys_poll_input): new function
+
+	* lisp.h (TEST_INT, TEST_INT_GUTS, TEST_INT_PERIOD,
+	TEST_INT_SLOW): expanded testing for interrupts
+	* lisp.c (lisp_test_int_counter): new variable
+
+	* x11_main.c (x11_handle_input): handle asynchronous input,
+	just look for the events we want, C-g causes an interrupt
+	(x11_handle_sync_input, x11_handle_async_input): new functions
+	* x11_defs.h: define TEST_INT_GUTS as x11_handle_async_input()
+	* unix_defs.h: remove the TEST_INT definition
+	* unix_processes.c (run_process): use TEST_INT_SLOW to test for
+	interrupts in synchronous processes
+
 1998-07-04  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lispmach.c (cmd_make_byte_code_subr): don't allocate the
