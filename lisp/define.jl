@@ -34,29 +34,15 @@
 ;; lambda lists natively, so things like (define (foo . bar) ..) will
 ;; work correctly
 
+;; Note^2 that this doesn't work quite like Scheme define, in that the
+;; outermost define always affects the global environment (unless within
+;; a with-internal-definitions block)
+
 ;; returns (SYM . DEF)
 (defun define-parse (args)
-  (let
-      (sym def)
-    (if (consp (car args))
-	;; (define (foo args...) body...)
-	(let
-	    ((arg-spec (cdar args))
-	     header)
-	  (setq sym (caar args))
-	  (setq args (cdr args))
-	  (while (or (stringp (car args))
-		     (eq (caar args) 'interactive))
-	    (setq header (cons (car args) header))
-	    (setq args (cdr args)))
-	  (setq def `(lambda ,arg-spec
-		       ,@(reverse header)
-		       ,(define-scan-internals args))))
-
-      ;; (define foo bar)
-      (setq sym (car args))
-      (setq def (define-scan-form (cadr args))))
-    (cons sym def)))
+  (if (consp (car args))
+      (define-parse `(,(caar args) (lambda ,(cdar args) ,@(cdr args))))
+    (cons (car args) (define-scan-form (cadr args)))))
 
 (defun define-scan-internals (body)
   (let
@@ -126,7 +112,15 @@
      form)
 
     ((lambda)
-     (list 'lambda (nth 1 form) (define-scan-internals (nthcdr 2 form))))
+     (let ((body (nthcdr 2 form))
+	   (header nil))
+       ;; skip doc strings and interactive decls..
+       (while (or (stringp body) (eq (caar body) 'interactive))
+	 (setq header (cons (car body) header))
+	 (setq body (cdr body)))
+       `(lambda ,(cadr form)
+	  ,@(nreverse header)
+	  ,(define-scan-internals body))))
 
     ((defvar)
      (list* 'defvar (nth 1 form) (define-scan-form (nth 2 form))
