@@ -661,34 +661,27 @@ returns a new list constructed from the results, ie,
 {
     VALUE res = sym_nil;
     VALUE *last = &res;
-    GC_root gc_list, gc_argv, gc_res;
-    VALUE argv;
+    GC_root gc_list, gc_fun, gc_res;
     DECLARE2(list, LISTP);
-    argv = cmd_cons(fun, cmd_cons(sym_nil, sym_nil));
-    if(argv)
+
+    PUSHGC(gc_res, res);
+    PUSHGC(gc_fun, fun);
+    PUSHGC(gc_list, list);
+    while(res != LISP_NULL && CONSP(list))
     {
-	PUSHGC(gc_res, res);
-	PUSHGC(gc_argv, argv);
-	PUSHGC(gc_list, list);
-	while(res != LISP_NULL && CONSP(list))
+	TEST_INT;
+	if(INT_P
+	   || !(*last = cmd_cons(sym_nil, sym_nil))
+	   || !(VCAR(*last) = call_lisp1(fun, VCAR(list))))
+	    res = LISP_NULL;
+	else
 	{
-	    if(!(*last = cmd_cons(sym_nil, sym_nil)))
-		return(LISP_NULL);
-	    VCAR(VCDR(argv)) = VCAR(list);
-	    if(!(VCAR(*last) = cmd_funcall(argv)))
-		res = LISP_NULL;
-	    else
-	    {
-		last = &VCDR(*last);
-		list = VCDR(list);
-	    }
-	    TEST_INT;
-	    if(INT_P)
-		res = LISP_NULL;
+	    last = &VCDR(*last);
+	    list = VCDR(list);
 	}
-	POPGC; POPGC; POPGC;
     }
-    return(res);
+    POPGC; POPGC; POPGC;
+    return res;
 }
 
 _PR VALUE cmd_mapc(VALUE, VALUE);
@@ -699,25 +692,20 @@ mapc FUNCTION LIST
 Applies FUNCTION to each element in LIST, discards the results.
 ::end:: */
 {
-    VALUE argv, res = list;
-    GC_root gc_argv, gc_list;
+    VALUE res = sym_nil;
+    GC_root gc_fun, gc_list;
     DECLARE2(list, LISTP);
-    if(!(argv = cmd_cons(fun, cmd_cons(sym_nil, sym_nil))))
-	return(LISP_NULL);
-    PUSHGC(gc_argv, argv);
+    PUSHGC(gc_fun, fun);
     PUSHGC(gc_list, list);
     while(res != LISP_NULL && CONSP(list))
     {
-	VCAR(VCDR(argv)) = VCAR(list);
-	if(!cmd_funcall(argv))
+	TEST_INT;
+	if(INT_P || !call_lisp1(fun, VCAR(list)))
 	    res = LISP_NULL;
 	list = VCDR(list);
-	TEST_INT;
-	if(INT_P)
-	    res = LISP_NULL;
     }
     POPGC; POPGC;
-    return(res);
+    return res;
 }
 
 _PR VALUE cmd_filter(VALUE pred, VALUE list);
