@@ -103,6 +103,7 @@ rep_expand_file_name(repv file)
     char buf[PATH_MAX];
     char *optr = buf;
     char *iptr = rep_STR(file);
+
     while(*iptr != 0)
     {
 	char *end;
@@ -111,8 +112,8 @@ rep_expand_file_name(repv file)
 	{
 	    if(iptr[1] == '/')
 	    {
-		iptr += 2;
-		continue;
+		iptr += 1;
+		goto strip;
 	    }
 	    else if(iptr[1] == 0)
 	    {
@@ -126,6 +127,8 @@ rep_expand_file_name(repv file)
 	    {
 		if(iptr[2] == '/' || iptr[2] == 0)
 		{
+		    /* XXX this is wrong on some invalid paths,
+		       XXX e.g `/../../../foo' -> `/../foo' */
 		    char *back = optr;
 		    if(back > buf && back[-1] == '/')
 			back--;
@@ -142,26 +145,24 @@ rep_expand_file_name(repv file)
 			    *optr++ = '/';
 		    }
 		    iptr += (iptr[2] == 0) ? 2 : 3;
-		    continue;
+		    goto strip;
 		}
 	    }
 	}
-	else if(*iptr == '/')
-	{
-	    /* Must be a root */
-	    optr = buf;
-	    *optr++ = *iptr++;
-	    continue;
-	}
-
 	end = strchr(iptr, '/');
 	if(end == 0)
 	    end = iptr + strlen(iptr);
 	memcpy(optr, iptr, end - iptr);
 	optr += end - iptr;
 	iptr = end;
+
 	if(*iptr == '/')
 	    *optr++ = *iptr++;
+
+    strip:
+	/* merge multiple slashes into one */
+	while (*iptr && *iptr == '/')
+	    iptr++;
     }
 
     if(optr - buf != rep_STRING_LEN(file)
