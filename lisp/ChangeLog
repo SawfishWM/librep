@@ -1,3 +1,15 @@
+2000-02-27  John Harper  <john@dcs.warwick.ac.uk>
+
+	* gaol.jl: added a load more safe functions to the list. Also
+	allow `tables' to be required
+
+	* compiler.jl: misc fixes for math stuff. Also fixed
+	compilation of transitive comparisons (no guarantee they would
+	evaluate all arguments previously)
+
+	* bytecodes.jl, disassembler.jl: deleted op-numeq and
+	op-num-noteq. op-lsh changed to op-ash
+
 2000-02-25  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lisp.jl (positivep, negativep, oddp, evenp, abs, %, modulo,

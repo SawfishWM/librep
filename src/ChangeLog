@@ -1,3 +1,22 @@
+2000-02-27  John Harper  <john@dcs.warwick.ac.uk>
+
+	* values.c: represents strings as a two-word header and a
+	separate chunk of data. This saves one word per string, and may
+	also improve gc performance (only need to touch (contiguous)
+	headers when gc-ing, so better dcache performance)
+
+	* streams.c (Fformat): use rep_print_number_to_string for all
+	numeric conversions
+
+	* rep_lisp.h: moved unnecessary definitions to .c files.
+	Changed how strings are represented
+
+	* lispcmds.c (=, /=): these functions now accept N arguments,
+	and do a general (i.e. not just numeric) comparison
+
+	* lispmach.c, bytecodes.h: deleted OP_NUMEQ and OP_NUM_NOTEQ;
+	OP_LSH becomes OP_ASH
+
 2000-02-25  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep.h.in: added rep_long_long define, will be `long long' if
