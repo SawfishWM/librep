@@ -170,6 +170,4 @@ When read, the syntax `FOO#BAR' expands to `(structure-ref FOO BAR)'."
 		   %make-structure %make-interface %parse-interface
 		   %external-structure-ref %alias-structure))
 
-(export-bindings '(provide require featurep))
-
 (export-bindings '(lambda validate-byte-code run-byte-code load))
