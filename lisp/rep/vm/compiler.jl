@@ -656,7 +656,7 @@ that files which shouldn't be compiled aren't."
 	  (comp-dec-stack)
 	  (if (consp (cdr subl))
 	      ;; Something besides the condition
-	      (if (consp (cdr form))
+	      (if (cdr form)
 		  ;; This isn't the last condition list
 		  (progn
 		    (comp-compile-jmp op-jn next-label)
@@ -671,38 +671,17 @@ that files which shouldn't be compiled aren't."
 		(comp-compile-body (cdr subl))
 		(comp-dec-stack)
 		(setq need-trailing-nil nil))
-	    (comp-compile-jmp op-jtp end-label))))
+	    ;; No action to take
+	    (if (cdr form)
+		;; This isn't the last condition list
+		(comp-compile-jmp op-jtp end-label)
+	      ;; This is the last condition list, since there's no
+	      ;; action to take, just fall out the bottom, with the
+	      ;; condition as value.
+	      (setq need-trailing-nil nil)))))
       (setq form (cdr form)))
     (when need-trailing-nil
       (comp-write-op op-nil))
-    (comp-inc-stack)
-    (comp-set-label end-label)))
-
-(put 'or 'compile-fun 'comp-compile-or)
-(defun comp-compile-or (form)
-  (let
-      ((end-label (comp-make-label)))
-    (setq form (cdr form))
-    (while (consp form)
-      (comp-compile-form (car form))
-      (comp-dec-stack)
-      (when (cdr form)
-	(comp-compile-jmp op-jtp end-label))
-      (setq form (cdr form)))
-    (comp-inc-stack)
-    (comp-set-label end-label)))
-
-(put 'and 'compile-fun 'comp-compile-and)
-(defun comp-compile-and (form)
-  (let
-      ((end-label (comp-make-label)))
-    (setq form (cdr form))
-    (while (consp form)
-      (comp-compile-form (car form))
-      (comp-dec-stack)
-      (when (cdr form)
-	(comp-compile-jmp op-jnp end-label))
-      (setq form (cdr form)))
     (comp-inc-stack)
     (comp-set-label end-label)))
 
