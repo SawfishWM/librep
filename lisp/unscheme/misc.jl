@@ -40,8 +40,10 @@
 	    write display newline write-char
 	    load %load-suffixes)
 
-  (open rep
-	rep.data.datums)
+    ((open rep
+	   rep.io.files
+	   rep.data.datums)
+     (access rep.io.streams))
 
 ;;; control features
 
@@ -97,8 +99,8 @@
 	  (proc file)
 	(close-file file))))
 
-  (define input-port? input-stream-p)
-  (define output-port? output-stream-p)
+  (define input-port? rep.io.streams#input-stream-p)
+  (define output-port? rep.io.streams#output-stream-p)
 
   (define (current-input-port) standard-input)
   (define (current-output-port) standard-output)
@@ -126,35 +128,36 @@
 ;;; input
 
   (define eof-object (make-datum nil 'scheme-eof-object))
-  (define-datum-printer 'scheme-eof-object (lambda (x s)
-					     (rep#write s "#<scheme-eof>")))
+  (define-datum-printer 'scheme-eof-object
+			(lambda (x s)
+			  (rep.io.streams#write s "#<scheme-eof>")))
 
   (define (read #!optional port)
     (condition-case nil
-	(rep#read port)
+	(rep.io.streams#read port)
       (end-of-stream eof-object)))
 
   (define (read-char #!optional port)
-    (or (rep#read-char (or port standard-input)) eof-object))
+    (or (rep.io.streams#read-char (or port standard-input)) eof-object))
 
   (define (peek-char #!optional port)
-    (or (rep#peek-char (or port standard-input)) eof-object))
+    (or (rep.io.streams#peek-char (or port standard-input)) eof-object))
 
   (define eof-object? (lambda (obj) (eq obj eof-object)))
 
 ;;; output
 
   (define (write obj #!optional port)
-    (format (or port standard-output) "%S" obj))
+    (rep.io.streams#format (or port standard-output) "%S" obj))
 
   (define (display obj #!optional port)
-    (format (or port standard-output) "%s" obj))
+    (rep.io.streams#format (or port standard-output) "%s" obj))
 
   (define (newline #!optional port)
-    (rep#write (or port standard-output) #\newline))
+    (rep.io.streams#write (or port standard-output) #\newline))
 
   (define (write-char char #!optional port)
-    (rep#write (or port standard-output) char))
+    (rep.io.streams#write (or port standard-output) char))
 
 ;;; system interface
 
