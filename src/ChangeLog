@@ -1,3 +1,8 @@
+2000-01-30  John Harper  <john@dcs.warwick.ac.uk>
+
+	* continuations.c: removed unused STACK_SLOP definition,
+	removed extra call to FLUSH_REGISTER_WINDOWS
+
 2000-01-28  John Harper  <john@dcs.warwick.ac.uk>
 
 	* main.c (rep_init_from_dump): find the stack base by looking
