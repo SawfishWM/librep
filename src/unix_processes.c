@@ -792,15 +792,16 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 			   flags won't get set until the _orphan_ quits.
 
 			   Solution: Check for process exit here. If it
-			   has exited, allow a few more attempts to read
-			   input, before breaking the loop. */
+			   has exited, allow a few more timeouts, before
+			   breaking the loop. */
 
-			if(exited && ++post_exit_count > 2)
+			if(exited && number == 0 && ++post_exit_count > 2)
 			    break;
 
-			if(got_sigchld && waitpid(pr->pr_Pid,
-						  &pr->pr_ExitStatus,
-						  WNOHANG) == pr->pr_Pid)
+			if(!exited && got_sigchld
+			   && waitpid(pr->pr_Pid,
+				      &pr->pr_ExitStatus,
+				      WNOHANG) == pr->pr_Pid)
 			    exited = TRUE;
 		    }
 		    if(!exited)
