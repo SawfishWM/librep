@@ -288,6 +288,10 @@
   (put 'define-structure 'rep-compile-fun compile-define-structure)
   (put 'structure-ref 'rep-compile-fun compile-structure-ref)
 
+  (defun compile-declare (form)
+    (note-declaration (cdr form)))
+  (put 'declare 'rep-compile-fun compile-declare)
+
   (defun compile-quote (form)
     (compile-constant (car (cdr form))))
   (put 'quote 'rep-compile-fun compile-quote)
