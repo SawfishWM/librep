@@ -179,6 +179,50 @@
 
   (put '\#cond 'scheme-compile-fun (get 'cond 'rep-compile-fun))
 
+  ;; adapted from rep.vm.compiler.rep
+  (defun compile-case (form &optional return-follows)
+    (let
+	((end-label (make-label)))
+      (setq form (cdr form))
+      (unless form
+	(compiler-error "No key value in case statement"))
+      ;; XXX if key is constant optimise case away..
+      (compile-form-1 (car form))
+      (setq form (cdr form))
+      (while (consp form)
+	(unless (consp form)
+	  (compiler-error "Badly formed clause in case statement"))
+	(let
+	    ((cases (caar form))
+	     (forms (cdar form))
+	     (next-label (make-label)))
+	  (cond ((consp cases)
+		 (emit-insn (bytecode dup))
+		 (increment-stack)
+		 (if (consp (cdr cases))
+		     ;; >1 possible case
+		     (progn
+		       (compile-constant cases)
+		       (emit-insn (bytecode memql)))
+		   ;; only one case, use eql
+		   (compile-constant (car cases))
+		   (emit-insn (bytecode eql)))
+		 (decrement-stack)
+		 (emit-jmp-insn (bytecode jn) next-label)
+		 (decrement-stack))
+		((not (eq cases 'else))
+		 (compiler-error "Badly formed clause in case statement")))
+	  (compile-body forms return-follows)
+	  (decrement-stack)
+	  (emit-jmp-insn (bytecode jmp) end-label)
+	  (fix-label next-label)
+	  (setq form (cdr form))))
+      (increment-stack)
+      (fix-label end-label)
+      (emit-insn (bytecode swap))
+      (emit-insn (bytecode pop))))
+  (put 'case 'scheme-compile-fun compile-case)
+
   (defun do-predicate (form)
     (let* ((rep-fun (or (get (car form) 'scheme-compile-rep) (car form)))
 	   (rep-compiler (get rep-fun 'rep-compile-fun)))
