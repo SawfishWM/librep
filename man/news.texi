@@ -4,6 +4,46 @@
 @cindex News
 
 
+@unnumberedsec 0.12.4
+
+@itemize @bullet
+
+@item Support building without GNU MP, @samp{--without-gmp} option to
+configure. Use @code{long long} for non-fixnum integers (promote to
+floats when out of range); no exact rationals. There's also an option
+to disable continuations/threading (@samp{--disable-continuations})
+
+@item Sanitized function inlining:
+
+@itemize @minus
+@item Use @code{(declare (inline @var{names}@dots{}))} to tell the
+compiler that it might be useful to inline the named functions
+
+@item Don't even think about inlining across module/file boundaries
+(for now anyway)
+@end itemize
+
+@item Cleaned up the @code{gaol} module. Interface is essentially:
+@code{gaol-define}, @code{gaol-define-special},
+@code{gaol-define-file-handler}. Added @code{gaol-open} to import
+complete modules. Still supports old interface
+
+@item Be a lot more efficient when printing quoted strings and symbol
+names (for some streams there used to be a system-call per character!)
+Also, when quoting weird symbol names, be more intelligent
+
+@item Removed code to autoload from modules (which didn't really work
+anyway)
+
+@item Be more intelligent about deciding when to flush the module cache
+
+@item Build fixes for IRIX (David Kaelbling)
+
+@item Other miscellaneous bug-fixes and performance tweaks
+
+@end itemize
+
+
 @unnumberedsec 0.12.3
 
 @itemize @bullet

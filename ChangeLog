@@ -1,5 +1,7 @@
 2000-07-20  John Harper  <john@dcs.warwick.ac.uk>
 
+	* configure.in: version 0.12.4, bumped ${librevision}
+
 	* Makedefs.in: set libtool mode explicitly
 	* rules.mk.sh: set libtool mode explicitly; include -rpath
 	option

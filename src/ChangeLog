@@ -1,5 +1,7 @@
 2000-07-20  John Harper  <john@dcs.warwick.ac.uk>
 
+	* version 0.12.4
+
 	* Makefile.in: include $(LIBS) and $(GMP_LIBS) when linking
 	librep.la
 

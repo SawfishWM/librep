@@ -1,5 +1,7 @@
 2000-07-20  John Harper  <john@dcs.warwick.ac.uk>
 
+	* version 0.12.4
+
 	* rep-repl.jl (repl): fixed bug of not prompting for
 	continuation lines when a whole form isn't read
 
