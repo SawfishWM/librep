@@ -1,3 +1,36 @@
+2000-08-27    <john@dcs.warwick.ac.uk>
+
+	* lispmach.h: implemented OP_FOO_ARG_ changes; optimized gc
+	protection handling; fixed bug of exiting the vm and possibly
+	gc'ing with undefined protection
+
+	* bytecodes.h: renamed OP_FOO_ARG_WITH_DEFAULT as OP_FOO_ARG_.
+	These now leave one or two values on the stack, first a bool
+	signifying whether the parameter was defined or not, and, if it
+	was, its value
+
+	* lisp.c (bind_lambda_list_1): now evaluates default values of
+	#!optional and #!key arguments (in the environment of the
+	closure being called, _without_ any of the bindings currently
+	being instantiated)
+
+	* tables.c (Ftable_bound_p): new function
+
+2000-08-25  John Harper  <john@dcs.warwick.ac.uk>
+
+	* numbers.c (rep_print_number_to_string): minor changes to
+	non-gmp bignum case
+
+2000-08-24  John Harper  <john@dcs.warwick.ac.uk>
+
+	* main.c (rep_top_level_recursive_edit): new function, called
+	by apps as their top-level event-loop. Calls recursive-edit but
+	with extra protection for unhandled exceptions that shouldn't
+	terminate the program
+
+	* symbols.c (Fdefvar): only eval the value form if setting the
+	value of the special variable
+
 2000-08-18  John Harper  <john@dcs.warwick.ac.uk>
 
 	* continuations.c (thread_suspend): POLL-ARG is now `void *'

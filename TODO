@@ -10,11 +10,7 @@ and more long-term ideas are marked -
 Outstanding bugs
 ================
 
- ! can throw out the top of the program in sawfish/jade
-
  ! #!key params can't be inlined by the compiler
-
- ! (defvar SYM FORM) always evaluates FORM, even if SYM is bound
 
  ! (define foo bar "Doc") should do something with "Doc"
 
@@ -47,18 +43,12 @@ Outstanding bugs
 
  ! doesn't handle NaN or Inf in floats properly (at all)
 
- ! ((call/cc call/cc) (call/cc call/cc)) can't be interrupted, and it
-   eats all memory
-
  ! Putting a breakpoint in a .jaderc file doesn't work correctly; the
    debugger is entered, but the commands don't work
 
  ! It's relatively easy to blow the stack when regexp matching. Try
    searching for `/\*(.|\n)*\*/' in a C file with reasonable large
    comments.
-
- ! If a compiled file FOO.jlc is made from source file FOO, but FOO is
-   newer, load doesn't notice, and loads the invalid FOO.jlc
 
  ! if load can't find the file, its error message is confusing
    (especially if the named file does exist, but no suffixed file
@@ -67,15 +57,6 @@ Outstanding bugs
  ! non-fixnum numbers can't be dumped / dump totally broken re: modules
 
  ! `random' only accepts its range as a fixnum
-
- ! unwind-protect may not evaluate it's cleanup forms, consider:
-
-   (call/cc (lambda (exit)
-	      (unwind-protect
-		  (exit)
-		(message "Foo!"))))
-   
-   Just call this a [mis-] feature for now..
 
  ! it's legal to do (set foo 42) where the contents of foo has a
    lexical binding
@@ -89,8 +70,9 @@ Outstanding bugs
 
  + deprecated:
 
-   * 0xNN and 0NN integer syntaxes (0.13+)
-   * define-value
+   * 0xNN and 0NN integer syntaxes [0.13+]
+   * define-value [0.13+]
+   * &optional and &rest (replaced by #!optional and #!rest) [0.13+]
 
 
 General programming tasks:
@@ -187,7 +169,8 @@ General programming tasks:
 
    1. handle constant keys
 
-   2. optimize the search
+   2. optimize the search (binary search if all clauses have same type
+      and are orderable?)
 
  - Implement weak-pairs or equivalent
 

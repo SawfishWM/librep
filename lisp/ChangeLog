@@ -1,3 +1,22 @@
+2000-08-27    <john@dcs.warwick.ac.uk>
+
+	* rep/vm/compiler/inline.jl, rep/vm/compiler/basic.jl: now
+	evaluate default values of #!optional and #!key parameters
+
+	* rep/vm/disassembler.jl, rep/vm/bytecode-defs.jl:
+	foo-arg-with-default is now foo-arg*, these now push a variable
+	number of values
+
+	* rep/data.jl (remove, remq): new functions
+
+2000-08-25  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep/vm/compiler/rep.jl (pass-1): recursively flatten `progn'
+	forms (correctly now)
+
+	* rep/vm/compiler/utils.jl (compiler-constant-p,
+	compiler-constant-value): handle keyword symbols
+
 2000-08-21  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep/i18n/xgettext.jl (scan): scan bodies of define-structure

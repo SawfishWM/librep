@@ -1546,6 +1546,16 @@ references the mid-point of @code{baz} since the last list in an @code{append}
 call is not copied.
 @end defun
 
+@defun remove elt list
+Return a copy of @var{list}, with all elements the same as @var{elt}
+discarded (using the @code{equal} function to compare).
+@end defun
+
+@defun remq elt list
+Similar to the @code{remove} function, except that comparisons are made
+using @code{eq}.
+@end defun
+
 @defun reverse list
 This function returns a new list; it is made from the elements of the list
 @var{list} in reverse order. Note that this function does not alter its
@@ -3472,23 +3482,30 @@ are interpreted as follows:
 @item #!optional
 All variables following this keyword are considered @dfn{optional} (all
 variables before the first keyword are @dfn{required}: an error will be
-signalled if a required argument is undefined in a function call). If
-an optional argument is undefined it will be bound to a false value.
+signalled if a required argument is undefined in a function call).
 
-Note that optional arguments must be specified if a later optional
-argument is also specified. Use @code{nil} to explicitly show that an
-optional argument is undefined.
+@var{optional-parameters} may either be of the form @code{@var{symbol}}
+or of the form @code{(@var{symbol} @value{default})}. If no argument is
+supplied for this parameter the @var{default} form is evaluated to give
+the bound value@footnote{The @var{default} form is evaluated in the
+environment of the closure being called, but without any of the
+bindings created by the lambda expression.}. If no @var{default} form
+is given, then the variable is bound to a false value.
 
-For example, if a function @code{foo} takes two optional arguments and
-you want to call it with only the second argument defined, the first
-argument must be specified as @code{nil} to ensure that the correct
-argument value is bound to the correct variable.
+Note that optional parameters must be specified if a later parameter is
+also specified.
 
 @lisp
-(defun foo (#!optional arg-1 arg-2)
-  @dots{}
-
-(foo nil arg-2-value)   ;Leave the first argument undefined
+((lambda (#!optional a b) (list a b)))
+    @result{} (() ())
+((lambda (#!optional a b) (list a b)) 1)
+    @result{} (1 ())
+((lambda (#!optional a b) (list a b)) nil 1)
+    @result{} (() 1)
+((lambda (#!optional (a 1)) (list a)))
+    @result{} (1)
+((lambda (#!optional (a 1)) (list a)) 2)
+    @result{} (2)
 @end lisp
 
 @item #!key
@@ -3497,6 +3514,11 @@ keyword are keyword parameters. The values bound to these parameters
 when the function is called are determined not by position (as with
 normal parameters), but by being marked by a preceding keyword symbol.
 Keyword symbols have the syntax @samp{#:@var{symbol}}.
+
+As with optional parameters, default values may be supplied through the
+use of the @code{(@var{symbol} @var{default})} syntax. If no default
+value is given and no keyword argument of the specified kind is
+available, the variable is bound to a false value.
 
 For example, the lambda list @code{(a #!key b c)} accepts one required
 argument, and two optional keyword arguments. The variable @code{a}
@@ -4160,14 +4182,14 @@ Two special forms are used to define modules, one for anonymous
 modules, one for named modules. When storing modules in files, each
 file often contains a single instance of one of these forms.
 
-@defmac structure interface config body @dots{}
-@defmacx define-structure name interface config body @dots{}
+@defmac structure interface config body@dots{}
+@defmacx define-structure name interface config body@dots{}
 These special forms each create a new module with interface
 @var{interface} (using the syntax described in the previous section),
 and configuration @var{config}.
 
 After configuring the module as specified, the sequence of forms
-@var{body @dots{}} is evaluated; it should include the definitions
+@var{body@dots{}} is evaluated; it should include the definitions
 required to fulfil the interface that the module has promised to
 exhibit.
 
@@ -4223,12 +4245,12 @@ It is also possible to export multiple views of a single underlying set
 of bindings, by using the @code{define-structures} form to create a
 number of modules.
 
-@defmac define-structures ((name interface) @dots{}) config body @dots{}
+@defmac define-structures ((name interface) @dots{}) config body@dots{}
 Create a module for each @code{(@var{name} @var{interface})} pair. The
 module is called @var{name} and exports the interface defined by
 @var{interface}.
 
-The @var{config} and @var{body @dots{}} forms are as in
+The @var{config} and @var{body@dots{}} forms are as in
 @code{define-structure}.
 
 Here is a trivial example:
@@ -5562,15 +5584,15 @@ interpreted counterparts in all areas (space and time). For example:
 user> (define (fib n) (if (<= n 2) 1 (+ (fib (- n 1)) (fib (- n 2)))))
 user> ,time (fib 30)
 832040
-Elapsed: 48.472671 seconds
+Elapsed: 17.05572 seconds
 user> ,compile
 user> ,time (fib 30)
 832040
-Elapsed: 5.322098 seconds
+Elapsed: 1.479007 seconds
 @end example
 
 @noindent
----the compiled version executes over nine times faster than the
+---the compiled function is over an order of magnitude faster than the
 interpreted version.
 
 @menu
@@ -5929,13 +5951,15 @@ When reading the output of the disassembler bear in mind that
 calculations are performed on the stack, the value left on the stack
 when the piece of code ends is the value of the byte-code form.
 
-Here is a small example. Consider the following function definition:
+Here is a small example. Consider the @code{fib} function given at the
+start of this section:
 
 @lisp
-(defun foo (x y)
-  (if (> x y)
-      (- x y)
-    (- y x)))
+(define (fib n)
+  (if (<= n 2)
+      1
+    (+ (fib (- n 1))
+       (fib (- n 2)))))
 @end lisp
 
 @noindent
@@ -5943,27 +5967,29 @@ After compilation and disassembly, the following is produced (but
 without the annotations):
 
 @example
-Disassembly of function foo:
+Disassembly of #<closure fib>:
 
-Arguments: (x y)
-Interactive spec: nil
-Doc string: nil
-[Uses 14 code bytes, 0 constants, and 2 stack slots]
+21 bytes, 1 constants, and (5,0,1) stack slots
 
-Disassembly:
-
-0		refn	#1      ;load x onto the stack
-1		refn	#0      ;load y onto the stack
-2		gt              ;greater-than comparison
-3		jn	10      ;if (x > y) is nil goto 12
-6		refn	#1
-7		refn	#0
-8		sub             ;x - y on stack
-9		return          ;return x - y
-10		refn	#0
-11		refn	#1
-12		sub
-13		return          ;return y - x
+0		required-arg            ;requires a single parameter
+1		dup
+2		slot-set #0             ;store it in register 0 (r0)
+3		pushi	2
+4		le
+5		jn	10              ;unless r0 <= 2, goto 10
+8		pushi	1
+9		return                  ;else, return 1
+10		refg	[0] fib
+11		slot-ref #0
+12		dec
+13		call	#1              ;push result of (fib (1- n))
+14		refg	[0] fib
+15		slot-ref #0
+16		pushi	2
+17		sub
+18		call	#1              ;push (fib (- n 2))
+19		add
+20		return                  ;return the sum of the two calls
 @end example
 
 
@@ -6187,6 +6213,11 @@ prevent it being garbage collected.
 @defun table-ref table key
 Return the value stored in hash table @var{table} indexed by object
 @var{key}. Returns false if no such value exists.
+@end defun
+
+@defun table-bound-p table key
+Returns true if the hash table @var{table} contains a value associated
+with @var{key}.
 @end defun
 
 @defun table-set table key value
