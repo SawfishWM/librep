@@ -1,25 +1,24 @@
-# Makefile.in for Jade's Lisp files
+# Makefile.in for rep's Lisp files
 # Copyright (C) 1998 John Harper <john@dcs.warwick.ac.uk>
 # $Id$
 #
-# This file is part of Jade.
+# This file is part of rep.
 #
-# Jade is free software; you can redistribute it and/or modify it
+# rep is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2, or (at your option)
 # any later version.
 #
-# Jade is distributed in the hope that it will be useful, but
+# rep is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Jade; see the file COPYING.  If not, write to
+# along with rep; see the file COPYING.  If not, write to
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-jade_prog = ../src/rep
-
+rep_prog = ../libtool --mode=execute -dlopen ../src/libsdbm.la ../src/rep
 COMPILE_ENV = REPLISPDIR=. REPDOCFILE=../DOC
 
 INSTALL_FILES = *.jl *.jlc
@@ -27,9 +26,9 @@ INSTALL_FILES = *.jl *.jlc
 all : lisp
 
 lisp :
-	$(COMPILE_ENV) $(jade_prog) --batch --no-rc \
+	$(COMPILE_ENV) $(rep_prog) --batch --no-rc \
 	  -l compiler -f compile-compiler
-	$(COMPILE_ENV) $(jade_prog) --batch --no-rc -f compile-lisp-lib
+	$(COMPILE_ENV) $(rep_prog) --batch --no-rc -f compile-lisp-lib
 
 install : all installdirs
 	for f in $(INSTALL_FILES); do \
