@@ -143,7 +143,8 @@
 #define OP_THROW 0x74			/* throw_val = (cons pop[1] pop[2]),
 					   goto error-handler */
 #define OP_BINDERR 0x75			/* bind (cons pop[1] SP) */
-#define OP_UNUSED1 0x76
+#define OP_RETURN 0x76
+#define OP_UNBINDALL 0x77
 #define OP_BOUNDP 0x78			/* call-1 boundp */
 #define OP_SYMBOLP 0x79			/* push (symbolp pop[1]) */
 #define OP_GET 0x7a			/* call-2 get */
