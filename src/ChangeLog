@@ -1,5 +1,8 @@
 2000-02-25  John Harper  <john@dcs.warwick.ac.uk>
 
+	* rep.h.in: added rep_long_long define, will be `long long' if
+	available, `long' otherwise
+
 	* rep_lisp.h: new type rep_Number, only the bits in the car are
 	publicly accessible
 	* numbers.c: new file, handles all numeric stuff

@@ -358,17 +358,12 @@ extern repv Fchar_upcase(repv);
 extern repv Fchar_downcase(repv);
 
 /* from numbers.c */
-extern repv rep_coerce (repv in, int type);
-extern repv rep_promote_to (repv in, int type);
-extern void rep_promote (repv *n1p, repv *n2p);
-extern void rep_promote_left (repv *n1p, repv *n2p);
-extern void rep_promote_right (repv *n1p, repv *n2p);
-extern repv rep_maybe_demote (repv in);
-extern repv rep_coerce (repv in, int type);
 extern repv rep_make_long_uint (u_long in);
 extern repv rep_make_long_int (long in);
 extern u_long rep_get_long_uint (repv in);
 extern u_long rep_get_long_int (repv in);
+extern repv rep_make_longlong_int (rep_long_long in);
+extern rep_long_long rep_get_longlong_int (repv in);
 extern repv rep_make_float (double in, rep_bool force);
 extern double rep_get_float (repv in);
 extern repv rep_number_foldl (repv args, repv (*op)(repv, repv));
