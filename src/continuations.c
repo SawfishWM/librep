@@ -131,12 +131,6 @@ DEFSYM(continuation, "continuation");
 /* used while longjmp'ing to save accessing a local variable */
 static rep_continuation *invoked_continuation;
 
-/* Extra space (in bytes) to allow at the top of the stack. This
-   seems to help on sparcs at least, flushing reg. windows stomps
-   on some of the stack I guess (but how much of the stack? dan thinks
-   each window has 24 registers, each 64 bits, so 192 bytes?) */
-#define STACK_SLOP 256
-
 /* Approx. number of extra bytes of stack per recursion */
 #define STACK_GROWTH 512
 
@@ -177,7 +171,7 @@ grow_stack_and_invoke (rep_continuation *c, char *water_mark)
 	grow_stack_and_invoke (c, (char *) growth);
 #endif
 
-    FLUSH_REGISTER_WINDOWS;		/* XXX necessary? */
+    FLUSH_REGISTER_WINDOWS;
 
     /* stack's big enough now, so reload the saved copy somewhere
        below the current position */
@@ -188,7 +182,6 @@ grow_stack_and_invoke (rep_continuation *c, char *water_mark)
     memcpy (rep_stack_bottom, c->stack_copy, c->stack_size);
 #endif
 
-    FLUSH_REGISTER_WINDOWS;		/* XXX necessary? */
     longjmp (c->jmpbuf, 1);
 }
 
