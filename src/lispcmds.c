@@ -1643,61 +1643,68 @@ loaded and a warning is displayed.
 research:
     while(rep_NILP(name) && rep_CONSP(path))
     {
-	dir = Ffile_name_as_directory(rep_STRINGP(rep_CAR(path))
-					 ? rep_CAR(path)
-					 : rep_null_string());
-	if(dir == rep_NULL || !rep_STRINGP(dir))
-	    goto path_error;
-
-	if(!no_suffix_p)
+	if (rep_STRINGP (rep_CAR(path)))
 	{
-	    repv tem;
-	    static char *suffixes[3] = { ".jl", ".jlc" };
-	    int i = 1;
-	    if (!trying_dl && interp_mode)
-		i = 0;
-	    for(; i >= 0; i--)
+	    dir = Fexpand_file_name (file, rep_CAR(path));
+	    if(dir == rep_NULL || !rep_STRINGP(dir))
+		goto path_error;
+
+	    if(!no_suffix_p)
 	    {
+		repv tem;
+		static char *suffixes[3] = { ".jl", ".jlc" };
+		int i = 1;
+		if (!trying_dl && interp_mode)
+		    i = 0;
+		for(; i >= 0; i--)
+		{
 #ifdef HAVE_DYNAMIC_LOADING
-		if (trying_dl)
-		{
-		    if (i == 1)
-			try = rep_concat3(rep_STR(dir), rep_STR(file), ".la");
-		    else
-			try = rep_concat4(rep_STR(dir), "lib", rep_STR(file), ".la");
-		}
-		else
-#endif
-		    try = rep_concat3(rep_STR(dir), rep_STR(file), suffixes[i]);
-		tem = load_file_exists_p (try);
-		if(!tem)
-		    goto path_error;
-		if(!rep_NILP(tem))
-		{
-		    if(!rep_NILP(name))
+		    if (trying_dl)
 		    {
-			if(rep_file_newer_than(try, name))
+			if (i == 1)
+			    try = rep_concat2(rep_STR(dir), ".la");
+			else
 			{
-			    if (rep_message_fun != 0)
-				(*rep_message_fun)(rep_messagef,"Warning: %s newer than %s, using %s", rep_STR(try), rep_STR(name), rep_STR(try));
-			    name = try;
+			    try = (Fexpand_file_name
+				   (rep_concat3 ("lib", rep_STR(file), ".la"),
+				    rep_CAR(path)));
 			}
 		    }
 		    else
-			name = try;
+#endif
+			try = rep_concat2(rep_STR(dir), suffixes[i]);
+
+		    if (try == rep_NULL || !rep_STRINGP (try))
+			goto path_error;
+
+		    tem = load_file_exists_p (try);
+		    if(!tem)
+			goto path_error;
+		    if(tem != Qnil)
+		    {
+			if(name != Qnil)
+			{
+			    if(rep_file_newer_than(try, name))
+			    {
+				if (rep_message_fun != 0)
+				    (*rep_message_fun)(rep_messagef,"Warning: %s newer than %s, using %s", rep_STR(try), rep_STR(name), rep_STR(try));
+				name = try;
+			    }
+			}
+			else
+			    name = try;
+		    }
 		}
 	    }
-	}
-	if(rep_NILP(name))
-	{
-	    /* Try without a suffix */
-	    repv tem;
-	    try = rep_concat2(rep_STR(dir), rep_STR(file));
-	    tem = load_file_exists_p (try);
-	    if(!tem)
-		goto path_error;
-	    if(!rep_NILP(tem))
-		name = try;
+	    if(name == Qnil)
+	    {
+		/* Try without a suffix */
+		repv tem = load_file_exists_p (dir);
+		if(!tem)
+		    goto path_error;
+		if(tem != Qnil)
+		    name = dir;
+	    }
 	}
 	path = rep_CDR(path);
 	rep_TEST_INT;
