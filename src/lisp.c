@@ -192,7 +192,7 @@ repv (*rep_bytecode_interpreter)(repv code, repv consts,
 struct rep_Call *rep_call_stack;
 
 /* Prevent infinite recursion */
-static int lisp_depth, max_lisp_depth = 500;
+int rep_lisp_depth, rep_max_lisp_depth = 500;
 
 /* Used to avoid costly interrupt checking too often */
 int rep_test_int_counter = 0;
@@ -949,7 +949,8 @@ rep_eval_lambda(repv lambdaExp, repv argList, rep_bool eval_args)
 	rep_PUSHGC(gc_lambdaExp, lambdaExp);
 	rep_PUSHGC(gc_argList, argList);
 	lambdaExp = rep_CDR(lambdaExp);
-	boundlist = rep_bind_lambda_list(rep_CAR(lambdaExp), argList, eval_args);
+	boundlist = rep_bind_lambda_list(rep_CAR(lambdaExp),
+					 argList, eval_args);
 	if(boundlist)
 	{
 	    rep_GC_root gc_boundlist;
@@ -1101,9 +1102,9 @@ rep_funcall(repv fun, repv arglist, rep_bool eval_args)
     }
 #endif
 
-    if(++lisp_depth > max_lisp_depth)
+    if(++rep_lisp_depth > rep_max_lisp_depth)
     {
-	lisp_depth--;
+	rep_lisp_depth--;
 	return Fsignal(Qerror, rep_LIST_1(rep_VAL(&max_depth)));
     }
 
@@ -1270,7 +1271,6 @@ again:
 	if (was_closed)
 	{
 	    repv boundlist;
-
 	    if (rep_bytecode_interpreter == 0)
 		goto invalid;
 
@@ -1301,7 +1301,7 @@ again:
 end:
     rep_POP_CALL(lc);
     rep_POPGC; rep_POPGC;
-    lisp_depth--;
+    rep_lisp_depth--;
     return result;
 }
 
@@ -2117,7 +2117,7 @@ This is intended to stop infinite recursion, if the default value of 250 is
 too small (you get errors in normal use) set it to something larger.
 ::end:: */
 {
-    return rep_handle_var_int(val, &max_lisp_depth);
+    return rep_handle_var_int(val, &rep_max_lisp_depth);
 }
 
 void
