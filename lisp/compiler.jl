@@ -616,6 +616,7 @@ that files which shouldn't be compiled aren't."
 	   (comp-defvars '())
 	   (comp-output-stream nil))
 	(comp-compile-form form)))
+    (comp-write-op op-return)
 
     ;; Now we have a [reversed] list of intermediate code
     (setq comp-intermediate-code (nreverse comp-intermediate-code))
