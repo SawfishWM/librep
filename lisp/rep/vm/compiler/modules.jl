@@ -81,14 +81,16 @@
 ;;; functions
 
   (define (find-structure name)
-    (or (intern-structure name)
-	(compiler-error "unable to fund module `%s'" name)))
+    (condition-case nil
+	(intern-structure name)
+      (file-error nil)))
 
   ;; return t if the module called STRUCT exports a variable called VAR
   (defun module-exports-p (struct var)
     (and (symbolp var)
 	 (cond ((symbolp struct)
-		(structure-exports-p (find-structure struct) var))
+		(let ((tem (find-structure struct)))
+		  (and tem (structure-exports-p tem var))))
 	       ((structurep struct)
 		(structure-exports-p struct var)))))
 

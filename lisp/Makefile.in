@@ -26,7 +26,7 @@ INSTALL_FILES = *.jl *.jlc
 INSTALL_DIRS := . rep rep rep/lang rep/vm rep/vm/compiler rep/io \
 	rep/io/file-handlers rep/io/file-handlers/remote rep/i18n \
 	rep/data rep/www rep/util rep/mail rep/threads rep/system \
-	rep/net rep/test scheme unscheme
+	rep/net rep/test rep/xml scheme unscheme
 
 all : lisp
 

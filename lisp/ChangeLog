@@ -1,3 +1,12 @@
+2002-06-22  John Harper  <jsh@unfactored.org>
+
+	* version 0.16.1
+
+	* Makefile.in: include rep/xml in installed modules
+
+	* rep/vm/compiler/modules.jl (find-structure): catch the error
+	that happens if the module can't be loaded and return nil
+
 2002-06-20  John Harper  <jsh@unfactored.org>
 
 	* version 0.16
