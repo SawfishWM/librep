@@ -319,7 +319,8 @@ read_symbol(repv strm, int *c_p)
 	{
 	case ' ':  case '\t': case '\n': case '\f':
 	case '(':  case ')':  case '[':  case ']':
-	case '\'': case '"':  case ';':
+	case '\'': case '"':  case ';':  case ',':
+	case '`':
 	    goto done;
 
 	case '\\':
