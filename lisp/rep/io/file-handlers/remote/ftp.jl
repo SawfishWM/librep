@@ -71,6 +71,10 @@ usernames. Only used when no username is given in a filename.")
   "Default username to use for FTP sessions when none is specified, either
 explicitly, or by the remote-ftp-host-user-alist variable.")
 
+(defvar remote-ftp-ls-format "ls \"-la %s\""
+  "FTP command format string to produce an `ls -l' format listing of the
+directory substituted for the single %s format specifier.")
+
 (defvar remote-ftp-sessions nil
   "List of FTP structures defining all running FTP sessions.")
 
@@ -111,7 +115,7 @@ These mean that the FTP process should (or already has) been killed.")
 (defvar remote-ftp-ls-l-type-alist '((?- . file) (?d . directory)
 				     (?l . symlink) (?p . pipe) (?s . socket)
 				     (?b . device) (?c . device))
-  "Alist associated characters in the first column of `ls -l' output with
+  "Alist associating characters in the first column of `ls -l' output with
 file types.")
 
 
@@ -431,7 +435,7 @@ file types.")
       (aset session remote-ftp-cached-dir 'busy)
       (aset session remote-ftp-dircache nil)
       (aset session remote-ftp-callback 'remote-ftp-dircache-callback)
-      (remote-ftp-command session 'dircache "ls -la %s" dir)
+      (remote-ftp-command session 'dircache remote-ftp-ls-format dir)
       (aset session remote-ftp-cached-dir dir)
       (aset session remote-ftp-callback nil))
     (catch 'return
