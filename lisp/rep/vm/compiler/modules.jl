@@ -37,9 +37,11 @@
 					   compile-structure
 					   compile-define-structure
 					   compile-structure-ref
-					   call-with-module-declared)
+					   call-with-module-declared
+					   compile-module)
   (open rep
 	structure-internals
+	compiler
 	compiler-basic
 	compiler-bindings
 	compiler-const
@@ -374,4 +376,15 @@
       (compile-constant struct)
       (compile-constant var)
       (emit-insn (bytecode structure-ref))
-      (decrement-stack))))
+      (decrement-stack)))
+
+
+;;; exported top-level functions
+
+  (defun compile-module (struct)
+    "Compiles all function bindings in the module named STRUCT."
+    (let ((struct (%intern-structure struct)))
+      (when struct
+	(%structure-walk (lambda (var value)
+			   (when (closurep value)
+			     (compile-function value))) struct)))))
