@@ -1,3 +1,27 @@
+1999-07-06  John Harper  <john@dcs.warwick.ac.uk>
+
+	* remote-rep.jl: new file, mostly copied from remote-ftp, but
+	uses the rep-remote program (rsh'd onto the remote host) for
+	all file access. Supports all file operations (unlike ftp)
+
+	* remote-ftp.jl (remote-ftp-host-user-alist,
+	remote-ftp-default-user): deleted
+	* remote.jl (remote-host-user-alist, remote-default-user): new
+	variables
+	(remote-get-user): new function
+
+1999-07-04  John Harper  <john@dcs.warwick.ac.uk>
+
+	* tilde.jl, remote-ftp.jl: handle new operations read-symlink
+	and make-symlink (actually, ftp doesn't do make-symlink)
+
+	* compiler.jl (compile-file): preserve `#! ... !#' at start of
+	file if present
+
+1999-07-02  John Harper  <john@dcs.warwick.ac.uk>
+
+	* remote-ftp.jl (remote-ftp-empty-cache): new command
+
 1999-06-09  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep.jl (rep): don't use `read' to read an entire form at

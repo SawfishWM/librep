@@ -87,6 +87,8 @@ extern repv Fset_file_modes(repv file, repv modes);
 extern repv Ffile_modes_as_string(repv file);
 extern repv Ffile_modtime(repv file);
 extern repv Fdirectory_files(repv dir);
+extern repv Fread_symlink(repv file);
+extern repv Fmake_symlink(repv file, repv contents);
 extern repv Fstdin_file(void);
 extern repv Fstdout_file(void);
 extern repv Fstderr_file(void);
@@ -344,6 +346,7 @@ extern int rep_stream_puts(repv, void *, int, rep_bool);
 extern int rep_stream_read_esc(repv, int *);
 extern repv Fwrite(repv stream, repv data, repv len);
 extern repv Fread_char(repv stream);
+extern repv Fread_chars(repv stream, repv count);
 extern repv Fread_line(repv stream);
 extern repv Fcopy_stream(repv source, repv dest);
 extern repv Fread(repv);
@@ -495,6 +498,8 @@ extern repv rep_set_file_modes(repv file, repv modes);
 extern repv rep_file_modes_as_string(repv file);
 extern repv rep_file_modtime(repv file);
 extern repv rep_directory_files(repv dir_name);
+extern repv rep_read_symlink (repv file);
+extern repv rep_make_symlink (repv file, repv contents);
 extern repv rep_getpwd(void);
 
 /* from unix_main.c */

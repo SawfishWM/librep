@@ -45,4 +45,7 @@
 (put 'rcp 'remote-backend 'remote-rcp-handler)
 (autoload 'remote-rcp-handler "remote-rcp")
 (autoload 'pwd-prompt "pwd-prompt")
+(autoload 'remote-rep-add-passwd "remote-rep" t)
+(put 'rep 'remote-backend 'remote-rep-handler)
+(autoload 'remote-rep-handler "remote-rep")
 ;;; ::autoload-end::

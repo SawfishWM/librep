@@ -1,3 +1,25 @@
+1999-07-06  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_processes.c: new process-connection-type: `socketpair'
+
+	* unix_main.c (wait_for_input): fixed for when input doesn't
+	arrive within the first second (the input fdset used to be
+	munged)
+	(usr1_signal_handler): connected to SIGUSR1, outputs the Lisp
+	backtrace when called
+
+	* rep-remote.c: new program, provides a method of accessing
+	files on a remote host (using the remote-rep.jl Lisp backend)
+
+1999-07-05  John Harper  <john@dcs.warwick.ac.uk>
+
+	* streams.c (Fread_chars): new function
+
+1999-07-04  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_files.c, files.c: new file operations: read-symlink and
+	make-symlink
+
 1999-06-29  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_processes.c (rep_proc_init): don't create a new process
