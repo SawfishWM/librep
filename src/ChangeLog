@@ -1,3 +1,7 @@
+2000-03-07  John Harper  <john@dcs.warwick.ac.uk>
+
+	* streams.c (Fformat): implemented the `+' and ` ' flags
+
 2000-03-05  John Harper  <john@dcs.warwick.ac.uk>
 
 	* version 0.11
