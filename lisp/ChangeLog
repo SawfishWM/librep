@@ -1,3 +1,8 @@
+Fri Jun 19 16:51:54 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* remote-ftp.jl (remote-ftp-output-filter): only display hash
+	characters when remote-ftp-display-progress is t
+
 Wed Jun 17 17:11:10 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* isearch.jl (isearch-push-match): small fix
