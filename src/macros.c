@@ -50,50 +50,46 @@ DEFUN("macroexpand", Fmacroexpand, Smacroexpand,
 ::doc:macroexpand::
 macroexpand FORM [ENVIRONMENT]
 
-If FORM is a macro call, expand it until it isn't. If ENVIRONMENT is
-specified it is an alist of `(MACRO-NAME . DEFINITION)'.
+If FORM is a macro call, expand it until it isn't.
+
+If ENVIRONMENT is specified it is a function to call to do the actual
+expansion. Any macro expanders recursively calling macroexpand should
+pass the value of the `macro-environment' variable to this parameter.
 ::end:: */
 {
-    repv input = form, car, bindings;
-    rep_GC_root gc_input, gc_form, gc_env, gc_car, gc_bindings;
+    repv input = form, car, bindings, ptr;
+    rep_GC_root gc_input, gc_form, gc_car, gc_bindings;
 
     if (!rep_CONSP (form))
 	return form;
 
-    if (env == Qnil)
+    if (env != Qnil)
+	return rep_call_lisp1 (env, form);
+
+    /* Search the history */
+    ptr = history[HIST_HASH_FN(form)];
+    while (ptr != 0)
     {
-	/* Search the history */
-	repv ptr = history[HIST_HASH_FN(form)];
-	while (ptr != 0)
+	if (rep_CAAR (ptr) == form)
 	{
-	    if (rep_CAAR (ptr) == form)
-	    {
-		macro_hits++;
-		return rep_CDAR (ptr);
-	    }
-	    ptr = rep_CDR (ptr);
+	    macro_hits++;
+	    return rep_CDAR (ptr);
 	}
-	macro_misses++;
+	ptr = rep_CDR (ptr);
     }
+    macro_misses++;
 
     rep_PUSHGC(gc_input, input);
     rep_PUSHGC(gc_form, form);
-    rep_PUSHGC(gc_env, env);
     rep_PUSHGC(gc_car, car);
 top:
     car = rep_CAR(form);
     if(rep_SYMBOLP(car))
     {
-	repv tmp;
-	if(env != Qnil && (tmp = Fassq(car, env)) && rep_CONSP(tmp))
-	    car = rep_CDR(tmp);
-	else
-	{
-	    car = Fsymbol_value (car, Qt);
-	    if (!rep_CONSP(car) || rep_CAR(car) != Qmacro)
-		goto end;
-	    car = rep_CDR(car);
-	}
+	car = Fsymbol_value (car, Qt);
+	if (!rep_CONSP(car) || rep_CAR(car) != Qmacro)
+	    goto end;
+	car = rep_CDR(car);
     }
     else if (rep_CONSP(car) && rep_CAR(car) == Qmacro)
 	car = rep_CDR(car);
@@ -101,7 +97,7 @@ top:
     if (Ffunctionp(car) == Qnil)
 	goto end;
 
-    bindings = rep_bind_symbol (Qnil, Qmacro_environment, env);
+    bindings = rep_bind_symbol (Qnil, Qmacro_environment, Qnil);
     rep_PUSHGC(gc_bindings, bindings);
     form = rep_funcall (car, rep_CDR(form), rep_FALSE);
     rep_POPGC;
@@ -109,9 +105,9 @@ top:
     if (form != rep_NULL && rep_CONSP (form))
 	goto top;
 end:
-    rep_POPGC; rep_POPGC; rep_POPGC; rep_POPGC;
+    rep_POPGC; rep_POPGC; rep_POPGC;
 
-    if (env == Qnil && form != rep_NULL)
+    if (form != rep_NULL)
     {
 	/* Cache for future use */
 	u_int hash = HIST_HASH_FN(input);
