@@ -1,3 +1,8 @@
+Mon May 25 17:11:32 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.c (throw_value): declared as volatile. This stops the
+	compiler optimizing tests out of existence
+
 Sun May 24 10:24:16 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* edit.h (WIN): new field w_DisplayedName; the string currently

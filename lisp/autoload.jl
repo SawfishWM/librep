@@ -103,6 +103,8 @@
 (autoload 'rm-forward "rm-misc" t)
 (autoload 'rm-burst-message "rm-misc" t)
 (autoload 'rm-thread-folder "rm-thread" t)
+(autoload 'rm-toggle-threading "rm-thread" t)
+(autoload 'rm-sort-folder "rm-thread" t)
 (autoload 'mail-setup "send-mail" t)
 (autoload 'rcs-init-file "rcs")
 (autoload 'rcs-register-buffer "rcs" t)

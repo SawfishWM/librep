@@ -1,3 +1,41 @@
+Mon May 25 17:12:39 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compiler.jl (comp-compile-top-form): when compiling defvars,
+	if the value is a list but not a constant, compile it to
+	bytecode
+
+	* mail-headers.jl (mail-parse-date): resolve timezone
+	specifications to the difference in minutes they specify
+	(currently I've ignored the single letter `military' zones).
+	Also calculate the time since the epoch (actually create
+	(DAYS . SECONDS) to avoid overflow)
+	(mail-get-actual-subject); function to strip re: prefixes from
+	a subject string
+
+	* maildefs.jl (mail-re-regexp): regexp defining how we strip
+	re: prefixes, moved from rm-misc.jl
+
+	* read-mail.jl (rm-keymap, rm-summary-keymap): bind Ctrl-s to
+	sort the folder, and Ctrl-t to toggle threading
+	(rm-get-actual-subject): new function
+	(rm-invalidate-summary-cache): new function
+
+	* rm-misc.jl (rm-Re-regexp): moved to maildefs.jl
+	(rm-reply): use mail-get-actual-subject
+
+	* rm-thread.jl (rm-thread-using-subject): new variable, when t
+	use subjects to group messages as well as id's
+	(rm-sort-predicates): alist of (KEY . PREDICATE) for sorting
+	folder order
+	(rm-threaded-folder): new variable, t when folder is threaded
+	(rm-thread-folder): misc. fixes, use subjects, sort thread
+	lists, use rm-fix-msg-lists
+	(rm-fix-msg-lists): function to install a list of messages
+	preserving the current message
+	(rm-toggle-threading): new command, toggles between threaded
+	and sorted by location display
+	(rm-sort-folder): new command, sorts display order by key
+
 Sun May 24 13:18:54 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* read-mail.jl (rm-move-forwards, rm-move-backwards): changed
