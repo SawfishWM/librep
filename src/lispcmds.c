@@ -258,7 +258,7 @@ to the beginning of the next list. Returns the new list.
     while(rep_CONSP(args))
     {
 	repv tmp = rep_CAR(args);
-	if(!rep_LISTP(tmp))
+	if(!rep_LISTP(tmp) && rep_CDR (args) != Qnil)
 	    return rep_signal_arg_error(tmp, i);
 	if(rep_CONSP(tmp))
 	{
@@ -274,6 +274,8 @@ to the beginning of the next list. Returns the new list.
 	    }
 	    resend = &rep_CDR(tmp);
 	}
+	else
+	    *resend = tmp;
 	args = rep_CDR(args);
     }
     return(res);
