@@ -332,7 +332,7 @@
 		  ((or (and is-nil (eq (car insn1) (bytecode jnp)))
 		       (and is-t (eq (car insn1) (bytecode jtp))))
 		   ;; nil; jnp X --> nil; jmp X
-		   ;; t; jpt X --> t; jmp X
+		   ;; t; jtp X --> t; jmp X
 		   (rplaca insn1 (bytecode jmp)))
 		  ((or (and is-t (eq (car insn1) (bytecode jpn)))
 		       (and is-nil (eq (car insn1) (bytecode jpt))))
@@ -426,7 +426,8 @@
 	       (setq tem (or (memq (cdr insn0) (cdr code-string))
 			     (error "Can't find jump destination")))
 	       (setq tem (car (cdr tem)))
-	       (eq (car tem) (bytecode jmp)))
+	       (eq (car tem) (bytecode jmp))
+	       (not (eq (cdr insn0) (cdr tem))))
 	  (rplacd insn0 (cdr tem))
 	  (setq keep-going t))
 
@@ -581,7 +582,9 @@
       (mapc (lambda (c)
 	      (aset comp-constant-usage (cdr c) i)
 	      (rplacd c i)
-	      (setq i (1+ i))) (fluid constant-alist)))
+	      (setq i (1+ i))) (fluid constant-alist))
+      ;; update constant-index to account for deletions
+      (fluid-set constant-index i))
     ;; now update the code string
     (mapc (lambda (insn)
 	    (when (memq (car insn) byte-insns-with-constants)
