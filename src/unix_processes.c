@@ -928,7 +928,11 @@ proc_prin(VALUE strm, VALUE obj)
     {
 	if(pr->pr_ExitStatus != -1)
 	{
+#ifdef HAVE_SNPRINTF
+	    snprintf(buf, sizeof(buf), " exited: 0x%x", pr->pr_ExitStatus);
+#else
 	    sprintf(buf, " exited: 0x%x", pr->pr_ExitStatus);
+#endif
 	    stream_puts(strm, buf, -1, FALSE);
 	}
     }

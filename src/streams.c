@@ -486,12 +486,8 @@ top:
 		VCDR(stream) = MAKE_INT(newlen);
 		args = new;
 	    }
-#if 1
 	    memcpy(VSTR(args) + len, buf, bufLen);
 	    VSTR(args)[len + bufLen] = 0;
-#else
-	    strcpy(VSTR(args) + len, buf);
-#endif
 	    set_string_len(args, len + bufLen);
 	    rc = bufLen;
 	    break;
@@ -1024,7 +1020,12 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 		    ptr += width_end - width_start;
 		    *ptr++ = c;
 		    *ptr = 0;
-		    sprintf(buf, fmt, INTP(val) ? VINT(val) : (long)val);
+#ifdef HAVE_SNPRINTF
+		    snprintf(buf, sizeof(buf),
+#else
+		    sprintf(buf,
+#endif
+			    fmt, INTP(val) ? VINT(val) : (long)val);
 		    stream_puts(stream, buf, -1, FALSE);
 		    break;
 

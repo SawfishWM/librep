@@ -90,7 +90,11 @@ db_vprintf(void *_db, char *fmt, va_list args)
     int length;
     struct debug_buf *db = _db;
 
+#ifdef HAVE_SNPRINTF
+    vsnprintf(buf, sizeof(buf), fmt, args);
+#else
     vsprintf(buf, fmt, args);
+#endif
     length = strlen(buf);
     if(length > db->size - db->ptr)
     {

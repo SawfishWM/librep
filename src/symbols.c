@@ -629,7 +629,11 @@ Returns a new (non-interned) symbol with a unique print name.
     static int counter;
     char buf[20];
     counter++;
+#ifdef HAVE_SNPRINTF
+    snprintf(buf, sizeof(buf), "G%04d", counter);
+#else
     sprintf(buf, "G%04d", counter);
+#endif
     return(cmd_make_symbol(string_dup(buf)));
 }
 

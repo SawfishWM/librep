@@ -1437,7 +1437,11 @@ lisp_prin(VALUE strm, VALUE obj)
 	VALUE tem;
 
     case V_Int:
+#ifdef HAVE_SNPRINTF
+	snprintf(tbuf, sizeof(tbuf), "%ld", VINT(obj));
+#else
 	sprintf(tbuf, "%ld", VINT(obj));
+#endif
 	stream_puts(strm, tbuf, -1, FALSE);
 	break;
 
@@ -1510,17 +1514,30 @@ lisp_prin(VALUE strm, VALUE obj)
     case V_Subr4:
     case V_Subr5:
     case V_SubrN:
+#ifdef HAVE_SNPRINTF
+	snprintf(tbuf, sizeof(tbuf), "#<subr %s>", VSTR(VXSUBR(obj)->name));
+#else
 	sprintf(tbuf, "#<subr %s>", VSTR(VXSUBR(obj)->name));
+#endif
 	stream_puts(strm, tbuf, -1, FALSE);
 	break;
 
     case V_SF:
+#ifdef HAVE_SNPRINTF
+	snprintf(tbuf, sizeof(tbuf),
+		 "#<special-form %s>", VSTR(VXSUBR(obj)->name));
+#else
 	sprintf(tbuf, "#<special-form %s>", VSTR(VXSUBR(obj)->name));
+#endif
 	stream_puts(strm, tbuf, -1, FALSE);
 	break;
 
     case V_Var:
+#ifdef HAVE_SNPRINTF
+	snprintf(tbuf, sizeof(tbuf), "#<var %s>", VSTR(VXSUBR(obj)->name));
+#else
 	sprintf(tbuf, "#<var %s>", VSTR(VXSUBR(obj)->name));
+#endif
 	stream_puts(strm, tbuf, -1, FALSE);
 	break;
 
