@@ -418,7 +418,7 @@ Returns a human-readable string defining the current date and time, or if
 specified, that defining TIME.
 
 If defined, FORMAT is a string defining how to create the string. It has
-the same conventions as the argument to the C library's cftime function.
+the same conventions as the template to the C library's strftime function.
 ::end:: */
 {
     time_t timestamp;
@@ -428,8 +428,9 @@ the same conventions as the argument to the C library's cftime function.
 	timestamp = sys_time();
     if(STRINGP(format))
     {
+	struct tm *loctime = localtime(&timestamp);
 	char buf[256];
-	int len = cftime(buf, VSTR(format), &timestamp);
+	int len = strftime(buf, sizeof(buf), VSTR(format), loctime);
 	if(len > 0)
 	    return string_dupn(buf, len);
     }
