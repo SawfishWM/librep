@@ -20,8 +20,7 @@
 
 #include "jade.h"
 #include "jade_protos.h"
-#define BUILD_JADE
-#include "regexp/regexp.h"
+#include "regexp.h"
 
 #ifdef HAVE_ALLOCA
 # include <alloca.h>
@@ -40,7 +39,8 @@ _PR VALUE add_const_num(VALUE, long);
 _PR void intern_static(VALUE *, VALUE);
 _PR VALUE bind_symbol(VALUE, VALUE, VALUE);
 _PR void unbind_symbols(VALUE);
-_PR int symbols_init(void);
+_PR int pre_symbols_init(void);
+_PR void symbols_init(void);
 _PR void symbols_kill(void);
 
 /* Main storage of symbols.  */
@@ -61,7 +61,7 @@ VALUE void_value = VAL(&void_object);
 
 /* The special value which signifies the end of a hash-bucket chain.
    It can be any Lisp object which isn't a symbol.  */
-#define OB_NIL VAL(&void_value)
+#define OB_NIL VAL(&void_object)
 
 static Lisp_Symbol_Block *symbol_block_chain;
 static Lisp_Symbol *symbol_freelist;
@@ -134,6 +134,25 @@ symbol_sweep(void)
 	}
 	sb = nxt;
     }
+#ifdef DUMPED
+    {
+	Lisp_Symbol *sym;
+	for(sym = &dumped_symbols_start; sym < &dumped_symbols_end; sym++)
+	{
+	    if(!GC_CELL_MARKEDP(VAL(sym)))
+	    {
+		/* Don't put this on the free list. There may
+		   still be references to it from other dumped
+		   constants (that aren't marked).. */
+	    }
+	    else
+	    {
+		GC_CLR_CELL(VAL(sym));
+		used_symbols++;
+	    }
+	}
+    }
+#endif /* DUMPED */
 }
 
 int
@@ -906,7 +925,11 @@ retrieved with the `get' function.
     {
 	if(VCAR(plist) == prop)
 	{
-	    VCAR(VCDR(plist)) = val;
+	    if(CONS_WRITABLE_P(VCDR(plist)))
+		VCAR(VCDR(plist)) = val;
+	    else
+		/* Can't write into a dumped cell */
+		VCDR(plist) = cmd_cons(val, VCDR(VCDR(plist)));
 	    return(val);
 	}
 	plist = VCDR(VCDR(plist));
@@ -1137,67 +1160,72 @@ The obarray used by the Lisp reader.
 }
 
 int
-symbols_init(void)
+pre_symbols_init(void)
 {
     obarray = cmd_make_obarray(MAKE_INT(OBSIZE));
     if(obarray)
     {
 	mark_static(&obarray);
-
-	/* fiddly details of initialising the first symbol */
-	sym_nil = cmd_intern(VAL(&str_nil), obarray);
-	mark_static(&sym_nil);
-	VSYM(sym_nil)->value = sym_nil;
-	VSYM(sym_nil)->prop_list = sym_nil;
-	VSYM(sym_nil)->car |= SF_CONSTANT;
-
-	INTERN(t);
-	VSYM(sym_t)->value = sym_t;
-	VSYM(sym_t)->car |= SF_CONSTANT;
-
-	INTERN(variable_documentation);
-	ADD_SUBR(subr_make_symbol);
-	ADD_SUBR(subr_make_obarray);
-	ADD_SUBR(subr_find_symbol);
-	ADD_SUBR(subr_intern_symbol);
-	ADD_SUBR(subr_intern);
-	ADD_SUBR(subr_unintern);
-	ADD_SUBR(subr_symbol_value);
-	ADD_SUBR_INT(subr_set);
-	ADD_SUBR(subr_setplist);
-	ADD_SUBR(subr_symbol_name);
-	ADD_SUBR(subr_symbol_function);
-	ADD_SUBR(subr_default_value);
-	ADD_SUBR(subr_default_boundp);
-	ADD_SUBR(subr_set_default);
-	ADD_SUBR(subr_fboundp);
-	ADD_SUBR(subr_boundp);
-	ADD_SUBR(subr_symbol_plist);
-	ADD_SUBR(subr_gensym);
-	ADD_SUBR(subr_symbolp);
-	ADD_SUBR(subr_setq);
-	ADD_SUBR(subr_setq_default);
-	ADD_SUBR(subr_fset);
-	ADD_SUBR(subr_makunbound);
-	ADD_SUBR(subr_fmakunbound);
-	ADD_SUBR(subr_let);
-	ADD_SUBR(subr_letstar);
-	ADD_SUBR(subr_get);
-	ADD_SUBR(subr_put);
-	ADD_SUBR(subr_make_local_variable);
-	ADD_SUBR(subr_make_variable_buffer_local);
-	ADD_SUBR(subr_buffer_variables);
-	ADD_SUBR(subr_kill_all_local_variables);
-	ADD_SUBR(subr_kill_local_variable);
-	ADD_SUBR(subr_apropos);
-	ADD_SUBR(subr_set_const_variable);
-	ADD_SUBR(subr_const_variable_p);
-	ADD_SUBR_INT(subr_trace);
-	ADD_SUBR_INT(subr_untrace);
-	ADD_SUBR(subr_obarray);
-	return(TRUE);
+	return TRUE;
     }
-    return(FALSE);
+    else
+	return FALSE;
+}
+
+void
+symbols_init(void)
+{
+    /* fiddly details of initialising the first symbol */
+    sym_nil = cmd_intern(VAL(&str_nil), obarray);
+    mark_static(&sym_nil);
+    VSYM(sym_nil)->value = sym_nil;
+    VSYM(sym_nil)->prop_list = sym_nil;
+    VSYM(sym_nil)->car |= SF_CONSTANT;
+
+    INTERN(t);
+    VSYM(sym_t)->value = sym_t;
+    VSYM(sym_t)->car |= SF_CONSTANT;
+
+    INTERN(variable_documentation);
+    ADD_SUBR(subr_make_symbol);
+    ADD_SUBR(subr_make_obarray);
+    ADD_SUBR(subr_find_symbol);
+    ADD_SUBR(subr_intern_symbol);
+    ADD_SUBR(subr_intern);
+    ADD_SUBR(subr_unintern);
+    ADD_SUBR(subr_symbol_value);
+    ADD_SUBR_INT(subr_set);
+    ADD_SUBR(subr_setplist);
+    ADD_SUBR(subr_symbol_name);
+    ADD_SUBR(subr_symbol_function);
+    ADD_SUBR(subr_default_value);
+    ADD_SUBR(subr_default_boundp);
+    ADD_SUBR(subr_set_default);
+    ADD_SUBR(subr_fboundp);
+    ADD_SUBR(subr_boundp);
+    ADD_SUBR(subr_symbol_plist);
+    ADD_SUBR(subr_gensym);
+    ADD_SUBR(subr_symbolp);
+    ADD_SUBR(subr_setq);
+    ADD_SUBR(subr_setq_default);
+    ADD_SUBR(subr_fset);
+    ADD_SUBR(subr_makunbound);
+    ADD_SUBR(subr_fmakunbound);
+    ADD_SUBR(subr_let);
+    ADD_SUBR(subr_letstar);
+    ADD_SUBR(subr_get);
+    ADD_SUBR(subr_put);
+    ADD_SUBR(subr_make_local_variable);
+    ADD_SUBR(subr_make_variable_buffer_local);
+    ADD_SUBR(subr_buffer_variables);
+    ADD_SUBR(subr_kill_all_local_variables);
+    ADD_SUBR(subr_kill_local_variable);
+    ADD_SUBR(subr_apropos);
+    ADD_SUBR(subr_set_const_variable);
+    ADD_SUBR(subr_const_variable_p);
+    ADD_SUBR_INT(subr_trace);
+    ADD_SUBR_INT(subr_untrace);
+    ADD_SUBR(subr_obarray);
 }
 
 void
