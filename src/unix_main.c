@@ -819,8 +819,7 @@ event_loop(void)
     VALUE result = sym_nil;
     recurse_depth++;
 
-    curr_vw->vw_Flags |= VWFF_REFRESH_STATUS;
-    refresh_world_curs();
+    cmd_redisplay(sym_nil);
 
     while(curr_win != NULL)
     {
@@ -828,8 +827,6 @@ event_loop(void)
 	struct timeval timeout;
 	int ready, i;
 	bool refreshp = FALSE;
-
-	sys_flush_output();
 
 	memcpy(&copy, &input_fdset, sizeof(copy));
 	timeout.tv_sec = EVENT_TIMEOUT_LENGTH;
@@ -892,8 +889,7 @@ event_loop(void)
 	if(refreshp)
 	{
 	    undo_end_of_command();
-	    curr_vw->vw_Flags |= VWFF_REFRESH_STATUS;
-	    refresh_world_curs();
+	    cmd_redisplay(sym_nil);
 	}
     }
 
