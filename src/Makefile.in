@@ -37,7 +37,7 @@ COMMON_SRCS =	buffers.c commands.c debug-buffer.c edit.c editcommands.c \
 		extent.c faces.c files.c find.c glyphs.c housekeeping.c \
 		keys.c lisp.c lispcmds.c lispmach.c main.c misc.c movement.c \
 		redisplay.c regexp.c regjade.c regsub.c streams.c \
-		stringmem.c symbols.c undo.c values.c views.c windows.c
+		symbols.c undo.c values.c views.c windows.c
 COMMON_HDRS =	jade.h edit.h lisp.h value.h keys.h stringmem.h \
 		revision.h regexp.h
 
