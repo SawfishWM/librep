@@ -225,6 +225,9 @@ string INPUT."
 (defmacro cdddr (x)
   (list 'cdr (list 'cdr (list 'cdr x))))
 
+(defmacro call-with-current-continuation (f)
+  (list 'call/cc f))
+
 
 ;; guardian wrapper
 
