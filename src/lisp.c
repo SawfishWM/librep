@@ -69,9 +69,7 @@ DEFSYM(standard_output, "standard-output");
 
 DEFSYM(amp_optional, "&optional");
 DEFSYM(amp_rest, "&rest");
-DEFSYM(ex_optional, "#!optional");
-DEFSYM(ex_rest, "#!rest");
-DEFSYM(ex_key, "#!key");
+static repv ex_optional, ex_rest, ex_key;
 
 /* When a `throw' happens a function stuffs a cons-cell in here with,
    (TAG . repv).
@@ -361,7 +359,7 @@ end:
 
 /* Could be a symbol or a number */
 static repv
-read_symbol(repv strm, int *c_p)
+read_symbol(repv strm, int *c_p, repv obarray)
 {
     static repv buffer = rep_NULL;
     static size_t buflen = 240;
@@ -619,14 +617,12 @@ done:
     else
     {
 intern:	rep_set_string_len(buffer, i);
-	if(!(result = Ffind_symbol(rep_VAL(buffer), Qnil))
-	   || (rep_NILP(result)))
+	result = Ffind_symbol (rep_VAL(buffer), obarray);
+	if (result != rep_NULL && result == Qnil)
 	{
-	    repv name;
-	    if((name = rep_string_dup(buf)) && (result = Fmake_symbol(name)))
-		result = Fintern_symbol(result, Qnil);
-	    else
-		result = rep_NULL;
+	    result = Fmake_symbol (rep_string_dupn (buf, i));
+	    if (result != rep_NULL)
+		result = Fintern_symbol (result, obarray);
 	}
     }
     *c_p = c;
@@ -724,6 +720,19 @@ read_str(repv strm, int *c_p)
 	return result;
     }
     return rep_mem_error();
+}
+
+static repv
+skip_chars (repv stream, const char *str, repv ret, int *ptr)
+{
+    while (*str != 0)
+    {
+	int c = rep_stream_getc (stream);
+	if (c != *str++)
+	    return Fsignal (Qinvalid_read_syntax, rep_LIST_1(stream));
+    }
+    *ptr = rep_stream_getc (stream);
+    return ret;
 }
 
 /* Using the above readlisp*() functions this classifies each type
@@ -833,6 +842,8 @@ rep_readl(repv strm, register int *c_p)
 	case '#':
 	    switch(*c_p = rep_stream_getc(strm))
 	    {
+		int c;
+
 	    case EOF:
 		goto eof;
 
@@ -896,8 +907,9 @@ rep_readl(repv strm, register int *c_p)
 		      { 0, 0 }
 		    };
 
-		    int c = rep_stream_getc (strm), c2, i;
+		    int c2, i;
 
+		    c = rep_stream_getc (strm);
 		    if (c == EOF)
 			goto eof;
 		    if (!isalpha (c))
@@ -948,14 +960,19 @@ rep_readl(repv strm, register int *c_p)
 			continue;
 		    }
 		}
-		rep_stream_ungetc (strm, *c_p);
-		*c_p = '#';
-		return read_symbol (strm, c_p);
+		c = rep_stream_getc (strm);
+		switch (c)
+		{
+		case 'o': return skip_chars (strm, "ptional", ex_optional, c_p);
+		case 'r': return skip_chars (strm, "est", ex_rest, c_p);
+		case 'k': return skip_chars (strm, "ey", ex_key, c_p);
+		default:  goto error;
+		}
 
 	    case ':':
 		rep_stream_ungetc (strm, *c_p);
 		*c_p = '#';
-		form = read_symbol (strm, c_p);
+		form = read_symbol (strm, c_p, rep_keyword_obarray);
 		if (form && rep_SYMBOLP (form))
 		    rep_SYM (form)->car |= rep_SF_KEYWORD;
 		return form;
@@ -978,14 +995,14 @@ rep_readl(repv strm, register int *c_p)
 	    }
 
 	default: identifier:
-	    form = read_symbol(strm, c_p);
+	    form = read_symbol(strm, c_p, rep_obarray);
 	    if (form && *c_p == '#' && rep_SYMBOLP (form))
 	    {
 		/* foo#bar expands to (structure-ref foo bar)
 		   (this syntax is from Xerox scheme's module system) */
 		repv var;
 		*c_p = rep_stream_getc (strm);
-		var = read_symbol (strm, c_p);
+		var = read_symbol (strm, c_p, rep_obarray);
 		if (var != 0)
 		    return rep_list_3 (Qstructure_ref, form, var);
 		else
@@ -1122,7 +1139,7 @@ bind_lambda_list_1 (repv lambdaList, repv *args, int nargs)
 	    argspec = rep_CAR (lambdaList);
 	    lambdaList = rep_CDR (lambdaList);
 
-	    if (argspec == Qex_optional || argspec == Qamp_optional)
+	    if (argspec == ex_optional || argspec == Qamp_optional)
 	    {
 		static int dep;
 		if (argspec == Qamp_optional)
@@ -1134,14 +1151,14 @@ bind_lambda_list_1 (repv lambdaList, repv *args, int nargs)
 		state = STATE_OPTIONAL;
 		continue;
 	    }
-	    else if (argspec == Qex_key)
+	    else if (argspec == ex_key)
 	    {
 		if (state >= STATE_KEY)
 		    goto invalid;
 		state = STATE_KEY;
 		continue;
 	    }
-	    else if (argspec == Qex_rest || argspec == Qamp_rest)
+	    else if (argspec == ex_rest || argspec == Qamp_rest)
 	    {
 		static int dep;
 		if (argspec == Qamp_rest)
@@ -2555,6 +2572,9 @@ DEFSYM(rep_lang_interpreter, "rep.lang.interpreter");
 void
 rep_lisp_init(void)
 {
+    DEFSTRING (optional, "#!optional");
+    DEFSTRING (rest, "#!rest");
+    DEFSTRING (key, "#!key");
     repv tem;
 
     rep_INTERN(quote); rep_INTERN(lambda); rep_INTERN(macro);
@@ -2566,10 +2586,17 @@ rep_lisp_init(void)
     rep_INTERN_SPECIAL(debug_entry); rep_INTERN_SPECIAL(debug_exit);
     rep_INTERN_SPECIAL(debug_error_entry);
     rep_INTERN(amp_optional); rep_INTERN(amp_rest);
-    rep_INTERN(ex_optional); rep_INTERN(ex_rest); rep_INTERN(ex_key);
-    rep_SYM(Qex_optional)->car |= rep_SF_LITERAL;
-    rep_SYM(Qex_rest)->car |= rep_SF_LITERAL;
-    rep_SYM(Qex_key)->car |= rep_SF_LITERAL;
+
+    ex_optional = Fmake_symbol (rep_VAL (&optional));
+    ex_rest = Fmake_symbol (rep_VAL (&rest));
+    ex_key = Fmake_symbol (rep_VAL (&key));
+    rep_SYM(ex_optional)->car |= rep_SF_LITERAL;
+    rep_SYM(ex_rest)->car |= rep_SF_LITERAL;
+    rep_SYM(ex_key)->car |= rep_SF_LITERAL;
+    rep_mark_static (&ex_optional);
+    rep_mark_static (&ex_rest);
+    rep_mark_static (&ex_key);
+
     rep_mark_static((repv *)&rep_throw_value);
 
     tem = rep_push_structure ("rep.lang.interpreter");
