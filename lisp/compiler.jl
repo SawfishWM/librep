@@ -107,41 +107,56 @@ is one of these that form is compiled.")
       ((comp-current-file file-name)
        src-file dst-file form
        comp-macro-env
-       comp-const-env)
-    (when (and (setq src-file (open file-name "r"))
-	       (setq dst-file (open (concat file-name ?c) "w")))
-      (format dst-file
-	      ";;; Source file: %s\n;;; Compiled by %s@%s on %s\n;;; Jade %d.%d\n"
-	      file-name (user-login-name) (system-name) (current-time-string)
-	      (major-version-number) (minor-version-number))
-      (error-protect
-        (unwind-protect
-	    (let
-		(form)
-	      (message (concat "Compiling " file-name "...") t)
-	      (while (not (file-eof-p src-file))
-		(when (setq form (read src-file))
-		  (cond
-		   ((memq (car form) '(defun defmacro defvar defconst require))
-		    (setq form (comp-compile-top-form form)))
-		   ((memq (car form) comp-top-level-compiled)
-		    ;; Compile this form
-		    (setq form (compile-form form))))
-		  (when form
-		    (print form dst-file)
-		    (write dst-file ?\n)))))
-	  (close dst-file)
-	  (close src-file))
-	(error
-	  ;; Be sure to remove any partially written dst-file. Also, signal
-	  ;; the error again so that the user sees it.
-	  (let
-	      ((fname (concat file-name ?c)))
-	    (when (file-exists-p fname)
-	      (delete-file fname)))
-	  ;; Hack to signal error without entering the debugger (again)
-	  (throw 'error error-info)))
-      t)))
+       comp-const-env
+       form)
+    (message (concat "Compiling " file-name "...") t)
+    (when (setq src-file (open file-name "r"))
+      (unwind-protect
+	  ;; Pass 1. Scan for macro definitions in FILE-NAME
+	  (while (not (file-eof-p src-file))
+	    (setq form (read src-file))
+	    (when (eq (car form) 'defmacro)
+	      (setq comp-macro-env (cons (cons (nth 1 form)
+					       (cons 'lambda (nthcdr 2 form)))
+					 comp-macro-env))))
+	(close src-file))
+      (when (and (setq src-file (open file-name "r"))
+		 (setq dst-file (open (concat file-name ?c) "w")))
+	(error-protect
+	    (unwind-protect
+		(progn
+		  ;; Pass 2. The actual compile
+		  (format dst-file
+			  ";;; Source file: %s
+;;; Compiled by %s@%s on %s
+;;; Jade %d.%d\n"
+			  file-name (user-login-name) (system-name)
+			  (current-time-string) (major-version-number)
+			  (minor-version-number))
+		  (while (not (file-eof-p src-file))
+		    (when (setq form (read src-file))
+		      (cond
+		       ((memq (car form) '(defun defmacro defvar
+					    defconst require))
+			(setq form (comp-compile-top-form form)))
+		       ((memq (car form) comp-top-level-compiled)
+			;; Compile this form
+			(setq form (compile-form form))))
+		      (when form
+			(print form dst-file)
+			(write dst-file ?\n)))))
+	      (close dst-file)
+	      (close src-file))
+	  (error
+	   ;; Be sure to remove any partially written dst-file. Also, signal
+	   ;; the error again so that the user sees it.
+	   (let
+	       ((fname (concat file-name ?c)))
+	     (when (file-exists-p fname)
+	       (delete-file fname)))
+	   ;; Hack to signal error without entering the debugger (again)
+	   (throw 'error error-info)))
+	t))))
 
 ;;;###autoload
 (defun compile-directory (dir-name &optional force-p exclude-list)
@@ -228,7 +243,9 @@ that files which shouldn't be compiled aren't."
 	   (comp-current-fun (nth 1 form)))
 	(if tmp
 	    (rplacd tmp code)
-	  (setq comp-macro-env (cons (cons (nth 1 form) code) comp-macro-env)))
+;;; Don't do this, now we've added a pre-pass
+;;;	  (setq comp-macro-env (cons (cons (nth 1 form) code) comp-macro-env))
+	  (comp-error "Compiled macro wasn't in environment" (nth 1 form)))
 	(cons 'defmacro (cons (nth 1 form) (cdr code)))))
      ((eq fun 'defconst)
       (let
