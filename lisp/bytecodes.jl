@@ -46,7 +46,7 @@
 
 ;; Instruction set version
 (defconst bytecode-major 3)
-(defconst bytecode-minor 0)
+(defconst bytecode-minor 1)
 
 ;; Opcodes
 (defconst op-call 0x08)			;call (stk[n] stk[n-1] ... stk[0])
@@ -124,7 +124,7 @@
 (defconst op-errorpro 0x7c)
 (defconst op-signal 0x7d)
 (defconst op-return 0x7e)
-(defconst op-reverse 0x7f)		;new 12/7/94
+(defconst op-reverse 0x7f)
 (defconst op-nreverse 0x80)
 (defconst op-assoc 0x81)
 (defconst op-assq 0x82)
@@ -145,9 +145,12 @@
 (defconst op-special-form-p 0x91)
 (defconst op-subrp 0x92)
 (defconst op-eql 0x93)
-(defconst op-lxor 0x94)			;new 23-8-94
-(defconst op-max 0x95)			;new 12-1-98
+(defconst op-lxor 0x94)
+(defconst op-max 0x95)
 (defconst op-min 0x96)
+(defconst op-filter 0x97)
+(defconst op-macrop 0x98)
+(defconst op-bytecodep 0x99)
 
 (defconst op-set-current-buffer 0xb0)
 (defconst op-bind-buffer 0xb1)
@@ -157,14 +160,13 @@
 (defconst op-windowp 0xb5)
 (defconst op-bind-window 0xb6)
 
-(defconst op-viewp 0xb7)		;new 26-8-97
+(defconst op-viewp 0xb7)
 (defconst op-bind-view 0xb8)
 (defconst op-current-view 0xb9)
 (defconst op-swap2 0xba)		;s[0]=s[1], s[1]=s[2], s[2]=s[0]
 
-(defconst op-mod 0xbb)			;new 21-11-97
-
-(defconst op-pos 0xbc)			;new 20-12-97
+(defconst op-mod 0xbb)
+(defconst op-pos 0xbc)
 (defconst op-posp 0xbd)
 
 (defconst op-last-before-jmps 0xf7)

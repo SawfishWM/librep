@@ -1482,6 +1482,12 @@ that files which shouldn't be compiled aren't."
   (put 'max 'compile-opcode op-max)
   (put 'min 'compile-fun 'comp-compile-binary-op)
   (put 'min 'compile-opcode op-min)
+  (put 'filter 'compile-fun 'comp-compile-2-args)
+  (put 'filter 'compile-opcode op-filter)
+  (put 'macrop 'compile-fun 'comp-compile-1-args)
+  (put 'macrop 'compile-opcode op-macrop)
+  (put 'bytecodep 'compile-fun 'comp-compile-1-args)
+  (put 'bytecodep 'compile-opcode op-bytecodep)
 
   (put 'set-current-buffer 'compile-fun 'comp-compile-2-args)
   (put 'set-current-buffer 'compile-opcode op-set-current-buffer)
