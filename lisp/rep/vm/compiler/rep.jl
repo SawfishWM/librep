@@ -270,7 +270,7 @@
 	(add-documentation name nil (compiler-constant-value doc))
 	(setq doc nil))
       `(progn
-	 ,@(and doc (list '(put ',name 'variable-documentation ,doc)))
+	 ,@(and doc (list `(put ',name 'variable-documentation ,doc)))
 	 (make-variable-special ',name)
 	 (unless (boundp ',name)
 	   (setq ,name ,value)))))

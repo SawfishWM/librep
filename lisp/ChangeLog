@@ -1,3 +1,8 @@
+2001-05-04  John Harper  <jsh@eazel.com>
+
+	* rep/vm/compiler/rep.jl (trans-defvar): fixed typo in the last
+	change (using , in a non-backquote form)
+
 2001-05-01  John Harper  <jsh@eazel.com>
 
 	* rep/vm/compiler/rep.jl (trans-defvar): if the defvar has a
