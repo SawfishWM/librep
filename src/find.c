@@ -503,9 +503,10 @@ with STRING. Returns the position of the next match or nil.
 	tx = VAL(curr_vw->vw_Tx);
     if(check_line(VTX(tx), pos))
     {
-	Pos start = *VPOS(pos);
 	char first = VSTR(str)[0];
 	long len = STRING_LEN(str);
+	Pos start;
+	COPY_VPOS(&start, pos);
 	while(buffer_strchr(VTX(tx), &start, first))
 	{
 	    Pos end = start;
@@ -541,9 +542,10 @@ with STRING. Returns the position of the next match or nil.
 	tx = VAL(curr_vw->vw_Tx);
     if(check_line(VTX(tx), pos))
     {
-	Pos start = *VPOS(pos);
 	char first = VSTR(str)[0];
 	long len = STRING_LEN(str);
+	Pos start;
+	COPY_VPOS(&start, pos);
 	while(buffer_reverse_strchr(VTX(tx), &start, first))
 	{
 	    Pos end = start;
@@ -579,7 +581,8 @@ with CHAR. Returns the position of the next match or nil.
 	tx = VAL(curr_vw->vw_Tx);
     if(check_line(VTX(tx), pos))
     {
-	Pos tem = *VPOS(pos);
+	Pos tem;
+	COPY_VPOS(&tem, pos);
 	if(buffer_strchr(VTX(tx), &tem, VINT(ch)))
 	    return make_pos(PCOL(&tem), PROW(&tem));
 	return(sym_nil);
@@ -603,7 +606,8 @@ with CHAR. Returns the position of the next match or nil.
 	tx = VAL(curr_vw->vw_Tx);
     if(check_line(VTX(tx), pos))
     {
-	Pos tem = *VPOS(pos);
+	Pos tem;
+	COPY_VPOS(&tem, pos);
 	if(buffer_reverse_strchr(VTX(tx), &tem, VINT(ch)))
 	    return make_pos(PCOL(&tem), PROW(&tem));
 	return(sym_nil);

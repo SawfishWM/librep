@@ -82,7 +82,6 @@ Lisp_Type_Data data_types[] = {
     { ptr_cmp, buffer_prin, buffer_prin, "buffer" },
     { ptr_cmp, window_prin, window_prin, "window" },
     { ptr_cmp, view_prin, view_prin, "view" },
-    { pos_cmp, pos_prin, pos_prin, "pos" },
     { mark_cmp, mark_prin, mark_prin, "mark" },
     { file_cmp, file_prin, file_prin, "file" },
 #ifdef HAVE_SUBPROCESSES
@@ -484,37 +483,10 @@ vector_cmp(VALUE v1, VALUE v2)
 
 /* Positions */
 
-static Pos_Block *pos_block_chain;
-static Pos *pos_free_list;
-static int used_pos, allocated_pos;
-
 VALUE
 make_pos(long col, long row)
 {
-    Pos *p = pos_free_list;
-    if(!p)
-    {
-	Pos_Block *pb = ALLOC_OBJECT(sizeof(Pos_Block));
-	if(pb)
-	{
-	    int i;
-	    allocated_pos += POSBLK_SIZE;
-	    pb->next = pos_block_chain;
-	    pos_block_chain = pb;
-	    for(i = 0; i < (POSBLK_SIZE - 1); i++)
-		pb->pos[i].next = &pb->pos[i + 1];
-	    pb->pos[i].next = pos_free_list;
-	    pos_free_list = pb->pos;
-	}
-	p = pos_free_list;
-    }
-    pos_free_list = p->next;
-    VNORMAL_TYPE(p) = V_Pos;
-    VCOL(p) = col;
-    VROW(p) = row;
-    used_pos++;
-    data_after_gc += sizeof(Pos);
-    return VAL(p);
+    return MAKE_POS(col, row);
 }
 
 _PR VALUE cmd_pos(VALUE, VALUE);
@@ -527,7 +499,7 @@ Returns a new position object with coordinates (COLUMN , ROW).
 {
     long col = INTP(x) ? VINT(x) : VCOL(curr_vw->vw_CursorPos);
     long row = INTP(y) ? VINT(y) : VROW(curr_vw->vw_CursorPos);
-    return make_pos(col ,row);
+    return MAKE_POS(col ,row);
 }
 
 _PR VALUE cmd_copy_pos(VALUE pos);
@@ -539,55 +511,7 @@ Returns a new copy of POS.
 ::end:: */
 {
     DECLARE1(pos, POSP);
-    return make_pos(VCOL(pos), VROW(pos));
-}
-
-void
-pos_prin(VALUE strm, VALUE obj)
-{
-    u_char tbuf[32];
-    sprintf(tbuf, "#<pos %ld %ld>", VCOL(obj), VROW(obj));
-    stream_puts(strm, tbuf, -1, FALSE);
-}
-
-static void
-pos_sweep(void)
-{
-    Pos_Block *pb = pos_block_chain;
-    pos_free_list = NULL;
-    used_pos = 0;
-    while(pb)
-    {
-	int i;
-	Pos_Block *nxt = pb->next;
-	for(i = 0; i < POSBLK_SIZE; i++)
-	{
-	    if(!GC_NORMAL_MARKEDP(VAL(&pb->pos[i])))
-	    {
-		pb->pos[i].next = pos_free_list;
-		pos_free_list = &pb->pos[i];
-	    }
-	    else
-	    {
-		GC_CLR_NORMAL(VAL(&pb->pos[i]));
-		used_pos++;
-	    }
-	}
-	pb = nxt;
-    }
-}
-
-int
-pos_cmp(VALUE v1, VALUE v2)
-{
-    int rc = 1;
-    if(VTYPE(v2) == VTYPE(v1))
-    {
-	rc = VROW(v1) - VROW(v2);
-	if(rc == 0)
-	    rc = VCOL(v1) - VCOL(v2);
-    }
-    return(rc);
+    return MAKE_POS(VCOL(pos), VROW(pos));
 }
 
 
@@ -771,7 +695,6 @@ again:
 	break;
 
     case V_DynamicString:
-    case V_Pos:
     case V_GlyphTable:
 	GC_SET_NORMAL(val);
 	break;
@@ -893,7 +816,6 @@ last garbage-collection is greater than `garbage-threshold'.
     string_sweep();
     cons_sweep();
     vector_sweep();
-    pos_sweep();
     symbol_sweep();
     file_sweep();
     buffer_sweep();
@@ -923,12 +845,10 @@ last garbage-collection is greater than `garbage-threshold'.
 
     if(NILP(noStats))
     {
-	return(list_4(cmd_cons(MAKE_INT(used_cons),
+	return(list_3(cmd_cons(MAKE_INT(used_cons),
 			       MAKE_INT(allocated_cons - used_cons)),
 		      cmd_cons(MAKE_INT(used_symbols),
 			       MAKE_INT(allocated_symbols - used_symbols)),
-		      cmd_cons(MAKE_INT(used_pos),
-			       MAKE_INT(allocated_pos - used_pos)),
 		      MAKE_INT(used_vector_slots)));
     }
     return(sym_t);
@@ -958,7 +878,6 @@ values_kill(void)
 {
     Lisp_Cons_Block *cb = cons_block_chain;
     Lisp_Vector *v = vector_chain;
-    Pos_Block *pb = pos_block_chain;
     while(cb)
     {
 	Lisp_Cons_Block *nxt = cb->next;
@@ -971,14 +890,7 @@ values_kill(void)
 	FREE_OBJECT(v);
 	v = nxt;
     }
-    while(pb)
-    {
-	Pos_Block *nxt = pb->next;
-	FREE_OBJECT(pb);
-	pb = nxt;
-    }
     cons_block_chain = NULL;
     vector_chain = NULL;
-    pos_block_chain = NULL;
     sm_kill(&lisp_strmem);
 }

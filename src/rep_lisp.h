@@ -29,7 +29,6 @@
    of objects fit as close as possible into powers of 2 sized blocks. */
 #define CONSBLK_SIZE	510		/* ~4k */
 #define SYMBOLBLK_SIZE	340		/* ~8k */
-#define POSBLK_SIZE	340		/* ~4k */
 
 /* The number of hash buckets in each obarray, this is a prime number. */
 #define OBSIZE		509
@@ -184,7 +183,6 @@ enum Lisp_Type
     V_Buffer,
     V_Window,
     V_View,
-    V_Pos,
     V_Mark,
     V_File,
     V_Process,
@@ -345,29 +343,22 @@ typedef struct lisp_symbol_block {
    accessed via VALUE pointers (and VCOL, VROW macros) are _read_only_,
    while those accessed through Pos * pointers (and PCOL, PROW macros)
    are _read_write_, probably allocated on the stack. */
-typedef union pos {
-    struct {
-	u_char type;
-	long col ALIGN_4;
-	long row;
-    }		    data;
-    union pos	   *next;
-} Pos;
 
-typedef struct pos_block {
-    struct pos_block *next;
-    Pos pos[POSBLK_SIZE] CONCAT(ALIGN_, NORMAL_ALIGNMENT);
-} Pos_Block;
+#define POSP(v) (CONSP(v) && INTP(VCAR(v)) && INTP(VCDR(v)))
 
-#define PCOL(p) ((p)->data.col)
-#define PROW(p) ((p)->data.row)
+/* We define the column in the cdr and the row in the car, so that
+   the normal cons-comparison (car first, then cdr) will work as the
+   old pos-comparison used to (i.e. row-major). */
+#define MAKE_POS(col, row) cmd_cons(MAKE_INT(row), MAKE_INT(col))
+#define VCOL(v) (VINT(VCDR(v)))
+#define VROW(v) (VINT(VCAR(v)))
+
+/* These should never be used unless it's clear there can be
+   no other references to V. */
+#define VSETCOL(v,c) (VCDR(v) = MAKE_INT(c))
+#define VSETROW(v,r) (VCAR(v) = MAKE_INT(r))
 
 /* These all want VALUE pointers */
-#define VPOS(v)		((Pos *)VPTR(v))
-#define VCOL(v)		(PCOL(VPOS(v)))
-#define VROW(v)		(PROW(VPOS(v)))
-#define POSP(v)		VNORMAL_TYPEP(v, V_Pos)
-
 #define POS_EQUAL_P(s,e) \
     ((VROW(s) == VROW(e)) && (VCOL(s) == VCOL(e)))
 #define POS_GREATER_P(s,e) \
@@ -378,6 +369,35 @@ typedef struct pos_block {
     ((VROW(s) < VROW(e)) || ((VROW(s) == VROW(e)) && (VCOL(s) < VCOL(e))))
 #define POS_LESS_EQUAL_P(s,e) \
     ((VROW(s) < VROW(e)) || ((VROW(s) == VROW(e)) && (VCOL(s) <= VCOL(e))))
+
+/* A more conventional C structure, used in the editor internals to
+   avoid the gratuitous masking and shifting otherwise required. */
+typedef struct {
+    long row, col;
+} Pos;
+
+#define PCOL(p) ((p)->col)
+#define PROW(p) ((p)->row)
+
+#define COPY_VPOS(p, v) 	\
+    do {			\
+	PROW(p) = VROW(v);	\
+	PCOL(p) = VCOL(v);	\
+    } while(0)
+
+#define COPY_POS(p) MAKE_POS(PCOL(p), PROW(p))
+
+/* These all want Pos pointers */
+#define PPOS_EQUAL_P(s,e) \
+    ((PROW(s) == PROW(e)) && (PCOL(s) == PCOL(e)))
+#define PPOS_GREATER_P(s,e) \
+    ((PROW(s) > PROW(e)) || ((PROW(s) == PROW(e)) && (PCOL(s) > PCOL(e))))
+#define PPOS_GREATER_EQUAL_P(s,e) \
+    ((PROW(s) > PROW(e)) || ((PROW(s) == PROW(e)) && (PCOL(s) >= PCOL(e))))
+#define PPOS_LESS_P(s,e) \
+    ((PROW(s) < PROW(e)) || ((PROW(s) == PROW(e)) && (PCOL(s) < PCOL(e))))
+#define PPOS_LESS_EQUAL_P(s,e) \
+    ((PROW(s) < PROW(e)) || ((PROW(s) == PROW(e)) && (PCOL(s) <= PCOL(e))))
 
 
 /* Files */
