@@ -1,3 +1,7 @@
+2000-07-24  John Harper  <john@dcs.warwick.ac.uk>
+
+	* librep.spec.in: added install-aliases
+
 2000-07-23  John Harper  <john@dcs.warwick.ac.uk>
 
 	* librep.spec.in: added rep_INSTALL_ALIASES
