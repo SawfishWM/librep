@@ -30,11 +30,14 @@ INSTALL_DIRS := . rep rep rep/lang rep/vm rep/vm/compiler rep/io \
 
 all : lisp
 
-lisp :
+lisp : ../src/.libexec
 	$(COMPILE_ENV) $(rep_prog) --batch --no-rc \
 	  -l rep.vm.compiler -f compile-compiler
 	$(COMPILE_ENV) $(rep_prog) --batch --no-rc \
 	  -l rep.vm.compiler -f compile-lisp-lib
+
+../src/.libexec :
+	( cd ../src && $(MAKE) .libexec )
 
 install : all installdirs
 	for d in $(INSTALL_DIRS); do \
