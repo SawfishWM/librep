@@ -506,7 +506,9 @@ funarg_sweep (void)
     }
 }
 
-/* Returns (SYM . VALUE) if a lexical binding. Returns t if the actual
+/* this is also in lispmach.c and lisp.c
+
+   Returns (SYM . VALUE) if a lexical binding. Returns t if the actual
    value is in the symbol's function slot */
 static inline repv
 search_function_environment (repv sym)
@@ -824,9 +826,14 @@ setplist SYMBOL PROP-LIST
 Sets the property list of SYMBOL to PROP-LIST, returns PROP-LIST.
 ::end:: */
 {
+    int spec;
     rep_DECLARE1(sym, rep_SYMBOLP);
+    spec = search_special_environment (sym);
+    if (spec == 0)
+	return Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
+
     rep_SYM(sym)->prop_list = prop;
-    return(prop);
+    return prop;
 }
 
 DEFUN("symbol-name", Fsymbol_name, Ssymbol_name, (repv sym), rep_Subr1) /*
@@ -901,8 +908,13 @@ symbol-plist SYMBOL
 Returns the property-list of SYMBOL.
 ::end:: */
 {
+    int spec;
     rep_DECLARE1(sym, rep_SYMBOLP);
-    return(rep_SYM(sym)->prop_list);
+    spec = search_special_environment (sym);
+    if (spec == 0)
+	return Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
+
+    return rep_SYM(sym)->prop_list;
 }
 
 DEFUN("gensym", Fgensym, Sgensym, (void), rep_Subr0) /*
@@ -1310,7 +1322,12 @@ retrieved with the `get' function.
 ::end:: */
 {
     repv plist;
+    int spec;
     rep_DECLARE1(sym, rep_SYMBOLP);
+    spec = search_special_environment (sym);
+    if (spec == 0)
+	return Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
+
     plist = rep_SYM(sym)->prop_list;
     while(rep_CONSP(plist) && rep_CONSP(rep_CDR(plist)))
     {
