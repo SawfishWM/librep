@@ -39,15 +39,15 @@
    "equal" "eq" "num-eq" "num-not-eq" "gt" "ge" "lt" "le"	; 0x60
    "inc" "dec" "lsh" "zerop" "null" "atom" "consp" "listp"
    "numberp" "stringp" "vectorp" "catch" "throw" "binderr" "return" "unbindall"	; 0x70
-   "boundp" "symbolp" "get" "put" "errorpro" "signal" nil "reverse"
+   "boundp" "symbolp" "get" "put" "errorpro" "signal" "quotient" "reverse"
    "nreverse" "assoc" "assq" "rassoc" "rassq" "last" "mapcar" "mapc" ; 0x80
    "member" "memq" "delete" "delq" "delete-if" "delete-if-not" "copy-sequence" "sequencep"
    "functionp" "special-form-p" "subrp" "eql" "lxor" "max" "min" "filter" ; 0x90
    "macrop" "bytecodep" "pushi\t0" "pushi\t1" "pushi\t2" "pushi\t-1" "pushi\t-2" "pushi\t%d"
    "pushi\t%d" "pushi\t%d" "caar" "cadr" "cdar" "cddr" "caddr" "cadddr"	 ; 0xa0
-   "caddddr" "cadddddr" "caddddddr" "cadddddddr" nil nil nil nil
-   "bindobj" "forbid" "permit" nil nil nil nil nil	 ; 0xb0
-   nil nil "swap2" "mod" "make-closure" nil "closurep" "bindenv"
+   "caddddr" "cadddddr" "caddddddr" "cadddddddr" "floor" "ceiling" "truncate" "round"
+   "bindobj" "forbid" "permit" "exp" "log" "sin" "cos" "tan"	 ; 0xb0
+   "sqrt" "expt" "swap2" "mod" "make-closure" nil "closurep" "bindenv"
    nil nil nil nil nil nil nil nil	 ; 0xc0
    nil nil nil nil nil nil nil nil
    nil nil nil nil nil nil nil nil	 ; 0xd0
