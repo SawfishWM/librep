@@ -437,7 +437,7 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 		else
 		{
 		    close(stdin_fds[0]);
-		    close(stdout_fds[1]);
+		    close(stdin_fds[1]);
 		}
 	    }
 	}
@@ -774,10 +774,10 @@ set in the PROCESS prior to calling this function.
     return(res);
 }
 
-_PR VALUE cmd_run_process(VALUE arg_list);
-DEFUN("run-process", cmd_run_process, subr_run_process, (VALUE arg_list), V_SubrN, DOC_run_process) /*
-::doc:run_process::
-run-process [PROCESS] [IN-FILE] [PROGRAM] [ARGS...]
+_PR VALUE cmd_call_process(VALUE arg_list);
+DEFUN("call-process", cmd_call_process, subr_call_process, (VALUE arg_list), V_SubrN, DOC_call_process) /*
+::doc:call_process::
+call-process [PROCESS] [IN-FILE] [PROGRAM] [ARGS...]
 <UNIX-ONLY>
 
 Starts a process running on process-object PROCESS. Waits for the child to
@@ -1361,7 +1361,7 @@ proc_init(void)
     INTERN(sym_pty_echo, "pty-echo");
     ADD_SUBR(subr_make_process);
     ADD_SUBR(subr_start_process);
-    ADD_SUBR(subr_run_process);
+    ADD_SUBR(subr_call_process);
     ADD_SUBR(subr_signal_process);
     ADD_SUBR(subr_interrupt_process);
     ADD_SUBR(subr_kill_process);
