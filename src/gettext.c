@@ -33,7 +33,7 @@ extern char *gnu_gettext (const char *msgid);
 extern char *gnu_textdomain (const char *domainname);
 extern char *gnu_bindtextdomain (const char *domainname, const char *dirname);
 
-DEFUN("_", Fgettext, Sgettext, (repv in), rep_Subr1)
+DEFUN("gettext", Fgettext, Sgettext, (repv in), rep_Subr1)
 {
     char *out;
     rep_DECLARE1(in, rep_STRINGP);
@@ -74,12 +74,22 @@ DEFUN("textdomain", Ftextdomain, Stextdomain, (repv dom), rep_Subr1)
 
 /* DL hooks */
 
+DEFSTRING(underscore, "_");
+
 repv
 rep_dl_init(void)
 {
-    repv tem = rep_push_structure ("gettext");
+    repv tem = rep_push_structure ("gettext"), ret;
     rep_ADD_SUBR(Sgettext);
     rep_ADD_SUBR(Sbindtextdomain);
     rep_ADD_SUBR(Stextdomain);
-    return rep_pop_structure (tem);
+    ret = rep_pop_structure (tem);
+
+    /* Update binding of `_' in `rep' structure to point at the
+       gettext function */
+    tem = rep_push_structure ("rep");
+    Fset (Fintern (rep_VAL (&underscore), Qnil), rep_VAL (&Sgettext));
+    rep_pop_structure (tem);
+
+    return ret;
 }
