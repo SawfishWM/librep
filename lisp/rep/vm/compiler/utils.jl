@@ -261,7 +261,7 @@
 ;; Return t if FORM is a constant
 (defun compiler-constant-p (form)
   (cond
-   ((or (integerp form) (stringp form)
+   ((or (numberp form) (stringp form)
 	(vectorp form) (bytecodep form)
 	(eq form t) (eq form nil)))
    ((consp form)
@@ -276,7 +276,7 @@
 ;; If FORM is a constant, return its value
 (defun compiler-constant-value (form)
   (cond
-   ((or (integerp form) (stringp form)
+   ((or (numberp form) (stringp form)
 	(vectorp form) (bytecodep form)
 	(eq form t) (eq form nil))
     ;; Self-evaluating types
