@@ -878,17 +878,26 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 		    ptr = fmt+1 + (flags_end - flags_start);
 		    strncpy(ptr, width_start, width_end - width_start);
 		    ptr += width_end - width_start;
+		    if (c != 'c')
+			ptr = stpcpy (ptr, rep_PTR_SIZED_INT_CONV);
 		    *ptr++ = c;
 		    *ptr = 0;
+		    if (c == 'c')
+		    {
 #ifdef HAVE_SNPRINTF
-		    snprintf(buf, sizeof(buf),
+			snprintf (buf, sizeof (buf), fmt, (int)rep_INT(val));
 #else
-		    sprintf(buf,
+			sprintf (buf, fmt, (int)rep_INT(val));
 #endif
-			    fmt,
-			    rep_INTP(val) ? rep_INT(val)
-			    : rep_LONG_INTP(val) ? rep_LONG_INT (val)
-			    : (long)val);
+		    }
+		    else
+		    {
+#ifdef HAVE_SNPRINTF
+			snprintf(buf, sizeof(buf), fmt, rep_INT(val));
+#else
+			sprintf(buf, fmt, rep_INT(val));
+#endif
+		    }
 		    rep_stream_puts(stream, buf, -1, rep_FALSE);
 		    break;
 
