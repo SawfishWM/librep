@@ -62,7 +62,7 @@ emacssitelispdir='${datadir}/emacs/site-lisp'
 
 dnl make sure we can find libraries and headers under $prefix
 case "$prefix" in
-  /|/usr|/usr/local)
+  /|/usr|/usr/local|NONE)
     ;;
   *)
     LDFLAGS="${LDFLAGS} -L$prefix/lib"
