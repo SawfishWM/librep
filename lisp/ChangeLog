@@ -1,3 +1,20 @@
+1999-02-01  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rm-mail-dir.jl (rm-mail-dir-auto-scan-hook): new hook
+
+1999-01-31  John Harper  <john@dcs.warwick.ac.uk>
+
+	* html-decode.jl: only underline links (anchors with href
+	field). Add anchors to a list that's returned to the caller
+	* html-display.jl (html-display-goto-anchor): new command
+	* find-url.jl: support for anchors specified in URLs
+
+	* bytecodes.jl: several pushi instructions
+	* compiler.jl (comp-write-raw-op): new function
+	(comp-compile-constant): use pushi instructions to compile
+	integers where possible
+	* disassembler.jl (disassemble): support pushi instructions
+
 1999-01-28  John Harper  <john@dcs.warwick.ac.uk>
 
 	* find-url.jl (find-file-as-url): new command

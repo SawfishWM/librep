@@ -1,3 +1,18 @@
+1999-01-31  John Harper  <john@dcs.warwick.ac.uk>
+
+	* bytecodes.h: several OP_PUSHI opcodes for pushing immediate
+	integers (of various sizes)
+	* lispmach.c (cmd_jade_byte_code): added PUSHI instructions
+
+	* lispmach.c (cmd_validate_byte_code): had the minor
+	comparisons the wrong way around
+
+	* x11_windowsys.h (struct x11_display): added `name' field
+	* x11_main.c (x11_get_display): new function, searches for a
+	named open display
+	(x11_open_display): call x11_get_display before creating a new
+	one
+
 1999-01-29  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_processes.c (run_process): clean up better when fork
