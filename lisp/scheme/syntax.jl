@@ -125,19 +125,22 @@
   (defmacro begin forms
     (cons '%progn forms))
 
-  ;; I could have written this using named let, but since rep currently
-  ;; doesn't have a tail-recursive interpreter (only a compiler), using
-  ;; `while' may be more useful..
+  ;; initially I wrote this using while, to avoid the non-tail-recursive
+  ;; interpreter, but that doesn't create fresh bindings for each
+  ;; iteration
   (defmacro do (vars test . body)
-    `(let ,(mapcar (lambda (var)
-		     (list (car var) (cadr var))) vars)
-       (%while (%test (not ,(car test)))
-	 ,@body
-	 ,@(mapcar (lambda (var)
-		     `(set! ,(car var) ,(rep#cond
-					 ((cddr var) (caddr var))
-					 (t (car var))))) vars))
-       ,@(cdr test)))
+    ((lambda (tem)
+       `(let ,tem ,(mapcar (lambda (var)
+			     (list (car var) (cadr var))) vars)
+	  (if ,(car test)
+	      (begin ,@(cdr test))
+	    ,@body
+	    (,tem ,@(mapcar (lambda (var)
+			      (rep#cond
+			       ((cddr var) (caddr var))
+			       (t (car var))))
+			    vars)))))
+     (gensym)))
 
   (defmacro delay (expression)
     `(%make-promise (lambda () ,expression)))
