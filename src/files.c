@@ -432,7 +432,7 @@ or whatever).
     if(!file_name)
 	return LISP_NULL;
 
-    /* Now canonicalise FILE-NAME. */
+    /* Now simplify FILE-NAME. */
 
     handler = get_file_handler(file_name, op_expand_file_name);
     if(NILP(handler))
@@ -475,14 +475,15 @@ of a file is defined such that two files can be compared simply by comparing
 their canonical names; if the names match, they refer to the same file.
 
 (Note that the opposite isn't always true, if two canonical names don't
-match the file could still be the same, for example via symbolic links.)
+match the file could still be the same, for example via links. On most
+operating systems, symbolic links will be expanded where possible.)
 ::end:: */
 {
     VALUE handler = expand_and_get_handler(&file, op_canonical_file_name);
     if(!handler)
 	return LISP_NULL;
     if(NILP(handler))
-	return file;
+	return sys_canonical_file_name(file);
     else
 	return call_handler(handler, op_canonical_file_name,
 			    sym_canonical_file_name, 1, file);
