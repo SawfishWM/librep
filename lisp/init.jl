@@ -33,10 +33,9 @@
 
 ;; Function decls
 
-(progn					;progn forces compilation
-  (setq defmacro
-	(cons 'macro
-	      (lambda (symbol . body)
+(setq defmacro
+      (cons 'macro
+	    (lambda (symbol . body)
 "defmacro NAME LAMBDA-LIST [DOC-STRING] BODY...
 defmacro NAME BYTECODE-OBJECT
 
@@ -48,15 +47,15 @@ to return a form which will be executed to provide the result of the
 expression. Note that macros are expanded at compile-time, and may be
 expanded an arbitrary number of times."
 
-	        (cond ((bytecodep (car body))
-		       (setq body (car body)))
-		      (t
-		       (setq body (list 'quote (cons 'lambda body)))))
-	        (list 'setq symbol
-		      (list 'cons
-			    (list 'quote 'macro)
-			    (list 'make-closure body
-				  (symbol-name symbol))))))))
+	      (cond ((bytecodep (car body))
+		     (setq body (car body)))
+		    (t
+		     (setq body (list 'quote (cons 'lambda body)))))
+	      (list 'setq symbol
+		    (list 'cons
+			  (list 'quote 'macro)
+			  (list 'make-closure body
+				(symbol-name symbol)))))))
 
 (defmacro defun (symbol . body)
   "defun NAME LAMBDA-LIST [DOC-STRING] BODY...

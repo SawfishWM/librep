@@ -75,7 +75,6 @@ sdbm-store,
 sdbmp,
 set-default,
 setq-default,
-with-object,
 
 
 @node Intro, Data Types, , The language
@@ -1256,13 +1255,13 @@ This function returns the cdr (second element) of the cons cell
 @defun rplaca cons-cell new-car
 This function sets the value of the car (first element) in the cons
 cell @var{cons-cell} to @var{new-car}. The value returned is
-@var{new-car}.
+@var{cons-cell}.
 
 @lisp
 (setq x (cons 1 2))
     @result{} (1 . 2)
 (rplaca x 3)
-    @result{} 3
+    @result{} (3 . 2)
 x
     @result{} (3 . 2)
 @end lisp
@@ -4912,8 +4911,8 @@ often outweighs the slight inefficiency.
 Also note that currently no attempt is made to save or restore the
 dynamic state of the Lisp system, apart from variable bindings (both
 lexical and special). This means that any @code{unwind-protect},
-@code{condition-case}, @code{catch}, or @code{with-object} forms that
-are active when invoking a continuation are all ignored.
+@code{condition-case} or @code{catch} forms that are active when
+invoking a continuation are all ignored.
 
 Another restriction is that invoking a continuation may not cause
 control to pass across a dynamic root (@pxref{Threads}).
