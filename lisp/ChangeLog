@@ -1,3 +1,7 @@
+1999-10-24  John Harper  <john@dcs.warwick.ac.uk>
+
+	* version 0.7
+
 1999-10-17  John Harper  <john@dcs.warwick.ac.uk>
 
 	* tar-file-handler.jl: read-only access to files stored in tar

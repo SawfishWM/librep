@@ -1,5 +1,7 @@
 1999-10-24  John Harper  <john@dcs.warwick.ac.uk>
 
+	* version 0.7
+
 	* lispcmds.c (Fload): remember to call Fclose_file on any
 	opened streams
 
