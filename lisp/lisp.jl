@@ -157,17 +157,10 @@ string INPUT."
   (time-later-p (file-modtime file1) (file-modtime file2)))
 
 ;; Some function pseudonyms
-(defun setcar (cell value)
-  (rplaca cell value))
-
-(defun setcdr (cell value)
-  (rplacd cell value))
-
-(defun string= (x y)
-  (equal x y))
-
-(defun string< (&rest args)
-  (cons '< args))
+(define-value 'setcar rplaca)
+(define-value 'setcdr rplacd)
+(define-value 'string= equal)
+(define-value 'string< <)
 
 (defun error (&rest args)
   (signal 'error (list (apply format nil args))))
@@ -238,28 +231,32 @@ string INPUT."
 ;; numeric functions
 
 (defun positivep (x)
+  "Return t if X is greater than zero."
   (> x 0))
 
 (defun negativep (x)
+  "Return t if X is less than zero."
   (< x 0))
 
 (defun oddp (x)
+  "Return t if X is odd, i.e. (/= (mod X 2) 0)."
   (not (zerop (mod x 2))))
 
 (defun evenp (x)
+  "Return t if X is odd, i.e. (= (mod X 2) 0)."
   (zerop (mod x 2)))
 
 (defun abs (x)
+  "Return the absolute value of X, i.e. (max X (- X))."
   (max x (- x)))
 
-(defun % (x y)
-  (remainder x y))
-
-(defun modulo (x y)
-  (mod x y))
-
 (defun lcm (a b)
+  "Return the least common multiple of integers A and B."
   (quotient (* a b) (gcd a b)))
+
+(define-value '% remainder)
+(define-value 'modulo mod)
+(define-value 'lsh ash)
 
 
 ;; guardian wrapper
