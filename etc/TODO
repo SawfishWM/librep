@@ -99,14 +99,24 @@ General programming tasks:
    the list of messages being viewed (since there's no single buffer,
    but we may be viewing different virtual folders in separate windows)
 
-   I like the idea of a central "pool" of messages formed from a list
-   of folders (commands to add/remove folders from the pool), using
-   restriction mechanisms to select the actual list of messages to be
-   viewed.
+   There's two basic ideas here: selection and restriction. We _select_
+   an input set of messages, then _restrict_ it to the messages we wish
+   to display. The selection can be done on a folder by folder basis,
+   adding and removing folders as required. The restriction needs to
+   allow complex rules, most easily done through Lisp, i.e.
 
-   Alternatively, we could remove the need for folders completely
-   (and the lame mbox format) by using some kind of database of
-   messages. This would open up a whole new set of questions..
+	(and (header "From" "john@dcs.warwick.ac.uk")
+	     (not (header "Subject" "Jade")))
+
+   where all strings are regexps. The non `and', `or', `not' forms can
+   be preprocessed to translate to real functions (local macros?). We
+   could provide a defrule statement. The rules can even be compiled
+   for extra speed.
+
+   What other predicates would be useful? Some things that come to
+   mind: date (after/before), size, folder, body search (slow),
+   recipient, sender, flags (unread, deleted, filed, ...), calling of
+   sub-rules.
 
  - Allow jadeclient to communicate inter-host.
 

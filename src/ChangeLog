@@ -1,5 +1,8 @@
 Mon May 25 17:11:32 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* lispcmds.c (cmd_if, cmd_and, cmd_or): reinstated these
+	special forms
+
 	* lisp.c (throw_value): declared as volatile. This stops the
 	compiler optimizing tests out of existence
 

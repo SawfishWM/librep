@@ -1,5 +1,13 @@
 Mon May 25 17:12:39 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* rm-output.jl (rm-output-message): call 'rm-after-import-hook
+
+	* rm-thread.jl (rm-auto-thread-new-messages): new variable
+
+	* lisp.jl (if, and, or): deleted, they're now special forms
+	* compiler.jl (if, and, or): source code transformations to
+	compile these special forms
+
 	* compiler.jl, lisp.jl: support for eval-when-compile
 	construct, though I'm not sure if it has the correct semantics
 	at anything but the top-level?
