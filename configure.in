@@ -152,6 +152,10 @@ if test "$doug_lea_malloc" = "no"; then
       dnl dlmalloc is broken on Tru64
       AC_DEFINE(LIBC_MALLOC)
       ;;
+    *-sparc-sun*)
+      dnl dlmalloc may be broken on solaris
+      AC_DEFINE(LIBC_MALLOC)
+      ;;
     *)
       EXTRA_LIBOBJS="${EXTRA_LIBOBJS} dlmalloc.o"
       AC_DEFINE(DOUG_LEA_MALLOC)
