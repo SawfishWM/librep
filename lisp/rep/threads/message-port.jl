@@ -56,7 +56,7 @@
 
   (define (message-fetch port #!optional timeout)
     "Fetch the earliest unread message sent to message port PORT. Blocks the
-current thread for TIMEOUT microseconds, or indefinitely if TIMEOUT isn't
+current thread for TIMEOUT milliseconds, or indefinitely if TIMEOUT isn't
 defined. Returns the message, or false if no message could be read."
     (obtain-mutex (port-mutex port))
     (unwind-protect
@@ -74,7 +74,9 @@ defined. Returns the message, or false if no message could be read."
     "Send the message MESSAGE (an arbitrary value) to message port PORT."
     (obtain-mutex (port-mutex port))
     (unwind-protect
-	(enqueue (port-queue port) message)
+	(progn
+	  (enqueue (port-queue port) message)
+	  (condition-variable-signal (port-condition port)))
       (release-mutex (port-mutex port)))))
 
 
