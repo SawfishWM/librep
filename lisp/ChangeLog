@@ -1,3 +1,20 @@
+1998-10-08  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rm-mime.jl, mime-quoted-printable.jl, mime-decode.jl,
+	mime-base64.jl: initial support for decoding of MIME messages.
+	The quoted-printable stuff is unimplemented; various shortcuts
+	in mime-decode as well
+
+	* read-mail.jl (rm-display-current-message, rm-proxy-folder):
+	support for rendering messages to a temporary buffer for
+	display (used for MIME for example)
+
+	* rm-summary.jl (rm-summary-view): never return a buffer, only
+	a view
+
+	* compiler.jl (comp-trans-require): tranform to evaluate
+	embedded require forms before compiling them
+
 1998-10-07  John Harper  <john@dcs.warwick.ac.uk>
 
 	* send-mail.jl (sendmail-send-message): when handling FCC
