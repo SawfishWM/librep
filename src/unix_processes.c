@@ -964,8 +964,9 @@ proc_putc(repv stream, int c)
 }
 
 static int
-proc_puts(repv stream, void *buf, int len, rep_bool is_lisp)
+proc_puts(repv stream, void *data, int len, rep_bool is_lisp)
 {
+    u_char *buf = is_lisp ? rep_STR(data) : data;
     return write_to_process(stream, buf, len);
 }
 
