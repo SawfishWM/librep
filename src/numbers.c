@@ -1617,7 +1617,7 @@ Return `e' (the base of natural logarithms) raised to the power X.
 ::end:: */
 {
     rep_DECLARE1 (arg, rep_NUMERICP);
-    return rep_make_float (exp (rep_get_float (arg)), rep_TRUE);
+    return rep_make_float (exp (rep_get_float (arg)), rep_FALSE);
 }
 
 DEFUN("log", Flog, Slog, (repv arg), rep_Subr1) /*
@@ -1632,7 +1632,7 @@ X is less than zero.
     rep_DECLARE1 (arg, rep_NUMERICP);
     d = rep_get_float (arg);
     if (d >= 0)
-	return rep_make_float (log (d), rep_TRUE);
+	return rep_make_float (log (d), rep_FALSE);
     else
 	return Fsignal (Qarith_error, rep_LIST_1 (rep_VAL (&domain_error)));
 }
@@ -1645,7 +1645,7 @@ Returns the sine of X, in radians.
 ::end:: */
 {
     rep_DECLARE1 (arg, rep_NUMERICP);
-    return rep_make_float (sin (rep_get_float (arg)), rep_TRUE);
+    return rep_make_float (sin (rep_get_float (arg)), rep_FALSE);
 }
 
 DEFUN("cos", Fcos, Scos, (repv arg), rep_Subr1) /*
@@ -1656,7 +1656,7 @@ Returns the cosine of X, in radians.
 ::end:: */
 {
     rep_DECLARE1 (arg, rep_NUMERICP);
-    return rep_make_float (cos (rep_get_float (arg)), rep_TRUE);
+    return rep_make_float (cos (rep_get_float (arg)), rep_FALSE);
 }
 
 DEFUN("tan", Ftan, Stan, (repv arg), rep_Subr1) /*
@@ -1667,7 +1667,7 @@ Returns the tangent of X, in radians.
 ::end:: */
 {
     rep_DECLARE1 (arg, rep_NUMERICP);
-    return rep_make_float (tan (rep_get_float (arg)), rep_TRUE);
+    return rep_make_float (tan (rep_get_float (arg)), rep_FALSE);
 }
 
 DEFUN("asin", Fasin, Sasin, (repv arg), rep_Subr1) /*
@@ -1681,7 +1681,7 @@ Return the arc sine of X (the value whose sine is X), in radians.
     rep_DECLARE1 (arg, rep_NUMERICP);
     d = rep_get_float (arg);
     if (d >= -1.0 && d <= 1.0)
-	return rep_make_float (asin (d), rep_TRUE);
+	return rep_make_float (asin (d), rep_FALSE);
     else
 	return Fsignal (Qarith_error, rep_LIST_1 (rep_VAL (&domain_error)));
 }
@@ -1697,7 +1697,7 @@ Return the arc cosine of X (the value whose cosine is X), in radians.
     rep_DECLARE1 (arg, rep_NUMERICP);
     d = rep_get_float (arg);
     if (d >= -1.0 && d <= 1.0)
-	return rep_make_float (acos (d), rep_TRUE);
+	return rep_make_float (acos (d), rep_FALSE);
     else
 	return Fsignal (Qarith_error, rep_LIST_1 (rep_VAL (&domain_error)));
 }
@@ -1718,10 +1718,10 @@ be zero.
 {
     rep_DECLARE1 (y, rep_NUMERICP);
     if (!rep_NUMERICP (x))
-	return rep_make_float (atan (rep_get_float (y)), rep_TRUE);
+	return rep_make_float (atan (rep_get_float (y)), rep_FALSE);
     else
 	return rep_make_float (atan2 (rep_get_float (y),
-				      rep_get_float (x)), rep_TRUE);
+				      rep_get_float (x)), rep_FALSE);
 }
 
 DEFUN("sqrt", Fsqrt, Ssqrt, (repv arg), rep_Subr1) /*
@@ -1736,7 +1736,7 @@ arithmetic error (should return a complex number).
     rep_DECLARE1 (arg, rep_NUMERICP);
     d = rep_get_float (arg);
     if (d >= 0)
-	return rep_make_float (sqrt (d), rep_TRUE);
+	return rep_make_float (sqrt (d), rep_FALSE);
     else
 	return Fsignal (Qarith_error, rep_LIST_1 (rep_VAL (&domain_error)));
 }
