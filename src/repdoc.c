@@ -62,9 +62,9 @@ scanfile(FILE *src, SDBM *sdbm)
 	    *out = 0;
 
 	    key.dptr = id;
-	    key.dsize = strlen(id) + 1;
+	    key.dsize = strlen(id);
             value.dptr = buf;
-	    value.dsize = strlen(buf) + 1;
+	    value.dsize = strlen(buf);
 	    sdbm_store (sdbm, key, value, SDBM_REPLACE);
 	}
     }
