@@ -1,3 +1,23 @@
+1999-01-12  John Harper  <john@dcs.warwick.ac.uk>
+
+	* dired.jl (dired-do-copy): only call summary-update when
+	copying to the displayed directory
+
+	* help.jl (describe-function): handle nil doc string
+
+	* buffers.jl (find-file): expand the file name before doing
+	anything with it, also if it's a directory, call
+	directory-file-name on it
+
+	* remote-ftp.jl: cache more than one directory listing, and
+	expire cached directories after X minutes (default X=5).
+	(remote-ftp-command): instead of just returning t if the
+	command succeeded, signal a file-error if it failed; nothing
+	really checked the return value anyway..
+	(remote-ftp-open-session): if remote-ftp-login fails (i.e.
+	signals an error), close the session before propagating the
+	error
+
 1999-01-11  John Harper  <john@dcs.warwick.ac.uk>
 
 	* dired.jl (dired-do-copy, dired-do-rename): set default file
