@@ -157,10 +157,29 @@ DEFUN("current-time", cmd_current_time, subr_current_time, (void), V_Subr0, DOC_
 current-time
 
 Return a value denoting the current system time. This will be a cons cell
-containing two numbers, the low 24 bits, and the higher bits.
+containing (DAYS . SECONDS), the number of DAYS since the epoch, and the
+number of seconds since the start of the day (universal time).
 ::end:: */
 {
-    return(MAKE_LONG_INT(sys_time()));
+    u_long time = sys_time();
+    return MAKE_TIME(time);
+}
+
+_PR VALUE cmd_fix_time(VALUE time);
+DEFUN("fix-time", cmd_fix_time, subr_fix_time, (VALUE time), V_Subr1, DOC_fix_time) /*
+::doc:fix_time::
+fix-time TIMESTAMP
+
+Ensure that the two parts of TIMESTAMP are mutually consistent. If not
+TIMESTAMP is altered. Returns TIMESTAMP.
+::end:: */
+{
+    u_long timestamp;
+    DECLARE1(time, TIMEP);
+    timestamp = GET_TIME(time);
+    VCAR(time) = MAKE_INT(timestamp / 86400);
+    VCDR(time) = MAKE_INT(timestamp % 86400);
+    return time;
 }
 
 _PR VALUE cmd_current_time_string(VALUE time, VALUE format);
@@ -178,8 +197,8 @@ the same conventions as the template to the C library's strftime function.
 ::end:: */
 {
     time_t timestamp;
-    if(LONG_INTP(time))
-	timestamp = VLONG_INT(time);
+    if(TIMEP(time))
+	timestamp = GET_TIME(time);
     else
 	timestamp = sys_time();
     if(STRINGP(format))
@@ -207,9 +226,12 @@ time-later-p TIME-STAMP1 TIME-STAMP2
 Returns t when TIME-STAMP1 refers to a later time than TIME-STAMP2.
 ::end:: */
 {
-    DECLARE1(t1, LONG_INTP);
-    DECLARE2(t2, LONG_INTP);
-    return VLONG_INT(t1) > VLONG_INT(t2) ? sym_t : sym_nil;
+    u_long time1, time2;
+    DECLARE1(t1, TIMEP);
+    DECLARE2(t2, TIMEP);
+    time1 = GET_TIME(t1);
+    time2 = GET_TIME(t2);
+    return time1 > time2 ? sym_t : sym_nil;
 }
 
 _PR VALUE cmd_sleep_for(VALUE secs, VALUE msecs);
@@ -338,6 +360,7 @@ misc_init(void)
     ADD_SUBR_INT(subr_beep);
     ADD_SUBR(subr_make_completion_string);
     ADD_SUBR(subr_current_time);
+    ADD_SUBR(subr_fix_time);
     ADD_SUBR(subr_current_time_string);
     ADD_SUBR(subr_time_later_p);
     ADD_SUBR(subr_sleep_for);
