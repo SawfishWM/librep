@@ -51,4 +51,8 @@ enum server_request {
 /* How we test for pending input */
 #define INPUT_PENDING (unix_input_pending != 0)
 
+#ifndef HAVE_REALPATH
+extern char *realpath (const char *name, char *resolved);
+#endif
+
 #endif /* _UNIX_DEFS_H */
