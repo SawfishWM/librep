@@ -144,6 +144,11 @@
   (define (module-imports name)
      (structure-imports (get-structure name)))
 
+  (define (locate-binding* name)
+    (locate-binding name (append (list (repl-struct (fluid current-repl)))
+				 (module-imports
+				  (repl-struct (fluid current-repl))))))
+
 
 ;;; commands
 
@@ -287,11 +292,8 @@ enter a meta-command prefixed by a `,' character.\n\n")
        (lambda (name)
 	 (require 'rep.lang.doc)
 	 (let* ((value (repl-eval name))
-		(imports (append (list (repl-struct (fluid current-repl)))
-				 (module-imports
-				  (repl-struct (fluid current-repl)))))
 		(doc (documentation
-		      name (locate-binding name imports) value)))
+		      name (locate-binding* name) value)))
 	   (write standard-output #\newline)
 	   (describe-value value name)
 	   (write standard-output #\newline)
@@ -311,6 +313,15 @@ enter a meta-command prefixed by a `,' character.\n\n")
 	   (mapc (lambda (x)
 		   (describe-value (repl-eval x) x)) funs))))
   (put 'apropos 'repl-help "\"REGEXP\"")
+
+  (put 'locate 'repl-command
+       (lambda (var)
+	 (let ((struct (locate-binding* var)))
+	   (if struct
+	       (format standard-output "`%s' is bound in `%s'\n"
+		       var struct)
+	     (format standard-output "`%s' is unbound\n" var)))))
+  (put 'locate 'repl-help "SYMBOL")
 
   (put 'time 'repl-command
        (lambda (form)
