@@ -36,6 +36,8 @@
 
 (define-structure scheme (export
 
+			  #f #t
+
 			  ;; syntax
 
 			  quote lambda if set! cond case and or
