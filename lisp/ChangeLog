@@ -1,5 +1,12 @@
 Sun Apr 26 13:39:17 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* buffers.jl: call (window-list), instead of variable
+	window-list
+	* loadkeys.jl, loadmenus.jl, server.jl: use make- and
+	delete-window instead of open- and close-window
+	* windows.jl (window-list, window-closed-hook, open-window,
+	open-window-on-display, close-window): deleted
+
 	* buffers.jl (mildly-special-buffer): deleted this variable
 	(kill-buffer): don't destroy-buffer, just remove it from all
 	buffer-list's. Moved remove-buffer into this function

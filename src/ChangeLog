@@ -1,5 +1,19 @@
 Sun Apr 26 19:23:28 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* views.c (make_view): minor changes to how we set up the view
+	* windows.c (cmd_make_window, cmd_destroy_window): assume
+	responsibilities of open-window and close-window.
+	destroy-window renamed as delete-window, and split into two
+	functions, delete_window, and cmd_delete_window. The Lisp
+	variant calls save-and-quit if window_count==1
+	(sym_make_window_hook): no longer passed an argument
+	(sym_destroy_window_hook): renamed delete-window-hook
+	(cmd_window_list): new function
+	(sym_window_closed_hook): deleted
+	* x11_windows.c (cmd_make_window_on_display): made interactive
+	* x11_main.c (handle_event): call delete-window, not
+	window-closed-hook
+
 	* redisplay.c, glyphs.c: another attempt to fix a display bug
 
 	* edit.h (TXFF_SPECIAL): deleted this flag
