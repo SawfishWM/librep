@@ -169,6 +169,7 @@ The number of list levels to descend when printing before abbreviating.
 
 DEFSYM(autoload_verbose, "autoload-verbose");
 DEFSYM(load, "load");
+DEFSYM(macro_environment, "macro-environment");
 
 /* When rep_TRUE Feval() calls the "debug-entry" function */
 rep_bool rep_single_step_flag;
@@ -1821,6 +1822,9 @@ specified it is an alist of `(MACRO-NAME . DEFINITION)'.
 top:
     if(rep_CONSP(form))
     {
+	repv bindings;
+	rep_GC_root gc_bindings;
+
 	car = rep_CAR(form);
 	if(rep_SYMBOLP(car))
 	{
@@ -1841,7 +1845,11 @@ top:
 	if (Ffunctionp(car) == Qnil)
 	    goto end;
 
+	bindings = rep_bind_symbol (Qnil, Qmacro_environment, env);
+	rep_PUSHGC(gc_bindings, bindings);
 	form = rep_funcall (car, rep_CDR(form), rep_FALSE);
+	rep_POPGC;
+	rep_unbind_symbols (bindings);
 	if (form != rep_NULL)
 	    goto top;
     }
@@ -2198,4 +2206,5 @@ rep_lisp_init(void)
 
     rep_INTERN_SPECIAL(autoload_verbose);
     rep_INTERN(load);
+    rep_INTERN_SPECIAL(macro_environment);
 }
