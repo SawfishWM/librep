@@ -22,7 +22,7 @@
 #define BYTECODES_H
 
 #define BYTECODE_MAJOR_VERSION 8
-#define BYTECODE_MINOR_VERSION 1
+#define BYTECODE_MINOR_VERSION 2
 
 /* Number of bits encoded in each extra opcode forming the argument. */
 #define ARG_SHIFT    8
@@ -175,6 +175,18 @@
 #define OP_PUSHI 0x9f			/* push (signed) pc[0] */
 #define OP_PUSHIWN 0xa0			/* push (- pc[0,1]) */
 #define OP_PUSHIWP 0xa1			/* push (+ pc[0,1]) */
+
+#define OP_CAAR 0xa2			/* push (car (car pop[1])) */
+#define OP_CADR 0xa3			/* push (car (cdr pop[1])) */
+#define OP_CDAR 0xa4			/* push (cdr (car pop[1])) */
+#define OP_CDDR 0xa5			/* push (cdr (cdr pop[1])) */
+
+#define OP_CADDR 0xa6
+#define OP_CADDDR 0xa7
+#define OP_CADDDDR 0xa8
+#define OP_CADDDDDR 0xa9
+#define OP_CADDDDDDR 0xaa
+#define OP_CADDDDDDDR 0xab
 
 #define OP_BINDOBJ 0xb0			/* bind stk[0] */
 
