@@ -21,6 +21,7 @@
 #include "jade.h"
 #include "jade_protos.h"
 #include "revision.h"
+#include "build.h"
 
 #include <string.h>
 #include <ctype.h>
@@ -430,6 +431,20 @@ Return a string identifying the current version of Jade.
     return VAL(vers_string);
 }
 
+_PR VALUE cmd_version_and_build_string(void);
+DEFUN("version-and-build-string", cmd_version_and_build_string, subr_version_and_build_string, (void), V_Subr0, DOC_version_and_build_string) /*
+::doc:version_and_build_string::
+version-and-build-string
+
+Returns a string describing the current version of Jade, as well as where
+and when it was built.
+::end:: */
+{
+    static DEFSTRING(build_string, VERSSTRING ", built " BUILD_DATE
+		     " on " BUILD_HOST ", by " BUILD_USER ".");
+    return VAL(build_string);
+}
+
 _PR VALUE cmd_getenv(VALUE name);
 DEFUN("getenv", cmd_getenv, subr_getenv, (VALUE name), V_Subr1, DOC_getenv) /*
 ::doc:getenv::
@@ -470,5 +485,6 @@ misc_init(void)
     ADD_SUBR(subr_major_version_number);
     ADD_SUBR(subr_minor_version_number);
     ADD_SUBR(subr_version_string);
+    ADD_SUBR(subr_version_and_build_string);
     ADD_SUBR(subr_getenv);
 }
