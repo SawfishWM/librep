@@ -19,6 +19,7 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* These are the Lisp objects which are classed as streams:
+
    FILE: [rw]
    MARK: [rw] advance pos attribute of mark afterwards
    BUFFER: [rw] from cursor pos
@@ -30,7 +31,10 @@
   		  return the next character, when writing it is called with
   		  one arg, either character or string.
    PROCESS: [w] write to the stdin of the PROCESS if it's running
-   t: [w] display in status line  */
+   t: [w] display in status line
+
+   Note that when using any of the three BUFFER stream types, the buffer's
+   restriction is respected. */
 
 #include "jade.h"
 #include "jade_protos.h"
@@ -63,12 +67,12 @@ static int
 pos_getc(TX *tx, POS *pos)
 {
     int c = EOF;
-    if(pos->pos_Line < tx->tx_NumLines)
+    if(pos->pos_Line < tx->tx_LogicalEnd)
     {
 	LINE *ln = tx->tx_Lines + pos->pos_Line;
 	if(pos->pos_Col >= (ln->ln_Strlen - 1))
 	{
-	    if(++pos->pos_Line == tx->tx_NumLines)
+	    if(++pos->pos_Line == tx->tx_LogicalEnd)
 	    {
 		--pos->pos_Line;
 		return(EOF);
@@ -330,7 +334,7 @@ stream_putc(VALUE stream, int c)
 		rc = pos_putc(VTX(args), &VPOS(VCDR(stream)), c);
 	    else
 	    {
-		pos.pos_Line = VTX(args)->tx_NumLines - 1;
+		pos.pos_Line = VTX(args)->tx_LogicalEnd - 1;
 		pos.pos_Col = VTX(args)->tx_Lines[pos.pos_Line].ln_Strlen - 1;
 		rc = pos_putc(VTX(args), &pos, c);
 	    }
@@ -467,7 +471,7 @@ stream_puts(VALUE stream, u_char *buf, int bufLen, bool isValString)
 		rc = pos_puts(VTX(args), &VPOS(VCDR(stream)), buf, bufLen);
 	    else
 	    {
-		pos.pos_Line = VTX(args)->tx_NumLines - 1;
+		pos.pos_Line = VTX(args)->tx_LogicalEnd - 1;
 		pos.pos_Col = VTX(args)->tx_Lines[pos.pos_Line].ln_Strlen - 1;
 		rc = pos_puts(VTX(args), &pos, buf, bufLen);
 	    }
