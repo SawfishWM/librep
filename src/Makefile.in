@@ -44,8 +44,11 @@ CC=@CC@
 CPPFLAGS=@CPPFLAGS@
 CFLAGS=$(CPPFLAGS) @CFLAGS@ @X_CFLAGS@
 LDFLAGS=@LDFLAGS@
-LIBS=@LIBOBJS@ @LIBS@
+LIBS=@LIBS@
+LIBOBJS=@LIBOBJS@ @ALLOCA@
 X11LIBS=@X_PRE_LIBS@ -lX11 @X_LIBS@ @X_EXTRA_LIBS@
+JADE_LIBS=$(LIBOBJS) $(LIBS)
+JADECLIENT_LIBS=$(LIBS)
 
 HAVE_X11=@HAVE_X11@
 HAVE_UNIX=@HAVE_UNIX@
@@ -101,28 +104,25 @@ ifeq ($(DUMPED_JADE), 1)
 endif
 
 ifneq ($(HAVE_X11), 0)
- JADE_LIBS = $(LIBS) $(X11LIBS)
-else
- JADE_LIBS = $(LIBS)
+JADE_LIBS += $(X11LIBS)
 endif
-JADECLIENT_LIBS = $(LIBS)
 
 .c.o :
-	$(CC) -c $(CFLAGS) -DJADE -DJADE_DIR=$(jadedir) -I. -I../lib -I.. -o $@ $<
+	$(CC) -c $(CFLAGS) -DJADE -DJADE_DIR=$(jadedir) -DHAVE_CONFIG_H -I. -I../lib -I.. -o $@ $<
 
 .PHONY: clean realclean
 
 ifeq ($(DUMPED_JADE), 0)
-all : jade jadeclient
-
-jade : jade_protos.h doc-strings.h $(OBJS)
-	$(CC) $(LDFLAGS) -o jade $(OBJS) $(JADE_LIBS)
+ all : jade jadeclient
 else
-all : jaded
-
-jaded : jade_protos.h doc-strings.h $(OBJS)
-	$(CC) $(LDFLAGS) -o jaded $(OBJS) $(JADE_LIBS)
+ all : jaded
 endif
+
+jade : jade_protos.h doc-strings.h $(OBJS) $(LIBOBJS)
+	$(CC) $(LDFLAGS) -o jade $(OBJS) $(JADE_LIBS)
+
+jaded : jade_protos.h doc-strings.h $(OBJS) $(LIBOBJS)
+	$(CC) $(LDFLAGS) -o jaded $(OBJS) $(JADE_LIBS)
 
 jadeclient : unix_client.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(JADECLIENT_LIBS)
