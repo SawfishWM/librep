@@ -237,7 +237,7 @@ struct rep_thread_struct {
     rep_thread *next, *pred;
     repv name;
     rep_continuation *cont;
-    repv env, special_env, fh_env;
+    repv env, special_env, fh_env, structure;
     repv (*bytecode)(repv, repv, repv, repv);
     int lock;
     struct timeval run_at;
@@ -748,6 +748,7 @@ thread_save_environ (rep_thread *t)
     t->env = rep_env;
     t->special_env = rep_special_env;
     t->fh_env = rep_fh_env;
+    t->structure = rep_structure;
     t->bytecode = rep_bytecode_interpreter;
 }
 
@@ -757,6 +758,7 @@ thread_load_environ (rep_thread *t)
     rep_env = t->env;
     rep_special_env = t->special_env;
     rep_fh_env = t->fh_env;
+    rep_structure = t->structure;
     rep_bytecode_interpreter = t->bytecode;
 }
 
@@ -1167,7 +1169,7 @@ mark_cont (repv obj)
 	rep_MARKVAL(lc->args);
 	rep_MARKVAL(lc->saved_env);
 	rep_MARKVAL(lc->saved_special_env);
-	rep_MARKVAL(lc->saved_fh_env);
+	rep_MARKVAL(lc->saved_structure);
     }
     for (matches = c->regexp_data;
 	 matches != 0 && !SP_OLDER_P ((char *) matches, c->stack_bottom);
@@ -1175,6 +1177,7 @@ mark_cont (repv obj)
     {
 	struct rep_saved_regexp_data *sd
 	    = FIXUP(struct rep_saved_regexp_data *, c, matches);
+	assert (sd->type ==  rep_reg_obj || sd->type == rep_reg_string);
 	if(sd->type == rep_reg_obj)
 	{
 	    int i;
@@ -1239,6 +1242,7 @@ mark_thread (repv obj)
     rep_MARKVAL (THREAD (obj)->env);
     rep_MARKVAL (THREAD (obj)->special_env);
     rep_MARKVAL (THREAD (obj)->fh_env);
+    rep_MARKVAL (THREAD (obj)->structure);
     rep_MARKVAL (THREAD (obj)->name);
 }
 
