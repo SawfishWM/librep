@@ -169,7 +169,7 @@ results have been received.")
 	(mutex nil))
       response))
 
-  ;; return non-nil if WORD is spelt correctly
+  ;; return true if WORD is spelt correctly
   (define (ispell-test-word word)
     (let ((response (ispell-word word)))
       (string-looking-at "^[*+-]" response)))

@@ -289,7 +289,7 @@ we would like. This is due to the view of folded functions as
 (defun compile-directory (dir-name &optional force-p exclude-re)
   "Compiles all Lisp files in the directory DIRECTORY-NAME whose object
 files are either older than their source file or don't exist. If
-FORCE-P is non-nil every lisp file is recompiled. Any subdirectories of
+FORCE-P is true every lisp file is recompiled. Any subdirectories of
 DIR-NAME are recursed into.
 
 EXCLUDE-RE may be a regexp matching files which shouldn't be compiled."
@@ -310,7 +310,7 @@ EXCLUDE-RE may be a regexp matching files which shouldn't be compiled."
 
 (defun compile-lisp-lib (&optional directory force-p)
   "Recompile all out of date files in the lisp library directory. If FORCE-P
-is non-nil it's as though all files were out of date.
+is true it's as though all files were out of date.
 This makes sure that all doc strings are written to their special file and
 that files which shouldn't be compiled aren't."
   (interactive "\nP")

@@ -94,7 +94,7 @@ added object."
       (set-pos ring new-pos)))
 
   (define (ring-ref ring &optional depth)
-    "Read an object from the ring buffer RING. If DEPTH is non-nil it
+    "Read an object from the ring buffer RING. If DEPTH is true it
 defines the object to access, the most recently added item is at
 depth zero, the next at depth one, and so on. If there is no item at
 DEPTH nil is returned."

@@ -32,7 +32,7 @@
 (defun add-hook (hook-symbol new-func &optional at-end)
   "Arrange it so that FUNCTION-NAME is added to the hook-list stored in
 symbol, HOOK-SYMBOL. It will added at the head of the list unless AT-END
-is non-nil in which case it is added at the end."
+is true in which case it is added at the end."
   (unless (boundp hook-symbol)
     (make-variable-special hook-symbol)
     (set hook-symbol nil))

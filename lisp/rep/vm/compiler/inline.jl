@@ -113,7 +113,7 @@
 
   ;; This compiles an inline lambda, i.e. FUN is something like
   ;; (lambda (LAMBDA-LIST...) BODY...)
-  ;; If PUSHED-ARGS-ALREADY is non-nil it should be a count of the number
+  ;; If PUSHED-ARGS-ALREADY is true it should be a count of the number
   ;; of arguments pushed onto the stack (in reverse order). In this case,
   ;; ARGS is ignored
   (defun compile-lambda-inline (fun args &optional pushed-args-already

@@ -49,7 +49,7 @@
 
   (defun describe-value (value &optional name)
     "Print to standard-output a description of the lisp data object VALUE. If
-NAME is non-nil, then it should be the symbol that is associated with VALUE."
+NAME is true, then it should be the symbol that is associated with VALUE."
     (let*
 	((type (cond
 		((special-form-p value)

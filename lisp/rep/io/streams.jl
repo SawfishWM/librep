@@ -40,7 +40,7 @@ is 0)."
   (read (make-string-input-stream string start)))
 
 (defun streamp (arg)
-  "Returns `t' if ARG is some sort of I/O stream."
+  "Returns true if ARG is some sort of I/O stream."
   (or (input-stream-p arg) (output-stream-p arg)))
 
 (export-bindings '(prin1-to-string read-from-string streamp))

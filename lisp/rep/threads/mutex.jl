@@ -40,7 +40,7 @@
     (list 'mutex))
 
   (defun mutexp (arg)
-    "Return `t' if ARG is a mutex object."
+    "Returns true if ARG is a mutex object."
     (eq (car arg) 'mutex))
 
   (defun obtain-mutex (mtx)
@@ -54,7 +54,7 @@ thread until the mutex is available."
 
   (defun maybe-obtain-mutex (mtx)
     "Attempt to obtain mutex MTX for the current thread without blocking.
-Returns `t' if able to obtain the mutex, `nil' otherwise."
+Returns true if able to obtain the mutex, false otherwise."
     (without-interrupts
      (if (cdr mtx)
 	 nil
@@ -63,7 +63,7 @@ Returns `t' if able to obtain the mutex, `nil' otherwise."
 
   (defun release-mutex (mtx)
     "Release the mutex object MTX (which should have previously been obtained
-by the current thread). Returns `t' if the mutex has no new owner."
+by the current thread). Returns true if the mutex has no new owner."
     (or (eq (cadr mtx) (current-thread))
 	(error "Not owner of mutex: %S" mtx))
     (without-interrupts

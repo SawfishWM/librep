@@ -50,13 +50,13 @@
   "When t, informational messages from FTP sessions are displayed.")
 
 (defvar remote-ftp-max-message-lines nil
-  "When non-nil, the maximum number of FTP message lines to keep.")
+  "When true, the maximum number of FTP message lines to keep.")
 
 (defvar remote-ftp-timeout 30
   "Number of seconds to wait for FTP output before giving up.")
 
 (defvar remote-ftp-max-sessions 5
-  "If non-nil, the maximum number of FTP clients that may be running
+  "If true, the maximum number of FTP clients that may be running
 concurrently.")
 
 (defvar remote-ftp-anon-users "anonymous|ftp"
@@ -70,7 +70,7 @@ concurrently.")
   "Mode in which to transfer files, one of the symbols `binary' or `ascii'.")
 
 (defvar remote-ftp-display-progress nil
-  "When non-nil, show progress of FTP transfers.")
+  "When true, show progress of FTP transfers.")
 
 (defvar remote-ftp-echo-output nil
   "When t, echo all output from FTP processes. Use for debugging only.")

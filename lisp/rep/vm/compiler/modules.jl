@@ -61,7 +61,7 @@
   ;; the name of the module being compiled in
   (define current-module (make-fluid *root-structure*))
 
-  ;; if non-nil, the namespace of the module being compiled in; only
+  ;; if true, the namespace of the module being compiled in; only
   ;; set when compiling code outside a module definition
   (define current-structure (make-fluid
 			     (get-structure (fluid current-module))))

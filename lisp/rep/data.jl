@@ -99,7 +99,7 @@ objects from deallocation when they have no extant references.
 Calling this function with a single argument adds that value to the
 list of objects protected by the guardian. Calling the function with no
 arguments returns one of the objects that would otherwise have been
-deallocated by the garbage collector, or `nil' if no such objects
+deallocated by the garbage collector, or false if no such objects
 exist that have not already been returned."
   (let ((g (make-primitive-guardian)))
     (lambda args
