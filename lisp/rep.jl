@@ -51,7 +51,7 @@
 	   (load (concat (user-home-directory) ".reprc") t t)
 	   (load "rep-default" t)))
       (error
-       (format (stderr-file) "error in local config--> %S\n" error-data))))
+       (default-error-handler (car error-data) (cdr error-data)))))
   
   ;; Use all arguments which are left.
   (let

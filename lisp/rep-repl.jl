@@ -66,7 +66,7 @@
 	   (unless (and input (not (string= "" input)))
 	     (throw 'out)))
 	  (error
-	   (format standard-output "error--> %S\n" data)
+	   (error-handler-function (car data) (cdr data))
 	   (setq input nil)))))))
 
 (put 'in 'repl-command
