@@ -123,7 +123,8 @@
 (defconst op-catch 0x73)
 (defconst op-throw 0x74)
 (defconst op-binderr 0x75)
-(defconst op-unused1 0x76)
+(defconst op-return 0x76)
+(defconst op-unbindall 0x77)
 (defconst op-boundp 0x78)
 (defconst op-symbolp 0x79)
 (defconst op-get 0x7a)
@@ -234,7 +235,7 @@
    -1  -1  -1  -1  0   0   -1  -1
    -1  -1  -1  -1  -1  -1  -1  -1	;0x60
    0   0   -1  0   0   0   0   0
-   0   0   0   nil -1  -1  nil nil	;0x70
+   0   0   0   nil -1  -1  -1  0	;0x70
    0   0   -1  -2  -1  -1  nil 0
    0   -1  -1  -1  -1  0   -1  -1	;0x80
    -1  -1  -1  -1  -1  -1  0   0
