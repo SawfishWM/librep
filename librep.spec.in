@@ -2,11 +2,11 @@
 Name: librep
 Version: @version@
 Release: 1
-Summary: embeddable LISP environment
+Summary: An embeddable LISP environment
 Copyright: GPL
 Group: Development/Languages
-Source: ftp://ftp.dcs.warwick.ac.uk/people/John.Harper/librep/librep-%{version}.tar.gz
-URL: http://www.dcs.warwick.ac.uk/~john/sw/librep.html
+Source: http://download.sourceforge.net/librep/librep-%{version}.tar.gz
+URL: http://librep.sourceforge.net/
 Packager: John Harper <john@dcs.warwick.ac.uk>
 Buildroot: /var/tmp/%{name}-root
 BuildPrereq: gmp-devel gdbm-devel readline-devel
@@ -31,18 +31,19 @@ Requires: %{name}
 Link libraries and C header files for librep development.
 
 %prep
-%setup
+%setup -q
 
 %build
-./configure --with-readline --prefix %{_prefix} %{_host}
-make CFLAGS="$RPM_OPT_FLAGS"
+%configure --with-readline
+make host_type=%{_target_platform}
 
 %install
-rm -rf $RPM_BUILD_ROOT
+[ -n "$RPM_BUILD_ROOT" -a "$RPM_BUILD_ROOT" != / ] && rm -rf $RPM_BUILD_ROOT
 make install \
-    prefix=$RPM_BUILD_ROOT%{_prefix} \
-    aclocaldir=$RPM_BUILD_ROOT%{_prefix}/share/aclocal
-gzip -9nf $RPM_BUILD_ROOT%{_prefix}/info/librep*
+    host_type=%{_target_platform} \
+    DESTDIR=$RPM_BUILD_ROOT \
+    aclocaldir=%{_datadir}/aclocal
+gzip -9nf $RPM_BUILD_ROOT%{_infodir}/librep*
 
 %post
 /sbin/ldconfig
@@ -56,31 +57,34 @@ fi
 %postun -p /sbin/ldconfig
 
 %clean
-rm -rf $RPM_BUILD_ROOT
+[ -n "$RPM_BUILD_ROOT" -a "$RPM_BUILD_ROOT" != / ] && rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root)
 %doc NEWS README THANKS TODO BUGS
-%{_prefix}/bin/rep
-%{_prefix}/bin/rep-remote
-%{_prefix}/lib/librep.so.*
-%{_prefix}/share/rep/%{version}
-%{_prefix}/libexec/rep/%{version}/%{_host}
-%{_prefix}/info/librep*
+%{_bindir}/rep
+%{_bindir}/rep-remote
+%{_libdir}/librep.so.*
+%{_datadir}/rep/%{version}
+%{_libexecdir}/rep/%{version}/%{_target_platform}
+%{_infodir}/librep*
 
 %files devel
 %defattr(-,root,root)
-%{_prefix}/bin/rep-config
-%{_prefix}/bin/rep-xgettext
-%{_prefix}/bin/repdoc
-%{_prefix}/lib/librep.so
-%{_prefix}/include/rep.h
-%{_prefix}/include/rep_*.h
-%{_prefix}/libexec/rep/%{_host}/libtool
-%{_prefix}/libexec/rep/%{_host}/rules.mk
-%{_prefix}/share/aclocal/rep.m4
+%{_bindir}/rep-config
+%{_bindir}/rep-xgettext
+%{_bindir}/repdoc
+%{_libdir}/librep.so
+%{_includedir}/rep.h
+%{_includedir}/rep_*.h
+%{_libexecdir}/rep/%{_target_platform}/libtool
+%{_libexecdir}/rep/%{_target_platform}/rules.mk
+%{_datadir}/aclocal/rep.m4
 
 %changelog
+* Tue Jun 13 2000 John Harper <john@dcs.warwick.ac.uk>
+- use better macros
+
 * Wed Nov 10 1999 Michael K. Johnson <johnsonm@redhat.com>
 - post{,un} use -p
 
