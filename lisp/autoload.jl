@@ -132,6 +132,7 @@
 (autoload 'get-mail-name-from-address "mail-dir" t)
 (autoload 'list-mail-aliases "mail-dir-summary" t)
 (autoload 'list-mail-addresses "mail-dir-summary" t)
+(autoload 'expand-mail-aliases "sm-mail-dir" t)
 (autoload 'set-fill-column "fill" t)
 (autoload 'set-fill-prefix "fill" t)
 (autoload 'fill-paragraph "fill" t)
