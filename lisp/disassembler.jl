@@ -55,7 +55,7 @@
    nil nil nil nil nil nil nil nil	 ; 0xe0
    nil nil nil nil nil nil nil nil
    nil nil nil nil nil nil nil nil	 ; 0xf0
-   nil nil nil "jmp\t%d" "jn\t%d" "jt\t%d" "jnp\t%d" "jtp\t%d" ])
+   nil "jpn\t%d" "jpt\t%d" "jmp\t%d" "jn\t%d" "jt\t%d" "jnp\t%d" "jtp\t%d" ])
 
 ;;;###autoload
 (defun disassemble-fun (fun &optional stream)
