@@ -31,6 +31,8 @@
 
 /* #define GC_MONITOR_STK */
 
+#define TEST_GC_INHIBIT
+
 _PR int value_cmp(VALUE, VALUE);
 _PR void princ_val(VALUE, VALUE);
 _PR void print_val(VALUE, VALUE);
@@ -141,14 +143,26 @@ void
 princ_val(VALUE strm, VALUE val)
 {
     if(val != LISP_NULL)
-	PRINC_VAL(strm, val);
+    {
+	GC_root gc_strm, gc_val;
+	PUSHGC(gc_strm, strm);
+	PUSHGC(gc_val, val);
+	data_types[VTYPE(val)].princ(strm, val);
+	POPGC; POPGC;
+    }
 }
 
 void
 print_val(VALUE strm, VALUE val)
 {
     if(val != LISP_NULL)
-	PRINT_VAL(strm, val);
+    {
+	GC_root gc_strm, gc_val;
+	PUSHGC(gc_strm, strm);
+	PUSHGC(gc_val, val);
+	data_types[VTYPE(val)].print(strm, val);
+	POPGC; POPGC;
+    }
 }
 
 int
@@ -596,10 +610,9 @@ GC_n_roots *gc_n_roots_stack;
 
 /* data_after_gc = bytes of storage used since last gc
    gc_threshold = value that data_after_gc should be before gc'ing
-   idle_gc_threshold = value that DAGC should be before gc'ing in idle time
-   gc_inhibit = protects against against gc in critical section when TRUE  */
+   idle_gc_threshold = value that DAGC should be before gc'ing in idle time */
 _PR int data_after_gc, gc_threshold, idle_gc_threshold, gc_inhibit;
-int data_after_gc, gc_threshold = 100000, idle_gc_threshold = 20000, gc_inhibit;
+int data_after_gc, gc_threshold = 100000, idle_gc_threshold = 20000;
 
 #ifdef GC_MONITOR_STK
 static int *gc_stack_high_tide;
@@ -863,9 +876,6 @@ last garbage-collection is greater than `garbage-threshold'.
     int dummy;
     gc_stack_high_tide = &dummy;
 #endif
-
-    if(gc_inhibit)
-	return(sym_nil);
 
 #ifndef NO_GC_MSG
     old_log_msgs = log_messages;
