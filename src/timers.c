@@ -338,7 +338,6 @@ timer_print (repv stream, repv arg)
 /* DL hooks */
 
 rep_xsubr *rep_dl_subrs[] = { &Smake_timer, &Sdelete_timer, &Sset_timer, 0 };
-repv rep_dl_feature;
 
 repv
 rep_dl_init (void)
@@ -346,8 +345,6 @@ rep_dl_init (void)
     timer_type = rep_register_new_type ("timer", 0, timer_print, timer_print,
 					timer_sweep, timer_mark,
 					timer_mark_active, 0, 0, 0, 0, 0, 0);
-    rep_INTERN (timers);
-    rep_dl_feature = Qtimers;
     pipe (pipe_fds);
     rep_register_input_fd (pipe_fds[0], timer_fd_handler);
 #ifdef HAVE_UNIX
@@ -356,7 +353,8 @@ rep_dl_init (void)
     sigemptyset (&alrm_sigset);
     sigaddset (&alrm_sigset, SIGALRM);
     rep_sig_restart (SIGALRM, rep_TRUE);
-    return Qt;
+    rep_INTERN (timers);
+    return Qtimers;
 }
 
 void

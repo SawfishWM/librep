@@ -251,8 +251,6 @@ rep_xsubr *rep_dl_subrs[] = { &Ssdbm_open, &Ssdbm_close, &Ssdbm_fetch,
 			      &Ssdbm_nextkey, &Ssdbm_rdonly, &Ssdbm_error,
 			      &Ssdbmp, 0 };
 
-repv rep_dl_feature;
-
 repv
 rep_dl_init (void)
 {
@@ -263,6 +261,5 @@ rep_dl_init (void)
     rep_INTERN (sdbm);
     rep_INTERN (insert);
     rep_INTERN (replace);
-    rep_dl_feature = Qsdbm;
-    return Qt;
+    return Qsdbm;
 }

@@ -71,12 +71,10 @@ DEFUN("textdomain", Ftextdomain, Stextdomain, (repv dom), rep_Subr1)
 /* DL hooks */
 
 rep_xsubr *rep_dl_subrs[] = { &Sgettext, &Sbindtextdomain, &Stextdomain, 0 };
-repv rep_dl_feature;
 
 repv
 rep_dl_init(void)
 {
     rep_INTERN(gettext);
-    rep_dl_feature = Qgettext;
-    return Qt;
+    return Qgettext;
 }

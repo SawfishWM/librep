@@ -105,7 +105,6 @@ DEFUN("readline", Freadline, Sreadline, (repv prompt_), rep_Subr1)
 /* DL hooks */
 
 rep_xsubr *rep_dl_subrs[] = { &Sreadline, 0 };
-repv rep_dl_feature;
 
 repv
 rep_dl_init(void)
@@ -115,9 +114,8 @@ rep_dl_init(void)
     rep_INTERN(boundp);
     completions = Qnil;
     rep_mark_static (&completions);
-    rep_dl_feature = Qreadline;
 #ifdef HAVE_LIBREADLINE
     rl_completion_entry_function = (void *) completion_generator;
 #endif
-    return Qt;
+    return Qreadline;
 }
