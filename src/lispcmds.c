@@ -2418,7 +2418,9 @@ lispcmds_init(void)
     ADD_SUBR(subr_return);
     ADD_SUBR(subr_unwind_protect);
     INTERN(sym_load_path, "load-path");
-    VSYM(sym_load_path)->sym_Value = list_2(null_string, MKSTR(LISP_LIB_DIR));
+    VSYM(sym_load_path)->sym_Value = list_3(null_string,
+					    MKSTR(SITE_LISP_DIR),
+					    MKSTR(LISP_LIB_DIR));
     DOC_VAR(sym_load_path, DOC_load_path);
     INTERN(sym_lisp_lib_dir, "lisp-lib-dir");
     VSYM(sym_lisp_lib_dir)->sym_Value = MKSTR(LISP_LIB_DIR);
