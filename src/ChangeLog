@@ -1,3 +1,12 @@
+1999-03-19  John Harper  <john@dcs.warwick.ac.uk>
+
+	* main.c (rep_event_loop_fun): new hook, allows the standard
+	event loop to be replaced
+
+	* unix_main.c (rep_register_input_fd_fun,
+	rep_deregister_input_fd_fun): new hooks, allows non-standard
+	event loops to catch inputs
+
 1999-03-18  John Harper  <john@dcs.warwick.ac.uk>
 
 	* repsdbm.c (rep_dl_init): return Qt

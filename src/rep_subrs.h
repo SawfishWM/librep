@@ -283,6 +283,7 @@ extern rep_bool rep_handle_input_exception(repv *result_p);
 extern void *rep_common_db;
 extern int rep_recurse_depth;
 extern rep_bool (*rep_on_idle_fun)(int since_last);
+extern repv (*rep_event_loop_fun)(void);
 extern repv Qidle_hook;
 extern void (*rep_on_termination_fun)(void);
 extern repv Qexit, Qquit, Qtop_level, Qcommand_line_args;
@@ -497,6 +498,8 @@ extern repv rep_getpwd(void);
 
 /* from unix_main.c */
 extern u_long rep_time(void);
+extern void (*rep_register_input_fd_fun)(int fd, void (*callback)(int fd));
+extern void (*rep_deregister_input_fd_fun)(int fd);
 extern void rep_sleep_for(long secs, long msecs);
 extern void rep_register_input_fd(int fd, void (*callback)(int fd));
 extern void rep_deregister_input_fd(int fd);
