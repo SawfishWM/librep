@@ -56,38 +56,48 @@ strip_common_prefix () {
   echo $str2
 }
 
+# turns `FOO/BAR/BAZ' into `FOO/BAR/libBAZ'
+lib_prefixed () {
+  echo "$1" | sed -e 's/\([^/]*\)$/lib\1/'
+}
+
+dosome () {
+  destroot="$1"; src="$2"; dest="$3"; shift 3
+
+  for g in `echo "${destroot}/${src}.*"`; do
+    if [ -r $g ]; then
+      suf=`echo $g | sed -e 's|^.*'${src}'\(.*\)$|\1|'`
+      if [ $verbose = yes ]; then
+	echo "${src}${suf} -> ${dest}${suf}"
+      fi
+      if [ $dry_run = no ]; then
+	rm -f "${destroot}/${dest}${suf}"
+	case $suf in
+	  .la)
+	    copy_la_file "${destroot}/${src}${suf}" \
+		"${destroot}/${dest}${suf}"
+	    ;;
+	  *)
+	    # make sure links are relative to their own directory
+	    src=`strip_common_prefix $dest $src`
+	    ln -s "${src}${suf}" "${destroot}/${dest}${suf}"
+	    ;;
+	esac
+      fi
+    fi
+  done
+}
+
 doit () {
-  destroot=$1; shift
+  destroot="$1"; shift
   for f in $*; do
     src=`echo $f | sed -e 's/^\(.*\)#\(.*\)$/\1/'`
     dest=`echo $f | sed -e 's/^\(.*\)#\(.*\)$/\2/'`
+    dosome "$destroot" "$src" "$dest"
 
-    for g in `echo "${destroot}/${src}.*"`; do
-      if [ -r $g ]; then
-	suf=`echo $g | sed -e 's|^.*'${src}'\(.*\)$|\1|'`
-	if [ $verbose = yes ]; then
-	  echo "${src}${suf} -> ${dest}${suf}"
-	fi
-	if [ $dry_run = no ]; then
-	  rm -f "${destroot}/${dest}${suf}"
-	  case $suf in
-	    .la)
-	      copy_la_file "${destroot}/${src}${suf}" \
-		  "${destroot}/${dest}${suf}"
-	      ;;
-	    *)
-	      # make sure links are relative to their own directory
-	      src=`strip_common_prefix $dest $src`
-	      ln -s "${src}${suf}" "${destroot}/${dest}${suf}"
-	      ;;
-	  esac
-	fi
-      else
-	if [ $verbose = yes ]; then
-	  echo "Skipping non-existent $src"
-	fi
-      fi
-    done
+    # libtool sometimes needs to prefix module libraries with a `lib'
+    # prefix; this will try to pick up such libraries
+    dosome "$destroot" `lib_prefixed "$src"` `lib_prefixed "$dest"`
   done
 }
 
