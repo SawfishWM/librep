@@ -107,6 +107,11 @@
 	      (fluid current-module)
 	    nil)))))
 
+  (defun variable-stem (var)
+    (if (consp var)
+	(nth 2 var)			;structure-ref
+      var))
+
   (defun symbol-value-1 (var)
     (cond ((and (symbolp var) (special-variable-p var))
 	   (symbol-value var))
@@ -116,9 +121,7 @@
 	  (t
 	   (let ((struct (locate-variable var)))
 	     (and struct (%structure-ref (%intern-structure struct)
-					 (if (consp var)
-					     (nth 2 var)	;structure-ref
-					   var)))))))
+					 (variable-stem var)))))))
 
   ;; if possible, return the value of variable VAR, else return nil
   (defun compiler-symbol-value (var)
@@ -144,11 +147,8 @@
 		  (assq var (fluid lex-bindings))))
 	 (let
 	     ((struct (locate-variable var)))
-	   (and struct (binding-immutable-p
-			(if (consp var)
-			    (nth 2 var)	;structure-ref
-			  var)
-			(%intern-structure struct))))))
+	   (and struct (binding-immutable-p (variable-stem var)
+					    (%intern-structure struct))))))
 
   (defun get-language-property (prop)
     (and (fluid current-language) (get (fluid current-language) prop)))
@@ -160,9 +160,7 @@
 	  ((struct (locate-variable name))
 	   (prop (and struct (get struct prop-name))))
 	(if (and prop (symbolp prop))
-	    (get (if (consp name)
-		     (nth 2 name)	;structure-ref
-		   name) prop)
+	    (get (variable-stem name) prop)
 	  prop))))
 
   (defun compiler-macroexpand-1 (form)
