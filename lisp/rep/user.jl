@@ -23,7 +23,8 @@
 
 (define-structure user ()
 
-  (open rep)
+    ((open rep)
+     (set-binds))
 
   (setq *user-structure* 'user)
   (setq *root-structure* 'user)
