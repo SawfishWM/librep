@@ -16,8 +16,8 @@ For more details see:
 
 	http://librep.sourceforge.net/
 
-To compile this you'll need GNU make and the GNU MP library. Basically,
-just do:
+To compile this you'll need GNU make and the GNU MP library (see
+below). Basically, just do:
 
 	$ ./configure --with-readline
 	$ make
@@ -26,6 +26,9 @@ just do:
 
 Notes
 =====
+
+64-bit systems
+--------------
 
 If you're on a 64-bit architecture you may want to look at the
 `--with-value-type' configure option. This is an implicitly signed
@@ -52,3 +55,19 @@ initialises itself.
 Also, if this option is set to anything but int, long, or long long,
 then the src/rep.h file will need to be edited for the constant suffix
 and printf conversion of the chosen type.
+
+
+libgmp
+------
+
+rep uses GNU MP for it's bignum/rational implementation; you can find
+gmp at any GNU mirror. GMP as distributed only builds a static library
+and hasn't been updated for around four years.
+
+The support directory contains four patches that can be used to make
+gmp (version 2.0.2) build a shared library on some platforms (tested on
+at least Linux and Solaris). One of the patches also includes a number
+of bug fixes.
+
+Three of these patches were taken from the Redhat 6.0 gmp sources.
+

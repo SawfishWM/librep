@@ -1,0 +1,13 @@
+
+This directory contains four patches against gmp-2.02, they should be
+applied in the following order:
+
+	1. gmp-2.0.2-1.shared.patch
+	2. gmp-2.0.2-sparc.patch
+	3. gmp-2.0.2-fixes.patch
+	4. gmp-2.0.2-solaris.patch
+
+The first three are from the Redhat gmp SRPM (2.02-10), and should be
+installed on all platforms. The last patch allows the patched gmp to
+compile using the native Solaris assembler and linker
+

@@ -1,0 +1,266 @@
+diff -ur -x Makefile gmp-2.0.2-orig/Makefile.in gmp-2.0.2/Makefile.in
+--- gmp-2.0.2-orig/Makefile.in	Thu Jun  6 19:21:19 1996
++++ gmp-2.0.2/Makefile.in	Sat May 23 15:55:11 1998
+@@ -27,10 +27,13 @@
+ infodir = $(prefix)/info
+ includedir = $(prefix)/include
+ 
++MV = mv
+ CC = gcc
+ LOCAL_CC = $(CC)
+ CFLAGS = -g -O
+ XCFLAGS = 
++PICFLAGS = -fPIC
++
+ AR = ar
+ AR_FLAGS = rc
+ RANLIB_TEST = [ -f /usr/bin/ranlib -o -f /bin/ranlib ]
+@@ -51,19 +54,23 @@
+   extract-double.c insert-double.c
+ OBJS = memory.o mp_set_fns.o mp_clz_tab.o version.o stack-alloc.o mp_bpl.o \
+   extract-double.o insert-double.o
++SHOBJS = $(foreach OBJECT, $(OBJS), shared/$(OBJECT))
+ FILES = gmp.h mp.h gmp-impl.h longlong.h urandom.h move-if-change \
+  mkinstalldirs INSTALL COPYING.LIB ChangeLog Makefile.in \
+  NEWS README SPEED TODO config.guess config.sub configure configure.in \
+  gmp.info* gmp.texi texinfo.tex $(SRCS)
+ 
+ INCLUDES = -I. -Impn -I$(srcdir)
+-FLAGS_TO_PASS = "CC=$(CC)" "CFLAGS=$(CFLAGS)" "XCFLAGS=$(XCFLAGS)"
++FLAGS_TO_PASS = "CC=$(CC)" "CFLAGS=$(CFLAGS)" "XCFLAGS=$(XCFLAGS)" "PICFLAGS=$(PICFLAGS)" "MV=$(MV)"
+ 
+-all: libgmp.a
++all: libgmp.a libgmp.so
+ 
+ .c.o:
+ 	$(CC) -c $(INCLUDES) $(CFLAGS) $(XCFLAGS) $<
+ 
++%.o : ../%.c
++	$(CC) -c $(INCLUDES) $(CFLAGS) $(XCFLAGS) $(PICFLAGS) $< -o $@
++
+ libgmp.a: mpn/libmpn.a mpz/libmpz.a mpf/libmpf.a mpq/libmpq.a $(OBJS)
+ 	rm -rf tmpdir
+ 	mkdir tmpdir
+@@ -78,6 +85,22 @@
+ 	mv tmpdir/$@ .
+ 	rm -rf tmpdir
+ 
++shared:
++	mkdir shared
++
++libgmp.so: shared mpn/shared mpz/shared mpf/shared mpq/shared $(SHOBJS)
++	rm -rf tmpdir
++	mkdir tmpdir
++	for i in mpn mpz mpf mpq; \
++	  do \
++	    mkdir tmpdir/$$i; \
++	    cp -p $$i/shared/* tmpdir/$$i; \
++	  done
++	cp -p shared/* tmpdir/
++	cd tmpdir; $(CC) -shared -Wl,-soname,libgmp.so.2 -o libgmp.so.2.0.2 *.o */*.o
++	mv tmpdir/libgmp.so.2.0.2 .;ln -s libgmp.so.2.0.2 libgmp.so
++	rm -rf tmpdir
++
+ libmp.a: mpn/libmpn.a mpbsd/libmpbsd.a $(OBJS)
+ 	rm -rf tmpdir
+ 	mkdir tmpdir
+@@ -103,6 +126,15 @@
+ mpbsd/libmpbsd.a: force
+ 	cd mpbsd; $(MAKE) $(FLAGS_TO_PASS) libmpbsd.a
+ 
++mpn/shared: force
++	cd mpn; $(MAKE) $(FLAGS_TO_PASS) libmpn.so
++mpz/shared: force
++	cd mpz; $(MAKE) $(FLAGS_TO_PASS) libmpz.so
++mpf/shared: force
++	cd mpf; $(MAKE) $(FLAGS_TO_PASS) libmpf.so
++mpq/shared: force
++	cd mpq; $(MAKE) $(FLAGS_TO_PASS) libmpq.so
++
+ check: libgmp.a
+ 	cd mpz/tests; $(MAKE) $(FLAGS_TO_PASS) check
+ 	cd mpq/tests; $(MAKE) $(FLAGS_TO_PASS) check
+@@ -142,6 +174,10 @@
+ 	-chmod a-x $(libdir)/libgmp.a
+ 	$(INSTALL_DATA) $(srcdir)/gmp.h $(includedir)/gmp.h
+ 	-chmod a-x $(includedir)/gmp.h
++	$(INSTALL_DATA) libgmp.so.2.0.2 $(libdir)/libgmp.so.2.0.2
++	cd $(libdir);rm -f libgmp.so libgmp.so.2 libgmp.so.2.0
++	cd $(libdir);ln -s libgmp.so.2.0.2 libgmp.so.2
++	cd $(libdir);ln -s libgmp.so.2 libgmp.so
+ install-bsdmp: installdirs libmp.a gmp.info install-info-files
+ 	$(INSTALL_DATA) libmp.a $(libdir)/libmp.a
+ 	-chmod a-x $(libdir)/libmp.a
+@@ -152,9 +188,10 @@
+ 	do $(INSTALL_DATA) $$f $(infodir)/$$f; done
+ 	-chmod a-x $(infodir)/gmp.info*
+ 	# Attempt to edit the info directory node
+-	if $(SHELL) -c 'install-info --version' >/dev/null 2>&1; then \
+-	  install-info --dir-file=$(infodir)/dir $(infodir)/gmp.info; \
+-	  else true; fi
++# Do this from the rpm spec file.
++#	if $(SHELL) -c 'install-info --version' >/dev/null 2>&1; then \
++#	  install-info --dir-file=$(infodir)/dir $(infodir)/gmp.info; \
++#	  else true; fi
+ 
+ installdirs: $(srcdir)/mkinstalldirs
+ 	$(srcdir)/mkinstalldirs $(includedir) $(libdir) $(infodir)
+@@ -168,6 +205,7 @@
+ 
+ clean mostlyclean:
+ 	rm -f *.o libgmp.a libmp.a gmp.dvi gmp.ps tmp.* tmp-*
++	rm -rf shared libgmp.so.2.0.2 libgmp.so
+ 	rm -f gmp.?? gmp.??s gmp.log gmp.toc gmp.*aux gmp*.html
+ 	-cd mpn; $(MAKE) $@
+ 	-cd mpz; $(MAKE) $@
+diff -ur -x Makefile gmp-2.0.2-orig/mpf/Makefile.in gmp-2.0.2/mpf/Makefile.in
+--- gmp-2.0.2-orig/mpf/Makefile.in	Fri May 24 14:29:16 1996
++++ gmp-2.0.2/mpf/Makefile.in	Sat May 23 15:58:16 1998
+@@ -42,7 +42,7 @@
+   add.o add_ui.o sub.o sub_ui.o ui_sub.o mul.o mul_ui.o div.o div_ui.o \
+   cmp.o cmp_ui.o cmp_si.o mul_2exp.o div_2exp.o abs.o neg.o set_q.o get_d.o \
+   set_dfl_prec.o set_prc.o set_prc_raw.o get_prc.o ui_div.o sqrt_ui.o
+-
++MPF_SHOBJS = $(foreach OBJECT, $(MPF_OBJS), shared/$(OBJECT))
+ LATER_OBJS = inp_raw.o out_raw.o random.o pow_ui.o fac_ui.o
+ 
+ INCLUDES = -I. -I.. -I../mpn -I$(srcdir)/..
+@@ -51,11 +51,21 @@
+ 	rm -f $@
+ 	$(AR) $(AR_FLAGS) $@ $(MPF_OBJS)
+ 
++shared:
++	mkdir shared
++
++libmpf.so: shared Makefile $(MPF_SHOBJS)
++	touch libmpf.so
++
++%.o:../%.c
++	$(CC) -c $(INCLUDES) $(CFLAGS) $(XCFLAGS) $(PICFLAGS) $< -o $@
++
+ .c.o:
+ 	$(CC) -c $(INCLUDES) $(CFLAGS) $(XCFLAGS) $<
+ 
+ clean mostlyclean:
+ 	rm -f *.o libmpf.a
++	rm -rf shared libmpf.so
+ 	-cd tests; $(MAKE) $@
+ distclean maintainer-clean: clean
+ 	rm -f Makefile config.status
+diff -ur -x Makefile gmp-2.0.2-orig/mpn/Makefile.in gmp-2.0.2/mpn/Makefile.in
+--- gmp-2.0.2-orig/mpn/Makefile.in	Fri May 17 04:44:42 1996
++++ gmp-2.0.2/mpn/Makefile.in	Sat May 23 16:03:31 1998
+@@ -21,6 +21,7 @@
+ srcdir = .
+ 
+ MPN_OBJECTS = This gets filled in by configure.in.
++MPN_SHOBJS = $(foreach OBJECT,$(MPN_OBJECTS),shared/$(OBJECT))
+ MPN_LINKS = This gets filled in by configure.in.
+ CC = gcc
+ CPP = $(CC) -E
+@@ -37,21 +38,39 @@
+ 	rm -f $@
+ 	$(AR) $(AR_FLAGS) $@ mp_bases.o $(MPN_OBJECTS)
+ 
++libmpn.so: shared Makefile shared/mp_bases.o $(MPN_SHOBJS)
++	touch libmpn.so
++
+ .SUFFIXES: .c .s .S
+ 
++shared:
++	mkdir shared
++
++%.o:../%.c
++	$(CC) -c $(INCLUDES) $(CFLAGS) $(XCFLAGS) $(PICFLAGS) $< -o $@
++
+ .c.o:
+ 	$(CC) -c $(INCLUDES) $(CFLAGS) $(XCFLAGS) $<
+ 
++%.o:../%.s
++	$(CC) -c $(CFLAGS) $(PICFLAGS) $< -o $@
++
+ .s.o:
+ 	$(CC) -c $(CFLAGS) $<
+ 
++%.o:../%.S
++	$(CPP) $(SFLAGS) $(INCLUDES) $(CFLAGS) $(PICFLAGS) $< | grep -v '^#'>tmp-$(notdir $*).s
++	$(CC) -c tmp-$(notdir $*).s $(CFLAGS) $(PICFLAGS) -o $@
++	rm -f tmp-$(notdir $*).s
++
+ .S.o:
+ 	$(CPP) $(SFLAGS) $(INCLUDES) $(CFLAGS) $< | grep -v '^#' >tmp-$*.s
+-	$(CC) -c tmp-$*.s -o $@
++	$(CC) $(CFLAGS) -c tmp-$*.s -o $@
+ 	rm -f tmp-$*.s
+ 
+ clean mostlyclean:
+ 	rm -f *.o tmp-* libmpn.a
++	rm -rf shared libmpn.so
+ 	#-cd tests; $(MAKE) $@
+ distclean maintainer-clean: clean
+ 	rm -f asm-syntax.h Makefile config.status $(MPN_LINKS)
+diff -ur -x Makefile gmp-2.0.2-orig/mpq/Makefile.in gmp-2.0.2/mpq/Makefile.in
+--- gmp-2.0.2-orig/mpq/Makefile.in	Fri May 17 05:04:22 1996
++++ gmp-2.0.2/mpq/Makefile.in	Sat May 23 16:05:28 1998
+@@ -36,17 +36,27 @@
+ MPQ_OBJS = add.o canonicalize.o clear.o cmp.o cmp_ui.o div.o get_d.o \
+  get_den.o get_num.o init.o inv.o mul.o neg.o set.o set_den.o set_num.o \
+  set_si.o set_ui.o sub.o equal.o set_z.o
+-
++MPQ_SHOBJS = $(foreach OBJECT,$(MPQ_OBJS),shared/$(OBJECT))
+ INCLUDES = -I. -I.. -I../mpn -I$(srcdir)/..
+ 
+ libmpq.a: Makefile $(MPQ_OBJS)
+ 	rm -f $@
+ 	$(AR) $(AR_FLAGS) $@ $(MPQ_OBJS)
+ 
++libmpq.so: shared Makefile $(MPQ_SHOBJS)
++	touch libmpq.so
++
++shared:
++	mkdir shared
++
++%.o:../%.c
++	$(CC) -c $(INCLUDES) $(CFLAGS) $(XCFLAGS) $(PICFLAGS) $< -o $@
++
+ .c.o:
+ 	$(CC) -c $(INCLUDES) $(CFLAGS) $(XCFLAGS) $<
+ 
+ clean mostlyclean:
++	rm -rf shared libmpq.so
+ 	rm -f *.o libmpq.a
+ 	-cd tests; $(MAKE) $@
+ distclean maintainer-clean: clean
+diff -ur -x Makefile gmp-2.0.2-orig/mpz/Makefile.in gmp-2.0.2/mpz/Makefile.in
+--- gmp-2.0.2-orig/mpz/Makefile.in	Fri May 24 14:45:46 1996
++++ gmp-2.0.2/mpz/Makefile.in	Sat May 23 16:07:33 1998
+@@ -65,18 +65,28 @@
+   tdiv_qr.o tdiv_q.o tdiv_r.o tdiv_qr_ui.o tdiv_q_ui.o tdiv_r_ui.o \
+   mod.o divexact.o array_init.o scan0.o scan1.o \
+   jacobi.o legendre.o invert.o
+-
++MPZ_SHOBJS = $(foreach OBJECT,$(MPZ_OBJS),shared/$(OBJECT))
+ INCLUDES = -I. -I.. -I../mpn -I$(srcdir)/..
+ 
+ libmpz.a: Makefile $(MPZ_OBJS)
+ 	rm -f $@
+ 	$(AR) $(AR_FLAGS) $@ $(MPZ_OBJS)
+ 
++libmpz.so: shared Makefile $(MPZ_SHOBJS)
++	touch libmpz.so
++
++shared:
++	mkdir shared
++
++%.o:../%.c
++	$(CC) -c $(INCLUDES) $(CFLAGS) $(XCFLAGS) $(PICFLAGS) $< -o $@
++
+ .c.o:
+ 	$(CC) -c $(INCLUDES) $(CFLAGS) $(XCFLAGS) $<
+ 
+ clean mostlyclean:
+ 	rm -f *.o libmpz.a
++	rm -rf shared libmpz.so
+ 	-cd tests; $(MAKE) $@
+ distclean maintainer-clean: clean
+ 	rm -f Makefile config.status

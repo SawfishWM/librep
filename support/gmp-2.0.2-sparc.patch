@@ -1,0 +1,153 @@
+It's another instance of non-PIC stuff being put
+into a shared object.
+
+--- gmp-2.0.2/mpn/sparc32/v8/supersparc/udiv.S.davem	Wed May  8 00:10:53 1996
++++ gmp-2.0.2/mpn/sparc32/v8/supersparc/udiv.S	Wed Apr 28 08:00:21 1999
+@@ -22,6 +22,9 @@
+ ! MA 02111-1307, USA.
+ 
+ 
++! Added PIC support - May/96, Miguel de Icaza
++!
++
+ ! INPUT PARAMETERS
+ ! rem_ptr	i0
+ ! n1		i1
+@@ -31,10 +34,21 @@
+ #include "sysdep.h"
+ #undef ret	/* Kludge for glibc */
+ 
++#ifdef PIC
+ 	.text
++#else
++	.section .rodata,#alloc
++#endif
+ 	.align	8
+-LC0:	.double	0r4294967296
+-LC1:	.double	0r2147483648
++	.type two_to_32,@object
++	.size two_to_32,8
++two_to_32:
++	.double	0r4294967296
++
++	.type two_to_31,@object
++	.size two_to_31,8
++two_to_31:
++	.double	0r2147483648
+ 
+ 	.align	4
+ 	.global	C_SYMBOL_NAME(__udiv_qrnnd)
+@@ -44,9 +58,16 @@
+ 	!#PROLOGUE# 1
+ 	st	%i1,[%fp-8]
+ 	ld	[%fp-8],%f10
+-	sethi	%hi(LC0),%o7
++#ifdef PIC
++base:
++	call	1f
++	fitod	%f10,%f4
++1:	ldd	[%o7-(base-two_to_32)],%f8
++#else
++	sethi	%hi(two_to_32),%o7
+ 	fitod	%f10,%f4
+-	ldd	[%o7+%lo(LC0)],%f8
++	ldd	[%o7+%lo(two_to_32)],%f8
++#endif
+ 	cmp	%i1,0
+ 	bge	L248
+ 	mov	%i0,%i5
+@@ -69,8 +90,12 @@
+ 	faddd	%f4,%f8,%f4
+ L250:
+ 	fdivd	%f2,%f4,%f2
+-	sethi	%hi(LC1),%o7
+-	ldd	[%o7+%lo(LC1)],%f4
++#ifdef PIC
++	ldd	[%o7-(base-two_to_31)],%f4
++#else
++	sethi	%hi(two_to_31),%o7
++	ldd	[%o7+%lo(two_to_31)],%f4
++#endif
+ 	fcmped	%f2,%f4
+ 	nop
+ 	fbge,a	L251
+--- gmp-2.0.2/mpn/sparc32/udiv_fp.S.davem	Wed May  8 00:10:53 1996
++++ gmp-2.0.2/mpn/sparc32/udiv_fp.S	Wed Apr 28 07:58:12 1999
+@@ -20,6 +20,8 @@
+ ! the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+ ! MA 02111-1307, USA.
+ 
++! Added PIC support - May/96, Miguel de Icaza
++!
+ 
+ ! INPUT PARAMETERS
+ ! rem_ptr	i0
+@@ -30,10 +32,21 @@
+ #include "sysdep.h"
+ #undef ret	/* Kludge for glibc */
+ 
++#ifdef PIC
+ 	.text
++#else
++	.section .rodata,#alloc
++#endif
+ 	.align	8
+-LC0:	.double	0r4294967296
+-LC1:	.double	0r2147483648
++	.type two_to_32,@object
++	.size two_to_32,8
++two_to_32:
++	.double	0r4294967296
++
++	.type two_to_31,@object
++	.size two_to_31,8
++two_to_31:
++	.double	0r2147483648
+ 
+ 	.align	4
+ 	.global	C_SYMBOL_NAME(__udiv_qrnnd)
+@@ -43,9 +56,16 @@
+ 	!#PROLOGUE# 1
+ 	st	%i1,[%fp-8]
+ 	ld	[%fp-8],%f10
+-	sethi	%hi(LC0),%o7
++#ifdef PIC
++base:
++	call	1f
++	fitod	%f10,%f4
++1:	ldd	[%o7-(base-two_to_32)],%f8
++#else
++	sethi	%hi(two_to_32),%o7
+ 	fitod	%f10,%f4
+-	ldd	[%o7+%lo(LC0)],%f8
++	ldd	[%o7+%lo(two_to_32)],%f8
++#endif
+ 	cmp	%i1,0
+ 	bge	L248
+ 	mov	%i0,%i5
+@@ -68,8 +88,12 @@
+ 	faddd	%f4,%f8,%f4
+ L250:
+ 	fdivd	%f2,%f4,%f2
+-	sethi	%hi(LC1),%o7
+-	ldd	[%o7+%lo(LC1)],%f4
++#ifdef PIC
++	ldd	[%o7-(base-two_to_31)],%f4
++#else
++	sethi	%hi(two_to_31),%o7
++	ldd	[%o7+%lo(two_to_31)],%f4
++#endif
+ 	fcmped	%f2,%f4
+ 	nop
+ 	fbge,a	L251
+--- gmp-2.0.2/Makefile.in.davem	Wed Apr 28 07:47:39 1999
++++ gmp-2.0.2/Makefile.in	Wed Apr 28 07:48:13 1999
+@@ -32,7 +32,7 @@
+ LOCAL_CC = $(CC)
+ CFLAGS = -g -O
+ XCFLAGS = 
+-PICFLAGS = -fPIC
++PICFLAGS = -fPIC -DPIC
+ 
+ AR = ar
+ AR_FLAGS = rc
