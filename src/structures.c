@@ -141,6 +141,7 @@ DEFSYM(_meta, "%meta");
 DEFSYM(rep, "rep");
 DEFSYM(_specials, "%specials");
 DEFSYM(_user_structure_, "*user-structure*");
+DEFSYM(_root_structure_, "*root-structure*");
 
 repv F_get_structure (repv);
 static rep_struct_node *search_imports (rep_struct *s, repv var);
@@ -845,12 +846,36 @@ attempt to load it.
     tem = F_get_structure (name);
     if (tem == Qnil)
     {
-	rep_GC_root gc_name;
+	repv old = rep_structure;
+	rep_GC_root gc_name, gc_old;
+
+	/* We need to load the file from within a well-defined
+	   structure, not just the current one. Look for the
+	   value of the *root-structure* variable first, then
+	   fall back to the default structure */
+
+	rep_structure = rep_default_structure;
+	tem = Fsymbol_value (Q_root_structure_, Qt);
+	if (!rep_VOIDP (tem))
+	{
+	    tem = F_get_structure (tem);
+	    if (rep_STRUCTUREP (tem))
+		rep_structure = tem;
+	}
+
+	rep_PUSHGC (gc_old, old);
 	rep_PUSHGC (gc_name, name);
 	tem = Fload (Fsymbol_name (name), Qnil, Qnil, Qnil, Qnil);
 	rep_POPGC;
-	if (tem  && rep_STRUCTUREP (tem))
-	    F_name_structure (tem, name);
+	if (tem != rep_NULL)
+	{
+	    if (rep_STRUCTUREP (tem))
+		F_name_structure (tem, name);
+	    else
+		tem = Qnil;
+	}
+	rep_POPGC;
+	rep_structure = old;
     }
     return tem;
 }
@@ -954,6 +979,17 @@ Return the result of evaluating FORM inside structure object STRUCTURE.
     rep_POPGC;
     rep_structure = old;
     return result;
+}
+
+DEFUN ("%make-closure-in-structure", F_make_closure_in_structure,
+       S_make_closure_in_structure, (repv fun, repv structure), rep_Subr2)
+{
+    repv closure;
+    rep_DECLARE2 (structure, rep_STRUCTUREP);
+    closure = Fmake_closure (fun, Qnil);
+    if (closure && rep_FUNARGP (closure))
+	rep_FUNARG (closure)->structure = structure;
+    return closure;
 }
 
 DEFUN ("%structure-walk", F_structure_walk,
@@ -1099,22 +1135,44 @@ loaded is either FILE (if given), or the print name of FEATURE.
 ::end:: */
 {
     repv tem;
-    rep_GC_root gc_feature;
+    rep_struct *dst = rep_STRUCTURE (rep_structure);
+
     rep_DECLARE1 (feature, rep_SYMBOLP);
 
     if (Ffeaturep (feature) != Qnil)
 	return feature;
 
-    rep_PUSHGC (gc_feature, feature);
-    tem = F_open_structures (rep_LIST_1 (feature));
-    rep_POPGC;
-    if (tem != rep_NULL)
+    /* Need to do all this locally, since the file providing the
+       feature/module has to be loaded into the _current_ structure
+       (in case it contains bare code). %intern-structure OTOH
+       always loads into *root-structure*, since it's often called
+       with only the %meta structure imported */
+
+    tem = Fmemq (feature, dst->imports);
+    if (tem == Qnil)
     {
-	Fprovide (feature);
-	return feature;
+	tem = F_get_structure (feature);
+	if (!rep_STRUCTUREP (tem))
+	{
+	    rep_GC_root gc_feature;
+	    rep_PUSHGC (gc_feature, feature);
+	    tem = Fload (Fsymbol_name (feature), Qnil, Qnil, Qnil, Qnil);
+	    rep_POPGC;
+	    
+	    if (tem == rep_NULL)
+		return rep_NULL;
+
+	    if (rep_STRUCTUREP (tem))
+		F_name_structure (tem, feature);
+	}
+	if (rep_STRUCTUREP (tem))
+	{
+	    dst->imports = Fcons (feature, dst->imports);
+	    Fprovide (feature);
+	    cache_flush ();
+	}
     }
-    else
-	return rep_NULL;
+    return Qt;
 }
 
 
@@ -1225,6 +1283,7 @@ rep_structures_init (void)
     rep_ADD_INTERNAL_SUBR (S_current_structure);
     rep_ADD_INTERNAL_SUBR (S_structurep);
     rep_ADD_INTERNAL_SUBR (S_eval_in_structure);
+    rep_ADD_INTERNAL_SUBR (S_make_closure_in_structure);
     rep_ADD_INTERNAL_SUBR (S_structure_walk);
 #ifdef DEBUG
     rep_ADD_SUBR (S_structure_stats);
@@ -1241,6 +1300,7 @@ rep_structures_init (void)
     rep_INTERN (rep);
     rep_INTERN (_specials);
     rep_INTERN_SPECIAL (_user_structure_);
+    rep_INTERN_SPECIAL (_root_structure_);
 
     rep_mark_static (&rep_structure);
     rep_mark_static (&rep_default_structure);
