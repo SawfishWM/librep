@@ -1,3 +1,13 @@
+Tue Apr 21 11:48:59 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compile.jl (compile-parse-errors, next-error): rewrote most
+	of these functions. Now tracks changes of directory while
+	compiling (see compile-{push,pop}-directory-regexp variables,
+	by default set up for GNU make)
+
+	* cvs.jl (cvs-command): use (message ... t) instead of (format
+	t ...) to display calling CVS message
+
 Mon Apr 20 00:20:06 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* cvs.jl (cvs-commit-directory): new command, bound to `C'
