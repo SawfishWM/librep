@@ -244,6 +244,7 @@ inner_main(int argc, char **argv)
 bool
 on_idle(long since_last_event)
 {
+    static bool called_hook;
     bool res = FALSE;
 
     /* A timeout; do one of:
@@ -251,7 +252,10 @@ on_idle(long since_last_event)
 	* Print the current key-prefix
 	* Auto-save a buffer
 	* GC if enough data allocated
-	* Run the `idle-hook'  */
+	* Run the `idle-hook' (only once per idle-period)  */
+
+    if(since_last_event == 0)
+	called_hook = FALSE;
 
     if(remove_all_messages(TRUE)
        || print_event_prefix()
@@ -260,14 +264,15 @@ on_idle(long since_last_event)
     else if(data_after_gc > idle_gc_threshold)
 	/* nothing was saved so try a GC */
 	cmd_garbage_collect(sym_t);
-    else
+    else if(!called_hook)
     {
 	VALUE hook = cmd_symbol_value(sym_idle_hook, sym_t);
 	if(!VOIDP(hook) && !NILP(hook))
 	{
-	    cmd_call_hook(sym_idle_hook, sym_nil, sym_nil);
+	    cmd_call_hook(hook, sym_nil, sym_nil);
 	    res = TRUE;
 	}
+	called_hook = TRUE;
     }
     return res;
 }
