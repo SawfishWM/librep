@@ -430,7 +430,8 @@ sys_sit_for(u_long timeout_msecs)
 {
     fd_set copy;
     int ready;
-    cmd_redisplay(sym_nil);
+    if(timeout_msecs != 0)
+	cmd_redisplay(sym_nil);
     memcpy(&copy, &input_fdset, sizeof(copy));
     ready = wait_for_input(&copy, timeout_msecs);
     if(INT_P)
