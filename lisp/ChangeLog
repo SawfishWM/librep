@@ -1,3 +1,8 @@
+2000-01-12  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.jl (make-guardian): new function, a means for protecting
+	objects from being deallocated when they have no references
+
 src/2000-01-09  John Harper  <john@dcs.warwick.ac.uk>
 
 	* version 0.10

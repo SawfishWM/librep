@@ -424,6 +424,7 @@ extern repv Vobarray(repv val);
 extern rep_cons *rep_dumped_cons_start, *rep_dumped_cons_end;
 extern rep_symbol *rep_dumped_symbols_start, *rep_dumped_symbols_end;
 extern repv rep_dumped_non_constants;
+extern int rep_guardian_type;
 extern void rep_register_type(u_int code, char *name,
 			      int (*compare)(repv, repv),
 			      void (*princ)(repv, repv),
@@ -466,6 +467,9 @@ extern repv rep_list_3(repv, repv, repv);
 extern repv rep_list_4(repv, repv, repv, repv);
 extern repv rep_list_5(repv, repv, repv, repv, repv);
 extern repv rep_make_vector(int);
+extern repv Fmake_primitive_guardian (void);
+extern repv Fprimitive_guardian_push (repv g, repv obj);
+extern repv Fprimitive_guardian_pop (repv g);
 extern void rep_mark_static(repv *);
 extern void rep_mark_value(repv);
 extern repv Fcons(repv, repv);

@@ -6,6 +6,8 @@
 	underlying mechanism for the make-guardian function (see
     ftp://ftp.cs.indiana.edu/pub/scheme-repository/doc/pubs/guardians.ps.gz)
 
+	* values.c (Qafter_gc_hook): new hook, called after each gc
+
 2000-01-09  John Harper  <john@dcs.warwick.ac.uk>
 
 	* version 0.10
