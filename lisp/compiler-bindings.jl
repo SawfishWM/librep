@@ -46,7 +46,9 @@
   (define lexically-pure (make-fluid t))	;any dynamic state?
 
   (defun spec-bound-p (var)
-    (or (memq var (fluid defvars)) (special-variable-p var)))
+    (or (memq var (fluid defvars))
+	(special-variable-p var)
+	(memq var (fluid spec-bindings))))
 
   ;; note that the outermost binding of symbol VAR has state TAG
   (defun tag-binding (var tag)
@@ -58,17 +60,20 @@
   ;; return t if outermost binding of symbol VAR has state TAG
   (defun binding-tagged-p (var tag)
     (let ((cell (assq var (fluid lex-bindings))))
+      ;; hardcoded in binding-lexical-addr
       (and cell (memq tag (cdr cell)))))
 
   ;; note that symbol VAR has been bound
-  (defun note-binding (var)
+  (defun note-binding (var &optional without-location)
     (if (spec-bound-p var)
 	(progn
 	  ;; specially bound (dynamic scope)
 	  (fluid-set spec-bindings (cons var (fluid spec-bindings)))
 	  (fluid-set lexically-pure nil))
       ;; assume it's lexically bound otherwise
-      (fluid-set lex-bindings (cons (list var) (fluid lex-bindings))))
+      (fluid-set lex-bindings (cons (list var) (fluid lex-bindings)))
+      (when without-location
+	(tag-binding var 'no-location)))
     (when (eq var (fluid lambda-name))
       (fluid-set lambda-name nil)))
 
@@ -101,9 +106,11 @@
 	(let
 	    ((i 0))
 	  (mapc (lambda (x)
-		  (when (eq (car x) var)
-		    (throw 'out i))
-		  (setq i (1+ i))) (fluid lex-bindings))
+		  (unless (memq 'no-location (cdr x))
+		    (when (eq (car x) var)
+		      (throw 'out i))
+		    (setq i (1+ i))))
+		(fluid lex-bindings))
 	  nil))))
 
   (defun emit-binding (var)
@@ -125,4 +132,25 @@
 	      (note-binding-modified sym))
 	  ;; No lexical binding, but not special either. Just
 	  ;; update the global value
-	  (emit-insn (bytecode setg) (add-constant sym)))))))
+	  (emit-insn (bytecode setg) (add-constant sym))))))
+
+
+;; declarations
+
+  ;; (declare (bound VARIABLE))
+
+  (defun declare-bound (form)
+    (let loop ((vars (cdr form)))
+      (when vars
+	(note-binding (car vars) t)
+	(loop (cdr vars)))))
+  (put 'bound 'compiler-decl-fun declare-bound)
+
+  ;; (declare (special VARIABLE))
+
+  (defun declare-special (form)
+    (let loop ((vars (cdr form)))
+      (when vars
+	(fluid-set spec-bindings (cons (car vars) (fluid spec-bindings)))
+	(loop (cdr vars)))))
+  (put 'special 'compiler-decl-fun declare-special))
