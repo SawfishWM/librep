@@ -389,12 +389,13 @@ compile_regexp(VALUE re)
 
 /* Called at GC */
 static void
-release_cached_regexp(void)
+mark_cached_regexps(void)
 {
     u_long total = 0;
     struct cached_regexp *x = cached_regexps;
     while(x != 0 && total < regexp_cache_limit)
     {
+	MARKVAL(x->regexp);
 	total += sizeof(struct cached_regexp) + x->compiled->regsize;
 	x = x->next;
     }
@@ -411,6 +412,21 @@ release_cached_regexp(void)
 	    str_free(x);
 	    x = tem;
 	}
+    }
+}
+
+/* Free all cached regexps */
+static void
+release_cached_regexps(void)
+{
+    struct cached_regexp *x = cached_regexps;
+    cached_regexps = 0;
+    while(x != 0)
+    {
+	struct cached_regexp *next = x->next;
+	free(x->compiled);
+	str_free(x);
+	x = next;
     }
 }
 
@@ -441,7 +457,7 @@ mark_regexp_data(void)
     struct saved_regexp_data *sd;
 
     /* Don't keep too many cached REs through GC. */
-    release_cached_regexp();
+    mark_cached_regexps();
 
     if(last_match_type == reg_tx)
     {
@@ -1113,5 +1129,5 @@ find_init(void)
 void
 find_kill(void)
 {
-    release_cached_regexp();
+    release_cached_regexps();
 }
