@@ -18,6 +18,11 @@
  * misrepresented as being the original software.
  */
 
+#ifdef JADE
+#include "jade.h"
+#include "jade_protos.h"
+#endif
+
 /*
  * CHANGED, 14-Jan-93, by J.Harper,
  * added #ifdef __STDC__ prototype sections so I can use registerized
