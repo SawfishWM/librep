@@ -10,12 +10,10 @@ and more long-term ideas are marked -
 Outstanding bugs
 ================
 
- ! doc strings are limited to 1k
+ ! doc strings are limited to 1k by SDBM
 
  ! ((call/cc call/cc) (call/cc call/cc)) can't be interrupted, and it
    eats all memory
-
- ! #'SYMBOL should dereference SYMBOL, not enclose it
 
  ! Putting a breakpoint in a .jaderc file doesn't work correctly; the
    debugger is entered, but the commands don't work

@@ -1,5 +1,8 @@
 2000-02-17  John Harper  <john@dcs.warwick.ac.uk>
 
+	* lisp.jl (load-all): remove the (broken) restiction on not
+	loading from the current directory
+
 	* lisp.jl (prin1-to-string, read-from-string, setcar, setcdr,
 	string=, string<, caar, cadr, cadr, cdar, cdar, cddr, cddr,
 	caddr, caddr, call-with-current-continuation): changed these

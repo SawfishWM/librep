@@ -3243,9 +3243,9 @@ continuation of @var{function}, as if @var{function} had returned the
 argument applied to the continuation object.
 @end defun
 
-@defmac call-with-current-continuation function
+@defun call-with-current-continuation function
 This is an alias for @code{call/cc}.
-@end defmac
+@end defun
 
 In its simplest form, @code{call/cc} can mimic the @code{catch} and
 @code{throw} procedures (@pxref{Catch and Throw}), for example:
