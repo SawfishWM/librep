@@ -42,6 +42,19 @@ call it. Otherwise exactly the same as defun."
 	(list 'put (list 'quote (car decl)) ''compile-inline t)))
 
 
+;; Mutually recursive binding
+
+(defmacro letrec (bindings &rest body)
+  (let
+      ((vars (mapcar (lambda (x)
+		       (if (consp x) (car x) x)) bindings))
+       (setters (mapcar (lambda (x)
+			  (if (consp x)
+			      (cons 'setq x)
+			    (list 'setq x nil))) bindings)))
+    `(let ,vars ,@setters ,@body)))
+    
+
 ;; Convenient conditional macros, defined using cond
 
 (defmacro when (condition &rest forms)
@@ -52,7 +65,7 @@ with FORMS."
 (defmacro unless (condition &rest forms)
   "Evaluates CONDITION, if it is nil an implicit progn is performed with
 FORMS."
-  (list 'cond (cons condition nil) (cons 't forms)))
+  (list 'if (list 'not condition) (cons 'progn forms)))
 
 
 ;; Features
