@@ -23,13 +23,16 @@
 
 (define-structure rep.i18n.xgettext
 
-    (export set-included-definers set-helper
+    (export current-file current-module
+	    set-included-definers set-helper
 	    register scan scan-list scan-file
 	    output-c-file output-pot-file)
 
     (open rep)
 
   (define current-file (make-fluid))
+  (define current-module (make-fluid))
+
   (define found-strings (make-fluid))
 
   (define included-definers (make-fluid t))
@@ -95,7 +98,8 @@
 	     (scan-list (nthcdr 2 form))))
 
 	  ((define-structure)
-	   (scan-list (nthcdr 4 form)))
+	   (let-fluids ((current-module (nth 1 form)))
+	     (scan-list (nthcdr 4 form))))
 
 	  ((structure)
 	   (scan-list (nthcdr 3 form)))
