@@ -33,7 +33,7 @@ exec_prefix := $(prefix)
 bindir := $(exec_prefix)/bin
 infodir := $(prefix)/info
 datadir := $(prefix)/lib
-jadedir := $(datadir)/jade/$(VERSION)
+jadedir := $(datadir)/jade
 lispdir := $(jadedir)/lisp
 
 CLEANDIRS = src lisp man
