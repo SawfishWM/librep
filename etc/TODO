@@ -166,7 +166,8 @@ General programming tasks:
 X11 tasks:
 ==========
 
- - Scroll bars, menus
+ - Scroll bars, menus. Would it be possible to enable use of GTK at
+   compile time? Is it possible to handle multiple displays?
 
  - `Fuzzy' colour allocation; if a colour can't be allocated find the
    nearest match 

@@ -1,3 +1,16 @@
+Sun May  3 12:22:27 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* read-mail.jl (rm-next-page, rm-previous-page): detect top and
+	bottom of buffer properly, not just when the cursor is at the
+	top or the bottom
+
+	* buffer-summary.jl: use the standard read-only/modified
+	symbols (as in the status line). Removed the `-' synonym for
+	the `%' command
+
+	* init.jl, compiler.jl: don't use version-and-build-string
+	anymore, but use build-id-string instead
+
 Thu Apr 30 10:43:36 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* buffer-summary.jl (bs-print-item): substitute `Fundamental'

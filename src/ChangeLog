@@ -1,5 +1,8 @@
 Sun May  3 12:20:21 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* views.c (update_status_buffer): pad the gap between the
+	tx_StatusId string and the mode details with hyphens not spaces
+
 	* misc.c (cmd_version_and_build_string): renamed as
 	build-id-string, doesn't have the version-string on the front,
 	but does have the HOST_TYPE (i.e. i586-pc-gnu, or whatever) on
