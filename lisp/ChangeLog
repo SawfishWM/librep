@@ -1,5 +1,8 @@
 2000-02-01  John Harper  <john@dcs.warwick.ac.uk>
 
+	* memoize.jl (memoize-function): use `equal' hash-tables to
+	cache results
+
 	* define.jl (lambda*): macro similar to lambda, but scans out
 	internal definitions
 

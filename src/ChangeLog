@@ -1,5 +1,7 @@
 2000-02-01  John Harper  <john@dcs.warwick.ac.uk>
 
+	* tables.c: new file, implements hash tables
+
 	* lispmach.c (Fjade_byte_code): check if needing to gc before
 	entering the main loop (needed when tail-calling). Also, check
 	for exceeding max-lisp-depth. (First pointed out by Ceri Storey)
