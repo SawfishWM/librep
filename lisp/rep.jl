@@ -43,9 +43,6 @@
 ;; Do operating-system initialisation
 (load-all (concat "os-" (symbol-name operating-system)) t)
 
-(unless batch-mode
-  (format standard-output ";; rep %s, Copyright (C) 1999 John Harper\n;; rep comes with ABSOLUTELY NO WARRANTY; for details see the file COPYING\n;; built %s\n" rep-version rep-build-id))
-
 ;; Load site specific initialisation. Errors here are trapped since
 ;; they're probably not going to result in an unusable state
 (unless (get-command-line-option "--no-rc")
@@ -78,7 +75,9 @@
       ((equal "-q" arg)
        (throw 'quit 0))
       (t
+       (setq batch-mode t)
        (load arg)))))
 
 (unless batch-mode
+  (format standard-output ";; rep %s, Copyright (C) 1999 John Harper\n;; rep comes with ABSOLUTELY NO WARRANTY; for details see the file COPYING\n;; built %s\n" rep-version rep-build-id)
   (rep))
