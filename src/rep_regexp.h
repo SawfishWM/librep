@@ -54,6 +54,7 @@ typedef struct regexp {
 
 extern regexp *regcomp(char *);
 extern int regexec2(regexp *, char *, int);
+extern int regmatch_string(regexp *, char *, int);
 extern void regsub(int, regsubs *, char *, char *, void *);
 extern int regsublen(int, regsubs *, char *, void *);
 extern void regerror(char *);
