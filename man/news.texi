@@ -5,7 +5,8 @@
 
 @unnumberedsec 0.6.1
 
-No new features; minor portability tweaks and build changes
+No new features; minor portability tweaks and build changes. Fix bug of
+trying to load directories as Lisp scripts
 
 
 @unnumberedsec 0.6

@@ -1,6 +1,9 @@
-1999-09-19  John Harper  <john@dcs.warwick.ac.uk>
+1999-09-20  John Harper  <john@dcs.warwick.ac.uk>
 
 	* version 0.6.1
+
+	* lispcmds.c (Fload): only try to load files if they're
+	readable and not a directory (not if they just exist)
 
 1999-09-17  John Harper  <john@dcs.warwick.ac.uk>
 
