@@ -1636,7 +1636,8 @@ eval(repv obj, repv tail_posn)
 	    rep_lisp_depth--;
 	    return Fsignal(Qerror, rep_LIST_1(rep_VAL(&max_depth)));
 	}
-	if (rep_CONSP (rep_CAR (obj)) && rep_CAAR (obj) == Qlambda)
+	if (rep_CONSP (rep_CAR (obj)) && rep_CAAR (obj) == Qlambda
+	    && Fsymbol_value (Qlambda, Qt) == rep_VAL (&Slambda))
 	{
 	    /* inline lambda; don't need to enclose it.. */
 	    struct rep_Call lc;
