@@ -267,7 +267,10 @@ bool
 on_idle(long since_last_event)
 {
     static bool called_hook;
+    static int depth;
     bool res = FALSE;
+
+    depth++;
 
     /* A timeout; do one of:
 	* Remove messages in minibuffers
@@ -286,7 +289,7 @@ on_idle(long since_last_event)
     else if(data_after_gc > idle_gc_threshold)
 	/* nothing was saved so try a GC */
 	cmd_garbage_collect(sym_t);
-    else if(!called_hook)
+    else if(!called_hook && depth == 1)
     {
 	VALUE hook = cmd_symbol_value(sym_idle_hook, sym_t);
 	if(!VOIDP(hook) && !NILP(hook))
@@ -296,6 +299,8 @@ on_idle(long since_last_event)
 	}
 	called_hook = TRUE;
     }
+
+    depth--;
     return res;
 }
 
