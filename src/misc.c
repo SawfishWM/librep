@@ -399,20 +399,22 @@ with the current time of day.
     divisor = rep_LISP_MAX_INT / limit;
     do {
 	val = rand();
-#if rep_LISP_INT_BITS-1 > RAND_BITS
-	val = (val << RAND_BITS) | rand();
-# if rep_LISP_INT_BITS-1 > 2*RAND_BITS
-	val = (val << RAND_BITS) | rand();
-#  if rep_LISP_INT_BITS-1 > 3*RAND_BITS
-	val = (val << RAND_BITS) | rand();
-#   if rep_LISP_INT_BITS-1 > 4*RAND_BITS
-	val = (val << RAND_BITS) | rand();
-#   endif
-#  endif
-# endif
-#endif
+	if (rep_LISP_INT_BITS-1 > RAND_BITS)
+	{
+	    val = (val << RAND_BITS) | rand();
+	    if (rep_LISP_INT_BITS-1 > 2*RAND_BITS)
+	    {
+		val = (val << RAND_BITS) | rand();
+		if (rep_LISP_INT_BITS-1 > 3*RAND_BITS)
+		{
+		    val = (val << RAND_BITS) | rand();
+		    if (rep_LISP_INT_BITS-1 > 4*RAND_BITS)
+			val = (val << RAND_BITS) | rand();
+		}
+	    }
+	}
 	/* Ensure VAL is positive (assumes twos-complement) */
-	val &= ~(~0L << (rep_LISP_INT_BITS-1));
+	val &= ~(~rep_VALUE_CONST(0) << (rep_LISP_INT_BITS-1));
 	val /= divisor;
     } while(val >= limit);
 
