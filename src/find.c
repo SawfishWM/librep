@@ -620,16 +620,17 @@ with CHAR. Returns the position of the next match or nil.
     return LISP_NULL;
 }
 
-_PR VALUE cmd_string_match(VALUE re, VALUE str, VALUE nocase_p, VALUE start);
-DEFUN("string-match", cmd_string_match, subr_string_match, (VALUE re, VALUE str, VALUE nocase_p, VALUE start), V_Subr4, DOC_string_match) /*
+_PR VALUE cmd_string_match(VALUE re, VALUE str, VALUE start, VALUE nocasep);
+DEFUN("string-match", cmd_string_match, subr_string_match, (VALUE re, VALUE str, VALUE start, VALUE nocasep), V_Subr4, DOC_string_match) /*
 ::doc:string_match::
-string-match REGEXP STRING [IGNORE-CASE-P] [START]
+string-match REGEXP STRING [START] [IGNORE-CASE-P]
 
 Return t if REGEXP matches STRING. Updates the match data.
 
-When IGNORE-CASE-P is non-nil the case of matched strings are ignored. Note
-that character classes are still case-significant. When defined, START is
-the index of the first character to start matching at (counting from zero).
+When defined, START is the index of the first character to start
+matching at (counting from zero). When IGNORE-CASE-P is non-nil the
+case of matched strings are ignored. Note that character classes are
+still case-significant.
 ::end:: */
 {
     regexp *prog;
@@ -641,7 +642,7 @@ the index of the first character to start matching at (counting from zero).
     {
 	VALUE res;
 	if(regexec2(prog, VSTR(str) + xstart,
-		    (NILP(nocase_p) ? 0 : REG_NOCASE)
+		    (NILP(nocasep) ? 0 : REG_NOCASE)
 		    | (xstart == 0 ? 0 : REG_NOTBOL)))
 	{
 	    update_last_match(str, prog);
@@ -682,6 +683,37 @@ Returns t if REGEXP matches the text at POS. Updates the match data.
 		res = sym_nil;
 	    return res;
 	}
+    }
+    return LISP_NULL;
+}
+
+_PR VALUE cmd_string_looking_at(VALUE re, VALUE string, VALUE start, VALUE nocasep);
+DEFUN("string-looking-at", cmd_string_looking_at, subr_string_looking_at, (VALUE re, VALUE string, VALUE start, VALUE nocasep), V_Subr4, DOC_string_looking_at) /*
+::doc:string_looking_at::
+string-looking-at REGEXP STRING [START] [IGNORE-CASE-P]
+
+Returns t if REGEXP matches the STRING (starting at character START).
+Updates the match data.
+::end:: */
+{
+    regexp *prog;
+    long xstart = INTP(start) ? VINT(start) : 0;
+    DECLARE1(re, STRINGP);
+    DECLARE2(string, STRINGP);
+    prog = compile_regexp(re);
+    if(prog != NULL)
+    {
+	VALUE res;
+	if(regmatch_string(prog, VSTR(string) + xstart,
+			   (NILP(nocasep) ? 0 : REG_NOCASE)
+			   | (xstart == 0 ? 0 : REG_NOTBOL)))
+	{
+	    update_last_match(string, prog);
+	    res = sym_t;
+	}
+	else
+	    res = sym_nil;
+	return res;
     }
     return LISP_NULL;
 }
@@ -971,6 +1003,7 @@ find_init(void)
     ADD_SUBR(subr_char_search_backward);
     ADD_SUBR(subr_string_match);
     ADD_SUBR(subr_looking_at);
+    ADD_SUBR(subr_string_looking_at);
     ADD_SUBR(subr_buffer_compare_string);
     ADD_SUBR(subr_expand_last_match);
     ADD_SUBR(subr_match_start);
