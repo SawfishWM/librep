@@ -70,6 +70,11 @@ DEFSTRING(domain_error, "Domain error");
 # endif
 #endif
 
+#if !defined (HAVE_STRTOLL) && defined (HAVE_STRTOQ)
+# define strtoll strtoq
+# define HAVE_STRTOLL 1
+#endif
+
 
 /* Private type definitions */
 
