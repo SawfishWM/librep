@@ -402,8 +402,8 @@ their position in that file.")
 	(when (consp interactive)
 	  (setq interactive (compile-form interactive))))
       (when (and *compiler-write-docs* doc name)
-	(add-documentation name doc)
-	(add-documentation-params name args))
+	(add-documentation name (fluid current-module) doc)
+	(add-documentation-params name (fluid current-module) args))
 
       (let ((asm (compile-lambda-to-asm `(lambda ,args ,@body) name)))
 	(allocate-bindings asm)
@@ -425,8 +425,8 @@ their position in that file.")
 	(when (consp interactive)
 	  (setq interactive (compile-form interactive))))
       (when (and *compiler-write-docs* doc name)
-	(add-documentation name doc)
-	(add-documentation-params name args))
+	(add-documentation name (fluid current-module) doc)
+	(add-documentation-params name (fluid current-module) args))
 
       ;; push a pseudo instruction. All details of the bindings may
       ;; not yet be known. So allocate-bindings function will recursively

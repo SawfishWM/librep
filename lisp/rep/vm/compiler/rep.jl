@@ -172,7 +172,7 @@
       ((defconst)
        (let ((doc (nth 3 form)))
 	 (when (and *compiler-write-docs* (stringp doc))
-	   (add-documentation (nth 1 form) doc)
+	   (add-documentation (nth 1 form) (fluid current-module) doc)
 	   (setq form (delq (nth 3 form) form)))
 	 (unless (memq (nth 1 form) (fluid defvars))
 	   (remember-variable (nth 1 form)))
@@ -189,7 +189,7 @@
 	   ;; Compile the definition. A good idea?
 	   (rplaca (nthcdr 2 form) (compile-form (nth 2 form))))
 	 (when (and *compiler-write-docs* (stringp doc))
-	   (add-documentation (nth 1 form) doc)
+	   (add-documentation (nth 1 form) (fluid current-module) doc)
 	   (setq form (delq (nth 3 form) form)))
 	 (unless (memq (nth 1 form) (fluid defvars))
 	   (remember-variable (nth 1 form))))
