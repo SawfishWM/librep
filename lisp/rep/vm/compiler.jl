@@ -1563,8 +1563,6 @@ that files which shouldn't be compiled aren't."
     ;; XXX if key is constant optimise case away..
     (comp-compile-form (car form))
     (setq form (cdr form))
-    (comp-write-op op-dup)
-    (comp-inc-stack)
     (while (consp form)
       (unless (consp form)
 	(comp-error "Badly formed clause in case statement"))
@@ -1572,6 +1570,8 @@ that files which shouldn't be compiled aren't."
 	  ((cases (caar form))
 	   (forms (cdar form))
 	   (next-label (comp-make-label)))
+	(comp-write-op op-dup)
+	(comp-inc-stack)
 	(cond ((consp cases)
 	       (if (consp (cdr cases))
 		   ;; >1 possible case
