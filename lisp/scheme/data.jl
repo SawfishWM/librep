@@ -192,24 +192,6 @@
   (define (rationalize x y)
     (error "rationalize is unimplemented"))
 
-  (define (number->string number . rest)
-    (let ((conv (if rest
-		    (case (car rest)
-		      ((8) "%o")
-		      ((10) "%d")
-		      ((16) "%x")
-		      (t (error "unsupported radix: %s" (car rest))))
-		  "%d")))
-      (format nil conv number)))
-
-  (define (string->number string . rest)
-    (if rest
-	(error "reading numbers with given radix is unimplemented")
-      (let ((value (condition-case nil
-		       (read-from-string string)
-		     (error nil))))
-	(if (numberp value) value #f))))
-
 ;;; characters
 
   (define char=? =)
