@@ -55,6 +55,11 @@ char *alloca ();
 # define THREADED_VM 1
 #endif
 
+/* Define this to cache top-of-stack in a register */
+#ifndef __i386__
+# define CACHE_TOS 1
+#endif
+
 DEFSYM(run_byte_code, "run-byte-code");
 DEFSYM(bytecode_error, "bytecode-error");
 DEFSTRING(err_bytecode_error, "Invalid byte code version");
@@ -154,11 +159,26 @@ list_ref (repv list, int elt)
     return rep_CONSP(list) ? rep_CAR(list) : Qnil;
 }
 
-#define TOP	    (*stackp)
-#define RET_POP	    (*stackp--)
-#define POP	    (stackp--)
-#define POPN(n)	    (stackp -= n)
-#define PUSH(v)	    (*(++stackp) = (v))
+#ifdef CACHE_TOS
+# define RELOAD     tos = *stackp
+# define UPDATE     *stackp = tos
+# define TOP	    tos
+# define POP	    do { stackp--; RELOAD; } while (0)
+# define POPN(n)    do { stackp -= (n); RELOAD; } while (0)
+# define POP1(a)    do { (a) = tos; stackp--; RELOAD; } while (0)
+# define POP2(a,b)  do { (a) = tos; (b) = stackp[-1]; stackp -= 2; RELOAD; } while (0)
+# define PUSH(v)    do { UPDATE; tos = (v); *(++stackp) = tos; } while (0)
+#else
+# define RELOAD
+# define UPDATE
+# define TOP	    (*stackp)
+# define POP	    do { stackp--; } while (0)
+# define POPN(n)    do { stackp -= (n); } while (0)
+# define POP1(a)    do { (a) = *stackp--; } while (0)
+# define POP2(a,b)  do { (a) = stackp[0]; (b) = stackp[-1]; stackp -= 2; } while (0)
+# define PUSH(v)    do { *(++stackp) = (v); } while (0)
+#endif
+
 #define STK_USE	    (stackp - (stackbase - 1))
 
 #define BIND_USE	(bindp - (bindbase - 1))
@@ -195,9 +215,12 @@ list_ref (repv list, int elt)
 
 #define SYNC_GC				\
     do {				\
+	UPDATE;				\
 	gc_stackbase.count = STK_USE;	\
 	gc_bindbase.count = BIND_USE;	\
     } while (0)
+
+#define AFTER_GC RELOAD
 
 /* These macros pop as many args as required then call the specified
    function properly. */
@@ -207,13 +230,12 @@ list_ref (repv list, int elt)
     NEXT;
     
 #define CALL_2(cmd)		\
-    tmp = RET_POP;		\
+    POP1 (tmp);			\
     TOP = cmd (TOP, tmp);	\
     NEXT;
 
 #define CALL_3(cmd)			\
-    tmp = RET_POP;			\
-    tmp2 = RET_POP;			\
+    POP2 (tmp, tmp2);			\
     TOP = cmd (TOP, tmp2, tmp);		\
     NEXT;
 
@@ -386,22 +408,22 @@ list_ref (repv list, int elt)
 #ifdef __mips__
 #define PC_REG asm("$16")
 #define SP_REG asm("$17")
-#define BP_REG asm("$18")
+#define TOS_REG asm("$18")
 #endif
 #ifdef __sparc__
 #define PC_REG asm("%l0")
 #define SP_REG asm("%l1")
-#define BP_REG asm("%l2")
+#define TOS_REG asm("%l2")
 #endif
 #ifdef __alpha__
 #ifdef __CRAY__
 #define PC_REG asm("r9")
 #define SP_REG asm("r10")
-#define BP_REG asm("r11")
+#define TOS_REG asm("r11")
 #else
 #define PC_REG asm("$9")
 #define SP_REG asm("$10")
-#define BP_REG asm("$11")
+#define TOS_REG asm("$11")
 #endif
 #endif
 #ifdef __i386__
@@ -411,12 +433,12 @@ list_ref (repv list, int elt)
 #if defined(PPC) || defined(_POWER) || defined(_IBMR2)
 #define PC_REG asm("26")
 #define SP_REG asm("27")
-#define BP_REG asm("28")
+#define TOS_REG asm("28")
 #endif
 #ifdef __hppa__
 #define PC_REG asm("%r18")
 #define SP_REG asm("%r17")
-#define BP_REG asm("%r16")
+#define TOS_REG asm("%r16")
 #endif
 #ifdef __mc68000__
 #define PC_REG asm("a5")
@@ -425,8 +447,19 @@ list_ref (repv list, int elt)
 #ifdef __arm__
 #define PC_REG asm("r9")
 #define SP_REG asm("r8")
-#define BP_REG asm("r7")
+#define TOS_REG asm("r7")
 #endif
+#endif
+
+#if defined (TOS_REG) && !defined (CACHE_TOS)
+# if !defined (PC_REG)
+#  define PC_REG TOS_REG
+# elif !defined (SP_REG)
+#  define SP_REG TOS_REG
+# elif !define (BP_REG)
+#  define BP_REG TOS_REG
+# endif
+# undef TOS_REG
 #endif
 
 #ifndef PC_REG
@@ -437,6 +470,9 @@ list_ref (repv list, int elt)
 #endif
 #ifndef BP_REG
 #define BP_REG
+#endif
+#ifndef TOS_REG
+#define TOS_REG
 #endif
 
 DEFSTRING(max_depth, "max-lisp-depth exceeded, possible infinite recursion?");
@@ -539,6 +575,9 @@ again_stack: {
     repv *stackbase;
     register repv *bindp BP_REG;
     repv *bindbase;
+#ifdef CACHE_TOS
+    register repv tos TOS_REG;
+#endif
 
 #if defined (__GNUC__)
     /* Using GCC's variable length auto arrays is better for this since
@@ -564,6 +603,7 @@ again:
     /* Initialize the frame and stack pointers */
     stackbase = stack + 1;
     stackp = stackbase - 1;
+    RELOAD;
     bindbase = bindstack;
     bindp = bindbase - 1;
 
@@ -599,6 +639,7 @@ again:
 
 	    /* args are still available above the top of the stack,
 	       this just makes things a bit easier. */
+	    UPDATE;
 	    POPN(arg);
 	    tmp = TOP;
 	    lc.fun = tmp;
@@ -711,7 +752,10 @@ again:
 		    tmp2 = Qnil;
 		    POPN(-arg); /* reclaim my args */
 		    while(arg--)
-			tmp2 = inline_Fcons(RET_POP, tmp2);
+		    {
+			repv x; POP1 (x);
+			tmp2 = inline_Fcons(x, tmp2);
+		    }
 		    lc.args = tmp2;
 		    TOP = rep_SUBRNFUN(tmp)(tmp2);
 		    break;
@@ -794,7 +838,10 @@ again:
 		   and send it to the interpreter.. */
 		POPN(-arg);
 		for (tmp2 = Qnil; arg-- > 0;)
-		    tmp2 = Fcons (RET_POP, tmp2);
+		{
+		    repv x; POP1 (x);
+		    tmp2 = Fcons (x, tmp2);
+		}
 		rep_POP_CALL (lc);
 		TOP = rep_funcall(TOP, tmp2, rep_FALSE);
 		NEXT;
@@ -845,25 +892,30 @@ again:
 		repv tem = search_special_bindings (tmp);
 		if (tem != Qnil)
 		{
-		    rep_CDR (tem) = RET_POP;
+		    repv x; POP1 (x);
+		    rep_CDR (tem) = x;
 		    SAFE_NEXT;
 		}
 	    }
 	    /* fall back to common case */
-	    Fset(rep_VECT(consts)->array[arg], RET_POP);
+	    POP1 (tmp);
+	    Fset(rep_VECT(consts)->array[arg], tmp);
 	    NEXT;
 	END_INSN
 
 	BEGIN_INSN_WITH_ARG (OP_LIST)
 	    tmp = Qnil;
 	    while(arg--)
-		tmp = inline_Fcons(RET_POP, tmp);
+	    {
+		repv x; POP1 (x);
+		tmp = inline_Fcons(x, tmp);
+	    }
 	    PUSH(tmp);
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_BIND)
-	    tmp2 = RET_POP;
+	    POP1 (tmp2);
 	    rep_env = inline_Fcons (tmp2, rep_env);
 	    BIND_TOP = rep_MARK_LEX_BINDING (BIND_TOP);
 	    SAFE_NEXT;
@@ -871,7 +923,7 @@ again:
 
 	BEGIN_INSN_WITH_ARG (OP_BINDSPEC)
 	    tmp = rep_VECT(consts)->array[arg];
-	    tmp2 = RET_POP;
+	    POP1 (tmp2);
 	    /* assuming non-restricted environment */
 	    rep_special_bindings = Fcons (Fcons (tmp, tmp2),
 					  rep_special_bindings);
@@ -927,7 +979,8 @@ again:
 	END_INSN
 
 	BEGIN_INSN_WITH_ARG (OP_SETN)
-	    rep_CAR (snap_environment (arg)) = RET_POP;
+	    POP1 (tmp);
+	    rep_CAR (snap_environment (arg)) = tmp;
 	    SAFE_NEXT;
 	END_INSN
 
@@ -961,7 +1014,8 @@ again:
 
 	BEGIN_INSN_WITH_ARG (OP_SETG)
 	    tmp = rep_VECT(consts)->array[arg];
-	    Fstructure_set (rep_structure, tmp, RET_POP);
+	    POP1 (tmp2);
+	    Fstructure_set (rep_structure, tmp, tmp2);
 	    SAFE_NEXT;
 	END_INSN
 
@@ -1001,7 +1055,6 @@ again:
 	END_INSN
 
 	BEGIN_INSN (OP_UNBIND)
-	    SYNC_GC;
 	    impurity -= inline_unbind(BIND_RET_POP);
 	    SAFE_NEXT;
 	END_INSN
@@ -1086,7 +1139,7 @@ again:
 
 	BEGIN_INSN (OP_ADD)
 	    /* open-code fixnum arithmetic */
-	    tmp = RET_POP;
+	    POP1 (tmp);
 	    tmp2 = TOP;
 	    if (rep_INTP (tmp) && rep_INTP (tmp2))
 	    {
@@ -1119,7 +1172,7 @@ again:
 
 	BEGIN_INSN (OP_SUB)
 	    /* open-code fixnum arithmetic */
-	    tmp = RET_POP;
+	    POP1 (tmp);
 	    tmp2 = TOP;
 	    if (rep_INTP (tmp) && rep_INTP (tmp2))
 	    {
@@ -1179,13 +1232,13 @@ again:
 	END_INSN
 
 	BEGIN_INSN (OP_EQUAL)
-	    tmp = RET_POP;
+	    POP1 (tmp);
 	    TOP = (rep_value_cmp(TOP, tmp) == 0) ? Qt : Qnil;
 	    NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_EQ)
-	    tmp = RET_POP;
+	    POP1 (tmp);
 	    TOP = (TOP == tmp) ? Qt : Qnil;
 	    SAFE_NEXT;
 	END_INSN
@@ -1200,7 +1253,7 @@ again:
 	END_INSN
 
 	BEGIN_INSN (OP_GT)
-	    tmp = RET_POP;
+	    POP1 (tmp);
 	    tmp2 = TOP;
 	    if (rep_INTP (tmp2) && rep_INTP (tmp))
 	    {
@@ -1220,7 +1273,7 @@ again:
 	END_INSN
 
 	BEGIN_INSN (OP_GE)
-	    tmp = RET_POP;
+	    POP1 (tmp);
 	    tmp2 = TOP;
 	    if (rep_INTP (tmp2) && rep_INTP (tmp))
 	    {
@@ -1240,7 +1293,7 @@ again:
 	END_INSN
 
 	BEGIN_INSN (OP_LT)
-	    tmp = RET_POP;
+	    POP1 (tmp);
 	    tmp2 = TOP;
 	    if (rep_INTP (tmp2) && rep_INTP (tmp))
 	    {
@@ -1260,7 +1313,7 @@ again:
 	END_INSN
 
 	BEGIN_INSN (OP_LE)
-	    tmp = RET_POP;
+	    POP1 (tmp);
 	    tmp2 = TOP;
 	    if (rep_INTP (tmp2) && rep_INTP (tmp))
 	    {
@@ -1378,7 +1431,7 @@ again:
 	       if (car THROW-VALUE) == TAG we match, and we
 	       leave two values on the stack, nil on top (to
 	       pacify EJMP), (cdr THROW-VALUE) below that. */
-	    tmp = RET_POP;		/* tag */
+	    POP1 (tmp);		/* tag */
 	    tmp2 = TOP;		/* rep_throw_value */
 	    if(rep_CONSP(tmp2) && rep_CAR(tmp2) == tmp)
 	    {
@@ -1389,7 +1442,7 @@ again:
 	END_INSN
 
 	BEGIN_INSN (OP_THROW)
-	    tmp = RET_POP;
+	    POP1 (tmp);
 	    if(rep_throw_value == rep_NULL)
 	    {
 		rep_throw_value = Fcons(TOP, tmp);
@@ -1403,20 +1456,18 @@ again:
 	       stack in a pair with the current stack-pointer.
 	       This installs an address in the code string as an
 	       error handler. */
-	    tmp = RET_POP;
+	    POP1 (tmp);
 	    BIND_PUSH (Fcons (Qerror, Fcons (tmp, rep_MAKE_INT(STK_USE))));
 	    impurity++;
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_RETURN)
-	    SYNC_GC;
 	    unbind_n (bindbase, BIND_USE);
 	    RETURN;
 	END_INSN
 
 	BEGIN_INSN (OP_UNBINDALL)
-	    SYNC_GC;
 	    unbind_n (bindbase + 1, BIND_USE - 1);
 	    bindp = bindbase;
 	    impurity = rep_SPEC_BINDINGS (BIND_TOP);
@@ -1451,7 +1502,7 @@ again:
 	       This function pops (1) and tests it against the error
 	       in (2). If they match it sets (2) to nil, and binds the
 	       error data to the next lexical slot. */
-	    tmp = RET_POP;
+	    POP1 (tmp);
 	    if(rep_CONSP(TOP) && rep_CAR(TOP) == Qerror
 	       && rep_compare_error(rep_CDR(TOP), tmp))
 	    {
@@ -1711,7 +1762,8 @@ again:
 	END_INSN
 
 	BEGIN_INSN (OP_APPLY)
-	    repv args = RET_POP;
+	    repv args;
+	    POP1 (args);
 	    tmp = TOP;
 	    SYNC_GC;
 	    if (impurity == 0 && *pc == OP_RETURN && rep_FUNARGP (tmp)
@@ -1810,7 +1862,6 @@ again:
 	END_INSN
 
 	BEGIN_INSN (OP_UNBINDALL_0)
-	    SYNC_GC;
 	    unbind_n (bindbase, BIND_USE);
 	    bindp = bindbase - 1;
 	    impurity = 0;
@@ -1835,8 +1886,8 @@ again:
 	END_INSN
 
 	BEGIN_INSN (OP_FLUID_BIND)
-	    tmp = RET_POP;
-	    rep_special_bindings = Fcons (Fcons (RET_POP, tmp),
+	    POP2 (tmp, tmp2);
+	    rep_special_bindings = Fcons (Fcons (tmp2, tmp),
 					  rep_special_bindings);
 	    BIND_TOP = rep_MARK_SPEC_BINDING (BIND_TOP);
 	    impurity++;
@@ -1848,7 +1899,7 @@ again:
 	END_INSN
 
 	BEGIN_INSN (OP_NUM_EQ)
-	    tmp = RET_POP;
+	    POP1 (tmp);
 	    tmp2 = TOP;
 	    if (rep_INTP (tmp) && rep_INTP (tmp2))
 	    {
@@ -1879,7 +1930,7 @@ again:
 	END_INSN
 
 	BEGIN_INSN (OP__DEFINE)
-	    tmp = RET_POP;
+	    POP1 (tmp);
 	    TOP = Fstructure_define (rep_structure, TOP, tmp);
 	    NEXT;
 	END_INSN
@@ -1889,7 +1940,7 @@ again:
 	BEGIN_INSN (OP_EJMP)
 	    /* Pop the stack; if it's nil jmp pc[0,1], otherwise
 	       set rep_throw_value=ARG and goto the error handler. */
-	    tmp = RET_POP;
+	    POP1 (tmp);
 	    if(rep_NILP(tmp))
 		goto do_jmp;
 	    rep_throw_value = tmp;
@@ -1897,14 +1948,16 @@ again:
 	END_INSN
 
 	BEGIN_INSN (OP_JN)
-	    if(rep_NILP(RET_POP))
+	    POP1 (tmp);
+	    if(rep_NILP(tmp))
 		goto do_jmp;
 	    pc += 2;
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_JT)
-	    if(!rep_NILP(RET_POP))
+	    POP1 (tmp);
+	    if(!rep_NILP(tmp))
 		goto do_jmp;
 	    pc += 2;
 	    SAFE_NEXT;
@@ -1955,13 +2008,16 @@ again:
 	    if(rep_INTERRUPTP)
 		HANDLE_ERROR;
 
-	    /* ...or if it's time to gc... */
 	    SYNC_GC;
+
+	    /* ...or if it's time to gc... */
 	    if(rep_data_after_gc >= rep_gc_threshold)
 		Fgarbage_collect (Qnil);
 
 	    /* ...or time to switch threads */
 	    rep_MAY_YIELD;
+
+	    AFTER_GC;
 	    SAFE_NEXT;
 	END_INSN
 
@@ -2020,6 +2076,7 @@ again:
 		    rep_throw_value = rep_NULL;
 		    pc = rep_STR(code) + rep_INT(rep_CAR(item));
 		    impurity--;
+		    RELOAD;
 		    SAFE_NEXT;
 		}
 		else
