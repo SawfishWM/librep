@@ -48,9 +48,9 @@
   ;; Push a constant onto the stack
   (defun compile-constant (form)
     (cond
-     ((eq form nil)
+     ((eq form '())
       (emit-insn (bytecode nil)))
-     ((eq form t)
+     ((eq form 't)
       (emit-insn (bytecode t)))
      ((and (fixnump form) (<= form 65535) (>= form -65535))
       ;; use one of the pushi instructions
