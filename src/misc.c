@@ -526,6 +526,24 @@ Returns the lower-case equivalent of CHAR.
     return rep_MAKE_INT(tolower(rep_INT(ch)));
 }
 
+DEFUN("system", Fsystem, Ssystem, (repv command), rep_Subr1) /*
+::doc:Ssystem::
+system SHELL-COMMAND
+
+Synchronously execute the shell command string SHELL-COMMAND. Returns the
+exit status of the command, or signals an error if the shell couldn't
+be started.
+
+Note that the exit status is _not_ the same as the return code. It
+depends on the operating system, but under unix the return code may be
+found by right-shifting the exit status by eight bits. Low non-zero
+values represent that the process was killed by a signal.
+::end:: */
+{
+    rep_DECLARE1(command, rep_STRINGP);
+    return rep_system (rep_STR (command));
+}
+
 void
 rep_misc_init(void)
 {
@@ -572,6 +590,7 @@ rep_misc_init(void)
     rep_ADD_SUBR(Sspace_char_p);
     rep_ADD_SUBR(Schar_upcase);
     rep_ADD_SUBR(Schar_downcase);
+    rep_ADD_SUBR(Ssystem);
 
     rep_INTERN(upcase_table);
     rep_SYM(Qupcase_table)->value = rep_make_string(257);
