@@ -1477,7 +1477,7 @@ again:
 		result = (rep_bytecode_interpreter
 			  (rep_COMPILED_CODE(fun),
 			   rep_COMPILED_CONSTANTS(fun),
-			   rep_MAKE_INT(rep_COMPILED_STACK(fun)),
+			   rep_COMPILED_STACK(fun),
 			   boundlist));
 	    }
 	    else
