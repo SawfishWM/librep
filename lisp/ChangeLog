@@ -1,5 +1,8 @@
 Sun Jun  7 14:57:12 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* edit.jl (mouse-select-drag): preserve type of block when
+	dragging status lines
+
 	* compiler.jl: added source transform to handle setq-default
 	special form
 
