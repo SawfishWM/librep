@@ -1649,7 +1649,7 @@ research:
 	    repv tem;
 	    static char *suffixes[3] = { ".jl", ".jlc" };
 	    int i = 1;
-	    if (rep_SYM(Qinterpreted_mode)->value != Qnil)
+	    if (Fsymbol_value (Qinterpreted_mode, Qt) != Qnil)
 		i = 0;
 	    for(; i >= 0; i--)
 	    {
@@ -2503,7 +2503,6 @@ Returns t if arg is a primitive function.
     case rep_Subr5:
     case rep_SubrN:
     case rep_SF:
-    case rep_Var:
 	return(Qt);
     default:
 	return(Qnil);
@@ -2540,7 +2539,6 @@ Returns the name (a string) associated with SUBR.
     case rep_Subr5:
     case rep_SubrN:
     case rep_SF:
-    case rep_Var:
 	return(rep_SUBR(subr)->name);
     default:
 	return(Qnil);
@@ -2903,70 +2901,70 @@ rep_lispcmds_init(void)
 
     rep_INTERN_SPECIAL(rep_directory);
     if(getenv("REPDIR") != 0)
-	rep_SYM(Qrep_directory)->value = rep_string_dup(getenv("REPDIR"));
+	Fset (Qrep_directory, rep_string_dup(getenv("REPDIR")));
     else
-	rep_SYM(Qrep_directory)->value = rep_VAL(&default_rep_directory);
+	Fset (Qrep_directory, rep_VAL(&default_rep_directory));
 
     rep_INTERN_SPECIAL(lisp_lib_directory);
     if(getenv("REPLISPDIR") != 0)
-	rep_SYM(Qlisp_lib_directory)->value = rep_string_dup(getenv("REPLISPDIR"));
+	Fset (Qlisp_lib_directory, rep_string_dup(getenv("REPLISPDIR")));
     else
-	rep_SYM(Qlisp_lib_directory)->value = rep_string_dup(REP_LISP_DIRECTORY);
+	Fset (Qlisp_lib_directory, rep_string_dup(REP_LISP_DIRECTORY));
 
     rep_INTERN_SPECIAL(site_lisp_directory);
     if(getenv("REPSITELISPDIR") != 0)
-	rep_SYM(Qsite_lisp_directory)->value
-	    = rep_string_dup(getenv("REPSITELISPDIR"));
+	Fset(Qsite_lisp_directory, rep_string_dup(getenv("REPSITELISPDIR")));
     else
-	rep_SYM(Qsite_lisp_directory)->value
-	    = rep_concat2(rep_STR(rep_SYM(Qrep_directory)->value), "/site-lisp");
+	Fset (Qsite_lisp_directory,
+	      rep_concat2(rep_STR(Fsymbol_value (Qrep_directory, Qt)),
+			  "/site-lisp"));
 
     rep_INTERN_SPECIAL(exec_directory);
     if(getenv("REPEXECDIR") != 0)
-	rep_SYM(Qexec_directory)->value = rep_string_dup(getenv("REPEXECDIR"));
+	Fset (Qexec_directory, rep_string_dup(getenv("REPEXECDIR")));
     else
-	rep_SYM(Qexec_directory)->value = rep_string_dup(REP_EXEC_DIRECTORY);
+	Fset (Qexec_directory, rep_string_dup(REP_EXEC_DIRECTORY));
 
     rep_INTERN_SPECIAL(documentation_file);
     if(getenv("REPDOCFILE") != 0)
-	rep_SYM(Qdocumentation_file)->value = rep_string_dup(getenv("REPDOCFILE"));
+	Fset (Qdocumentation_file, rep_string_dup(getenv("REPDOCFILE")));
     else
-	rep_SYM(Qdocumentation_file)->value = rep_string_dup(REP_DOC_FILE);
+	Fset (Qdocumentation_file, rep_string_dup(REP_DOC_FILE));
 
     rep_INTERN_SPECIAL(documentation_files);
-    rep_SYM(Qdocumentation_files)->value
-	= Fcons (rep_SYM(Qdocumentation_file)->value, Qnil);
+    Fset (Qdocumentation_files,
+	  Fcons (Fsymbol_value (Qdocumentation_file, Qt), Qnil));
 
     rep_INTERN_SPECIAL(load_path);
-    rep_SYM(Qload_path)->value = rep_list_3(rep_SYM(Qlisp_lib_directory)->value,
-					rep_SYM(Qsite_lisp_directory)->value,
-					rep_null_string ());
+    Fset (Qload_path, rep_list_3(Fsymbol_value (Qlisp_lib_directory, Qt),
+				 Fsymbol_value (Qsite_lisp_directory, Qt),
+				 rep_null_string ()));
 
     rep_INTERN_SPECIAL(dl_load_path);
-    rep_SYM(Qdl_load_path)->value = Qnil;
+    Fset (Qdl_load_path, Qnil);
     {
 	char *ptr = getenv("LD_LIBRARY_PATH");
 	while (ptr != 0 && *ptr != 0)
 	{
 	    char *end = strchr(ptr, ':');
-	    rep_SYM(Qdl_load_path)->value
-		= Fcons(end ? rep_string_dupn(ptr, end - ptr)
-			: rep_string_dup(ptr), rep_SYM(Qdl_load_path)->value);
+	    Fset (Qdl_load_path,
+		  Fcons(end ? rep_string_dupn(ptr, end - ptr)
+			: rep_string_dup(ptr), Fsymbol_value (Qdl_load_path, Qt)));
 	    ptr = end ? end + 1 : 0;
 	}
     }
-    rep_SYM(Qdl_load_path)->value
-	= Fcons(rep_SYM(Qexec_directory)->value,
-		Fcons (rep_string_dup (REP_COMMON_EXEC_DIRECTORY),
-		       Fnreverse(rep_SYM(Qdl_load_path)->value)));
+    Fset (Qdl_load_path,
+	  Fcons (Fsymbol_value (Qexec_directory, Qt),
+		 Fcons (rep_string_dup (REP_COMMON_EXEC_DIRECTORY),
+			Fnreverse(Fsymbol_value (Qdl_load_path, Qt)))));
 
     rep_INTERN_SPECIAL(after_load_alist);
-    rep_SYM(Qafter_load_alist)->value = Qnil;
+    Fset (Qafter_load_alist, Qnil);
 
     rep_INTERN(or); rep_INTERN(and);
 
     rep_INTERN_SPECIAL(dl_load_reloc_now);
-    rep_SYM(Qdl_load_reloc_now)->value = Qnil;
+    Fset (Qdl_load_reloc_now, Qnil);
 
     rep_INTERN_SPECIAL(load_filename);
 }
