@@ -18,65 +18,67 @@
 # along with Jade; see the file COPYING.  If not, write to
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-include Makedefs
+include ./Makedefs
 
-CLEANDIRS = lisp man
+top_srcdir=@top_srcdir@
 
-ifeq ($(enable_dumped), 0)
- all : lib jade lisp
-else
- all : lib jade lisp jaded
-endif
+BUILDDIRS = lib jade lisp jaded
+INSTALLDIRS = lib lisp man
+RCLEANDIRS = lisp man
 
-.PHONY: jade jaded lisp lib
+all :
+	-set -e; for dir in $(BUILDDIRS); do \
+	  [ -d $$dir ] && ( cd $$dir && $(MAKE) $@ ); \
+ 	done
 
-lib :
-	(cd lib && $(MAKE) all)
+install : all installdirs
+	if [ -x jaded/jaded ]; then \
+	  $(INSTALL_PROGRAM) jaded/jaded $(bindir)/jade; \
+	else \
+	  $(INSTALL_PROGRAM) jade/jade $(bindir)/jade; \
+	fi
+	-set -e; for dir in $(INSTALLDIRS); do \
+	  ( cd $$dir && $(MAKE) $@ ); \
+	done
+	$(INSTALL_DATA) ./DOC $(jadedir)/$(version)
 
-jade :
-	(cd jade && $(MAKE) all)
+installdirs : $(top_srcdir)/mkinstalldirs
+	$(SHELL) $(top_srcdir)/mkinstalldirs $(jadedir)/$(version) $(bindir)
 
-ifneq ($(enable_dumped), 0)
-jaded : jade $(DUMPED_OUT)
-	(cd jaded && $(MAKE) all)
-endif
+uninstall :
+	rm -f $(bindir)/jade $(bindir)/jaded $(bindir)/jadeclient
+	-set -e; for dir in $(INSTALLDIRS); do \
+	  ( cd $$dir && $(MAKE) $@ ); \
+	done
+	rm -rf $(jadedir)/$(version)
 
 NEWS : man/news.texi
 	(cd man && $(MAKE) ../NEWS )
-
-install : all installdirs
-	$(INSTALL_PROGRAM) src/jade $(bindir)/jade
-	$(INSTALL_PROGRAM) src/jadeclient $(bindir)/jadeclient
-	(cd man && $(MAKE) install.info)
-	(cd lisp && $(MAKE) install)
-
-installdirs :
-	$(SHELL) libsrc/mkinstalldirs $(jadedir) $(bindir) $(infodir) \
-		 $(lispdir)
-
-uninstall :
-	rm -f $(bindir)/jade $(bindir)/jadeclient )
-	(cd man && $(MAKE) uninstall.info )
-	(cd lisp && $(MAKE) uninstall )
-	rm -rf $(jadedir)
-
-lisp :
-	(cd lisp && $(MAKE) lisp)
 
 tar :
 	tar -zcT FILES -f jade.tar.gz
 
 nobak :
-	rm `find . -name '*~' -print`
+	rm -f `find . -name '*~' -print`
 
 clean :
-	rm -f *~ NEWS
-	set -e; for dir in $(CLEANDIRS); do $(MAKE) -C $$dir clean; done
+	-set -e; for dir in $(BUILDDIRS); do \
+	  [ -d $$dir ] && ( cd $$dir && $(MAKE) $@ ); \
+	done
+	rm -f *~ NEWS DOC TAGS
 
 realclean :
-	set -e; for dir in $(CLEANDIRS); do $(MAKE) -C $$dir realclean; done
+	-set -e; for dir in $(RCLEANDIRS); do \
+	  [ -d $$dir ] && ( cd $$dir && $(MAKE) $@ ); \
+	done
 	-[ -d lib ] && rm -rf lib
 	-[ -d jade ] && rm -rf jade
 	-[ -d jaded ] && rm -rf jaded
 	rm -f config.cache config.h config.log config.status Makedefs Makefile
-	rm -f *~ NEWS dump.out DOC
+	rm -f *~ NEWS DOC TAGS
+
+TAGS :
+	etags --language=c `find . -name '*.[ch]' -print` \
+	      --language=lisp `find . -name '*.jl' -print`
+
+.PHONY: jade jaded lisp lib install uninstall tar nobak clean realclean TAGS

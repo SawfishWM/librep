@@ -20,11 +20,15 @@
 
 include ../Makedefs
 
-jade_prog := ../jade/jade
+top_srcdir=@top_srcdir@
 
-COMPILE_ENV := JADELISPLIB=.
+jade_prog = ../jade/jade
 
-all :
+COMPILE_ENV = JADELISPLIB=.
+
+INSTALL_FILES = $(wildcard *.jl) $(wildcard *.jlc) $(wildcard *.jld) DOC
+
+all : lisp
 
 lisp :
 	$(COMPILE_ENV) $(jade_prog) -geometry +0+0 -log-msgs -no-rc \
@@ -37,22 +41,19 @@ dumped :
 		-f sleep-window -l dump -f dump-batch -o $(DUMPED_OUT) \
 		$(DUMPED_SRCS) -q
 
-install :
-	for f in *.jl; \
-	do \
-	  $(INSTALL_DATA) $$f $(lispdir)/$$f; \
-	done
-	$(INSTALL_DATA) ../DOC $(lispdir)/../DOC
-	$(COMPILE_ENV) $(jade_prog) -geometry +0+0 -log-msgs -no-rc \
-		-f sleep-window -l compiler -f compile-compiler -q
-	$(COMPILE_ENV) $(jade_prog) -geometry +0+0 -log-msgs -no-rc \
-		-f sleep-window -f compile-lisp-lib -q
+install : all installdirs
+	$(INSTALL_DATA) $(INSTALL_FILES) $(lispdir)
+
+installdirs : $(top_srcdir)/mkinstalldirs
+	$(SHELL) $(top_srcdir)/mkinstalldirs $(lispdir)
 
 uninstall :
-	-rm -f *.jl *.jlc DOC
+	rm -f $(addprefix $(lispdir)/, $(INSTALL_FILES))
 
 clean :
-	-rm -f *.jlc DOC *.jld dump.out *~
+	rm -f *.jlc DOC *.jld dump.out *~
 
 realclean : clean
-	-rm -f Makefile
+	rm -f Makefile
+
+.PHONY : all lisp dumped install uninstall clean realclean

@@ -27,7 +27,7 @@ AC_CONFIG_AUX_DIR(etc)
 version="4.0"
 jadedir='${datadir}/jade'
 lispdir='${jadedir}/${version}/lisp'
-jadeexecdir='${libexecdir}/jade/${version}'
+jadeexecdir='${libexecdir}/jade/${version}/${host_type}'
 
 output_files="man/Makefile jade/Makefile:src/Makefile.in\
  lib/Makefile:lib-src/Makefile.in lisp/Makefile Makedefs Makefile"

@@ -61,12 +61,14 @@ HAVE_UNIX=@HAVE_UNIX@
 .PHONY: clean realclean install
 
 %.o : %.c
-	$(CC) -c $(CPPFLAGS) $(CFLAGS) -DJADE -DJADE_DIR=$(jadedir) \
-	  -DJADE_EXEC_DIR=$(jadeexecdir) -o $@ $<
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) -DJADE \
+	  '-DJADE_DIR="$(jadedir)"' '-DJADE_EXEC_DIR="$(jadeexecdir)"' \
+	  -o $@ $<
 
 % : %.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -DJADE -DJADE_DIR=$(jadedir) \
-	  -DJADE_EXEC_DIR=$(jadeexecdir) -o $@ $< $(LIBS)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -DJADE \
+	  '-DJADE_DIR="$(jadedir)"' '-DJADE_EXEC_DIR="$(jadeexecdir)"' \
+	  -o $@ $< $(LIBS)
 
 %.$(dynsuffix) : %.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(DL_CFLAGS) -DJADE -DJADE_DL -o $@ $<
