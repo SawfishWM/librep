@@ -165,6 +165,14 @@ functions."
 	     (cond ((consp x) (cons 'setq x))
 		   (t (list 'setq x nil)))) bindings)))
 
+(defmacro fluid-let (bindings . body)
+  (let ((fluids nil)
+	(values nil))
+    (mapc (lambda (x)
+	    (setq fluids (cons (car x) fluids))
+	    (setq values (cons `(progn ,@(cdr x)) values))) bindings)
+    `(with-fluids (list ,@fluids) (list ,@values) (lambda () ,@body))))
+
 
 ;; Conditional syntax
 
