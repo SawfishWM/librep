@@ -168,6 +168,7 @@ DEFSTRING(no_prog, "No program");
 DEFSTRING(cant_start, "Can't start");
 DEFSTRING(dev_null, "/dev/null");
 DEFSTRING(dot, ".");
+DEFSTRING(not_local, "Need a local file");
 
 
 
@@ -1090,11 +1091,29 @@ set in the PROCESS prior to calling this function.
 		pr->pr_Args = arg_list;
 	}
     }
-    if(!STRINGP(pr->pr_Prog))
+    if(infile != VAL(&dev_null))
+    {
+	/* Ensure that INFILE is a real name in the local file
+	   system, and that the file actually exists. */
+	GC_root gc_arg_list, gc_pr, gc_infile;
+	VALUE _pr = VAL(pr);
+	PUSHGC(gc_arg_list, arg_list);
+	PUSHGC(gc_pr, _pr);
+	PUSHGC(gc_infile, infile);
+	infile = cmd_local_file_name(infile);
+	if(infile && STRINGP(infile))
+	{
+	    if(NILP(sys_file_exists_p(infile)))
+		res = signal_file_error(infile);
+	}
+	else
+	    res = cmd_signal(sym_process_error,
+			     LIST_2(VAL(&not_local), VAL(pr)));
+	POPGC; POPGC; POPGC;
+    }
+    if(NILP(res) && !STRINGP(pr->pr_Prog))
 	res = cmd_signal(sym_process_error, LIST_2(VAL(&no_prog), VAL(pr)));
-    else if(NILP(sys_file_exists_p(infile)))
-	res = signal_file_error(infile);
-    else
+    if(NILP(res))
     {
 	int numargs = list_length(pr->pr_Args) + 1;
 	char **argv = str_alloc(sizeof(char *) * (numargs + 1));
