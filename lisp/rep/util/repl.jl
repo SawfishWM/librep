@@ -297,10 +297,10 @@ enter a meta-command prefixed by a `,' character.\n\n")
        (lambda (name)
 	 (require 'rep.lang.doc)
 	 (let* ((value (repl-eval name))
-		(doc (documentation
-		      name (locate-binding* name) value)))
+		(struct (locate-binding* name))
+		(doc (documentation name struct value)))
 	   (write standard-output #\newline)
-	   (describe-value value name)
+	   (describe-value value name struct)
 	   (write standard-output #\newline)
 	   (when doc
 	     (format standard-output "%s\n\n" doc)))))
