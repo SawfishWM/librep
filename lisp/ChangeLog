@@ -1,3 +1,17 @@
+1998-11-26  John Harper  <john@dcs.warwick.ac.uk>
+
+	* mail-dir.jl (insert-mail-item): fix for when no name
+	associated with address
+
+	* tex-mode.jl (latex-mode, plain-tex-mode): added autoload tags
+
+1998-11-25  John Harper  <john@jsh.org>
+
+	* edit.jl (quoted-insert): new command, bound to C-q
+
+	* keymap.jl (next-event): new function
+	(read-event): new optional arg COOKED
+
 1998-11-24  John Harper  <john@jsh.org>
 
 	* help.jl (describe-function): once more run

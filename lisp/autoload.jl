@@ -117,6 +117,8 @@
 (bind-keys ctrl-x-keymap "v" 'rcs-keymap)
 (load "rcs-hooks")
 (autoload 'tex-mode "tex-mode" t)
+(autoload 'latex-mode "tex-mode" t)
+(autoload 'plain-tex-mode "tex-mode" t)
 (autoload 'print-buffer "print" t)
 (autoload 'print-buffer-to-file "print" t)
 (autoload 'print-buffer-to-printer "print" t)
@@ -233,4 +235,5 @@
 (autoload 'page-summary "page-summary" t)
 (autoload 'ispell-add-word-to-dictionary "ispell" t)
 (autoload 'ispell-add-word-for-session "ispell" t)
+(autoload 'next-event "keymap")
 ;;; ::autoload-end::
