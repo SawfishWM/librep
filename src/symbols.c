@@ -20,6 +20,7 @@
 
 #include "jade.h"
 #include "jade_protos.h"
+#define BUILD_JADE
 #include "regexp/regexp.h"
 
 #ifdef HAVE_ALLOCA

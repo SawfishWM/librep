@@ -38,6 +38,7 @@
 
 #include "jade.h"
 #include "jade_protos.h"
+#define BUILD_JADE
 #include "regexp/regexp.h"
 
 #include <string.h>
