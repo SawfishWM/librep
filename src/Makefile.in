@@ -101,7 +101,7 @@ libsdbm.la : $(SDBM_OBJS) repsdbm.lo
 
 clean :
 	rm -f *~ *.o *.lo *.la build.h
-	rm -f repdoc core rep
+	rm -f repdoc core rep rep-remote
 
 realclean : clean
 	rm -f .*.d Makefile rep.h dump.out dumped.s rep-config
