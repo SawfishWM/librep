@@ -125,7 +125,8 @@
 
   (defun make-gaol ()
     (build-structure)
-    (let ((gaol (make-structure '() (lambda () (open-structures '(%gaol))))))
+    (declare (bound %open-structures))
+    (let ((gaol (make-structure '() (lambda () (%open-structures '(%gaol))))))
       (set-file-handler-environment file-handler-env gaol)
       (set-special-environment gaol-safe-specials gaol)
       (structure-install-vm gaol nil)
