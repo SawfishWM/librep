@@ -396,7 +396,6 @@ typedef struct {
     repv car;				/* bits 8->11 are flags */
     repv next;				/* next symbol in rep_obarray bucket */
     repv name;
-    repv prop_list;
 } rep_symbol;
 
 /* Means that the symbol's value may be in some form of local storage,
