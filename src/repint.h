@@ -111,7 +111,11 @@ struct rep_struct_struct {
        environment, or Qt to denote all specials. */
     repv special_env;
 
+    /* If set, currently recursively searching this module for a binding */
     u_int exclusion : 1;
+
+    /* If set, all (local) bindings are exported by default. */
+    u_int export_all : 1;
 };
 
 extern int rep_structure_type;
