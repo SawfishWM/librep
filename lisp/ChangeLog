@@ -1,3 +1,9 @@
+2002-03-30  John Harper  <jsh@unfactored.org>
+
+	* rep/net/rpc.jl: more reliable/predictable error handling.
+	Also when closing a socket, report failures on any requests
+	pending on that socket (avoids hanging forever..)
+
 2002-03-24  John Harper  <jsh@unfactored.org>
 
 	* rep/vm/compiler/inline.jl (max-inline-depth): increased from

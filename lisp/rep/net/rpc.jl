@@ -123,7 +123,8 @@
     (make-socket-data closable)
     ;; no predicate
     (pending-data socket-pending-data socket-pending-data-set!)
-    (closable socket-closable-p))
+    (closable socket-closable-p)
+    (pending-calls socket-pending-calls socket-pending-calls-set!))
 
   ;; The socket used to listen for connections to this server (or false)
   (define listener-socket nil)
@@ -141,11 +142,10 @@
   (define socket-data-table (make-weak-table eq-hash eq))
 
   ;; Return the socket associated with SERVER:PORT. If there isn't one,
-  ;; try to connect to the server
+  ;; try to connect to the server. Signals an error on failure
   (define (server-socket server port)
     (or (table-ref socket-cache (cons server port))
-	(open-server server port)
-	(error "No connection with server %s:%d" server port)))
+	(open-server server port)))
 
   (define (register-rpc-server socket #!key closable)
     "Add the connection SOCKET to the table of known rpc connections. If
@@ -160,12 +160,20 @@ by knowing its address and port number."
     "Remove SOCKET from the table of rpc connections."
     (let ((server (socket-peer-address socket))
 	  (port (socket-peer-port socket)))
-      (when (eq (server-socket server port) socket)
-	(let ((data (socket-data socket)))
+      (when (eq (table-ref socket-cache (cons server port)) socket)
+	(table-unset socket-cache (cons server port)))
+      (let ((data (socket-data socket)))
+	(if (not data)
+	    (close-socket socket)
 	  (when (socket-closable-p data)
 	    (close-socket socket))
-	  (table-unset socket-cache (cons server port))
-	  (table-unset socket-data-table socket)))))
+	  (table-unset socket-data-table socket)
+	  ;; fail-out any pending calls on this socket
+	  (mapc (lambda (id)
+		  (dispatch-pending-call
+		   socket id nil
+		   (list 'rpc-error "Lost connection" server port)))
+		(socket-pending-calls data))))))
 
   ;; Return the data structure associated with SOCKET
   (define (socket-data socket) (table-ref socket-data-table socket))
@@ -181,10 +189,14 @@ by knowing its address and port number."
       (lambda ()
 	(setq counter (1+ counter)))))
 
-  (define (record-pending-call id callback)
-    (table-set pending-calls id callback))
+  (define (record-pending-call socket id callback)
+    (table-set pending-calls id callback)
+    (let ((data (socket-data socket)))
+      (socket-pending-calls-set! data (cons id (socket-pending-calls data)))))
 
-  (define (dispatch-pending-call id succeeded value)
+  (define (dispatch-pending-call socket id succeeded value)
+    (let ((data (socket-data socket)))
+      (socket-pending-calls-set! data (delq id (socket-pending-calls data))))
     (let ((callback (table-ref pending-calls id)))
       (when callback
 	(table-unset pending-calls id)
@@ -202,7 +214,7 @@ server sockets."
       (register-rpc-server socket #:closable nil)
       socket))
 
-  ;; Open an rpc connection to HOST:PORT
+  ;; Open an rpc connection to HOST:PORT; signals an error on failure
   (define (open-server host port)
     (let (socket)
       (setq socket (socket-client host port
@@ -246,7 +258,7 @@ server sockets."
 	       (let ((id (nth 1 form))
 		     (succeeded (nth 2 form))
 		     (value (nth 3 form)))
-		 (dispatch-pending-call id succeeded value)))
+		 (dispatch-pending-call socket id succeeded value)))
 
 	      ((call)
 	       ;; (call CALL-ID SERVANT-ID ARGS...)
@@ -269,7 +281,7 @@ server sockets."
 		       (write socket (prin1-to-string response)))))))))))))
 
   (define (invoke-method socket id callback servant-id args)
-    (record-pending-call id callback)
+    (record-pending-call socket id callback)
     (let ((request (list* 'call id servant-id args)))
       (debug "Wrote: %S\n" request)
       (write socket (prin1-to-string request))))
@@ -419,7 +431,7 @@ reference the RPC proxy function PROXY."
   (define (servant-id->global-id id)
     "Return the globally referenceable RPC servant id for local servant id ID."
     (unless listener-socket
-      (error "Need an opened RPC server"))
+      (error "Need an active local RPC server"))
     (make-global-id (socket-address listener-socket)
 		    (socket-port listener-socket) id))
 
