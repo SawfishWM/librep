@@ -1273,6 +1273,108 @@ load_file_exists_p (repv name)
     return tem;
 }
 
+DEFUN ("load-file", Fload_file, Sload_file,
+       (repv name, repv structure), rep_Subr2) /*
+::doc:load-file::
+load-file FILENAME [STRUCTURE]
+
+Load the file of Lisp forms called FILENAME (no suffixes are added, or
+paths searched). The file is loaded in a null lexical environment,
+within STRUCTURE. The value of the last form evaluated is returned.
+::end:: */
+{
+    repv stream, bindings = Qnil, result, tem;
+    rep_GC_root gc_stream, gc_bindings;
+    struct rep_Call lc;
+    int c;
+
+    if (structure == Qnil)
+	structure = rep_structure;
+
+    rep_DECLARE1 (name, rep_STRINGP);
+    rep_DECLARE2 (structure, rep_STRUCTUREP);
+
+    rep_PUSHGC (gc_stream, name);
+    rep_PUSHGC (gc_bindings, structure);
+    stream = Fopen_file (name, Qread);
+    rep_POPGC; rep_POPGC;
+    if (!stream || !rep_FILEP (stream))
+	return rep_NULL;
+
+    bindings = rep_bind_symbol (bindings, Qload_filename, name);
+    rep_PUSHGC (gc_stream, stream);
+    rep_PUSHGC (gc_bindings, bindings);
+
+    /* Create the lexical environment for the file. */
+    lc.fun = Qnil;
+    lc.args = Qnil;
+    lc.args_evalled_p = Qnil;
+    rep_PUSH_CALL (lc);
+    rep_env = Qnil;
+    rep_structure = structure;
+
+    result = Qnil;
+    c = rep_stream_getc (stream);
+    while ((c != EOF) && (tem = rep_readl (stream, &c)))
+    {
+	rep_TEST_INT;
+	if (rep_INTERRUPTP || !(result = rep_eval (tem, Qnil)))
+	{
+	    rep_unbind_symbols (bindings);
+	    rep_POP_CALL (lc);
+	    rep_POPGC; rep_POPGC;
+	    return rep_NULL;
+	}
+    }
+    if (rep_throw_value
+	&& rep_CAR (rep_throw_value) == Qerror
+	&& rep_CONSP (rep_CDR(rep_throw_value))
+	&& rep_CAR (rep_CDR(rep_throw_value)) == Qend_of_stream)
+    {
+	/* lose the end-of-stream error. */
+	rep_throw_value = rep_NULL;
+    }
+    rep_POP_CALL (lc);
+    rep_POPGC; rep_POPGC;
+
+    rep_PUSHGC (gc_stream, result);
+    rep_unbind_symbols (bindings);
+    Fclose_file (stream);
+    rep_POPGC;
+
+    return result;
+}
+
+DEFUN ("load-dl-file", Fload_dl_file, Sload_dl_file,
+       (repv name, repv structure), rep_Subr2)
+{
+    struct rep_Call lc;
+    repv result;
+
+    if (structure == Qnil)
+	structure = rep_structure;
+
+    rep_DECLARE1 (name, rep_STRINGP);
+    rep_DECLARE2 (structure, rep_STRUCTUREP);
+
+    /* Create the lexical environment for the file. */
+    lc.fun = Qnil;
+    lc.args = Qnil;
+    lc.args_evalled_p = Qnil;
+    rep_PUSH_CALL (lc);
+    rep_env = Qnil;
+    rep_structure = structure;
+
+#ifdef HAVE_DYNAMIC_LOADING
+    result = rep_open_dl_library (name);
+#else
+    result = Fsignal (Qerror, rep_LIST_1 (rep_string_dup ("No support for dynamic loading of shared libraries")));
+#endif
+
+    rep_POP_CALL (lc);
+    return result;
+}
+
 DEFUN_INT("load", Fload, Sload, (repv file, repv noerr_p, repv nopath_p, repv nosuf_p, repv unused), rep_Subr5, "fLisp file to load:") /*
 ::doc:load::
 load FILE [NO-ERROR] [NO-PATH] [NO-SUFFIX]
@@ -1300,10 +1402,7 @@ loaded and a warning is displayed.
     repv dir = rep_NULL, try = rep_NULL;
     repv result = rep_NULL;
     repv suffixes;
-
-#ifdef HAVE_DYNAMIC_LOADING
     rep_bool trying_dl = rep_FALSE;
-#endif
 
     rep_GC_root gc_file, gc_name, gc_path, gc_dir, gc_try, gc_result, gc_suffixes;
 
@@ -1432,74 +1531,16 @@ path_error:
 	    return Qnil;
     }
 
+    rep_PUSHGC (gc_file, file);
 #ifdef HAVE_DYNAMIC_LOADING
     if(trying_dl)
-    {
-	rep_PUSHGC(gc_file, file);
-	result = rep_open_dl_library (name);
-	rep_POPGC;
-	if (result == rep_NULL)
-	    return rep_NULL;
-    }
+	result = Fload_dl_file (name, rep_structure);
     else
 #endif
-    {
-	repv stream, bindings = Qnil;
-	rep_GC_root gc_stream, gc_bindings;
-	struct rep_Call lc;
-
-	repv tem;
-	int c;
-
-	rep_PUSHGC(gc_file, file);
-	rep_PUSHGC(gc_stream, name);
-	stream = Fopen_file(name, Qread);
-	rep_POPGC;
-	if(!stream || !rep_FILEP(stream))
-	{
-	    rep_POPGC;
-       	    return rep_NULL;
-	}
-
-	bindings = rep_bind_symbol (bindings, Qload_filename, name);
-	rep_PUSHGC(gc_stream, stream);
-	rep_PUSHGC(gc_bindings, bindings);
-
-	/* Create the lexical environment for the file. */
-	lc.fun = Qnil;
-	lc.args = Qnil;
-	lc.args_evalled_p = Qnil;
-	rep_PUSH_CALL(lc);
-	rep_env = Qnil;
-
-	result = Qnil;
-	c = rep_stream_getc(stream);
-	while((c != EOF) && (tem = rep_readl(stream, &c)))
-	{
-	    rep_TEST_INT;
-	    if(rep_INTERRUPTP || !(result = rep_eval(tem, Qnil)))
-	    {
-		rep_unbind_symbols (bindings);
-		rep_POP_CALL(lc);
-		rep_POPGC; rep_POPGC; rep_POPGC;
-		return rep_NULL;
-	    }
-	}
-	if (rep_throw_value
-	    && rep_CAR(rep_throw_value) == Qerror
-	    && rep_CONSP(rep_CDR(rep_throw_value))
-	    && rep_CAR(rep_CDR(rep_throw_value)) == Qend_of_stream)
-	{
-	    /* lose the end-of-stream error. */
-	    rep_throw_value = rep_NULL;
-	}
-	rep_POP_CALL(lc);
-	rep_POPGC; rep_POPGC;
-	rep_PUSHGC (gc_result, result);
-	rep_unbind_symbols (bindings);
-	Fclose_file (stream);
-	rep_POPGC; rep_POPGC;
-    }
+	result = Fload_file (name, rep_structure);
+    rep_POPGC;
+    if (result == rep_NULL)
+	return rep_NULL;
 
     /* Loading succeeded. Look for an applicable item in
        the after-load-alist. */
@@ -2106,6 +2147,8 @@ rep_lispcmds_init(void)
     rep_pop_structure (tem);
 
     tem = rep_push_structure ("rep.io.files");
+    rep_ADD_SUBR (Sload_file);
+    rep_ADD_SUBR (Sload_dl_file);
     rep_ADD_SUBR_INT(Sload);
     rep_pop_structure (tem);
 
