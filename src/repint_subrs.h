@@ -25,6 +25,7 @@
 extern void rep_continuations_init (void);
 
 /* from datums.c */
+extern void rep_pre_datums_init (void);
 extern void rep_datums_init (void);
 
 /* from files.c */
