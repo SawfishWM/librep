@@ -36,7 +36,7 @@
 
   (define (domain-parts domain)
     "Return the list of domain components that the string DOMAIN consists of."
-    (string-split domain "\\."))
+    (string-split "\\." domain))
 
   (define (domain-above domain)
     "Return the name of parent domain of the string DOMAIN."
