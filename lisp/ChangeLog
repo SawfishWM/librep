@@ -1,3 +1,8 @@
+2000-02-28  John Harper  <john@dcs.warwick.ac.uk>
+
+	* define.jl (define-parse): remember in `(define FOO BAR)' to
+	scan BAR for internal definitions
+
 2000-02-27  John Harper  <john@dcs.warwick.ac.uk>
 
 	* gaol.jl: added a load more safe functions to the list. Also
