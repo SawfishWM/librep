@@ -21,8 +21,8 @@
 #ifndef BYTECODES_H
 #define BYTECODES_H
 
-#define BYTECODE_MAJOR_VERSION 8
-#define BYTECODE_MINOR_VERSION 2
+#define BYTECODE_MAJOR_VERSION 9
+#define BYTECODE_MINOR_VERSION 0
 
 /* Number of bits encoded in each extra opcode forming the argument. */
 #define ARG_SHIFT    8
@@ -61,11 +61,26 @@
 /* Push the list formed from the top ARG values on the stack. */
 #define OP_LIST 0x28
 
-/* Bind the value on the top of the stack to the symbol const[ARG].
-   Pops the value off the stack. */
+/* Lexically bind the value on the top of the stack to the symbol
+   const[ARG]. Pops the value off the stack. */
 #define OP_BIND 0x30
 
-#define OP_LAST_WITH_ARGS 0x38
+/* Pushes the ARG'th value in the lexical environment */
+#define OP_REFN 0x38
+
+/* Sets the ARG'th value in the lexical environment. Pops value */
+#define OP_SETN 0xe8
+
+/* Pushes the global lexical value of symbol const[ARG] */
+#define OP_REFG 0xe0
+
+/* Pops the stack, and sets the global lexical value of symbol const[ARG] */
+#define OP_SETG 0xd8
+
+/* Pops the stack, does a special binding to symbol const[ARG] */
+#define OP_BINDSPEC 0xd0
+
+#define OP_LAST_WITH_ARGS 0x3f
 
 
 /* Opcodes without arguments. */
