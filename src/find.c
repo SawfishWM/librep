@@ -591,10 +591,13 @@ findnext(TX *tx, u_char * re, POS *pos, bool nocase)
 	    index = line->ln_Strlen - 1;
 	else
 	    index = pos->pos_Col;
-	while(!rc && (tx->tx_NumLines > pos->pos_Line))
+	while(!rc && (tx->tx_LogicalEnd > pos->pos_Line))
 	{
-	    if(regexec2(prog, line->ln_Line + index, (index ? REG_NOTBOL : 0) | (nocase ? REG_NOCASE : 0)))
+	    if(regexec2(prog, line->ln_Line + index,
+			(index ? REG_NOTBOL : 0) | (nocase ? REG_NOCASE : 0)))
+	    {
 		rc = TRUE;
+	    }
 	    else
 	    {
 		pos->pos_Line++;
@@ -630,11 +633,12 @@ findprev(TX *tx, u_char *re, POS *pos, bool nocase)
 	 * we simply find as many matches as we can on a line, then return
 	 * the last (taking the "start" position into account)
 	 */
-	while(!rc && (pos->pos_Line >= 0))
+	while(!rc && (pos->pos_Line >= tx->tx_LogicalStart))
 	{
 	    index = 0;
 	    while(regexec2(prog, line->ln_Line + index,
-			   (index ? REG_NOTBOL : 0) | (nocase ? REG_NOCASE : 0)))
+			   (index ? REG_NOTBOL : 0)
+			   | (nocase ? REG_NOCASE : 0)))
 	    {
 		long oindex = index;
 		if(((prog->startp)[0] - (char *)line->ln_Line) > pos->pos_Col)
@@ -679,7 +683,7 @@ findstrnext(TX *tx, u_char *str, POS *pos)
 	pos->pos_Line++;
 	line++;
     }
-    while(tx->tx_NumLines > pos->pos_Line)
+    while(tx->tx_LogicalEnd > pos->pos_Line)
     {
 	u_char *match = strstr(line->ln_Line + pos->pos_Col, str);
 	if(match)
@@ -700,7 +704,7 @@ findstrprev(TX *tx, u_char *str, POS *pos)
     LINE *line = tx->tx_Lines + pos->pos_Line;
     if(pos->pos_Col >= line->ln_Strlen)
 	pos->pos_Col = line->ln_Strlen - 1;
-    while(pos->pos_Line >= 0)
+    while(pos->pos_Line >= tx->tx_LogicalStart)
     {
 	u_char *match = mystrrstrn(line->ln_Line, str, pos->pos_Col + 1);
 	if(match)
@@ -725,7 +729,7 @@ findcharnext(TX *tx, u_char c, POS *pos)
 	pos->pos_Line++;
 	line++;
     }
-    while(tx->tx_NumLines > pos->pos_Line)
+    while(tx->tx_LogicalEnd > pos->pos_Line)
     {
 	u_char *match = strchr(line->ln_Line + pos->pos_Col, c);
 	if(match)
@@ -746,7 +750,7 @@ findcharprev(TX *tx, u_char c, POS *pos)
     LINE *line = tx->tx_Lines + pos->pos_Line;
     if(pos->pos_Col >= line->ln_Strlen)
 	pos->pos_Col = line->ln_Strlen - 1;
-    while(pos->pos_Line >= 0)
+    while(pos->pos_Line >= tx->tx_LogicalStart)
     {
 	u_char *match = mystrrchrn(line->ln_Line, c, pos->pos_Col + 1);
 	if(match)
