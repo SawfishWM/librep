@@ -19,9 +19,6 @@
 ;; along with librep; see the file COPYING.  If not, write to
 ;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-(structure (export)
-  (open rep date)
-
 ;; Commentary:
 
 ;; This allows tar files to be handled as directories, append `#tar' to
@@ -35,6 +32,10 @@
 ;; somewhere, and then clean up later..)
 
 ;; It needs to use GNU tar (for the compression options)
+
+(define-structure tar-file-handler ()
+
+    (open rep date)
 
 
 ;; configuration
@@ -63,6 +64,9 @@
 
 (defvar tarfh-max-cached-dirs 5
   "Total number of tar listings to cache.")
+
+(defvar tarfh-largest-cached-file 1048576
+  "Size of the largest cachable tar file.")
 
 ;; Cached tar listings
 (define tarfh-dir-cache nil)
@@ -102,13 +106,44 @@
     (zerop (apply call-process process input-file
 		  tarfh-gnu-tar-program all-args))))
 
+
+;; extracting files (with caching)
+
+(define cached-file nil)		;name of file
+(define cached-dir nil)			;directory containing tar contents
+
 (defun tarfh-copy-out (tarfile file-name dest-file)
-  (let
-      ((file (open-file dest-file 'write)))
-    (when file
-      (unwind-protect
-	  (tarfh-call-tar nil file "--extract" tarfile "--to-stdout" file-name)
-	(close-file file)))))
+  (unless (and cached-file (file-name= cached-file tarfile))
+    ;; no cached copy..
+    (unless (> (file-size tarfile) tarfh-largest-cached-file)
+      (empty-file-cache)
+      (condition-case nil
+	  (let ((dir-name (concat (make-temp-name) "-rep-tarfh")))
+	    (make-directory dir-name)
+	    (set-file-modes dir-name #o700)
+	    (tarfh-call-tar nil nil "--extract" tarfile "-C" dir-name)
+	    (setq cached-file tarfile)
+	    (setq cached-dir dir-name))
+	(file-error))))
+  (if (and cached-file (file-name= cached-file tarfile))
+      (copy-file (expand-file-name file-name cached-dir) dest-file)
+    ;; still no cached copy, so read from the file
+    (let ((file (open-file dest-file 'write)))
+      (when file
+	(unwind-protect
+	    (tarfh-call-tar nil file "--extract" tarfile
+			    "--to-stdout" file-name)
+	  (close-file file))))))
+
+(defun empty-file-cache ()
+  (when cached-file
+    ;; delete the old file in the background..
+    (system
+     (format nil "nice rm -rf '%s' & >/dev/null 2>&1 </dev/null" cached-dir))
+    (setq cached-file nil)))
+
+(add-hook 'idle-hook empty-file-cache)
+(add-hook 'before-exit-hook empty-file-cache)
 
 
 ;; directory caching
