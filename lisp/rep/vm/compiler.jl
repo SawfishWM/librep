@@ -196,6 +196,12 @@ that files which shouldn't be compiled aren't."
       ((comp-write-docs t))
     (compile-directory lisp-lib-dir force-p compile-lib-exclude-list)))
 
+;; Used when bootstrapping from the Makefile
+(defun compile-compiler ()
+  (let
+      ((comp-write-docs t))
+    (compile-file (file-name-concat lisp-lib-dir "compiler.jl"))))
+
 ;;;###autoload
 (defun compile-function (function)
   "Compiles the body of the function FUNCTION."
