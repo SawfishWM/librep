@@ -1,3 +1,11 @@
+1998-10-09  John Harper  <john@dcs.warwick.ac.uk>
+
+	* mime-decode.jl, rm-mime.jl: support for Content-Disposition
+	header, other misc fixes
+
+	* mime-quoted-printable.jl (mime-decode-quoted-printable): this
+	function has now been implemented
+
 1998-10-08  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rm-mime.jl, mime-quoted-printable.jl, mime-decode.jl,

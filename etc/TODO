@@ -41,11 +41,6 @@ Outstanding bugs
    searching for `/\*(.|\n)*\*/' in a C file with reasonable large
    comments.
 
- ! Deleting text doesn't delete extents contained within the deletion
- ! The extent position updating code doesn't always work; try splitting
-   a line which contains an extent and its child
-   [ 19-9-98: hopefully both these bugs have been fixed now.. ]
-
 
 General programming tasks:
 ==========================
@@ -142,7 +137,7 @@ General programming tasks:
  - Implement an HTML-view mode that renders HTML in one buffer into
    another buffer for viewing
 
- - Handle MIME encoded messages
+ - Support for composing MIME messages
 
  - Make the compiler optimise its output
 
