@@ -42,8 +42,10 @@ gdbm-open PATH ACCESS-TYPE [MODE] [FLAGS]
     rep_GC_root gc_type, gc_mode;
 
     /* only flag currently is `no-lock' */
+#ifdef GDBM_NOLOCK
     if (rep_CONSP (flags) && rep_CAR (flags) == Qno_lock)
 	uflags |= GDBM_NOLOCK;
+#endif
 
     rep_PUSHGC(gc_type, type);
     rep_PUSHGC(gc_mode, mode);
