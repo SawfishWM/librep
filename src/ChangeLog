@@ -1,3 +1,10 @@
+1998-08-18  John Harper  <john@dcs.warwick.ac.uk>
+
+	* keys.c (lookup_event, lookup_event_name): moved from
+	x11_keys.c and rewritten to be portable
+	* x11_keys.c (sys_lookup_mod, sys_lookup_code,
+	sys_lookup_mod_name, sys_lookup_code_name): new functions
+
 1998-08-11  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lisp.c (funcall): support for autoloading macros (but only if
