@@ -3928,7 +3928,7 @@ If the lists @var{fluids} and @var{values} are not of the same length,
 an error is signalled.
 @end defun
 
-@defmac fluid-let bindings body @dots{}
+@defmac let-fluids bindings body @dots{}
 A convenient wrapper around @code{with-fluids}, similar to the
 @code{let} syntax.
 
@@ -3940,14 +3940,14 @@ the @var{body @dots{}} forms is returned.
 @end defmac
 
 Here is an example code fragment using fluid variables and
-@code{fluid-let}:
+@code{let-fluids}:
 
 @lisp
 (define a (make-fluid))
 (define b (make-fluid))
 
-(fluid-let ((a 1)
-            (b 2))
+(let-fluids ((a 1)
+             (b 2))
   (+ (fluid a) (fluid b))) @result{} 3
 @end lisp
 

@@ -1,3 +1,11 @@
+2000-06-02  John Harper  <john@dcs.warwick.ac.uk>
+
+	* init.jl (fluid-let): renamed as `let-fluids'. Updated all
+	users
+
+	* rep-repl.jl: removed *repl-in-struct* defvar, replaced by
+	fluid repl-in-struct
+
 2000-06-01  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep-repl.jl (rl-completion-generator): new function,
