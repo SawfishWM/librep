@@ -28,6 +28,12 @@ Outstanding bugs
 General programming tasks:
 ==========================
 
+ - Optimize compilation of case statements
+
+   1. handle constant keys
+
+   2. optimize the search
+
  - Eliminate lexically-bound symbols from compiled code?
 
    currently the symbols are only used when the binding is created; all

@@ -1,3 +1,15 @@
+2000-01-24  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compiler.jl (comp-compile-case): support the new `case'
+	statement (similar to in scheme)
+
+	* lisp.jl (when): expand to an if statement, not a cond. This
+	makes `(when t)' behave consistently with `(if t)' (pointed out
+	by Dave Pearson)
+
+	* compiler-opt.jl (comp-peephole-opt): fix error when
+	transforming `bind X; refn #0' --> `dup; bind X'
+
 2000-01-23  John Harper  <john@dcs.warwick.ac.uk>
 
 	* bytecodes.jl (op-return, op-unbindall): new instructions (for
