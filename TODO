@@ -14,8 +14,6 @@ Outstanding bugs
 
  ! scheme define/lambda doesn't splice begin forms
 
- ! fluid-let custom compiler is disabled
-
  ! can't do numerator/denominator of flonums
 
  ! ref cache can thrash when switching structures quickly

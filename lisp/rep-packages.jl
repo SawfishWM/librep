@@ -40,6 +40,7 @@
 
 (define-interface rep-interpreter-debug
   (export break step backtrace debug-frame-environment
+	  debug-outer-frame debug-inner-frame
 	  trace untrace debug-entry debug-error-entry
 	  default-error-handler))
 

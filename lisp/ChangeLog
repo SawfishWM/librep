@@ -1,3 +1,12 @@
+2000-05-17  John Harper  <john@dcs.warwick.ac.uk>
+
+	* debug.jl: added `up' and `down' commands; catch errors during
+	`print' commands
+
+	* compiler-rep.jl (compile-fluid-let): re-enabled this, the
+	segmentation faults it used to cause seem to have mysteriously
+	disappeared
+
 2000-05-16  John Harper  <john@dcs.warwick.ac.uk>
 
 	* debug.jl (error-entry): make this work again
