@@ -14,6 +14,7 @@ rpath_repexecdir=$repexecdir
 repdocfile=$repdocfile
 
 rep_LIBTOOL=\$(repexecdir)/libtool
+rep_INSTALL_ALIASES=\$(repexecdir)/install-aliases
 
 # use this like:
 # foo.la : foo.lo bar.lo
@@ -22,8 +23,8 @@ rep_LIBTOOL=\$(repexecdir)/libtool
 rep_DL_LD=\$(rep_LIBTOOL) --mode=link \$(CC) -avoid-version -module \
 	  -rpath \$(rpath_repexecdir)
 
-rep_DL_INSTALL=\$(rep_LIBTOOL) \$(INSTALL)
-rep_DL_UNINSTALL=\$(rep_LIBTOOL) rm
+rep_DL_INSTALL=\$(rep_LIBTOOL) --mode=install \$(INSTALL)
+rep_DL_UNINSTALL=\$(rep_LIBTOOL) --mode=uninstall rm
 
 # Rule for libtool controlled C objects
 %.lo : %.c

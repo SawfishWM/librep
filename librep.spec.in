@@ -9,7 +9,7 @@ Source: http://download.sourceforge.net/librep/librep-%{version}.tar.gz
 URL: http://librep.sourceforge.net/
 Packager: John Harper <john@dcs.warwick.ac.uk>
 Buildroot: /var/tmp/%{name}-root
-BuildPrereq: gmp-devel gdbm-devel readline-devel
+BuildPrereq: gmp-devel gdbm-devel readline-devel texinfo
 PreReq: /sbin/install-info
 
 %description
