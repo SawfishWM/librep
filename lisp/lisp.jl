@@ -44,9 +44,13 @@ call it. Otherwise exactly the same as defun."
 	(list 'put (list 'quote (car decl)) ''compile-inline t)))
 
 (defmacro function (arg)
+  "#'ARG
+
+Return the closure from ARG, either a lambda-expression, or a symbol.
+When applied to a symbol, the symbol's value is returned."
   (if (symbolp arg)
       arg
-    (list 'make-closure arg)))
+    (list 'make-closure (list 'quote arg))))
 
 
 ;; Binding syntax
@@ -140,6 +144,27 @@ FORMS."
 	  (t (loop (cdr rest) (if body 
 				  (list 'cond (list (car rest) body))
 				(car rest)))))))
+
+
+;; set syntax
+
+(defmacro setq-default args
+  "setq-default { VARIABLE FORM } ...
+
+Sets the default value of each VARIABLE to the value of its
+corresponding FORM evaluated, returns the value of the last evaluation.
+See also `setq'. Returns the value of the last FORM."
+
+  (let loop ((rest args)
+	     (body nil))
+    (if (null rest)
+	(cons 'progn (nreverse body))
+      (loop (cddr rest)
+	    (cons (list 'set-default
+			(list 'quote (car rest)) (cadr rest)) body)))))
+
+;; XXX it would be nice to do the same for setq.. might stress the
+;; XXX interpreter somewhat..? :-(
 
 
 ;; Function to allow easy creation of autoload stubs
@@ -304,8 +329,25 @@ string INPUT."
 (defun cdddr (x)
   (cdr (cdr (cdr x))))
 
+
+;; some scheme compatibility functions
+
 (defun call-with-current-continuation (f)
+  "See `call/cc'."
   (call/cc f))
+
+(defun dynamic-wind (before thunk after)
+  "Call THUNK without arguments, returning the result of this call.
+BEFORE and AFTER are also called (without arguments), whenever
+execution respectively enters or leaves the dynamic extent of the call
+to THUNK.
+
+In the simplest case (when call/cc isn't used to pass control in or out
+of THUNK) each function will be called exactly once."
+  (before)
+  (unwind-protect
+      (call-with-barrier thunk nil before after)
+    (after)))
 
 
 ;; numeric functions
