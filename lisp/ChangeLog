@@ -1,3 +1,21 @@
+1998-09-12  John Harper  <john@dcs.warwick.ac.uk>
+
+	* init.jl: load files for the window- and operating-system,
+	the relevant name prefixed by "ws-" and "os-" respectively
+
+	* ispell.jl (ispell-handle-failure-interactively): highlight
+	the misspelt word in the buffer as well as in the list of
+	options display
+
+	* ws-x11.jl: new file, initialisation for X11, contains
+	functions for the block-status, after-kill, and pre-yank-hook's
+	* edit.jl: moved all X11 specific code to ws-x11.jl
+
+	* edit.jl (mouse-select): only kill the block on a single
+	click, if that click is _inside_ the marked region
+	(mouse-select-drag): same as above, but only when the current
+	mouse position is the same as the position of the first click
+
 1998-09-10  John Harper  <john@dcs.warwick.ac.uk>
 
 	* ispell.jl (ispell-highlight-misspellings): support for
