@@ -19,11 +19,7 @@ main(int argc, char **argv)
 
     rep_init(prog_name, &argc, &argv, 0, 0);
 
-    tem = strrchr(prog_name, '/');
-    if (tem != 0)
-	prog_name = tem + 1;
-
-    Fload(rep_string_dup(prog_name), Qnil, Qnil, Qnil);
+    Fload(rep_string_dup("rep"), Qnil, Qnil, Qnil);
 
     if(rep_throw_value && rep_CAR(rep_throw_value) == Qerror)
     {
