@@ -448,6 +448,10 @@ into the compiled program. When interpreted, nil is returned."
 is 0)."
   (read (make-string-input-stream string start)))
 
+(defun streamp (arg)
+  "Returns `t' if ARG is some sort of I/O stream."
+  (or (input-stream-p arg) (output-stream-p arg)))
+
 (defun assoc-regexp (input alist &optional fold-case)
   "Scan ALIST for an element whose car is a regular expression matching the
 string INPUT."
