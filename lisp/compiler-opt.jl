@@ -293,7 +293,8 @@
 	 ;; init-bind; unbind --> deleted
 	 ((and (eq (car insn0) op-init-bind)
 	       (eq (car insn1) op-unbind))
-	  (comp-peep-del-0-1))
+	  (comp-peep-del-0-1)
+	  (setq keep-going t))
 
 	 ;; <varref> X; dup... ; <varref> X --> <varref> X; dup...; dup
 	 ((and (memq (car insn0) comp-varref-insns)

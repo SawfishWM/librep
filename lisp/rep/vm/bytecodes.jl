@@ -291,3 +291,12 @@
 ;; list of instructions that reference the vector of constants
 (defvar comp-insns-with-constants (list op-push op-refq op-setq
 					op-refg op-setg op-bind op-bindspec))
+
+;; list of all varref instructions
+(defvar comp-varref-insns (list op-refq op-refn op-refg))
+
+;; list of all varset instructions
+(defvar comp-varset-insns (list op-setq op-setn op-setg))
+
+;; list of all varbind instructions
+(defvar comp-varbind-insns (list op-bind op-bindspec))
