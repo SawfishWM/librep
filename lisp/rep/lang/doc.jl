@@ -1,22 +1,25 @@
-;;;; lisp-doc.jl -- Accessing LISP doc strings
-;;;  Copyright (C) 1993, 1994 John Harper <john@dcs.warwick.ac.uk>
-;;;  $Id$
+#| lisp-doc.jl -- Accessing LISP doc strings
 
-;;; This file is part of Jade.
+   $Id$
 
-;;; Jade is free software; you can redistribute it and/or modify it
-;;; under the terms of the GNU General Public License as published by
-;;; the Free Software Foundation; either version 2, or (at your option)
-;;; any later version.
+   Copyright (C) 1993, 1994, 2000 John Harper <john@dcs.warwick.ac.uk>
 
-;;; Jade is distributed in the hope that it will be useful, but
-;;; WITHOUT ANY WARRANTY; without even the implied warranty of
-;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-;;; GNU General Public License for more details.
+   This file is part of Librep.
 
-;;; You should have received a copy of the GNU General Public License
-;;; along with Jade; see the file COPYING.  If not, write to
-;;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
+   Librep is free software; you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2, or (at your option)
+   any later version.
+
+   Librep is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with Librep; see the file COPYING.  If not, write to
+   the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
+|#
 
 (declare (unsafe-for-call/cc))
 
@@ -24,16 +27,17 @@
 
     (export describe-lambda-list
 	    describe-value
+	    doc-file-value-key
+	    doc-file-param-key
 	    doc-file-ref
 	    doc-file-set
 	    documentation
-	    document-var
+	    document-variable
 	    add-documentation
 	    add-documentation-params)
 
-    (open rep)
-
-  (define-structure-alias lisp-doc rep.lang.doc)
+    (open rep
+	  rep.structures)
 
   (defun describe-lambda-list (lambda-list)
     (let ((output (make-string-output-stream)))
@@ -51,7 +55,7 @@
 	(format output " . %s" (string-upcase (symbol-name lambda-list))))
       (get-output-stream-string output)))
 
-  (defun describe-value (value #!optional name)
+  (defun describe-value (value #!optional name structure)
     "Print to standard-output a description of the lisp data object VALUE. If
 NAME is true, then it should be the symbol that is associated with VALUE."
     (let*
@@ -69,6 +73,10 @@ NAME is true, then it should be the symbol that is associated with VALUE."
 		(t
 		 "Variable"))))
       (when (closurep value)
+	(unless structure
+	  (let ((tem (closure-structure value)))
+	    (when (structure-name tem)
+	      (setq structure (structure-name tem)))))
 	(setq value (closure-function value)))
       ;; Check if it's been compiled.
       (when (bytecodep value)
@@ -77,12 +85,25 @@ NAME is true, then it should be the symbol that is associated with VALUE."
       (let ((arg-doc (cond ((eq (car value) 'lambda)
 			    (describe-lambda-list (cadr value)))
 			   ((and (bytecodep value) name (symbolp name))
-			    (doc-file-ref (concat 0 (symbol-name name)))))))
+			    (or (and structure
+				     (doc-file-ref (doc-file-param-key
+						    name structure)))
+				(doc-file-ref (doc-file-param-key name)))))))
 	(format standard-output
 		"\(%s%s\)\n" (or name value) (or arg-doc "")))))
 
 
 ;;; GDBM doc-file access
+
+  (defun make-key (prefix name #!optional structure)
+    (if structure
+	(concat prefix (symbol-name structure) #\# (symbol-name name))
+      (concat prefix (symbol-name name))))
+
+  (defun doc-file-value-key (name #!optional structure)
+    (make-key nil name structure))
+  (defun doc-file-param-key (name #!optional structure)
+    (make-key 0 name structure))
 
   (defun doc-file-ref (key)
     (require 'rep.io.db.gdbm)
@@ -112,34 +133,52 @@ NAME is true, then it should be the symbol that is associated with VALUE."
 
 ;;; Accessing doc strings
 
-  (defun documentation (symbol #!optional value)
+  (defun documentation-property (#!optional structure)
+    (if structure
+	(intern (concat "documentation#" (symbol-name structure)))
+      'documentation))
+
+  (defun documentation (symbol #!optional structure value)
     "Returns the documentation-string for SYMBOL."
     (catch 'exit
-      (let (doc)
-	;; First check for in-core documentation
-	(when (setq doc (get symbol 'documentation))
-	  (throw 'exit doc))
-	(when (boundp symbol)
-	  (setq doc (or value (and (boundp symbol) (symbol-value symbol))))
-	  (when (eq 'macro (car doc))
-	    (setq doc (cdr doc)))
-	  (when (and (closurep doc) (eq (car (closure-function doc)) 'lambda))
-	    (setq doc (nth 2 (closure-function doc)))
-	    (when (stringp doc)
-	      (throw 'exit doc))))
-	;; Then for doc strings in the databases
-	(doc-file-ref (symbol-name symbol)))))
-  
-  (defun document-var (symbol doc-string)
-    "Sets the `documentation' property of SYMBOL to DOC-STRING."
-    (put symbol 'documentation doc-string)
+      (when (and (not structure) (closurep value))
+	(let ((tem (closure-structure value)))
+	  (when (structure-name tem)
+	    (setq structure (structure-name tem)))))
+
+      ;; First check for in-core documentation
+      (when (boundp symbol)
+	(let ((tem (or value (and (boundp symbol) (symbol-value symbol)))))
+	  (when (eq 'macro (car tem))
+	    (setq tem (cdr tem)))
+	  (when (and (closurep tem)
+		     (eq (car (closure-function tem)) 'lambda))
+	    (setq tem (nth 2 (closure-function tem)))
+	    (when (stringp tem)
+	      (throw 'exit tem)))))
+
+      (let ((doc (or (and structure (get symbol
+					 (documentation-property
+					  structure)))
+		     (get symbol (documentation-property)))))
+	(when doc
+	  (throw 'exit doc)))
+
+      ;; Then for doc strings in the databases
+      (or (and structure (doc-file-ref
+			  (doc-file-value-key symbol structure)))
+	  (doc-file-ref (doc-file-value-key symbol)))))
+
+  (defun document-variable (symbol structure doc-string)
+    "Sets the documentation property of SYMBOL to DOC-STRING."
+    (put symbol (documentation-property structure) doc-string)
     symbol)
 
-  (defun add-documentation (symbol string)
+  (defun add-documentation (symbol structure string)
     "Adds a documentation string STRING to the file of such strings."
-    (doc-file-set (symbol-name symbol) string))
+    (doc-file-set (doc-file-value-key symbol structure) string))
 
-  (defun add-documentation-params (name param-list)
+  (defun add-documentation-params (name structure param-list)
     "Records that function NAME (a symbol) has argument list PARAM-LIST."
-    (doc-file-set (concat 0 (symbol-name name))
+    (doc-file-set (doc-file-param-key name structure)
 		  (describe-lambda-list param-list))))
