@@ -347,18 +347,24 @@ of the possible declaration types.")
 
 (declare (in-module rep))
 
-(%make-structure nil nil nil '%interfaces)
+(make-structure nil nil nil '%interfaces)
 
-(defun %make-interface (name sig)
-  (%structure-set (%get-structure '%interfaces) name sig))
+(defun make-interface (name sig)
+  (structure-set (get-structure '%interfaces) name sig))
 
-(defun %parse-interface (sig)
+(defun parse-interface (sig)
   (cond ((null sig) '())
 	((eq (car sig) 'export)
 	 (cdr sig))
 	((eq (car sig) 'compound-interface)
-	 (apply append (mapcar %parse-interface (cdr sig))))
-	((symbolp sig) (%structure-ref (%get-structure '%interfaces) sig))))
+	 (apply append (mapcar parse-interface (cdr sig))))
+	((eq (car sig) 'structure-interface)
+	 (structure-interface (intern-structure (cadr sig))))
+	((symbolp sig)
+	 (let ((interfaces (get-structure '%interfaces)))
+	   (or (structure-bound-p interfaces sig)
+	       (error "No such interface: %s" sig))
+	   (%structure-ref interfaces sig)))))
 
 (defmacro define-interface (name sig)
   "Associate the symbol NAME with the module interface SIG (in a
@@ -368,6 +374,7 @@ of the form:
    INTERFACE ->  (export [ID...])
 	     or  NAME
 	     or  (compound-interface [INTERFACE...])
+	     or  (structure-interface [STRUCTURE-NAME...])
 
 where an ID is a symbol naming a top-level binding to export, and NAME
 is the name of an interface previously defined using define-interface.
@@ -417,6 +424,19 @@ the interface and configuration clause syntaxes respectively."
 	(list* 'lambda nil body)
 	(list 'quote name)))
 
+(defun alias-structure (from to)
+  (name-structure (get-structure from) to))
+
+(defmacro define-structure-alias (from to)
+  "Create a secondary name TO for the structure called FROM."
+  `(%alias-structure ',from ',to))
+
+(define-value '%make-structure make-structure)
+(define-value '%make-interface make-interface)
+(define-value '%parse-interface parse-interface)
+(define-value '%external-structure-ref external-structure-ref)
+(define-value '%alias-structure alias-structure)
+
 (defmacro structure-open names
   (list '%open-structures (list 'quote names)))
 
@@ -438,12 +458,12 @@ When read, the syntax `FOO#BAR' expands to `(structure-ref FOO BAR)'."
 				access %access-structures quote))
 
 (let
-    ((meta-struct (%make-structure (%parse-interface '%meta) nil nil '%meta)))
-  (%structure-set meta-struct 'quote quote)
-  (%structure-set meta-struct 'open structure-open)
-  (%structure-set meta-struct '%open-structures %open-structures)
-  (%structure-set meta-struct 'access structure-access)
-  (%structure-set meta-struct '%access-structures %access-structures))
+    ((meta-struct (make-structure (parse-interface '%meta) nil nil '%meta)))
+  (structure-set meta-struct 'quote quote)
+  (structure-set meta-struct 'open structure-open)
+  (structure-set meta-struct '%open-structures open-structures)
+  (structure-set meta-struct 'access structure-access)
+  (structure-set meta-struct '%access-structures access-structures))
 
 (setq *root-structure* 'rep)
 
@@ -596,8 +616,7 @@ match the FILE argument to `load'."
 LIBRARY has been read by the `load' function. Note that LIBRARY must exactly
 match the FILE argument to `load'."
   (call-after-load library (lambda ()
-			     (eval form (%intern-structure
-					 *root-structure*)))))
+			     (eval form (intern-structure *root-structure*)))))
 
 
 ;; loading
@@ -810,10 +829,10 @@ exist that have not already been returned."
   (define-file-handler symbol (make-autoload symbol file)))
 
 (defun define-file-handler (name proc)
-  (%structure-set (%current-structure) name proc))
+  (structure-set (current-structure) name proc))
 
 (defun file-handler-ref (name)
-  (%structure-ref (%current-structure) name))
+  (%structure-ref (current-structure) name))
 
 
 ;; entry point
