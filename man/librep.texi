@@ -9,8 +9,9 @@
 @set UPDATE-MONTH September 2000
 
 @ifinfo
+@dircategory Programming Languages
 @direntry
-* librep: (librep).		A LISP extension language
+* librep: (librep).		A flexible Lisp environment
 @end direntry
 
 This is Edition @value{EDITION}, last updated @value{UPDATED},
