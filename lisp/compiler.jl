@@ -194,6 +194,9 @@ value when given the same inputs. Used when constant folding.")
 (defvar comp-current-file nil)		;the file being compiled
 (defvar comp-current-fun nil)		;the function being compiled
 (defvar comp-inline-depth 0)		;depth of lambda-inlining
+(defvar comp-lexically-pure t)		;any dynamic state?
+(defvar comp-lambda-name nil)		;name of current lambda exp
+(defvar comp-lambda-args nil)		;arg spec of current lambda
 
 (defvar comp-output-stream nil)		;stream for compiler output
 
@@ -307,8 +310,9 @@ value when given the same inputs. Used when constant folding.")
     (catch 'return
       (let
 	  ((decl (assq name comp-defuns)))
-	(when (and (null decl) (boundp name))
-	  (setq decl (symbol-value name))
+	(when (and (null decl) (or (boundp name) (assq name comp-inline-env)))
+	  (setq decl (or (cdr (assq name comp-inline-env))
+			 (symbol-value name)))
 	  (when (or (subrp decl)
 		    (and (closurep decl)
 			 (eq (car (closure-function decl)) 'autoload)))
@@ -347,6 +351,11 @@ value when given the same inputs. Used when constant folding.")
   "List of symbols, when the name of the function called by a top-level form
 is one of these that form is compiled.")
 
+(defvar comp-top-level-unexpanded
+  '(defun defmacro defvar defconst defsubst require define-value)
+  "List of symbols, when the car of a top-level form is a member of this list,
+don't macroexpand the form before compiling.")
+
 ;;;###autoload
 (defun compile-file (file-name)
   "Compiles the file of jade-lisp code FILE-NAME into a new file called
@@ -362,6 +371,7 @@ is one of these that form is compiled.")
        (comp-defines '())
        (comp-spec-bindings '())
        (comp-lex-bindings '())
+       (comp-lexically-pure t)
        (comp-output-stream nil)
        (temp-file (make-temp-name))
        src-file dst-file input-forms header form)
@@ -391,14 +401,13 @@ is one of these that form is compiled.")
 			(setq header (get-output-stream-string out)))
 		    (seek-file src-file 0 'start))
 
-
 		  ;; Scan for top-level definitions in the file.
 		  ;; Also eval require forms (for macro defs)
 		  (condition-case nil
 		      (while t
-			(setq form (macroexpand (read src-file)
-						comp-macro-env))
-			(setq input-forms (cons form input-forms))
+			(setq form (read src-file))
+			(unless (memq (car form) comp-top-level-unexpanded)
+			  (setq form (macroexpand form comp-macro-env)))
 			(cond
 			 ((eq (car form) 'defun)
 			  (comp-remember-fun (nth 1 form) (nth 2 form)))
@@ -428,7 +437,8 @@ is one of these that form is compiled.")
 			      (comp-remember-lexical-var
 			       (comp-constant-value sym)))))
 			 ((eq (car form) 'require)
-			  (eval form))))
+			  (eval form)))
+			(setq input-forms (cons form input-forms)))
 		    (end-of-stream)))
 	      (close-file src-file))
 	    (setq input-forms (nreverse input-forms))
@@ -443,15 +453,13 @@ is one of these that form is compiled.")
 				";; Source file: %s\n(validate-byte-code %d %d)\n"
 				file-name bytecode-major bytecode-minor)
 			(while (setq form (car input-forms))
-			  ;; just in case?
-			  (setq form (macroexpand form comp-macro-env))
-			  (cond
-			   ((memq (car form) '(defun defmacro defvar defconst
-					       defsubst require define-value))
-			    (setq form (comp-compile-top-form form)))
-			   ((memq (car form) comp-top-level-compiled)
-			    ;; Compile this form
-			    (setq form (compile-form form))))
+			  (if (memq (car form) comp-top-level-unexpanded)
+			      (setq form (comp-compile-top-form form))
+			    ;; just in case?
+			    (setq form (macroexpand form comp-macro-env))
+			    (when (memq (car form) comp-top-level-compiled)
+			      ;; Compile this form
+			      (setq form (compile-form form))))
 			  (when form
 			    (print form dst-file))
 			  (setq input-forms (cdr input-forms)))
@@ -659,14 +667,7 @@ that files which shouldn't be compiled aren't."
        (comp-intermediate-code nil))
 
     ;; Do the high-level compilation
-    (if comp-current-file
-	(comp-compile-form form)
-      ;; Setup comp-defuns and comp-defvars if compile-file hasn't already
-      (let
-	  ((comp-defuns '())
-	   (comp-defvars '())
-	   (comp-output-stream nil))
-	(comp-compile-form form)))
+    (comp-compile-form form t)
     (comp-write-op op-return)
 
     ;; Now we have a [reversed] list of intermediate code
@@ -739,7 +740,7 @@ that files which shouldn't be compiled aren't."
 	  (list '1- 'comp-current-stack))))
 
 ;; Compile one form so that its value ends up on the stack when interpreted
-(defun comp-compile-form (form)
+(defun comp-compile-form (form &optional return-follows)
   (cond
     ((eq form nil)
       (comp-write-op op-nil)
@@ -781,7 +782,7 @@ that files which shouldn't be compiled aren't."
        ;; If the form is still a function application, avoid the
        ;; extra recursion
        (unless (consp form)
-	 (comp-compile-form form)
+	 (comp-compile-form form return-follows)
 	 (setq form nil)))
      (unless (null form)
        ;; A subroutine application of some sort
@@ -793,14 +794,14 @@ that files which shouldn't be compiled aren't."
 	  ((and (symbolp (car form))
 		(setq fun (get (car form) 'compile-transform)))
 	   ;; Yes, there is, so call it.
-	   (comp-compile-form (funcall fun form)))
+	   (comp-compile-form (funcall fun form) return-follows))
 
 	  ;; Check if there's a special handler for this function
 	  ((and (symbolp (car form))
 		(setq fun (get (car form) 'compile-fun))
 		(not (or (memq (car form) comp-spec-bindings)
 			 (memq (car form) comp-lex-bindings))))
-	   (funcall fun form))
+	   (fun form return-follows))
 
 	  ;; Is it a function to be inlined?
 	  ((and (symbolp (car form)) (get (car form) 'compile-inline))
@@ -810,7 +811,7 @@ that files which shouldn't be compiled aren't."
 	   ;; Expand macros
 	   (if (not (eq (setq fun (macroexpand form comp-macro-env)) form))
 	       ;; The macro did something, so start again
-	       (comp-compile-form fun)
+	       (comp-compile-form fun return-follows)
 	     ;; No special handler, so do it ourselves
 	     (setq fun (car form))
 	     (cond
@@ -823,16 +824,24 @@ that files which shouldn't be compiled aren't."
 					   (cdr form)))
 	      (t
 	       ;; Assume a normal function call
-	       (comp-compile-form fun)
-	       (setq form (cdr form))
-	       (let
-		   ((i 0))
-		 (while (consp form)
-		   (comp-compile-form (car form))
-		   (setq i (1+ i)
-			 form (cdr form)))
-		 (comp-write-op op-call i)
-		 (comp-dec-stack i))))))))))
+	       (if (and return-follows
+			comp-lexically-pure
+			(eq fun comp-lambda-name))
+		   (progn
+		     (comp-do-tail-call comp-lambda-args (cdr form))
+		     ;; fake it, the next caller will pop the (non-existant)
+		     ;; return value
+		     (comp-inc-stack))
+		 (comp-compile-form fun)
+		 (setq form (cdr form))
+		 (let
+		     ((i 0))
+		   (while (consp form)
+		     (comp-compile-form (car form))
+		     (setq i (1+ i)
+			   form (cdr form)))
+		   (comp-write-op op-call i)
+		   (comp-dec-stack i)))))))))))
     (t
      ;; Not a variable reference or a function call; so what is it?
      (comp-compile-constant form))))
@@ -878,13 +887,20 @@ that files which shouldn't be compiled aren't."
 
 ;; Compile a list of forms, the last form's evaluated value is left on
 ;; the stack. If the list is empty nil is pushed.
-(defun comp-compile-body (body)
+(defun comp-compile-body (body &optional return-follows name)
   (if (null body)
       (progn
 	(comp-write-op op-nil)
 	(comp-inc-stack))
     (while (consp body)
-      (comp-compile-form (car body))
+      (if (and (null (cdr body)) (comp-constant-function-p (car body)) name)
+	  ;; handle named lambdas specially so we track name of current fun
+	  (progn
+	    (comp-compile-constant
+	     (comp-compile-lambda
+	      (comp-constant-function-value (car body)) name))
+	    (comp-write-op op-enclose))
+	(comp-compile-form (car body) (if (cdr body) nil return-follows)))
       (when (cdr body)
 	(comp-write-op op-pop)
 	(comp-dec-stack))
@@ -929,7 +945,10 @@ that files which shouldn't be compiled aren't."
       (mapc comp-test-varbind vars)
       (when (setq form (let
 			   ((comp-spec-bindings comp-spec-bindings)
-			    (comp-lex-bindings comp-lex-bindings))
+			    (comp-lex-bindings comp-lex-bindings)
+			    (comp-lexically-pure t)
+			    (comp-lambda-name name)
+			    (comp-lambda-args args))
 			 (comp-note-bindings vars)
 			 (compile-form (cons 'progn body))))
 	(make-byte-code-subr args (nth 1 form) (nth 2 form) (nth 3 form)
@@ -982,10 +1001,14 @@ that files which shouldn't be compiled aren't."
 
 (defun comp-note-binding (var)
   (if (comp-spec-bound-p var)
-      ;; specially bound (dynamic scope)
-      (setq comp-spec-bindings (cons var comp-spec-bindings))
+      (progn
+	;; specially bound (dynamic scope)
+	(setq comp-spec-bindings (cons var comp-spec-bindings))
+	(setq comp-lexically-pure nil))
     ;; assume it's lexically bound otherwise
-    (setq comp-lex-bindings (cons var comp-lex-bindings))))
+    (setq comp-lex-bindings (cons var comp-lex-bindings)))
+  (when (eq var comp-lambda-name)
+    (setq comp-lambda-name nil)))
 
 (defmacro comp-note-bindings (vars)
   (list 'mapc 'comp-note-binding vars))
@@ -1006,6 +1029,19 @@ that files which shouldn't be compiled aren't."
   (comp-write-op (if (comp-spec-bound-p var) op-bindspec op-bind)
 		 (comp-add-constant var))
   (comp-note-binding var))
+
+(defun comp-emit-varset (sym)
+  (comp-test-varref sym)
+  (if (comp-spec-bound-p sym)
+      (comp-write-op op-setq (comp-add-constant sym))
+    (let
+	((lex-addr (comp-binding-lexical-addr sym)))
+      (if lex-addr
+	  ;; The lexical address is known. Use it to avoid scanning
+	  (comp-write-op op-setn lex-addr)
+	;; No lexical binding, but not special either. Just
+	;; update the global value
+	(comp-write-op op-setg (comp-add-constant sym))))))
 
 
 ;; Managing the output code
@@ -1100,6 +1136,16 @@ that files which shouldn't be compiled aren't."
 ;; Set the address of the label LABEL to the current pc
 (defmacro comp-set-label (label)
   `(setq comp-intermediate-code (cons ,label comp-intermediate-code)))
+
+;; return the label marking the start of the bytecode sequence
+(defun comp-start-label ()
+  (let
+      ((label (last comp-intermediate-code)))
+    (unless (eq (car label) 'label)
+      (setq label (comp-make-label))
+      (setq comp-intermediate-code (nconc comp-intermediate-code
+					(list label))))
+    label))
 
 
 ;; Constant folding
@@ -1279,8 +1325,8 @@ that files which shouldn't be compiled aren't."
       (comp-dec-stack))))
 (put 'mapc 'compile-fun comp-compile-mapc)
       
-(defun comp-compile-progn (form)
-  (comp-compile-body (cdr form)))
+(defun comp-compile-progn (form &optional return-follows)
+  (comp-compile-body (cdr form) return-follows))
 (put 'progn 'compile-fun comp-compile-progn)
 
 (defun comp-compile-prog1 (form)
@@ -1309,20 +1355,10 @@ that files which shouldn't be compiled aren't."
 	;; use setq
 	(progn
 	  (setq sym (comp-constant-value sym))
-	  (comp-test-varref sym)
 	  (comp-compile-form val)
 	  (comp-write-op op-dup)
 	  (comp-inc-stack)
-	  (if (comp-spec-bound-p sym)
-	      (comp-write-op op-setq (comp-add-constant sym))
-	    (let
-		((lex-addr (comp-binding-lexical-addr sym)))
-	      (if lex-addr
-		  ;; The lexical address is known. Use it to avoid scanning
-		  (comp-write-op op-setn lex-addr)
-		;; No lexical binding, but not special either. Just
-		;; update the global value
-		(comp-write-op op-setg (comp-add-constant sym)))))
+	  (comp-emit-varset sym)
 	  (comp-dec-stack))
       (comp-compile-form sym)
       (comp-compile-form val)
@@ -1330,21 +1366,9 @@ that files which shouldn't be compiled aren't."
       (comp-dec-stack))))
 (put 'set 'compile-fun comp-compile-set)
 
-;; This compiles an inline lambda, i.e. FUN is something like
-;; (lambda (LAMBDA-LIST...) BODY...)
-;; If PUSHED-ARGS-ALREADY is non-nil it should be a count of the number
-;; of arguments pushed onto the stack (in reverse order). In this case,
-;; ARGS is ignored
-(defun comp-compile-lambda-inline (fun args &optional pushed-args-already)
-  (when (>= (setq comp-inline-depth (1+ comp-inline-depth))
-	    comp-max-inline-depth)
-    (setq comp-inline-depth 0)
-    (comp-error "Won't inline more than %d nested functions"
-		comp-max-inline-depth))
-  (let*
-      ((lambda-list (nth 1 fun))
-       (body (nthcdr 2 fun))
-       (arg-count 0))
+(defun comp-push-args (lambda-list args &optional pushed-args-already tester)
+  (let
+      ((arg-count 0))
     (if (not pushed-args-already)
 	;; First of all, evaluate each argument onto the stack
 	(while (consp args)
@@ -1360,10 +1384,8 @@ that files which shouldn't be compiled aren't."
     (let
 	((state 'required)
 	 (args-left arg-count)
-	 (bind-stack '())
-	 (comp-spec-bindings comp-spec-bindings)
-	 (comp-lex-bindings comp-lex-bindings))
-      (mapc comp-test-varbind (comp-get-lambda-vars lambda-list))
+	 (bind-stack '()))
+      (mapc tester (comp-get-lambda-vars lambda-list))
       (while lambda-list
 	(cond
 	 ((symbolp lambda-list)
@@ -1395,48 +1417,79 @@ that files which shouldn't be compiled aren't."
 				     bind-stack)))))))
 	(setq lambda-list (cdr lambda-list)))
       (when (> args-left 0)
-	(comp-warning "%d unused parameters to inline lambda" args-left))
-      ;; Set up the body for compiling, skip any interactive form or
-      ;; doc string
-      (while (and (consp body) (or (stringp (car body))
-				   (and (consp (car body))
-					(eq (car (car body)) 'interactive))))
-	(setq body (cdr body)))
-      ;; Now we have a list of things to bind to, in the same order
-      ;; as the stack of evaluated arguments. The list has items
-      ;; SYMBOL, (SYMBOL . ARGS-TO-BIND), or (SYMBOL . nil)
-      (if bind-stack
-	  (progn
-	    (comp-write-op op-init-bind)
-	    ;; Bind all variables
-	    (while bind-stack
-	      (if (consp (car bind-stack))
-		  (progn
-		    (if (null (cdr (car bind-stack)))
-			(progn
-			  (comp-write-op op-nil)
-			  (comp-inc-stack))
-		      (comp-write-op op-list (cdr (car bind-stack)))
-		      (comp-inc-stack)		;in case of a zero-length list
-		      (comp-dec-stack (cdr (car bind-stack))))
-		    (comp-emit-binding (car (car bind-stack))))
-		(comp-emit-binding (car bind-stack)))
-	      (comp-dec-stack)
-	      (setq bind-stack (cdr bind-stack)))
-	    ;; Then pop any args that weren't used.
-	    (while (> args-left 0)
-	      (comp-write-op op-pop)
-	      (comp-dec-stack)
-	      (setq args-left (1- args-left)))
-	    (comp-compile-body body)
-	    (comp-write-op op-unbind))
-	;; Nothing to bind to. Just pop the evaluated args and
-	;; evaluate the body
-	(while (> args-left 0)
-	  (comp-write-op op-pop)
-	  (comp-dec-stack)
-	  (setq args-left (1- args-left)))
-	(comp-compile-body body))))
+	(comp-warning "%d unused parameters to lambda expression" args-left))
+      (cons args-left bind-stack))))
+
+(defun comp-pop-args (bind-stack args-left setter)
+  ;; Bind all variables
+  (while bind-stack
+    (if (consp (car bind-stack))
+	(progn
+	  (if (null (cdr (car bind-stack)))
+	      (progn
+		(comp-write-op op-nil)
+		(comp-inc-stack))
+	    (comp-write-op op-list (cdr (car bind-stack)))
+	    (comp-dec-stack (cdr (car bind-stack)))
+	    (comp-inc-stack))
+	  (setter (car (car bind-stack))))
+      (setter (car bind-stack)))
+    (comp-dec-stack)
+    (setq bind-stack (cdr bind-stack)))
+  ;; Then pop any args that weren't used.
+  (while (> args-left 0)
+    (comp-write-op op-pop)
+    (comp-dec-stack)
+    (setq args-left (1- args-left))))
+
+;; This compiles an inline lambda, i.e. FUN is something like
+;; (lambda (LAMBDA-LIST...) BODY...)
+;; If PUSHED-ARGS-ALREADY is non-nil it should be a count of the number
+;; of arguments pushed onto the stack (in reverse order). In this case,
+;; ARGS is ignored
+(defun comp-compile-lambda-inline (fun args &optional pushed-args-already)
+  (when (>= (setq comp-inline-depth (1+ comp-inline-depth))
+	    comp-max-inline-depth)
+    (setq comp-inline-depth 0)
+    (comp-error "Won't inline more than %d nested functions"
+		comp-max-inline-depth))
+  (unless (eq (car fun) 'lambda)
+    (comp-error "Invalid function to inline: %s, %s" fun args))
+  (let*
+      ((lambda-list (nth 1 fun))
+       (body (nthcdr 2 fun))
+       (out (comp-push-args
+	     lambda-list args pushed-args-already comp-test-varbind))
+       (args-left (car out))
+       (bind-stack (cdr out))
+       (comp-spec-bindings comp-spec-bindings)
+       (comp-lex-bindings comp-lex-bindings)
+       (comp-lexically-pure comp-lexically-pure)
+       (comp-lambda-name comp-lambda-name))
+
+    ;; Set up the body for compiling, skip any interactive form or
+    ;; doc string
+    (while (and (consp body) (or (stringp (car body))
+				 (and (consp (car body))
+				      (eq (car (car body)) 'interactive))))
+      (setq body (cdr body)))
+    
+    ;; Now we have a list of things to bind to, in the same order
+    ;; as the stack of evaluated arguments. The list has items
+    ;; SYMBOL, (SYMBOL . ARGS-TO-BIND), or (SYMBOL . nil)
+    (if bind-stack
+	(progn
+	  (comp-write-op op-init-bind)
+	  (comp-pop-args bind-stack args-left comp-emit-binding)
+	  (comp-compile-body body)
+	  (comp-write-op op-unbind))
+      ;; Nothing to bind to. Just pop the evaluated args and
+      ;; evaluate the body
+      (while (> args-left 0)
+	(comp-write-op op-pop)
+	(comp-dec-stack)
+	(setq args-left (1- args-left)))
+      (comp-compile-body body)))
   (setq comp-inline-depth (1- comp-inline-depth)))
 
 ;; The defsubst form stuffs this into the compile-fun property of
@@ -1445,11 +1498,26 @@ that files which shouldn't be compiled aren't."
   (comp-compile-lambda-inline
    (closure-function (symbol-value (car form))) (cdr form)))
 
-(defun comp-compile-let* (form)
+(defun comp-do-tail-call (arg-spec args)
+  (let*
+      ((out (comp-push-args arg-spec args nil comp-test-varref))
+       (args-left (car out))
+       (bind-stack (cdr out))
+       (comp-spec-bindings comp-spec-bindings)
+       (comp-lex-bindings comp-lex-bindings)
+       (comp-lexically-pure comp-lexically-pure)
+       (comp-lambda-name comp-lambda-name))
+    (comp-pop-args bind-stack args-left comp-emit-varset)
+    (comp-write-op op-unbindall)
+    (comp-write-op op-jmp (comp-start-label))))
+
+(defun comp-compile-let* (form &optional return-follows)
   (let
       ((lst (car (cdr form)))
        (comp-spec-bindings comp-spec-bindings)
-       (comp-lex-bindings comp-lex-bindings))
+       (comp-lex-bindings comp-lex-bindings)
+       (comp-lexically-pure comp-lexically-pure)
+       (comp-lambda-name comp-lambda-name))
     (comp-write-op op-init-bind)
     (while (consp lst)
       (cond
@@ -1466,11 +1534,11 @@ that files which shouldn't be compiled aren't."
 	  (comp-emit-binding (car lst))))
       (comp-dec-stack)
       (setq lst (cdr lst)))
-    (comp-compile-body (nthcdr 2 form))
+    (comp-compile-body (nthcdr 2 form) return-follows)
     (comp-write-op op-unbind)))
 (put 'let* 'compile-fun comp-compile-let*)
 
-(defun comp-compile-let (form)
+(defun comp-compile-let (form &optional return-follows)
   (let
       ((lst (car (cdr form)))
        (sym-stk nil)
@@ -1479,8 +1547,8 @@ that files which shouldn't be compiled aren't."
     (while (consp lst)
       (cond
 	((consp (car lst))
-	  (setq sym-stk (cons (car (car lst)) sym-stk))
-	  (comp-compile-body (cdr (car lst))))
+	  (setq sym-stk (cons (caar lst) sym-stk))
+	  (comp-compile-body (cdar lst)))
 	(t
 	  (setq sym-stk (cons (car lst) sym-stk))
 	  (comp-write-op op-nil)
@@ -1489,14 +1557,43 @@ that files which shouldn't be compiled aren't."
     (mapc comp-test-varbind sym-stk)
     (let
 	((comp-spec-bindings comp-spec-bindings)
-	 (comp-lex-bindings comp-lex-bindings))
+	 (comp-lex-bindings comp-lex-bindings)
+	 (comp-lexically-pure comp-lexically-pure)
+	 (comp-lambda-name comp-lambda-name))
       (while (consp sym-stk)
 	(comp-emit-binding (car sym-stk))
 	(comp-dec-stack)
 	(setq sym-stk (cdr sym-stk)))
-      (comp-compile-body (nthcdr 2 form)))
+      (comp-compile-body (nthcdr 2 form) return-follows))
     (comp-write-op op-unbind)))
 (put 'let 'compile-fun comp-compile-let)
+
+(defun comp-compile-letrec (form &optional return-follows)
+  (let
+      ((bindings (car (cdr form)))
+       (comp-spec-bindings comp-spec-bindings)
+       (comp-lex-bindings comp-lex-bindings)
+       (comp-lexically-pure comp-lexically-pure)
+       (comp-lambda-name comp-lambda-name))
+    (comp-write-op op-init-bind)
+    ;; create the bindings, should really be to void values, but use nil..
+    (mapc (lambda (cell)
+	    (let
+		((var (or (car cell) cell)))
+	      (comp-test-varbind var)
+	      (comp-compile-constant nil)
+	      (comp-emit-binding var)
+	      (comp-dec-stack))) bindings)
+    ;; then set them to their values
+    (mapc (lambda (cell)
+	    (let
+		((var (or (car cell) cell)))
+	      (comp-compile-body (cdr cell) nil var)
+	      (comp-emit-varset var)
+	      (comp-dec-stack))) bindings)
+    (comp-compile-body (nthcdr 2 form) return-follows)
+    (comp-write-op op-unbind)))
+(put 'letrec 'compile-fun comp-compile-letrec)
 
 (defun comp-compile-save-environment (form)
   (comp-write-op op-bindenv)
@@ -1509,7 +1606,8 @@ that files which shouldn't be compiled aren't."
   (comp-compile-constant (nth 1 form))
   (comp-write-op op-dup)
   (comp-inc-stack)
-  (comp-compile-constant (comp-compile-lambda (cons 'lambda (nthcdr 2 form))))
+  (comp-compile-constant (comp-compile-lambda (cons 'lambda (nthcdr 2 form))
+					      (nth 1 form)))
   (comp-write-op op-enclose)
   (comp-write-op op-dset)
   (comp-write-op op-pop)
@@ -1522,14 +1620,15 @@ that files which shouldn't be compiled aren't."
   (comp-write-op op-dup)
   (comp-inc-stack)
   (comp-compile-constant (cons 'macro (comp-compile-lambda
-				       (cons 'lambda (nthcdr 2 form)))))
+				       (cons 'lambda (nthcdr 2 form))
+				       (nth 1 form))))
   (comp-write-op op-enclose)
   (comp-write-op op-dset)
   (comp-write-op op-pop)
   (comp-dec-stack 2))
 (put 'defmacro 'compile-fun comp-compile-defmacro)
 
-(defun comp-compile-cond (form)
+(defun comp-compile-cond (form &optional return-follows)
   (let
       ((end-label (comp-make-label))
        (need-trailing-nil t))
@@ -1548,11 +1647,11 @@ that files which shouldn't be compiled aren't."
 	  (if (consp (cdr subl))
 	      ;; There's something besides the condition
 	      (progn
-		(comp-compile-body (cdr subl))
+		(comp-compile-body (cdr subl) return-follows)
 		(comp-dec-stack))
 	    (if (eq condition (car subl))
 		(comp-write-op op-t)
-	      (comp-compile-form (car subl))
+	      (comp-compile-form (car subl) return-follows)
 	      (comp-dec-stack)))
 	  (when (consp (cdr form))
 	    (comp-warning "Unreachable conditions after t in cond statement")
@@ -1573,7 +1672,7 @@ that files which shouldn't be compiled aren't."
 		  ;; This isn't the last condition list
 		  (progn
 		    (comp-compile-jmp op-jn next-label)
-		    (comp-compile-body (cdr subl))
+		    (comp-compile-body (cdr subl) return-follows)
 		    (comp-dec-stack)
 		    (comp-compile-jmp op-jmp end-label)
 		    (comp-set-label next-label))
@@ -1581,7 +1680,7 @@ that files which shouldn't be compiled aren't."
 		;; of this condition for the return value when it's
 		;; nil
 		(comp-compile-jmp op-jnp end-label)
-		(comp-compile-body (cdr subl))
+		(comp-compile-body (cdr subl) return-follows)
 		(comp-dec-stack)
 		(setq need-trailing-nil nil))
 	    ;; No action to take
@@ -1599,7 +1698,7 @@ that files which shouldn't be compiled aren't."
     (comp-set-label end-label)))
 (put 'cond 'compile-fun comp-compile-cond)
 
-(defun comp-compile-case (form)
+(defun comp-compile-case (form &optional return-follows)
   (let
       ((end-label (comp-make-label)))
     (setq form (cdr form))
@@ -1631,7 +1730,7 @@ that files which shouldn't be compiled aren't."
 	       (comp-dec-stack))
 	      ((not (eq cases t))
 	       (comp-error "Badly formed clause in case statement")))
-	(comp-compile-body forms)
+	(comp-compile-body forms return-follows)
 	(comp-dec-stack)
 	(comp-compile-jmp op-jmp end-label)
 	(comp-set-label next-label)
@@ -1646,7 +1745,8 @@ that files which shouldn't be compiled aren't."
   (let
       ((catch-label (comp-make-label))
        (start-label (comp-make-label))
-       (end-label (comp-make-label)))
+       (end-label (comp-make-label))
+       (comp-lexically-pure nil))
     ;;		jmp start
     (comp-compile-jmp op-jmp start-label)
 
@@ -1680,7 +1780,8 @@ that files which shouldn't be compiled aren't."
   (let
       ((cleanup-label (comp-make-label))
        (start-label (comp-make-label))
-       (end-label (comp-make-label)))
+       (end-label (comp-make-label))
+       (comp-lexically-pure nil))
 
     ;;		jmp start
     (comp-compile-jmp op-jmp start-label)
@@ -1724,7 +1825,8 @@ that files which shouldn't be compiled aren't."
       ((cleanup-label (comp-make-label))
        (start-label (comp-make-label))
        (end-label (comp-make-label))
-       (handlers (nthcdr 3 form)))
+       (handlers (nthcdr 3 form))
+       (comp-lexically-pure nil))
 
     ;;		jmp start
     ;; cleanup:
@@ -1735,7 +1837,8 @@ that files which shouldn't be compiled aren't."
     (if (consp handlers)
 	(let
 	    ((comp-spec-bindings comp-spec-bindings)
-	     (comp-lex-bindings comp-lex-bindings))
+	     (comp-lex-bindings comp-lex-bindings)
+	     (comp-lambda-name comp-lambda-name))
 	  (when (nth 1 form)
 	    (comp-test-varbind (nth 1 form))
 	    (comp-note-binding (nth 1 form)))
@@ -1806,11 +1909,13 @@ that files which shouldn't be compiled aren't."
 (put 'condition-case 'compile-fun comp-compile-condition-case)
 
 (defun comp-compile-with-object (form)
-  (comp-compile-form (nth 1 form))
-  (comp-write-op op-bindobj)
-  (comp-dec-stack)
-  (comp-compile-body (nthcdr 2 form))
-  (comp-write-op op-unbind))
+  (let
+      ((comp-lexically-pure nil))
+    (comp-compile-form (nth 1 form))
+    (comp-write-op op-bindobj)
+    (comp-dec-stack)
+    (comp-compile-body (nthcdr 2 form))
+    (comp-write-op op-unbind)))
 (put 'with-object 'compile-fun comp-compile-with-object)
 
 (defun comp-compile-list (form)
@@ -1852,16 +1957,6 @@ that files which shouldn't be compiled aren't."
       (comp-write-op op-call arg-count)
       (comp-dec-stack arg-count))))
 (put 'funcall 'compile-fun comp-compile-funcall)
-
-;; Handles (with-X X FORMS...)
-(defun comp-compile-with-form (form)
-  (let
-      ((swap-opcode (get (car form) 'compile-opcode)))
-    (comp-compile-form (nth 1 form))
-    (comp-write-op swap-opcode)
-    (comp-dec-stack)
-    (comp-compile-body (nthcdr 2 form))
-    (comp-write-op op-unbind)))
 
 (defun comp-compile-nth (form)
   (let
