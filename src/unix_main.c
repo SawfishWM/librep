@@ -389,19 +389,13 @@ wait_for_input(fd_set *inputs, u_long timeout_msecs)
        interrupt between each call to select. */
     do {
 	struct timeval timeout;
+	u_long max_sleep = rep_max_sleep_for ();
 	u_long this_timeout_msecs = MIN (timeout_msecs,
 					 rep_input_timeout_secs * 1000);
-	rep_bool threaded = rep_INT (Fthread_queue_length (Qnil)) > 0;
-	if (!threaded)
-	{
-	    timeout.tv_sec = this_timeout_msecs / 1000;
-	    timeout.tv_usec = (this_timeout_msecs % 1000) * 1000;
-	}
-	else
-	{
-	    timeout.tv_sec = 0;
-	    timeout.tv_usec = 0;
-	}
+	u_long actual_timeout_msecs = MIN (this_timeout_msecs, max_sleep);
+
+	timeout.tv_sec = actual_timeout_msecs / 1000;
+	timeout.tv_usec = (actual_timeout_msecs % 1000) * 1000;
 	memcpy (&copy, inputs, sizeof (copy));
 
 	/* Dont test for interrupts before the first call to select() */
@@ -420,12 +414,12 @@ wait_for_input(fd_set *inputs, u_long timeout_msecs)
 	rep_sig_restart(SIGALRM, rep_TRUE);
 	rep_sig_restart(SIGCHLD, rep_TRUE);
 
-	if (ready == 0 && threaded)
+	if (ready == 0 && actual_timeout_msecs < this_timeout_msecs)
 	{
-	    this_timeout_msecs = MIN (this_timeout_msecs, 100);
-	    Fthread_suspend (Qnil, rep_MAKE_INT (this_timeout_msecs));
+	    Fthread_suspend (Qnil, rep_MAKE_INT (this_timeout_msecs
+						 - actual_timeout_msecs));
 	}
-
+	
 	timeout_msecs -= this_timeout_msecs;
     } while (ready == 0 && timeout_msecs > 0);
 
