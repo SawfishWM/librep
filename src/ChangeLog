@@ -1,3 +1,7 @@
+1999-10-29  John Harper  <john@dcs.warwick.ac.uk>
+
+	* regexp.c: ANSII-fy function definitions
+
 1999-10-28  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep-config.sh: expect ${libdir} as second argument, not
