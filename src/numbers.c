@@ -1742,17 +1742,37 @@ Returns X raised to the power Y.
 
 If X is negative and Y is a non-integer, then an arithmetic error is
 signalled (mathematically should return a complex number).
+
+If X and Y are both integers (and Y is a non-negative fixnum), the
+result will be exact.
 ::end:: */
 {
-    double x, y;
+    repv out;
     rep_DECLARE1 (arg1, rep_NUMERICP);
     rep_DECLARE1 (arg2, rep_NUMERICP);
-    x = rep_get_float (arg1);
-    y = rep_get_float (arg2);
-    if (x >= 0 || ceil (y) == y)
-	return rep_make_float (pow (x, y), rep_FALSE);
+
+    if (rep_INTEGERP (arg1) && rep_INTP (arg2) && rep_INT (arg2) >= 0)
+    {
+	if (rep_INTP (arg1))
+	{
+	    arg1 = promote_to (arg1, rep_NUMBER_BIGNUM);
+	    out = arg1;
+	}
+	else
+	    out = dup (arg1);
+	mpz_pow_ui (rep_NUMBER(out,z), rep_NUMBER(arg1,z), rep_INT(arg2));
+    }
     else
-	return Fsignal (Qarith_error, rep_LIST_1 (rep_VAL (&domain_error)));
+    {
+	double x, y;
+	x = rep_get_float (arg1);
+	y = rep_get_float (arg2);
+	if (x >= 0 || ceil (y) == y)
+	    out = rep_make_float (pow (x, y), rep_FALSE);
+	else
+	    out = Fsignal (Qarith_error, rep_LIST_1 (rep_VAL (&domain_error)));
+    }
+    return out;
 }
 
 DEFUN("gcd", Fgcd, Sgcd, (repv x, repv y), rep_Subr2) /*
