@@ -1,3 +1,8 @@
+2002-02-09  John Harper  <jsh@unfactored.org>
+
+	* rep/util/repl.jl (do-readline): new function to avoid loading
+	and using readline if stdin isn't a tty
+
 2002-01-20  John Harper  <jsh@unfactored.org>
 
 	* rep/data/trie.jl: new module. A useful data structure for

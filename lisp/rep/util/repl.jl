@@ -34,7 +34,7 @@
 	  rep.structures
 	  rep.system
 	  rep.regexp
-	  rep.io.readline)
+	  rep.io.files)
 
   (define current-repl (make-fluid))
 
@@ -88,10 +88,18 @@
 	     (default-error-handler (car data) (cdr data))
 	     t))))))
 
+  (define (do-readline prompt completer)
+    (if (file-ttyp standard-input)
+	(progn
+	  (require 'rep.io.readline)
+	  (readline prompt completer))
+      (write standard-output prompt)
+      (read-line standard-input)))
+
   (define (repl #!optional initial-structure)
     ;; returns t if repl should run again
     (define (run-repl)
-      (let ((input (readline
+      (let ((input (do-readline
 		    (format nil (if (repl-pending (fluid current-repl))
 				    "" "%s> ")
 			    (repl-struct (fluid current-repl)))
@@ -108,7 +116,7 @@
       (let loop ()
 	(when (call-with-exception-handler run-repl interrupt-handler)
 	  (loop)))))
-
+  
   (define (print-list data #!optional map)
     (unless map (setq map identity))
     (let* ((count (length data))
