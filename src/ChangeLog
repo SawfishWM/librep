@@ -1,3 +1,8 @@
+1998-11-01  John Harper  <john@dcs.warwick.ac.uk>
+
+	* x11_windows.c (sys_new_window): when setting the XSizeHints
+	structure set the base_height to zero
+
 1998-10-27  John Harper  <john@dcs.warwick.ac.uk>
 
 	* streams.c (stream_puts, stream_putc): when growing the window

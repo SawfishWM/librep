@@ -1,3 +1,11 @@
+1998-11-01  John Harper  <john@dcs.warwick.ac.uk>
+
+	* buffers.jl (kill-buffer): call kill-buffer-hook with the
+	current buffer as the buffer being killed, instead of passing
+	it as an argument
+	* server.jl, shell.jl: adapt to new calling method for
+	kill-buffer-hook
+
 1998-10-31  John Harper  <john@dcs.warwick.ac.uk>
 
 	* tex-shell.jl (bibtex-file, tex-kill-job,

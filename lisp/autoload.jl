@@ -226,4 +226,8 @@
 (autoload 'mime-encode-attach-buffer "mime-encode" t)
 (autoload-variable 'mime-encode-keymap "mime-encode")
 (autoload 'tex-file "tex-shell" t)
+(autoload 'bibtex-file "tex-shell" t)
+(autoload 'tex-print "tex-shell" t)
+(autoload 'tex-view "tex-shell" t)
+(autoload 'tex-show-print-queue "tex-shell" t)
 ;;; ::autoload-end::
