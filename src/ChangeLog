@@ -1,3 +1,7 @@
+2000-02-23  John Harper  <john@dcs.warwick.ac.uk>
+
+	* continuations.c (rep_max_sleep_for): handle root_barrier == 0
+
 2000-02-17  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lispmach.c (OP_DSET): call Fdefine_value () to implement this
