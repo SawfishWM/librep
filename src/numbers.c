@@ -87,6 +87,8 @@ typedef struct rep_number_block_struct {
 
 #define rep_NUMBER(v,t) (((rep_number_ ## t *) rep_PTR(v))->t)
 
+#define rep_NUMBER_INEXACT_P(v) (rep_NUMBERP(v) && rep_NUMBER_FLOAT_P(v))
+
 
 /* number object handling */
 
@@ -1516,19 +1518,15 @@ NUMBER.
     rep_DECLARE1 (arg, rep_NUMERICP);
     switch (rep_NUMERIC_TYPE (arg))
     {
-	double d;
-
     case rep_NUMBER_INT:
     case rep_NUMBER_BIGNUM:
 	return arg;
 
-	/* XXX R4RS says `inexact in -> inexact out'. Why? */
-    default:
-        if (rep_NUMBER_RATIONAL_P (arg))
-	    d = mpq_get_d (rep_NUMBER(arg,q));
-	else
-	    d = rep_NUMBER(arg,f);
-	return rep_make_long_int ((long) floor (d));
+    case rep_NUMBER_RATIONAL:
+	return rep_make_long_int (floor (mpq_get_d (rep_NUMBER (arg,q))));
+
+    case rep_NUMBER_FLOAT:
+	return rep_make_float (floor (rep_NUMBER (arg,f)), rep_TRUE);
     }
     abort ();
 }	
@@ -1544,18 +1542,15 @@ NUMBER.
     rep_DECLARE1 (arg, rep_NUMERICP);
     switch (rep_NUMERIC_TYPE (arg))
     {
-	double d;
-
     case rep_NUMBER_INT:
     case rep_NUMBER_BIGNUM:
 	return arg;
 
-    default:
-        if (rep_NUMBER_RATIONAL_P (arg))
-	    d = mpq_get_d (rep_NUMBER(arg,q));
-	else
-	    d = rep_NUMBER(arg,f);
-	return rep_make_long_int ((long) ceil (d));
+    case rep_NUMBER_RATIONAL:
+	return rep_make_long_int (ceil (mpq_get_d (rep_NUMBER (arg,q))));
+
+    case rep_NUMBER_FLOAT:
+	return rep_make_float (ceil (rep_NUMBER (arg,f)), rep_TRUE);
     }
     abort ();
 }
@@ -1582,7 +1577,10 @@ Round NUMBER to the nearest integer between NUMBER and zero.
 	else
 	    d = rep_NUMBER(arg,f);
 	d = (d < 0.0) ? -floor (-d) : floor (d);
-	return rep_make_long_int ((long) d);
+        if (rep_NUMBER_RATIONAL_P (arg))
+	    return rep_make_long_int ((long) d);
+	else
+	    return rep_make_float (d, rep_TRUE);
     }
     abort ();
 }
@@ -1615,7 +1613,10 @@ nearest even integer.
 	/* Adjust so that the round is towards even.  */
 	d = ((plus_half == result && plus_half / 2 != floor (plus_half / 2))
 	     ? result - 1 : result);
-	return rep_make_long_int ((long) d);
+        if (rep_NUMBER_RATIONAL_P (arg))
+	    return rep_make_long_int ((long) d);
+	else
+	    return rep_make_float (d, rep_TRUE);
     }
     abort ();
 }
@@ -1628,7 +1629,7 @@ Return `e' (the base of natural logarithms) raised to the power X.
 ::end:: */
 {
     rep_DECLARE1 (arg, rep_NUMERICP);
-    return rep_make_float (exp (rep_get_float (arg)), rep_FALSE);
+    return rep_make_float (exp (rep_get_float (arg)), rep_TRUE);
 }
 
 DEFUN("log", Flog, Slog, (repv arg), rep_Subr1) /*
@@ -1643,7 +1644,7 @@ X is less than zero.
     rep_DECLARE1 (arg, rep_NUMERICP);
     d = rep_get_float (arg);
     if (d >= 0)
-	return rep_make_float (log (d), rep_FALSE);
+	return rep_make_float (log (d), rep_TRUE);
     else
 	return Fsignal (Qarith_error, rep_LIST_1 (rep_VAL (&domain_error)));
 }
@@ -1656,7 +1657,7 @@ Returns the sine of X, in radians.
 ::end:: */
 {
     rep_DECLARE1 (arg, rep_NUMERICP);
-    return rep_make_float (sin (rep_get_float (arg)), rep_FALSE);
+    return rep_make_float (sin (rep_get_float (arg)), rep_TRUE);
 }
 
 DEFUN("cos", Fcos, Scos, (repv arg), rep_Subr1) /*
@@ -1667,7 +1668,7 @@ Returns the cosine of X, in radians.
 ::end:: */
 {
     rep_DECLARE1 (arg, rep_NUMERICP);
-    return rep_make_float (cos (rep_get_float (arg)), rep_FALSE);
+    return rep_make_float (cos (rep_get_float (arg)), rep_TRUE);
 }
 
 DEFUN("tan", Ftan, Stan, (repv arg), rep_Subr1) /*
@@ -1678,7 +1679,7 @@ Returns the tangent of X, in radians.
 ::end:: */
 {
     rep_DECLARE1 (arg, rep_NUMERICP);
-    return rep_make_float (tan (rep_get_float (arg)), rep_FALSE);
+    return rep_make_float (tan (rep_get_float (arg)), rep_TRUE);
 }
 
 DEFUN("asin", Fasin, Sasin, (repv arg), rep_Subr1) /*
@@ -1692,7 +1693,7 @@ Return the arc sine of X (the value whose sine is X), in radians.
     rep_DECLARE1 (arg, rep_NUMERICP);
     d = rep_get_float (arg);
     if (d >= -1.0 && d <= 1.0)
-	return rep_make_float (asin (d), rep_FALSE);
+	return rep_make_float (asin (d), rep_TRUE);
     else
 	return Fsignal (Qarith_error, rep_LIST_1 (rep_VAL (&domain_error)));
 }
@@ -1708,7 +1709,7 @@ Return the arc cosine of X (the value whose cosine is X), in radians.
     rep_DECLARE1 (arg, rep_NUMERICP);
     d = rep_get_float (arg);
     if (d >= -1.0 && d <= 1.0)
-	return rep_make_float (acos (d), rep_FALSE);
+	return rep_make_float (acos (d), rep_TRUE);
     else
 	return Fsignal (Qarith_error, rep_LIST_1 (rep_VAL (&domain_error)));
 }
@@ -1729,10 +1730,10 @@ be zero.
 {
     rep_DECLARE1 (y, rep_NUMERICP);
     if (!rep_NUMERICP (x))
-	return rep_make_float (atan (rep_get_float (y)), rep_FALSE);
+	return rep_make_float (atan (rep_get_float (y)), rep_TRUE);
     else
 	return rep_make_float (atan2 (rep_get_float (y),
-				      rep_get_float (x)), rep_FALSE);
+				      rep_get_float (x)), rep_TRUE);
 }
 
 DEFUN("sqrt", Fsqrt, Ssqrt, (repv arg), rep_Subr1) /*
@@ -1747,7 +1748,7 @@ arithmetic error (should return a complex number).
     rep_DECLARE1 (arg, rep_NUMERICP);
     d = rep_get_float (arg);
     if (d >= 0)
-	return rep_make_float (sqrt (d), rep_FALSE);
+	return rep_make_float (sqrt (d), rep_NUMBER_INEXACT_P (arg));
     else
 	return Fsignal (Qarith_error, rep_LIST_1 (rep_VAL (&domain_error)));
 }
@@ -1760,9 +1761,6 @@ Returns X raised to the power Y.
 
 If X is negative and Y is a non-integer, then an arithmetic error is
 signalled (mathematically should return a complex number).
-
-If X and Y are both integers (and Y is a fixnum), the result will be
-exact.
 ::end:: */
 {
     repv out;
@@ -1790,7 +1788,11 @@ exact.
 	x = rep_get_float (arg1);
 	y = rep_get_float (arg2);
 	if (x >= 0 || ceil (y) == y)
-	    out = rep_make_float (pow (x, y), rep_FALSE);
+	{
+	    out = rep_make_float (pow (x, y),
+				  rep_NUMBER_INEXACT_P (arg1)
+				  || rep_NUMBER_INEXACT_P (arg2));
+	}
 	else
 	    out = Fsignal (Qarith_error, rep_LIST_1 (rep_VAL (&domain_error)));
     }
