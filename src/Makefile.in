@@ -39,6 +39,7 @@ jadedir=@jadedir@
 lispdir=@lispdir@
 dumped_lisp_files=@dumped_lisp_files@
 enable_dumped=@opt_enable_dumped@
+jadeexecdir=@jadeexecdir@
 
 CC=@CC@
 CPPFLAGS=@CPPFLAGS@
@@ -73,7 +74,7 @@ COMMON_HDRS =	jade.h edit.h lisp.h value.h keys.h stringmem.h \
 X11_SRCS =	x11_keys.c x11_main.c x11_misc.c x11_windows.c
 X11_HDRS =	x11_defs.h x11_windowsys.h
 
-UNIX_SRCS =	lists.c unix_files.c unix_main.c unix_processes.c \
+UNIX_SRCS =	lists.c unix_dl.c unix_files.c unix_main.c unix_processes.c \
 		unix_server.c
 UNIX_HDRS =	unix_defs.h
 
@@ -108,7 +109,9 @@ JADE_LIBS += $(X11LIBS)
 endif
 
 .c.o :
-	$(CC) -c $(CFLAGS) -DJADE -DJADE_DIR=$(jadedir) -DHAVE_CONFIG_H -I. -I../lib -I.. -o $@ $<
+	$(CC) -c $(CFLAGS) -DJADE -DJADE_DIR=$(jadedir) \
+	  -DJADE_EXEC_DIR=$(jadeexecdir) -DHAVE_CONFIG_H \
+	  -I. -I../lib -I.. -o $@ $<
 
 .PHONY: clean realclean
 
@@ -185,8 +188,10 @@ ifneq ($(HAVE_X11), 0)
 endif
 
 ifneq ($(HAVE_UNIX), 0)
+ unix_client.o	: $(HDRS)
+ unix_dl.o	: $(HDRS)
+ unix_files.o	: $(HDRS)
  unix_main.o	: $(HDRS)
- unix_memory.o	: $(HDRS)
  unix_processes.o : $(HDRS)
  unix_server.o	: $(HDRS)
 endif
