@@ -1,3 +1,7 @@
+2001-04-09  John Harper  <jsh@eazel.com>
+
+	* configure.in: version 0.13.6, bumped library revision
+
 2001-03-22  John Harper  <jsh@eazel.com>
 
 	* configure.in: version 0.13.5, bumped library revision number
