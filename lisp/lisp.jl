@@ -35,6 +35,62 @@
 
 ;; Function decls
 
+(progn					;progn forces compilation
+  (setq defmacro
+	(cons 'macro
+	      (lambda (symbol . body)
+"defmacro NAME LAMBDA-LIST [DOC-STRING] BODY...
+defmacro NAME BYTECODE-OBJECT
+
+Defines a macro called NAME with argument spec. LAMBDA-LIST,
+documentation DOC-STRING (optional) and body BODY.
+
+Macros are called with their arguments un-evaluated, they are expected
+to return a form which will be executed to provide the result of the
+expression. Note that macros are expanded at compile-time, and may be
+expanded an arbitrary number of times."
+
+	        (cond ((bytecodep (car body))
+		       (setq body (car body)))
+		      (t
+		       (setq body (list 'quote (cons 'lambda body)))))
+	        (list 'progn
+		      (list 'setq symbol
+			    (list 'cons
+				  (list 'quote 'macro)
+				  (list 'make-closure body
+					(symbol-name symbol))))
+		      (list 'mark-symbol-defined (list 'quote symbol)))))))
+(mark-symbol-defined 'defmacro)
+
+(defmacro defun (symbol . body)
+  "defun NAME LAMBDA-LIST [DOC-STRING] BODY...
+defun NAME BYTECODE-OBJECT
+
+Defines a function called NAME with argument specification LAMBDA-LIST,
+documentation DOC-STRING (optional) and body BODY."
+
+  (cond ((bytecodep (car body))
+	 (setq body (car body)))
+	(t
+	 (setq body (list 'quote (cons 'lambda body)))))
+  (list 'progn
+	(list 'setq symbol (list 'make-closure body (symbol-name symbol)))
+	(list 'mark-symbol-defined (list 'quote symbol))))
+
+(defmacro defconst (symbol . args)
+  "defconst NAME VALUE [DOC-STRING]
+
+Define a constant NAME whose (default) value is VALUE. If NAME is
+already bound an error is signalled.
+
+Constants are treated specially by the Lisp compiler, basically they
+are hard-coded into the byte-code."
+
+  (list 'progn
+	(list* 'defvar symbol args)
+	(list 'set-const-variable (list 'quote symbol))))
+
 (defmacro defsubst (&rest decl)
   "Defines a function that will be compiled inline to any functions that
 call it. Otherwise exactly the same as defun."
@@ -161,7 +217,14 @@ See also `setq'. Returns the value of the last FORM."
 	(cons 'progn (nreverse body))
       (loop (cddr rest)
 	    (cons (list 'set-default
-			(list 'quote (car rest)) (cadr rest)) body)))))
+			(list 'quote (car rest)) (nth 1 rest)) body)))))
+
+(defmacro define-value (var-form value)
+  (or (eq (car var-form) 'quote)
+      (error "define-value can only set constant symbols: %s" var-form))
+  (list 'progn
+	(list 'setq (nth 1 var-form) value)
+	(list 'mark-symbol-defined var-form)))
 
 ;; XXX it would be nice to do the same for setq.. might stress the
 ;; XXX interpreter somewhat..? :-(
@@ -184,14 +247,16 @@ Evaluate FORM1 discarding its result, then evaluate FORM2 followed by
   "Tell the evaluator that the value of SYMBOL will be initialised
 by loading FILE."
   (unless (boundp symbol)
-    (define-value symbol (make-closure (list* 'autoload symbol file extra)))))
+    (set symbol (make-closure (list* 'autoload symbol file extra)))
+    (mark-symbol-defined symbol)))
 
 (defun autoload-macro (symbol file &rest extra)
   "Tell the evaluator that the value of the macro SYMBOL will be initialised
 by loading FILE."
   (unless (boundp symbol)
-    (define-value symbol (cons 'macro (make-closure
-				       (list* 'autoload symbol file extra))))))
+    (set symbol (cons 'macro (make-closure
+			      (list* 'autoload symbol file extra))))
+    (mark-symbol-defined symbol)))
 
 
 ;; Hook manipulation
