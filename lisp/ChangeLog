@@ -1,3 +1,8 @@
+2000-08-21  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep/i18n/xgettext.jl (scan): scan bodies of define-structure
+	and structure forms
+
 2000-08-17  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep/util/gaol.jl (gaol-define-vm): new function, installs a

@@ -1,3 +1,8 @@
+2000-08-18  John Harper  <john@dcs.warwick.ac.uk>
+
+	* continuations.c (thread_suspend): POLL-ARG is now `void *'
+	not `repv'
+
 2000-08-17  John Harper  <john@dcs.warwick.ac.uk>
 
 	* continuations.c: moved get_stack_top () into save_stack ();
