@@ -1,0 +1,38 @@
+/* rep_config.h.in -- configure defs needed by library callers */
+
+#ifndef REP_CONFIG_H
+#define REP_CONFIG_H
+
+/* Version number */
+#undef rep_VERSION
+
+/* libtool interface revision number */
+#undef rep_INTERFACE
+
+/* Define if you have some flavour of Unix */
+#undef rep_HAVE_UNIX
+
+/* An implicitly signed integer type, that a pointer can be cast to and
+   from without dropping bits */
+#undef rep_PTR_SIZED_INT
+
+/* This is either L or LL -- the suffix to append to integer constants
+   of the above type */
+#undef rep_PTR_SIZED_INT_SUFFIX
+
+/* A string, the printf integer conversion of the above integer type,
+   i.e. "" for int, "l" for long, "ll" for long long */
+#undef rep_PTR_SIZED_INT_CONV
+
+/* The number of bytes in the above type. */
+#undef rep_PTR_SIZED_INT_SIZEOF
+#define rep_PTR_SIZED_INT_BITS (rep_PTR_SIZED_INT_SIZEOF * CHAR_BIT)
+
+/* The minimum alignment of memory allocated by malloc(). The default of
+   four should be ok for most systems? */
+#undef rep_MALLOC_ALIGNMENT
+
+/* Defined if `long long int' is available */
+#undef rep_HAVE_LONG_LONG
+
+#endif /* REP_CONFIG_H */

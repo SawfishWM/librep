@@ -89,6 +89,7 @@ install : all installdirs
 	for i in $(INSTALL_HDRS); do \
 	  $(INSTALL_DATA) $(srcdir)/$$i $(DESTDIR)$(includedir); \
 	done
+	$(INSTALL_DATA) rep_config.h $(DESTDIR)$(repcommonexecdir)
 	$(SHELL) $(top_srcdir)/install-aliases -c . $(DESTDIR)$(repexecdir)
 
 installdirs : mkinstalldirs
@@ -146,7 +147,7 @@ clean :
 	rm -f repdoc core rep rep-remote srep
 
 distclean : clean
-	rm -f .*.d Makefile rep.h dump.out dumped.s rep-config
+	rm -f .*.d Makefile rep_config.h dump.out dumped.s rep-config
 	rm -rf .libs .libexec
 
 realclean : distclean

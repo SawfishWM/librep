@@ -33,19 +33,16 @@ fi
 while test \$# -gt 0; do
   case \$1 in
     --version)
-      echo ${version}
+      echo "${version}"
       ;;
     --cflags)
-      if test ${prefix}/include != /usr/include ; then
-        includes=-I${prefix}/include
-      fi
-      echo \$includes
+      echo "-I${prefix}/include -I${repexecdir}"
       ;;
     --libs)
-      echo ${libpath} -lrep ${LIBS}
+      echo "${libpath} -lrep ${LIBS}"
       ;;
     --execdir)
-      echo ${repexecdir}
+      echo "${repexecdir}"
       ;;
     *)
       echo "\${usage}" 1>&2

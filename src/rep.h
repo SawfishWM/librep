@@ -1,4 +1,4 @@
-/* rep.h.in -- Public include file, brings in all the rest
+/* rep.h -- Public include file, brings in all the rest
    Copyright (C) 1993, 1994 John Harper <john@dcs.warwick.ac.uk>
    $Id$
 
@@ -32,49 +32,13 @@ typedef int rep_bool;
 #define NULL 0
 #endif
 
-
-/* configure defs needed by library callers */
-
-/* Version number */
-#undef rep_VERSION
-
-/* libtool interface revision number */
-#undef rep_INTERFACE
-
-/* Define if you have some flavour of Unix */
-#undef rep_HAVE_UNIX
-
-/* An implicitly signed integer type, that a pointer can be cast to and
-   from without dropping bits */
-#undef rep_PTR_SIZED_INT
-
-/* This is either L or LL -- the suffix to append to integer constants
-   of the above type */
-#undef rep_PTR_SIZED_INT_SUFFIX
-
-/* A string, the printf integer conversion of the above integer type,
-   i.e. "" for int, "l" for long, "ll" for long long */
-#undef rep_PTR_SIZED_INT_CONV
-
-/* The number of bytes in the above type. */
-#undef rep_PTR_SIZED_INT_SIZEOF
-#define rep_PTR_SIZED_INT_BITS (rep_PTR_SIZED_INT_SIZEOF * CHAR_BIT)
-
-/* The minimum alignment of memory allocated by malloc(). The default of
-   four should be ok for most systems? */
-#undef rep_MALLOC_ALIGNMENT
-
-/* Defined if `long long int' is available */
-#undef rep_HAVE_LONG_LONG
+#include <rep_config.h>
 
 #ifdef rep_HAVE_LONG_LONG
 # define rep_long_long long long
 #else
 # define rep_long_long long
 #endif
-
-
-/* Other public includes */
 
 #include "rep_lisp.h"
 #include "rep_regexp.h"
