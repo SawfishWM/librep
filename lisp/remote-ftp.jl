@@ -87,6 +87,9 @@ directory substituted for the single %s format specifier.")
 
 ;; Output templates, mostly copied from ange-ftp :-)
 
+(defvar remote-ftp-prompt-regexp "([Ff]tp> *)+"
+  "Regular expression matching a prompt from the FTP command (to be ignored).")
+
 (defvar remote-ftp-multi-msgs
   "220-|230-|226|25.-|221-|200-|331-|4[25]1-|530-"
   "Regular expression matching the start of a multiline ftp reply.")
@@ -268,7 +271,7 @@ file types.")
        line-end)
     (while (< point (length output))
       ;; Skip any prompts
-      (when (string-looking-at "(ftp> *)+" output point)
+      (when (string-looking-at remote-ftp-prompt-regexp output point)
 	(setq point (match-end)))
       ;; Look for `#' progress characters
       (when (string-looking-at "#+" output point)
