@@ -689,7 +689,7 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 		    u_char buf[1025];
 		    int actual;
 		    fd_set inputs;
-		    bool done_out = FALSE, done_err = FALSE;
+		    bool done_out = FALSE, done_err = FALSE, exited = FALSE;
 		    int interrupt_count = 0;
 
 		    FD_ZERO(&inputs);
@@ -698,15 +698,19 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 		    pr->pr_Stdin = 0;
 		    fcntl(pr->pr_Stdout, F_SETFL, O_NONBLOCK);
 		    fcntl(pr->pr_Stderr, F_SETFL, O_NONBLOCK);
-		    while(!(done_out && done_err))
+		    while(!(done_out && done_err) && !exited)
 		    {
 			fd_set copy = inputs;
 			struct timeval timeout;
 			int number;
 			timeout.tv_sec = 1;
 			timeout.tv_usec = 0;
+
+			sigchld_restart(FALSE);
 			number = select(FD_SETSIZE, &copy, NULL,
 					NULL, &timeout);
+			sigchld_restart(TRUE);
+
 			TEST_INT;
 			if(INT_P)
 			{
@@ -770,8 +774,20 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 				}
 			    }
 			}
+			/* If the child process exits, but has spawned
+			   an orphan of its own on the same input and
+			   output streams, the done_out and done_err
+			   flags won't get set until the _orphan_ quits.
+			   This is unsatisfactory; so if my child exits
+			   that's it, goodnight vienna.. */
+			if(got_sigchld && waitpid(pr->pr_Pid,
+						  &pr->pr_ExitStatus,
+						  WNOHANG) == pr->pr_Pid)
+			    exited = TRUE;
 		    }
-		    waitpid(pr->pr_Pid, &pr->pr_ExitStatus, 0);
+		    if(!exited)
+			waitpid(pr->pr_Pid, &pr->pr_ExitStatus, 0);
+
 		    close(pr->pr_Stdout);
 		    close(pr->pr_Stderr);
 		    pr->pr_Stdout = 0;
