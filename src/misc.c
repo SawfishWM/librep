@@ -99,10 +99,16 @@ Rings a bell.
     return(sym_t);
 }
 
-_PR VALUE cmd_make_completion_string(VALUE existing, VALUE arg_list);
-DEFUN("make-completion-string", cmd_make_completion_string, subr_make_completion_string, (VALUE existing, VALUE arg_list), V_Subr2, DOC_make_completion_string) /*
-::doc:make_completion_string::
-make-completion-string EXISTING STRING-LIST
+_PR VALUE cmd_complete_string(VALUE existing, VALUE arg_list, VALUE fold);
+DEFUN("complete-string", cmd_complete_string, subr_complete_string,
+      (VALUE existing, VALUE arg_list, VALUE fold), V_Subr3,
+      DOC_complete_string) /*
+::doc:complete_string::
+complete-string TEMPLATE LIST [FOLD-CASE]
+
+Return a string whose beginning matches the string TEMPLATE, and is unique
+in the set of all strings in LIST which also match TEMPLATE. If FOLD-CASE
+is t, all matching ignores character case.
 ::end:: */
 {
     u_char *orig, *match = NULL;
@@ -120,7 +126,7 @@ make-completion-string EXISTING STRING-LIST
 	if(STRINGP(arg))
 	{
 	    u_char *tmp = VSTR(arg);
-	    if(mystrcmp(orig, tmp))
+	    if((NILP(fold) ? strncmp : strncasecmp)(orig, tmp, origlen) == 0)
 	    {
 		if(match)
 		{
@@ -128,11 +134,13 @@ make-completion-string EXISTING STRING-LIST
 		    tmp += origlen;
 		    while(*tmp2 && *tmp)
 		    {
-			if(*tmp2++ != *tmp++)
+			if(NILP(fold)
+			   ? (*tmp2 != *tmp)
+			   : (tolower(*tmp2) != tolower(*tmp)))
 			{
-			    tmp2--;
 			    break;
 			}
+			tmp2++; tmp++;
 		    }
 		    if((tmp2 - match) < matchlen)
 			matchlen = tmp2 - match;
@@ -147,8 +155,9 @@ make-completion-string EXISTING STRING-LIST
 	arg_list = VCDR(arg_list);
     }
     if(match)
-	return(string_dupn(match, matchlen));
-    return(sym_nil);
+	return string_dupn(match, matchlen);
+    else
+	return sym_nil;
 }
 
 _PR VALUE cmd_current_time(void);
@@ -358,7 +367,7 @@ misc_init(void)
     VSYM(sym_process_environment)->value = sym_nil;
 
     ADD_SUBR_INT(subr_beep);
-    ADD_SUBR(subr_make_completion_string);
+    ADD_SUBR(subr_complete_string);
     ADD_SUBR(subr_current_time);
     ADD_SUBR(subr_fix_time);
     ADD_SUBR(subr_current_time_string);
