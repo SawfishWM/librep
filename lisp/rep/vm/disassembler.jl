@@ -31,14 +31,14 @@
      "refq" nil nil nil nil nil nil nil
      "setq" nil nil nil nil nil nil nil	; 0x20
      "list" nil nil nil nil nil nil nil
-     "bind" nil nil nil nil nil nil nil	; 0x30
+     nil nil nil nil nil nil nil nil	; 0x30
      "refn" nil nil nil nil nil nil nil
      "ref" "set" "fluid-ref" "enclose"
      "init-bind" "unbind" "dup" "swap"	; 0x40
      "pop" "push\tnil" "push\tt" "cons"
      "car" "cdr" "rplaca" "rplacd"
      "nth" "nthcdr" "aset" "aref"
-     "length" "eval" "add" "neg" "sub"	; 0x50
+     "length" "bind" "add" "neg" "sub"	; 0x50
      "mul" "div" "rem" "lnot" "not" "lor" "land"
      "equal" "eq" "structure-ref" "scm-test"
      "gt" "ge" "lt" "le"		; 0x60
@@ -101,7 +101,7 @@
       (when (closurep arg)
 	(setq arg (closure-function arg)))
       (cond
-       ((and (consp arg) (eq (car arg) 'jade-byte-code))
+       ((and (consp arg) (eq (car arg) 'run-byte-code))
 	(setq code-string (nth 1 arg)
 	      consts (nth 2 arg)
 	      stack (nth 3 arg)))
@@ -109,7 +109,12 @@
 	(setq code-string (aref arg 1)
 	      consts (aref arg 2))
 	(when (zerop depth)
-	  (format stream "Arguments: %S\n" (aref arg 0))
+	  (format stream "Arguments: %s required, %s optional"
+		  (logand (aref arg 0) 0xfff)
+		  (logand (ash (aref arg 0) -12) 0xfff))
+	  (unless (zerop (ash (aref arg 0) -24))
+	    (write stream ", 1 rest arg"))
+	  (write stream #\newline)
 	  (let
 	      ((spec (and (> (length arg) 5) (aref arg 5)))
 	       (doc (and (> (length arg) 4) (aref arg 4))))
@@ -150,7 +155,7 @@
 	     ((= op (bytecode push))
 	      (let
 		  ((argobj (aref consts arg)))
-		(if (or (and (consp argobj) (eq (car argobj) 'jade-byte-code))
+		(if (or (and (consp argobj) (eq (car argobj) 'byte-code))
 			(bytecodep argobj))
 		    (progn
 		      (format stream "push\t[%d] bytecode...\n" arg)
