@@ -76,7 +76,7 @@
       ((equal "-q" arg)
        (throw 'quit 0))
       (t
-       (message (format nil "Unknown option: %s" arg))))))
+       (load arg)))))
 
 (unless batch-mode
   (rep))
