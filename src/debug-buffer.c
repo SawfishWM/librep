@@ -118,7 +118,7 @@ rep_db_printf(void *_db, char *fmt, ...)
 void
 rep_db_print_backtrace(void *_db, char *fun)
 {
-#if defined(__GNUC__)
+#if defined(__GNUC__) && ! defined(BROKEN_ALPHA_GCC)
 
 #define BT_BASE 1
 #define BT_DEPTH 8
@@ -176,7 +176,7 @@ rep_db_print_backtrace(void *_db, char *fun)
 void *
 rep_db_return_address(void)
 {
-#if defined(__GNUC__)
+#if defined(__GNUC__) && ! defined(BROKEN_ALPHA_GCC)
     return __builtin_return_address(1);
 #else
     return 0;

@@ -297,4 +297,7 @@
 /* Define to use the readline library. */
 #undef HAVE_LIBREADLINE
 
+/* Define if we have a broken gcc on alpha */
+#undef BROKEN_ALPHA_GCC
+
 #endif /* CONFIG_H */

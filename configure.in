@@ -340,6 +340,15 @@ AC_ARG_WITH(malloc-alignment,
  [with_malloc_alignment=4])
 AC_DEFINE_UNQUOTED(rep_MALLOC_ALIGNMENT, ${with_malloc_alignment})
 
+dnl Check for gcc crashes on alpha (seems to be fixed in new snapshots, but
+dnl just to make it compile on all machines)
+AC_MSG_CHECKING([for broken alpha gcc])
+AC_TRY_COMPILE([],[__builtin_return_address(1);],
+	       [AC_MSG_RESULT(no)],
+	       [AC_DEFINE(BROKEN_ALPHA_GCC,1)
+		AC_MSG_RESULT(yes)
+		AC_MSG_WARN([Backtrace support will not be compiled])])
+
 dnl Nonstandard exported symbols
 AC_SUBST(version)
 AC_SUBST(libversion)
