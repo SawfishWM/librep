@@ -633,7 +633,7 @@ variable will be set (if necessary) not the local value.
 	int spec;
 	rep_GC_root gc_args;
 	repv sym = rep_CAR(args), val;
-	repv tmp = Fboundp(sym);
+	repv tmp = Fdefault_boundp(sym);
 	if(!tmp)
 	    return rep_NULL;
 	rep_PUSHGC(gc_args, args);
@@ -878,7 +878,8 @@ DEFUN("set-default", Fset_default, Sset_default,
 ::doc:set-default::
 set-default SYMBOL VALUE
 
-Sets the default value of SYMBOL to VALUE, then returns VALUE.
+Sets the default value of SYMBOL to VALUE, then returns VALUE. Also
+makes the symbol special if it isn't already.
 ::end:: */
 {
     int spec;
@@ -893,12 +894,14 @@ Sets the default value of SYMBOL to VALUE, then returns VALUE.
 	if (spec > 0 && rep_SYM(sym)->car & rep_SF_WEAK_MOD)
 	    return Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
 
+	if (!(rep_SYM(sym)->car & rep_SF_SPECIAL))
+	    Fmake_variable_special (sym);
+
 	tem = search_special_bindings (sym);
 	if (tem != Qnil)
 	    rep_CDR (tem) = val;
 	else
 	    val = F_structure_set (rep_specials_structure, sym, val);
-	rep_SYM(sym)->car |= rep_SF_SPECIAL;
     }
     else
 	return Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
@@ -1177,6 +1180,12 @@ DEFUN("make-variable-special", Fmake_variable_special,
     spec = search_special_environment (sym);
     if (spec == 0)
 	return Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
+    if (!(rep_SYM(sym)->car & rep_SF_SPECIAL))
+    {
+	repv tem = rep_get_initial_special_value (sym);
+	if (tem)
+	    F_structure_set (rep_specials_structure, sym, tem);
+    }
     rep_SYM(sym)->car |= rep_SF_SPECIAL;
     return sym;
 }
