@@ -32,9 +32,8 @@
 
 ;;;###autoload
 (defun repl (&optional initial-structure)
-  (let
-      ((print-escape t)
-       input)
+  (let ((print-escape t)
+	input)
     (let-fluids ((repl-in-struct (or initial-structure *user-structure*)))
       (write standard-output "\nEnter `,help' to list commands.\n")
       (catch 'out
@@ -43,33 +42,35 @@
 		       input (readline
 			      (format nil (if input "" "%s> ")
 				      (fluid repl-in-struct)))))
-	  (condition-case data
-	      (progn
-		(if (string-looking-at "\\s*,\\s*" input)
-		    ;; a `,' introduces a meta command
-		    (let
-			((stream (make-string-input-stream input (match-end)))
-			 sexps)
-		      (condition-case nil
-			  (while t
-			    (setq sexps (cons (read stream) sexps)))
-			(end-of-stream
-			 (setq sexps (nreverse sexps))))
-		      (if (get (car sexps) 'repl-command)
-			  (apply (get (car sexps) 'repl-command) (cdr sexps))
-			(format standard-output
-				"unrecognized command name: %s\n"
-				(car sexps))))
-		  (let ((form (condition-case nil
-				  (read-from-string input)
-				(end-of-stream
-				 (unless (and input (not (string= "" input)))
-				   (throw 'out))))))
-		    (format standard-output "%S\n" (repl-eval form))))
-		(setq input nil))
-	    (error
-	     (error-handler-function (car data) (cdr data))
-	     (setq input nil))))))))
+	  (catch 'next
+	    (condition-case data
+		(progn
+		  (if (string-looking-at "\\s*,\\s*" input)
+		      ;; a `,' introduces a meta command
+		      (let ((stream (make-string-input-stream
+				     input (match-end)))
+			    sexps)
+			(condition-case nil
+			    (while t
+			      (setq sexps (cons (read stream) sexps)))
+			  (end-of-stream
+			   (setq sexps (nreverse sexps))))
+			(if (get (car sexps) 'repl-command)
+			    (apply (get (car sexps) 'repl-command) (cdr sexps))
+			  (format standard-output
+				  "unrecognized command name: %s\n"
+				  (car sexps))))
+		    (let ((form (condition-case nil
+				    (read-from-string input)
+				  (end-of-stream
+				   (if (and input (not (string= "" input)))
+				       (throw 'next)
+				     (throw 'out))))))
+		      (format standard-output "%S\n" (repl-eval form))))
+		  (setq input nil))
+	      (error
+	       (error-handler-function (car data) (cdr data))
+	       (setq input nil)))))))))
 
 (defun rl-completion-generator (w)
   (apropos (concat #\^ (quote-regexp w))
