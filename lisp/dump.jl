@@ -278,14 +278,14 @@ Note that each input file will be loaded from the lisp-lib-directory with
 	  ((i 0)
 	   (size (length object)))
 	(while (< i size)
-	  (unless (integerp (aref object i))
+	  (unless (fixnump (aref object i))
 	    (aset object i (dump-get-label
 			    (dump-add-constant (aref object i)))))
 	  (setq i (1+ i)))))
      ((consp object)
-      (unless (integerp (car object))
+      (unless (fixnump (car object))
 	(rplaca object (dump-get-label (dump-add-constant (car object)))))
-      (unless (integerp (cdr object))
+      (unless (fixnump (cdr object))
 	(rplacd object (dump-get-label (dump-add-constant (cdr object)))))))
 
     ;; Get the (OBJECT LABEL STATE...) cell that represents this
@@ -315,7 +315,7 @@ Note that each input file will be loaded from the lisp-lib-directory with
 ;; Return t if FORM is constant
 (defun dump-constant-p (form)
   (cond
-   ((or (integerp form) (stringp form)
+   ((or (numberp form) (stringp form)
 	(vectorp form) (bytecodep form)
 	(eq form t) (eq form nil)))
    ((consp form)
@@ -327,7 +327,7 @@ Note that each input file will be loaded from the lisp-lib-directory with
 ;; Return the Lisp object that is the value of the constant FORM
 (defun dump-get-constant (form)
   (cond
-   ((or (integerp form) (stringp form)
+   ((or (numberp form) (stringp form)
 	(vectorp form) (bytecodep form)
 	(eq form t) (eq form nil))
     ;; Self-evaluating types
@@ -340,7 +340,7 @@ Note that each input file will be loaded from the lisp-lib-directory with
 ;; that FORM is a constant)
 (defun dump-constant-value (form)
   (setq form (dump-get-constant form))
-  (if (integerp form)
+  (if (fixnump form)
       form
     (dump-get-label (dump-add-constant form))))
 
@@ -501,7 +501,7 @@ Note that each input file will be loaded from the lisp-lib-directory with
   (@ "} const_rep_funarg;\n"))
 
 (defun dump-output-object (obj)
-  (cond ((integerp obj)
+  (cond ((fixnump obj)
 	 (format nil "%d" (logior (ash obj 2) 2)))
 	(obj
 	 (format nil "rep_VAL(&%s)" obj))
