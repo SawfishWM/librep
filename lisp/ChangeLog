@@ -1,3 +1,20 @@
+1998-08-19  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rm-mail-dir.jl (rm-mail-dir-scanner): rewritten. added
+	parameters FOLDER (unused) and ALL-ADDRESSES. Only scan
+	recipients when ALL-ADDRESSES is non-nil
+	(rm-mail-dir-scan-current): prefix arg means scan all addresses
+
+	* read-mail.jl (rm-format): new function, format a string using
+	a message and the mail-local format specifiers
+
+	* rm-misc.jl (rm-citation-format): format string for citation
+	line in quoted messages
+
+	* send-mail.jl (send-mail-mode): set paragraph-separate and
+	paragraph-start to understand the yank-prefix and
+	header-separator
+
 1998-08-18  John Harper  <john@dcs.warwick.ac.uk>
 
 	* pwd-prompt.jl (pwd-prompt): no need for dubious hacks

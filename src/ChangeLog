@@ -1,3 +1,8 @@
+1998-08-19  John Harper  <john@dcs.warwick.ac.uk>
+
+	* keys.c (lookup_event_name): minor change to limit the number
+	of modifier bits tested
+
 1998-08-18  John Harper  <john@dcs.warwick.ac.uk>
 
 	* keys.c (lookup_event, lookup_event_name): moved from
