@@ -57,10 +57,8 @@
 		      (format standard-output
 			      "unrecognized command name: %s\n"
 			      (car sexps))))
-		(format standard-output "%S\n" (eval
-						(read-from-string input)
-						(%intern-structure
-						 *repl-in-struct*))))
+		(format standard-output "%S\n" (eval (read-from-string input)
+						     *repl-in-struct*)))
 	      (setq input nil))
 	  (end-of-stream
 	   (unless (and input (not (string= "" input)))
@@ -72,8 +70,7 @@
 (put 'in 'repl-command
      (lambda (struct &optional form)
        (if form
-	   (format standard-output "%S\n"
-		   (eval form (%get-structure struct)))
+	   (format standard-output "%S\n" (eval form struct))
 	 (setq *repl-in-struct* struct))))
 (put 'in 'repl-help "STRUCT [FORM ...]")
 
@@ -98,19 +95,17 @@
 
 (put 'load-file 'repl-command
      (lambda (file . args)
-       (eval `(,load ,file ,@args) (%intern-structure *repl-in-struct*))))
+       (eval `(,load ,file ,@args) *repl-in-struct*)))
 (put 'load-file 'repl-help "\"FILENAME\"")
 
 (put 'open 'repl-command
      (lambda structs
-       (eval `(,%open-structures (,quote ,structs))
-	     (%intern-structure *repl-in-struct*))))
+       (eval `(,%open-structures (,quote ,structs)) *repl-in-struct*)))
 (put 'open 'repl-help "STRUCT ...")
 
 (put 'access 'repl-command
      (lambda structs
-       (eval `(,%access-structures (,quote ,structs))
-	     (%intern-structure *repl-in-struct*))))
+       (eval `(,%access-structures (,quote ,structs)) *repl-in-struct*)))
 (put 'access 'repl-help "STRUCT ...")
 
 (put 'structures 'repl-command
@@ -155,15 +150,14 @@
 (put 'dis 'repl-command
      (lambda (arg)
        (require 'disassembler)
-       (disassemble (eval arg (%intern-structure *repl-in-struct*)))))
+       (disassemble (eval arg *repl-in-struct*))))
 (put 'dis 'repl-help "FORM")
 
 (put 'compile-proc 'repl-command
      (lambda args
        (require 'compiler)
        (mapc (lambda (arg)
-	       (compile-function (eval
-				  arg (%intern-structure *repl-in-struct*))))
+	       (compile-function (eval arg *repl-in-struct*)))
 	     args)))
 (put 'compile-proc 'repl-help "PROCEDURE ...")
 
@@ -185,16 +179,14 @@
 
 (put 'expand 'repl-command
      (lambda (form)
-       (format standard-output "%s\n" (eval
-				       `(,macroexpand ',form)
-				       (%intern-structure *repl-in-struct*)))))
+       (format standard-output "%s\n" (eval `(,macroexpand ',form)
+					    *repl-in-struct*))))
 (put 'expand 'repl-help "FORM")
 
 (put 'step 'repl-command
      (lambda (form)
-       (format standard-output "%s\n" (eval
-				       `(,step ',form)
-				       (%intern-structure *repl-in-struct*)))))
+       (format standard-output "%s\n" (eval `(,step ',form)
+					    *repl-in-struct*))))
 (put 'step 'repl-help "FORM")
 
 (put 'help 'repl-command
@@ -224,7 +216,7 @@ enter a meta-command prefixed by a `,' character.\n")
 (put 'describe 'repl-command
      (lambda (name)
        (require 'lisp-doc)
-       (let* ((value (eval name (%intern-structure *repl-in-struct*)))
+       (let* ((value (eval name *repl-in-struct*))
 	      (doc (documentation name value)))
 	 (write standard-output #\newline)
 	 (describe-value value name)
@@ -239,12 +231,11 @@ enter a meta-command prefixed by a `,' character.\n")
        (let ((funs (apropos re (lambda (x)
 				 (condition-case nil
 				     (progn
-				       (eval
-					x (%intern-structure *repl-in-struct*))
+				       (eval x *repl-in-struct*)
 				       t)
 				   (void-value nil))))))
 	 (mapc (lambda (x)
-		 (let* ((val (eval x (%intern-structure *repl-in-struct*))))
+		 (let* ((val (eval x *repl-in-struct*)))
 		   (describe-value val x))) funs))))
 (put 'apropos 'repl-help "\"REGEXP\"")
 
@@ -252,7 +243,7 @@ enter a meta-command prefixed by a `,' character.\n")
      (lambda (form)
        (let (t1 t2 ret)
 	 (setq t1 (current-utime))
-	 (setq ret (eval form (%intern-structure *repl-in-struct*)))
+	 (setq ret (eval form *repl-in-struct*))
 	 (setq t2 (current-utime))
 	 (format standard-output
 		 "%S\nElapsed: %d seconds\n" ret (/ (- t2 t1) 1e6)))))
