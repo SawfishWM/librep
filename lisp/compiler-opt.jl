@@ -346,12 +346,14 @@
 	  (setq keep-going t))
 
 	 ;; jmp X; ... Y: --> jmp X; Y:
-	 ((and (eq (car insn0) op-jmp)
-	       (not (eq (car insn1) 'label)))
+	 ;; return; ... Y: --> return; Y:
+	 ((and (or (eq (car insn0) op-jmp)
+		   (eq (car insn0) op-return))
+	       insn1 (not (eq (car insn1) 'label)))
 	  (setq tem (nthcdr 2 point))
 	  (while (and tem (not (eq (car (car tem)) 'label)))
 	    (setq tem (cdr tem)))
-	  (when (eq (cdr insn0) (car tem))
+	  (unless (eq tem (nthcdr 2 point))
 	    (rplacd (cdr point) tem)
 	    (comp-peep-refill)
 	    (setq keep-going t)))
