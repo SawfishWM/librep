@@ -31,6 +31,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
 #undef textdomain
 #undef bindtextdomain
 
+/* avoid clashing with libc functions (under solaris) */
+
+#define gettext gnu_gettext
+#define dgettext gnu_dgettext
+#define dcgettext gnu_dcgettext
+#define textdomain gnu_textdomain
+#define bindtextdomain gnu_bindtextdomain
 
 char *
 bindtextdomain (domainname, dirname)
