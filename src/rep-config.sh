@@ -23,7 +23,7 @@ fi
 cat <<EOF
 #!/bin/sh
 
-usage="usage: rep-config [--version]1 [--libs] [--cflags] [--execdir]"
+usage="usage: rep-config [--version] [--libs] [--cflags] [--execdir]"
 
 if test \$# -eq 0; then
       echo "\${usage}" 1>&2
