@@ -232,33 +232,6 @@ balance-brackets OPEN-STRING CLOSE-STRING STRING
     return(make_number(cnt));
 }
 
-_PR VALUE cmd_strtoc(VALUE string);
-DEFUN("strtoc", cmd_strtoc, subr_strtoc, (VALUE string), V_Subr1, DOC_strtoc) /*
-::doc:strtoc::
-strtoc STRING
-
-Returns the first character of STRING.
-::end:: */
-{
-    DECLARE1(string, STRINGP);
-    return(make_number((long)*VSTR(string)));
-}
-
-_PR VALUE cmd_ctostr(VALUE ch);
-DEFUN("ctostr", cmd_ctostr, subr_ctostr, (VALUE ch), V_Subr1, DOC_ctostr) /*
-::doc:ctostr::
-ctostr CHAR
-
-Returns a one-character string containing CHAR.
-::end:: */
-{
-    u_char tmp[2];
-    DECLARE1(ch, CHARP);
-    tmp[0] = (u_char)VCHAR(ch);
-    tmp[1] = 0;
-    return(string_dup(tmp));
-}
-
 _PR VALUE cmd_amiga_p(void);
 DEFUN("amiga-p", cmd_amiga_p, subr_amiga_p, (void), V_Subr0, DOC_amiga_p) /*
 ::doc:amiga_p::
@@ -440,6 +413,17 @@ minor-version-number
     return(minor_version_number);
 }
 
+_PR VALUE cmd_version_string(void);
+DEFUN("version-string", cmd_version_string, subr_version_string, (void), V_Subr0, DOC_version_string) /*
+::doc:version_string::
+version-string
+
+Return a string identifying the current version of Jade.
+::end:: */
+{
+    return MKSTR(VERSSTRING);
+}
+
 _PR VALUE cmd_getenv(VALUE name);
 DEFUN("getenv", cmd_getenv, subr_getenv, (VALUE name), V_Subr1, DOC_getenv) /*
 ::doc:getenv::
@@ -469,8 +453,6 @@ misc_init(void)
     ADD_SUBR(subr_file_name_nondirectory);
     ADD_SUBR(subr_file_name_directory);
     ADD_SUBR(subr_balance_brackets);
-    ADD_SUBR(subr_strtoc);
-    ADD_SUBR(subr_ctostr);
     ADD_SUBR(subr_amiga_p);
     ADD_SUBR(subr_x11_p);
     ADD_SUBR(subr_unix_p);
@@ -480,5 +462,6 @@ misc_init(void)
     ADD_SUBR(subr_current_time_string);
     ADD_SUBR(subr_major_version_number);
     ADD_SUBR(subr_minor_version_number);
+    ADD_SUBR(subr_version_string);
     ADD_SUBR(subr_getenv);
 }
