@@ -21,6 +21,7 @@
 #define _GNU_SOURCE
 
 #include "repint.h"
+#include "build.h"
 
 #include <string.h>
 #include <stdlib.h>
