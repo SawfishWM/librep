@@ -1,3 +1,8 @@
+1998-11-29  John Harper  <john@jsh.org>
+
+	* keys.c (overriding-local-keymap): new variable, when non-nil,
+	overrides all local keymaps
+
 1998-11-24  John Harper  <john@dcs.warwick.ac.uk>
 
 	* keys.c: big changes. No longer have the keymap-path variable,

@@ -1,3 +1,15 @@
+1998-12-01  John Harper  <john@dcs.warwick.ac.uk>
+
+	* tex-mode.jl (tex-mode, latex-mode, plain-tex-mode): fix
+	documentation strings
+
+1998-11-29  John Harper  <john@dcs.warwick.ac.uk>
+
+	* loadkeys.jl (global-keymap): no longer buffer-local
+
+	* replace.jl (query-replace): use overriding-local-keymap to
+	install the keymap
+
 1998-11-26  John Harper  <john@dcs.warwick.ac.uk>
 
 	* mail-dir.jl (insert-mail-item): fix for when no name
@@ -5,14 +17,14 @@
 
 	* tex-mode.jl (latex-mode, plain-tex-mode): added autoload tags
 
-1998-11-25  John Harper  <john@jsh.org>
+1998-11-25  John Harper  <john@dcs.warwick.ac.uk>
 
 	* edit.jl (quoted-insert): new command, bound to C-q
 
 	* keymap.jl (next-event): new function
 	(read-event): new optional arg COOKED
 
-1998-11-24  John Harper  <john@jsh.org>
+1998-11-24  John Harper  <john@dcs.warwick.ac.uk>
 
 	* help.jl (describe-function): once more run
 	substitute-command-keys over the documentation
@@ -53,7 +65,7 @@
 
 	* buffers.jl (insert-buffer): new command
 
-1998-11-14  John Harper  <john@jsh.org>
+1998-11-14  John Harper  <john@dcs.warwick.ac.uk>
 
 	* c-mode.jl (c-indent-pos): don't recognize a semi-colon as
 	terminating a statement unless (ignoring following whitespace)
