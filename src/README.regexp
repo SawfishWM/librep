@@ -1,10 +1,7 @@
 
-This is a version of the "nearly-public-domain" regexp(3) regular expression
-matching library by Henry Spencer, I have modified it slightly to meet my
-needs, this is what I've done,
+This is a version of Henry Spencer's famous regexp implementation. I've
+modified it to meet my needs, this is what I've done:
 
-    1) if "__STDC__" is defined ANSI function prototypes are used, this is
-       so a register based call-interface is possible.
     2) added a new function regsublen(), this performs a dry run of the
        regsub() function returning the length of the string needed to hold
        the output from regsub().
@@ -20,6 +17,7 @@ needs, this is what I've done,
     7) Altered the regexp structure to allow storing of subexpressions as
        positions in a Jade buffer. Also altered calling conventions of
        regsub() and regsublen() to support this.
+    8) support \w, \W, \s, \S, \d, \D, \b, \B, *?, +?, ?? syntax (as in Perl)
 
 And probably some other things as well. Obviously all errors are my
 responsibility. The original README follows,

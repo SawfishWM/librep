@@ -1,3 +1,16 @@
+1999-05-31  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep_regexp.h (NGSTAR, NGPLUS): new operators, non-greedy plus
+	and minus
+	* regexp.c: implemented non-greedy *, + and ? operators: *?, +?
+	and ?? (as in Perl)
+
+1999-05-30  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep_regexp.h, regexp.c (WORD, NWORD, WSPC, NWSPC, DIGI,
+	NDIGI, WEDGE, NWEDGE): new operators; they are Perl's \w, \W,
+	\s, \S, \d, \D, \b, \B syntax, respectively
+
 1999-05-29  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lispcmds.c (rep_lispcmds_init): add a null string to the end
