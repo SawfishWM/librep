@@ -655,7 +655,7 @@ again:
 	    goto rep_CONCAT(op_,OP_REFQ);
 
 	CASE_OP_ARG(OP_SETG)
-	    tmp = rep_SYM(rep_VECT(consts)->array[arg])->value;
+	    tmp = rep_VECT(consts)->array[arg];
 	    rep_SYM(tmp)->value = RET_POP;
 	    goto fetch;
 
