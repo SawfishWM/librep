@@ -79,27 +79,36 @@
     (let ((op (gensym))
 	  (args (gensym))
 	  (self (gensym))
-	  (base (gensym)))
-      `(letrec ((,base ,base-object)
-		(,self
-		 (lambda (,op #!key (self ,self) . ,args)
-		   (case ,op
-		     ,@(mapcar (lambda (method)
-				 (cond ((consp (car method))
-					;; ((METHOD-NAME . PARAM-LIST) BODY...)
-					`((,(caar method))
-					  (let ,(make-let-bindings
-						 (cdar method) args)
-					    ,@(cdr method))))
-				       ((symbolp (car method))
-					;; (METHOD-NAME FUNCTION)
-					`((,(car method))
-					  (apply ,(cadr method) ,args)))))
-			       methods)
-		     (t (if ,base
-			    (apply ,base ,op #:self self ,args)
-			  (signal 'unknown-method (list ,op))))))))
-	 ,self)))
+	  (base (gensym))
+	  (lambdas '()))
+      (let ((clauses
+	     (mapcar
+	      (lambda (method)
+		(cond ((consp (car method))
+		       ;; ((METHOD-NAME . PARAM-LIST) BODY...)
+		       `((,(caar method))
+			 (let ,(make-let-bindings
+				(cdar method) args)
+			   ,@(cdr method))))
+		      ((symbolp (car method))
+		       ;; (METHOD-NAME FUNCTION)
+		       (if (eq (car (cadr method)) 'lambda)
+			   (let ((tem (gensym)))
+			     (setq lambdas (cons (list tem (cadr method)) lambdas))
+			     `((,(car method)) (apply ,tem ,args)))
+			 `((,(car method))
+			   (apply ,(cadr method) ,args))))))
+	      methods)))
+	`(let ((,base ,base-object)
+	       ,@lambdas)
+	   (letrec ((,self
+		     (lambda (,op #!key (self ,self) . ,args)
+		       (case ,op
+			 ,@clauses
+			 (t (if ,base
+				(apply ,base ,op #:self self ,args)
+			      (signal 'unknown-method (list ,op))))))))
+	     ,self)))))
 
   (define objectp closurep)
 

@@ -1,3 +1,10 @@
+2001-07-30  John Harper  <jsh@pixelslut.com>
+
+	* rep/data/objects.jl: move method bodies that are lambda
+	expressions into a let block outside the object's lambda in the
+	expansion, then reference their new names. This avoids consing
+	a new closure each time a method is called
+
 2001-07-28  John Harper  <jsh@pixelslut.com>
 
 	* rep/io/file-handlers/tilde.jl: fixed the logic for
