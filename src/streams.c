@@ -787,6 +787,7 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
     repv stream, format, extra_formats = rep_NULL;
     rep_GC_root gc_stream, gc_format, gc_args, gc_extra_formats;
     u_char c;
+    int this_arg = 0;
 
     if(!rep_CONSP(args))
 	return rep_signal_missing_arg(1);
@@ -822,11 +823,39 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 	    char *flags_start, *flags_end;
 	    char *width_start, *width_end;
 	    int field_width = 0;
+	    char *tem;
 
 	    if(last_fmt != fmt)
 		rep_stream_puts(stream, last_fmt, fmt - last_fmt - 1, rep_FALSE);
 
-	    /* First scan for flags */
+	    /* Parse the `n$' prefix */
+	    tem = fmt;
+	    while (1)
+	    {
+		switch (*tem++)
+		{
+		    int arg;
+
+		case '0': case '1': case '2': case '3': case '4':
+		case '5': case '6': case '7': case '8': case '9':
+		    break;
+
+		case '$':
+		    arg = atoi (fmt);
+		    if (arg > 0)
+		    {
+			this_arg = arg - 1;
+			fmt = tem;
+		    }
+		    goto parse_flags;
+
+		default:
+		    goto parse_flags;
+		}
+	    }
+
+	parse_flags:
+	    /* Then scan for flags */
 	    flags_start = fmt;
 	    c = *fmt++;
 	    while(1)
@@ -867,15 +896,14 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 		rep_stream_putc(stream, '%');
 	    else
 	    {
-		repv val, fun;
+		repv fun;
+		repv val = Fnth (rep_MAKE_INT(this_arg), args);
 
-		if(!rep_CONSP(args))
+		if (val == rep_NULL)
 		{
-		    stream = rep_signal_missing_arg(0);
+		    stream = rep_NULL;
 		    goto exit;
 		}
-		val = rep_CAR(args);
-		args = rep_CDR(args);
 
 		switch(c)
 		{
@@ -968,6 +996,7 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 			}
 		    }
 		}
+		this_arg++;
 	    }
 	    last_fmt = fmt;
 	}
