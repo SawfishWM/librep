@@ -87,6 +87,7 @@ extern void rep_streams_init(void);
 
 /* from structures.c */
 extern repv rep_default_structure, rep_specials_structure;
+extern repv F_make_structure (repv, repv, repv, repv);
 extern repv F_structure_ref (repv, repv);
 extern repv F_structure_set (repv, repv, repv);
 extern repv F_external_structure_ref (repv, repv);

@@ -1,5 +1,8 @@
 2000-04-09  John Harper  <john@dcs.warwick.ac.uk>
 
+	* rep_lisp.h (rep_symbol): removed `prop_list' field
+	* symbols.c (plist_structure): namespace for property lists
+
 	* unix_dl.c (rep_open_dl_library): don't return 0 if the dl has
 	already been loaded
 
