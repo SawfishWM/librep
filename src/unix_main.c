@@ -48,15 +48,18 @@ _PR u_long file_mod_time(u_char *);
 _PR void sys_misc_init(void);
 
 _PR bool same_files(u_char *, u_char *);
-_PR u_char * file_part(u_char *);
+_PR u_char *file_part(u_char *);
 _PR VALUE lookup_errno(void);
-_PR void doconmsg(u_char *);
 _PR VALUE read_file(u_char *);
 _PR long sys_file_length(u_char *);
 _PR u_long sys_time(void);
 _PR int add_file_part(u_char *, const u_char *, int);
 _PR VALUE sys_expand_file_name(VALUE);
 _PR VALUE sys_fully_qualify_file_name(VALUE);
+
+_PR void register_input_fd(int fd, void (*callback)(int fd));
+_PR void deregister_input_fd(int fd);
+_PR VALUE event_loop(void);
 
 bool
 same_files(u_char *file1, u_char *file2)
@@ -129,12 +132,6 @@ lookup_errno(void)
     else
         return(MKSTR("<error>"));
 #endif
-}
-
-void
-doconmsg(u_char *msg)
-{
-    fputs(msg, stderr);
 }
 
 VALUE
@@ -803,6 +800,133 @@ sys_fully_qualify_file_name(VALUE name)
 	    return(string_dup(buf));
     }
     return LISP_NULL;
+}
+
+
+/* Main input loop */
+
+/* This is the set of fds we're waiting for input from. */
+static fd_set input_fdset;
+
+/* For every bit set in unix_fd_read_set there should be a corresponding
+   function in here that will be called when input becomes available.
+   -- Is this really such a good idea, it's a lot of wasted space.. */
+static void (*input_actions[FD_SETSIZE])(int);
+
+/* The length of time since the last input. */
+static long idle_period;
+
+void
+register_input_fd(int fd, void (*callback)(int fd))
+{
+    static bool initialised = FALSE;
+    if(!initialised)
+    {
+	/* This function will be called before the sys_misc_init()
+	   function is called. */
+	FD_ZERO(&input_fdset);
+	initialised = TRUE;
+    }
+
+    FD_SET(fd, &input_fdset);
+    input_actions[fd] = callback;
+}
+
+void
+deregister_input_fd(int fd)
+{
+    FD_CLR(fd, &input_fdset);
+    input_actions[fd] = NULL;
+}
+
+/* The input handler loop. */
+VALUE
+event_loop(void)
+{
+    VALUE result = sym_nil;
+    recurse_depth++;
+
+    curr_vw->vw_Flags |= VWFF_REFRESH_STATUS;
+    refresh_world_curs();
+
+    while(curr_win != NULL)
+    {
+	fd_set copy;
+	struct timeval timeout;
+	int ready, i;
+	bool refreshp = FALSE;
+
+	sys_flush_output();
+
+	memcpy(&copy, &input_fdset, sizeof(copy));
+	timeout.tv_sec = EVENT_TIMEOUT_LENGTH;
+	timeout.tv_usec = 0;
+
+#ifdef HAVE_SUBPROCESSES
+	/* Don't want select() to restart after a SIGCHLD; there may be
+	   a notification to dispatch.  */
+	sigchld_restart(FALSE);
+#endif
+
+	ready = select(FD_SETSIZE, &copy, NULL, NULL, &timeout);
+
+#ifdef HAVE_SUBPROCESSES
+	sigchld_restart(TRUE);
+#endif
+
+	if(ready > 0)
+	{
+	    idle_period = 0;
+
+	    /* no need to test first 3 descriptors */
+	    for(i = 3; i < FD_SETSIZE && ready > 0; i++)
+	    {
+		if(FD_ISSET(i, &copy))
+		{
+		    ready--;
+		    if(input_actions[i] != NULL)
+		    {
+			input_actions[i](i);
+			refreshp = TRUE;
+		    }
+		}
+	    }
+	}
+	else if(ready == 0)
+	{
+	    /* A timeout. The following isn't accurate, but it's
+	       not important */
+	    idle_period += EVENT_TIMEOUT_LENGTH;
+
+	    if(on_idle(idle_period))
+		refreshp = TRUE;
+	}
+
+#ifdef HAVE_SUBPROCESSES
+	if(proc_periodically())
+	    refreshp = TRUE;
+#endif
+
+	/* Check for exceptional conditions. */
+	if(throw_value != LISP_NULL)
+	{
+	    if(handle_input_exception(&result))
+		goto end;
+	    else
+		refreshp = TRUE;
+	}
+
+	if(refreshp)
+	{
+	    undo_end_of_command();
+	    curr_vw->vw_Flags |= VWFF_REFRESH_STATUS;
+	    refresh_world_curs();
+	}
+    }
+
+end:
+    recurse_depth--;
+    return result;
 }
 
 
