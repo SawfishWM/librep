@@ -1,3 +1,7 @@
+2000-03-15  John Harper  <john@dcs.warwick.ac.uk>
+
+	* datums.c: plugin for user-defined opaque data types
+
 2000-03-14  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lisp.c (rep_readl): some work to accept standard CL and
