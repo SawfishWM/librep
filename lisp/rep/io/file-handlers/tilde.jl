@@ -51,7 +51,7 @@
       ;; that things like "~/foo/../bar" expand to "~/bar"
       (let
 	  ((file-name (car args)))
-	(if (string-looking-at "~[^/]*/?" file-name)
+	(if (string-looking-at "~[^/]+/?" file-name)
 	    (concat (substring file-name (match-start) (match-end))
 		    (expand-file-name (substring file-name (match-end)) "."))
 	  file-name)))
