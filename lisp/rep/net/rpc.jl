@@ -251,7 +251,7 @@ server sockets."
       (socket-result-pending-set! (socket-data socket) result-callback)
       (unwind-protect
 	  (while (not result)
-	    (accept-process-output))
+	    (accept-process-output 60))
 	(socket-result-pending-set! (socket-data socket) old-vector))
       (if (eq (car result) '#t)
 	  ;; success
@@ -322,6 +322,7 @@ becomes invalid."
 	      ((async)
 	       ;; async request - no result required
 	       (let ((socket (server-socket server port)))
+		 ;;(format standard-error "Wrote: %S\n" (cons servant-id (cddr args)))
 		 (write socket (prin1-to-string
 				;; cheap hack, vectors mean async
 				(apply vector (cons servant-id
@@ -329,6 +330,7 @@ becomes invalid."
 
 	  ;; otherwise, just forward to the server
 	  (let ((socket (server-socket server port)))
+	    ;;(format standard-error "Wrote: %S\n" (cons servant-id args))
 	    (write socket (prin1-to-string (cons servant-id args)))
 	    (wait-for-reponse socket))))))
 

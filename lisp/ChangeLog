@@ -1,3 +1,7 @@
+2001-06-29  John Harper  <jsh@pixelslut.com>
+
+	* rep/net/rpc.jl: minor changes
+
 2001-06-28  John Harper  <jsh@pixelslut.com>
 
 	* rep/net/rpc.jl (async-rpc-call, make-proxy,
