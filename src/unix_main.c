@@ -50,7 +50,6 @@ _PR void sys_misc_init(void);
 _PR bool same_files(u_char *, u_char *);
 _PR u_char *file_part(u_char *);
 _PR VALUE lookup_errno(void);
-_PR VALUE read_file(u_char *);
 _PR long sys_file_length(u_char *);
 _PR u_long sys_time(void);
 _PR int add_file_part(u_char *, const u_char *, int);
@@ -132,32 +131,6 @@ lookup_errno(void)
     else
         return(MKSTR("<error>"));
 #endif
-}
-
-VALUE
-read_file(u_char *fileName)
-{
-    FILE *fh = fopen(fileName, "r");
-    if(fh)
-    {
-	struct stat stat;
-	if(!fstat(fileno(fh), &stat))
-	{
-	    VALUE mem = make_string(stat.st_size + 1);
-	    if(mem)
-	    {
-		fread(VSTR(mem), 1, stat.st_size, fh);
-		VSTR(mem)[stat.st_size] = 0;
-		fclose(fh);
-		return(mem);
-	    }
-	    else
-		mem_error();
-	}
-	fclose(fh);
-    }
-    return(cmd_signal(sym_file_error,
-		      list_2(lookup_errno(), string_dup(fileName))));
 }
 
 long
