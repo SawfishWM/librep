@@ -284,7 +284,12 @@ rep_open_dl_library(repv file_name)
 	}
 	fclose(fh);
 	if (!dlname)
-	    signal_error ("Can't find dlname in .la object");
+	{
+	    char err[256];
+	    snprintf (err, sizeof (err), "Can't find dlname in %s",
+		      rep_STR (file_name));
+	    signal_error (err);
+	}
 	else
 	{
 	    rep_xsubr **functions;
