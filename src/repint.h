@@ -33,6 +33,12 @@
 
 #include "rep.h"
 
+#ifndef ENABLE_BROKEN_DUMPING
+  /* No point incurring the overhead if it's unnecessary */
+# undef rep_CONS_WRITABLE_P
+# define rep_CONS_WRITABLE_P(x) rep_TRUE
+#endif
+
 #ifdef rep_HAVE_UNIX
 # include "unix_defs.h"
 #else

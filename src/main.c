@@ -191,7 +191,11 @@ void
 rep_init(char *prog_name, int *argc, char ***argv,
 	 void (*sys_symbols)(void), void (*obsolete_sys_usage)(void))
 {
+#ifdef ENABLE_BROKEN_DUMPING
     char *dump_file = getenv ("REPDUMPFILE");
+#else
+    char *dump_file = 0;
+#endif
     rep_init_from_dump (prog_name, argc, argv,
 			sys_symbols, obsolete_sys_usage, dump_file);
 }
@@ -213,9 +217,11 @@ rep_init_from_dump(char *prog_name, int *argc, char ***argv,
     rep_pre_sys_os_init();
     if(rep_pre_symbols_init())
     {
+#ifdef ENABLE_BROKEN_DUMPING
 	char *tem = getenv ("REPUNDUMPED");
 	if (dump_file && (!tem || atoi(tem) == 0))
 	    rep_dumped_init (dump_file);
+#endif
 
 	rep_symbols_init();
 	rep_structures_init ();
