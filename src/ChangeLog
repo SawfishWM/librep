@@ -1,4 +1,18 @@
+2000-07-10  John Harper  <john@dcs.warwick.ac.uk>
+
+	* Makefile.in: include LDFLAGS in the --libs data when creating
+	rep-config
+
 2000-07-09  John Harper  <john@dcs.warwick.ac.uk>
+
+	* repgdbm.c (Fgdbm_open): added optional arg FLAGS, a list of
+	symbols. Only current flag is `no-lock' which means to pass the
+	GDBM_NOLOCK flag when opening the db
+
+	* lispmach.c, bytecodes.h: expand OP_REFN into OP_REFN_[0-7],
+	then implement each variant separately. This allows the first
+	six to know exactly how many cdr's to take, at compile time,
+	giving a 10% speedup (on the `prime' kernel)
 
 	* unix_dl.c (load_requires): use F_intern_structure instead of
 	Frequire (so that the secondary modules aren't opened in the

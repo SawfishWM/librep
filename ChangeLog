@@ -1,3 +1,7 @@
+2000-07-10  John Harper  <john@dcs.warwick.ac.uk>
+
+	* librep.spec.in: replaced `/usr/info' by `%{_infodir}'
+
 2000-07-06  John Harper  <john@dcs.warwick.ac.uk>
 
 	* Makefile.in, lisp/Makefile.in, man/Makefile.in,

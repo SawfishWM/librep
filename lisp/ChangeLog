@@ -1,5 +1,7 @@
 2000-07-09  John Harper  <john@dcs.warwick.ac.uk>
 
+	* lisp-doc.jl (doc-file-ref): pass `no-lock' flag to gdbm-open
+
 	* rep-repl.jl (repl): only catch end-of-stream errors when
 	reading, not when evaluating
 
