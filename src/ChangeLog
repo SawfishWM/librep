@@ -1,3 +1,15 @@
+2000-03-19  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.c (rep_bind_lambda_list, rep_eval_lambda): both have an
+	extra argument, EVAL-IN-ENV. When true rep_bind_lambda_list
+	won't evaluate the arguments in the _previous_ innermost
+	environment, but the _current_ innermost environment. All
+	callers changed.
+
+	(eval): call inline lambda expressions directly, without
+	evaluating the car to a closure that is then discarded
+	immediately
+
 2000-03-15  John Harper  <john@dcs.warwick.ac.uk>
 
 	* datums.c: plugin for user-defined opaque data types
