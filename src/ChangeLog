@@ -1,3 +1,8 @@
+1998-08-11  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.c (funcall): support for autoloading macros (but only if
+	the list of arguments is still to be evaluated)
+
 1998-08-10  John Harper  <john@dcs.warwick.ac.uk>
 
 	* files.c (files_init): ADD_SUBR the make-file-from-stream

@@ -6,7 +6,7 @@ TODO list for Jade
 Bugs are marked !, things that should be done soon are marked +,
 and more long-term ideas are marked -
 
-Last modified: May 16, 1998
+Last modified: August 11, 1998
 
 
 Outstanding bugs
@@ -29,6 +29,11 @@ Outstanding bugs
 
  ! minor-mode-list and minor-mode-names are not permanent-local, but
    some of the minor modes need to be (i.e. rcs-mode)
+
+ ! non-local file handles aren't finalised correctly when they're
+   garbage collected, they're simply deallocated without calling
+   close-file on them (this could be construed a ``feature'' rather
+   than a bug?)
 
 
 General programming tasks:

@@ -1,5 +1,8 @@
 1998-08-11  John Harper  <john@dcs.warwick.ac.uk>
 
+	* miranda.jl (miranda): ensure that a local-file-name is passed
+	to the subprocess
+
 	* find-autoloads.jl (autoload-do-magic): allow macros to have
 	autoload tags
 	* rm-restrict.jl (defrule): added autoload tag
