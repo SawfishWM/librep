@@ -68,6 +68,9 @@ DEFSYM(standard_output, "standard-output");
 
 DEFSYM(amp_optional, "&optional");
 DEFSYM(amp_rest, "&rest");
+DEFSYM(ex_optional, "#!optional");
+DEFSYM(ex_rest, "#!rest");
+DEFSYM(ex_key, "#!key");
 
 /* When a `throw' happens a function stuffs a cons-cell in here with,
    (TAG . repv).
@@ -944,7 +947,17 @@ rep_readl(repv strm, register int *c_p)
 			continue;
 		    }
 		}
-		goto error;
+		rep_stream_ungetc (strm, *c_p);
+		*c_p = '#';
+		return read_symbol (strm, c_p);
+
+	    case ':':
+		rep_stream_ungetc (strm, *c_p);
+		*c_p = '#';
+		form = read_symbol (strm, c_p);
+		if (form && rep_SYMBOLP (form))
+		    rep_SYM (form)->car |= rep_SF_KEYWORD;
+		return form;
 
 	    case 't': case 'T':
 	    case 'f': case 'F':
@@ -1081,7 +1094,7 @@ rep_bind_lambda_list_1 (repv lambdaList, repv *args, int nargs,
 			repv (*binder) (repv, repv, repv))
 {
     enum arg_state {
-	STATE_REQUIRED = 1, STATE_OPTIONAL, STATE_REST
+	STATE_REQUIRED = 1, STATE_OPTIONAL, STATE_KEY, STATE_REST
     };
 
     struct binding {
@@ -1105,24 +1118,34 @@ rep_bind_lambda_list_1 (repv lambdaList, repv *args, int nargs,
 	    argspec = rep_CAR (lambdaList);
 	    lambdaList = rep_CDR (lambdaList);
 
-	    if (rep_STR (rep_SYM (argspec)->name)[0] == '&')
+	    if (argspec == Qex_optional || argspec == Qamp_optional)
 	    {
+		static int dep;
 		if (argspec == Qamp_optional)
-		{
-		    if (state > STATE_OPTIONAL)
-			return Fsignal (Qinvalid_lambda_list,
-					rep_LIST_1 (lambdaList));
-		    state = STATE_OPTIONAL;
-		    continue;
+		    rep_deprecated (&dep, "&optional in lambda list");
+		if (state >= STATE_OPTIONAL) {
+		invalid: return Fsignal (Qinvalid_lambda_list,
+					 rep_LIST_1 (lambdaList));
 		}
-		else if (argspec == Qamp_rest)
-		{
-		    if (state > STATE_REST)
-			return Fsignal (Qinvalid_lambda_list,
-					rep_LIST_1 (lambdaList));
-		    state = STATE_REST;
-		    continue;
-		}
+		state = STATE_OPTIONAL;
+		continue;
+	    }
+	    else if (argspec == Qex_key)
+	    {
+		if (state >= STATE_KEY)
+		    goto invalid;
+		state = STATE_KEY;
+		continue;
+	    }
+	    else if (argspec == Qex_rest || argspec == Qamp_rest)
+	    {
+		static int dep;
+		if (argspec == Qamp_rest)
+		    rep_deprecated (&dep, "&rest in lambda list");
+		if (state >= STATE_REST)
+		    goto invalid;
+		state = STATE_REST;
+		continue;
 	    }
 	}
 	else if (lambdaList != Qnil && rep_SYMBOLP (lambdaList))
@@ -1141,6 +1164,9 @@ rep_bind_lambda_list_1 (repv lambdaList, repv *args, int nargs,
 
 	switch (state)
 	{
+	    repv key;
+            int i;
+
 	case STATE_REQUIRED:
 	case STATE_OPTIONAL:
 	    if (nargs > 0)
@@ -1157,15 +1183,32 @@ rep_bind_lambda_list_1 (repv lambdaList, repv *args, int nargs,
 	    }
 	    break;
 
+	case STATE_KEY:
+	    key = Fmake_keyword (argspec);
+	    item->value = Qnil;
+	    for (i = 0; i < nargs - 1; i += 2)
+	    {
+		if (args[i] == key && args[i+1] != rep_NULL)
+		{
+		    item->value = args[i+1];
+		    args[i] = args[i+1] = rep_NULL;
+		    break;
+		}
+	    }
+	    break;
+
 	case STATE_REST:
 	    {
 		repv list = Qnil;
 		repv *ptr = &list;
 		while (nargs > 0)
 		{
-		    *ptr = Fcons (*args++, Qnil);
-		    ptr = rep_CDRLOC (*ptr);
-		    nargs--;
+		    if (*args != rep_NULL)
+		    {
+			*ptr = Fcons (*args, Qnil);
+			ptr = rep_CDRLOC (*ptr);
+		    }
+		    args++; nargs--;
 		}
 		item->value = list;
 	    }
@@ -1194,7 +1237,11 @@ out:
 
 /* format of lambda-lists is something like,
 
-   [{required-symbols}] [&optional {optional-symbols}] [&rest symbol]
+   [<required-params>*] [#!optional <optional-params>*]
+   [#!key <keyword-params>*] [#!rest <rest-param>]
+
+   A keyword parameter X is associated with an argument by a keyword
+   symbol #:X. If no such symbol exists, it's bound to false
 
    Note that the lambdaList arg isn't protected from gc by this
    function; it's assumed that this is done by the caller.
@@ -1642,7 +1689,10 @@ eval(repv obj, repv tail_posn)
 	repv ret;
 
     case rep_Symbol:
-	return Fsymbol_value(obj, Qnil);
+	if (!rep_KEYWORDP (obj))
+	    return Fsymbol_value(obj, Qnil);
+	else
+	    return obj;
 
     case rep_Cons:
 	if (++rep_lisp_depth > rep_max_lisp_depth)
@@ -2438,6 +2488,10 @@ rep_lisp_init(void)
     rep_INTERN_SPECIAL(debug_entry); rep_INTERN_SPECIAL(debug_exit);
     rep_INTERN_SPECIAL(debug_error_entry);
     rep_INTERN(amp_optional); rep_INTERN(amp_rest);
+    rep_INTERN(ex_optional); rep_INTERN(ex_rest); rep_INTERN(ex_key);
+    rep_SYM(Qex_optional)->car |= rep_SF_LITERAL;
+    rep_SYM(Qex_rest)->car |= rep_SF_LITERAL;
+    rep_SYM(Qex_key)->car |= rep_SF_LITERAL;
     rep_mark_static((repv *)&rep_throw_value);
 
     tem = rep_push_structure ("rep.lang.interpreter");
