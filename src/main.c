@@ -76,29 +76,65 @@ DEFSTRING(noarg, "No argument for option");
 rep_bool
 rep_get_option (char *option, repv *argp)
 {
-    repv opt = rep_string_dup (option);
-    repv tem = Fmember (opt, rep_SYM(Qcommand_line_args)->value);
-    if (tem && tem != Qnil)
+    int optlen = strlen(option);
+    repv tem = rep_SYM(Qcommand_line_args)->value;
+    while (!rep_INTERRUPTP && rep_CONSP(tem) && rep_STRINGP(rep_CAR(tem)))
     {
-	if (argp != 0)
+	if (strncmp (option, rep_STR(rep_CAR(tem)), optlen) == 0)
 	{
-	    if (!rep_CONSP(rep_CDR(tem)))
+	    repv opt = rep_CAR(tem), cdr = rep_CDR(tem);
+	    if (rep_STR(opt)[optlen] == '=' || rep_STR(opt)[optlen] == 0)
 	    {
-		Fsignal (Qerror, rep_list_2(rep_VAL(&noarg), opt));
-		return rep_FALSE;
-	    }
-	    else
-	    {
-		*argp = rep_CAR(rep_CDR(tem));
-		rep_CDR(tem) = rep_CDR(rep_CDR(tem));
+		rep_SYM(Qcommand_line_args)->value
+		    = Fdelq (opt, rep_SYM(Qcommand_line_args)->value);
+		if (argp != 0)
+		{
+		    if (rep_STR(opt)[optlen] == '=')
+		    {
+			*argp = rep_string_dup (rep_STR(opt) + optlen + 1);
+			return rep_TRUE;
+		    }
+		    else if (rep_CONSP(cdr) && rep_STRINGP(rep_CAR(cdr)))
+		    {
+			*argp = rep_CAR(cdr);
+			rep_SYM(Qcommand_line_args)->value
+			    = Fdelq (*argp, rep_SYM(Qcommand_line_args)->value);
+			return rep_TRUE;
+		    }
+		    else
+		    {
+			Fsignal (Qerror, rep_list_2(rep_VAL(&noarg),
+						    rep_string_dup(option)));
+			return rep_FALSE;
+		    }
+		}
+		else
+		    return rep_TRUE;
 	    }
 	}
-	rep_SYM(Qcommand_line_args)->value
-	    = Fdelq (rep_CAR(tem), rep_SYM(Qcommand_line_args)->value);
-	return rep_TRUE;
+	tem = rep_CDR(tem);
+	rep_TEST_INT;
     }
+    return rep_FALSE;
+}
+
+DEFUN("get-command-line-option", Fget_command_line_option,
+      Sget_command_line_option, (repv opt, repv arg), rep_Subr2) /*
+::doc:get-command-line-option::
+get-command-line-option OPTION [REQUIRES-ARGUMENT]
+
+Returns t if OPTION was specified on the command line (OPTION is typically
+a word beginning with `--'). If REQUIRES-ARGUMENT is non-nil, this option
+requires a parameter, the value of which is returned. If a parameters isn't
+supplied an error is signalled.
+::end:: */
+{
+    repv param = Qt;
+    rep_DECLARE1(opt, rep_STRINGP);
+    if (rep_get_option (rep_STR(opt), (arg == Qnil) ? 0 : &param))
+	return param;
     else
-	return rep_FALSE;
+	return (arg == Qnil) ? Qnil : rep_NULL;
 }
 
 static int
@@ -359,4 +395,5 @@ rep_main_init(void)
     rep_SYM(Qbatch_mode)->value = Qnil;
     rep_INTERN(interpreted_mode);
     rep_SYM(Qinterpreted_mode)->value = Qnil;
+    rep_ADD_SUBR(Sget_command_line_option);
 }
