@@ -219,14 +219,11 @@ number_sweep(void)
 static repv
 dup__ (repv in)
 {
-    switch (rep_NUMERIC_TYPE (in))
+    switch (rep_NUMBER_TYPE (in))
     {
 	rep_number_z *z;
 	rep_number_q *q;
 	rep_number_f *f;
-
-    case rep_NUMBER_INT:
-	return in;
 
     case rep_NUMBER_BIGNUM:
 	z = make_number (rep_NUMBER_BIGNUM);
@@ -325,11 +322,12 @@ promote_to (repv in, int type)
     }
 }
 
+/* IN must be a non-fixnum number */
 static repv
-maybe_demote__ (repv in)
+maybe_demote (repv in)
 {
     assert (rep_NUMBERP(in));
-    switch (rep_NUMERIC_TYPE(in))
+    switch (rep_NUMBER_TYPE(in))
     {
     case rep_NUMBER_RATIONAL:
 	if (mpz_cmp_ui (mpq_denref (rep_NUMBER (in,q)), 1) == 0)
@@ -350,15 +348,6 @@ maybe_demote__ (repv in)
 	}
     }
     return in;
-}
-
-static inline repv
-maybe_demote (repv in)
-{
-    if (rep_INTP (in))
-	return in;
-    else
-	return maybe_demote__ (in);
 }
 
 static repv
