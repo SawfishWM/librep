@@ -13,6 +13,7 @@ Outstanding bugs
 ================
 
  ! How does the return function work with open-coded functions? Not
+   [A guest modification]
    very well probably..
 
  ! Change most uses of make-buffer to use open-buffer, and only
