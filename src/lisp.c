@@ -157,6 +157,8 @@ The maximum number of list elements to print before abbreviating.
 The number of list levels to descend when printing before abbreviating.
 ::end:: */
 
+DEFSYM(autoload_verbose, "autoload-verbose");
+
 /* When rep_TRUE Feval() calls the "debug-entry" function */
 rep_bool rep_single_step_flag;
 
@@ -938,7 +940,9 @@ rep_load_autoload(repv fun, repv aload_def, rep_bool is_variable)
 
 	    u_char *old_msg;
 	    u_long old_msg_len;
-	    if (rep_SYM (Qbatch_mode)->value == Qnil && rep_message_fun != 0)
+	    if (rep_SYM (Qbatch_mode)->value == Qnil
+		&& rep_SYM (Qautoload_verbose)->value != Qnil
+		&& rep_message_fun != 0)
 	    {
 		(*rep_message_fun)(rep_save_message, &old_msg, &old_msg_len);
 		(*rep_message_fun)(rep_messagef,
@@ -952,7 +956,9 @@ rep_load_autoload(repv fun, repv aload_def, rep_bool is_variable)
 	    tmp = Fload(file, Qt, Qnil, Qnil);
 	    rep_POPGC; rep_POPGC;
 
-	    if (rep_SYM (Qbatch_mode)->value == Qnil && rep_message_fun != 0)
+	    if (rep_SYM (Qbatch_mode)->value == Qnil
+		&& rep_SYM (Qautoload_verbose)->value != Qnil
+		&& rep_message_fun != 0)
 	    {
 		(*rep_message_fun)(rep_messagef,
 				   "Loading %s...done.", rep_STR(file));
@@ -2090,4 +2096,6 @@ rep_lisp_init(void)
     rep_SYM(Qprint_length)->value = Qnil;
     rep_SYM(Qprint_level)->value = Qnil;
     rep_INTERN(newlines);
+
+    rep_INTERN(autoload_verbose);
 }
