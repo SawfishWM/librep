@@ -51,7 +51,7 @@ _PR VALUE readl(VALUE, int *);
 
 _PR VALUE bindlambdalist(VALUE lambdaList, VALUE argList, bool eval_args);
 _PR VALUE eval_lambda(VALUE, VALUE, bool eval_args);
-_PR VALUE load_autoload(VALUE, VALUE);
+_PR VALUE load_autoload(VALUE, VALUE, bool);
 _PR VALUE funcall(VALUE fun, VALUE arglist, bool eval_args);
 
 _PR VALUE call_lisp0(VALUE);
@@ -918,10 +918,12 @@ eval_lambda(VALUE lambdaExp, VALUE argList, bool eval_args)
 
 /* Autoloads a function, FUN is the symbol of the function, ALOAD-DEF is
    the `(autoload FILE-NAME ...)' object. This function may cause a gc.
-   Returns the new function-value of FUN, or NULL for an error. */
+   Returns the new function-value of FUN, or NULL for an error.
+   If IS-VARIABLE is true, then return the value-slot of FUN, but do
+   everything else the same. */
 DEFSTRING(invl_autoload, "Can only autoload from symbols");
 VALUE
-load_autoload(VALUE fun, VALUE aload_def)
+load_autoload(VALUE fun, VALUE aload_def, bool is_variable)
 {
     if(!SYMBOLP(fun))
     {
@@ -933,30 +935,35 @@ load_autoload(VALUE fun, VALUE aload_def)
     else
     {
 	VALUE autoload = VCDR(aload_def);
-	if(CONSP(autoload))
+	if(CONSP(autoload) && STRINGP(VCAR(autoload)))
 	{
-	    /* trash the autoload defn, this way I make sure
-	       that we don't keep trying to autoload a function
-	       indefinitely.  */
-	    GC_root gc_fun, gc_aload_def;
+	    VALUE file = VCAR(autoload);
+	    GC_root gc_fun, gc_file;
 	    VALUE tmp;
+
 	    u_char *old_msg;
 	    u_long old_msg_len;
 	    save_message(curr_win, &old_msg, &old_msg_len);
-	    messagef("Loading %s...", VSTR(VCAR(autoload)));
+	    messagef("Loading %s...", VSTR(file));
 	    redisplay_message(curr_win);
 
-	    PUSHGC(gc_fun, fun); PUSHGC(gc_aload_def, aload_def);
-	    VCAR(aload_def) = sym_nil;
-	    tmp = cmd_load(VCAR(autoload), sym_t, sym_nil, sym_nil);
+	    PUSHGC(gc_fun, fun); PUSHGC(gc_file, file);
+	    /* trash the autoload defn, so we don't keep trying to
+	       autoload indefinitely.  */
+	    VCAR(autoload) = sym_nil;
+	    tmp = cmd_load(file, sym_t, sym_nil, sym_nil);
 	    POPGC; POPGC;
 
-	    messagef("Loading %s...done.", VSTR(VCAR(autoload)));
+	    messagef("Loading %s...done.", VSTR(file));
 	    redisplay_message(curr_win);
 	    restore_message(curr_win, old_msg, old_msg_len);
 
 	    if(tmp && !NILP(tmp))
-		return cmd_symbol_function(fun, sym_nil);
+	    {
+		return (!is_variable
+			? cmd_symbol_function(fun, sym_nil)
+			: cmd_symbol_value(fun, sym_nil));
+	    }
 	}
 	return cmd_signal(sym_invalid_autoload, LIST_1(fun));
     }
@@ -1137,7 +1144,7 @@ again:
 	}
 	else if(car == sym_autoload)
 	{
-	    car = load_autoload(origfun, fun);
+	    car = load_autoload(origfun, fun, FALSE);
 	    if(car)
 	    {
 		fun = origfun;
