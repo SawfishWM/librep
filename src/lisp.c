@@ -224,6 +224,10 @@ struct Lisp_Call *lisp_call_stack;
 
 static int lisp_depth, max_lisp_depth = 500;
 
+/* Used to avoid costly interrupt checking too often */
+_PR int lisp_test_int_counter;
+int lisp_test_int_counter = 0;
+
 
 /* Reading */
 
