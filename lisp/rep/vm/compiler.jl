@@ -210,6 +210,8 @@ that files which shouldn't be compiled aren't."
   (signal 'compile-error data))
 
 (defun comp-warning (string)
+  (unless (memq comp-buffer buffer-list)
+    (add-buffer comp-buffer))
   (goto-buffer comp-buffer)
   (insert "Warning: ")
   (when comp-current-file
