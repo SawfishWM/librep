@@ -18,6 +18,16 @@
    along with Jade; see the file COPYING.	If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
+/* Define this symbol to disable the code that tries to predict how many
+   lines a file of length N will contain. */
+/* #define NO_ADAPTIVE_LOADING */
+
+/* When loading files into buffers, read this many lines before trying to
+   predict how many lines the file actually contains, based on the average
+   line length up to this point. This prediction is re-calibrated each time
+   new lines subsequently need to be allocated. */
+#define ADAPTIVE_INITIAL_SAMPLES 64
+
 #include "jade.h"
 #include <lib/jade_protos.h>
 
@@ -55,6 +65,8 @@
    (copy-file SOURCE DEST)
    (copy-file-to-local-fs SOURCE LOCAL-DEST)
    (copy-file-from-local-fs LOCAL-SOURCE DEST)
+   (make-directory NAME)
+   (delete-directory NAME)
 
    (file-exists-p NAME)
    (file-regular-p NAME)
@@ -108,6 +120,8 @@ DEFSYM(read_file_contents, "read-file-contents");
 DEFSYM(insert_file_contents, "insert-file-contents");
 DEFSYM(delete_file, "delete-file");
 DEFSYM(rename_file, "rename-file");
+DEFSYM(make_directory, "make-directory");
+DEFSYM(delete_directory, "delete-directory");
 DEFSYM(copy_file, "copy-file");
 DEFSYM(copy_file_to_local_fs, "copy-file-to-local-fs");
 DEFSYM(copy_file_from_local_fs, "copy-file-from-local-fs");
@@ -163,6 +177,8 @@ enum file_ops {
     op_insert_file_contents,
     op_delete_file,
     op_rename_file,
+    op_make_directory,
+    op_delete_directory,
     op_copy_file,
     op_copy_file_to_local_fs,
     op_copy_file_from_local_fs,
@@ -1116,6 +1132,47 @@ this almost certainly won't work across filing systems.
 	return cmd_signal(sym_file_error, LIST_1(VAL(&cant_rename)));
 }
 
+_PR VALUE cmd_make_directory(VALUE);
+DEFUN_INT("make-directory", cmd_make_directory, subr_make_directory,
+	  (VALUE dir_name), V_Subr1, DOC_make_directory,
+	  "DDirectory to create:") /*
+::doc:make_directory::
+make-directory DIRECTORY-NAME
+
+Create a directory called DIRECTORY-NAME.
+::end:: */
+{
+    VALUE handler = expand_and_get_handler(&dir_name, op_make_directory);
+    if(!handler)
+	return handler;
+    if(NILP(handler))
+	return sys_make_directory(dir_name);
+    else
+	return call_handler(handler, op_make_directory, sym_make_directory,
+			    1, dir_name);
+}
+
+_PR VALUE cmd_delete_directory(VALUE);
+DEFUN_INT("delete-directory", cmd_delete_directory, subr_delete_directory,
+	  (VALUE dir_name), V_Subr1, DOC_delete_directory,
+	  "DDirectory to delete:") /*
+::doc:delete_directory::
+delete-directory DIRECTORY-NAME
+
+Delete the directory called DIRECTORY-NAME. Note that the directory in
+question should be empty.
+::end:: */
+{
+    VALUE handler = expand_and_get_handler(&dir_name, op_delete_directory);
+    if(!handler)
+	return handler;
+    if(NILP(handler))
+	return sys_delete_directory(dir_name);
+    else
+	return call_handler(handler, op_delete_directory, sym_delete_directory,
+			    1, dir_name);
+}
+
 _PR VALUE cmd_copy_file(VALUE, VALUE);
 DEFUN_INT("copy-file", cmd_copy_file, subr_copy_file, (VALUE src, VALUE dst),
 	  V_Subr2, DOC_copy_file, "fSource file:" DS_NL "FDestination file:") /*
@@ -1574,12 +1631,6 @@ Returns the name of a unique file in the local filing system.
 
 /* Low level stuff */
 
-/* The average number of chars-per-line in the last file read. At first
-   I tried an average over all files ever loaded; this seems better since
-   likely use will involve locality in loading similar files.
-   Initialised to a guessed value */
-static u_long last_avg_line_length = 40;
-
 /* Read a file into a tx structure, the line list should have been
    killed. FILE-LENGTH is the length of the file to be loaded, or -1
    if the length is unknown. */
@@ -1591,28 +1642,11 @@ read_file_into_tx(TX *tx, FILE *fh, long file_length)
     long len, linenum, alloced_lines, chars_read = 0;
     LINE *line;
 
-    /* First calculate the rate at which the line list is allocated. */
-    if(file_length > 0)
-    {
-	/* We know the length of the file, and the average chars-per-line
-	   of the last file loaded. */
-	long predicted_lines = file_length / last_avg_line_length;
-	if(predicted_lines < 64)
-	    predicted_lines = 64;
-	if(predicted_lines > 1024)
-	    predicted_lines = 1024;
-	if(!resize_line_list(tx, predicted_lines, 0))
-	    goto abortmem;
-	alloced_lines = predicted_lines;
-    }
-    else
-    {
-	/* Don't know the length of the file. Let resize_line_list()
-	   take care of everything. */
-	if(!resize_line_list(tx, 1, 0))
-	    goto abortmem;
-	alloced_lines = 1;
-    }
+    /* For the first N allocations, use the standard resize_line_list method,
+       even if we know the length of the file.. */
+    if(!resize_line_list(tx, 1, 0))
+	goto abortmem;
+    alloced_lines = 1;
     linenum = 0;
     line = tx->tx_Lines;
 
@@ -1649,29 +1683,31 @@ read_file_into_tx(TX *tx, FILE *fh, long file_length)
 
 	    if(++linenum >= alloced_lines)
 	    {
-		/* Need to grow the line list. If we don't know the size
-		   of the file just pass it off to resize_line_list().. */
-		if(file_length < 0)
-		{
-		    if(!resize_line_list(tx, 1, linenum))
-			goto abortmem;
-		    alloced_lines++;
-		}
-		else
+		/* Need to grow the line list. */
+#ifndef NO_ADAPTIVE_LOADING
+		if(file_length >= 0 && linenum > ADAPTIVE_INITIAL_SAMPLES)
 		{
 		    /* We know the file_length, and the average bytes-per-line
 		       so far. Re-calibrate our prediction of the total
 		       number of lines. */
 		    long predicted_lines = file_length * linenum / chars_read;
-		    /* Some restrictions on the growth rate */
+		    /* Ensure that at least some new lines are going
+		       to be allocated.. */
 		    if(predicted_lines < linenum + 32)
 			predicted_lines = linenum + 32;
-		    if(predicted_lines > linenum + 1024)
-			predicted_lines = linenum + 1024;
 		    if(!resize_line_list(tx, predicted_lines - alloced_lines,
 					 linenum))
 			goto abortmem;
 		    alloced_lines = predicted_lines;
+		}
+		else
+#endif
+		{
+		    /*  We don't know the size of the file;
+		        just pass it off to resize_line_list().. */
+		    if(!resize_line_list(tx, 1, linenum))
+			goto abortmem;
+		    alloced_lines++;
 		}
 		line = tx->tx_Lines + linenum;
 	    }
@@ -1723,11 +1759,6 @@ read_file_into_tx(TX *tx, FILE *fh, long file_length)
     if(!resize_line_list(tx, linenum - alloced_lines, linenum))
 	goto abortmem;
 
-    /* If the average line length seems sensible, set it as the
-       length of the "last-read" file */
-    if(chars_read / linenum > 10 && chars_read / linenum < 100)
-	last_avg_line_length = chars_read / linenum;
-
     tx->tx_LogicalStart = 0;
     tx->tx_LogicalEnd = tx->tx_NumLines;
 
@@ -1777,6 +1808,8 @@ files_init(void)
     INTERN(insert_file_contents);
     INTERN(delete_file);
     INTERN(rename_file);
+    INTERN(make_directory);
+    INTERN(delete_directory);
     INTERN(copy_file);
     INTERN(copy_file_to_local_fs);
     INTERN(copy_file_from_local_fs);
@@ -1826,6 +1859,8 @@ files_init(void)
     ADD_SUBR_INT(subr_delete_file);
     ADD_SUBR_INT(subr_rename_file);
     ADD_SUBR_INT(subr_copy_file);
+    ADD_SUBR_INT(subr_make_directory);
+    ADD_SUBR_INT(subr_delete_directory);
 
     ADD_SUBR(subr_file_readable_p);
     ADD_SUBR(subr_file_writable_p);
