@@ -385,7 +385,8 @@ wait_for_input(fd_set *inputs, u_long timeout_msecs)
 
 /* Handle the READY fds with pending input (defined by fdset INPUTS).
    If CALLBACK-TYPE is non-null, only invoke this function for input
-   arriving. Return true if the display might require updating. */
+   arriving. Return true if the display might require updating. Returns
+   immediately if a Lisp error has occurred. */
 static bool
 handle_input(fd_set *inputs, int ready)
 {
@@ -398,7 +399,7 @@ handle_input(fd_set *inputs, int ready)
 	idle_period = 0;
 
 	/* no need to test first 3 descriptors */
-	for(i = 3; i < FD_SETSIZE && ready > 0; i++)
+	for(i = 3; i < FD_SETSIZE && ready > 0 && !INT_P; i++)
 	{
 	    if(FD_ISSET(i, inputs))
 	    {
@@ -414,14 +415,14 @@ handle_input(fd_set *inputs, int ready)
     else if(ready == 0)
     {
 	/* A timeout. */
-	if(on_idle(idle_period))
+	if(!INT_P && on_idle(idle_period))
 	    refreshp = TRUE;
 
 	idle_period++;
     }
 
 #ifdef HAVE_SUBPROCESSES
-    if(proc_periodically())
+    if(!INT_P && proc_periodically())
 	refreshp = TRUE;
 #endif
 
@@ -481,7 +482,10 @@ sys_sit_for(u_long timeout_msecs)
     cmd_redisplay(sym_nil);
     memcpy(&copy, &input_fdset, sizeof(copy));
     ready = wait_for_input(&copy, timeout_msecs);
-    return (ready > 0) ? sym_nil : sym_t;
+    if(INT_P)
+	return LISP_NULL;
+    else
+	return (ready > 0) ? sym_nil : sym_t;
 }
 
 /* Wait TIMEOUT_MSECS for input, ignoring any input fds that would
@@ -499,9 +503,12 @@ sys_accept_input(u_long timeout_msecs, void *callback)
 	    FD_SET(i, &copy);
     }
     ready = wait_for_input(&copy, timeout_msecs);
-    if(ready > 0)
+    if(ready > 0 && !INT_P)
 	handle_input(&copy, ready);
-    return ready > 0 ? sym_nil : sym_t;
+    if(INT_P)
+	return LISP_NULL;
+    else
+	return ready > 0 ? sym_nil : sym_t;
 }
 
 
