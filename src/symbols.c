@@ -995,7 +995,7 @@ Returns t if SYMBOL has a default value.
     {
 	repv tem = search_special_bindings (sym);
 	if (tem != Qnil)
-	    return rep_VOIDP (rep_CDR (tem));
+	    return rep_VOIDP (rep_CDR (tem)) ? Qnil : Qt;
 	else
 	{
 	    tem = F_structure_ref (rep_specials_structure, sym);
