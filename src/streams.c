@@ -748,10 +748,11 @@ FORMAT-STRING is a template for the result, any `%' characters introduce
 a substitution, using the next unused ARG. The substitutions have the
 following syntax,
 
-	%[FLAGS][FIELD-WIDTH]CONVERSION
+	%[FLAGS][FIELD-WIDTH][.PRECISION]CONVERSION
 
-FIELD-WIDTH is a positive decimal integer, defining the size in characters
-of the substitution output.
+FIELD-WIDTH is a positive decimal integer, defining the size in
+characters of the substitution output. PRECISION is only valid when
+printing floating point numbers.
 
 CONVERSION is a character defining how to convert the corresponding ARG
 to text. The default options are:
@@ -818,14 +819,12 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
     {
 	if(c == '%')
 	{
-	    rep_bool left_justify = rep_FALSE, truncate_field = rep_TRUE;
+	    rep_bool left_justify = rep_FALSE, truncate_field = rep_FALSE;
 	    rep_bool pad_zeros = rep_FALSE;
-	    char *flags_start, *flags_end;
-	    char *width_start, *width_end;
-	    int field_width = 0;
+	    int field_width = 0, precision = 0;
 	    char *tem;
 
-	    if(last_fmt != fmt)
+	    if(last_fmt != fmt - 1)
 		rep_stream_puts(stream, last_fmt, fmt - last_fmt - 1, rep_FALSE);
 
 	    /* Parse the `n$' prefix */
@@ -856,7 +855,6 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 
 	parse_flags:
 	    /* Then scan for flags */
-	    flags_start = fmt;
 	    c = *fmt++;
 	    while(1)
 	    {
@@ -871,11 +869,11 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 		case '0':
 		    pad_zeros = rep_TRUE; break;
 
+		    /* XXX these aren't actually implemented.. */
 		case '+': case ' ':
 		    break;
 
 		default:
-		    flags_end = fmt - 1;
 		    goto parse_field_width;
 		}
 		c = *fmt++;
@@ -883,13 +881,24 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 
 	    /* Now look for the field width */
 	parse_field_width:
-	    width_start = fmt-1;
 	    while(isdigit(c))
 	    {
 		field_width = field_width * 10 + (c - '0');
 		c = *fmt++;
 	    }
-	    width_end = fmt-1;
+
+	    /* Now precision */
+	    if (c == '.')
+	    {
+		c = *fmt++;
+		while (c && isdigit (c))
+		{
+		    precision = precision * 10 + (c - '0');
+		    c = *fmt++;
+		}
+	    }
+	    else
+		precision = -1;
 
 	    /* Finally, the format specifier */
 	    if(c == '%')
@@ -898,6 +907,7 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 	    {
 		repv fun;
 		repv val = Fnth (rep_MAKE_INT(this_arg), args);
+		rep_bool free_str = rep_FALSE;
 
 		if (val == rep_NULL)
 		{
@@ -907,61 +917,60 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 
 		switch(c)
 		{
+		    int radix, len;
 		    u_char buf[256], fmt[32], *ptr;
 
-		case 'd': case 'x': case 'X': case 'o': case 'c':
-		    fmt[0] = '%';
-		    strncpy(fmt+1, flags_start, flags_end - flags_start);
-		    ptr = fmt+1 + (flags_end - flags_start);
-		    strncpy(ptr, width_start, width_end - width_start);
-		    ptr += width_end - width_start;
-		    if (c != 'c')
-			ptr = stpcpy (ptr, rep_PTR_SIZED_INT_CONV);
-		    *ptr++ = c;
-		    *ptr = 0;
-		    if (c == 'c')
-		    {
-#ifdef HAVE_SNPRINTF
-			snprintf (buf, sizeof (buf), fmt, (int)rep_INT(val));
-#else
-			sprintf (buf, fmt, (int)rep_INT(val));
-#endif
-		    }
-		    else
-		    {
-#ifdef HAVE_SNPRINTF
-			snprintf(buf, sizeof(buf), fmt, rep_INT(val));
-#else
-			sprintf(buf, fmt, rep_INT(val));
-#endif
-		    }
-		    rep_stream_puts(stream, buf, -1, rep_FALSE);
+		case 'c':
+		    rep_stream_putc (stream, rep_INT (val));
 		    break;
+
+		case 'x': case 'X':
+		    radix = 16;
+		    goto do_number;
+
+		case 'o':
+		    radix = 8;
+		    goto do_number;
+
+		case 'd':
+		    radix = 10;
+		do_number:
+		    ptr = rep_print_number_to_string (val, radix, precision);
+		    if (ptr == 0)
+			break;
+		    free_str = rep_TRUE;
+		    len = strlen (ptr);
+		    goto string_out;
 
 		case 's':
 		unquoted:
-		    if(rep_STRINGP(val) && (left_justify || field_width > 0))
+		    if (!rep_STRINGP (val)
+			|| (left_justify && field_width == 0))
 		    {
-			/* Only handle field width, justification, etc
-			   for strings */
-			size_t len = rep_STRING_LEN(val);
-			if(len >= field_width)
-			    rep_stream_puts(stream, rep_PTR(val),
-					truncate_field ? field_width : len,
-					rep_TRUE);
-			else
-			{
-			    len = MIN(field_width - len, sizeof(buf));
-			    memset(buf, !pad_zeros ? ' ' : '0', len);
-			    if(left_justify)
-				rep_stream_puts(stream, rep_PTR(val), -1, rep_TRUE);
-			    rep_stream_puts(stream, buf, len, rep_FALSE);
-			    if(!left_justify)
-				rep_stream_puts(stream, rep_PTR(val), -1, rep_TRUE);
-			}
+			rep_princ_val(stream, val);
+			break;
+		    }
+		    ptr = rep_STR (val);
+		    len = rep_STRING_LEN (val);
+
+		string_out:
+		    if(field_width == 0 || len >= field_width)
+		    {
+			rep_stream_puts(stream, ptr, truncate_field
+					? field_width : len, rep_FALSE);
 		    }
 		    else
-			rep_princ_val(stream, val);
+		    {
+			len = MIN(field_width - len, sizeof(buf));
+			memset(buf, !pad_zeros ? ' ' : '0', len);
+			if(left_justify)
+			    rep_stream_puts(stream, ptr, -1, rep_FALSE);
+			rep_stream_puts(stream, buf, len, rep_FALSE);
+			if(!left_justify)
+			    rep_stream_puts(stream, ptr, -1, rep_FALSE);
+		    }
+		    if (free_str)
+			free (ptr);
 		    break;
 
 		case 'S':
