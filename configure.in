@@ -567,8 +567,8 @@ AC_CHECK_FUNC(_nl_msg_cat_cntr,
   AC_CHECK_HEADERS(libintl.h)
   USE_INCLUDED_LIBINTL=no])
 
-dnl Build all files
-AC_OUTPUT(${output_files})
+dnl Build all files. Makes sure rules.mk is rebuild each time
+AC_OUTPUT(${output_files}, [rm -f rules.mk])
 
 dnl If it doesn't look like GNU Make is being used, give a friendly warning
 tem=`make --version -f /dev/null 2>&1 | grep GNU`

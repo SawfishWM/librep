@@ -11,7 +11,6 @@ cat <<EOF
 repdir=$repdir
 repcommonexecdir=$repcommonexecdir
 rpath_repcommonexecdir=$repcommonexecdir
-repdocfile=$repdocfile
 
 rep_LIBTOOL=\$(repcommonexecdir)/libtool
 rep_INSTALL_ALIASES=\$(repcommonexecdir)/install-aliases
