@@ -35,5 +35,6 @@
 (autoload 'string-upcase "string-util")
 (autoload 'string-downcase "string-util")
 (autoload 'capitalize-string "string-util")
+(autoload 'mapconcat "string-util")
 (autoload 'repl "rep-repl")
 ;;; ::autoload-end::

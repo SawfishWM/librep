@@ -112,7 +112,7 @@
 
 	  ;; string-util.jl
 	  string-upper-case-p string-lower-case-p string-capitalized-p
-	  string-upcase string-downcase capitalize-string
+	  string-upcase string-downcase capitalize-string mapconcat
 
 	  ;; sort.jl
 	  sort))
