@@ -1,5 +1,7 @@
 Mon Jun  1 11:26:39 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* read-mail.jl (rm-append-inbox, rm-rebuild-folder): fixed
+
 	* read-mail.jl (rm-open-mailbox, rm-close-mailbox,
 	rm-subtract-mailbox, rm-subtract-all-mailboxes): new functions.
 	Also lots of other fixes, it seems to work quite well now
