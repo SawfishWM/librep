@@ -1,5 +1,8 @@
 2000-03-07  John Harper  <john@dcs.warwick.ac.uk>
 
+	* numbers.c (maybe_demote): fixed typo when demoting rationals
+	to bignums
+
 	* streams.c (Fformat): implemented the `+' and ` ' flags
 
 2000-03-05  John Harper  <john@dcs.warwick.ac.uk>
