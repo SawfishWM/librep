@@ -312,6 +312,11 @@ exited, returning an undefined value."
 	   (list 'cond (list condition (cons 'progn body) (list tem)))))
    (gensym)))
 
+(defmacro prog1 (form1 . forms)
+  "First evals FORM1 then FORMS, returns the value that FORM1 gave."
+  (let ((tem (gensym)))
+    `((lambda (,tem) ,@forms ,tem) ,form1)))
+
 (defmacro prog2 args
   "prog2 FORM1 FORM2 [FORMS...]
 
@@ -319,6 +324,13 @@ Evaluate FORM1 discarding its result, then evaluate FORM2 followed by
 `(progn FORMS...)'. Returns the result of evaluating FORM2."
 
   (list 'progn (car args) (cons 'prog1 (cdr args))))
+
+(defmacro with-object (obj . body)
+  "Evaluate OBJ and make its value ``current'' in some way meaningful
+for the data type, evaluate all BODY forms, then return to the old
+current value of whatever was changed. Return the value of the last
+BODY form evaluated."
+  `(call-with-object ,obj (lambda () ,@body)))
 
 ;; hide compiler declarations
 (defmacro declare ())
