@@ -176,7 +176,6 @@
       (truncate . 0xae)
       (round . 0xaf)
 
-      (bindobj . 0xb0)
       (forbid . 0xb1)
       (permit . 0xb2)
 

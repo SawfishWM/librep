@@ -59,7 +59,7 @@
      "cdar" "cddr" "caddr" "cadddr"	; 0xa0
      "caddddr" "cadddddr" "caddddddr" "cadddddddr"
      "floor" "ceiling" "truncate" "round"
-     "bindobj" "forbid" "permit" "exp"
+     nil "forbid" "permit" "exp"
      "log" "sin" "cos" "tan"		; 0xb0
      "sqrt" "expt" "swap2" "mod"
      "make-closure" "unbindall-0" "closurep" "pop-all"
