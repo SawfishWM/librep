@@ -590,9 +590,11 @@ of THUNK) each function will be called exactly once."
   "Return the absolute value of X, i.e. (max X (- X))."
   (max x (- x)))
 
-(defun lcm (a b)
+(defun lcm args
   "Return the least common multiple of integers A and B."
-  (quotient (* a b) (gcd a b)))
+  (if (null args)
+      1
+    (quotient (apply * (mapcar abs args)) (apply gcd args))))
 
 (define-value '% remainder)
 (define-value 'modulo mod)
