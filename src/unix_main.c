@@ -84,6 +84,8 @@ _PR void unix_set_fd_nonblocking(int fd);
 _PR void unix_set_fd_blocking(int fd);
 _PR void unix_set_fd_cloexec(int fd);
 _PR VALUE sys_event_loop(void);
+_PR VALUE sys_sit_for(u_long timeout_msecs);
+_PR VALUE sys_accept_input(u_long timeout_msecs, void *callback);
 _PR void *sys_alloc(u_int length);
 _PR void pre_sys_init(void);
 _PR void sys_misc_init(void);
@@ -268,7 +270,7 @@ sys_system_name(void)
 /* Main input loop */
 
 /* This is the set of fds we're waiting for input from. */
-static fd_set input_fdset;
+static fd_set input_fdset, working_fdset;
 
 /* For every bit set in unix_fd_read_set there should be a corresponding
    function in here that will be called when input becomes available.
@@ -344,6 +346,88 @@ unix_set_fd_cloexec(int fd)
 	fcntl(fd, F_SETFD, tem | FD_CLOEXEC);
 }
 
+/* Wait for input for no longer than TIMEOUT-MSECS. If input arrived
+   return the number of ready fds, with the actual fds defined by the
+   fdset `working_fdset'. Return zero if the timeout was reached. */
+static int
+wait_for_input(u_long timeout_msecs)
+{
+    struct timeval timeout;
+    int ready;
+
+    if(curr_win == 0)
+	return 0;
+
+    memcpy(&working_fdset, &input_fdset, sizeof(working_fdset));
+    timeout.tv_sec = timeout_msecs / 1000;
+    timeout.tv_usec = (timeout_msecs % 1000) * 1000;
+
+#ifdef HAVE_SUBPROCESSES
+    /* Don't want select() to restart after a SIGCHLD; there may be
+       a notification to dispatch.  */
+    sigchld_restart(FALSE);
+#endif
+
+    ready = select(FD_SETSIZE, &working_fdset, NULL, NULL, &timeout);
+
+#ifdef HAVE_SUBPROCESSES
+    sigchld_restart(TRUE);
+#endif
+
+#ifndef NO_ASYNC_INPUT
+    /* Is this the best place to set this? Should it be after
+       reading all input..? */
+    unix_input_pending = 0;
+#endif
+
+    return ready;
+}
+
+/* Handle the READY fds with pending input (defined by `working_fdset').
+   If CALLBACK-TYPE is non-null, only invoke this function for input
+   arriving. Return true if the display might require updating. */
+static bool
+handle_input(int ready)
+{
+    bool refreshp = FALSE;
+
+    if(ready > 0)
+    {
+	int i;
+
+	idle_period = 0;
+
+	/* no need to test first 3 descriptors */
+	for(i = 3; i < FD_SETSIZE && ready > 0; i++)
+	{
+	    if(FD_ISSET(i, &working_fdset))
+	    {
+		ready--;
+		if(input_actions[i] != NULL)
+		{
+		    input_actions[i](i);
+		    refreshp = TRUE;
+		}
+	    }
+	}
+    }
+    else if(ready == 0)
+    {
+	/* A timeout. */
+	if(on_idle(idle_period))
+	    refreshp = TRUE;
+
+	idle_period++;
+    }
+
+#ifdef HAVE_SUBPROCESSES
+    if(proc_periodically())
+	refreshp = TRUE;
+#endif
+
+    return refreshp;
+}
+
 /* The input handler loop. */
 VALUE
 sys_event_loop(void)
@@ -352,68 +436,13 @@ sys_event_loop(void)
     recurse_depth++;
 
     cmd_redisplay(sym_nil);
-
     while(curr_win != NULL)
     {
-	fd_set copy;
-	struct timeval timeout;
-	int ready, i;
+	int ready;
 	bool refreshp = FALSE;
 
-	memcpy(&copy, &input_fdset, sizeof(copy));
-	timeout.tv_sec = EVENT_TIMEOUT_LENGTH;
-	timeout.tv_usec = 0;
-
-#ifdef HAVE_SUBPROCESSES
-	/* Don't want select() to restart after a SIGCHLD; there may be
-	   a notification to dispatch.  */
-	sigchld_restart(FALSE);
-#endif
-
-	ready = select(FD_SETSIZE, &copy, NULL, NULL, &timeout);
-
-#ifdef HAVE_SUBPROCESSES
-	sigchld_restart(TRUE);
-#endif
-
-#ifndef NO_ASYNC_INPUT
-	/* Is this the best place to set this? Should it be after
-	   reading all input..? */
-	unix_input_pending = 0;
-#endif
-
-	if(ready > 0)
-	{
-	    idle_period = 0;
-
-	    /* no need to test first 3 descriptors */
-	    for(i = 3; i < FD_SETSIZE && ready > 0; i++)
-	    {
-		if(FD_ISSET(i, &copy))
-		{
-		    ready--;
-		    if(input_actions[i] != NULL)
-		    {
-			input_actions[i](i);
-			refreshp = TRUE;
-		    }
-		}
-	    }
-	}
-	else if(ready == 0)
-	{
-	    /* A timeout. */
-	    if(on_idle(idle_period))
-		refreshp = TRUE;
-
-	    /* The following isn't accurate, but it's not important */
-	    idle_period += EVENT_TIMEOUT_LENGTH;
-	}
-
-#ifdef HAVE_SUBPROCESSES
-	if(proc_periodically())
-	    refreshp = TRUE;
-#endif
+	ready = wait_for_input(EVENT_TIMEOUT_LENGTH * 1000);
+	refreshp = handle_input(ready);
 
 	/* Check for exceptional conditions. */
 	if(throw_value != LISP_NULL)
@@ -440,6 +469,38 @@ sys_event_loop(void)
 end:
     recurse_depth--;
     return result;
+}
+
+VALUE
+sys_sit_for(u_long timeout_msecs)
+{
+    int ready;
+    cmd_redisplay(sym_nil);
+    ready = wait_for_input(timeout_msecs);
+    return (ready > 0) ? sym_nil : sym_t;
+}
+
+/* Wait TIMEOUT_MSECS for input, ignoring any input fds that would
+   invoke any callback function except CALLBACK. Return the number of
+   input fds serviced. */
+VALUE
+sys_accept_input(u_long timeout_msecs, void *callback)
+{
+    int ready, i;
+    for(i = 0; i < FD_SETSIZE; i++)
+    {
+	if(input_actions[i] != 0 && input_actions[i] != callback)
+	    FD_CLR(i, &input_fdset);
+    }
+    ready = wait_for_input(timeout_msecs);
+    if(ready > 0)
+	handle_input(ready);
+    for(i = 0; i < FD_SETSIZE; i++)
+    {
+	if(input_actions[i] != 0 && input_actions[i] != callback)
+	    FD_SET(i, &input_fdset);
+    }
+    return ready > 0 ? sym_nil : sym_t;
 }
 
 
