@@ -497,7 +497,7 @@ that files which shouldn't be compiled aren't."
 	    (when (or (not (file-exists-p (concat file ?c)))
 		      (file-newer-than-file-p file (concat file ?c)))
 	      (compile-file file)))
-	  '("compiler.jl" "compiler-opt.jl"))))
+	  '("compiler.jl" "compiler-opt.jl" "sort.jl"))))
 
 ;;;###autoload
 (defun compile-function (function)
