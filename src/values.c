@@ -525,26 +525,29 @@ static void
 cons_sweep(void)
 {
     rep_cons_block *cb;
-    cons_freelist = 0;
-    used_cons = 0;
+    rep_cons *tem_freelist = 0;
+    int tem_used = 0;
     for (cb = cons_block_chain; cb != 0; cb = cb->next.p)
     {
-	int i;
-	rep_cons *this = cb->cons;
-	for (i = 0; i < rep_CONSBLK_SIZE; i++, this++)
+	register rep_cons *this = cb->cons;
+	rep_cons *last = cb->cons + rep_CONSBLK_SIZE;
+	while (this < last)
 	{
 	    if (!rep_GC_CONS_MARKEDP (rep_CONS_VAL (this)))
 	    {
-		this->cdr = rep_CONS_VAL (cons_freelist);
-		cons_freelist = rep_CONS (this);
+		this->cdr = rep_CONS_VAL (tem_freelist);
+		tem_freelist = rep_CONS (this);
 	    }
 	    else
 	    {
 		rep_GC_CLR_CONS (rep_CONS_VAL (this));
-		used_cons++;
+		tem_used++;
 	    }
+	    this++;
 	}
     }
+    cons_freelist = tem_freelist;
+    used_cons = tem_used;
 }
 
 static int
