@@ -37,17 +37,21 @@
     '(nil t % * + - / /= 1+ 1- < <= = > >= add-hook alpha-char-p
       alphanumericp and append apply aref arrayp aset ash assoc
       assoc-regexp assq atom backquote beep boundp bytecodep call-hook
-      car caar cadr case catch cdr cdar cddr char-downcase char-upcase
-      closurep complete-string concat cond condition-case cons consp
-      copy-sequence copy-stream current-time current-time-string
-      default-boundp default-value defconst define define-value
-      defmacro defsubst defun defvar delete delete-if delete-if-not
-      delete-timer delq digit-char-p documentation elt eq eql equal error eval
-      eval-when-compile expand-last-match featurep filter fix-time flet
-      fmakunbound format funcall function functionp garbage-collect
-      gensym get get-output-stream-string getenv identity if integerp
-      interactive lambda last length let let* letrec list list* logand
-      logior lognot logxor lower-case-p lsh macroexpand macrolet macrop
+      car caar cadr caaar cdaar cadar cddar caadr cdadr caddr cdddr
+      caaaar cadaar caadar caddar caaadr cadadr caaddr cadddr cdaaar
+      cddaar cdadar cdddar cdaadr cddadr cdaddr cddddr case catch
+      call-with-catch cdr cdar cddr char-downcase char-upcase closurep
+      complete-string concat cond condition-case
+      call-with-error-handlers cons consp copy-sequence copy-stream
+      current-time current-time-string default-boundp default-value
+      defconst define define-value defmacro defsubst defun defvar
+      delete delete-if delete-if-not delete-timer delq digit-char-p
+      documentation elt eq eql equal error eval eval-when-compile
+      expand-last-match featurep filter fix-time flet fmakunbound
+      format funcall function functionp garbage-collect gensym get
+      get-output-stream-string getenv identity if integerp interactive
+      lambda last length let let* letrec list list* logand logior
+      lognot logxor lower-case-p lsh macroexpand macrolet macrop
       make-closure make-list make-string make-string-input-stream
       make-string-output-stream make-symbol make-timer make-vector
       makunbound mapc mapcar match-end match-start max member memq
@@ -61,20 +65,28 @@
       string-lessp string-looking-at string-match string< string=
       stringp subr-name subrp substring symbol-name symbol-plist
       symbol-value symbolp system-name throw time-later-p
-      translate-string unless unwind-protect upper-case-p
-      user-full-name user-login-name vector vectorp when while
-      with-internal-definitions with-object write zerop remainder
-      quotient modulo floor ceiling truncate round exp log sin cos tan
-      asin acos atan sqrt expt gcd fixnump rationalp realp exactp
-      inexactp exact->inexact inexact->exact numerator denominator
-      positivep negativep oddp evenp abs lcm
+      translate-string unless unwind-protect call-with-unwind-protect
+      upper-case-p user-full-name user-login-name vector vectorp when
+      while with-internal-definitions with-object write
+
+      zerop remainder quotient modulo floor ceiling truncate round exp
+      log sin cos tan asin acos atan sqrt expt gcd fixnump rationalp
+      realp exactp inexactp exact->inexact inexact->exact numerator
+      denominator positivep negativep oddp evenp abs lcm
+
+      make-datum define-datum-printer datum-ref datum-set has-type-p
+
+      make-fluid fluid fluid-set with-fluids let-fluids
+
       string->number number->string mapconcat string-upper-case-p
       string-lower-case-p string-capitalized-p string-upcase string-downcase
-      capitalize-string
+      capitalize-string mapconcat
+
       make-table make-weak-table string-hash symbol-hash eq-hash
       equal-hash tablep table-ref table-set table-unset table-walk
-      downcase-table flatten-table upcase-table operating-system rep-version
-      call-with-catch call-with-unwind-protect call-with-error-handlers))
+
+      downcase-table flatten-table upcase-table operating-system
+      rep-version))
 
   ;; alist mapping functions to their safe versions
   (define gaol-redefined-functions)
