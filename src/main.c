@@ -484,6 +484,31 @@ Enter a new recursive-edit.
     return ret;
 }
 
+/* Called from the main function of input-driven programs. Avoids the
+   program exiting due to an unhandled exception */
+repv
+rep_top_level_recursive_edit (void)
+{
+    repv ret;
+again:
+    ret = Frecursive_edit ();
+    if (rep_recurse_depth < 0
+	&& rep_throw_value && rep_CONSP (rep_throw_value))
+    {
+	repv type = rep_CAR (rep_throw_value);
+	if (type != Qquit
+	    && type != Qerror
+	    && type != Qterm_interrupt
+	    && type != Quser_interrupt)
+	{
+	    rep_throw_value = rep_NULL;
+	    rep_handle_error (Qno_catcher, rep_LIST_1 (type));
+	    goto again;
+	}
+    }
+    return ret;
+}
+
 DEFUN("recursion-depth", Frecursion_depth, Srecursion_depth, (void), rep_Subr0) /*
 ::doc:recursion-depth::
 recursion-depth
