@@ -1,3 +1,8 @@
+1999-09-09  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_processes.c (check_for_zombies): removed the assertion
+	that every pid must have a process structure
+
 1999-09-08  John Harper  <john@dcs.warwick.ac.uk>
 
 	* files.c (Fset_input_handler): new function, allows async
