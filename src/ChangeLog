@@ -1,3 +1,10 @@
+2000-03-21  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_dl.c: `#define RTLD_GLOBAL 0' if configure detected a
+	version of Tru64 with a broker loader; this means that librep
+	now fully supports Tru64 (from Aron Griffis
+	<agriffis@bigfoot.com>)
+
 2000-03-20  John Harper  <john@dcs.warwick.ac.uk>
 
 	* continuations.c (thread_invoke): calculate rep_sleep_for ()
