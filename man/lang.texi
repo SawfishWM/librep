@@ -5724,6 +5724,18 @@ This declaration should occur at the top-level of a program; it tells
 the compiler that the forms in the program will be evaluated within the
 context of the module called @var{module-name} (a symbol).
 
+@item (language @var{module})
+Explicitly specifies the particular language dialect that the current
+module or file body is written for. Language dialects included with the
+librep distribution include @code{rep}, @code{scheme} and
+@code{unscheme}. These are also the names of the modules that should be
+imported to use a particular dialect.
+
+By default, the @code{rep} dialect is assumed for code outside module
+definitions. For code inside a module definition the list of imported
+modules is scanned for a known language dialect (i.e. if the module
+imports @code{rep}, then the rep language dialect is compiled for).
+
 @item (unsafe-for-call/cc)
 Tell the compiler that it may register-allocate variables, even if it
 can't prove that doing so wouldn't produce incorrect results if
@@ -5743,8 +5755,8 @@ function call)
 @end itemize
 
 @noindent
-hence, this declaration is often useful where @code{call/cc} isn't
-used, and there is a lot of side effecting of local variables.
+this declaration is often useful where @code{call/cc} isn't used, and
+there is a lot of side effecting of local variables.
 @end table
 
 Declaration forms always evaluate to false.
