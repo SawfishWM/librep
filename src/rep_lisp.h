@@ -473,27 +473,24 @@ typedef struct rep_vector_struct {
 #define rep_COMPILEDP(v)	rep_CELL8_TYPEP(v, rep_Compiled)
 #define rep_COMPILED(v)		((rep_vector *)rep_PTR(v))
 
-/* First element is lambda list. */
-#define rep_COMPILED_LAMBDA(v)	rep_VECTI(v, 0)
+/* First elt is byte-code string */
+#define rep_COMPILED_CODE(v)	rep_VECTI(v, 0)
 
-/* Second is byte-code string */
-#define rep_COMPILED_CODE(v)	rep_VECTI(v, 1)
+/* Second is constant vector */
+#define rep_COMPILED_CONSTANTS(v) rep_VECTI(v, 1)
 
-/* Third is constant vector */
-#define rep_COMPILED_CONSTANTS(v) rep_VECTI(v, 2)
+/* Third is an (opaque) integer: memory requirements */
+#define rep_COMPILED_STACK(v)	rep_VECTI(v, 2)
 
-/* Fourth is an integer: stack usage */
-#define rep_COMPILED_STACK(v)	rep_VECTI(v, 3)
-
-#define rep_COMPILED_MIN_SLOTS	4
+#define rep_COMPILED_MIN_SLOTS	3
 
 /* Optional fifth element is documentation. */
-#define rep_COMPILED_DOC(v)	((rep_VECT_LEN(v) >= 5) \
-				 ? rep_VECTI(v, 4) : Qnil)
+#define rep_COMPILED_DOC(v)	((rep_VECT_LEN(v) >= 4) \
+				 ? rep_VECTI(v, 3) : Qnil)
 
 /* Optional sixth element is interactive specification. */
-#define rep_COMPILED_INTERACTIVE(v) ((rep_VECT_LEN(v) >= 6) \
-				     ? rep_VECTI(v, 5) : Qnil)
+#define rep_COMPILED_INTERACTIVE(v) ((rep_VECT_LEN(v) >= 5) \
+				     ? rep_VECTI(v, 4) : Qnil)
 
 
 /* Files */
