@@ -1,5 +1,8 @@
 2001-08-09  John Harper  <jsh@pixelslut.com>
 
+	* rep/threads/message-port.jl: new module, implements a simple
+	message queue for threads using mutexes and condition variables
+
 	* rep/net/rpc.jl: one minor bug fix
 
 2001-08-08  John Harper  <jsh@pixelslut.com>
