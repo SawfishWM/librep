@@ -1,3 +1,7 @@
+1999-03-12  John Harper  <john@dcs.warwick.ac.uk>
+
+	* misc.c (Fchar_downcase): this was using toupper not tolower
+
 1999-03-09  John Harper  <john@dcs.warwick.ac.uk>
 
 	* repsdbm.c: changed all function names from dbm- to sdbm-
