@@ -838,13 +838,14 @@ fetch:
 	       in (2). If they match it sets (2) to nil, and binds the
 	       error data to the symbol in (3). */
 	    tmp = RET_POP;
-	    if(compare_error(TOP, tmp))
+	    if(CONSP(TOP) && VCAR(TOP) == sym_error
+	       && compare_error(VCDR(TOP), tmp))
 	    {
 		/* The handler matches the error. */
-		tmp = TOP;		/* the throw_value */
+		tmp = VCDR(TOP);	/* the error data */
 		tmp2 = stackp[-1];	/* the symbol to bind to */
 		if(SYMBOLP(tmp2) && !NILP(tmp2))
-		    bindstack = cmd_cons(bind_symbol(sym_nil, tmp2, VCDR(tmp)),
+		    bindstack = cmd_cons(bind_symbol(sym_nil, tmp2, tmp),
 					 bindstack);
 		else
 		    /* Placeholder to allow simple unbinding */
