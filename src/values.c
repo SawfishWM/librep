@@ -524,50 +524,26 @@ rep_cons_free(repv cn)
 static void
 cons_sweep(void)
 {
-    rep_cons_block *cb = cons_block_chain;
-    cons_block_chain = NULL;
-    cons_freelist = NULL;
+    rep_cons_block *cb;
+    cons_freelist = 0;
     used_cons = 0;
-    while(cb != NULL)
+    for (cb = cons_block_chain; cb != 0; cb = cb->next.p)
     {
-	rep_cons_block *nxt = cb->next.p;
-	rep_cons *newfree = NULL, *newfreetail = NULL, *this;
-	int i, newused = 0;
-	for(i = 0, this = cb->cons; i < rep_CONSBLK_SIZE; i++, this++)
+	int i;
+	rep_cons *this = cb->cons;
+	for (i = 0; i < rep_CONSBLK_SIZE; i++, this++)
 	{
-	    if(!rep_GC_CONS_MARKEDP(rep_CONS_VAL(this)))
+	    if (!rep_GC_CONS_MARKEDP (rep_CONS_VAL (this)))
 	    {
-		if(!newfreetail)
-		    newfreetail = this;
-		this->cdr = rep_CONS_VAL(newfree);
-		newfree = this;
+		this->cdr = rep_CONS_VAL (cons_freelist);
+		cons_freelist = rep_CONS (this);
 	    }
 	    else
 	    {
-		rep_GC_CLR_CONS(rep_CONS_VAL(this));
-		newused++;
+		rep_GC_CLR_CONS (rep_CONS_VAL (this));
+		used_cons++;
 	    }
 	}
-	if(newused == 0)
-	{
-	    /* Whole ConsBlk unused, lets get rid of it.  */
-	    rep_free(cb);
-	    allocated_cons -= rep_CONSBLK_SIZE;
-	}
-	else
-	{
-	    if(newfreetail != NULL)
-	    {
-		/* Link this mini-freelist onto the main one.  */
-		newfreetail->cdr = rep_CONS_VAL(cons_freelist);
-		cons_freelist = newfree;
-		used_cons += newused;
-	    }
-	    /* Have to rebuild the ConsBlk chain as well.  */
-	    cb->next.p = cons_block_chain;
-	    cons_block_chain = cb;
-	}
-	cb = nxt;
     }
 }
 
@@ -845,20 +821,6 @@ rep_mark_value(register repv val)
     /* Assumes that the stack grows downwards (towards 0) */
     if(&dummy < gc_stack_high_tide)
 	gc_stack_high_tide = &dummy;
-#endif
-
-#ifdef GC_MINSTACK
-    /* This is a real problem. I can't safely stop marking since this means
-       that some lisp data won't have been marked and therefore the sweep
-       will screw up. But if I just keep on merrily recursing I risk
-       blowing the stack.  */
-    if(STK_SIZE <= GC_MINSTACK)
-    {
-	STK_WARN("garbage-collect(major problem!)");
-	/* Perhaps I should longjmp() back to the start of the gc, then quit
-	   totally?  */
-	return;
-    }
 #endif
 
 again:
