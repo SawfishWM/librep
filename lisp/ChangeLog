@@ -1,3 +1,19 @@
+1999-01-07  John Harper  <john@dcs.warwick.ac.uk>
+
+	* mime-decode.jl (mime-display-part): new function, decodes a
+	MIME subpart to a temporary buffer
+	* rm-mime.jl: bind C-RET to mime-display-part in read-mail mode
+
+1999-01-07  John Harper  <john@dcs.warwick.ac.uk>
+
+	* tex-mode.jl (tex-mode, latex-mode, plain-tex-mode): make sure
+	that when text-mode-hook is called, the major-mode is set to
+	its final value
+
+1999-01-05  John Harper  <john@dcs.warwick.ac.uk>
+
+	* ispell.jl: protect against multiple concurrent-readers
+
 1998-12-21  John Harper  <john@dcs.warwick.ac.uk>
 
 	* modes.jl (auto-mode-alist): made .sty suffix use tex-mode
