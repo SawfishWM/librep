@@ -56,5 +56,7 @@ uninstall :
 clean :
 	rm -f *~ librep.info* librep.?? librep.??
 
-realclean : clean
+distclean : clean
 	rm -f Makefile
+
+realclean : distclean
