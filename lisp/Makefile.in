@@ -1,32 +1,60 @@
-# Makefile for Jade's Lisp files
-# Copyright (C) 1993, 1994 John Harper <john@dcs.warwick.ac.uk>
+# Makefile.in for Jade's Lisp files
+# Copyright (C) 1998 John Harper <john@dcs.warwick.ac.uk>
 # $Id$
-
+#
+# This file is part of Jade.
+#
 # Jade is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2, or (at your option)
 # any later version.
-
+#
 # Jade is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with Jade; see the file COPYING.  If not, write to
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-# defaults
-bindir = ../src
-lispdir = .
+version=@version@
+SHELL=/bin/sh
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+datadir=@datadir@
+top_srcdir=@top_srcdir@
+srcdir=@srcdir@
+bindir=@bindir@
+includedir=@includedir@
+infodir=@infodir@
+libdir=@libdir@
+libexecdir=@libexecdir@
+localstatedir=@localstatedir@
+mandir=@mandir@
+sharedstatedir=@sharedstatedir@
+
+jadedir=@jadedir@
+lispdir=@lispdir@
+
+INSTALL=@INSTALL@
+INSTALL_DATA=@INSTALL_DATA@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+
+jade_prog = ../jade/jade
 
 all :
 
 lisp :
-	$(bindir)/jade -geometry +0+0 -log-msgs -f sleep-window -l compiler \
+	$(jade_prog) -geometry +0+0 -log-msgs -f sleep-window -l compiler \
 		-f compile-compiler -q
-	$(bindir)/jade -geometry +0+0 -log-msgs -f sleep-window \
+	$(jade_prog) -geometry +0+0 -log-msgs -f sleep-window \
 		-f compile-lisp-lib -q
+
+dumped :
+	$(jade_prog) -geometry +0+0 -log-msgs -f sleep-window -l dump \
+		-f dump-batch -o $(DUMPED_OUT) $(DUMPED_SRCS) -q
 
 install :
 	for f in *.jl; \
@@ -34,17 +62,17 @@ install :
 	  $(INSTALL_DATA) $$f $(lispdir)/$$f; \
 	done
 	$(INSTALL_DATA) ../DOC $(lispdir)/../DOC
-	$(bindir)/jade -geometry +0+0 -log-msgs -f sleep-window -l compiler \
+	$(jade_prog) -geometry +0+0 -log-msgs -f sleep-window -l compiler \
 		-f compile-compiler -q
-	$(bindir)/jade -geometry +0+0 -log-msgs -f sleep-window \
+	$(jade_prog) -geometry +0+0 -log-msgs -f sleep-window \
 		-f compile-lisp-lib -q
 
 uninstall :
-	-rm -f $(lispdir)/*.jl $(lispdir)/*.jlc $(lispdir)/../DOC
+	-rm -f *.jl "$(lispdir)/*.jlc" $(lispdir)/../DOC
 
 clean :
-	-rm -f *.jlc *~
-	-cp ../src/DOC.bare ../DOC
+	-rm -f *.jlc *.jld dump.out *~
+	-cp ../jade/lib/DOC-bare ../DOC
 
 realclean : clean
-	-rm -f ../DOC
+	-rm -f Makefile
