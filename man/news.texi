@@ -8,6 +8,8 @@
 
 @itemize @bullet
 
+@item Sending a rep process a @code{SIGUSR2} prints all debug buffers
+
 @item Added @samp{--with-value-type}, and
 @samp{--with-malloc-alignment} configure options. Also added code to
 automatically detect the first of these options.
