@@ -356,6 +356,28 @@ AC_TRY_COMPILE([],[__builtin_return_address(1);],
 		AC_MSG_RESULT(yes)
 		AC_MSG_WARN([Backtrace support will not be compiled])])
 
+AC_MSG_CHECKING([for stack growth direction])
+AC_ARG_WITH(stack-direction,
+ [  --with-stack-direction=DIR
+			  Stack growth direction. -1 for downwards,
+			   +1 for upwards. [DIR=<probed>]], [],
+ [with_stack_direction=0])
+if test "${with_stack_direction}" = 0; then
+  AC_TRY_RUN([
+    static char *inner (void) {
+      char bar; return &bar;
+    }
+    int main (void) {
+      char foo, *bar = inner ();
+      return !(&foo > bar);
+    }],
+   [AC_MSG_RESULT([downwards])
+    with_stack_direction=-1],
+   [AC_MSG_RESULT([upwards])
+    with_stack_direction=+1])
+  AC_DEFINE_UNQUOTED(STACK_DIRECTION, ${with_stack_direction})
+fi
+
 dnl Nonstandard exported symbols
 AC_SUBST(version)
 AC_SUBST(libversion)
