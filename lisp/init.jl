@@ -83,4 +83,4 @@
       (t
        (find-file arg)))))
 
-(message (version-and-build-string))
+(message (concat "Built " (build-id-string)))

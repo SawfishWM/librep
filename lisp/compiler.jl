@@ -312,11 +312,12 @@ is one of these that form is compiled.")
 		  (format dst-file
 			  ";; Source file: %s
 ;; Compiled by %s@%s on %s
-;; %s
+;; %s: %s
 
 (validate-byte-code %d %d %d %d)\n\n"
 			  file-name (user-login-name) (system-name)
-			  (current-time-string) (version-and-build-string)
+			  (current-time-string)
+			  (version-string) (build-id-string)
 			  bytecode-major bytecode-minor
 			  (major-version-number) (minor-version-number))
 		  (condition-case nil
