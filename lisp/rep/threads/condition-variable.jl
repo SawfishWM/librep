@@ -46,15 +46,18 @@
   (define (cv-ref cv) (datum-ref cv key))
   (define (cv-set cv x) (datum-set cv key x))
 
-  ;; XXX SRFI-18 support would require an optional TIMEOUT parameter
-  (define (condition-variable-wait cv mutex)
-    (let ((thread (current-thread)))
+  (define (condition-variable-wait cv mutex #!optional timeout)
+    (let ((thread (current-thread))
+	  (acquired nil))
       (unless (memq thread (cv-ref cv))
 	(cv-set cv (cons thread (cv-ref cv))))
-      (release-mutex mutex)
-      (thread-suspend thread)
+      (without-interrupts
+       ;; these two operations are atomic to prevent people
+       ;; signalling the condition before we actually suspend
+       (release-mutex mutex)
+       (setq acquired (not (thread-suspend thread timeout))))
       (obtain-mutex mutex)
-      t))
+      acquired))
 
   (define (condition-variable-signal cv)
     (when (cv-ref cv)

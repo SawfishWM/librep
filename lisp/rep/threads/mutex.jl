@@ -43,14 +43,14 @@
     "Returns true if ARG is a mutex object."
     (eq (car arg) 'mutex))
 
-  (defun obtain-mutex (mtx)
+  (defun obtain-mutex (mtx #!optional timeout)
     "Obtain the mutex MTX for the current thread. Will suspend the current
-thread until the mutex is available."
+thread until the mutex is available. Returns false if the timeout expired."
     (without-interrupts
      (if (null (cdr mtx))
 	 (rplacd mtx (list (current-thread)))
        (rplacd mtx (nconc (cdr mtx) (list (current-thread))))
-       (thread-suspend (current-thread)))))
+       (not (thread-suspend (current-thread) timeout)))))
 
   (defun maybe-obtain-mutex (mtx)
     "Attempt to obtain mutex MTX for the current thread without blocking.

@@ -1,3 +1,15 @@
+2001-08-02  John Harper  <jsh@pixelslut.com>
+
+	* rep/threads/condition-variable.jl (condition-variable-wait):
+	new optional TIMEOUT parameter. The function returns false if
+	the timeout expires. Note that even if this is the case the
+	function will still re-obtain the mutex before exiting. Also,
+	release the mutex and suspend the thread atomically
+
+	* rep/threads/mutex.jl (obtain-mutex): new optional TIMEOUT
+	parameter. The function returns false if the timeout expired
+	and the mutex couldn't be obtained, true otherwise
+
 2001-08-01  John Harper  <jsh@pixelslut.com>
 
 	* rep/vm/compiler/modules.jl (symbol-value-1): return false for
