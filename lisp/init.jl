@@ -451,11 +451,6 @@ When read, the syntax `FOO#BAR' expands to `(structure-ref FOO BAR)'."
 
 ;; exception handling and syntax
 
-;; rethrow exception DATA (a list)
-(defun raise-exception (data)
-  ;; should do something about this..
-  (throw (car data) (cdr data)))
-
 ;; Call and return value of THUNK with a catch for TAG
 (defun call-with-catch (tag thunk)
   (call-with-exception-handler
@@ -500,6 +495,11 @@ When read, the syntax `FOO#BAR' expands to `(structure-ref FOO BAR)'."
 `(throw TAG)'. The value of the `catch' form is either the value of the
 progn or the value given to any matching `throw' form."
   `(call-with-catch ,tag (lambda () ,@body)))
+
+(defun throw (tag value)
+  "Performs a non-local exit to the `catch' form waiting for TAG and return
+VALUE from it."
+  (raise-exception (cons tag value)))
 
 (defmacro unwind-protect (form . body)
   "Return the result of evaluating FORM. When execution leaves the
