@@ -175,12 +175,10 @@ rep_bool rep_single_step_flag;
    is taken as the last element of the environment */
 repv rep_env;
 
-/* A list of the special variables that may be accessed in this
-   environment, or Qt to denote all specials. This always contains
-   at least one cons cell, which is skipped. */
-repv rep_special_env, rep_special_bindings;
+/* Active special bindings, a list of (SYMBOL . VALUE) */
+repv rep_special_bindings;
 
-/* The bytecode interpreter to use. A three-arg subr or a null pointer */
+/* The bytecode interpreter to use. A subr or a null pointer */
 repv (*rep_bytecode_interpreter)(repv code, repv consts,
 				 repv stack, repv frame);
 
@@ -1259,7 +1257,6 @@ rep_load_autoload(repv funarg)
 	    rep_FUNARG(funarg)->fun = rep_FUNARG(tmp)->fun;
 	    rep_FUNARG(funarg)->name = rep_FUNARG(tmp)->name;
 	    rep_FUNARG(funarg)->env = rep_FUNARG(tmp)->env;
-	    rep_FUNARG(funarg)->special_env = rep_FUNARG(tmp)->special_env;
 	    rep_FUNARG(funarg)->structure = rep_FUNARG(tmp)->structure;
 	}
 	else
@@ -2258,7 +2255,7 @@ DEFUN("debug-frame-environment", Fdebug_frame_environment,
     if (fp != 0)
     {
 	return rep_list_4 (fp->saved_env,
-			   fp->saved_special_env,
+			   rep_STRUCTURE (fp->saved_structure)->special_env,
 			   rep_get_fh_env (),
 			   fp->saved_structure);
     }

@@ -568,7 +568,6 @@ typedef struct rep_funarg_struct {
     repv fun;
     repv name;
     repv env;
-    repv special_env;
     repv structure;
 } rep_funarg;
 
@@ -583,7 +582,6 @@ typedef struct rep_funarg_struct {
 #define rep_USE_FUNARG(f)				\
     do {						\
 	rep_env = rep_FUNARG(f)->env;			\
-	rep_special_env = rep_FUNARG(f)->special_env;	\
 	if (!(rep_FUNARG(f)->car & rep_FF_NO_BYTE_CODE)) \
 	    rep_bytecode_interpreter = Fjade_byte_code; \
 	else						\
@@ -594,7 +592,6 @@ typedef struct rep_funarg_struct {
 #define rep_USE_DEFAULT_ENV			\
     do {					\
 	rep_env = Qt;				\
-	rep_special_env = Fcons (Qnil, Qt);	\
 	rep_structure = rep_default_structure;	\
 	rep_bytecode_interpreter = Fjade_byte_code; \
     } while (0)
@@ -774,7 +771,6 @@ struct rep_Call {
     /* t if `args' is list of *evalled* arguments.  */
     repv args_evalled_p;
     repv saved_env;
-    repv saved_special_env;
     repv saved_structure;
     repv (*saved_bytecode)(repv, repv, repv, repv);
 };
@@ -782,7 +778,6 @@ struct rep_Call {
 #define rep_PUSH_CALL(lc)		\
     do {				\
 	(lc).saved_env = rep_env;	\
-	(lc).saved_special_env = rep_special_env; \
 	(lc).saved_structure = rep_structure; \
 	(lc).saved_bytecode = rep_bytecode_interpreter; \
 	(lc).next = rep_call_stack;	\
@@ -792,7 +787,6 @@ struct rep_Call {
 #define rep_POP_CALL(lc)		\
     do {				\
 	rep_env = (lc).saved_env;	\
-	rep_special_env = (lc).saved_special_env; \
 	rep_structure = (lc).saved_structure; \
 	rep_bytecode_interpreter = (lc).saved_bytecode; \
 	rep_call_stack = (lc).next;	\
