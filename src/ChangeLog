@@ -1,3 +1,10 @@
+1999-03-17  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep.c (main): test for (throw 'quit RC) when exiting
+
+	* lisp.c (rep_readl): when `#!' is encountered at the start of
+	a file, skip until `!#' is found
+
 1999-03-16  John Harper  <john@dcs.warwick.ac.uk>
 
 	* values.c: allocate the buffer of static gc roots dynamically
