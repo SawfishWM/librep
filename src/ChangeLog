@@ -1,3 +1,10 @@
+1998-07-04  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_defs.h: remove EXEC_DIR define, just use JADE_EXEC_DIR
+
+	* lispcmds.c: misc. changes to how the build directories and
+	load-paths are set up (mainly, rename `X-dir' as `X-directory')
+
 1998-07-03  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lispcmds.c (dl-load-path, exec-directory): new variables for

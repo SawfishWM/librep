@@ -1,3 +1,31 @@
+1998-07-04  John Harper  <john@dcs.warwick.ac.uk>
+
+	* modes.jl (mode-comment-header): new variable. Provides a
+	simple method of defining how one-line comments are introduced
+	in a file
+	* asm-mode.jl, lisp-mode.jl, texinfo-mode.jl, tex-mode.jl: use
+	mode-comment-header
+
+	* cvs.jl: add autoload tags for most commands
+
+	* rcs.jl (rcs-mode): replaces both the rcs-controlled-buffer
+	and rcs-current-info variables in one fell swoop
+
+	* perl-mode.jl: new file. Inherits a lot of code (and the
+	related problems?) from c-mode
+	* c-mode.jl: recognize $ and @ characters in symbols to help
+	perl-mode, improve comment handling
+	* modes.jl (auto-mode-alist, interpreter-mode-alist): added
+	regexps for perl-mode
+
+	* compile.jl (compile-push-directory-regexp,
+	compile-push-directory-expand): make this work properly (match
+	the `make[X]:' at the start of the line, not just `make:')
+
+	* help.jl, find-autoloads.jl, dump.jl, compiler.jl: change
+	miscellaneous `X-dir' variables to `X-directory' (jade-dir,
+	lisp-lib-dir, ..)
+
 1998-07-01  John Harper  <john@dcs.warwick.ac.uk>
 
 	* modes.jl (defun-at-point): check for null mode-defun-header
