@@ -34,10 +34,10 @@
 /* file containing doc-strings */
 #define DOC_FILE QUOTE(JADE_DIR) "/" VERSID "/DOC"
 
-/* From `unix_memory.c'  */
-#define myfree(p) do { if(p) free(p); } while(0)
-#define initmem() (1)
-#define killmem()
+/* These are related to the definition of sys_alloc() in unix_main.c */
+#define sys_free(p) do { if(p != 0) free(p); } while(0)
+#define sys_memory_init() (1)
+#define sys_memory_kill()
 
 /* For the client/server stuff. */
 #define JADE_SOCK_NAME ".Jade_rendezvous"
@@ -47,5 +47,8 @@ enum server_request {
     req_eval,
     req_end_of_session
 };
+
+/* How we test for pending input */
+#define INPUT_PENDING (unix_input_pending != 0)
 
 #endif /* _UNIX_DEFS_H */
