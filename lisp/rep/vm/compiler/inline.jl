@@ -194,5 +194,7 @@
 	  ;; none of the bindings are captured, so just modify them
 	  (pop-inline-args bind-stack args-left emit-varset)
 	  (unless (eq (fluid lambda-bindings) (fluid lex-bindings))
-	    (emit-insn (bytecode unbindall))))
+	    (emit-insn (bytecode unbindall)))
+	  (when (> (fluid current-stack) 0)
+	    (emit-insn (bytecode pop-all))))
 	(emit-insn (bytecode jmp) (get-start-label))))))
