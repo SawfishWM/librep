@@ -50,14 +50,7 @@ char *alloca ();
 /* The number of hash buckets in each rep_obarray, this is a prime number. */
 #define rep_OBSIZE		509
 
-#define rep_SYMBOLBLK_SIZE	680		/* ~8k */
 #define rep_FUNARGBLK_SIZE	204		/* ~4k */
-
-/* Symbol allocation blocks */
-typedef struct rep_symbol_block_struct {
-    struct rep_symbol_block_struct *next;
-    rep_ALIGN_CELL(rep_symbol symbols[rep_SYMBOLBLK_SIZE]);
-} rep_symbol_block;
 
 /* Closure allocation blocks */
 typedef struct rep_funarg_block_struct {
@@ -93,10 +86,6 @@ repv rep_void_value = rep_VAL(&void_object);
 rep_ALIGN_CELL(static rep_cell lextag) = { rep_Void };
 #define LEXTAG rep_VAL(&lextag)
 
-static rep_symbol_block *symbol_block_chain;
-static rep_symbol *symbol_freelist;
-int rep_allocated_symbols, rep_used_symbols;
-
 static rep_funarg_block *funarg_block_chain;
 static rep_funarg *funarg_freelist;
 int rep_allocated_funargs, rep_used_funargs;
@@ -112,60 +101,13 @@ Returns a new, uninterned, symbol with print-name NAME. It's value and
 function definition are both void and it has a nil property-list.
 ::end:: */
 {
-    repv sym;
     rep_DECLARE1(name, rep_STRINGP);
-    if(!symbol_freelist)
-    {
-	rep_symbol_block *sb = rep_ALLOC_CELL(sizeof(rep_symbol_block));
-	if(sb)
-	{
-	    int i;
-	    rep_allocated_symbols += rep_SYMBOLBLK_SIZE;
-	    sb->next = symbol_block_chain;
-	    symbol_block_chain = sb;
-	    for(i = 0; i < (rep_SYMBOLBLK_SIZE - 1); i++)
-		sb->symbols[i].next = rep_VAL(&sb->symbols[i + 1]);
-	    sb->symbols[i].next = rep_VAL(symbol_freelist);
-	    symbol_freelist = sb->symbols;
-	}
-    }
-    if((sym = rep_VAL(symbol_freelist)))
-    {
-	symbol_freelist = rep_SYM(rep_SYM(sym)->next);
-	rep_SYM(sym)->next = rep_NULL;
-	rep_SYM(sym)->car = rep_Symbol;
-	rep_SYM(sym)->name = name;
-	rep_used_symbols++;
-	rep_data_after_gc += sizeof(rep_symbol);
-    }
-    return(sym);
+    return rep_make_tuple (rep_Symbol, rep_NULL, name);
 }
 
 static void
 symbol_sweep(void)
 {
-    rep_symbol_block *sb = symbol_block_chain;
-    symbol_freelist = NULL;
-    rep_used_symbols = 0;
-    while(sb)
-    {
-	int i;
-	rep_symbol_block *nxt = sb->next;
-	for(i = 0; i < rep_SYMBOLBLK_SIZE; i++)
-	{
-	    if(!rep_GC_CELL_MARKEDP(rep_VAL(&sb->symbols[i])))
-	    {
-		sb->symbols[i].next = rep_VAL(symbol_freelist);
-		symbol_freelist = &sb->symbols[i];
-	    }
-	    else
-	    {
-		rep_GC_CLR_CELL(rep_VAL(&sb->symbols[i]));
-		rep_used_symbols++;
-	    }
-	}
-	sb = nxt;
-    }
     /* Need to clear mark bits of dumped symbols, since they're mutable */
     if (rep_dumped_symbols_start != rep_dumped_symbols_end)
     {
@@ -173,10 +115,7 @@ symbol_sweep(void)
 	for(s = rep_dumped_symbols_start; s < rep_dumped_symbols_end; s++)
 	{
 	    if(rep_GC_CELL_MARKEDP(rep_VAL(s)))
-	    {
 		rep_GC_CLR_CELL(rep_VAL(s));
-		rep_used_symbols++;
-	    }
 	}
     }
 }
@@ -1358,17 +1297,4 @@ rep_symbols_init(void)
     rep_ADD_SUBR_INT(Strace);
     rep_ADD_SUBR_INT(Suntrace);
     rep_ADD_SUBR(Sobarray);
-}
-
-void
-rep_symbols_kill(void)
-{
-    rep_symbol_block *sb = symbol_block_chain;
-    while(sb)
-    {
-	rep_symbol_block *nxt = sb->next;
-	rep_FREE_CELL(sb);
-	sb = nxt;
-    }
-    symbol_block_chain = NULL;
 }
