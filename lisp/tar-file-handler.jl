@@ -19,7 +19,8 @@
 ;; along with librep; see the file COPYING.  If not, write to
 ;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-(provide 'tar-file-handler)
+(structure (export)
+  (open rep date)
 
 ;; Commentary:
 
@@ -31,7 +32,7 @@
 ;; This is pretty slow when reading more than one file, since each
 ;; file is uncompressed separately (i.e. uncompressing the entire tar
 ;; file each time. It would be better to untar the entire contents
-;; somewhere, and then clean up later..
+;; somewhere, and then clean up later..)
 
 ;; It needs to use GNU tar (for the compression options)
 
@@ -64,10 +65,10 @@
   "Total number of tar listings to cache.")
 
 ;; Cached tar listings
-(defvar tarfh-dir-cache nil)
+(define tarfh-dir-cache nil)
 
 ;; guards tarfh-created file handles
-(defvar tarfh-fh-guardian (make-guardian))
+(define tarfh-fh-guardian (make-guardian))
 
 
 ;; Interface to tar program
@@ -306,14 +307,12 @@
 
 ;; file handler
 
-;;;###autoload (setq file-handler-alist (cons '("#tar\\b" . tar-file-handler) file-handler-alist))
-
 (defun tarfh-split-filename (name)
   (unless (string-match "#tar/?" name)
     (error "Can't find #tar in %s" name))
   (cons (substring name 0 (match-start)) (substring name (match-end))))
 
-;;;###autoload
+
 (defun tar-file-handler (op &rest args)
   (cond ((filep (car args))
 	 ;; an open file handle
@@ -441,3 +440,8 @@
 			      (list "File isn't a symlink:" (car args))))))
        (t
 	(error "Unsupported TAR op: %s %s" op args)))))))
+
+;;;###autoload (setq file-handler-alist (cons '("#tar\\b" . tar-file-handler) file-handler-alist))
+;;;###autoload (autoload-file-handler 'tar-file-handler 'tar-file-handler)
+
+(define-file-handler 'tar-file-handler tar-file-handler))

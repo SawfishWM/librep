@@ -18,8 +18,9 @@
 ;;; along with librep; see the file COPYING.  If not, write to
 ;;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-(require 'remote)
-(provide 'remote-rep)
+(define-structure remote-rep (export remote-rep-add-passwd)
+
+  (open rep remote-utils)
 
 
 ;; Configuration
@@ -38,22 +39,22 @@
 
 (defvar remote-rep-echo-output nil)
 
-(defvar remote-rep-passwd-alist nil)
+(define remote-rep-passwd-alist nil)
 
 (defvar remote-rep-dircache-expiry-time 60)
 
 (defvar remote-rep-dircache-max-dirs 5)
 
-(defvar remote-rep-sessions nil)
+(define remote-rep-sessions nil)
 
-(defvar remote-rep-signature "\002rep-remote; protocol (\\d+)\002")
+(defconst remote-rep-signature "\002rep-remote; protocol (\\d+)\002")
 
 (defvar remote-rep-passwd-msgs "[Pp]assword: *"
   "Regular expression matching password prompt.")
 
 (defconst remote-rep-required-protocol 1)
 
-(defvar remote-rep-hex-map (let
+(define remote-rep-hex-map (let
 			       ((map (make-string 128 0))
 				i)
 			     (setq i ?0)
@@ -603,7 +604,6 @@
 	(cdr cell)
       (pwd-prompt (concat "Password for " joined ?:)))))
 
-;;;###autoload
 (defun remote-rep-add-passwd (user host passwd)
   "Add the string PASSWD as the password for rep-remote session of USER@HOST."
   (interactive "sUsername:\nsHost:\nPassword for %s@%s:")
@@ -621,7 +621,6 @@
 
 ;; Backend handler
 
-;;;###autoload
 (defun remote-rep-handler (split-name op args)
   (cond
    ((eq op 'canonical-file-name)
@@ -784,5 +783,8 @@
 	   (t
 	    (error "Unsupported rep-remote op: %s %s" op args))))))))))
 
-;;;###autoload (put 'rep 'remote-backend remote-rep-handler)
-(put 'rep 'remote-backend remote-rep-handler)
+;;;###autoload (put 'rep 'remote-backend 'remote-rep-handler)
+
+;;;###autoload (autoload-file-handler 'remote-rep-handler 'remote-rep)
+
+(define-file-handler 'remote-rep-handler remote-rep-handler))

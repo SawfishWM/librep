@@ -19,8 +19,6 @@
 ;; along with librep; see the file COPYING.  If not, write to
 ;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-(provide 'threads)
-
 ;;;###autoload
 (defmacro with-threads-blocked (&rest forms)
   "Evaluate `(progn FORMS)' with thread preemption disabled."

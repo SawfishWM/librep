@@ -23,9 +23,10 @@
 ;;	matching files against regexp(s)
 ;;    - Fix all the kludges marked by XXX
 
-(require 'remote)
-(require 'mailaddr)			;for user-mail-address
-(provide 'remote-ftp)
+(define-structure remote-ftp (export remote-ftp-add-passwd)
+
+  (open rep remote-utils)
+  (require 'mailaddr)			;for user-mail-address
 
 
 ;; Configuration:
@@ -83,7 +84,7 @@ time.")
   "List of FTP structures defining all running FTP sessions.")
 
 
-;; Output templates, mostly copied from ange-ftp :-)
+;; Output templates, mostly copied from ange-ftp..!
 
 (defvar remote-ftp-prompt-regexp "([Ff]tp> *)+"
   "Regular expression matching a prompt from the FTP command (to be ignored).")
@@ -643,7 +644,6 @@ file types.")
       (pwd-prompt (concat (if retrying "Try again; p" ?P)
 			  "assword for " joined ?:)))))
 
-;;;###autoload
 (defun remote-ftp-add-passwd (user host passwd)
   "Add the string PASSWD as the password for FTP session of USER@HOST."
   (interactive "sUsername:\nsHost:\nPassword for %s@%s:")
@@ -661,7 +661,6 @@ file types.")
 
 ;; Backend handler
 
-;;;###autoload
 (defun remote-ftp-handler (split-name op args)
   (cond
    ((eq op 'canonical-file-name)
@@ -820,5 +819,8 @@ file types.")
 	   (t
 	    (error "Unsupported FTP op: %s %s" op args))))))))))
 
-;;;###autoload (put 'ftp 'remote-backend remote-ftp-handler)
-(put 'ftp 'remote-backend remote-ftp-handler)
+;;;###autoload (put 'ftp 'remote-backend 'remote-ftp-handler)
+
+;;;###autoload (autoload-file-handler 'remote-ftp-handler 'remote-ftp)
+
+(define-file-handler 'remote-ftp-handler remote-ftp-handler))

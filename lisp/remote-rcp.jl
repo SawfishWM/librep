@@ -18,12 +18,13 @@
 ;;; along with Jade; see the file COPYING.  If not, write to
 ;;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-(require 'remote)
-(provide 'remote-rcp)
+(define-structure remote-rcp (export)
 
-;; Notes:
+  (open rep remote-utils)
 
-;; Don't use this. It needs a lot of work. Use the FTP backend instead.
+  ;; Notes:
+
+  ;; Don't use this. It needs a lot of work. Use the FTP backend instead.
 
 
 ;; Configuration:
@@ -46,7 +47,6 @@
   (concat (and (car split) (concat (car split) ?@))
 	  (nth 1 split) ?: (nth 2 split)))
 
-;;;###autoload
 (defun remote-rcp-handler (split-name op args)
   (cond
    ((eq op 'canonical-file-name)
@@ -98,5 +98,8 @@
    (t
     (error "Unsupported remote-rcp op: %s %s" op args))))
 
-;;;###autoload (put 'rcp 'remote-backend remote-rcp-handler)
-(put 'rcp 'remote-backend remote-rcp-handler)
+;;;###autoload (put 'rcp 'remote-backend 'remote-rcp-handler)
+
+;;;###autoload (autoload-file-handler 'remote-rcp-handler 'remote-rcp)
+
+(define-file-handler 'remote-rcp-handler remote-rcp-handler))
