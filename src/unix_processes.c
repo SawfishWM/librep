@@ -655,20 +655,44 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 		    int actual;
 		    fd_set inputs;
 		    bool done_out = FALSE, done_err = FALSE;
+		    int interrupt_count = 0;
+
 		    FD_ZERO(&inputs);
 		    FD_SET(pr->pr_Stdout, &inputs);
 		    FD_SET(pr->pr_Stderr, &inputs);
 		    pr->pr_Stdin = 0;
 		    fcntl(pr->pr_Stdout, F_SETFL, O_NONBLOCK);
 		    fcntl(pr->pr_Stderr, F_SETFL, O_NONBLOCK);
-		    while(!done_out || !done_err)
+		    while(!(done_out && done_err))
 		    {
 			fd_set copy = inputs;
-			int number = select(FD_SETSIZE, &copy, NULL,
-					    NULL, NULL);
+			struct timeval timeout;
+			int number;
+			timeout.tv_sec = 1;
+			timeout.tv_usec = 0;
+			number = select(FD_SETSIZE, &copy, NULL,
+					NULL, &timeout);
+			TEST_INT;
+			if(INT_P)
+			{
+			    int signal;
+			    /* What to do here? */
+			    switch(++interrupt_count)
+			    {
+			    case 1:
+				signal = SIGTERM;
+				break;
+			    case 2:
+				signal = SIGHUP;
+				break;
+			    default:
+				signal = SIGKILL;
+			    }
+			    signal_process(pr, signal, TRUE);
+			}
 			if(number > 0)
 			{
-			    if(FD_ISSET(pr->pr_Stdout, &copy))
+			    if(!done_out && FD_ISSET(pr->pr_Stdout, &copy))
 			    {
 				actual = read(pr->pr_Stdout, buf, 1024);
 				if(actual > 0)
@@ -680,10 +704,16 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 						    actual, FALSE);
 				    }
 				}
-				else if(errno != EINTR)
+				else if(actual == 0
+					|| (errno != EINTR
+					    && errno != EAGAIN
+					    && errno != EWOULDBLOCK))
+				{
 				    done_out = TRUE;
+				    FD_CLR(pr->pr_Stdout, &inputs);
+				}
 			    }
-			    if(FD_ISSET(pr->pr_Stderr, &copy))
+			    if(!done_err && FD_ISSET(pr->pr_Stderr, &copy))
 			    {
 				actual = read(pr->pr_Stderr, buf, 1024);
 				if(actual > 0)
@@ -695,8 +725,14 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 						    actual, FALSE);
 				    }
 				}
-				else if(errno != EINTR)
+				else if(actual == 0
+					|| (errno != EINTR
+					    && errno != EAGAIN
+					    && errno != EWOULDBLOCK))
+				{
 				    done_err = TRUE;
+				    FD_CLR(pr->pr_Stderr, &inputs);
+				}
 			    }
 			}
 		    }
