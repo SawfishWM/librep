@@ -149,7 +149,8 @@ their position in that file.")
     last member memq arrayp aref substring concat length elt lognot not
     logior logxor logand equal = /= > < >= <= lsh ash zerop null atom consp
     listp numberp integerp stringp vectorp bytecodep functionp macrop
-    special-form-p subrp sequencep)
+    special-form-p subrp sequencep quotient floor ceiling truncate round
+    exp log sin cos tan asin acos atan sqrt expt)
   "List of side-effect-free functions. They should always return the same
 value when given the same inputs. Used when constant folding.")
 
@@ -2019,8 +2020,12 @@ that files which shouldn't be compiled aren't."
   (put '/ 'compile-opcode op-div)
   (put '% 'compile-fun comp-compile-2-args)
   (put '% 'compile-opcode op-rem)
+  (put 'remainder 'compile-fun comp-compile-2-args)
+  (put 'remainder 'compile-opcode op-rem)
   (put 'mod 'compile-fun comp-compile-2-args)
   (put 'mod 'compile-opcode op-mod)
+  (put 'modulo 'compile-fun comp-compile-2-args)
+  (put 'modulo 'compile-opcode op-mod)
   (put 'lognot 'compile-fun comp-compile-1-args)
   (put 'lognot 'compile-opcode op-lnot)
   (put 'not 'compile-fun comp-compile-1-args)
@@ -2081,6 +2086,8 @@ that files which shouldn't be compiled aren't."
   (put 'put 'compile-opcode op-put)
   (put 'signal 'compile-fun comp-compile-2-args)
   (put 'signal 'compile-opcode op-signal)
+  (put 'quotient 'compile-fun comp-compile-2-args)
+  (put 'quotient 'compile-opcode op-quotient)
   (put 'reverse 'compile-fun comp-compile-1-args) ; new 12/7/94
   (put 'reverse 'compile-opcode op-reverse)
   (put 'nreverse 'compile-fun comp-compile-1-args)
@@ -2150,6 +2157,29 @@ that files which shouldn't be compiled aren't."
   (put 'cddr 'compile-opcode op-cddr)
   (put 'caddr 'compile-fun comp-compile-1-args)
   (put 'caddr 'compile-opcode op-caddr)
+
+  (put 'floor 'compile-fun comp-compile-1-args)
+  (put 'floor 'compile-opcode op-floor)
+  (put 'ceiling 'compile-fun comp-compile-1-args)
+  (put 'ceiling 'compile-opcode op-ceiling)
+  (put 'truncate 'compile-fun comp-compile-1-args)
+  (put 'truncate 'compile-opcode op-truncate)
+  (put 'round 'compile-fun comp-compile-1-args)
+  (put 'round 'compile-opcode op-round)
+  (put 'exp 'compile-fun comp-compile-1-args)
+  (put 'exp 'compile-opcode op-exp)
+  (put 'log 'compile-fun comp-compile-1-args)
+  (put 'log 'compile-opcode op-log)
+  (put 'sin 'compile-fun comp-compile-1-args)
+  (put 'sin 'compile-opcode op-sin)
+  (put 'cos 'compile-fun comp-compile-1-args)
+  (put 'cos 'compile-opcode op-cos)
+  (put 'tan 'compile-fun comp-compile-1-args)
+  (put 'tan 'compile-opcode op-tan)
+  (put 'sqrt 'compile-fun comp-compile-1-args)
+  (put 'sqrt 'compile-opcode op-sqrt)
+  (put 'expt 'compile-fun comp-compile-2-args)
+  (put 'expt 'compile-opcode op-expt)
 
   ;; some pseudonyms
   (put 'setcar 'compile-fun comp-compile-2-args)
