@@ -20,16 +20,16 @@
 
 ;;; ::autoload-start::
 (setq file-handler-alist (cons '("^/(([a-zA-Z0-9._-]+)@)?([a-zA-Z0-9._-]+):" . remote-file-handler) file-handler-alist))
-(autoload-file-handler 'remote-file-handler 'remote)
+(autoload-file-handler 'remote-file-handler "remote")
 (put 'ftp 'remote-backend 'remote-ftp-handler)
-(autoload-file-handler 'remote-ftp-handler 'remote-ftp)
+(autoload-file-handler 'remote-ftp-handler "remote-ftp")
 (put 'rcp 'remote-backend 'remote-rcp-handler)
-(autoload-file-handler 'remote-rcp-handler 'remote-rcp)
+(autoload-file-handler 'remote-rcp-handler "remote-rcp")
 (put 'rep 'remote-backend 'remote-rep-handler)
-(autoload-file-handler 'remote-rep-handler 'remote-rep)
+(autoload-file-handler 'remote-rep-handler "remote-rep")
 (setq file-handler-alist (cons '("#tar\\b" . tar-file-handler) file-handler-alist))
-(autoload-file-handler 'tar-file-handler 'tar-file-handler)
+(autoload-file-handler 'tar-file-handler "tar-file-handler")
 (autoload 'pwd-prompt "pwd-prompt")
-(autoload 'debug-entry 'debug)
-(autoload 'debug-error-entry 'debug)
+(autoload 'debug-entry "debug")
+(autoload 'debug-error-entry "debug")
 ;;; ::autoload-end::

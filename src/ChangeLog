@@ -1,3 +1,8 @@
+2000-07-17  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.c (rep_load_autoload): removed stuff to autoload modules
+	-- it was broken anyway
+
 2000-07-16  John Harper  <john@dcs.warwick.ac.uk>
 
 	* numbers.c: check for overflow when using rep_longlong as

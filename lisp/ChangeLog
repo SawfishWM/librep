@@ -1,3 +1,13 @@
+2000-07-18  John Harper  <john@dcs.warwick.ac.uk>
+
+	* gaol.jl: store all state in gaol, don't keep it locally then
+	rebuild the gaol from that. Deprecated some old functions, new
+	interface is basically gaol-define, gaol-define-special,
+	gaol-define-file-handler. Also added gaol-open
+
+	* compiler-modules.jl: signal errors when trying to reference
+	unknown structures
+
 2000-07-16  John Harper  <john@dcs.warwick.ac.uk>
 
 	* gaol.jl (gaol-safe-functions): added more safe functions

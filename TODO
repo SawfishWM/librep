@@ -10,6 +10,8 @@ and more long-term ideas are marked -
 Outstanding bugs
 ================
 
+ ! (define foo bar "Doc") should do something with "Doc"
+
  ! scheme define/lambda doesn't splice begin forms
 
  ! the scheme module fails some of the guile test.scm cases
