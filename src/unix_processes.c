@@ -76,6 +76,10 @@
 # endif
 #endif
 
+#ifdef ENVIRON_UNDECLARED
+  extern char **environ;
+#endif
+
 static struct sigaction chld_sigact;
 static sigset_t chld_sigset;
 
@@ -162,6 +166,7 @@ DEFSTRING(already_running, "Already running");
 DEFSTRING(no_prog, "No program");
 DEFSTRING(cant_start, "Can't start");
 DEFSTRING(dev_null, "/dev/null");
+DEFSTRING(dot, ".");
 
 
 
@@ -176,12 +181,12 @@ close_proc_files(struct Proc *pr)
 {
     if(pr->pr_Stdout)
     {
-	deregister_input_fd(pr->pr_Stdout);
+	sys_deregister_input_fd(pr->pr_Stdout);
 	close(pr->pr_Stdout);
     }
     if(pr->pr_Stderr && pr->pr_Stderr != pr->pr_Stdout)
     {
-	deregister_input_fd(pr->pr_Stderr);
+	sys_deregister_input_fd(pr->pr_Stderr);
 	close(pr->pr_Stderr);
     }
     if(pr->pr_Stdin && (pr->pr_Stdin != pr->pr_Stdout))
@@ -309,7 +314,7 @@ read_from_one_fd(struct Proc *pr, int fd)
     {
 	/* We assume EOF  */
 
-	deregister_input_fd(fd);
+	sys_deregister_input_fd(fd);
 	close(fd);
 
 	/* Could be either pr_Stdout or pr_Stderr */
@@ -531,7 +536,32 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 	{
 	    switch(pr->pr_Pid = fork())
 	    {
+		VALUE tem;
+
 	    case 0:
+		/* Child process */
+
+		/* Build the environment */
+		tem = cmd_symbol_value(sym_process_environment, sym_t);
+		if(CONSP(tem))
+		{
+		    VALUE len = cmd_length(tem);
+		    if(len && INTP(len))
+		    {
+			environ = sys_alloc(sizeof(char *) * (VINT(len) + 1));
+			if(environ != 0)
+			{
+			    char **ptr = environ;
+			    while(CONSP(tem))
+			    {
+				*ptr++ = VSTR(VCAR(tem));
+				tem = VCDR(tem);
+			    }
+			    *ptr++ = 0;
+			}
+		    }
+		}
+
 		if(usepty)
 		{
 		    int slave;
@@ -605,15 +635,23 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 		    close(stderr_fds[0]);
 		    close(stderr_fds[1]);
 		}
-		if(STRINGP(pr->pr_Dir) && (STRING_LEN(pr->pr_Dir) > 0))
-		    chdir(VSTR(pr->pr_Dir));
+		if(STRINGP(pr->pr_Dir))
+		{
+		    if(STRING_LEN(pr->pr_Dir) > 0)
+			chdir(VSTR(pr->pr_Dir));
+		}
+
 		execvp(argv[0], argv);
 		perror("child: execvp");
 		exit(255);
+
 	    case -1:
 		perror("fork()");
 		break;
+
 	    default:
+		/* Parent process */
+
 		PR_SET_STATUS(pr, PR_RUNNING);
 		if(!usepty)
 		{
@@ -634,15 +672,14 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 			    pr->pr_Stdin = pr->pr_Stdout;
 			}
 		    }
-		    fcntl(pr->pr_Stdin, F_SETFD, 1);
-		    fcntl(pr->pr_Stdout, F_SETFD, 1);
-		    fcntl(pr->pr_Stdout, F_SETFL, O_NONBLOCK);
-		    register_input_fd(pr->pr_Stdout, read_from_process);
+		    unix_set_fd_cloexec(pr->pr_Stdin);
+		    unix_set_fd_nonblocking(pr->pr_Stdout);
+		    sys_register_input_fd(pr->pr_Stdout, read_from_process);
 		    if(pr->pr_Stderr != pr->pr_Stdout)
 		    {
-			fcntl(pr->pr_Stderr, F_SETFD, 1);
-			fcntl(pr->pr_Stderr, F_SETFL, O_NONBLOCK);
-			register_input_fd(pr->pr_Stderr, read_from_process);
+			unix_set_fd_nonblocking(pr->pr_Stderr);
+			sys_register_input_fd(pr->pr_Stderr,
+					      read_from_process);
 		    }
 		    process_run_count++;
 		}
@@ -843,29 +880,44 @@ list of arguments passed to the process.
 Any of the arguments may be unspecified, in which case they can be set
 either by the functions provided or by the function called to create the
 actual running process.
+
+If the DIR parameter is nil it will be inherited from the
+`default-directory' variable of the current buffer.
 ::end:: */
 {
-    struct Proc *pr = ALLOC_OBJECT(sizeof(struct Proc));
-    if(pr)
+    VALUE pr = VAL(ALLOC_OBJECT(sizeof(struct Proc)));
+    if(pr != LISP_NULL)
     {
-	pr->pr_Car = V_Process;
-	pr->pr_Next = process_chain;
-	process_chain = pr;
-	pr->pr_NotifyNext = NULL;
-	PR_SET_STATUS(pr, PR_DEAD);
-	pr->pr_Pid = 0;
-	pr->pr_Stdin = pr->pr_Stdout = 0;
-	pr->pr_ExitStatus = -1;
-	pr->pr_OutputStream = stream;
-	pr->pr_ErrorStream = stream;
-	pr->pr_NotifyFun = fun;
-	pr->pr_Prog = prog;
-	pr->pr_Args = args;
-	pr->pr_Dir = dir;
-	pr->pr_ConnType = sym_pipe;
-	return(VAL(pr));
+	GC_root gc_pr;
+	VPROC(pr)->pr_Car = V_Process;
+	VPROC(pr)->pr_Next = process_chain;
+	process_chain = VPROC(pr);
+	VPROC(pr)->pr_NotifyNext = NULL;
+	PR_SET_STATUS(VPROC(pr), PR_DEAD);
+	VPROC(pr)->pr_Pid = 0;
+	VPROC(pr)->pr_Stdin = VPROC(pr)->pr_Stdout = 0;
+	VPROC(pr)->pr_ExitStatus = -1;
+	VPROC(pr)->pr_OutputStream = stream;
+	VPROC(pr)->pr_ErrorStream = stream;
+	VPROC(pr)->pr_NotifyFun = fun;
+	VPROC(pr)->pr_Prog = prog;
+	VPROC(pr)->pr_Args = args;
+	VPROC(pr)->pr_ConnType = sym_pipe;
+	VPROC(pr)->pr_Dir = dir;
+
+	/* Ensure that pr_Dir refers to an absolute local file */
+	PUSHGC(gc_pr, pr);
+	dir = cmd_local_file_name(STRINGP(dir) ? dir : VAL(&dot));
+	POPGC;
+	if(dir && STRINGP(dir))
+	    VPROC(pr)->pr_Dir = dir;
+	else
+	    VPROC(pr)->pr_Dir = sym_nil;
+
+	return pr;
     }
-    return(mem_error());
+    else
+	return mem_error();
 }
 
 _PR VALUE cmd_start_process(VALUE arg_list);
@@ -992,10 +1044,8 @@ set in the PROCESS prior to calling this function.
 	}
     }
     if(!STRINGP(pr->pr_Prog))
-    {
 	res = cmd_signal(sym_process_error, LIST_2(VAL(&no_prog), VAL(pr)));
-    }
-    else if(!file_exists(VSTR(infile)))
+    else if(NILP(sys_file_exists_p(infile)))
 	res = signal_file_error(infile);
     else
     {
@@ -1067,7 +1117,7 @@ set in the PROCESS prior to calling this function.
 		    VALUE temp_file;
 		    VALUE ret;
 		    arg_list = VCDR(arg_list);
-		    temp_file = cmd_tmp_file_name();
+		    temp_file = cmd_make_temp_name();
 		    if(temp_file && STRINGP(temp_file))
 		    {
 			/* Open the file to make it private. */
@@ -1078,8 +1128,7 @@ set in the PROCESS prior to calling this function.
 			    return signal_file_error(temp_file);
 			close(fd);
 		    }
-		    ret = cmd_write_buffer_contents(temp_file, start, end,
-						    sym_nil);
+		    ret = cmd_write_buffer_contents(temp_file, start, end);
 		    if(ret && !NILP(ret))
 		    {
 			if(deletep)
@@ -1469,9 +1518,20 @@ set-process-dir PROCESS DIR
 Set the directory of PROCESS to DIR.
 ::end:: */
 {
+    GC_root gc_proc;
     DECLARE1(proc, PROCESSP);
-    VPROC(proc)->pr_Dir = dir;
-    return(dir);
+    DECLARE2(dir, STRINGP);
+
+    /* Ensure that pr_Dir refers to an absolute local file */
+    PUSHGC(gc_proc, proc);
+    dir = cmd_local_file_name(STRINGP(dir) ? dir : VAL(&dot));
+    POPGC;
+    if(dir && STRINGP(dir))
+	VPROC(proc)->pr_Dir = dir;
+    else
+	VPROC(proc)->pr_Dir = sym_nil;
+
+    return VPROC(proc)->pr_Dir;;
 }
 
 _PR VALUE cmd_process_connection_type(VALUE proc);
