@@ -2134,7 +2134,7 @@ that files which shouldn't be compiled aren't."
   (put 'zerop 'compile-fun comp-compile-1-args)
   (put 'zerop 'compile-opcode op-zerop)
   (put 'null 'compile-fun comp-compile-1-args)
-  (put 'null 'compile-opcode op-null)
+  (put 'null 'compile-opcode op-not)
   (put 'atom 'compile-fun comp-compile-1-args)
   (put 'atom 'compile-opcode op-atom)
   (put 'consp 'compile-fun comp-compile-1-args)
