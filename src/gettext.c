@@ -24,14 +24,20 @@
 #include <rep.h>
 
 #ifdef LIBC_GETTEXT
+# ifdef HAVE_LIBINTL_H
+#  include <libintl.h>
+# endif
 # define gnu_gettext gettext
 # define gnu_textdomain textdomain
 # define gnu_bindtextdomain bindtextdomain
-#endif
-
+#else
+# define gnu_gettext gettext__
+# define gnu_textdomain textdomain__
+# define gnu_bindtextdomain bindtextdomain__
 extern char *gnu_gettext (const char *msgid);
 extern char *gnu_textdomain (const char *domainname);
 extern char *gnu_bindtextdomain (const char *domainname, const char *dirname);
+#endif
 
 DEFUN("gettext", Fgettext, Sgettext, (repv in), rep_Subr1)
 {
