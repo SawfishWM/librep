@@ -44,6 +44,10 @@
 ;;; call to the byte-code interpreter gets its own stack; the size of
 ;;; stack needed is calculated by the compiler.
 
+;; Instruction set version
+(defconst bytecode-major 2)
+(defconst bytecode-minor 1)
+
 ;; Opcodes
 (defconst op-call 0x08)			;call (stk[n] stk[n-1] ... stk[0])
 					; pops n values, replacing the
