@@ -1,3 +1,8 @@
+1998-09-01  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_processes.c (cmd_accept_process_output): accept
+	termination notifications as well as stream output
+
 1998-08-30  John Harper  <john@dcs.warwick.ac.uk>
 
 	* glyphs.c (make_window_glyphs): reload the glyph-table each
