@@ -1,3 +1,9 @@
+1998-08-02  John Harper  <john@dcs.warwick.ac.uk>
+
+	* add-log.jl, buffer-summary.jl, buffers.jl, compile.jl,
+	info.jl: miscellaneous changes for buffer-file-name returning
+	nil if the buffer has no file, not the null string as before
+
 1998-08-01  John Harper  <john@dcs.warwick.ac.uk>
 
 	* buffers.jl (find-file): check that the file exists before
