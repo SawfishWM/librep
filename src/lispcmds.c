@@ -39,13 +39,13 @@ DEFSYM(load_path, "load-path");
 DEFSYM(dl_load_path, "dl-load-path");
 DEFSYM(after_load_alist, "after-load-alist");
 DEFSYM(provide, "provide");
-DEFSYM(features, "features");
 DEFSYM(rep_directory, "rep-directory");
 DEFSYM(lisp_lib_directory, "lisp-lib-directory");
 DEFSYM(site_lisp_directory, "site-lisp-directory");
 DEFSYM(exec_directory, "exec-directory");
 DEFSYM(documentation_file, "documentation-file");
 DEFSYM(documentation_files, "documentation-files");
+DEFSYM(_load_suffixes, "%load-suffixes");
 DEFSYM(dl_load_reloc_now, "dl-load-reloc-now");
 DEFSYM(load_filename, "load-filename"); /*
 ::doc:load-path::
@@ -1352,9 +1352,9 @@ load_file_exists_p (repv name)
     return tem;
 }
 
-DEFUN_INT("load", Fload, Sload, (repv file, repv noerr_p, repv nopath_p, repv nosuf_p, repv in_env), rep_Subr5, "fLisp file to load:") /*
+DEFUN_INT("load", Fload, Sload, (repv file, repv noerr_p, repv nopath_p, repv nosuf_p, repv unused), rep_Subr5, "fLisp file to load:") /*
 ::doc:load::
-load FILE [NO-ERROR] [NO-PATH] [NO-SUFFIX] [IN-CURRENT-ENVIRONMENT]
+load FILE [NO-ERROR] [NO-PATH] [NO-SUFFIX]
 
 Attempt to open and then read-and-eval the file of Lisp code FILE.
 
@@ -1366,10 +1366,6 @@ If NO-ERROR is non-nil no error is signalled if FILE can't be found. If
 NO-PATH is non-nil the `load-path' variable is not used, just the value
 of FILE. If NO-SUFFIX is non-nil no suffixes are appended to FILE.
 
-If IN-CURRENT-ENVIRONMENT is non-nil then the forms contained by FILE
-are evaluated within the current lexical environment; by default a new
-environment is created for each file loaded.
-
 If the compiled version is older than it's source code, the source code is
 loaded and a warning is displayed.
 ::end:: */
@@ -1377,17 +1373,18 @@ loaded and a warning is displayed.
     /* Avoid the need to protect these args from GC. */
     rep_bool no_error_p = !rep_NILP(noerr_p);
     rep_bool no_suffix_p = !rep_NILP(nosuf_p);
-    rep_bool in_current_env = !rep_NILP(in_env);
     rep_bool interp_mode = Fsymbol_value (Qinterpreted_mode, Qt) != Qnil;
 
     repv name = Qnil, path;
     repv dir = rep_NULL, try = rep_NULL;
+    repv result;
+    repv suffixes;
 
 #ifdef HAVE_DYNAMIC_LOADING
     rep_bool trying_dl = rep_FALSE;
 #endif
 
-    rep_GC_root gc_file, gc_name, gc_path, gc_dir, gc_try;
+    rep_GC_root gc_file, gc_name, gc_path, gc_dir, gc_try, gc_result, gc_suffixes;
 
     rep_DECLARE1(file, rep_STRINGP);
     if(rep_NILP(nopath_p))
@@ -1399,11 +1396,16 @@ loaded and a warning is displayed.
     else
 	path = Fcons(rep_null_string(), Qnil);
 
+    suffixes = F_structure_ref (rep_structure, Q_load_suffixes);
+    if (!suffixes || !rep_CONSP (suffixes))
+	no_suffix_p = rep_TRUE;
+
     rep_PUSHGC(gc_name, name);
     rep_PUSHGC(gc_file, file);
     rep_PUSHGC(gc_path, path);
     rep_PUSHGC(gc_dir, dir);
     rep_PUSHGC(gc_try, try);
+    rep_PUSHGC(gc_suffixes, suffixes);
 
     /* Scan the path for the file to load. */
 research:
@@ -1418,7 +1420,6 @@ research:
 	    if(!no_suffix_p)
 	    {
 		repv tem;
-		static char *suffixes[3] = { ".jl", ".jlc" };
 		int i = 1;
 		if (!trying_dl && interp_mode)
 		    i = 0;
@@ -1438,27 +1439,32 @@ research:
 		    }
 		    else
 #endif
-			try = rep_concat2(rep_STR(dir), suffixes[i]);
-
-		    if (try == rep_NULL || !rep_STRINGP (try))
-			goto path_error;
-
-		    tem = load_file_exists_p (try);
-		    if(!tem)
-			goto path_error;
-		    if(tem != Qnil)
 		    {
-			if(name != Qnil)
+			repv sfx = ((i == 0)
+				    ? rep_CAR(suffixes) : rep_CDR(suffixes));
+			if (rep_STRINGP (sfx))
+			    try = rep_concat2(rep_STR(dir), rep_STR(sfx));
+		    }
+
+		    if (try && rep_STRINGP (try))
+		    {
+			tem = load_file_exists_p (try);
+			if(!tem)
+			    goto path_error;
+			if(tem != Qnil)
 			{
-			    if(rep_file_newer_than(try, name))
+			    if(name != Qnil)
 			    {
-				if (rep_message_fun != 0)
-				    (*rep_message_fun)(rep_messagef,"Warning: %s newer than %s, using %s", rep_STR(try), rep_STR(name), rep_STR(try));
-				name = try;
+				if(rep_file_newer_than(try, name))
+				{
+				    if (rep_message_fun != 0)
+					(*rep_message_fun)(rep_messagef, "Warning: %s newer than %s, using %s", rep_STR(try), rep_STR(name), rep_STR(try));
+				    name = try;
+				}
 			    }
+			    else
+				name = try;
 			}
-			else
-			    name = try;
 		    }
 		}
 	    }
@@ -1495,7 +1501,7 @@ research:
 #endif
 
 path_error:
-    rep_POPGC; rep_POPGC; rep_POPGC; rep_POPGC; rep_POPGC;
+    rep_POPGC; rep_POPGC; rep_POPGC; rep_POPGC; rep_POPGC; rep_POPGC;
 
     if(rep_NILP(name))
     {
@@ -1508,11 +1514,10 @@ path_error:
 #ifdef HAVE_DYNAMIC_LOADING
     if(trying_dl)
     {
-	void *handle;
 	rep_PUSHGC(gc_file, file);
-	handle = rep_open_dl_library(name);
+	result = rep_open_dl_library (name);
 	rep_POPGC;
-	if (handle == 0)
+	if (result == rep_NULL)
 	    return rep_NULL;
     }
     else
@@ -1542,18 +1547,13 @@ path_error:
 	lc.args = Qnil;
 	lc.args_evalled_p = Qnil;
 	rep_PUSH_CALL(lc);
-
-	if (!in_current_env)
-	{
-	    rep_env = Qt;
-	    rep_special_env = Fcons (Qnil, Qt);
-	}
+	rep_env = Qt;
 
 	c = rep_stream_getc(stream);
 	while((c != EOF) && (tem = rep_readl(stream, &c)))
 	{
 	    rep_TEST_INT;
-	    if(rep_INTERRUPTP || !Feval(tem))
+	    if(rep_INTERRUPTP || !(result = Feval(tem)))
 	    {
 		rep_unbind_symbols (bindings);
 		rep_POP_CALL(lc);
@@ -1571,13 +1571,15 @@ path_error:
 	}
 	rep_POP_CALL(lc);
 	rep_POPGC; rep_POPGC;
+	rep_PUSHGC (gc_result, result);
 	rep_unbind_symbols (bindings);
 	Fclose_file (stream);
-	rep_POPGC;
+	rep_POPGC; rep_POPGC;
     }
 
     /* Loading succeeded. Look for an applicable item in
        the after-load-alist. */
+    rep_PUSHGC (gc_result, result);
     rep_PUSHGC (gc_file, file);
     {
 	repv tem;
@@ -1601,8 +1603,9 @@ again:
 	}
     }
     rep_POPGC;
+    rep_POPGC;
 
-    return Qt;
+    return result;
 }
 
 DEFUN("equal", Fequal, Sequal, (repv val1, repv val2), rep_Subr2) /*
@@ -2219,63 +2222,8 @@ of whatever was changed. Return the value of the last FORM evaluated.
     return res;
 }
 
-DEFUN("featurep", Ffeaturep, Sfeaturep, (repv feature), rep_Subr1) /*
-::doc:featurep::
-featurep FEATURE
-
-Return non-nil if feature FEATURE has already been loaded.
-::end:: */
-{
-    repv value;
-    rep_DECLARE1 (feature, rep_SYMBOLP);
-    value = Fsymbol_value (Qfeatures, Qnil);
-    if (value != rep_NULL)
-	return Fmemq (feature, value);
-    else
-	return rep_NULL;
-}
-
-DEFUN("provide", Fprovide, Sprovide, (repv feature), rep_Subr1) /*
-::doc:provide::
-provide FEATURE
-
-Show that the feature FEATURE (a symbol) has been loaded.
-::end:: */
-{
-    repv value;
-    rep_DECLARE1 (feature, rep_SYMBOLP);
-    value = Fsymbol_value (Qfeatures, Qnil);
-    if (value != rep_NULL)
-    {
-	repv tem = Fmemq (feature, value);
-	if (tem && tem == Qnil)
-	    Fset (Qfeatures, Fcons (feature, value));
-	return feature;
-    }
-    else
-	return rep_NULL;
-}
-
-DEFUN_INT("require", Frequire, Srequire, (repv feature, repv file), rep_Subr2,
-	  "SFeature to load:") /*
-::doc:require::
-require FEATURE [FILE]
-
-If FEATURE (a symbol) has not already been loaded, load it. The file
-loaded is either FILE (if given), or the print name of FEATURE.
-::end:: */
-{
-    repv tem;
-    rep_DECLARE1 (feature, rep_SYMBOLP);
-    tem = Ffeaturep (feature);
-    if (tem && tem == Qnil)
-    {
-	if (!rep_STRINGP(file))
-	    file = rep_SYM(feature)->name;
-	return Fload (file, Qnil, Qnil, Qnil, Qnil);
-    }
-    return feature;
-}
+DEFSTRING(jl, ".jl");
+DEFSTRING(jlc, ".jlc");
 
 void
 rep_lispcmds_init(void)
@@ -2358,14 +2306,8 @@ rep_lispcmds_init(void)
     rep_ADD_SUBR(Sthrow);
     rep_ADD_SUBR(Sunwind_protect);
     rep_ADD_SUBR(Swith_object);
-    rep_ADD_SUBR(Sfeaturep);
-    rep_ADD_SUBR(Sprovide);
-    rep_ADD_SUBR_INT(Srequire);
 
     rep_INTERN(provide);
-    rep_INTERN_SPECIAL(features);
-    if (Fboundp (Qfeatures) == Qnil)
-	Fset (Qfeatures, Qnil);
 
     rep_INTERN_SPECIAL(rep_directory);
     if(getenv("REPDIR") != 0)
@@ -2435,4 +2377,8 @@ rep_lispcmds_init(void)
     Fset (Qdl_load_reloc_now, Qnil);
 
     rep_INTERN_SPECIAL(load_filename);
+
+    rep_INTERN (_load_suffixes);
+    F_structure_set (rep_structure, Q_load_suffixes, Fcons (rep_VAL (&jl),
+							    rep_VAL (&jlc)));
 }
