@@ -107,9 +107,12 @@ AC_ARG_WITH(gmp,
   fi
 ])
 AC_CHECK_HEADER(gmp.h,
-    AC_CHECK_LIB(gmp, mpz_init, GMP_LIBS="-lgmp -lm",
-	AC_MSG_ERROR(Cannot find GMP library)),
-    AC_MSG_ERROR(Cannot find GMP header))
+    AC_MSG_CHECKING([for mpz_init in -lgmp])
+    _libs=$LIBS LIBS="$LIBS -lgmp"
+    AC_TRY_LINK([#include <gmp.h>], [mpz_t foo; mpz_init (foo);],
+        [LIBS=$_libs GMP_LIBS="-lgmp -lm" AC_MSG_RESULT(yes)],
+	AC_MSG_ERROR([Cannot find GMP library])),
+    AC_MSG_ERROR([Cannot find GMP header]))
 AC_SUBST(GMP_LIBS)
 
 dnl Check for GNU DBM library and header files
@@ -202,7 +205,7 @@ if test $dl_ok = dl; then
   case ${host} in
     *-dec-osf5*)
       AC_MSG_CHECKING([for broken RTLD_GLOBAL on Tru64])
-      if /usr/sbin/sizer -v | grep -E -q -e 'UNIX [[TVX]]5\.0A? '; then
+      if /usr/sbin/sizer -v | grep -E -q -e 'UNIX [[TVX]]5\.0A?(-[[[[:digit:]]]]+)? '; then
 	  AC_DEFINE(BROKEN_RTLD_GLOBAL)
 	  AC_MSG_RESULT(yes)
       else
