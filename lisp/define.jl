@@ -70,7 +70,7 @@
 	 ((type (car form))
 	  fun values body)
        (setq form (cdr form))
-       (when (and (eq type 'let) (symbolp (car form)))
+       (when (and (eq type 'let) (car form) (symbolp (car form)))
 	 (setq fun (car form))
 	 (setq form (cdr form)))
        (setq values (mapcar (lambda (lst)
