@@ -234,7 +234,7 @@
 	 ;; jt X; nil --> jpt X
 	 ((and (eq (car insn0) op-jt)
 	       (eq (car insn1) op-nil))
-	  (rplaca insn0 op-jtp)
+	  (rplaca insn0 op-jpt)
 	  (comp-peep-del-1)
 	  (setq keep-going t))
 
