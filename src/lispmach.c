@@ -22,6 +22,12 @@
 
 #define _GNU_SOURCE
 
+/* Define this to check if the compiler gets things right */
+#undef TRUST_NO_ONE
+
+/* Define this to bytecode use histograms */
+#undef BYTECODE_PROFILE
+
 /* AIX requires this to be the first thing in the file.  */
 #include <config.h>
 #ifdef __GNUC__
@@ -40,15 +46,15 @@ char *alloca ();
 # endif
 #endif
 
+#ifndef TRUST_NO_ONE
+  /* turn off assertions */
+# define NDEBUG 1
+#endif
+
 #include "repint.h"
 #include "bytecodes.h"
 #include <assert.h>
-
-/* Define this to check if the compiler reserves enough stack */
-#undef CHECK_STACK_USAGE
-
-/* Define this to bytecode use histograms */
-#undef BYTECODE_PROFILE
+#include <string.h>
 
 /* Use the threaded interpreter with GNU CC. */
 #ifdef __GNUC__
@@ -65,8 +71,8 @@ DEFSYM(bytecode_error, "bytecode-error");
 DEFSTRING(err_bytecode_error, "Invalid byte code version");
 DEFSTRING(unknown_op, "Unknown lisp opcode");
 
-static repv vm (repv code, repv consts, repv frame,
-		int v_stkreq, int b_stkreq);
+static repv vm (repv code, repv consts, int argc, repv *argv,
+		int v_stkreq, int b_stkreq, int s_stkreq);
 
 #ifdef BYTECODE_PROFILE
 static int bytecode_profile[256];
@@ -148,6 +154,14 @@ search_special_bindings (repv sym)
     return env != Qnil ? rep_CAR(env) : env;
 }
 
+static inline void
+repv_memset (repv *s, repv c, int count)
+{
+    register int i;
+    for (i = 0; i < count; i++)
+	*s++ = c;
+}
+
 
 /* Lisp VM. */
 
@@ -179,23 +193,19 @@ list_ref (repv list, int elt)
 # define PUSH(v)    do { *(++stackp) = (v); } while (0)
 #endif
 
-#define STK_USE	    (stackp - (stackbase - 1))
+#define STK_USE	    (stackp - stack)
 
-#define BIND_USE	(bindp - (bindbase - 1))
+#define BIND_USE	(bindp - (bindstack - 1))
 #define BIND_RET_POP	(*bindp--)
 #define BIND_TOP	(*bindp)
-#define BIND_TOP_P	(bindp < bindbase)
+#define BIND_TOP_P	(bindp < bindstack)
 #define BIND_PUSH(x)	(*(++bindp) = (x))
 
-#ifdef CHECK_STACK_USAGE
-# define ASSERT_STACK_BOUNDS 			\
+#define ASSERT_STACK_BOUNDS 			\
     do {					\
 	assert (STK_USE <= v_stkreq);		\
 	assert (BIND_USE <= b_stkreq + 1);	\
     } while (0)
-#else
-# define ASSERT_STACK_BOUNDS
-#endif
 
 #ifdef BYTECODE_PROFILE
 # define PROFILE_NEXT do { bytecode_profile[*pc]++; } while (0)
@@ -216,11 +226,9 @@ list_ref (repv list, int elt)
 #define SYNC_GC				\
     do {				\
 	UPDATE;				\
-	gc_stackbase.count = STK_USE;	\
-	gc_bindbase.count = BIND_USE;	\
+	gc_stack.count = STK_USE;	\
+	gc_bindstack.count = BIND_USE;	\
     } while (0)
-
-#define AFTER_GC RELOAD
 
 /* These macros pop as many args as required then call the specified
    function properly. */
@@ -318,24 +326,24 @@ list_ref (repv list, int elt)
 # define HANDLE_ERROR	goto error
 
 # define JUMP_TABLE										\
- &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT,	/*00*/				\
- &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT,					\
+ &&TAG(OP_SLOT_REF_0), &&TAG(OP_SLOT_REF_1), &&TAG(OP_SLOT_REF_2), &&TAG(OP_SLOT_REF_3),	/*00*/	\
+ &&TAG(OP_SLOT_REF_4), &&TAG(OP_SLOT_REF_5), &&TAG(OP_SLOT_REF_6), &&TAG(OP_SLOT_REF_7),		\
  &&TAG0(OP_CALL), &&TAG0(OP_CALL), &&TAG0(OP_CALL), &&TAG0(OP_CALL), /*08*/			\
  &&TAG0(OP_CALL), &&TAG0(OP_CALL), &&TAG1(OP_CALL), &&TAG2(OP_CALL),				\
  &&TAG0(OP_PUSH), &&TAG0(OP_PUSH), &&TAG0(OP_PUSH), &&TAG0(OP_PUSH), /*10*/			\
  &&TAG0(OP_PUSH), &&TAG0(OP_PUSH), &&TAG1(OP_PUSH), &&TAG2(OP_PUSH),				\
- &&TAG0(OP_REFQ), &&TAG0(OP_REFQ), &&TAG0(OP_REFQ), &&TAG0(OP_REFQ), /*18*/			\
- &&TAG0(OP_REFQ), &&TAG0(OP_REFQ), &&TAG1(OP_REFQ), &&TAG2(OP_REFQ),				\
- &&TAG0(OP_SETQ), &&TAG0(OP_SETQ), &&TAG0(OP_SETQ), &&TAG0(OP_SETQ), /*20*/			\
- &&TAG0(OP_SETQ), &&TAG0(OP_SETQ), &&TAG1(OP_SETQ), &&TAG2(OP_SETQ),				\
- &&TAG0(OP_LIST), &&TAG0(OP_LIST), &&TAG0(OP_LIST), &&TAG0(OP_LIST), /*28*/			\
- &&TAG0(OP_LIST), &&TAG0(OP_LIST), &&TAG1(OP_LIST), &&TAG2(OP_LIST),				\
- &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, /*30*/			\
- &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT,				\
+ &&TAG0(OP_REFG), &&TAG0(OP_REFG), &&TAG0(OP_REFG), &&TAG0(OP_REFG), /*18*/			\
+ &&TAG0(OP_REFG), &&TAG0(OP_REFG), &&TAG1(OP_REFG), &&TAG2(OP_REFG),				\
+ &&TAG0(OP_SETG), &&TAG0(OP_SETG), &&TAG0(OP_SETG), &&TAG0(OP_SETG), /*20*/			\
+ &&TAG0(OP_SETG), &&TAG0(OP_SETG), &&TAG1(OP_SETG), &&TAG2(OP_SETG),				\
+ &&TAG0(OP_SETN), &&TAG0(OP_SETN), &&TAG0(OP_SETN), &&TAG0(OP_SETN), /*28*/			\
+ &&TAG0(OP_SETN), &&TAG0(OP_SETN), &&TAG1(OP_SETN), &&TAG2(OP_SETN),				\
+ &&TAG(OP_SLOT_SET_0), &&TAG(OP_SLOT_SET_1), &&TAG(OP_SLOT_SET_2), &&TAG(OP_SLOT_SET_3),	/*30*/	\
+ &&TAG(OP_SLOT_SET_4), &&TAG(OP_SLOT_SET_5), &&TAG(OP_SLOT_SET_6), &&TAG(OP_SLOT_SET_7),		\
  &&TAG(OP_REFN_0), &&TAG(OP_REFN_1), &&TAG(OP_REFN_2), &&TAG(OP_REFN_3), /*38*/			\
- &&TAG(OP_REFN_4), &&TAG(OP_REFN_5), &&TAG(OP_REFN_6), &&TAG(OP_REFN_7),				\
+ &&TAG(OP_REFN_4), &&TAG(OP_REFN_5), &&TAG(OP_REFN_6), &&TAG(OP_REFN_7),			\
 												\
- &&TAG(OP_REF), &&TAG(OP_SET), &&TAG(OP_FLUID_REF), &&TAG(OP_ENCLOSE), /*40*/			\
+ &&TAG(OP_REF), &&TAG(OP__SET), &&TAG(OP_FLUID_REF), &&TAG(OP_ENCLOSE), /*40*/			\
  &&TAG(OP_INIT_BIND), &&TAG(OP_UNBIND), &&TAG(OP_DUP), &&TAG(OP_SWAP),				\
  &&TAG(OP_POP), &&TAG(OP_NIL), &&TAG(OP_T), &&TAG(OP_CONS), /*48*/				\
  &&TAG(OP_CAR), &&TAG(OP_CDR), &&TAG(OP_RPLACA), &&TAG(OP_RPLACD),				\
@@ -375,18 +383,18 @@ list_ref (repv list, int elt)
  &&TAG(OP_MAKE_CLOSURE), &&TAG(OP_UNBINDALL_0), &&TAG(OP_CLOSUREP), &&TAG(OP_POP_ALL),		\
 												\
  &&TAG(OP_FLUID_SET), &&TAG(OP_FLUID_BIND), &&TAG(OP_MEMQL), &&TAG(OP_NUM_EQ), /*C0*/		\
- &&TAG(OP_TEST_SCM), &&TAG(OP_TEST_SCM_F), &&TAG(OP__DEFINE), &&TAG_DEFAULT,			\
- &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, /*C8*/				\
+ &&TAG(OP_TEST_SCM), &&TAG(OP_TEST_SCM_F), &&TAG(OP__DEFINE), &&TAG(OP_SPEC_BIND),		\
+ &&TAG(OP_SET), &&TAG(OP_REQUIRED_ARG), &&TAG(OP_OPTIONAL_ARG), &&TAG(OP_REST_ARG), /*C8*/				\
  &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT,					\
 												\
- &&TAG0(OP_BINDSPEC), &&TAG0(OP_BINDSPEC), &&TAG0(OP_BINDSPEC), &&TAG0(OP_BINDSPEC), /*D0*/	\
- &&TAG0(OP_BINDSPEC), &&TAG0(OP_BINDSPEC), &&TAG1(OP_BINDSPEC), &&TAG2(OP_BINDSPEC),		\
- &&TAG0(OP_SETG), &&TAG0(OP_SETG), &&TAG0(OP_SETG), &&TAG0(OP_SETG), /*D8*/			\
- &&TAG0(OP_SETG), &&TAG0(OP_SETG), &&TAG1(OP_SETG), &&TAG2(OP_SETG),				\
- &&TAG0(OP_REFG), &&TAG0(OP_REFG), &&TAG0(OP_REFG), &&TAG0(OP_REFG), /*E0*/			\
- &&TAG0(OP_REFG), &&TAG0(OP_REFG), &&TAG1(OP_REFG), &&TAG2(OP_REFG),				\
- &&TAG0(OP_SETN), &&TAG0(OP_SETN), &&TAG0(OP_SETN), &&TAG0(OP_SETN), /*E8*/			\
- &&TAG0(OP_SETN), &&TAG0(OP_SETN), &&TAG1(OP_SETN), &&TAG2(OP_SETN),				\
+ &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, /*D0*/	\
+ &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT,		\
+ &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, /*D8*/	\
+ &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT,		\
+ &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, /*E0*/	\
+ &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT,		\
+ &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, /*E8*/	\
+ &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT,		\
 												\
  &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, /*F0*/				\
  &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT,					\
@@ -477,89 +485,43 @@ list_ref (repv list, int elt)
 
 DEFSTRING(max_depth, "max-lisp-depth exceeded, possible infinite recursion?");
 
-static repv
-bytecode_binder (repv frame, repv sym, repv value)
+static inline repv
+inline_apply_bytecode (repv subr, int nargs, repv *args)
 {
-    if (frame == Qnil)
-	frame = rep_NEW_FRAME;
-
-    if (rep_SYM(sym)->car & rep_SF_SPECIAL)
-	return rep_bind_symbol (frame, sym, value);
-    else
-    {
-	rep_env = Fcons (value, rep_env);
-	return rep_MARK_LEX_BINDING (frame);
-    }
+    assert (rep_COMPILEDP (subr));
+    assert (rep_STRINGP (rep_COMPILED_CODE (subr)));
+    assert (rep_VECTORP (rep_COMPILED_CONSTANTS (subr)));
+    assert (rep_INTP (rep_COMPILED_STACK (subr)));
+    return vm (rep_COMPILED_CODE (subr), rep_COMPILED_CONSTANTS (subr),
+	       nargs, args, rep_INT (rep_COMPILED_STACK (subr)) & 0x3ff,
+	       (rep_INT (rep_COMPILED_STACK (subr)) >> 10) & 0x3ff,
+	       rep_INT (rep_COMPILED_STACK (subr) >> 20));
 }
-
-static repv
-make_bytecode_frame (repv spec, int nargs, repv *args)
-{
-    if (rep_INTP (spec))
-    {
-	int lambda = rep_INT (spec);
-	repv env = rep_env;
-	int i;
-
-	int min_args = lambda & 0xfff;
-	int max_args = min_args + ((lambda >> 12) & 0xfff);
-	int rest_arg = lambda >> 24;
-
-	if (nargs < min_args)
-	{
-	    repv fun = rep_call_stack != 0 ? rep_call_stack->fun : Qnil;
-	    return Fsignal (Qmissing_arg,
-			    rep_list_2 (fun, rep_MAKE_INT (nargs + 1)));
-	}
-
-	if (rest_arg)
-	{
-	    repv tem = Qnil;
-	    for (i = nargs - 1; i >= max_args; i--)
-		tem = inline_Fcons (args[i], tem);
-	    env = inline_Fcons (tem, env);
-	}
-
-	for (i = max_args - 1; i >= min_args; i--)
-	    env = inline_Fcons (i < nargs ? args[i] : Qnil, env);
-	for (i = min_args - 1; i >= 0; i--)
-	    env = inline_Fcons (args[i], env);
-
-	rep_env = env;
-	return rep_MAKE_INT (max_args + (rest_arg ? 1 : 0));
-    }
-    else
-	return rep_bind_lambda_list_1 (spec, args, nargs, bytecode_binder);
-}
-
-#define APPLY(subr, nargs, args)					\
-    vm (rep_COMPILED_CODE (subr), rep_COMPILED_CONSTANTS (subr),	\
-	make_bytecode_frame (rep_COMPILED_LAMBDA (subr), nargs, args),	\
-	rep_INT (rep_COMPILED_STACK (subr)) & 0xffff,			\
-	rep_INT (rep_COMPILED_STACK (subr)) >> 16)
 
 repv
 rep_apply_bytecode (repv subr, int nargs, repv *args)
 {
-    assert (rep_COMPILEDP (subr));
-    return APPLY (subr, nargs, args);
+    return inline_apply_bytecode (subr, nargs, args);
 }
 
 static repv
-vm (repv code, repv consts, repv frame, int v_stkreq, int b_stkreq)
+vm (repv code, repv consts, int argc, repv *argv,
+    int v_stkreq, int b_stkreq, int s_stkreq)
 {
     rep_GC_root gc_code, gc_consts;
     /* The `gcv_N' field is only filled in with the stack-size when there's
        a chance of gc.	*/
-    rep_GC_n_roots gc_stackbase, gc_bindbase;
+    rep_GC_n_roots gc_stack, gc_bindstack, gc_slots;
+    repv *stack, *bindstack, *slots;
+
+    /* Actual reusable size of the argv array. I did try reusing the passed
+       in argv, but that caused stack corruption in some cases.. */
+    repv *argv_base = 0;
+    int argv_size = 0;
 
     /* this is the number of dynamic `bindings' in effect
        (including non-variable bindings). */
     int impurity;
-
-    /* APPLY macro doesn't check this.. */
-    if (frame == rep_NULL)
-	return rep_NULL;
 
     if(++rep_lisp_depth > rep_max_lisp_depth)
     {
@@ -567,61 +529,41 @@ vm (repv code, repv consts, repv frame, int v_stkreq, int b_stkreq)
 	return Fsignal(Qerror, rep_LIST_1(rep_VAL(&max_depth)));
     }
 
-    /* Jump to this label when tail-calling but the current stack
-       is insufficiently large */
-again_stack: {
+    /* When tail-calling we'll only allocate a new stack if the current
+       is too small. (this guarantees bounded space requirements) */
+    stack = alloca (sizeof (repv) * (v_stkreq + 1));
+    bindstack = alloca (sizeof (repv) * (b_stkreq + 1));
+    slots = alloca (sizeof (repv) * (s_stkreq));
+    repv_memset (slots, 0, s_stkreq);
+
+    /* Jump to this label when tail-calling */
+again: {
     register u_char *pc PC_REG;
     register repv *stackp SP_REG;
-    repv *stackbase;
     register repv *bindp BP_REG;
-    repv *bindbase;
 #ifdef CACHE_TOS
     register repv tos TOS_REG;
 #endif
-
-#if defined (__GNUC__)
-    /* Using GCC's variable length auto arrays is better for this since
-       the stack space is freed when leaving the containing scope */
-    repv stack[v_stkreq + 1];
-    repv bindstack[b_stkreq + 1];
-#else
-    /* Otherwise just use alloca (). When tail-calling we'll only
-       allocate a new stack if the current is too small. */
-    repv *stack = alloca(sizeof(repv) * (v_stkreq + 1));
-    repv *bindstack = alloca(sizeof(repv) * (b_stkreq + 1));
-#endif
+    int argptr = 0;
 
     /* Make sure that even when the stack has no entries, the TOP
        element still != 0 (for the error-detection at label quit:) */
     stack[0] = Qt;
 
-    /* Jump to this label when tail-calling with a large enough stack */
-again:
-    rep_DECLARE1(code, rep_STRINGP);
-    rep_DECLARE2(consts, rep_VECTORP);
+    /* Always start with a null frame. Functions will add their args */
+    bindstack[0] = rep_NEW_FRAME;
 
-    /* Initialize the frame and stack pointers */
-    stackbase = stack + 1;
-    stackp = stackbase - 1;
-    RELOAD;
-    bindbase = bindstack;
-    bindp = bindbase - 1;
-
-    /* Push the binding frame of the function arguments */
-    BIND_PUSH (frame);
-    impurity = rep_SPEC_BINDINGS (frame);
+    /* Initialize the various virtual registers */
+    stackp = stack; RELOAD;
+    bindp = bindstack;
+    impurity = 0;
+    pc = rep_STR(code);
 
     rep_PUSHGC(gc_code, code);
     rep_PUSHGC(gc_consts, consts);
-    rep_PUSHGCN(gc_bindbase, bindbase, BIND_USE);
-    rep_PUSHGCN(gc_stackbase, stackbase, STK_USE);
-
-    if(rep_data_after_gc >= rep_gc_threshold)
-	Fgarbage_collect (Qnil);
-
-    rep_MAY_YIELD;
-
-    pc = rep_STR(code);
+    rep_PUSHGCN(gc_bindstack, bindstack, 0);
+    rep_PUSHGCN(gc_stack, stack + 1, 0);
+    rep_PUSHGCN(gc_slots, slots, s_stkreq);
 
     /* Start of the VM fetch-execute sequence. */
     {
@@ -639,8 +581,7 @@ again:
 
 	    /* args are still available above the top of the stack,
 	       this just makes things a bit easier. */
-	    UPDATE;
-	    POPN(arg);
+	    UPDATE; POPN(arg);
 	    tmp = TOP;
 	    lc.fun = tmp;
 	    lc.args = rep_void_value;
@@ -770,12 +711,16 @@ again:
 			{
 			    if (impurity != 0 || *pc != OP_RETURN)
 			    {
-				TOP = APPLY (tmp, arg, stackp+1);
+				void *old, *new;
+				asm ("movl %%ebp, %0" : "=m" (old));
+				TOP = inline_apply_bytecode (tmp, arg, stackp+1);
+				asm ("movl %%ebp, %0" : "=m" (new));
+				assert (old == new);
 			    }
 			    else
 			    {
 				/* A tail call that's safe for eliminating */
-				repv bindings;
+				int n_req_v, n_req_b, n_req_s;
 
 				/* snap the call stack when tail calling */
 				rep_call_stack = lc.next;
@@ -787,36 +732,54 @@ again:
 				   bindings; these were unbound when switching
 				   environments.. */
 
-				bindings = (make_bytecode_frame
-					    (rep_COMPILED_LAMBDA(tmp),
-					     arg, stackp+1));
-				if(bindings != rep_NULL)
+				/* Arguments for the function call */
+				argv = stackp + 1;
+				argc = arg;
+
+				/* Switch old argv and stack, or reallocate? */
+				n_req_v = rep_INT (rep_COMPILED_STACK (tmp)) & 0x3ff;
+				if (argv_size >= n_req_v)
 				{
-				    int n_req_s, n_req_b;
-
-				    frame = bindings;
-
-				    /* inputs: tmp=bytecode-subr */
-				do_tail_recursion:
-				    /* set up parameters */
-				    code = rep_COMPILED_CODE (tmp);
-				    consts = rep_COMPILED_CONSTANTS (tmp);
-
-				    rep_POPGCN; rep_POPGCN; rep_POPGC; rep_POPGC;
-
-				    /* do the goto, after deciding if the
-					current stack allocation is sufficient. */
-				    n_req_s = rep_INT (rep_COMPILED_STACK (tmp)) & 0xffff;
-				    n_req_b = rep_INT (rep_COMPILED_STACK (tmp)) >> 16;
-				    if (n_req_s > v_stkreq || n_req_b > b_stkreq)
-				    {
-					v_stkreq = n_req_s;
-					b_stkreq = n_req_b;
-					goto again_stack;
-				    }
-				    else
-					goto again;
+				    /* argv is big enough to be new stack */
+				    repv *tem_stack = stack;
+				    int tem_size = v_stkreq;
+				    stack = argv_base;
+				    v_stkreq = argv_size;
+				    argv_base = tem_stack;
+				    argv_size = tem_size;
 				}
+				else
+				{
+				    argv_base = stack;
+				    argv_size = v_stkreq;
+				    stack = alloca (sizeof (repv) * (n_req_v+1));
+				    v_stkreq = n_req_v;
+				}
+
+				/* inputs: tmp=bytecode-subr */
+			    do_tail_recursion:
+				/* Allocate new bind-stack? */
+				n_req_b = (rep_INT (rep_COMPILED_STACK (tmp)) >> 10) & 0x3ff;
+				if (b_stkreq < n_req_b)
+				{
+				    bindstack = alloca (sizeof (repv) * (n_req_b+1));
+				    b_stkreq = n_req_b;
+				}
+
+				/* Allocate new slots? */
+				n_req_s = rep_INT (rep_COMPILED_STACK (tmp)) >> 20;
+				if (s_stkreq < n_req_s)
+				{
+				    slots = alloca (sizeof (repv) * n_req_s);
+				    s_stkreq = n_req_s;
+				    repv_memset (slots, 0, s_stkreq);
+				}
+				
+				code = rep_COMPILED_CODE (tmp);
+				consts = rep_COMPILED_CONSTANTS (tmp);
+				rep_POPGCN; rep_POPGCN; rep_POPGCN;
+				rep_POPGC; rep_POPGC;
+				goto again;
 			    }
 			}
 			else
@@ -855,65 +818,6 @@ again:
 	    SAFE_NEXT;
 	END_INSN
 
-	BEGIN_INSN_WITH_ARG (OP_REFQ)
-	    /* this instruction is normally only used for special
-	       variables, so optimize the usual path */
-	    tmp = rep_VECT(consts)->array[arg];
-	    if ((rep_SYM(tmp)->car & rep_SF_SPECIAL)
-		&& !(rep_SYM(tmp)->car & rep_SF_LOCAL))
-	    {
-		/* bytecode interpreter is allowed to assume
-		   unrestricted environment.. */
-		repv tem = search_special_bindings (tmp);
-		if (tem != Qnil)
-		{
-		    tem = rep_CDR (tem);
-		    if (!rep_VOIDP(tem))
-		    {
-			PUSH (tem);
-			SAFE_NEXT;
-		    }
-		}
-	    }
-	    /* fall back to common case */
-	    PUSH(Fsymbol_value(rep_VECT(consts)->array[arg], Qnil));
-	    NEXT;
-	END_INSN
-
-	BEGIN_INSN_WITH_ARG (OP_SETQ)
-	    /* this instruction is normally only used for special
-	       variables, so optimize the usual path */
-	    tmp = rep_VECT(consts)->array[arg];
-	    if ((rep_SYM(tmp)->car & rep_SF_SPECIAL)
-		&& !(rep_SYM(tmp)->car & rep_SF_LOCAL))
-	    {
-		/* bytecode interpreter is allowed to assume
-		   unrestricted environment.. */
-		repv tem = search_special_bindings (tmp);
-		if (tem != Qnil)
-		{
-		    repv x; POP1 (x);
-		    rep_CDR (tem) = x;
-		    SAFE_NEXT;
-		}
-	    }
-	    /* fall back to common case */
-	    POP1 (tmp);
-	    Fset(rep_VECT(consts)->array[arg], tmp);
-	    NEXT;
-	END_INSN
-
-	BEGIN_INSN_WITH_ARG (OP_LIST)
-	    tmp = Qnil;
-	    while(arg--)
-	    {
-		repv x; POP1 (x);
-		tmp = inline_Fcons(x, tmp);
-	    }
-	    PUSH(tmp);
-	    SAFE_NEXT;
-	END_INSN
-
 	BEGIN_INSN (OP_BIND)
 	    POP1 (tmp2);
 	    rep_env = inline_Fcons (tmp2, rep_env);
@@ -921,9 +825,8 @@ again:
 	    SAFE_NEXT;
 	END_INSN
 
-	BEGIN_INSN_WITH_ARG (OP_BINDSPEC)
-	    tmp = rep_VECT(consts)->array[arg];
-	    POP1 (tmp2);
+	BEGIN_INSN (OP_SPEC_BIND)
+	    POP2 (tmp, tmp2);
 	    /* assuming non-restricted environment */
 	    rep_special_bindings = Fcons (Fcons (tmp, tmp2),
 					  rep_special_bindings);
@@ -937,48 +840,57 @@ again:
 	   of cdr's to skip. */
 	   
 	BEGIN_INSN (OP_REFN_0)
+	    assert (rep_list_length (rep_env) > 0);
 	    PUSH (rep_CAR (rep_env));
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_REFN_1)
+	    assert (rep_list_length (rep_env) > 1);
 	    PUSH (rep_CADR (rep_env));
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_REFN_2)
+	    assert (rep_list_length (rep_env) > 2);
 	    PUSH (rep_CADDR (rep_env));
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_REFN_3)
+	    assert (rep_list_length (rep_env) > 3);
 	    PUSH (rep_CADDDR (rep_env));
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_REFN_4)
+	    assert (rep_list_length (rep_env) > 4);
 	    PUSH (rep_CAR (rep_CDDDDR (rep_env)));
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_REFN_5)
+	    assert (rep_list_length (rep_env) > 5);
 	    PUSH (rep_CADR (rep_CDDDDR (rep_env)));
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_REFN_6)
 	    arg = FETCH;
+	    assert (rep_list_length (rep_env) > arg);
 	    PUSH (rep_CAR (snap_environment (arg)));
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_REFN_7)
 	    FETCH2 (arg);
+	    assert (rep_list_length (rep_env) > arg);
 	    PUSH (rep_CAR (snap_environment (arg)));
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN_WITH_ARG (OP_SETN)
+	    assert (rep_list_length (rep_env) > arg);
 	    POP1 (tmp);
 	    rep_CAR (snap_environment (arg)) = tmp;
 	    SAFE_NEXT;
@@ -1019,13 +931,125 @@ again:
 	    SAFE_NEXT;
 	END_INSN
 
+	BEGIN_INSN (OP_SLOT_REF_0)
+	    assert (s_stkreq > 0);
+	    PUSH(slots[0]);
+	    assert (TOP != 0);
+	    SAFE_NEXT;
+	END_INSN
+
+	BEGIN_INSN (OP_SLOT_REF_1)
+	    assert (s_stkreq > 1);
+	    PUSH(slots[1]);
+	    assert (TOP != 0);
+	    SAFE_NEXT;
+	END_INSN
+
+	BEGIN_INSN (OP_SLOT_REF_2)
+	    assert (s_stkreq > 2);
+	    PUSH(slots[2]);
+	    assert (TOP != 0);
+	    SAFE_NEXT;
+	END_INSN
+
+	BEGIN_INSN (OP_SLOT_REF_3)
+	    assert (s_stkreq > 3);
+	    PUSH(slots[3]);
+	    assert (TOP != 0);
+	    SAFE_NEXT;
+	END_INSN
+
+	BEGIN_INSN (OP_SLOT_REF_4)
+	    assert (s_stkreq > 4);
+	    PUSH(slots[4]);
+	    assert (TOP != 0);
+	    SAFE_NEXT;
+	END_INSN
+
+	BEGIN_INSN (OP_SLOT_REF_5)
+	    assert (s_stkreq > 5);
+	    PUSH(slots[5]);
+	    assert (TOP != 0);
+	    SAFE_NEXT;
+	END_INSN
+
+	BEGIN_INSN (OP_SLOT_REF_6)
+	    arg = FETCH;
+	    assert (s_stkreq > arg);
+	    tmp = slots[arg];
+	    PUSH(tmp);
+	    assert (TOP != 0);
+	    SAFE_NEXT;
+	END_INSN
+
+	BEGIN_INSN (OP_SLOT_REF_7)
+	    FETCH2 (arg);
+	    assert (s_stkreq > arg);
+	    tmp = slots[arg];
+	    PUSH (tmp);
+	    assert (TOP != 0);
+	    SAFE_NEXT;
+	END_INSN
+
+	BEGIN_INSN (OP_SLOT_SET_0)
+	    assert (s_stkreq > 0);
+	    POP1 (slots[0]);
+	    SAFE_NEXT;
+	END_INSN
+
+	BEGIN_INSN (OP_SLOT_SET_1)
+	    assert (s_stkreq > 1);
+	    POP1 (slots[1]);
+	    SAFE_NEXT;
+	END_INSN
+
+	BEGIN_INSN (OP_SLOT_SET_2)
+	    assert (s_stkreq > 2);
+	    POP1 (slots[2]);
+	    SAFE_NEXT;
+	END_INSN
+
+	BEGIN_INSN (OP_SLOT_SET_3)
+	    assert (s_stkreq > 3);
+	    POP1 (slots[3]);
+	    SAFE_NEXT;
+	END_INSN
+
+	BEGIN_INSN (OP_SLOT_SET_4)
+	    assert (s_stkreq > 4);
+	    POP1 (slots[4]);
+	    SAFE_NEXT;
+	END_INSN
+
+	BEGIN_INSN (OP_SLOT_SET_5)
+	    assert (s_stkreq > 5);
+	    POP1 (slots[5]);
+	    SAFE_NEXT;
+	END_INSN
+
+	BEGIN_INSN (OP_SLOT_SET_6)
+	    arg = FETCH;
+	    assert (s_stkreq > arg);
+	    POP1 (slots[arg]);
+	    SAFE_NEXT;
+	END_INSN
+
+	BEGIN_INSN (OP_SLOT_SET_7)
+	    FETCH2 (arg);
+	    assert (s_stkreq > arg);
+	    POP1 (slots[arg]);
+	    SAFE_NEXT;
+	END_INSN
+
 	BEGIN_INSN (OP_REF)
 	    TOP = Fsymbol_value(TOP, Qnil);
 	    NEXT;
 	END_INSN
 
-	BEGIN_INSN (OP_SET)
-	    CALL_2(Freal_set);
+	BEGIN_INSN (OP__SET)
+	    POP2 (tmp, tmp2);
+	    Freal_set (tmp, tmp2);
+	    NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_FLUID_REF)
@@ -1463,13 +1487,13 @@ again:
 	END_INSN
 
 	BEGIN_INSN (OP_RETURN)
-	    unbind_n (bindbase, BIND_USE);
+	    unbind_n (bindstack, BIND_USE);
 	    RETURN;
 	END_INSN
 
 	BEGIN_INSN (OP_UNBINDALL)
-	    unbind_n (bindbase + 1, BIND_USE - 1);
-	    bindp = bindbase;
+	    unbind_n (bindstack + 1, BIND_USE - 1);
+	    bindp = bindstack;
 	    impurity = rep_SPEC_BINDINGS (BIND_TOP);
 	    SAFE_NEXT;
 	END_INSN
@@ -1771,34 +1795,32 @@ again:
 		&& rep_STRUCTURE (rep_FUNARG (tmp)->structure)->apply_bytecode == 0)
 	    {
 		/* a doable tail-call */
-		repv bindings;
-		int nargs, i;
+		int nargs, i, n_req_v;
 		rep_USE_FUNARG (tmp);
 		tmp = rep_FUNARG (tmp)->fun;
 		nargs = rep_list_length (args);
+		if (nargs <= argv_size)
+		    argv = argv_base;
+		else
 		{
-#ifdef __GNUC__
-		    repv argv[nargs];
-#else
-		    repv *argv = rep_alloc (sizeof (repv) * nargs);
-#endif
-		    for (i = 0; i < nargs; i++)
-		    {
-			argv[i] = rep_CAR (args);
-			args = rep_CDR (args);
-		    }
-		    bindings = (make_bytecode_frame
-				(rep_COMPILED_LAMBDA (tmp), nargs, argv));
-#ifndef __GNUC__
-		    rep_free (argv);
-#endif
+		    /* Can't just copy over argv, reallocate */
+		    argv = alloca (sizeof (repv) * nargs);
+		    argv_base = argv; argv_size = nargs;
 		}
-		if (bindings != rep_NULL)
+		for (i = 0; i < nargs; i++)
 		{
-		    frame = bindings;
-		    goto do_tail_recursion;	/* passes `tmp' */
+		    argv[i] = rep_CAR (args);
+		    args = rep_CDR (args);
 		}
-		HANDLE_ERROR;
+		argc = nargs;
+		n_req_v = rep_INT (rep_COMPILED_STACK (tmp)) & 0x3ff;
+		if (n_req_v > v_stkreq)
+		{
+		    /* Reallocate stack */
+		    stack = alloca (sizeof (repv) * (n_req_v+1));
+		    v_stkreq = n_req_v;
+		}
+		goto do_tail_recursion;	/* passes `tmp' */
 	    }
 	    /* not a tail call */
 	    TOP = rep_apply (tmp, args);
@@ -1862,8 +1884,8 @@ again:
 	END_INSN
 
 	BEGIN_INSN (OP_UNBINDALL_0)
-	    unbind_n (bindbase, BIND_USE);
-	    bindp = bindbase - 1;
+	    unbind_n (bindstack, BIND_USE);
+	    bindp = bindstack - 1;
 	    impurity = 0;
 	    SAFE_NEXT;
 	END_INSN
@@ -1877,7 +1899,7 @@ again:
 	END_INSN
 
 	BEGIN_INSN (OP_POP_ALL)
-	    stackp = stackbase - 1;
+	    stackp = stack;
 	    RELOAD;
 	    SAFE_NEXT;
 	END_INSN
@@ -1934,6 +1956,35 @@ again:
 	    POP1 (tmp);
 	    TOP = Fstructure_define (rep_structure, TOP, tmp);
 	    NEXT;
+	END_INSN
+
+	BEGIN_INSN (OP_SET)
+	    CALL_2 (Freal_set);
+	END_INSN
+
+	BEGIN_INSN (OP_REQUIRED_ARG)
+	    if (argptr < argc)
+	    {
+		PUSH (argv[argptr++]);
+		SAFE_NEXT;
+	    }
+	    rep_signal_missing_arg (argptr + 1);
+	    HANDLE_ERROR;
+	END_INSN
+
+	BEGIN_INSN (OP_OPTIONAL_ARG)
+	    PUSH ((argptr < argc) ? argv[argptr++] : Qnil);
+	    SAFE_NEXT;
+	END_INSN
+
+	BEGIN_INSN (OP_REST_ARG)
+	    int i;
+	    tmp = Qnil;
+	    for (i = argc - 1; i >= argptr; i--)
+		tmp = Fcons (argv[i], tmp);
+	    argptr = argc;
+	    PUSH (tmp);
+	    SAFE_NEXT;
 	END_INSN
 
 	/* Jump instructions follow */
@@ -2018,17 +2069,8 @@ again:
 	    /* ...or time to switch threads */
 	    rep_MAY_YIELD;
 
-	    AFTER_GC;
 	    SAFE_NEXT;
 	END_INSN
-
-#ifndef THREADED_VM
-	BEGIN_INSN (0)
-	    /* ensure the jump table for the switch starts from zero
-	       (removes a subtraction instruction).. */
-	END_INSN
-	    /* fall through */
-#endif
 
 	BEGIN_DEFAULT_INSN
 	    Fsignal(Qerror, rep_list_2(rep_VAL(&unknown_op),
@@ -2072,7 +2114,7 @@ again:
 		       to pass control back to the error: label, or
 		       simply continue execution as normal. */
 
-		    stackp = (stackbase - 1) + rep_INT(rep_CDR(item));
+		    stackp = stack + rep_INT(rep_CDR(item));
 		    RELOAD;
 		    PUSH(rep_throw_value);
 		    rep_throw_value = rep_NULL;
@@ -2097,17 +2139,22 @@ quit:
     /* only use this var to save declaring another */
     code = TOP;
 
-    /* close the stack scope */ }
+    /* close the register scope */ }
+
+    /* moved to after the execution, to avoid needing to gc protect argv */
+    if(rep_data_after_gc >= rep_gc_threshold)
+	Fgarbage_collect (Qnil);
+    rep_MAY_YIELD;
 
     rep_lisp_depth--;
-    rep_POPGCN; rep_POPGCN; rep_POPGC; rep_POPGC;
+    rep_POPGCN; rep_POPGCN; rep_POPGCN; rep_POPGC; rep_POPGC;
     return code;
 }
 
 DEFUN("run-byte-code", Frun_byte_code, Srun_byte_code,
       (repv code, repv consts, repv stkreq), rep_Subr3)
 {
-    int v_stkreq, b_stkreq;
+    int v_stkreq, b_stkreq, s_stkreq;
 
     if (rep_STRUCTUREP (code))
     {
@@ -2116,12 +2163,15 @@ DEFUN("run-byte-code", Frun_byte_code, Srun_byte_code,
 	return Qt;
     }
 
+    rep_DECLARE1(code, rep_STRINGP);
+    rep_DECLARE2(consts, rep_VECTORP);
     rep_DECLARE3(stkreq, rep_INTP);
 
-    v_stkreq = rep_INT (stkreq) & 0xffff;
-    b_stkreq = rep_INT (stkreq) >> 16;
+    v_stkreq = rep_INT (stkreq) & 0x3ff;
+    b_stkreq = (rep_INT (stkreq) >> 10) & 0x3ff;
+    s_stkreq = rep_INT (stkreq) >> 20;
 
-    return vm (code, consts, Qnil, v_stkreq, b_stkreq);
+    return vm (code, consts, 0, 0, v_stkreq, b_stkreq, s_stkreq);
 }
 
 DEFUN("validate-byte-code", Fvalidate_byte_code, Svalidate_byte_code, (repv bc_major, repv bc_minor), rep_Subr2) /*
@@ -2142,29 +2192,28 @@ executed. If not, an error will be signalled.
 
 DEFUN("make-byte-code-subr", Fmake_byte_code_subr, Smake_byte_code_subr, (repv args), rep_SubrN) /*
 ::doc:make-byte-code-subr::
-make-byte-code-subr ARGS CODE CONSTANTS STACK [DOC] [INTERACTIVE]
+make-byte-code-subr CODE CONSTANTS STACK [DOC] [INTERACTIVE]
 
 Return an object that can be used as the function value of a symbol.
 ::end:: */
 {
     int len = rep_list_length(args);
-    repv obj[6], vec;
+    repv obj[5], vec;
     int used;
 
     if(len < rep_COMPILED_MIN_SLOTS)
 	return rep_signal_missing_arg(len + 1);
     
-    obj[0] = rep_CAR(args); args = rep_CDR(args);
     if(!rep_STRINGP(rep_CAR(args)))
 	return rep_signal_arg_error(rep_CAR(args), 2);
-    obj[1] = rep_CAR(args); args = rep_CDR(args);
+    obj[0] = rep_CAR(args); args = rep_CDR(args);
     if(!rep_VECTORP(rep_CAR(args)))
 	return rep_signal_arg_error(rep_CAR(args), 3);
-    obj[2] = rep_CAR(args); args = rep_CDR(args);
+    obj[1] = rep_CAR(args); args = rep_CDR(args);
     if(!rep_INTP(rep_CAR(args)))
 	return rep_signal_arg_error(rep_CAR(args), 4);
-    obj[3] = rep_CAR(args); args = rep_CDR(args);
-    used = 4;
+    obj[2] = rep_CAR(args); args = rep_CDR(args);
+    used = 3;
 
     if(rep_CONSP(args))
     {
@@ -2175,7 +2224,7 @@ Return an object that can be used as the function value of a symbol.
 	    if(rep_NILP(obj[used - 1]))
 		used--;
 	}
-	if(used == 5 && rep_NILP(obj[used - 1]))
+	if(used == 4 && rep_NILP(obj[used - 1]))
 	    used--;
     }
 
