@@ -519,12 +519,6 @@ again:
     fetch:
 	BEGIN_DISPATCH
 
-#ifndef THREADED_VM
-	BEGIN_INSN (0)
-	    /* ensure the jump table for the switch starts from zero.. */
-	END_INSN
-#endif
-
 	BEGIN_INSN_WITH_ARG (OP_CALL)
 	    struct rep_Call lc;
 	    rep_bool was_closed;
@@ -1775,6 +1769,14 @@ again:
 	    rep_MAY_YIELD;
 	    NEXT;
 	END_INSN
+
+#ifndef THREADED_VM
+	BEGIN_INSN (0)
+	    /* ensure the jump table for the switch starts from zero
+	       (removes a subtraction instruction).. */
+	END_INSN
+	    /* fall through */
+#endif
 
 	BEGIN_DEFAULT_INSN
 	    Fsignal(Qerror, rep_list_2(rep_VAL(&unknown_op),
