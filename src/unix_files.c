@@ -127,15 +127,24 @@ rep_expand_file_name(repv file)
 	    {
 		if(iptr[2] == '/' || iptr[2] == 0)
 		{
-		    /* XXX this is wrong on some invalid paths,
-		       XXX e.g `/../../../foo' -> `/../foo' */
 		    char *back = optr;
-		    if(back > buf && back[-1] == '/')
+		    rep_bool all_dots = rep_TRUE;
+		    char *end;
+		    while(back > buf && back[-1] == '/')
 			back--;
+		    end = back;
 		    while(back > buf && back[-1] != '/')
+		    {
 			back--;
-		    if(back < optr && back >= buf && *back != '/')
+			if (back[0] != '.')
+			    all_dots = rep_FALSE;
+		    }
+		    if(back < optr && back >= buf && *back != '/'
+		       /* Don't allow `../..' -> `' */
+		       && (!all_dots || end - back != 2))
+		    {
 			optr = back;
+		    }
 		    else
 		    {
 			/* Can't move up; leave the .. in the file name */
@@ -164,6 +173,10 @@ rep_expand_file_name(repv file)
 	while (*iptr && *iptr == '/')
 	    iptr++;
     }
+
+    /* Don't allow a fully-empty string to be returned */
+    if (optr - buf == 0)
+	*optr++ = '.';
 
     if(optr - buf != rep_STRING_LEN(file)
        || memcmp(rep_STR(file), buf, optr - buf) != 0)
