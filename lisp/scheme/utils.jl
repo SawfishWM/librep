@@ -23,11 +23,14 @@
 
 (define-structure scheme.utils
 
-    (export \#test
+    (export #f #t \#test
 	    make-predicate
 	    make-nil-predicate)
 
     (open rep)
+
+  (defconst #f #f)
+  (defconst #t #t)
 
   ;; given a scheme boolean, convert to a rep boolean
   (define (\#test value) (not (eq value #f)))
