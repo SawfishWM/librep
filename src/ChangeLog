@@ -1,3 +1,8 @@
+2003-05-04  John Harper  <jsh@apple.com>
+
+	* rep_gh.h, gh.c, Makefile.in: partial implementation of
+	guile's (deprecated) GH interface
+
 2003-02-25  John Harper  <jsh@unfactored.org>
 
 	* version 0.16.2
