@@ -6,11 +6,13 @@ TODO list for Jade
 Bugs are marked !, things that should be done soon are marked +,
 and more long-term ideas are marked -
 
-Last modified: May 10, 1998
+Last modified: May 16, 1998
 
 
 Outstanding bugs
 ================
+
+ ! expand-mail-aliases only expands the first alias?
 
  ! How does the return function work with open-coded functions? Not
    very well probably..
@@ -69,8 +71,7 @@ General programming tasks:
 
  + Run the thing through a profiler and a test-coverage analyser
 
- + Clean up the mail-dir interface, and test the auto-expanding of
-   aliases in sm-mail-dir.jl. Maybe turn it into a fully-fledged
+ + Clean up the mail-dir interface. Maybe turn it into a fully-fledged
    address book
 
  + Allow resizing of minibuffer views

@@ -1,5 +1,9 @@
 Sat May 16 13:51:54 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* housekeeping.c (adjust_marks_split_y): wasn't looking at the
+	column position to ignore positions before the split in the
+	line
+
 	* x11_misc.c (write_clip, read_clip): deleted, not used anymore
 
 	* unix_files.c, ../config.h.in: remove definition and use of

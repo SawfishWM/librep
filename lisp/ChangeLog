@@ -1,3 +1,26 @@
+Sat May 16 23:39:14 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* mail-dir.jl (mail-dir-auto-expand-aliases): deleted; the user
+	has to put the function in the mail-send-hook manually now
+	(add-mail-alias, add-mail-address): protect against adding null
+	addresses
+
+	* mail-headers.jl (mail-insert-list): be more intelligent when
+	finding the depth to indent continuation lines to--either the
+	column following the name of the header, or the current
+	indentation if inserting in a continuation line
+
+	* sm-mail-dir.jl: bind `Ctrl-c Ctrl-x' to expand any mail
+	aliases in the message's headers (in send-mail mode)
+	(sm-mail-dir-expand-aliases): this now seems to work, and is
+	called expand-mail-aliases. It's not added to mail-send-hook,
+	but is suitable for use in this hook. Given an interactive
+	decl. so can now be called as a command
+
+	* edit.jl (save-restriction): when restoring the original
+	restriction, unrestrict the buffer if there was no original
+	restriction or it's now invalid
+
 Fri May  8 13:03:43 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* windows.jl (other-view): only enlarge an existing view when
