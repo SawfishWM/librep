@@ -26,15 +26,6 @@ AC_CONFIG_AUX_DIR(etc)
 
 dnl Release versioning info
 version="0.7"
-dir_version=`pwd | sed -e 's/.*-//'`
-case "${dir_version}" in
-  *.*)
-    ;;
-  *)
-    version=${dir_version}
-    ;;
-esac
-unset dir_version
 
 dnl libtool versioning info: `CURRENT:REVISION:AGE'. CURRENT is the
 dnl current interface id, REVISION is the version number of this
