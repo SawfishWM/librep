@@ -142,25 +142,19 @@ symbol_sweep(void)
 	}
 	sb = nxt;
     }
-#ifdef rep_DUMPED
+    /* Need to clear mark bits of dumped symbols, since they're mutable */
+    if (rep_dumped_symbols_start != rep_dumped_symbols_end)
     {
-	rep_symbol *sym;
-	for(sym = &rep_dumped_symbols_start; sym < &rep_dumped_symbols_end; sym++)
+	rep_symbol *s;
+	for(s = rep_dumped_symbols_start; s < rep_dumped_symbols_end; s++)
 	{
-	    if(!rep_GC_CELL_MARKEDP(rep_VAL(sym)))
+	    if(rep_GC_CELL_MARKEDP(rep_VAL(s)))
 	    {
-		/* Don't put this on the free list. There may
-		   still be references to it from other dumped
-		   constants (that aren't marked).. */
-	    }
-	    else
-	    {
-		rep_GC_CLR_CELL(rep_VAL(sym));
+		rep_GC_CLR_CELL(rep_VAL(s));
 		rep_used_symbols++;
 	    }
 	}
     }
-#endif /* rep_DUMPED */
 }
 
 static int

@@ -241,13 +241,9 @@ typedef struct rep_cons_block_struct {
 #define rep_GCDR(v)	(rep_CDR(v) & ~rep_VALUE_CONS_MARK_BIT)
 
 /* True if cons cell V is mutable (i.e. not read-only). */
-#ifdef rep_DUMPED
-# define rep_CONS_WRITABLE_P(v) \
-    (! (rep_CONS(v) >= &rep_dumped_cons_start \
-	&& rep_CONS(v) < &rep_dumped_cons_end))
-#else
-# define rep_CONS_WRITABLE_P(v) rep_TRUE
-#endif
+#define rep_CONS_WRITABLE_P(v) \
+    (! (rep_CONS(v) >= rep_dumped_cons_start \
+	&& rep_CONS(v) < rep_dumped_cons_end))
 
 
 /* Type data */
@@ -470,13 +466,7 @@ typedef struct rep_vector_struct {
 
 #define rep_VECTORP(v)		rep_CELL8_TYPEP(v, rep_Vector)
 
-#ifdef rep_DUMPED
-# define rep_VECTOR_WRITABLE_P(v)				\
-    (!(rep_VECT(v) >= (rep_vector *)&rep_dumped_text_start	\
-       && rep_VECT(v) < (rep_vector *)&rep_dumped_text_end))
-#else
-# define rep_VECTOR_WRITABLE_P(v) rep_TRUE
-#endif
+#define rep_VECTOR_WRITABLE_P(v) (!rep_CELL_STATIC_P(v))
 
 
 /* Compiled Lisp functions; this is a vector. Some of these definitions
@@ -601,6 +591,8 @@ typedef struct rep_funarg_struct {
 
 #define rep_FUNARG(v) ((rep_funarg *)rep_PTR(v))
 #define rep_FUNARGP(v) (rep_CELL8_TYPEP(v, rep_Funarg))
+
+#define rep_FUNARG_WRITABLE_P(v) (!rep_CELL_STATIC_P(v))
 
 #define rep_USE_FUNARG(f)				\
     do {						\
@@ -912,23 +904,5 @@ struct rep_Call {
     (rep_INT(rep_CAR(time)) * 86400 + rep_INT(rep_CDR(time)))
 
 #define rep_TIMEP(v) rep_CONSP(v)
-
-
-/* Dumped Lisp code */
-
-#ifdef rep_DUMPED
-
-extern rep_PTR_SIZED_INT rep_dumped_text_start, rep_dumped_data_start;
-extern rep_PTR_SIZED_INT rep_dumped_text_end, rep_dumped_data_end;
-
-extern rep_string rep_dumped_strings_start, rep_dumped_strings_end;
-extern rep_cons rep_dumped_cons_start, rep_dumped_cons_end;
-extern rep_symbol rep_dumped_symbols_start, rep_dumped_symbols_end;
-extern rep_vector rep_dumped_vectors_start, rep_dumped_vectors_end;
-extern rep_vector rep_dumped_bytecode_start, rep_dumped_bytecode_end;
-
-#define rep_DUMPED_SYM_NIL ((&rep_dumped_symbols_end)-1)	/* trust me */
-
-#endif /* rep_DUMPED */
 
 #endif /* REP_LISP_H */

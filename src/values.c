@@ -37,6 +37,11 @@
 static int debug_gc = 0;
 #endif
 
+/* Dumped data */
+rep_cons *rep_dumped_cons_start, *rep_dumped_cons_end;
+rep_symbol *rep_dumped_symbols_start, *rep_dumped_symbols_end;
+repv rep_dumped_non_constants;
+
 
 /* Type handling */
 
@@ -651,10 +656,7 @@ again:
 
     case rep_Vector:
     case rep_Compiled:
-#ifdef rep_DUMPED
-	/* Ensure that read-only objects aren't marked */
 	if(rep_VECTOR_WRITABLE_P(val))
-#endif
 	{
 	    int i, len = rep_VECT_LEN(val);
 	    rep_GC_SET_CELL(val);
@@ -681,6 +683,8 @@ again:
 	break;
 
     case rep_Funarg:
+	if (!rep_FUNARG_WRITABLE_P(val))
+	    break;
 	rep_GC_SET_CELL(val);
 	rep_MARKVAL(rep_FUNARG(val)->name);
 	rep_MARKVAL(rep_FUNARG(val)->env);
@@ -799,6 +803,7 @@ last garbage-collection is greater than `garbage-threshold'.
 	rep_MARKVAL(lc->args);
 	rep_MARKVAL(lc->saved_env);
 	rep_MARKVAL(lc->saved_special_env);
+	rep_MARKVAL(lc->saved_fh_env);
 	/* don't bother marking `args_evalled_p' it's always `nil' or `t'  */
 	lc = lc->next;
     }
@@ -923,36 +928,32 @@ rep_values_kill(void)
 
 /* Support for dumped Lisp code */
 
-#ifdef rep_DUMPED
-
 void
-rep_dumped_init(void)
+rep_dumped_init(char *file)
 {
-    /* Main function is to go through all dumped symbols, interning
-       them, and changing rep_NULL values to be void. */
-    rep_symbol *sym;
-
-    /* But first, intern nil, it'll be filled in later. */
-    Qnil = Fintern_symbol(rep_VAL(rep_DUMPED_SYM_NIL), rep_void_value);
-
-    /* Initialise allocated_X counts */
-    allocated_cons = &rep_dumped_cons_end - &rep_dumped_cons_start;
-    rep_allocated_symbols = &rep_dumped_symbols_end - &rep_dumped_symbols_start;
-    /* ish.. */
-    used_vector_slots = ((&rep_dumped_vectors_end - &rep_dumped_vectors_start)
-			 + (&rep_dumped_bytecode_end - &rep_dumped_bytecode_start));
-
-    /* Stop one symbol too early, since we've already added it (nil) */
-    for(sym = &rep_dumped_symbols_start; sym < (&rep_dumped_symbols_end)-1; sym++)
+    void *dl = rep_open_dl_library (rep_string_dup (file));
+    if (dl == 0)
+	fprintf (stderr, "warning: couldn't open dumped filed %s\n", file);
+    else
     {
-	/* Second arg is [OBARRAY], but it's only checked against
-	   being a vector. */
-	Fintern_symbol(rep_VAL(sym), rep_void_value);
-	if(sym->value == rep_NULL)
-	    sym->value = rep_void_value;
-	if(sym->prop_list == rep_NULL)
-	    sym->prop_list = Qnil;
+	/* Main function is to go through all dumped symbols, interning
+	   them, and changing rep_NULL values to be void. */
+	rep_symbol *s;
+
+	/* But first, intern nil, it'll be filled in later. */
+	Qnil = Fintern_symbol (rep_VAL(rep_dumped_symbols_end - 1),
+			       rep_void_value);
+
+	/* Stop one symbol too early, since we've already added it */
+	for (s = rep_dumped_symbols_start; s < rep_dumped_symbols_end - 1; s++)
+	{
+	    /* Second arg is [OBARRAY], but it's only checked against
+	       being a vector. */
+	    Fintern_symbol (rep_VAL(s), rep_void_value);
+	    if (s->value == rep_NULL)
+		s->value = rep_void_value;
+	    if (s->prop_list == rep_NULL)
+		s->prop_list = Qnil;
+	}
     }
 }
-
-#endif /* rep_DUMPED */
