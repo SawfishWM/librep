@@ -84,7 +84,7 @@ typedef struct rep_number_block_struct {
 #define rep_SIZEOF_NUMBER_BLOCK(n,t) \
     (sizeof (rep_number_block) - sizeof (rep_number) + (t) * (n))
 
-#define rep_NUMBER(v,t)		(((rep_number_ ## t *) rep_PTR(v))->t)
+#define rep_NUMBER(v,t) (((rep_number_ ## t *) rep_PTR(v))->t)
 
 
 /* number object handling */
@@ -241,8 +241,8 @@ dup (repv in)
     abort ();
 }
 
-repv
-rep_promote_to (repv in, int type)
+static repv
+promote_to (repv in, int type)
 {
     int in_type = rep_NUMERIC_TYPE (in);
 
@@ -310,8 +310,8 @@ rep_promote_to (repv in, int type)
     }
 }
 
-repv
-rep_maybe_demote (repv in)
+static repv
+maybe_demote (repv in)
 {
     assert (rep_NUMBERP(in));
     switch (rep_NUMERIC_TYPE(in))
@@ -337,8 +337,8 @@ rep_maybe_demote (repv in)
     return in;
 }
 
-repv
-rep_coerce (repv in, int type)
+static repv
+coerce (repv in, int type)
 {
     int in_type = rep_NUMERIC_TYPE (in);
     if (in_type <= type)
@@ -364,8 +364,8 @@ rep_coerce (repv in, int type)
     }
 }
 
-void
-rep_promote (repv *n1p, repv *n2p)
+static void
+promote (repv *n1p, repv *n2p)
 {
     repv n1 = *n1p;
     repv n2 = *n2p;
@@ -373,43 +373,34 @@ rep_promote (repv *n1p, repv *n2p)
     int n2_type = rep_NUMERIC_TYPE (n2);
 
     if (n1_type > n2_type)
-	*n2p = rep_promote_to (n2, n1_type);
+	*n2p = promote_to (n2, n1_type);
     else if (n1_type < n2_type)
-	*n1p = rep_promote_to (n1, n2_type);
+	*n1p = promote_to (n1, n2_type);
 }
 
-void
-rep_promote_left (repv *n1p, repv *n2p)
+static repv
+promote_dup (repv *n1p, repv *n2p)
 {
     repv n1 = *n1p;
     repv n2 = *n2p;
     int n1_type = rep_NUMERIC_TYPE (n1);
     int n2_type = rep_NUMERIC_TYPE (n2);
+    repv out = rep_NULL;
 
     if (n1_type > n2_type)
     {
-	*n1p = dup (n1);
-	*n2p = rep_promote_to (n2, n1_type);
+	out = promote_to (n2, n1_type);
+	*n2p = out;
     }
-    else if (n1_type < n2_type)
-	*n1p = rep_promote_to (n1, n2_type);
-}
-
-void
-rep_promote_right (repv *n1p, repv *n2p)
-{
-    repv n1 = *n1p;
-    repv n2 = *n2p;
-    int n1_type = rep_NUMERIC_TYPE (n1);
-    int n2_type = rep_NUMERIC_TYPE (n2);
-
-    if (n1_type > n2_type)
-	*n2p = rep_promote_to (n2, n1_type);
     else if (n1_type < n2_type)
     {
-	*n1p = rep_promote_to (n1, n2_type);
-	*n2p = dup (n2);
+	out = promote_to (n1, n2_type);
+	*n1p = out;
     }
+    else
+	out = dup (*n1p);
+
+    return out;
 }
 
 repv
@@ -434,19 +425,6 @@ rep_make_long_int (long in)
     {
 	rep_number_z *z = make_number (rep_NUMBER_BIGNUM);
 	mpz_init_set_si (z->z, in);
-	return rep_VAL (z);
-    }
-}
-
-static inline repv
-make_longlong_int (long long in)
-{
-    if (in <= rep_LISP_MAX_INT && in >= rep_LISP_MIN_INT)
-	return rep_MAKE_INT (in);
-    else
-    {
-	rep_number_z *z = make_number (rep_NUMBER_BIGNUM);
-	mpz_init_set_d (z->z, (double) in);
 	return rep_VAL (z);
     }
 }
@@ -481,6 +459,63 @@ rep_get_long_int (repv in)
     }
     else
 	return 0;
+}
+
+repv
+rep_make_longlong_int (rep_long_long in)
+{
+    if (in <= rep_LISP_MAX_INT && in >= rep_LISP_MIN_INT)
+	return rep_MAKE_INT (in);
+    else
+    {
+	int sign = (in < 0) ? -1 : 1;
+	unsigned rep_long_long uin = (sign < 0) ? -in : in;
+	u_long bottom = (u_long) uin;
+	u_long top = (u_long) (uin >> (CHAR_BIT * sizeof (long)));
+	rep_number_z *z = make_number (rep_NUMBER_BIGNUM);
+	mpz_init_set_ui (z->z, bottom);
+	if (top != 0)
+	{
+	    mpz_t tem;
+	    mpz_init_set_ui (tem, top);
+	    mpz_mul_2exp (tem, tem, CHAR_BIT * sizeof (long));
+	    mpz_add (z->z, z->z, tem);
+	    mpz_clear (tem);
+	}
+	if (sign < 0)
+	    mpz_neg (z->z, z->z);
+	return rep_VAL (z);
+    }
+}
+
+rep_long_long
+rep_get_longlong_int (repv in)
+{
+    if (rep_NUMBERP (in) && rep_NUMBER_BIGNUM_P (in))
+    {
+	int sign = mpz_sgn (rep_NUMBER(in,z));
+	rep_long_long bottom, top, out;
+	mpz_t tem;
+	mpz_init_set (tem, rep_NUMBER(in,z));
+	if (sign < 0)
+	    mpz_neg (tem, tem);
+	bottom = mpz_get_ui (tem);
+	mpz_tdiv_q_2exp (tem, tem, CHAR_BIT * sizeof (long));
+	top = mpz_get_ui (tem);
+	out = bottom | (top << (CHAR_BIT * sizeof (long)));
+	if (sign < 0)
+	    out = -out;
+	return out;
+    }
+    else if (rep_CONSP (in)
+	     && rep_INTP (rep_CAR (in)) && rep_INTP (rep_CDR (in)))
+    {
+	rep_long_long out = rep_INT (rep_CDR (in));
+	out = (out << 24) | rep_INT (rep_CAR (in));
+	return out;
+    }
+    else
+	return rep_get_long_int (in);
 }
 
 repv
@@ -524,7 +559,7 @@ number_cmp(repv v1, repv v2)
 {
     if(!rep_NUMERICP(v1) || !rep_NUMERICP(v2))
 	return 1;
-    rep_promote (&v1, &v2);
+    promote (&v1, &v2);
     switch (rep_NUMERIC_TYPE (v1))
     {
     case rep_NUMBER_INT:
@@ -601,7 +636,7 @@ rep_parse_number (char *buf, int len, int radix, int sign, int type)
 	    {
 		if (sign < 0)
 		    mpz_neg (z->z, z->z);
-		return rep_maybe_demote (rep_VAL (z));
+		return maybe_demote (rep_VAL (z));
 	    }
 	    else
 		goto error;
@@ -619,7 +654,7 @@ rep_parse_number (char *buf, int len, int radix, int sign, int type)
 	    mpq_canonicalize (q->q);
 	    if (sign < 0)
 		mpq_neg (q->q, q->q);
-	    return rep_maybe_demote (rep_VAL (q));
+	    return maybe_demote (rep_VAL (q));
 	}
 	else
 	    goto error;
@@ -716,146 +751,146 @@ rep_number_foldl (repv args, repv (*op)(repv, repv))
 repv
 rep_number_add (repv x, repv y)
 {
+    repv out;
     rep_DECLARE1 (x, rep_NUMERICP);
     rep_DECLARE2 (y, rep_NUMERICP);
-    rep_promote_left (&x, &y);
-    switch (rep_NUMERIC_TYPE (x))
+    out = promote_dup (&x, &y);
+    switch (rep_NUMERIC_TYPE (out))
     {
 	case rep_NUMBER_INT:
-	    x = rep_make_long_int (rep_INT (x) + rep_INT (y));
+	    out = rep_make_long_int (rep_INT (x) + rep_INT (y));
 	    break;
 
 	case rep_NUMBER_BIGNUM:
-	    mpz_add (rep_NUMBER (x,z),
-		     rep_NUMBER (x,z), rep_NUMBER (y,z));
-	    x = rep_maybe_demote (x);
+	    mpz_add (rep_NUMBER (out,z), rep_NUMBER (x,z), rep_NUMBER (y,z));
+	    out = maybe_demote (out);
 	    break;
 
 	case rep_NUMBER_RATIONAL:
-	    mpq_add (rep_NUMBER (x,q),
-		     rep_NUMBER (x,q), rep_NUMBER (y,q));
-	    x = rep_maybe_demote (x);
+	    mpq_add (rep_NUMBER (out,q), rep_NUMBER (x,q), rep_NUMBER (y,q));
+	    out = maybe_demote (out);
 	    break;
     
 	case rep_NUMBER_FLOAT:
-	    rep_NUMBER (x,f) = rep_NUMBER (x,f) + rep_NUMBER (y,f);
+	    rep_NUMBER (out,f) = rep_NUMBER (x,f) + rep_NUMBER (y,f);
 	    break;
     }
-    return x;
+    return out;
 }
 
 repv
 rep_number_neg (repv x)
 {
+    repv out;
     rep_DECLARE1 (x, rep_NUMERICP);
-    x = dup (x);
-    switch (rep_NUMERIC_TYPE (x))
+    out = dup (x);
+    switch (rep_NUMERIC_TYPE (out))
     {
     case rep_NUMBER_INT:
-	x = rep_make_long_int (-rep_INT (x));
+	out = rep_make_long_int (-rep_INT (x));
 	break;
 
     case rep_NUMBER_BIGNUM:
-	mpz_neg (rep_NUMBER(x,z), rep_NUMBER(x,z));
+	mpz_neg (rep_NUMBER(out,z), rep_NUMBER(x,z));
 	break;
 
     case rep_NUMBER_RATIONAL:
-	mpq_neg (rep_NUMBER(x,q), rep_NUMBER(x,q));
+	mpq_neg (rep_NUMBER(out,q), rep_NUMBER(x,q));
 	break;
 
     case rep_NUMBER_FLOAT:
-	rep_NUMBER(x,f) = -rep_NUMBER(x,f);
+	rep_NUMBER(out,f) = -rep_NUMBER(x,f);
 	break;
     }
-    return x;
+    return out;
 }
 
 repv
 rep_number_sub (repv x, repv y)
 {
+    repv out;
     rep_DECLARE1 (x, rep_NUMERICP);
     rep_DECLARE2 (y, rep_NUMERICP);
-    rep_promote_left (&x, &y);
-    switch (rep_NUMERIC_TYPE (x))
+    out = promote_dup (&x, &y);
+    switch (rep_NUMERIC_TYPE (out))
     {
     case rep_NUMBER_INT:
-	x = rep_make_long_int (rep_INT (x) - rep_INT (y));
+	out = rep_make_long_int (rep_INT (x) - rep_INT (y));
 	break;
 
     case rep_NUMBER_BIGNUM:
-	mpz_sub (rep_NUMBER (x,z),
-		 rep_NUMBER (x,z), rep_NUMBER (y,z));
-	x = rep_maybe_demote (x);
+	mpz_sub (rep_NUMBER (out,z), rep_NUMBER (x,z), rep_NUMBER (y,z));
+	out = maybe_demote (out);
 	break;
 
     case rep_NUMBER_RATIONAL:
-	mpq_sub (rep_NUMBER (x,q),
-		 rep_NUMBER (x,q), rep_NUMBER (y,q));
-	x = rep_maybe_demote (x);
+	mpq_sub (rep_NUMBER (out,q), rep_NUMBER (x,q), rep_NUMBER (y,q));
+	out = maybe_demote (out);
 	break;
     
     case rep_NUMBER_FLOAT:
-	rep_NUMBER (x,f) = rep_NUMBER (x,f) - rep_NUMBER (y,f);
+	rep_NUMBER (out,f) = rep_NUMBER (x,f) - rep_NUMBER (y,f);
 	break;
     }
-    return x;
+    return out;
 }
 
 repv
 rep_number_mul (repv x, repv y)
 {
+    repv out;
     rep_DECLARE1 (x, rep_NUMERICP);
     rep_DECLARE2 (y, rep_NUMERICP);
-    rep_promote_left (&x, &y);
-    switch (rep_NUMERIC_TYPE (x))
+    out = promote_dup (&x, &y);
+    switch (rep_NUMERIC_TYPE (out))
     {
-	long long int tot;
+	rep_long_long int tot;
 
     case rep_NUMBER_INT:
-	tot = ((long long int) rep_INT (x)) * ((long long int) rep_INT (y));
-	return make_longlong_int (tot);
+	tot = ((rep_long_long) rep_INT (x)) * ((rep_long_long) rep_INT (y));
+	out = rep_make_longlong_int (tot);
+	break;
 
     case rep_NUMBER_BIGNUM:
-	mpz_mul (rep_NUMBER (x,z),
-		 rep_NUMBER (x,z), rep_NUMBER (y,z));
-	x = rep_maybe_demote (x);
+	mpz_mul (rep_NUMBER (out,z), rep_NUMBER (x,z), rep_NUMBER (y,z));
+	out = maybe_demote (out);
 	break;
 
     case rep_NUMBER_RATIONAL:
-	mpq_mul (rep_NUMBER (x,q),
-		 rep_NUMBER (x,q), rep_NUMBER (y,q));
-	x = rep_maybe_demote (x);
+	mpq_mul (rep_NUMBER (out,q), rep_NUMBER (x,q), rep_NUMBER (y,q));
+	out = maybe_demote (out);
 	break;
     
     case rep_NUMBER_FLOAT:
-	rep_NUMBER (x,f) = rep_NUMBER (x,f) * rep_NUMBER (y,f);
+	rep_NUMBER (out,f) = rep_NUMBER (x,f) * rep_NUMBER (y,f);
 	break;
     }
-    return x;
+    return out;
 }
 
 repv
 rep_number_div (repv x, repv y)
 {
+    repv out;
     rep_DECLARE1 (x, rep_NUMERICP);
     rep_DECLARE2 (y, rep_NUMERICP);
 
     if (Fzerop (y) != Qnil)
 	return Fsignal (Qarith_error, rep_LIST_1 (rep_VAL (&div_zero)));
 
-    rep_promote_left (&x, &y);
-    switch (rep_NUMERIC_TYPE (x))
+    out = promote_dup (&x, &y);
+    switch (rep_NUMERIC_TYPE (out))
     {
     case rep_NUMBER_INT:
 	if (rep_INT (x) % rep_INT (y) == 0)
-	    x = rep_MAKE_INT (rep_INT (x) / rep_INT (y));
+	    out = rep_MAKE_INT (rep_INT (x) / rep_INT (y));
 	else
 	{
 	    rep_number_q *q = make_number (rep_NUMBER_RATIONAL);
 	    mpq_init (q->q);
 	    mpq_set_si (q->q, rep_INT (x), rep_INT (y));
 	    mpq_canonicalize (q->q);
-	    return rep_VAL (q);
+	    out = rep_VAL (q);
 	}
 	break;
 
@@ -869,9 +904,9 @@ rep_number_div (repv x, repv y)
 	    mpz_clear (rem);
 	    if (sign == 0)
 	    {
-		mpz_tdiv_q (rep_NUMBER (x,z),
+		mpz_tdiv_q (rep_NUMBER (out,z),
 			    rep_NUMBER (x,z), rep_NUMBER (y,z));
-		x = rep_maybe_demote (x);
+		out = maybe_demote (out);
 	    }
 	    else
 	    {
@@ -880,122 +915,124 @@ rep_number_div (repv x, repv y)
 		mpq_set_num (q->q, rep_NUMBER (x,z));
 		mpq_set_den (q->q, rep_NUMBER (y,z));
 		mpq_canonicalize (q->q);
-		return rep_VAL (q);
+		out = rep_VAL (q);
 	    }
 	}
 	break;
 
     case rep_NUMBER_RATIONAL:
-	mpq_div (rep_NUMBER (x,q),
-		 rep_NUMBER (x,q), rep_NUMBER (y,q));
-	x = rep_maybe_demote (x);
+	mpq_div (rep_NUMBER (out,q), rep_NUMBER (x,q), rep_NUMBER (y,q));
+	out = maybe_demote (out);
 	break;
     
     case rep_NUMBER_FLOAT:
-	rep_NUMBER (x,f) = rep_NUMBER (x,f) / rep_NUMBER (y,f);
+	rep_NUMBER (out,f) = rep_NUMBER (x,f) / rep_NUMBER (y,f);
 	break;
     }
-    return x;
+    return out;
 }
 
 repv
 rep_number_lognot (repv x)
 {
+    repv out;
     rep_DECLARE1 (x, rep_NUMERICP);
     switch (rep_NUMERIC_TYPE (x))
     {
 	rep_number_z *z;
 
     case rep_NUMBER_INT:
-	x = rep_MAKE_INT (~rep_INT (x));
+	out = rep_MAKE_INT (~rep_INT (x));
+	break;
 
     case rep_NUMBER_BIGNUM:
 	z = make_number (rep_NUMBER_BIGNUM);
 	mpz_init (z->z);
 	mpz_com (z->z, rep_NUMBER (x,z));
-	x = rep_VAL (z);
+	out = rep_VAL (z);
+	break;
 
     default:
 	return rep_signal_arg_error (x, 1);
     }
-    return x;
+    return out;
 }
 
 repv
 rep_number_logior (repv x, repv y)
 {
+    repv out;
     rep_DECLARE1 (x, rep_NUMERICP);
     rep_DECLARE2 (y, rep_NUMERICP);
-    rep_promote_left (&x, &y);
-    switch (rep_NUMERIC_TYPE (x))
+    out = promote_dup (&x, &y);
+    switch (rep_NUMERIC_TYPE (out))
     {
     case rep_NUMBER_INT:
-	x = rep_MAKE_INT (rep_INT (x) | rep_INT (y));
+	out = rep_MAKE_INT (rep_INT (x) | rep_INT (y));
 	break;
 
     case rep_NUMBER_BIGNUM:
-	mpz_ior (rep_NUMBER (x,z),
-		 rep_NUMBER (x,z), rep_NUMBER (y,z));
+	mpz_ior (rep_NUMBER (out,z), rep_NUMBER (x,z), rep_NUMBER (y,z));
 	break;
 
     default:
 	return rep_signal_arg_error (x, 1);
     }
-    return x;
+    return out;
 }
 
 repv
 rep_number_logxor (repv x, repv y)
 {
+    repv out;
     rep_DECLARE1 (x, rep_NUMERICP);
     rep_DECLARE2 (y, rep_NUMERICP);
-    rep_promote_left (&x, &y);
-    switch (rep_NUMERIC_TYPE (x))
+    out = promote_dup (&x, &y);
+    switch (rep_NUMERIC_TYPE (out))
     {
 	mpz_t tem;
 
     case rep_NUMBER_INT:
-	x = rep_MAKE_INT (rep_INT (x) ^ rep_INT (y));
+	out = rep_MAKE_INT (rep_INT (x) ^ rep_INT (y));
 	break;
 
     case rep_NUMBER_BIGNUM:
 	/* XXX is this correct: x^y = x|y & ~(x&y) */
 	mpz_init (tem);
 	mpz_ior (tem, rep_NUMBER (x,z), rep_NUMBER (y,z));
-	mpz_and (rep_NUMBER (x,z),
-		 rep_NUMBER (x,z), rep_NUMBER (y,z));
-	mpz_com (rep_NUMBER (x,z), rep_NUMBER (x,z));
-	mpz_and (rep_NUMBER (x,z), rep_NUMBER (x,z), tem);
+	mpz_and (rep_NUMBER (out,z), rep_NUMBER (x,z), rep_NUMBER (y,z));
+	mpz_com (rep_NUMBER (out,z), rep_NUMBER (out,z));
+	mpz_and (rep_NUMBER (out,z), rep_NUMBER (out,z), tem);
 	mpz_clear (tem);
 	break;
 
     default:
 	return rep_signal_arg_error (x, 1);
     }
-    return x;
+    return out;
 }
 
 repv
 rep_number_logand (repv x, repv y)
 {
+    repv out;
     rep_DECLARE1 (x, rep_NUMERICP);
     rep_DECLARE2 (y, rep_NUMERICP);
-    rep_promote_left (&x, &y);
-    switch (rep_NUMERIC_TYPE (x))
+    out = promote_dup (&x, &y);
+    switch (rep_NUMERIC_TYPE (out))
     {
     case rep_NUMBER_INT:
-	x = rep_MAKE_INT (rep_INT (x) & rep_INT (y));
+	out = rep_MAKE_INT (rep_INT (x) & rep_INT (y));
 	break;
 
     case rep_NUMBER_BIGNUM:
-	mpz_and (rep_NUMBER (x,z),
-		 rep_NUMBER (x,z), rep_NUMBER (y,z));
+	mpz_and (rep_NUMBER (out,z), rep_NUMBER (x,z), rep_NUMBER (y,z));
 	break;
 
     default:
 	return rep_signal_arg_error (x, 1);
     }
-    return x;
+    return out;
 }
 
 DEFUN("+", Fplus, Splus, (repv args), rep_SubrN) /*
@@ -1057,24 +1094,28 @@ remainder DIVIDEND DIVISOR
 Returns the integer remainder after dividing DIVIDEND by DIVISOR.
 ::end:: */
 {
+    repv out;
     rep_DECLARE1(n1, rep_NUMERICP);
     rep_DECLARE2(n2, rep_NUMERICP);
     if(Fzerop (n2) != Qnil)
 	return Fsignal (Qarith_error, rep_LIST_1 (rep_VAL (&div_zero)));
 
-    rep_promote_left (&n1, &n2);
-    switch (rep_NUMERIC_TYPE (n1))
+    out = promote_dup (&n1, &n2);
+    switch (rep_NUMERIC_TYPE (out))
     {
     case rep_NUMBER_INT:
-	return rep_MAKE_INT (rep_INT (n1) % rep_INT (n2));
+	out = rep_MAKE_INT (rep_INT (n1) % rep_INT (n2));
+	break;
 
     case rep_NUMBER_BIGNUM:
-	mpz_tdiv_r (rep_NUMBER(n1,z), rep_NUMBER(n1,z), rep_NUMBER(n2,z));
-	return rep_maybe_demote (n1);
+	mpz_tdiv_r (rep_NUMBER(out,z), rep_NUMBER(n1,z), rep_NUMBER(n2,z));
+	out = maybe_demote (out);
+	break;
 
     default:
 	return rep_signal_arg_error (n1, 1);
     }
+    return out;
 }
 
 DEFUN("mod", Fmod, Smod, (repv n1, repv n2), rep_Subr2) /*
@@ -1091,13 +1132,14 @@ assuming that (floor Z) gives the least integer greater than or equal to Z,
 and that floating point division is used.
 ::end:: */
 {
+    repv out;
     rep_DECLARE1(n1, rep_NUMERICP);
     rep_DECLARE2(n2, rep_NUMERICP);
     if(Fzerop (n2) != Qnil)
 	return Fsignal (Qarith_error, rep_LIST_1 (rep_VAL (&div_zero)));
 
-    rep_promote_left (&n1, &n2);
-    switch (rep_NUMERIC_TYPE (n1))
+    out = promote_dup (&n1, &n2);
+    switch (rep_NUMERIC_TYPE (out))
     {
 	long tem;
 	int sign;
@@ -1108,33 +1150,38 @@ and that floating point division is used.
 	/* If the "remainder" comes out with the wrong sign, fix it.  */
 	if (rep_INT (n2) < 0 ? tem > 0 : tem < 0)
 	    tem += rep_INT (n2);
-	return rep_MAKE_INT (tem);
+	out = rep_MAKE_INT (tem);
+	break;
 
     case rep_NUMBER_BIGNUM:
-	mpz_tdiv_r (rep_NUMBER(n1,z), rep_NUMBER(n1,z), rep_NUMBER(n2,z));
+	mpz_tdiv_r (rep_NUMBER(out,z), rep_NUMBER(n1,z), rep_NUMBER(n2,z));
 	/* If the "remainder" comes out with the wrong sign, fix it.  */
-	sign = mpz_sgn (rep_NUMBER(n1,z));
+	sign = mpz_sgn (rep_NUMBER(out,z));
 	if (mpz_sgn (rep_NUMBER(n2,z)) < 0 ? sign > 0 : sign < 0)
-	    mpz_add (rep_NUMBER(n1,z), rep_NUMBER(n1,z), rep_NUMBER(n2,z));
-	return rep_maybe_demote (n1);
+	    mpz_add (rep_NUMBER(out,z), rep_NUMBER(out,z), rep_NUMBER(n2,z));
+	out = maybe_demote (out);
+	break;
 
     default:
 	return rep_signal_arg_error (n1, 1);
     }
+    return out;
 }
 
 DEFUN("quotient", Fquotient, Squotient, (repv x, repv y), rep_Subr2)
 {
+    repv out;
     rep_DECLARE1 (x, rep_INTEGERP);
     rep_DECLARE2 (y, rep_INTEGERP);
-    rep_promote_left (&x, &y);
+    out = promote_dup (&x, &y);
     if (rep_INTP (x))
-	return rep_MAKE_INT (rep_INT (x) / rep_INT (y));
+	out = rep_MAKE_INT (rep_INT (x) / rep_INT (y));
     else
     {
-	mpz_tdiv_q (rep_NUMBER(x,z), rep_NUMBER(x,z), rep_NUMBER(y,z));
-	return rep_maybe_demote (x);
+	mpz_tdiv_q (rep_NUMBER(out,z), rep_NUMBER(x,z), rep_NUMBER(y,z));
+	out = maybe_demote (out);
     }
+    return out;
 }
 
 DEFUN("lognot", Flognot, Slognot, (repv num), rep_Subr1) /*
@@ -1285,7 +1332,7 @@ Return NUMBER plus 1.
     case rep_NUMBER_BIGNUM:
 	num = dup (num);
 	mpz_add_ui (rep_NUMBER (num,z), rep_NUMBER (num,z), 1);
-	return rep_maybe_demote (num);
+	return maybe_demote (num);
 
     case rep_NUMBER_RATIONAL:
 	num = dup (num);
@@ -1293,7 +1340,7 @@ Return NUMBER plus 1.
 	mpq_set_ui (temq, 1, 1);
 	mpq_add (rep_NUMBER (num,q), rep_NUMBER (num,q), temq);
 	mpq_clear (temq);
-	return rep_maybe_demote (num);
+	return maybe_demote (num);
 
     case rep_NUMBER_FLOAT:
 	num = dup (num);
@@ -1321,7 +1368,7 @@ Return NUMBER minus 1.
     case rep_NUMBER_BIGNUM:
 	num = dup (num);
 	mpz_sub_ui (rep_NUMBER (num,z), rep_NUMBER (num,z), 1);
-	return rep_maybe_demote (num);
+	return maybe_demote (num);
 
     case rep_NUMBER_RATIONAL:
 	num = dup (num);
@@ -1329,7 +1376,7 @@ Return NUMBER minus 1.
 	mpq_set_si (temq, 1, 1);
 	mpq_sub (rep_NUMBER (num,q), rep_NUMBER (num,q), temq);
 	mpq_clear (temq);
-	return rep_maybe_demote (num);
+	return maybe_demote (num);
 
     case rep_NUMBER_FLOAT:
 	num = dup (num);
@@ -1367,26 +1414,26 @@ a negative COUNT means shift right.
     rep_DECLARE1(num, rep_NUMERICP);
     rep_DECLARE2(shift, rep_NUMERICP);
 
-    shift = rep_coerce (shift, rep_NUMBER_INT);
+    shift = coerce (shift, rep_NUMBER_INT);
     switch (rep_NUMERIC_TYPE (num))
     {
 	rep_number_z *z;
-	long long tot;
+	rep_long_long tot;
 
     case rep_NUMBER_INT:
 	if (rep_INT (shift) >= rep_LISP_INT_BITS)
 	{
-	    num = rep_promote_to (num, rep_NUMBER_BIGNUM);
+	    num = promote_to (num, rep_NUMBER_BIGNUM);
 	    goto do_bignum;
 	}
 	else
 	{
 	    if (rep_INT (shift) > 0)
-		tot = ((long long int) rep_INT (num)) << rep_INT (shift);
+		tot = ((rep_long_long) rep_INT (num)) << rep_INT (shift);
 	    else
-		tot = ((long long int) rep_INT (num)) >> -rep_INT (shift);
+		tot = ((rep_long_long) rep_INT (num)) >> -rep_INT (shift);
 	}
-	return make_longlong_int (tot);
+	return rep_make_longlong_int (tot);
 
     case rep_NUMBER_BIGNUM:
     do_bignum:
@@ -1396,7 +1443,7 @@ a negative COUNT means shift right.
 	    mpz_mul_2exp (z->z, rep_NUMBER (num,z), rep_INT (shift));
 	else
 	    mpz_div_2exp (z->z, rep_NUMBER (num,z), - rep_INT (shift));
-	return rep_maybe_demote (rep_VAL (z));
+	return maybe_demote (rep_VAL (z));
 
     default:
 	return rep_signal_arg_error (num, 1);
@@ -1560,9 +1607,10 @@ DEFUN("expt", Fexpt, Sexpt, (repv arg1, repv arg2), rep_Subr2)
 
 DEFUN("gcd", Fgcd, Sgcd, (repv x, repv y), rep_Subr2)
 {
+    repv out;
     rep_DECLARE1 (x, rep_INTEGERP);
     rep_DECLARE1 (y, rep_INTEGERP);
-    rep_promote_left (&x, &y);
+    out = promote_dup (&x, &y);
     if (rep_INTP (x))
     {
 	/* Euclid's algorithm */
@@ -1573,13 +1621,11 @@ DEFUN("gcd", Fgcd, Sgcd, (repv x, repv y), rep_Subr2)
 	    n = m;
 	    m = t;
 	}
-	return rep_MAKE_INT (n);
+	out = rep_MAKE_INT (n);
     }
     else
-    {
-	mpz_gcd (rep_NUMBER(x,z), rep_NUMBER(x,z), rep_NUMBER(y,z));
-	return x;
-    }
+	mpz_gcd (rep_NUMBER(out,z), rep_NUMBER(x,z), rep_NUMBER(y,z));
+    return out;
 }
 
 DEFUN("numberp", Fnumberp, Snumberp, (repv arg), rep_Subr1) /*
