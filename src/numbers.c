@@ -335,12 +335,12 @@ maybe_demote (repv in)
 	    rep_number_z *z = make_number (rep_NUMBER_BIGNUM);
 	    mpz_init_set (z->z, mpq_numref (rep_NUMBER (in,q)));
 	    in = rep_VAL (z);
+	    goto do_bignum;
 	}
-	else
-	    break;
-	/* fall through */
+	break;
 
     case rep_NUMBER_BIGNUM:
+    do_bignum:
 	if (mpz_cmp_si (rep_NUMBER (in,z), rep_LISP_MAX_INT) <= 0
 	    && mpz_cmp_si (rep_NUMBER (in,z), rep_LISP_MIN_INT) >= 0)
 	{
@@ -705,7 +705,7 @@ rep_parse_number (char *buf, u_int len, u_int radix, int sign, u_int type)
 	rep_number_z *z;
 	rep_number_q *q;
 	rep_number_f *f;
-	char *tem;
+	char *tem, *copy;
 	double d;
 	u_int bits;
 
@@ -789,10 +789,15 @@ rep_parse_number (char *buf, u_int len, u_int radix, int sign, u_int type)
 	assert (tem != 0);
 	q = make_number (rep_NUMBER_RATIONAL);
 	mpq_init (q->q);
-	*tem++ = 0;
-	if (mpz_set_str (mpq_numref (q->q), buf, radix) == 0
-	    && mpz_set_str (mpq_denref (q->q), tem, radix) == 0)
+	copy = alloca (tem - buf + 1);
+	memcpy (copy, buf, tem - buf);
+	copy[tem - buf] = 0;
+	if (mpz_set_str (mpq_numref (q->q), copy, radix) == 0
+	    && mpz_set_str (mpq_denref (q->q), tem + 1, radix) == 0)
 	{
+	    if (mpz_sgn (mpq_denref (q->q)) == 0)
+		goto error;
+
 	    mpq_canonicalize (q->q);
 	    if (sign < 0)
 		mpq_neg (q->q, q->q);
