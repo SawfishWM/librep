@@ -270,7 +270,7 @@ sys_system_name(void)
 /* Main input loop */
 
 /* This is the set of fds we're waiting for input from. */
-static fd_set input_fdset, working_fdset;
+static fd_set input_fdset;
 
 /* For every bit set in unix_fd_read_set there should be a corresponding
    function in here that will be called when input becomes available.
@@ -346,11 +346,12 @@ unix_set_fd_cloexec(int fd)
 	fcntl(fd, F_SETFD, tem | FD_CLOEXEC);
 }
 
-/* Wait for input for no longer than TIMEOUT-MSECS. If input arrived
-   return the number of ready fds, with the actual fds defined by the
-   fdset `working_fdset'. Return zero if the timeout was reached. */
+/* Wait for input for no longer than TIMEOUT-MSECS for input fds defined
+   by INPUTS. If input arrived return the number of ready fds, with the
+   actual fds defined by the fdset INPUTS. Return zero if the timeout
+   was reached. */
 static int
-wait_for_input(u_long timeout_msecs)
+wait_for_input(fd_set *inputs, u_long timeout_msecs)
 {
     struct timeval timeout;
     int ready;
@@ -358,7 +359,6 @@ wait_for_input(u_long timeout_msecs)
     if(curr_win == 0)
 	return 0;
 
-    memcpy(&working_fdset, &input_fdset, sizeof(working_fdset));
     timeout.tv_sec = timeout_msecs / 1000;
     timeout.tv_usec = (timeout_msecs % 1000) * 1000;
 
@@ -368,7 +368,7 @@ wait_for_input(u_long timeout_msecs)
     sigchld_restart(FALSE);
 #endif
 
-    ready = select(FD_SETSIZE, &working_fdset, NULL, NULL, &timeout);
+    ready = select(FD_SETSIZE, inputs, NULL, NULL, &timeout);
 
 #ifdef HAVE_SUBPROCESSES
     sigchld_restart(TRUE);
@@ -383,11 +383,11 @@ wait_for_input(u_long timeout_msecs)
     return ready;
 }
 
-/* Handle the READY fds with pending input (defined by `working_fdset').
+/* Handle the READY fds with pending input (defined by fdset INPUTS).
    If CALLBACK-TYPE is non-null, only invoke this function for input
    arriving. Return true if the display might require updating. */
 static bool
-handle_input(int ready)
+handle_input(fd_set *inputs, int ready)
 {
     bool refreshp = FALSE;
 
@@ -400,7 +400,7 @@ handle_input(int ready)
 	/* no need to test first 3 descriptors */
 	for(i = 3; i < FD_SETSIZE && ready > 0; i++)
 	{
-	    if(FD_ISSET(i, &working_fdset))
+	    if(FD_ISSET(i, inputs))
 	    {
 		ready--;
 		if(input_actions[i] != NULL)
@@ -440,9 +440,11 @@ sys_event_loop(void)
     {
 	int ready;
 	bool refreshp = FALSE;
+	fd_set copy;
 
-	ready = wait_for_input(EVENT_TIMEOUT_LENGTH * 1000);
-	refreshp = handle_input(ready);
+	memcpy(&copy, &input_fdset, sizeof(copy));
+	ready = wait_for_input(&copy, EVENT_TIMEOUT_LENGTH * 1000);
+	refreshp = handle_input(&copy, ready);
 
 	/* Check for exceptional conditions. */
 	if(throw_value != LISP_NULL)
@@ -474,9 +476,11 @@ end:
 VALUE
 sys_sit_for(u_long timeout_msecs)
 {
+    fd_set copy;
     int ready;
     cmd_redisplay(sym_nil);
-    ready = wait_for_input(timeout_msecs);
+    memcpy(&copy, &input_fdset, sizeof(copy));
+    ready = wait_for_input(&copy, timeout_msecs);
     return (ready > 0) ? sym_nil : sym_t;
 }
 
@@ -486,20 +490,17 @@ sys_sit_for(u_long timeout_msecs)
 VALUE
 sys_accept_input(u_long timeout_msecs, void *callback)
 {
+    fd_set copy;
     int ready, i;
+    FD_ZERO(&copy);
     for(i = 0; i < FD_SETSIZE; i++)
     {
-	if(input_actions[i] != 0 && input_actions[i] != callback)
-	    FD_CLR(i, &input_fdset);
+	if(FD_ISSET(i, &input_fdset) && input_actions[i] == callback)
+	    FD_SET(i, &copy);
     }
-    ready = wait_for_input(timeout_msecs);
+    ready = wait_for_input(&copy, timeout_msecs);
     if(ready > 0)
-	handle_input(ready);
-    for(i = 0; i < FD_SETSIZE; i++)
-    {
-	if(input_actions[i] != 0 && input_actions[i] != callback)
-	    FD_SET(i, &input_fdset);
-    }
+	handle_input(&copy, ready);
     return ready > 0 ? sym_nil : sym_t;
 }
 
