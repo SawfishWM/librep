@@ -81,6 +81,8 @@ table_mark (repv val)
 	    rep_MARKVAL(n->value);
 	}
     }
+    rep_MARKVAL(TABLE(val)->hash_fun);
+    rep_MARKVAL(TABLE(val)->compare_fun);
 }
 
 static void
