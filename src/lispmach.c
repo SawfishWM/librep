@@ -470,6 +470,9 @@ list_ref (repv list, int elt)
 #ifndef SLOTS_REG
 #define SLOTS_REG
 #endif
+#ifndef CFA_REG
+#define CFA_REG
+#endif
 #ifndef TOS_REG
 #define TOS_REG
 #endif
@@ -561,7 +564,8 @@ again: {
     /* Start of the VM fetch-execute sequence. */
     {
 #ifdef THREADED_VM
-	static void *cfa[256] = { JUMP_TABLE };
+	static void *cfa__[256] = { JUMP_TABLE };
+	register void **cfa CFA_REG = cfa__;
 #endif
 	int arg;
 	repv tmp, tmp2;
@@ -925,42 +929,42 @@ again: {
 
 	BEGIN_INSN (OP_SLOT_REF_0)
 	    assert (s_stkreq > 0);
-	    PUSH(slotp[0]);
+	    PUSH (slotp[0]);
 	    assert (TOP != 0);
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_SLOT_REF_1)
 	    assert (s_stkreq > 1);
-	    PUSH(slotp[1]);
+	    PUSH (slotp[1]);
 	    assert (TOP != 0);
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_SLOT_REF_2)
 	    assert (s_stkreq > 2);
-	    PUSH(slotp[2]);
+	    PUSH (slotp[2]);
 	    assert (TOP != 0);
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_SLOT_REF_3)
 	    assert (s_stkreq > 3);
-	    PUSH(slotp[3]);
+	    PUSH (slotp[3]);
 	    assert (TOP != 0);
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_SLOT_REF_4)
 	    assert (s_stkreq > 4);
-	    PUSH(slotp[4]);
+	    PUSH (slotp[4]);
 	    assert (TOP != 0);
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_SLOT_REF_5)
 	    assert (s_stkreq > 5);
-	    PUSH(slotp[5]);
+	    PUSH (slotp[5]);
 	    assert (TOP != 0);
 	    SAFE_NEXT;
 	END_INSN
@@ -969,7 +973,7 @@ again: {
 	    arg = FETCH;
 	    assert (s_stkreq > arg);
 	    tmp = slotp[arg];
-	    PUSH(tmp);
+	    PUSH (tmp);
 	    assert (TOP != 0);
 	    SAFE_NEXT;
 	END_INSN
