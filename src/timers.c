@@ -324,7 +324,12 @@ static void
 timer_print (repv stream, repv arg)
 {
     char buf[64];
+#ifdef HAVE_SNPRINTF
+    snprintf (buf, sizeof (buf), "#<timer %lds, %ldms>",
+	      TIMER(arg)->secs, TIMER(arg)->msecs);
+#else
     sprintf (buf, "#<timer %lds, %ldms>", TIMER(arg)->secs, TIMER(arg)->msecs);
+#endif
     rep_stream_puts (stream, buf, -1, rep_FALSE);
 }
 

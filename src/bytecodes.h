@@ -21,7 +21,7 @@
 #ifndef BYTECODES_H
 #define BYTECODES_H
 
-#define BYTECODE_MAJOR_VERSION 7
+#define BYTECODE_MAJOR_VERSION 8
 #define BYTECODE_MINOR_VERSION 0
 
 /* Number of bits encoded in each extra opcode forming the argument. */
@@ -72,8 +72,8 @@
 
 #define OP_REF 0x40			/* push (symbol-value pop) */
 #define OP_SET 0x41			/* call-2 set */
-#define OP_FREF 0x42			/* push (symbol-function pop) */
-#define OP_FSET 0x43			/* call-2 fset */
+#define OP_DSET 0x42			/* call-2 set & mark as defvar'd */
+
 #define OP_INIT_BIND 0x44		/* new-binding-set */
 #define OP_UNBIND 0x45			/* rewind-binding-set */
 #define OP_DUP	0x46			/* push stk[0] */
@@ -129,7 +129,6 @@
 					   goto error-handler */
 #define OP_BINDERR 0x75			/* bind (cons pop[1] SP) */
 #define OP_UNUSED1 0x76
-#define OP_FBOUNDP 0x77			/* call-1 fboundp */
 #define OP_BOUNDP 0x78			/* call-1 boundp */
 #define OP_SYMBOLP 0x79			/* push (symbolp pop[1]) */
 #define OP_GET 0x7a			/* call-2 get */
@@ -184,8 +183,7 @@
 
 #define OP_MOD 0xbb			/* push (mod pop[1] pop[2]) */
 
-#define OP_MAKE_CLOSURE 0xbc		/* push (make-closure pop[1]) */
-#define OP_FBIND 0xbd			/* fbind pop[1] pop[2] */
+#define OP_MAKE_CLOSURE 0xbc		/* push (make-closure pop[1] pop[2]) */
 #define OP_CLOSUREP 0xbe		/* push (closurep pop[1]) */
 #define OP_BINDENV 0xbf
 

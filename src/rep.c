@@ -15,12 +15,12 @@ static void
 usage (void)
 {
     fputs ("\
-    --version    print version details\n\
-    --no-rc      don't load rc or site-init files\n\
-    -f FUNCTION  call the Lisp function FUNCTION\n\
-    -l FILE      load the file of Lisp forms called FILE\n\
-    -q           quit\n"
-	   , stderr);
+    --version		print version details\n\
+    --no-rc		don't load rc or site-init files\n\
+    -f FUNCTION		call the Lisp function FUNCTION\n\
+    -l FILE		load the file of Lisp forms called FILE\n\
+    -q			quit\n",
+	   stderr);
 }
 
 int

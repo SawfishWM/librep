@@ -293,22 +293,32 @@ rep_call_file_handler(repv handler, int op, repv sym, int nargs, ...)
     lc.args_evalled_p = Qnil;
     rep_PUSH_CALL(lc);
 
-    if (rep_fh_env != Qt && rep_SYMBOLP(handler))
+    /* before it gets dereferenced */
+    op_data.handler = handler;
+
+    if (rep_SYMBOLP(handler))
     {
-	repv tem = Fassq (handler, rep_fh_env);
-	if (tem && rep_CONSP(tem))
+	if (rep_fh_env == Qt)
+	    handler = Fsymbol_value (handler, Qt);
+	else
 	{
-	    if (rep_CDR(tem) == Qt)
-		rep_USE_DEFAULT_ENV;
-	    else if (rep_FUNARGP(rep_CDR(tem)))
-		handler = rep_CDR(tem);
+	    repv tem = Fassq (handler, rep_fh_env);
+	    if (tem && rep_CONSP(tem))
+	    {
+		if (rep_CDR(tem) == Qt)
+		{
+		    rep_USE_DEFAULT_ENV;
+		    handler = Fsymbol_value (handler, Qt);
+		}
+		else if (rep_FUNARGP(rep_CDR(tem)))
+		    handler = rep_CDR(tem);
+	    }
 	}
     }
 
     rep_push_regexp_data(&matches);
     op_data.next = blocked_ops[op];
     blocked_ops[op] = &op_data;
-    op_data.handler = handler;
     /* handler and arg_list are automatically gc-protected by rep_funcall */
     res = rep_funcall(handler, arg_list, rep_FALSE);
     blocked_ops[op] = op_data.next;

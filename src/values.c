@@ -668,7 +668,6 @@ again:
 	rep_GC_SET_CELL(val);
 	rep_MARKVAL(rep_SYM(val)->name);
 	rep_MARKVAL(rep_SYM(val)->value);
-	rep_MARKVAL(rep_SYM(val)->function);
 	rep_MARKVAL(rep_SYM(val)->prop_list);
 	val = rep_SYM(val)->next;
 	if(val && !rep_INTP(val) && !rep_GC_MARKEDP(val))
@@ -683,8 +682,8 @@ again:
 
     case rep_Funarg:
 	rep_GC_SET_CELL(val);
+	rep_MARKVAL(rep_FUNARG(val)->name);
 	rep_MARKVAL(rep_FUNARG(val)->env);
-	rep_MARKVAL(rep_FUNARG(val)->fenv);
 	rep_MARKVAL(rep_FUNARG(val)->special_env);
 	rep_MARKVAL(rep_FUNARG(val)->fh_env);
 	val = rep_FUNARG(val)->fun;
@@ -799,7 +798,6 @@ last garbage-collection is greater than `garbage-threshold'.
 	rep_MARKVAL(lc->fun);
 	rep_MARKVAL(lc->args);
 	rep_MARKVAL(lc->saved_env);
-	rep_MARKVAL(lc->saved_fenv);
 	rep_MARKVAL(lc->saved_special_env);
 	/* don't bother marking `args_evalled_p' it's always `nil' or `t'  */
 	lc = lc->next;
@@ -952,8 +950,6 @@ rep_dumped_init(void)
 	Fintern_symbol(rep_VAL(sym), rep_void_value);
 	if(sym->value == rep_NULL)
 	    sym->value = rep_void_value;
-	if(sym->function == rep_NULL)
-	    sym->function = rep_void_value;
 	if(sym->prop_list == rep_NULL)
 	    sym->prop_list = Qnil;
     }

@@ -74,10 +74,13 @@ static void
 usage(char *prog_name, void (*sys_usage)(void))
 {
     fprintf(stderr, "usage: %s [OPTIONS...]\n", prog_name);
-    fputs ("\nwhere OPTIONS may include:\n"
-	   "    --init FILE  use FILE instead of `init.jl' to boot from\n"
-	   "    --batch      don't open any windows; process args and exit\n"
-	   "    --interp     don't load compiled Lisp files\n", stderr);
+    fputs ("\
+where OPTIONS may include:
+    --init FILE		use FILE instead of `init.jl' to boot from\n\
+    --batch		don't open any windows; process args and exit\n\
+    --interp		don't load compiled Lisp files\n\
+    --warn-shadowing	warn about redefining functions through binding\n",
+	   stderr);
     if (sys_usage != 0)
 	(*sys_usage)();
 }
@@ -180,6 +183,8 @@ get_main_options(char *prog_name, int *argc_p,
 	rep_SYM(Qbatch_mode)->value = Qt;
     if (rep_get_option("--interp", 0))
 	rep_SYM(Qinterpreted_mode)->value = Qt;
+    if (rep_get_option("--warn-shadowing", 0))
+	rep_warn_shadowing = rep_TRUE;
     if (rep_get_option("--help", 0) || rep_get_option ("-?", 0))
     {
 	usage(prog_name, sys_usage);

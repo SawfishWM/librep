@@ -26,7 +26,7 @@
 /* These numbers weren't just plucked from the air, they make the blocks
    of objects fit as close as possible into powers of 2 sized blocks. */
 #define rep_CONSBLK_SIZE	510		/* ~4k */
-#define rep_SYMBOLBLK_SIZE	340		/* ~8k */
+#define rep_SYMBOLBLK_SIZE	405		/* ~8k */
 
 /* The number of hash buckets in each rep_obarray, this is a prime number. */
 #define rep_OBSIZE		509
@@ -404,7 +404,6 @@ typedef struct {
     repv next;				/* next symbol in rep_obarray bucket */
     repv name;
     repv value;
-    repv function;
     repv prop_list;
 } rep_symbol;
 
@@ -594,8 +593,8 @@ typedef struct rep_funarg_struct {
     repv car;
     struct rep_funarg_struct *next;
     repv fun;
+    repv name;
     repv env;
-    repv fenv;
     repv special_env;
     repv fh_env;			/* file handlers */
 } rep_funarg;
@@ -606,15 +605,13 @@ typedef struct rep_funarg_struct {
 #define rep_USE_FUNARG(f)				\
     do {						\
 	rep_env = rep_FUNARG(f)->env;			\
-	rep_fenv = rep_FUNARG(f)->fenv;			\
 	rep_special_env = rep_FUNARG(f)->special_env;	\
 	rep_fh_env = rep_FUNARG(f)->fh_env;		\
     } while (0)
 
 #define rep_USE_DEFAULT_ENV			\
     do {					\
-	rep_env = Qnil;				\
-	rep_fenv = Qt;				\
+	rep_env = Qt;				\
 	rep_special_env = Fcons (Qnil, Qt);	\
 	rep_fh_env = Qt;			\
     } while (0)
@@ -724,7 +721,6 @@ typedef struct rep_gc_n_roots {
 	(root).next = rep_gc_root_stack;	\
 	rep_gc_root_stack = &(root);		\
     } while(0)
-#define rep_POPGC (rep_gc_root_stack = rep_gc_root_stack->next)
 
 /* Push a root to N values starting at PTR using ROOT as storage
    (ROOT is rep_GC_n_roots type) */
@@ -735,7 +731,41 @@ typedef struct rep_gc_n_roots {
 	(root).next = rep_gc_n_roots_stack;	\
 	rep_gc_n_roots_stack = &(root);		\
     } while(0)
-#define rep_POPGCN (rep_gc_n_roots_stack = rep_gc_n_roots_stack->next)
+
+#if !defined (rep_PARANOID_GC)
+
+# define rep_POPGC (rep_gc_root_stack = rep_gc_root_stack->next)
+# define rep_POPGCN (rep_gc_n_roots_stack = rep_gc_n_roots_stack->next)
+
+#else
+
+/* Check that gc roots are popped when they should have been;
+   assumes downwards growing stack */
+
+# if defined (__GNUC__) && defined (sparc)
+#  define rep_get_sp(var) asm ("mov %%sp, %0" : "=r" (var))
+# else
+#  error "don't know how to get stack ptr on this arch, undef rep_PARANOID_GC"
+# endif
+
+#define rep_CHECK_GC(root)	\
+    char *sp; rep_get_sp(sp);	\
+    if (sp > (char *) root)	\
+	abort ();
+
+# define rep_POPGC 					\
+    do {						\
+	rep_CHECK_GC(rep_gc_root_stack)			\
+	rep_gc_root_stack = rep_gc_root_stack->next;	\
+    } while (0)
+
+# define rep_POPGCN 						\
+    do {							\
+	rep_CHECK_GC(rep_gc_n_roots_stack)			\
+	rep_gc_n_roots_stack = rep_gc_n_roots_stack->next;	\
+    } while (0)
+
+#endif
 
 
 /* More other stuff */
@@ -747,7 +777,7 @@ struct rep_Call {
     repv args;
     /* t if `args' is list of *evalled* arguments.  */
     repv args_evalled_p;
-    repv saved_env, saved_fenv;
+    repv saved_env;
     repv saved_special_env;
     repv saved_fh_env;
 };
@@ -756,7 +786,6 @@ struct rep_Call {
     do {				\
 	(lc).saved_env = rep_env;	\
 	(lc).saved_special_env = rep_special_env; \
-	(lc).saved_fenv = rep_fenv;	\
 	(lc).saved_fh_env = rep_fh_env;	\
 	(lc).next = rep_call_stack;	\
 	rep_call_stack = &(lc);		\
@@ -766,7 +795,6 @@ struct rep_Call {
     do {				\
 	rep_env = (lc).saved_env;	\
 	rep_special_env = (lc).saved_special_env; \
-	rep_fenv = (lc).saved_fenv;	\
 	rep_fh_env = (lc).saved_fh_env;	\
 	rep_call_stack = (lc).next;	\
     } while (0)

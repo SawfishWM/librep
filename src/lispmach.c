@@ -94,8 +94,6 @@ rep_unbind_object(repv item)
 		t->unbind(item);
 	}
     }
-    else if (rep_INTP(item))
-	rep_unbind_functions (item);
     else if (rep_FUNARGP(item))
 	rep_USE_FUNARG(item);
     else
@@ -117,21 +115,14 @@ rep_bind_object(repv obj)
 	return Qnil;
 }
 
-/* copied from symbols.c */
+/* copied from symbols.c
+
+   Returns (SYM . VALUE) if a lexical binding. Returns t if the actual
+   value is in the symbol's function slot */
 static inline repv
-search_variable_environment (repv sym)
+search_environment (repv sym)
 {
     register repv env = rep_env;
-    while (env != Qnil && rep_CAR(rep_CAR(env)) != sym)
-	env = rep_CDR(env);
-    return (env == Qnil) ? Qnil : rep_CAR(env);
-}
-
-/* copied from symbols.c */
-static inline repv
-search_function_environment (repv sym)
-{
-    register repv env = rep_fenv;
     while (rep_CONSP(env) && rep_CAR(rep_CAR(env)) != sym)
 	env = rep_CDR(env);
     return rep_CONSP(env) ? rep_CAR(env) : env;
@@ -260,19 +251,11 @@ of byte code. See the functions `compile-file', `compile-directory' and
 	       this just makes things a bit easier. */
 	    POPN(arg);
 	    tmp = TOP;
-	    if(rep_SYMBOLP(tmp))
-	    {
-		if(rep_SYM(tmp)->car & rep_SF_DEBUG)
-		    rep_single_step_flag = rep_TRUE;
-		if(!(tmp = Fsymbol_function(tmp, Qnil)))
-		    goto error;
-	    }
-	    gc_stackbase.count = STK_USE;
-
-	    lc.fun = TOP;
+	    lc.fun = tmp;
 	    lc.args = Qnil;
 	    lc.args_evalled_p = Qt;
 	    rep_PUSH_CALL (lc);
+	    gc_stackbase.count = STK_USE;
 
 	    switch(rep_TYPE(tmp))
 	    {
@@ -417,7 +400,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		{
 		    repv bindings;
 
-		    if (search_function_environment (Qjade_byte_code) == Qnil)
+		    if (search_environment (Qjade_byte_code) == Qnil)
 			goto invalid;
 
 		    bindings = rep_bind_lambda_list(rep_COMPILED_LAMBDA(tmp),
@@ -456,8 +439,8 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		if ((rep_SYM(x)->car & (rep_SF_LOCAL | rep_SF_SPECIAL)) == 0)
 		{
 		    /* lexically bound variable */
-		    x = search_variable_environment (x);
-		    if (x != Qnil)
+		    x = search_environment (x);
+		    if (rep_CONSP(x))
 		    {
 			PUSH(rep_CDR(x));
 			goto fetch;
@@ -477,8 +460,8 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		if ((rep_SYM(x)->car & (rep_SF_LOCAL | rep_SF_SPECIAL)) == 0)
 		{
 		    /* lexically bound variable */
-		    x = search_variable_environment (x);
-		    if (x != Qnil)
+		    x = search_environment (x);
+		    if (rep_CONSP(x))
 		    {
 			rep_CDR(x) = RET_POP;
 			goto fetch;
@@ -513,12 +496,13 @@ of byte code. See the functions `compile-file', `compile-directory' and
 	case OP_SET:
 	    CALL_2(Fset);
 
-	case OP_FREF:
-	    TOP = Fsymbol_function(TOP, Qnil);
+	case OP_DSET:
+	    tmp = RET_POP;
+	    tmp2 = TOP;
+	    TOP = Fset (tmp2, tmp);
+	    if (TOP != rep_NULL)
+		rep_SYM(tmp2)->car |= rep_SF_DEFVAR;
 	    break;
-
-	case OP_FSET:
-	    CALL_2(Ffset);
 
 	case OP_INIT_BIND:
 	    bindstack = Fcons(Qnil, bindstack);
@@ -869,9 +853,6 @@ of byte code. See the functions `compile-file', `compile-directory' and
 	    bindstack = Fcons(Fcons(tmp, rep_MAKE_INT(STK_USE)), bindstack);
 	    break;
 
-	case OP_FBOUNDP:
-	    CALL_1(Ffboundp);
-
 	case OP_BOUNDP:
 	    CALL_1(Fboundp);
 
@@ -1066,19 +1047,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 	    CALL_2(Fmod);
 
 	case OP_MAKE_CLOSURE:
-	    CALL_1(Fmake_closure);
-
-	case OP_FBIND:
-	    tmp = RET_POP;
-	    tmp2 = RET_POP;
-	    if (rep_SYMBOLP(tmp))
-	    {
-		rep_CAR(bindstack) = rep_bind_function (rep_CAR(bindstack),
-							tmp, tmp2);
-	    }
-	    else
-		rep_signal_arg_error (tmp, 1);
-	    break;
+	    CALL_2(Fmake_closure);
 
 	case OP_CLOSUREP:
 	    if(rep_FUNARGP(TOP))
@@ -1088,7 +1057,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 	    goto fetch;
 
 	case OP_BINDENV:
-	    bindstack = Fcons (Fmake_closure (Qnil), bindstack);
+	    bindstack = Fcons (Fmake_closure (Qnil, Qnil), bindstack);
 	    break;
 
 	/* Jump instructions follow */

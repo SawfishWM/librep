@@ -105,12 +105,25 @@ DEFUN("function", Ffunction, Sfunction, (repv args), rep_SF) /*
 function ARG
 #'ARG
 
-Returns closure of ARG.
+Returns the closure of ARG.
 ::end:: */
 {
     if(rep_CONSP(args))
-	return Fmake_closure (rep_CAR(args));
+	return Fmake_closure (rep_CAR(args), Qnil);
     return rep_signal_missing_arg(1);
+}
+
+DEFUN("lambda", Flambda, Slambda, (repv args), rep_SF) /*
+::doc:Slambda::
+lambda LAMBDA-LIST BODY...
+
+Evaluates to an anonymous function.
+::end:: */
+{
+    if(rep_CONSP(args))
+	return Fmake_closure (Fcons (Qlambda, args), Qnil);
+    else
+	return rep_signal_missing_arg(1);
 }
 
 DEFUN("defmacro", Fdefmacro, Sdefmacro, (repv args), rep_SF) /*
@@ -146,7 +159,13 @@ code has not been compiled).
 	args = Fcons(Qlambda, args);
     else
 	args = rep_CAR(args);
-    return Ffset(name, Fcons (Qmacro, Fmake_closure (args))) ? name : rep_NULL;
+    if (Fset(name, Fcons (Qmacro, Fmake_closure (args, rep_SYM(name)->name))))
+    {
+	rep_SYM(name)->car |= rep_SF_DEFVAR;
+	return name;
+    }
+    else
+	return rep_NULL;
 }
 
 DEFUN("defun", Fdefun, Sdefun, (repv args), rep_SF) /*
@@ -171,7 +190,13 @@ value is,
 	args = Fcons(Qlambda, args);
     else
 	args = rep_CAR(args);
-    return Ffset(name, Fmake_closure (args)) ? name : rep_NULL;
+    if (Fset(name, Fmake_closure (args, rep_SYM(name)->name)))
+    {
+	rep_SYM(name)->car |= rep_SF_DEFVAR;
+	return name;
+    }
+    else
+	return rep_NULL;
 }
 
 DEFSTRING(const_bound, "Constant already bound");
@@ -1678,8 +1703,7 @@ path_error:
 
 	if (!in_current_env)
 	{
-	    rep_env = Qnil;
-	    rep_fenv = Qt;
+	    rep_env = Qt;
 	    rep_special_env = Fcons (Qnil, Qt);
 	}
 
@@ -2343,15 +2367,9 @@ DEFUN("functionp", Ffunctionp, Sfunctionp, (repv arg), rep_Subr1) /*
 ::doc:Sfunctionp::
 functionp ARG
 
-Returns t if ARG is a function (ie, a symbol or a list whose car is the
-symbol `lambda'
+Returns t if ARG is a function.
 ::end:: */
 {
-    while (rep_SYMBOLP(arg) && !rep_INTERRUPTP)
-    {
-	arg = Fsymbol_function (arg, Qt);
-	rep_TEST_INT;
-    }
     switch(rep_TYPE(arg))
     {
     case rep_Subr0:
@@ -2362,7 +2380,7 @@ symbol `lambda'
     case rep_Subr5:
     case rep_SubrN:
     case rep_Funarg:
-	return(Qt);
+	return Qt;
 
     case rep_Cons:
 	arg = rep_CAR(arg);
@@ -2382,11 +2400,6 @@ macrop ARG
 Returns t if ARG is a macro.
 ::end:: */
 {
-    while (rep_SYMBOLP(arg) && !rep_INTERRUPTP)
-    {
-	arg = Fsymbol_function (arg, Qt);
-	rep_TEST_INT;
-    }
     if(rep_CONSP(arg) && rep_CAR(arg) == Qmacro)
 	return Qt;
     else
@@ -2400,11 +2413,6 @@ special-form-p ARG
 Returns t if ARG is a special-form.
 ::end:: */
 {
-    while (rep_SYMBOLP(arg) && !rep_INTERRUPTP)
-    {
-	arg = Fsymbol_function (arg, Qt);
-	rep_TEST_INT;
-    }
     if(rep_TYPEP(arg, rep_SF))
 	return(Qt);
     return(Qnil);
@@ -2454,13 +2462,6 @@ subr-name SUBR [USE-VAR]
 Returns the name (a string) associated with SUBR.
 ::end:: */
 {
-    if(rep_SYMBOLP(subr))
-    {
-	if(rep_NILP(useVar))
-	    subr = Fsymbol_function (subr, Qt);
-	else
-	    subr = Fsymbol_value (subr, Qt);
-    }
     switch(rep_TYPE(subr))
     {
     case rep_Subr0:
@@ -2663,6 +2664,7 @@ rep_lispcmds_init(void)
 {
     rep_ADD_SUBR(Squote);
     rep_ADD_SUBR(Sfunction);
+    rep_ADD_SUBR(Slambda);
     rep_ADD_SUBR(Sdefmacro);
     rep_ADD_SUBR(Sdefun);
     rep_ADD_SUBR(Sdefconst);

@@ -262,7 +262,7 @@ rep_open_dl_library(repv file_name)
 	    dl_list = x;
 
 	    if (x->feature_sym != Qnil)
-		rep_call_lisp1 (Qprovide, x->feature_sym);
+		rep_call_lisp1 (Fsymbol_value (Qprovide, Qt), x->feature_sym);
 	}
     }
     return x;

@@ -41,7 +41,7 @@ exec rep "$0" "$@"
 
 (defmacro scan-list (x)
   `(when (consp ,x)
-     (mapc 'scan ,x)))
+     (mapc scan ,x)))
 
 (defun scan (form)
   (if (and (consp form) (eq (car form) '_) (stringp (nth 1 form)))
@@ -59,27 +59,27 @@ exec rep "$0" "$@"
 	       (setq tem (nthcdr 2 tem)))))
 
 	  ((eq (car form) 'let)
-	   (mapc #'(lambda (x)
-		     (when (consp x)
-		       (scan-list (cdr x)))) (nth 1 form))
-	   (mapc 'scan (nthcdr 2 form)))
+	   (mapc (lambda (x)
+		   (when (consp x)
+		     (scan-list (cdr x)))) (nth 1 form))
+	   (scan-list (nthcdr 2 form)))
 
 	  ((eq (car form) 'let*)
-	   (mapc #'(lambda (x)
-		     (when (consp x)
-		       (scan-list (cdr x)))) (nth 1 form))
-	   (mapc 'scan (nthcdr 2 form)))
+	   (mapc (lambda (x)
+		   (when (consp x)
+		     (scan-list (cdr x)))) (nth 1 form))
+	   (scan-list (nthcdr 2 form)))
 
 	  ((eq (car form) 'function)
 	   (scan (cdr form)))
 
 	  ((eq (car form) 'cond)
-	   (mapc #'(lambda (f)
-		     (scan-list f)) (cdr form)))
+	   (mapc (lambda (f)
+		   (scan-list f)) (cdr form)))
 
 	  ((eq (car form) 'condition-case)
-	   (mapc #'(lambda (handler)
-		     (scan-list (cdr handler))) (nthcdr 2 form)))
+	   (mapc (lambda (handler)
+		   (scan-list (cdr handler))) (nthcdr 2 form)))
 
 	  ((eq (car (car form)) 'lambda)
 	   ;; an inline lambda expression

@@ -72,6 +72,9 @@ static rep_symbol_block *symbol_block_chain;
 static rep_symbol *symbol_freelist;
 int rep_allocated_symbols, rep_used_symbols;
 
+/* When true, warn about hiding functions when binding */
+rep_bool rep_warn_shadowing = rep_FALSE;
+
 
 /* Symbol management */
 
@@ -107,7 +110,6 @@ function definition are both void and it has a nil property-list.
 	rep_SYM(sym)->car = rep_Symbol;
 	rep_SYM(sym)->name = name;
 	rep_SYM(sym)->value = rep_void_value;
-	rep_SYM(sym)->function = rep_void_value;
 	rep_SYM(sym)->prop_list = Qnil;
 	rep_used_symbols++;
 	rep_data_after_gc += sizeof(rep_symbol);
@@ -214,13 +216,10 @@ rep_add_subr(rep_xsubr *subr)
     repv sym = Fintern(subr->name, rep_obarray);
     if(sym)
     {
+	rep_SYM(sym)->value = rep_VAL(subr);
+	rep_SYM(sym)->car |= rep_SF_DEFVAR;
 	if(subr->car == rep_Var)
-	{
-	    rep_SYM(sym)->value = rep_VAL(subr);
 	    rep_SYM(sym)->car |= rep_SF_SPECIAL;
-	}
-	else
-	    rep_SYM(sym)->function = rep_VAL(subr);
     }
     return(sym);
 }
@@ -232,7 +231,7 @@ rep_add_const_num(repv name, long num)
     if(sym)
     {
 	rep_SYM(sym)->value = rep_MAKE_INT(num);
-	rep_SYM(sym)->car |= rep_SF_CONSTANT | rep_SF_SPECIAL;
+	rep_SYM(sym)->car |= rep_SF_CONSTANT | rep_SF_SPECIAL | rep_SF_DEFVAR;
     }
     return(sym);
 }
@@ -373,9 +372,10 @@ Removes SYMBOL from OBARRAY (or the default). Use this with caution.
 
 /* Closures */
 
-DEFUN("make-closure", Fmake_closure, Smake_closure, (repv fun), rep_Subr1) /*
+DEFUN("make-closure", Fmake_closure, Smake_closure,
+      (repv fun, repv name), rep_Subr2) /*
 ::doc:Smake-closure::
-make-closure FUNCTION
+make-closure FUNCTION &optional NAME
 
 Return a functional object which makes the closure of FUNCTION and the
 current environment.
@@ -384,8 +384,8 @@ current environment.
     rep_funarg *f = rep_ALLOC_CELL (sizeof (rep_funarg));
     f->car = rep_Funarg;
     f->fun = fun;
+    f->name = name;
     f->env = rep_env;
-    f->fenv = rep_fenv;
     f->special_env = rep_special_env;
     f->fh_env = rep_fh_env;
     f->next = funargs;
@@ -445,9 +445,9 @@ save-environment FORMS...
     return ret;
 }
 
-DEFUN("set-variable-environment", Fset_variable_environment,
-      Sset_variable_environment, (repv env), rep_Subr1) /*
-::doc:Sset-variable-environment::
+DEFUN("set-environment", Fset_environment,
+      Sset_environment, (repv env), rep_Subr1) /*
+::doc:Sset-environment::
 set-variable-environment ENV
 ::end:: */
 {
@@ -455,20 +455,6 @@ set-variable-environment ENV
     {
 	if (rep_LISTP (env))
 	    rep_call_stack->saved_env = env;
-    }
-    return Qt;
-}
-
-DEFUN("set-function-environment", Fset_function_environment,
-      Sset_function_environment, (repv env), rep_Subr1) /*
-::doc:Sset-function-environment::
-set-function-environment ENV
-::end:: */
-{
-    if (rep_call_stack != 0)
-    {
-	if (rep_LISTP (env))
-	    rep_call_stack->saved_fenv = env;
     }
     return Qt;
 }
@@ -507,29 +493,17 @@ funarg_sweep (void)
     }
 }
 
-/* this is also in lispmach.c and lisp.c
+/* this is also in lispmach.c
 
    Returns (SYM . VALUE) if a lexical binding. Returns t if the actual
    value is in the symbol's function slot */
 static inline repv
-search_function_environment (repv sym)
+search_environment (repv sym)
 {
-    register repv env = rep_fenv;
+    register repv env = rep_env;
     while (rep_CONSP(env) && rep_CAR(rep_CAR(env)) != sym)
 	env = rep_CDR(env);
     return rep_CONSP(env) ? rep_CAR(env) : env;
-}
-
-/* this is also in lispmach.c
-
-   Returns (SYM . VALUE) if a lexical binding; returns nil if no binding */
-static inline repv
-search_variable_environment (repv sym)
-{
-    register repv env = rep_env;
-    while (env != Qnil && rep_CAR(rep_CAR(env)) != sym)
-	env = rep_CDR(env);
-    return (env == Qnil) ? Qnil : rep_CAR(env);
 }
 
 static inline int
@@ -557,6 +531,14 @@ search_special_environment (repv sym)
 repv
 rep_bind_symbol(repv oldList, repv symbol, repv newVal)
 {
+    if (rep_warn_shadowing
+	&& Fboundp (symbol) != Qnil
+	&& Ffunctionp (Fsymbol_value (symbol, Qt)) != Qnil)
+    {
+	fprintf (stderr, "warning: shadowing %s\n",
+		 rep_STR(rep_SYM(symbol)->name));
+    }
+
     if (rep_SYM(symbol)->car & rep_SF_SPECIAL)
     {
 	if (search_special_environment (symbol))
@@ -603,24 +585,6 @@ rep_unbind_symbols(repv oldList)
     }
 }
 
-repv
-rep_bind_function (repv in_count, repv sym, repv new)
-{
-    rep_fenv = Fcons (Fcons (sym, new), rep_fenv);
-    if (in_count == Qnil)
-	return rep_MAKE_INT (1);
-    else
-	return rep_MAKE_INT (rep_INT(in_count) + 1);
-}
-
-void
-rep_unbind_functions (repv count)
-{
-    int i = rep_INT(count);
-    while (i-- > 0)
-	rep_fenv = rep_CDR(rep_fenv);
-}
-
 
 /* More lisp functions */
 
@@ -652,8 +616,10 @@ variable will be set (if necessary) not the local value.
 	if(!rep_NILP(tmp))
 	{
 	    /* Variable is bound, see if it's an autoload defn to overwrite. */
-	    if(rep_CONSP(rep_SYM(sym)->value)
-	       && rep_CAR(rep_SYM(sym)->value) == Qautoload)
+	    repv val = rep_SYM(sym)->value;
+	    if (rep_FUNARGP(val))
+		val = rep_FUNARG(val)->fun;
+	    if(rep_CONSP(val) && rep_CAR(val) == Qautoload)
 		tmp = Qnil;
 	}
 
@@ -677,7 +643,7 @@ variable will be set (if necessary) not the local value.
 
 	if (spec == 0)
 	{
-	    /* defvar'ing an undefvar'd variable from a restricte
+	    /* defvar'ing an undefvar'd variable from a restricted
 	       environment sets it as weak, and adds it to the env */
 
 	    rep_SYM(sym)->car |= rep_SF_WEAK;
@@ -692,7 +658,7 @@ variable will be set (if necessary) not the local value.
 	       exploits such as:
 
 			[restricted special environment]
-			(setq special-var "/bin/rm")
+			(defvar special-var "/bin/rm")
 
 			[unrestricted environment]
 			(defvar special-var "ls")
@@ -752,9 +718,11 @@ values look for one of those first.
     else
     {
 	/* lexical variable */
-	repv tem = search_variable_environment (sym);
+	repv tem = search_environment (sym);
 	if (rep_CONSP(tem))
 	    val = rep_CDR(tem);
+	else if (tem == Qt)
+	    val = rep_SYM(sym)->value;
     }
 
     if(val && (rep_CELL8_TYPEP(val, rep_Var)))
@@ -763,6 +731,9 @@ values look for one of those first.
 	if(val == rep_NULL)
 	    val = rep_void_value;
     }
+
+    if (rep_SYM(sym)->car & rep_SF_DEBUG)
+	rep_single_step_flag = rep_TRUE;
 
     if(no_err == Qnil && rep_VOIDP(val))
 	return Fsignal(Qvoid_value, rep_LIST_1(sym));
@@ -845,33 +816,13 @@ SYMBOL the buffer-local value in the current buffer is set. Returns repv.
     else
     {
 	/* lexical binding */
-	repv tem = search_variable_environment (sym);
+	repv tem = search_environment (sym);
 	if (rep_CONSP(tem))
 	    rep_CDR(tem) = val;
+	else if (tem == Qt)
+	    rep_SYM(sym)->value = val;
 	else
-	{
-	    int spec = search_special_environment (sym);
-	    if (spec)
-	    {
-		if (spec > 0 && rep_SYM(sym)->car & rep_SF_WEAK_MOD)
-		    return Fsignal (Qvoid_value, rep_LIST_1(sym)); /* XXX */
-
-		rep_SYM(sym)->value = val;
-		rep_SYM(sym)->car |= rep_SF_SPECIAL;
-	    }
-	    else if (rep_VOIDP(rep_SYM(sym)->value))
-	    {
-		/* Setting an unset special variable, when we would
-		   not normally be able to set specials. Define it
-		   as `weakly-special' and add it to the environment */
-		rep_SYM(sym)->value = val;
-		rep_SYM(sym)->car |= rep_SF_SPECIAL | rep_SF_WEAK;
-		rep_CDR(rep_special_env)
-		    = Fcons (sym, rep_CDR(rep_special_env));
-	    }
-	    else
-		return Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
-	}
+	    return Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
     }
     return val;
 }
@@ -902,15 +853,6 @@ Sets the default value of SYMBOL to VALUE, then returns VALUE.
 	else
 	    rep_SYM(sym)->value = val;
 	rep_SYM(sym)->car |= rep_SF_SPECIAL;
-    }
-    else if (rep_VOIDP(rep_SYM(sym)->value))
-    {
-	/* Setting an unset special variable, when we would
-	   not normally be able to set specials. Define it
-	   as `weakly-special' and add it to the environment */
-	rep_SYM(sym)->car |= rep_SF_SPECIAL | rep_SF_WEAK;
-	rep_SYM(sym)->value = val;
-	rep_CDR(rep_special_env) = Fcons (sym, rep_CDR(rep_special_env));
     }
     else
 	return Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
@@ -945,27 +887,6 @@ Returns the print-name of SYMBOL.
     return(rep_SYM(sym)->name);
 }
 
-DEFUN("symbol-function", Fsymbol_function, Ssymbol_function, (repv sym, repv no_err), rep_Subr2) /*
-::doc:Ssymbol-function::
-symbol-function SYMBOL
-
-Returns the function value of SYMBOL.
-::end:: */
-{
-    repv tem;
-    rep_DECLARE1(sym, rep_SYMBOLP);
-    tem = search_function_environment (sym);
-    if (rep_CONSP(tem))
-	return rep_CDR(tem);
-    else if (tem == Qnil
-	     || (rep_NILP(no_err) && (rep_VOIDP(rep_SYM(sym)->function))))
-    {
-	return(Fsignal(Qvoid_function, rep_LIST_1(sym)));
-    }
-    else
-	return(rep_SYM(sym)->function);
-}
-
 DEFUN("default-boundp", Fdefault_boundp, Sdefault_boundp, (repv sym), rep_Subr1) /*
 ::doc:Sdefault-boundp::
 default-boundp SYMBOL
@@ -975,17 +896,6 @@ Returns t if SYMBOL has a default value.
 {
     rep_DECLARE1(sym, rep_SYMBOLP);
     return((rep_VOIDP(rep_SYM(sym)->value)) ? Qnil : Qt);
-}
-
-DEFUN("fboundp", Ffboundp, Sfboundp, (repv sym), rep_Subr1) /*
-::doc:Sfboundp::
-fboundp SYMBOL
-
-Returns t if the function-slot of SYMBOL has a value.
-::end:: */
-{
-    rep_DECLARE1(sym, rep_SYMBOLP);
-    return(rep_VOIDP(Fsymbol_function(sym, Qt)) ? Qnil : Qt);
 }
 
 DEFUN("boundp", Fboundp, Sboundp, (repv sym), rep_Subr1) /*
@@ -1103,25 +1013,6 @@ end:
     return(res);
 }
 
-DEFUN("fset", Ffset, Sfset, (repv sym, repv val), rep_Subr2) /*
-::doc:Sfset::
-fset SYMBOL VALUE
-
-Sets the function value of SYMBOL to VALUE, returns VALUE.
-::end:: */
-{
-    repv tem;
-    rep_DECLARE1(sym, rep_SYMBOLP);
-    tem = search_function_environment (sym);
-    if (rep_CONSP(tem))
-	rep_CDR(tem) = val;
-    else if (tem == Qt)
-	rep_SYM(sym)->function = val;
-    else
-	return Fsignal (Qvoid_function, rep_LIST_1 (sym));	/* XXX */
-    return(val);
-}
-
 DEFUN("makunbound", Fmakunbound, Smakunbound, (repv sym), rep_Subr1) /*
 ::doc:Smakunbound::
 makunbound SYMBOL
@@ -1138,29 +1029,12 @@ as being special, this status is removed.
     }
     else
     {
-	repv tem = search_variable_environment (sym);
+	repv tem = search_environment (sym);
 	if (rep_CONSP(tem))
 	    rep_CDR(tem) = rep_void_value;
+	else if (tem == Qt)
+	    rep_SYM(sym)->value = rep_void_value;
     }
-    return(sym);
-}
-
-DEFUN("fmakunbound", Ffmakunbound, Sfmakunbound, (repv sym), rep_Subr1) /*
-::doc:Sfmakunbound::
-fmakunbound SYMBOL
-
-Make the function slot of SYMBOL have no value.
-::end:: */
-{
-    repv tem;
-    rep_DECLARE1(sym, rep_SYMBOLP);
-    tem = search_function_environment (sym);
-    if (rep_CONSP(tem))
-	rep_CDR(tem) = rep_void_value;
-    else if (tem == Qt)
-	rep_SYM(sym)->function = rep_void_value;
-    else
-	return Fsignal (Qvoid_function, rep_LIST_1 (sym));	/* XXX */
     return(sym);
 }
 
@@ -1279,56 +1153,6 @@ error:
     return(res);
 }
 
-static repv
-do_function_let (repv args, repv macrop)
-{
-    repv ret = rep_NULL;
-    repv bindings = Qnil;
-    rep_GC_root gc_bindings;
-    repv defs;
-    int count, i;
-    repv *symbols;
-    repv *functions;
-
-    if (!rep_CONSP(args))
-	return rep_signal_missing_arg (1);
-    defs = rep_CAR(args);
-    args = rep_CDR(args);
-
-    count = rep_list_length (defs);
-    symbols = alloca (count * sizeof (repv));
-    functions = alloca (count * sizeof (repv));
-    i = 0;
-    while (!rep_INTERRUPTP && rep_CONSP(defs))
-    {
-	repv def = rep_CAR(defs), name, fun;
-	if (!rep_CONSP(def) || !rep_SYMBOLP(rep_CAR(def)))
-	{
-	    rep_signal_arg_error (def, 1);
-	    goto out;
-	}
-	name = rep_CAR(def);
-	fun = Fmake_closure (Fcons (Qlambda, rep_CDR(def)));
-	if (macrop != Qnil)
-	    fun = Fcons (Qmacro, fun);
-	symbols[i] = name;
-	functions[i] = fun;
-	defs = rep_CDR(defs);
-	rep_TEST_INT;
-	i++;
-    }
-
-    for (i = 0; i < count; i++)
-	bindings = rep_bind_function (bindings, symbols[i], functions[i]);
-
-    rep_PUSHGC(gc_bindings, bindings);
-    ret = Fprogn (args);
-    rep_POPGC;
-out:
-    rep_unbind_functions (bindings);
-    return ret;
-}
-
 DEFUN("let", Flet, Slet, (repv args), rep_SF) /*
 ::doc:Slet::
 let (SYMBOL-BINDINGS...) BODY...
@@ -1374,22 +1198,6 @@ this means that,
 ::end:: */
 {
     return do_letstar (args, rep_bind_symbol, rep_unbind_symbols);
-}
-
-DEFUN("flet", Fflet, Sflet, (repv args), rep_SF) /*
-::doc:Sflet::
-flet ((NAME LAMBDA-LIST BODY...) ...) BODY...
-::end:: */
-{
-    return do_function_let (args, Qnil);
-}
-
-DEFUN("macrolet", Fmacrolet, Smacrolet, (repv args), rep_SF) /*
-::doc:Smacrolet::
-macrolet ((NAME LAMBDA-LIST BODY...) ...) BODY...
-::end:: */
-{
-    return do_function_let (args, Qt);
 }
 
 DEFUN("get", Fget, Sget, (repv sym, repv prop), rep_Subr2) /*
@@ -1604,7 +1412,6 @@ rep_symbols_init(void)
     Qnil = Fintern(rep_VAL(&str_nil), rep_obarray);
     rep_mark_static(&Qnil);
     rep_SYM(Qnil)->value = Qnil;
-    rep_SYM(Qnil)->function = rep_void_value;
     rep_SYM(Qnil)->prop_list = Qnil;
     rep_SYM(Qnil)->car |= rep_SF_CONSTANT | rep_SF_SPECIAL;
 
@@ -1625,32 +1432,25 @@ rep_symbols_init(void)
     rep_ADD_SUBR(Sset_closure_function);
     rep_ADD_SUBR(Sclosurep);
     rep_ADD_SUBR(Ssave_environment);
-    rep_ADD_SUBR(Sset_variable_environment);
-    rep_ADD_SUBR(Sset_function_environment);
+    rep_ADD_SUBR(Sset_environment);
     rep_ADD_SUBR(Sset_special_environment);
     rep_ADD_SUBR(Sdefvar);
     rep_ADD_SUBR(Ssymbol_value);
     rep_ADD_SUBR_INT(Sset);
     rep_ADD_SUBR(Ssetplist);
     rep_ADD_SUBR(Ssymbol_name);
-    rep_ADD_SUBR(Ssymbol_function);
     rep_ADD_SUBR(Sdefault_value);
     rep_ADD_SUBR(Sdefault_boundp);
     rep_ADD_SUBR(Sset_default);
-    rep_ADD_SUBR(Sfboundp);
     rep_ADD_SUBR(Sboundp);
     rep_ADD_SUBR(Ssymbol_plist);
     rep_ADD_SUBR(Sgensym);
     rep_ADD_SUBR(Ssymbolp);
     rep_ADD_SUBR(Ssetq);
     rep_ADD_SUBR(Ssetq_default);
-    rep_ADD_SUBR(Sfset);
     rep_ADD_SUBR(Smakunbound);
-    rep_ADD_SUBR(Sfmakunbound);
     rep_ADD_SUBR(Slet);
     rep_ADD_SUBR(Sletstar);
-    rep_ADD_SUBR(Sflet);
-    rep_ADD_SUBR(Smacrolet);
     rep_ADD_SUBR(Sget);
     rep_ADD_SUBR(Sput);
     rep_ADD_SUBR(Sapropos);
