@@ -1,5 +1,8 @@
 Tue Apr 28 16:05:44 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* read-mail.jl: use the new buffer-status-id variable to
+	display current message number with the buffer name
+
 	* cvs.jl (cvs-undo-modification): use cvs-revert-filenames
 	instead of doing it inline
 

@@ -1,5 +1,23 @@
 Tue Apr 28 15:57:54 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* Makefile.in: added files.o to list of dependencies
+
+	* edit.h (TX): added tx_StatusId field, a string to display in
+	the status line
+	(VW): removed vw_StatusBuf and STATUS_BUFSIZ, added
+	vw_StatusOverride, remove VWFF_CUSTOM_STATUS flag
+	* buffers.c (cmd_make_buffer): set tx_StatusId to
+	"Jade: BUFFER-NAME" by default
+	(buffer-status-id): interface to tx_StatusId
+	* glyphs.c (make_window_glyphs): change how
+	update_status_buffer is called, now it formats straight into
+	the glyph buffer
+	* values.c (mark_value): add tx_StatusId and vw_StatusOverride
+	* views.c (make_view): don't allocate vw_StatusBuf
+	(update_status_buffer): changed dramatically, now it looks more
+	like Emacs; still needs to be more customisable
+	(cmd_set_status_message): changed for VW structure mods
+
 	* symbols.c (cmd_put): fix how dumped plists are modified; cons
 	onto their head any new values instead
 
