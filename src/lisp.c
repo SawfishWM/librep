@@ -565,7 +565,7 @@ done:
     {
 intern:	rep_set_string_len(buffer, i);
 	if(!(result = Ffind_symbol(rep_VAL(buffer), Qnil))
-	   || (rep_NILP(result) && strcmp(buf, "nil")))
+	   || (rep_NILP(result)))
 	{
 	    repv name;
 	    if((name = rep_string_dup(buf)) && (result = Fmake_symbol(name)))

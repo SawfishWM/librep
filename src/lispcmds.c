@@ -1021,58 +1021,62 @@ a character or a list or vector of characters.
 	while(rep_CONSP(args))
 	{
 	    repv arg = rep_CAR(args);
-	    switch(rep_TYPE(arg))
+	    if (arg != Qnil)
 	    {
-		int slen, j;
-	    case rep_String:
-		slen = rep_STRING_LEN(arg);
-		if(!extend_concat(&buf, &buflen, i, slen))
-		    goto error;
-		memcpy(buf + i, rep_STR(arg), slen);
-		i += slen;
-		break;
-	    case rep_Int:
-		if(!extend_concat(&buf, &buflen, i, 1))
-		    goto error;
-		buf[i++] = rep_INT(arg);
-		break;
-	    case rep_Symbol:
-		if(arg != Qnil)
-		    break;
-		/* FALL THROUGH */
-	    case rep_Cons:
-		while(rep_CONSP(arg))
+		switch(rep_TYPE(arg))
 		{
-		    repv ch = rep_CAR(arg);
-		    if(rep_INTP(ch))
-		    {
-			if(!extend_concat(&buf, &buflen, i, 1))
-			    goto error;
-			buf[i++] = rep_INT(ch);
-		    }
-		    arg = rep_CDR(arg);
-		    rep_TEST_INT;
-		    if(rep_INTERRUPTP)
+		    int slen, j;
+
+		case rep_String:
+		    slen = rep_STRING_LEN(arg);
+		    if(!extend_concat(&buf, &buflen, i, slen))
 			goto error;
-		}
-		break;
-	    case rep_Vector:
-		{
-		    int len = rep_VECT_LEN(arg);
-		    for(j = 0; j < len; j++)
+		    memcpy(buf + i, rep_STR(arg), slen);
+		    i += slen;
+		    break;
+
+		case rep_Int:
+		    if(!extend_concat(&buf, &buflen, i, 1))
+			goto error;
+		    buf[i++] = rep_INT(arg);
+		    break;
+
+		case rep_Symbol:
+		case rep_Cons:
+		    while(rep_CONSP(arg))
 		    {
-			if(rep_INTP(rep_VECTI(arg, j)))
+			repv ch = rep_CAR(arg);
+			if(rep_INTP(ch))
 			{
 			    if(!extend_concat(&buf, &buflen, i, 1))
 				goto error;
-			    buf[i++] = rep_INT(rep_VECTI(arg, j));
+			    buf[i++] = rep_INT(ch);
 			}
+			arg = rep_CDR(arg);
+			rep_TEST_INT;
+			if(rep_INTERRUPTP)
+			    goto error;
 		    }
 		    break;
+
+		case rep_Vector:
+		    {
+			int len = rep_VECT_LEN(arg);
+			for(j = 0; j < len; j++)
+			{
+			    if(rep_INTP(rep_VECTI(arg, j)))
+			    {
+				if(!extend_concat(&buf, &buflen, i, 1))
+				    goto error;
+				buf[i++] = rep_INT(rep_VECTI(arg, j));
+			    }
+			}
+			break;
+		    }
+		default:
+		    res = rep_signal_arg_error(arg, argnum);
+		    goto error;
 		}
-	    default:
-		res = rep_signal_arg_error(arg, argnum);
-		goto error;
 	    }
 	    args = rep_CDR(args);
 	    argnum++;
@@ -1092,6 +1096,9 @@ length SEQUENCE
 Returns the number of elements in SEQUENCE (a string, list or vector).
 ::end:: */
 {
+    if (sequence == Qnil)
+	return rep_MAKE_INT (0);
+
     switch(rep_TYPE(sequence))
     {
 	int i;
@@ -1113,10 +1120,6 @@ Returns the number of elements in SEQUENCE (a string, list or vector).
 	}
 	return(rep_MAKE_INT(i));
 	break;
-    case rep_Symbol:
-	if(sequence == Qnil)
-	    return(rep_MAKE_INT(0));
-	/* FALL THROUGH */
     default:
 	return rep_signal_arg_error (sequence, 1);
     }
@@ -1130,12 +1133,10 @@ Returns a new sequence whose elements are eq to those in SEQUENCE.
 ::end:: */
 {
     repv res = Qnil;
+    if (seq == Qnil)
+	return Qnil;
     switch(rep_TYPE(seq))
     {
-    case rep_Symbol:
-	if(!rep_NILP(seq))
-	    res = rep_signal_arg_error(seq, 1);
-	break;
     case rep_Cons:
 	{
 	    repv *last = &res;
