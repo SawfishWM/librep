@@ -51,6 +51,7 @@ char *alloca ();
 #endif
 
 DEFSTRING(div_zero, "Divide by zero");
+DEFSTRING(domain_error, "Domain error");
 
 
 /* Private type definitions */
@@ -156,12 +157,12 @@ number_sweep(void)
 	    {
 		/* if on the freelist then the CELL_IS_8 bit
 		   will be unset (since the pointer is long aligned) */
-		if (!(this->car & rep_CELL_IS_8)
+		if (rep_CELL_CONS_P(rep_VAL(this))
 		    || !rep_GC_CELL_MARKEDP ((repv) this))
 		{
 		    if (!newfreetail)
 			newfreetail = this;
-		    if (this->car & rep_CELL_IS_8)
+		    if (!rep_CELL_CONS_P(rep_VAL(this)))
 		    {
 			switch (idx)
 			{
@@ -434,31 +435,53 @@ rep_get_long_uint (repv in)
 {
     if (rep_INTP (in))
 	return rep_INT (in);
-    else if (rep_NUMBERP (in) && rep_NUMBER_BIGNUM_P (in))
-	return mpz_get_ui (rep_NUMBER(in,z));
+    else if (rep_NUMBERP (in))
+    {
+	switch (rep_NUMBER_TYPE(in))
+	{
+	case rep_NUMBER_BIGNUM:
+	    return mpz_get_ui (rep_NUMBER(in,z));
+
+	case rep_NUMBER_RATIONAL:
+	    return (u_long) mpq_get_d (rep_NUMBER(in,q));
+
+	case rep_NUMBER_FLOAT:
+	    return (u_long) rep_NUMBER(in,f);
+	}
+    }
     else if (rep_CONSP (in)
 	     && rep_INTP (rep_CAR (in)) && rep_INTP (rep_CDR (in)))
     {
 	return rep_INT (rep_CAR (in)) | (rep_INT (rep_CDR (in)) << 24);
     }
-    else
-	return 0;
+    return 0;
 }
 
-u_long
+long
 rep_get_long_int (repv in)
 {
     if (rep_INTP (in))
 	return rep_INT (in);
-    else if (rep_NUMBERP (in) && rep_NUMBER_BIGNUM_P (in))
-	return mpz_get_si (rep_NUMBER(in,z));
+    else if (rep_NUMBERP (in))
+    {
+	switch (rep_NUMBER_TYPE(in))
+	{
+	case rep_NUMBER_BIGNUM:
+	    return mpz_get_ui (rep_NUMBER(in,z));
+
+	case rep_NUMBER_RATIONAL:
+	    return (u_long) mpq_get_d (rep_NUMBER(in,q));
+
+	case rep_NUMBER_FLOAT:
+	    return (u_long) rep_NUMBER(in,f);
+	}
+    }
     else if (rep_CONSP (in)
 	     && rep_INTP (rep_CAR (in)) && rep_INTP (rep_CDR (in)))
     {
 	return rep_INT (rep_CAR (in)) | (rep_INT (rep_CDR (in)) << 24);
     }
-    else
-	return 0;
+    return 0;
 }
 
 repv
@@ -491,21 +514,35 @@ rep_make_longlong_int (rep_long_long in)
 rep_long_long
 rep_get_longlong_int (repv in)
 {
-    if (rep_NUMBERP (in) && rep_NUMBER_BIGNUM_P (in))
+    if (rep_INTP (in))
+	return rep_INT (in);
+    else if (rep_NUMBERP (in))
     {
-	int sign = mpz_sgn (rep_NUMBER(in,z));
-	rep_long_long bottom, top, out;
-	mpz_t tem;
-	mpz_init_set (tem, rep_NUMBER(in,z));
-	if (sign < 0)
-	    mpz_neg (tem, tem);
-	bottom = mpz_get_ui (tem);
-	mpz_tdiv_q_2exp (tem, tem, CHAR_BIT * sizeof (long));
-	top = mpz_get_ui (tem);
-	out = bottom | (top << (CHAR_BIT * sizeof (long)));
-	if (sign < 0)
-	    out = -out;
-	return out;
+	switch (rep_NUMBER_TYPE(in))
+	{
+	case rep_NUMBER_BIGNUM:
+	    {
+		int sign = mpz_sgn (rep_NUMBER(in,z));
+		rep_long_long bottom, top, out;
+		mpz_t tem;
+		mpz_init_set (tem, rep_NUMBER(in,z));
+		if (sign < 0)
+		    mpz_neg (tem, tem);
+		bottom = mpz_get_ui (tem);
+		mpz_tdiv_q_2exp (tem, tem, CHAR_BIT * sizeof (long));
+		top = mpz_get_ui (tem);
+		out = bottom | (top << (CHAR_BIT * sizeof (long)));
+		if (sign < 0)
+		    out = -out;
+		return out;
+	    }
+
+	case rep_NUMBER_RATIONAL:
+	    return (rep_long_long) mpq_get_d (rep_NUMBER(in,q));
+
+	case rep_NUMBER_FLOAT:
+	    return (rep_long_long) rep_NUMBER(in,f);
+	}
     }
     else if (rep_CONSP (in)
 	     && rep_INTP (rep_CAR (in)) && rep_INTP (rep_CDR (in)))
@@ -514,8 +551,7 @@ rep_get_longlong_int (repv in)
 	out = (out << 24) | rep_INT (rep_CAR (in));
 	return out;
     }
-    else
-	return rep_get_long_int (in);
+    return 0;
 }
 
 repv
@@ -671,54 +707,88 @@ error:
     return rep_NULL;
 }
 
-static void
-number_prin (repv stream, repv obj)
+char *
+rep_print_number_to_string (repv obj, int radix, int prec)
 {
+    char *out = 0;
     switch (rep_NUMERIC_TYPE (obj))
     {
-	u_char tbuf[40];
-	char *tem;
-	mpz_t temz;
+	u_char buf[64], fmt[8], *tem;
+	size_t len;
 
     case rep_NUMBER_INT:
+	if (radix == 10)
+	    tem = "%" rep_PTR_SIZED_INT_CONV "d";
+	else if (radix == 16)
+	    tem = "%" rep_PTR_SIZED_INT_CONV "x";
+	else if (radix == 8)
+	    tem = "%" rep_PTR_SIZED_INT_CONV "o";
+	else
+	    tem = 0;			/* XXX handle arbitrary bases */
+	if (tem != 0)
+	{
 #ifdef HAVE_SNPRINTF
-	snprintf(tbuf, sizeof(tbuf),
-		 "%" rep_PTR_SIZED_INT_CONV "d", rep_INT(obj));
+	    snprintf(buf, sizeof(buf), tem, rep_INT(obj));
 #else
-	sprintf(tbuf, "%" rep_PTR_SIZED_INT_CONV "d", rep_INT(obj));
+	    sprintf(buf, tem, rep_INT(obj));
 #endif
-	rep_stream_puts(stream, tbuf, -1, rep_FALSE);
+	    out = strdup (buf);
+	}
 	break;
 
     case rep_NUMBER_BIGNUM:
-	tem = mpz_get_str (0, 10, rep_NUMBER(obj,z));
-	rep_stream_puts (stream, tem, -1, rep_FALSE);
-	free (tem);
+	out = mpz_get_str (0, radix, rep_NUMBER(obj,z));
 	break;
 
     case rep_NUMBER_RATIONAL:
-	mpz_init (temz);
-	mpq_get_num (temz, rep_NUMBER (obj,q));
-	tem = mpz_get_str (0, 10, temz);
-	rep_stream_puts (stream, tem, -1, rep_FALSE);
-	free (tem);
-	rep_stream_putc (stream, '/');
-	mpq_get_den (temz, rep_NUMBER (obj,q));
-	tem = mpz_get_str (0, 10, temz);
-	rep_stream_puts (stream, tem, -1, rep_FALSE);
-	free (tem);
-	mpz_clear (temz);
+	len = (mpz_sizeinbase (mpq_numref (rep_NUMBER (obj, q)), radix)
+	       + mpz_sizeinbase (mpq_denref (rep_NUMBER (obj, q)), radix) + 4);
+	out = malloc (len);
+	mpz_get_str (out, radix, mpq_numref (rep_NUMBER (obj,q)));
+	len = strlen (out);
+	out[len++] = '/';
+	mpz_get_str (out + len, radix, mpq_denref (rep_NUMBER (obj,q)));
 	break;
 
-    case rep_NUMBER_FLOAT:
+    case rep_NUMBER_FLOAT:		/* XXX handle radix arg */
+	sprintf (fmt, "%%.%dg", prec < 0 ? 16 : prec);
 #ifdef HAVE_SNPRINTF
-	snprintf(tbuf, sizeof(tbuf), "%.16g", rep_NUMBER(obj,f));
+	snprintf(buf, sizeof(buf), fmt, rep_NUMBER(obj,f));
 #else
-	sprintf(tbuf, "%.16g", rep_NUMBER(obj,f));
+	sprintf(buf, fmt, rep_NUMBER(obj,f));
 #endif
-	rep_stream_puts(stream, tbuf, -1, rep_FALSE);
-	if (ceil (rep_NUMBER(obj,f)) == rep_NUMBER(obj,f))
-	    rep_stream_putc (stream, '.');
+	/* libc doesn't always add a point */
+	if (!strchr (buf, '.') && !strchr (buf, 'e') && !strchr (buf, 'E'))
+	    strcat (buf, ".");
+	out = strdup (buf);
+    }
+    return out;
+}
+
+static void
+number_prin (repv stream, repv obj)
+{
+    if (rep_INTP (obj))
+    {
+	char buf[64];
+#ifdef HAVE_SNPRINTF
+	snprintf(buf, sizeof(buf),
+		 "%" rep_PTR_SIZED_INT_CONV "d", rep_INT(obj));
+#else
+	sprintf(buf, "%" rep_PTR_SIZED_INT_CONV "d", rep_INT(obj));
+#endif
+	rep_stream_puts(stream, buf, -1, rep_FALSE);
+    }
+    else
+    {
+	char *string = rep_print_number_to_string (obj, 10, -1);
+	if (string != 0)
+	{
+	    rep_stream_puts (stream, string, -1, rep_FALSE);
+	    free (string);
+	}
+	else
+	    rep_stream_puts (stream, "#<unprintable number>", -1, rep_FALSE);
     }
 }
 
@@ -886,10 +956,13 @@ rep_number_div (repv x, repv y)
 	    out = rep_MAKE_INT (rep_INT (x) / rep_INT (y));
 	else
 	{
+	    u_long uy = (rep_INT (y) < 0 ? - rep_INT (y) : rep_INT (y));
 	    rep_number_q *q = make_number (rep_NUMBER_RATIONAL);
 	    mpq_init (q->q);
-	    mpq_set_si (q->q, rep_INT (x), rep_INT (y));
+	    mpq_set_si (q->q, rep_INT (x), uy);
 	    mpq_canonicalize (q->q);
+	    if (rep_INT (y) < 0)
+		mpq_neg (q->q, q->q);
 	    out = rep_VAL (q);
 	}
 	break;
@@ -910,11 +983,14 @@ rep_number_div (repv x, repv y)
 	    }
 	    else
 	    {
+		mpq_t div;
 		rep_number_q *q = make_number (rep_NUMBER_RATIONAL);
 		mpq_init (q->q);
-		mpq_set_num (q->q, rep_NUMBER (x,z));
-		mpq_set_den (q->q, rep_NUMBER (y,z));
-		mpq_canonicalize (q->q);
+		mpq_set_z (q->q, rep_NUMBER (x,z));
+		mpq_init (div);
+		mpq_set_z (div, rep_NUMBER (y,z));
+		mpq_div (q->q, q->q, div);
+		mpq_clear (div);
 		out = rep_VAL (q);
 	    }
 	}
@@ -1168,7 +1244,13 @@ and that floating point division is used.
     return out;
 }
 
-DEFUN("quotient", Fquotient, Squotient, (repv x, repv y), rep_Subr2)
+DEFUN("quotient", Fquotient, Squotient, (repv x, repv y), rep_Subr2) /*
+::doc:quotient::
+quotient DIVIDEND DIVISOR
+
+Returns the integer quotient from dividing integers DIVIDEND and
+DIVISOR.
+::end:: */
 {
     repv out;
     rep_DECLARE1 (x, rep_INTEGERP);
@@ -1246,45 +1328,15 @@ Returns the bitwise logical `and' of its arguments.
 DEFUN("eql", Feql, Seql, (repv arg1, repv arg2), rep_Subr2) /*
 ::doc:eql::
 eql ARG1 ARG2
-Similar to `eq' except that numbers (integers, characters) with the same
-value will always be considered `eql' (this may or may not be the case
-with `eq').
+
+Similar to `eq' except that numbers with the same value will always be
+considered `eql' (this may or may not be the case with `eq').
 ::end:: */
 {
     if(rep_NUMERICP (arg1) && rep_NUMERICP (arg2))
 	return number_cmp (arg1, arg2) == 0 ? Qt : Qnil;
     else
 	return arg1 == arg2 ? Qt : Qnil;
-}
-
-DEFUN("=", Fnum_eq, Snum_eq, (repv num1, repv num2), rep_Subr2) /*
-::doc:=::
-= NUMBER1 NUMBER2
-
-Returns t if NUMBER1 and NUMBER2 are equal.
-::end:: */
-{
-    rep_DECLARE1(num1, rep_NUMERICP);
-    rep_DECLARE2(num2, rep_NUMERICP);
-    if(rep_INTP (num1) && rep_INTP (num2))
-	return (rep_INT (num1) == rep_INT (num2)) ? Qt : Qnil;
-    else
-	return (number_cmp (num1, num2) == 0) ? Qt : Qnil;
-}
-
-DEFUN("/=", Fnum_noteq, Snum_noteq, (repv num1, repv num2), rep_Subr2) /*
-::doc:/=::
-/= NUMBER1 NUMBER2
-
-Returns t if NUMBER1 and NUMBER2 are unequal.
-::end:: */
-{
-    rep_DECLARE1(num1, rep_NUMERICP);
-    rep_DECLARE2(num2, rep_NUMERICP);
-    if(rep_INTP (num1) && rep_INTP (num2))
-	return (rep_INT (num1) == rep_INT (num2)) ? Qnil : Qt;
-    else
-	return (number_cmp (num1, num2) == 0) ? Qnil : Qt;
 }
 
 DEFUN("zerop", Fzerop, Szerop, (repv num), rep_Subr1) /*
@@ -1386,33 +1438,18 @@ Return NUMBER minus 1.
     abort ();
 }
 
-DEFUN("lsh", Flsh, Slsh, (repv num, repv shift), rep_Subr2) /*
-::doc:lsh::
-lsh NUMBER COUNT
-
-Shift the bits in NUMBER by COUNT bits to the left, a negative COUNT means
-shift right. This is only works with fixnums.
-::end:: */
-{
-    rep_DECLARE1(num, rep_INTP);
-    rep_DECLARE2(shift, rep_INTP);
-    if (rep_INT (shift) > 0)
-	return rep_MAKE_INT (rep_INT (num) << rep_INT (shift));
-    else
-	/* ensure that a zero is in the top bit. */
-	return rep_MAKE_INT ((rep_INT (num) >> -rep_INT (shift)) & 0x7fffffff);
-}
-
 DEFUN("ash", Fash, Sash, (repv num, repv shift), rep_Subr2) /*
 ::doc:ash::
 ash NUMBER COUNT
 
-Use an arithmetic shift to shift the bits in NUMBER by COUNT bits to the left,
-a negative COUNT means shift right.
+Use an arithmetic shift to shift the bits in NUMBER by COUNT bits to
+the left, a negative COUNT means shift right.
+
+Both NUMBER and COUNT must be integers.
 ::end:: */
 {
-    rep_DECLARE1(num, rep_NUMERICP);
-    rep_DECLARE2(shift, rep_NUMERICP);
+    rep_DECLARE1(num, rep_INTEGERP);
+    rep_DECLARE2(shift, rep_INTEGERP);
 
     shift = coerce (shift, rep_NUMBER_INT);
     switch (rep_NUMERIC_TYPE (num))
@@ -1450,7 +1487,13 @@ a negative COUNT means shift right.
     }
 }
 
-DEFUN("floor", Ffloor, Sfloor, (repv arg), rep_Subr1)
+DEFUN("floor", Ffloor, Sfloor, (repv arg), rep_Subr1) /*
+::doc:floor::
+floor NUMBER
+
+Round NUMBER downwards to the nearest integer less than or equal to
+NUMBER.
+::end:: */
 {
     rep_DECLARE1 (arg, rep_NUMERICP);
     switch (rep_NUMERIC_TYPE (arg))
@@ -1472,7 +1515,13 @@ DEFUN("floor", Ffloor, Sfloor, (repv arg), rep_Subr1)
     abort ();
 }	
 
-DEFUN("ceiling", Fceiling, Sceiling, (repv arg), rep_Subr1)
+DEFUN("ceiling", Fceiling, Sceiling, (repv arg), rep_Subr1) /*
+::doc:ceiling::
+ceiling NUMBER
+
+Round NUMBER upwards to the nearest integer greater than or equal to
+NUMBER.
+::end:: */
 {
     rep_DECLARE1 (arg, rep_NUMERICP);
     switch (rep_NUMERIC_TYPE (arg))
@@ -1493,7 +1542,12 @@ DEFUN("ceiling", Fceiling, Sceiling, (repv arg), rep_Subr1)
     abort ();
 }
 
-DEFUN("truncate", Ftruncate, Struncate, (repv arg), rep_Subr1)
+DEFUN("truncate", Ftruncate, Struncate, (repv arg), rep_Subr1) /*
+::doc:truncate::
+truncate NUMBER
+
+Round NUMBER to the nearest integer between NUMBER and zero.
+::end:: */
 {
     rep_DECLARE1 (arg, rep_NUMERICP);
     switch (rep_NUMERIC_TYPE (arg))
@@ -1515,7 +1569,13 @@ DEFUN("truncate", Ftruncate, Struncate, (repv arg), rep_Subr1)
     abort ();
 }
 
-DEFUN("round", Fround, Sround, (repv arg), rep_Subr1)
+DEFUN("round", Fround, Sround, (repv arg), rep_Subr1) /*
+::doc:round::
+round NUMBER
+
+Round NUMBER to the nearest integer. Halfway cases are rounded to the
+nearest even integer.
+::end:: */
 {
     rep_DECLARE1 (arg, rep_NUMERICP);
     switch (rep_NUMERIC_TYPE (arg))
@@ -1542,70 +1602,165 @@ DEFUN("round", Fround, Sround, (repv arg), rep_Subr1)
     abort ();
 }
 
-DEFUN("exp", Fexp, Sexp, (repv arg), rep_Subr1)
+DEFUN("exp", Fexp, Sexp, (repv arg), rep_Subr1) /*
+::doc:exp::
+exp X
+
+Return `e' (the base of natural logarithms) raised to the power X.
+::end:: */
 {
     rep_DECLARE1 (arg, rep_NUMERICP);
     return rep_make_float (exp (rep_get_float (arg)), rep_TRUE);
 }
 
-DEFUN("log", Flog, Slog, (repv arg), rep_Subr1)
+DEFUN("log", Flog, Slog, (repv arg), rep_Subr1) /*
+::doc:log::
+log X
+
+Return the natural logarithm of X. An arithmetic error is signalled if
+X is less than zero.
+::end:: */
 {
+    double d;
     rep_DECLARE1 (arg, rep_NUMERICP);
-    return rep_make_float (log (rep_get_float (arg)), rep_TRUE);
+    d = rep_get_float (arg);
+    if (d >= 0)
+	return rep_make_float (log (d), rep_TRUE);
+    else
+	return Fsignal (Qarith_error, rep_LIST_1 (rep_VAL (&domain_error)));
 }
 
-DEFUN("sin", Fsin, Ssin, (repv arg), rep_Subr1)
+DEFUN("sin", Fsin, Ssin, (repv arg), rep_Subr1) /*
+::doc:sin::
+sin X
+
+Returns the sine of X, in radians.
+::end:: */
 {
     rep_DECLARE1 (arg, rep_NUMERICP);
     return rep_make_float (sin (rep_get_float (arg)), rep_TRUE);
 }
 
-DEFUN("cos", Fcos, Scos, (repv arg), rep_Subr1)
+DEFUN("cos", Fcos, Scos, (repv arg), rep_Subr1) /*
+::doc:cos::
+cos X
+
+Returns the cosine of X, in radians.
+::end:: */
 {
     rep_DECLARE1 (arg, rep_NUMERICP);
     return rep_make_float (cos (rep_get_float (arg)), rep_TRUE);
 }
 
-DEFUN("tan", Ftan, Stan, (repv arg), rep_Subr1)
+DEFUN("tan", Ftan, Stan, (repv arg), rep_Subr1) /*
+::doc:tan::
+tan X
+
+Returns the tangent of X, in radians.
+::end:: */
 {
     rep_DECLARE1 (arg, rep_NUMERICP);
     return rep_make_float (tan (rep_get_float (arg)), rep_TRUE);
 }
 
-DEFUN("asin", Fasin, Sasin, (repv arg), rep_Subr1)
+DEFUN("asin", Fasin, Sasin, (repv arg), rep_Subr1) /*
+::doc:asin::
+asin X
+
+Return the arc sine of X (the value whose sine is X), in radians.
+::end:: */
 {
+    double d;
     rep_DECLARE1 (arg, rep_NUMERICP);
-    return rep_make_float (asin (rep_get_float (arg)), rep_TRUE);
+    d = rep_get_float (arg);
+    if (d >= -1.0 && d <= 1.0)
+	return rep_make_float (asin (d), rep_TRUE);
+    else
+	return Fsignal (Qarith_error, rep_LIST_1 (rep_VAL (&domain_error)));
 }
 
-DEFUN("acos", Facos, Sacos, (repv arg), rep_Subr1)
+DEFUN("acos", Facos, Sacos, (repv arg), rep_Subr1) /*
+::doc:acos::
+acos X
+
+Return the arc cosine of X (the value whose cosine is X), in radians.
+::end:: */
 {
+    double d;
     rep_DECLARE1 (arg, rep_NUMERICP);
-    return rep_make_float (acos (rep_get_float (arg)), rep_TRUE);
+    d = rep_get_float (arg);
+    if (d >= -1.0 && d <= 1.0)
+	return rep_make_float (acos (d), rep_TRUE);
+    else
+	return Fsignal (Qarith_error, rep_LIST_1 (rep_VAL (&domain_error)));
 }
 
-/* XXX r4rs also has a two-arg variant */
-DEFUN("atan", Fatan, Satan, (repv arg), rep_Subr1)
+DEFUN("atan", Fatan, Satan, (repv y, repv x), rep_Subr2) /*
+::doc:atan::
+atan X
+
+Returns the arc tangent of X (the value whose tangent is X), in
+radians.
+
+atan Y X
+
+Returns the arc tangent of Y/X, in radians. The signs of both arguments
+are used to determine the quadrant of the result, and X is permitted to
+be zero.
+::end:: */
 {
-    rep_DECLARE1 (arg, rep_NUMERICP);
-    return rep_make_float (atan (rep_get_float (arg)), rep_TRUE);
+    rep_DECLARE1 (y, rep_NUMERICP);
+    if (!rep_NUMERICP (x))
+	return rep_make_float (atan (rep_get_float (y)), rep_TRUE);
+    else
+	return rep_make_float (atan2 (rep_get_float (y),
+				      rep_get_float (x)), rep_TRUE);
 }
 
-DEFUN("sqrt", Fsqrt, Ssqrt, (repv arg), rep_Subr1)
+DEFUN("sqrt", Fsqrt, Ssqrt, (repv arg), rep_Subr1) /*
+::doc:sqrt::
+sqrt X
+
+Returns the nonnegative square root of X. If X is negative, signals an
+arithmetic error (should return a complex number).
+::end:: */
 {
+    double d;
     rep_DECLARE1 (arg, rep_NUMERICP);
-    return rep_make_float (sqrt (rep_get_float (arg)), rep_TRUE);
+    d = rep_get_float (arg);
+    if (d >= 0)
+	return rep_make_float (sqrt (d), rep_TRUE);
+    else
+	return Fsignal (Qarith_error, rep_LIST_1 (rep_VAL (&domain_error)));
 }
 
-DEFUN("expt", Fexpt, Sexpt, (repv arg1, repv arg2), rep_Subr2)
+DEFUN("expt", Fexpt, Sexpt, (repv arg1, repv arg2), rep_Subr2) /*
+::doc:expt::
+expt X Y
+
+Returns X raised to the power Y.
+
+If X is negative and Y is a non-integer, then an arithmetic error is
+signalled (mathematically should return a complex number).
+::end:: */
 {
+    double x, y;
     rep_DECLARE1 (arg1, rep_NUMERICP);
     rep_DECLARE1 (arg2, rep_NUMERICP);
-    return rep_make_float (pow (rep_get_float (arg1),
-				rep_get_float (arg2)), rep_FALSE);
+    x = rep_get_float (arg1);
+    y = rep_get_float (arg2);
+    if (x >= 0 || ceil (y) == y)
+	return rep_make_float (pow (x, y), rep_FALSE);
+    else
+	return Fsignal (Qarith_error, rep_LIST_1 (rep_VAL (&domain_error)));
 }
 
-DEFUN("gcd", Fgcd, Sgcd, (repv x, repv y), rep_Subr2)
+DEFUN("gcd", Fgcd, Sgcd, (repv x, repv y), rep_Subr2) /*
+::doc:gcd::
+gcd X Y
+
+Return the greatest common divisor of the integers X and Y.
+::end:: */
 {
     repv out;
     rep_DECLARE1 (x, rep_INTEGERP);
@@ -1654,7 +1809,8 @@ DEFUN("fixnump", Ffixnump, Sfixnump, (repv arg), rep_Subr1) /*
 ::doc:fixnump::
 fixnump ARG
 
-Return t if ARG is a fixnum.
+Return t if ARG is a fixnum (i.e. an integer that fits in a Lisp
+pointer).
 ::end:: */
 {
     return rep_INTP (arg) ? Qt : Qnil;
@@ -1703,10 +1859,86 @@ Return t if ARG is an inexact number.
     return Fexactp (arg) == Qnil ? Qt : Qnil;
 }
 
-DEFUN("exact->inexact", Fexact_to_inexact, Sexact_to_inexact, (repv arg), rep_Subr1)
+DEFUN("exact->inexact", Fexact_to_inexact,
+      Sexact_to_inexact, (repv arg), rep_Subr1) /*
+::doc:exact->inexact::
+exact->inexact X
+
+Returns an inexact (i.e. floating point) representation of X.
+::end:: */
 {
     rep_DECLARE1(arg, rep_NUMERICP);
-    return rep_make_float (rep_get_float (arg), rep_TRUE);
+    if (!rep_INTP (arg) && rep_NUMBER_FLOAT_P (arg))
+	return arg;
+    else
+	return rep_make_float (rep_get_float (arg), rep_TRUE);
+}
+
+DEFUN("inexact->exact", Finexact_to_exact,
+      Sinexact_to_exact, (repv arg), rep_Subr1) /*
+::doc:inexact->exact::
+inexact->exact X
+
+Returns an exact representation of X. This may involve a loss of
+accuracy.
+::end:: */
+{
+    rep_DECLARE1(arg, rep_NUMERICP);
+    if (rep_INTP (arg) || !rep_NUMBER_FLOAT_P (arg))
+	return arg;
+    else
+    {
+	/* XXX is there a way to decide if it's rationalizable? */
+	double d = floor (rep_get_float (arg));
+	if (d >= rep_LISP_MIN_INT && d <= rep_LISP_MAX_INT)
+	    return rep_MAKE_INT ((long) d);
+	else
+	{
+	    rep_number_z *z = make_number (rep_NUMBER_BIGNUM);
+	    mpz_init_set_d (z->z, d);
+	    return rep_VAL (z);
+	}
+    }
+}
+
+DEFUN("numerator", Fnumerator, Snumerator, (repv x), rep_Subr1) /*
+::doc:numerator::
+numerator X
+
+Return the numerator of rational number X.
+::end:: */
+{
+    rep_DECLARE1(x, rep_NUMERICP);
+    if (rep_INTP (x) || rep_NUMBER_BIGNUM_P (x))
+	return x;
+    else if (rep_NUMBER_RATIONAL_P (x))
+    {
+	rep_number_z *z = make_number (rep_NUMBER_BIGNUM);
+	mpz_init_set (z->z, mpq_numref (rep_NUMBER(x,q)));
+	return maybe_demote (rep_VAL (z));
+    }
+    else
+	return rep_signal_arg_error (x, 1);
+}
+
+DEFUN("denominator", Fdenominator, Sdenominator, (repv x), rep_Subr1) /*
+::doc:denominator::
+denominator X
+
+Return the denominator of rational number X.
+::end:: */
+{
+    rep_DECLARE1(x, rep_NUMERICP);
+    if (rep_INTP (x) || rep_NUMBER_BIGNUM_P (x))
+	return rep_MAKE_INT (1);
+    else if (rep_NUMBER_RATIONAL_P (x))
+    {
+	rep_number_z *z = make_number (rep_NUMBER_BIGNUM);
+	mpz_init_set (z->z, mpq_denref (rep_NUMBER(x,q)));
+	return maybe_demote (rep_VAL (z));
+    }
+    else
+	return rep_signal_arg_error (x, 1);
 }
 
 
@@ -1747,10 +1979,7 @@ rep_numbers_init (void)
     rep_ADD_SUBR(Szerop);
     rep_ADD_SUBR(Splus1);
     rep_ADD_SUBR(Ssub1);
-    rep_ADD_SUBR(Slsh);
     rep_ADD_SUBR(Sash);
-    rep_ADD_SUBR(Snum_eq);
-    rep_ADD_SUBR(Snum_noteq);
     rep_ADD_SUBR(Sfloor);
     rep_ADD_SUBR(Sceiling);
     rep_ADD_SUBR(Struncate);
@@ -1774,4 +2003,7 @@ rep_numbers_init (void)
     rep_ADD_SUBR(Sexactp);
     rep_ADD_SUBR(Sinexactp);
     rep_ADD_SUBR(Sexact_to_inexact);
+    rep_ADD_SUBR(Sinexact_to_exact);
+    rep_ADD_SUBR(Snumerator);
+    rep_ADD_SUBR(Sdenominator);
 }
