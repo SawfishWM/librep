@@ -872,7 +872,6 @@ again:
 	    goto again;
 	break;
 
-    case rep_Var:
     case rep_Subr0:
     case rep_Subr1:
     case rep_Subr2:
@@ -891,8 +890,10 @@ again:
     }
 }
 
-DEFUN("garbage-threshold", Vgarbage_threshold, Sgarbage_threshold, (repv val), rep_Var) /*
+DEFUN("garbage-threshold", Fgarbage_threshold, Sgarbage_threshold, (repv val), rep_Subr1) /*
 ::doc:garbage-threshold::
+garbage-threshold [NEW-VALUE]
+
 The number of bytes of storage which must be used before a garbage-
 collection is triggered.
 ::end:: */
@@ -900,8 +901,10 @@ collection is triggered.
     return rep_handle_var_int(val, &rep_gc_threshold);
 }
 
-DEFUN("idle-garbage-threshold", Vidle_garbage_threshold, Sidle_garbage_threshold, (repv val), rep_Var) /*
+DEFUN("idle-garbage-threshold", Fidle_garbage_threshold, Sidle_garbage_threshold, (repv val), rep_Subr1) /*
 ::doc:idle-garbage-threshold::
+idle-garbage-threshold [NEW-VALUE]
+
 The number of bytes of storage which must be used before a garbage-
 collection is triggered when the editor is idle.
 ::end:: */
@@ -1048,8 +1051,6 @@ rep_pre_values_init(void)
     rep_register_type(rep_Compiled, "bytecode", vector_cmp,
 		  rep_lisp_prin, rep_lisp_prin, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     rep_register_type(rep_Void, "void", rep_type_cmp,
-		  rep_lisp_prin, rep_lisp_prin, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-    rep_register_type(rep_Var, "var", rep_ptr_cmp,
 		  rep_lisp_prin, rep_lisp_prin, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     rep_register_type(rep_SF, "special-form", rep_ptr_cmp,
 		  rep_lisp_prin, rep_lisp_prin, 0, 0, 0, 0, 0, 0, 0, 0, 0);
