@@ -81,6 +81,9 @@ COMPILE_ENV = REPLISPDIR=$(top_builddir)/lisp \
 	      REP_DL_LOAD_PATH=$(top_builddir)/src/.libexec \
 	      REPDOCFILE=$(top_builddir)/DOC
 
+include $(top_srcdir)/rules.mk
+rep_LIBTOOL=@LIBTOOL@
+
 # Rule for ``normal'' C objects
 %.o : %.c
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) -o $@ $<
@@ -96,8 +99,7 @@ COMPILE_ENV = REPLISPDIR=$(top_builddir)/lisp \
 # Rule for dlopen'able C objects
 %.la : %.c
 	$(LIBTOOL) --mode=compile $(CC) -c $(CPPFLAGS) $(CFLAGS) $<
-	$(LIBTOOL) --mode=link $(CC) -avoid-version -module $(CPPFLAGS) \
-	  $(CFLAGS) -o $@ $*.lo -rpath $(repexecdir)
+	$(rep_DL_LD) $(CPPFLAGS) $(CFLAGS) -o $@ $*.lo
 
 # Build dependancy files from C source files.
 .%.d : %.c

@@ -1,3 +1,12 @@
+2000-11-15  John Harper  <jsh@eazel.com>
+
+	* Makedefs.in: include rules.mk and redefine $(rep_DL_LIBTOOL)
+	to the uninstalled local libtool
+
+	* rules.mk.sh: in $(rep_DL_LD) macro, specify
+	-export-symbols-regex option to libtool to only retain symbols
+	whose names begin with `rep_dl_'
+
 2000-10-23  John Harper  <jsh@eazel.com>
 
 	* configure.in: version 0.13.2

@@ -21,7 +21,7 @@ rep_INSTALL_ALIASES=\$(repexecdir)/install-aliases
 #	\$(rep_DL_LD) link-opts...
 
 rep_DL_LD=\$(rep_LIBTOOL) --mode=link \$(CC) -avoid-version -module \
-	  -rpath \$(rpath_repexecdir)
+	  -rpath \$(rpath_repexecdir) -export-symbols-regex '^rep_dl_'
 
 rep_DL_INSTALL=\$(rep_LIBTOOL) --mode=install \$(INSTALL)
 rep_DL_UNINSTALL=\$(rep_LIBTOOL) --mode=uninstall rm
