@@ -72,6 +72,11 @@ typedef struct {
 
 #ifndef HAVE_GMP
 # if SIZEOF_LONG_LONG > SIZEOF_LONG
+#  if !defined (LONG_LONG_MIN) && defined (LONGLONG_MIN)
+    /* AIX uses LONGLONG_ */
+#   define LONG_LONG_MIN LONGLONG_MIN
+#   define LONG_LONG_MAX LONGLONG_MAX
+#  endif
 #  define BIGNUM_MIN LONG_LONG_MIN
 #  define BIGNUM_MAX LONG_LONG_MAX
 # else
@@ -2683,6 +2688,8 @@ void
 rep_numbers_init (void)
 {
     int i;
+    repv tem;
+
     rep_register_type(rep_Int, "integer", number_cmp,
 		      number_prin, number_prin,
 		      0, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -2699,6 +2706,7 @@ rep_numbers_init (void)
 				 / number_sizeofs[i]);
     }
 
+    tem = rep_push_structure ("rep.lang.math");
     rep_ADD_SUBR(Splus);
     rep_ADD_SUBR(Sminus);
     rep_ADD_SUBR(Sproduct);
@@ -2707,7 +2715,6 @@ rep_numbers_init (void)
     rep_ADD_SUBR(Smod);
     rep_ADD_SUBR(Squotient);
     rep_ADD_SUBR(Slognot);
-    rep_ADD_SUBR(Seql);
     rep_ADD_SUBR(Slogior);
     rep_ADD_SUBR(Slogxor);
     rep_ADD_SUBR(Slogand);
@@ -2742,4 +2749,9 @@ rep_numbers_init (void)
     rep_ADD_SUBR(Smin);
     rep_ADD_SUBR(Sstring_to_number);
     rep_ADD_SUBR(Snumber_to_string);
+    rep_pop_structure (tem);
+
+    tem = rep_push_structure ("rep.data");
+    rep_ADD_SUBR(Seql);
+    rep_pop_structure (tem);
 }
