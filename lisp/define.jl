@@ -76,24 +76,6 @@
 ;; this needs to handle all special forms
 (defun define-scan-form (form)
   (case (car form)
-    ((let let* letrec)
-     (let*
-	 ((type (car form))
-	  fun values body)
-       (setq form (cdr form))
-       (when (and (eq type 'let) (symbolp (car form)))
-	 (setq fun (car form))
-	 (setq form (cdr form)))
-       (setq values (mapcar (lambda (lst)
-			      (if (consp lst)
-				  (cons (car lst) (define-scan-body (cdr lst)))
-				lst))
-			    (car form)))
-       (setq body (define-scan-internals (cdr form)))
-       (if fun
-	   (list type fun values body)
-	 (list type values body))))
-
     ((setq)
      (let loop ((rest (cdr form))
 		(out nil))
@@ -124,11 +106,7 @@
      form)
 
     ((lambda)
-     (list* 'lambda (nth 1 form) (define-scan-body (nthcdr 2 form))))
-
-    ((defun)
-     (list 'defun (nth 1 form) (nth 2 form)
-	   (define-scan-internals (nthcdr 3 form))))
+     (list 'lambda (nth 1 form) (define-scan-internals (nthcdr 2 form))))
 
     ((defvar)
      (list* 'defvar (nth 1 form) (define-scan-form (nth 2 form))
