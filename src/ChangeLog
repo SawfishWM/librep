@@ -1,3 +1,9 @@
+1999-10-01  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep_lisp.h: remove rep_ALIGN macro, since it's only used
+	once, by rep_ALIGN_CELL. This now knows about implicit
+	alignment on the DEC C compiler
+
 1999-09-20  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lisp.c (Qautoload_verbose): only print autoloading messages
