@@ -336,7 +336,7 @@ structure_print (repv stream, repv arg)
 static rep_bool
 structure_exports_inherited_p (rep_struct *s, repv var)
 {
-    if (s->export_all)
+    if (s->car & rep_STF_EXPORT_ALL)
 	return rep_TRUE;
     else
     {
@@ -414,7 +414,7 @@ lookup_or_add (rep_struct *s, repv var)
 	rep_data_after_gc += sizeof (rep_struct_node);
 	n->symbol = var;
 	n->is_constant = 0;
-	n->is_exported = s->export_all;
+	n->is_exported = (s->car & rep_STF_EXPORT_ALL) != 0;
 	n->next = s->buckets[rep_STRUCT_HASH (var, s->total_buckets)];
 	s->buckets[rep_STRUCT_HASH (var, s->total_buckets)] = n;
 	s->total_bindings++;
@@ -434,16 +434,17 @@ static rep_struct_node *
 lookup_recursively (repv name, repv var)
 {
     repv s = F_get_structure (name);
-    if (s && rep_STRUCTUREP (s) && !rep_STRUCTURE (s)->exclusion)
+    if (s && rep_STRUCTUREP (s)
+	&& !(rep_STRUCTURE (s)->car & rep_STF_EXCLUSION))
     {
 	rep_struct_node *n;
 	n = lookup (rep_STRUCTURE (s), var);
 	if (n != 0)
 	    return n->is_exported ? n : 0;
-	rep_STRUCTURE (s)->exclusion = 1;
+	rep_STRUCTURE (s)->car |= rep_STF_EXCLUSION;
 	if (structure_exports_inherited_p (rep_STRUCTURE (s), var))
 	    n = rep_search_imports (rep_STRUCTURE (s), var);
-	rep_STRUCTURE (s)->exclusion = 0;
+	rep_STRUCTURE (s)->car &= ~rep_STF_EXCLUSION;
 	return n;
     }
     else
@@ -568,8 +569,10 @@ BODY-THUNK may be modified by this function!
     s->imports = Qnil;
     s->accessible = Qnil;
     s->special_env = Qt;
-    s->exclusion = 0;
-    s->export_all = 0;
+    if (rep_structure != rep_NULL)
+	s->apply_bytecode = rep_STRUCTURE (rep_structure)->apply_bytecode;
+    else
+	s->apply_bytecode = rep_apply_bytecode;
     s->next = all_structures;
     all_structures = s;
 
@@ -806,7 +809,7 @@ Set the interface of structure object STRUCTURE to INTERFACE.
     rep_DECLARE2 (sig, rep_INTERFACEP);
     s = rep_STRUCTURE (structure);
     s->inherited = Fcopy_sequence (sig);
-    s->export_all = 0;
+    s->car &= ~rep_STF_EXPORT_ALL;
 
     for (i = 0; i < s->total_buckets; i++)
     {
@@ -978,10 +981,6 @@ Return the result of evaluating FORM inside structure object STRUCTURE
     rep_PUSHGC (gc_old_env, old_env);
     rep_structure = structure;
     rep_env = env;
-
-    result = Fsymbol_value (Qrun_byte_code, Qt);
-    if (Ffunctionp (result) == Qnil)
-	rep_bytecode_interpreter = 0;
 
     result = Feval (form);
 
@@ -1226,7 +1225,10 @@ rep_add_subr(rep_xsubr *subr, rep_bool export)
 void
 rep_structure_exports_all (repv s, rep_bool status)
 {
-    rep_STRUCTURE (s)->export_all = status ? 1 : 0;
+    if (status)
+	rep_STRUCTURE (s)->car |= rep_STF_EXPORT_ALL;
+    else
+	rep_STRUCTURE (s)->car &= ~rep_STF_EXPORT_ALL;
 }
 
 DEFUN("%structure-exports-all", F_structure_exports_all,
@@ -1235,6 +1237,24 @@ DEFUN("%structure-exports-all", F_structure_exports_all,
     rep_DECLARE1 (s, rep_STRUCTUREP);
     rep_structure_exports_all (s, status != Qnil);
     return s;
+}
+
+DEFUN("%structure-install-vm", F_structure_install_vm,
+      S_structure_install_vm, (repv structure, repv vm), rep_Subr2)
+{
+    rep_struct *s;
+    rep_DECLARE1 (structure, rep_STRUCTUREP);
+    s = rep_STRUCTURE (structure);
+    if (vm == Qnil)
+    {
+	s->apply_bytecode = 0;
+	return Qnil;
+    }
+    else
+    {
+	rep_DECLARE (2, vm, Ffunctionp (vm) != Qnil);
+	return rep_call_lisp1 (vm, structure);
+    }
 }
 
 /* This is a horrible kludge :-(
@@ -1319,6 +1339,7 @@ rep_structures_init (void)
     rep_ADD_SUBR (Sprovide);
     rep_ADD_SUBR_INT (Srequire);
     rep_ADD_INTERNAL_SUBR (S_structure_exports_all);
+    rep_ADD_INTERNAL_SUBR (S_structure_install_vm);
 
     rep_INTERN (features);
     rep_INTERN (_structures);
