@@ -173,8 +173,6 @@ clean: mostlyclean
 distclean: clean
 	rm -f Makefile ID TAGS po2msg.sed po2tbl.sed
 
-realclean : distclean
-
 maintainer-clean: distclean
 	@echo "This command is intended for maintainers to use;"
 	@echo "it deletes files that may require special tools to rebuild."
