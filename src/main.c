@@ -195,6 +195,8 @@ get_main_options(char *prog_name, int *argc_p,
     return rep_TRUE;
 }
 
+/* Note that `argc' _must_ (I mean _must_!) be a pointer to the real
+   argc on the stack frame of the outermost procedure */
 void
 rep_init(char *prog_name, int *argc, char ***argv,
 	 void (*sys_symbols)(void), void (*sys_usage)(void))
@@ -209,8 +211,6 @@ rep_init_from_dump(char *prog_name, int *argc, char ***argv,
 		   void (*sys_symbols)(void), void (*sys_usage)(void),
 		   char *dump_file)
 {
-    char dummy;
-
     if(sizeof(rep_PTR_SIZED_INT) < sizeof(void *))
     {
 	fputs("sizeof(rep_PTR_SIZED_INT) < sizeof(void *); aborting\n",
@@ -243,7 +243,11 @@ rep_init_from_dump(char *prog_name, int *argc, char ***argv,
 	rep_streams_init();
 	rep_files_init();
 	rep_sys_os_init();
-	rep_stack_bottom = &dummy;
+
+	/* XXX Assumes that argc is on the stack. I can't think of
+	   XXX any other way to reliably find the real base of the
+	   XXX stack.. */
+	rep_stack_bottom = (char *) argc;
 	rep_continuations_init ();
 
 	if (sys_symbols != 0)
