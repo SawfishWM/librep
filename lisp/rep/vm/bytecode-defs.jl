@@ -32,8 +32,8 @@
   (open rep)
 
   ;; Instruction set version
-  (defconst bytecode-major 9)
-  (defconst bytecode-minor 1)
+  (defconst bytecode-major 10)
+  (defconst bytecode-minor 0)
 
   ;; macro to get a named bytecode
   (defmacro bytecode (name)
@@ -193,8 +193,10 @@
       (mod . 0xbb)
 
       (make-closure . 0xbc)
+      (unbindall-0 . 0xbd)
       (closurep . 0xbe)
       (bindenv . 0xbf)
+      (pop-all . 0xc0)
 
       (last-before-jmps . 0xf7)
 
@@ -242,7 +244,7 @@
      +1  +1  0   0   0   0   0   0	;0xa0
      0   0   0   0   0   0   0   0
      -1  0   0   0   0   0   0   0	;0xb0
-     0   -1  0   -1  -1  nil 0   0
+     0   -1  0   -1  -1  0   0   0
      nil nil nil nil nil nil nil nil	;0xc0
      nil nil nil nil nil nil nil nil
      -1  nil nil nil nil nil nil nil	;0xd0
