@@ -33,6 +33,8 @@ Outstanding bugs
 General programming tasks:
 ==========================
 
+ + Use libtool's dlopen wrapper
+
  + Test defsubst declared functions when dumped
 
  - In the Lisp VM replace the `bindstack' list with a vector. Means

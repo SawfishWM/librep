@@ -46,6 +46,9 @@
 /* Define if <dlfcn.h> is available */
 #undef HAVE_DLFCN_H
 
+/* Define if <dl.h> is available */
+#undef HAVE_DL_H
+
 /* Define if pseudo terminals are available */
 #undef HAVE_PTYS
 
@@ -162,8 +165,17 @@
 /* Define if you have the setitimer() function */
 #undef HAVE_SETITIMER
 
+/* Define if you have the dlopen() function */
+#undef HAVE_DLOPEN
+
 /* Define if you have the dladdr() function */
 #undef HAVE_DLADDR
+
+/* Define if you have the dlerror() function */
+#undef HAVE_DLERROR
+
+/* Define if you have the shl_load() function */
+#undef HAVE_SHL_LOAD
 
 /* Define if you have realpath() */
 #undef HAVE_REALPATH

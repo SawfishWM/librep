@@ -4,6 +4,16 @@
 @cindex News
 
 
+@unnumberedsec 0.6.3
+
+@itemize @bullet
+
+@item Added (untested) support for loading dynamic objects via
+@code{shl_load} (HP-UX)
+
+@end itemize
+
+
 @unnumberedsec 0.6.2
 
 @itemize @bullet
