@@ -102,8 +102,7 @@
 ;;;###autoload
 (defun describe-variable (var)
   (let
-      ((doc (documentation var))
-       (old-buf (current-buffer)))
+      ((doc (documentation var)))
     (describe-variable-1 var)
     (format standard-output "%s\n" (or doc "Undocumented."))))
 
