@@ -37,13 +37,8 @@
 (defun debug-mode ()
   "Debug Mode:\n
 The major mode controlling the Lisp debugger. Commands available within
-the debugger are,\n
-  `Ctrl-c Ctrl-s'		Step into this form.
-  `Ctrl-c Ctrl-i'		Ignore this form.
-  `Ctrl-c Ctrl-n'		Continue until the next form.
-  `Ctrl-c Ctrl-r'		Continue execution.
-  `Ctrl-c Ctrl-b'		Print a backtrace of the Lisp call stack.
-  `Ctrl-c Ctrl-x'		Set the value which this form will return."
+the debugger are:\n
+\\{debug-ctrl-c-keymap,Ctrl-c}"
   (setq ctrl-c-keymap debug-ctrl-c-keymap
 	major-mode 'debug-mode
 	mode-name "Debug"))
@@ -51,13 +46,7 @@ the debugger are,\n
 (with-buffer debug-buffer
   (debug-mode)
   (split-line)
-  (insert "::Lisp Debugger::\n
-Ctrl-c Ctrl-s	: Step into form
-Ctrl-c Ctrl-i	: Ignore form
-Ctrl-c Ctrl-n	: Continue until next form
-Ctrl-c Ctrl-r	: Continue
-Ctrl-c Ctrl-b	: Print backtrace
-Ctrl-c Ctrl-x	: Set value of form\n\n"))
+  (insert "::Lisp Debugger::\n\n"))
 
 
 
