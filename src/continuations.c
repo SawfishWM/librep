@@ -1003,6 +1003,22 @@ new_thread (repv name)
     return t;
 }
 
+static void
+ensure_default_thread (void)
+{
+    if (root_barrier->active == 0)
+    {
+	/* entering threaded execution. make the default thread */
+	rep_thread *x = new_thread (Qnil);
+	thread_save_environ (x);
+	/* this continuation will never get called,
+	   but it simplifies things.. */
+	if (primitive_call_cc (inner_make_thread, x, 0) != -1)
+	    abort ();
+	root_barrier->active = x;
+    }
+}
+
 static rep_thread *
 make_thread (repv thunk, repv name, rep_bool suspended)
 {
@@ -1018,17 +1034,7 @@ make_thread (repv thunk, repv name, rep_bool suspended)
 	t->car |= TF_SUSPENDED;
     thread_save_environ (t);
 
-    if (root_barrier->active == 0)
-    {
-	/* entering threaded execution. make the default thread */
-	rep_thread *x = new_thread (Qnil);
-	thread_save_environ (x);
-	/* this continuation will never get called,
-	   but it simplifies things.. */
-	if (primitive_call_cc (inner_make_thread, x, 0) != -1)
-	    abort ();
-	root_barrier->active = x;
-    }
+    ensure_default_thread ();
 
     rep_PUSHGC (gc_thunk, thunk);
     ret = primitive_call_cc (inner_make_thread, t, 0);
@@ -1712,17 +1718,23 @@ Return `t' if THREAD has exited.
 }
 
 DEFUN("current-thread", Fcurrent_thread,
-      Scurrent_thread, (repv depth_), rep_Subr1) /*
+      Scurrent_thread, (repv depth), rep_Subr1) /*
 ::doc:rep.threads#current-thread::
 current-thread [DEPTH]
 
-Return the currently executing thread, or `nil' if threaded execution
-is not currently taking place.
+Return the currently executing thread.
 ::end:: */
 {
 #ifdef WITH_CONTINUATIONS
-    rep_barrier *root = get_dynamic_root (rep_INTP (depth_)
-					  ? rep_INT (depth_) : 0);
+    rep_barrier *root;
+
+    if (!rep_INTP (depth))
+	depth = rep_MAKE_INT (0);
+
+    if (depth == rep_MAKE_INT (0))
+	ensure_default_thread ();
+
+    root = get_dynamic_root (rep_INT (depth));
     if (root == 0)
 	return Qnil;
     else
@@ -1732,7 +1744,7 @@ is not currently taking place.
 #endif
 }
 
-DEFUN("all-threads", Fall_threads, Sall_threads, (repv depth_), rep_Subr1) /*
+DEFUN("all-threads", Fall_threads, Sall_threads, (repv depth), rep_Subr1) /*
 ::doc:rep.threads#all-threads::
 all-threads [DEPTH]
 
@@ -1740,8 +1752,15 @@ Return a list of all threads.
 ::end:: */
 {
 #ifdef WITH_CONTINUATIONS
-    rep_barrier *root = get_dynamic_root (rep_INTP (depth_)
-					  ? rep_INT (depth_) : 0);
+    rep_barrier *root;
+
+    if (!rep_INTP (depth))
+	depth = rep_MAKE_INT (0);
+
+    if (depth == rep_MAKE_INT (0))
+	ensure_default_thread ();
+
+    root = get_dynamic_root (rep_INT (depth));
     if (root == 0)
 	return Qnil;
     else
