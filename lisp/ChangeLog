@@ -1,3 +1,16 @@
+1998-10-04  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rm-summary.jl, rm-output.jl, rm-mail-dir.jl, read-mail.jl:
+	support for marking messages then operating on the selected
+	messages. Currently only the `C-k' and `s' commands do this
+
+	* cvs.jl: use open-buffer to create buffers
+
+	* summary.jl (summary-unmark-all): call the after-marking
+	vector of each message unmarked
+	(summary-unmark-item): call after-marking even if the message
+	status didn't change
+
 1998-10-02  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rcs.jl (rcs-call-callback): don't truncate the log message at

@@ -1,3 +1,10 @@
+1998-10-04  John Harper  <john@dcs.warwick.ac.uk>
+
+	* debug-buffer.c (db_print_backtrace): minor bug fix
+
+	* commands.c (cmd_call_command): reinitialise the
+	current-prefix-arg before calling the actual command
+
 1998-09-21  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lispmach.c, bytecodes.h: changed op-set and op-fset to use
