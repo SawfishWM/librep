@@ -1,3 +1,19 @@
+Sun Apr 26 13:39:17 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* buffers.jl (open-buffer): always call add-buffer, not just
+	when having to create the buffer
+
+	* windows.jl (add-buffer, remove-buffer): rewritten using mapc
+	instead of iteration. add-buffer won't add the buffer if it's
+	already in the view's list
+
+	* cvs.jl (cvs-buffer): variable pointing to the summary buffer
+	(cvs-update-file-list): install a temporary minor mode whilst
+	updating (the mode's called cvs-update)
+	(cvs-buffer-p): macro to test if the current buffer is the
+	summary buffer
+	(cvs-summary-select-other-view): fixed
+
 Sat Apr 25 14:38:38 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* cvs.jl (cvs-command): handle the `*cvs*' buffer not existing
