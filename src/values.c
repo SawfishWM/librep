@@ -686,6 +686,7 @@ again:
 	rep_MARKVAL(rep_FUNARG(val)->env);
 	rep_MARKVAL(rep_FUNARG(val)->fenv);
 	rep_MARKVAL(rep_FUNARG(val)->special_env);
+	rep_MARKVAL(rep_FUNARG(val)->fh_env);
 	val = rep_FUNARG(val)->fun;
 	if (val && !rep_GC_MARKEDP(val))
 	    goto again;
