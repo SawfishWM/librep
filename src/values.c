@@ -783,7 +783,7 @@ rep_bool rep_in_gc = rep_FALSE;
 /* rep_data_after_gc = bytes of storage used since last gc
    rep_gc_threshold = value that rep_data_after_gc should be before gc'ing
    rep_idle_gc_threshold = value that DAGC should be before gc'ing in idle time */
-int rep_data_after_gc, rep_gc_threshold = 100000, rep_idle_gc_threshold = 20000;
+int rep_data_after_gc, rep_gc_threshold = 200000, rep_idle_gc_threshold = 20000;
 
 #ifdef GC_MONITOR_STK
 static int *gc_stack_high_tide;
@@ -884,7 +884,6 @@ again:
 	/* Dumped symbols are dumped read-write, so no worries.. */
 	rep_GC_SET_CELL(val);
 	rep_MARKVAL(rep_SYM(val)->name);
-	rep_MARKVAL(rep_SYM(val)->value);
 	rep_MARKVAL(rep_SYM(val)->prop_list);
 	val = rep_SYM(val)->next;
 	if(val && !rep_INTP(val) && !rep_GC_MARKEDP(val))
@@ -909,6 +908,7 @@ again:
 	rep_MARKVAL(rep_FUNARG(val)->env);
 	rep_MARKVAL(rep_FUNARG(val)->special_env);
 	rep_MARKVAL(rep_FUNARG(val)->fh_env);
+	rep_MARKVAL(rep_FUNARG(val)->structure);
 	val = rep_FUNARG(val)->fun;
 	if (val && !rep_GC_MARKEDP(val))
 	    goto again;
@@ -1028,6 +1028,7 @@ last garbage-collection is greater than `garbage-threshold'.
 	rep_MARKVAL(lc->saved_env);
 	rep_MARKVAL(lc->saved_special_env);
 	rep_MARKVAL(lc->saved_fh_env);
+	rep_MARKVAL(lc->saved_structure);
 	/* don't bother marking `args_evalled_p' it's always `nil' or `t'  */
 	lc = lc->next;
     }
@@ -1173,6 +1174,10 @@ rep_values_kill(void)
 void
 rep_dumped_init(char *file)
 {
+#if 1
+    fputs ("dumped startup is currently broken\n", stderr);
+    exit (1);
+#else
     void *dl = rep_open_dl_library (rep_string_dup (file));
     if (dl == 0)
 	fprintf (stderr, "warning: couldn't open dumped filed %s\n", file);
@@ -1198,4 +1203,5 @@ rep_dumped_init(char *file)
 		s->prop_list = Qnil;
 	}
     }
+#endif
 }
