@@ -38,6 +38,8 @@
 
 ;;; Code:
 
+(declare (in-module rep))
+
 (provide 'backquote)
 
 (defmacro backquote (arg)

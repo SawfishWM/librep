@@ -21,6 +21,8 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
+(declare (in-module rep))
+
 ;; Despite the fact that these things are separated, they're currently
 ;; implemented in one bundle, the all-encompassing rep structure. I
 ;; should change this, define individual structures then import them
@@ -34,7 +36,7 @@
 	  macrop functionp bytecodep subrp signal condition-case
 	  macroexpand make-closure closure-function closurep
 	  set-closure-function closurep save-environment set-environment
-	  set-special-environment load error))
+	  set-special-environment load error declare))
 
 (define-interface rep-interpreter-debug
   (export break step backtrace debug-frame-environment
@@ -81,7 +83,7 @@
 	  %structure-imports %structure-accessible %set-interface
 	  %get-structure %intern-structure %open-structures
 	  %access-structures %current-structure %structurep
-	  %eval-in-structure %structure-walk))
+	  %eval-in-structure %make-closure-in-structure %structure-walk))
 
 (define-interface rep-data
   (export cons car cdr list list* make-list append nconc rplaca rplacd
@@ -101,7 +103,7 @@
 	  ;; init.jl
 	  setcar setcdr string= string< eval-and-print nop identity
 	  interactive caar cdar cadr cddr caaar cdaar cadar cddar
-	  caadr cdadr caddr cdddr
+	  caadr cdadr caddr cdddr _
 
 	  ;; string-util.jl
 	  string-upper-case-p string-lower-case-p string-capitalized-p

@@ -21,6 +21,8 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
+(declare (in-module rep))
+
 (require 'readline)
 
 (defvar *repl-in-struct* nil)
@@ -29,8 +31,7 @@
 (defun repl (&optional initial-structure)
   (let
       ((print-escape t)
-       (*repl-in-struct* (or initial-structure (%structure-name
-						(%current-structure))))
+       (*repl-in-struct* (or initial-structure *user-structure*))
        input)
     (write standard-output "\nEnter `,help' to list commands.\n")
     (catch 'out

@@ -19,6 +19,8 @@
 ;; along with librep; see the file COPYING.  If not, write to
 ;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
+(declare (in-module rep))
+
 ;;;###autoload
 (defun string-upper-case-p (x)
   "Return t if string X is upper case (contains no lower case characters)."

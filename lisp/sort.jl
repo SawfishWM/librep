@@ -18,6 +18,8 @@
 ;;; along with Jade; see the file COPYING.  If not, write to
 ;;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
+(declare (in-module rep))
+
 ;;;###autoload
 (defun sort (lst &optional pred)
   "Sort LST destructively, but stably, returning the sorted list.
