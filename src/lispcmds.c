@@ -1818,6 +1818,58 @@ limited to numbers, it can do strings, positions, marks, etc as well.
     APPLY_COMPARISON(<=)
 }
 
+_PR VALUE cmd_max(VALUE);
+DEFUN("max", cmd_max, subr_max, (VALUE args), V_SubrN, DOC_max) /*
+::doc:max::
+max ARGS...
+
+Returns the greatest of its arguments. There must be at least two
+arguments.
+::end:: */
+{
+    VALUE max;
+    if(!CONSP(args) || !CONSP(VCDR(args)))
+	return signal_missing_arg(CONSP(args) ? 2 : 1);
+    max = VCAR(args);
+    args = VCDR(args);
+    while(CONSP(args))
+    {
+	VALUE tem = VCAR(args);
+	args = VCDR(args);
+	max = (value_cmp(max, tem) >= 0) ? max : tem;
+	TEST_INT;
+	if(INT_P)
+	    return LISP_NULL;
+    }
+    return max;
+}
+
+_PR VALUE cmd_min(VALUE);
+DEFUN("min", cmd_min, subr_min, (VALUE args), V_SubrN, DOC_min) /*
+::doc:min::
+min ARGS...
+
+Returns the smallest of its arguments. There must be at least two
+arguments.
+::end:: */
+{
+    VALUE min;
+    if(!CONSP(args) || !CONSP(VCDR(args)))
+	return signal_missing_arg(CONSP(args) ? 2 : 1);
+    min = VCAR(args);
+    args = VCDR(args);
+    while(CONSP(args))
+    {
+	VALUE tem = VCAR(args);
+	args = VCDR(args);
+	min = (value_cmp(min, tem) <= 0) ? min : tem;
+	TEST_INT;
+	if(INT_P)
+	    return LISP_NULL;
+    }
+    return min;
+}
+
 _PR VALUE cmd_plus1(VALUE);
 DEFUN("1+", cmd_plus1, subr_plus1, (VALUE num), V_Subr1, DOC_plus1) /*
 ::doc:plus1::
@@ -2417,6 +2469,8 @@ lispcmds_init(void)
     ADD_SUBR(subr_gethan);
     ADD_SUBR(subr_ltthan);
     ADD_SUBR(subr_lethan);
+    ADD_SUBR(subr_max);
+    ADD_SUBR(subr_min);
     ADD_SUBR(subr_plus1);
     ADD_SUBR(subr_sub1);
     ADD_SUBR(subr_lsh);
