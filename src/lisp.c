@@ -124,7 +124,8 @@ DEFSTRING(err_stack_error, "Out of stack space");
 
 DEFSYM(debug_on_error, "debug-on-error");
 DEFSYM(backtrace_on_error, "backtrace-on-error");
-DEFSYM(debug_macros, "debug-macros"); /*
+DEFSYM(debug_macros, "debug-macros");
+DEFSYM(error_handler_function, "error-handler-function"); /*
 ::doc:debug-on-error::
 When an error is signalled this variable controls whether or not to
 enter the Lisp debugger immediately. If the variable's value is t or a
@@ -139,6 +140,10 @@ entered.
 ::end::
 ::doc:debug-macros::
 When nil, the debugger isn't entered while expanding macro definitions.
+::end::
+::doc:error-handler-function::
+When set to a function value, called with two arguments (error type
+and data) when lisp errors occur.
 ::end:: */
 
 DEFSYM(print_escape, "print-escape");
@@ -1995,7 +2000,19 @@ DEFSTRING(n_err_fmt, "%s: %s");
 void
 rep_handle_error(repv error, repv data)
 {
+    static int mutex;
     repv errstr;
+
+    if (mutex++ == 0)
+    {
+	repv fun = Fsymbol_value (Qerror_handler_function, Qt);
+	if (Ffunctionp (fun) != Qnil)
+	{
+	    rep_call_lisp2 (fun, error, data);
+	    goto out;
+	}
+    }
+
     Fbeep();
     if(!(errstr = Fget(error, Qerror_message)) || !rep_STRINGP(errstr))
 	errstr = rep_VAL(&unknown_err);
@@ -2020,6 +2037,9 @@ rep_handle_error(repv error, repv data)
     default:
 	Fformat(rep_list_4(Qt, rep_VAL(&n_err_fmt), errstr, data));
     }
+
+out:
+    mutex--;
 }
 
 repv
@@ -2139,6 +2159,7 @@ rep_lisp_init(void)
     rep_SYM(Qbacktrace_on_error)->value = Qnil;
     rep_INTERN_SPECIAL(debug_macros);
     rep_SYM(Qdebug_macros)->value = Qnil;
+    rep_INTERN_SPECIAL(error_handler_function);
 
     rep_int_cell = Fcons(Quser_interrupt, Qnil);
     rep_mark_static(&rep_int_cell);
