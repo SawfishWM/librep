@@ -327,6 +327,7 @@ rep_unix_set_fd_cloexec(int fd)
 static int
 wait_for_input(fd_set *inputs, u_long timeout_msecs)
 {
+    fd_set copy;
     int ready = -1;
 
     if(input_pending_count > 0)
@@ -355,7 +356,7 @@ wait_for_input(fd_set *inputs, u_long timeout_msecs)
 	}
     }
 
-    /* Break the timeout into one-section chunks, then check for
+    /* Break the timeout into one-second chunks, then check for
        interrupt between each call to select. */
     do {
 	struct timeval timeout;
@@ -363,6 +364,7 @@ wait_for_input(fd_set *inputs, u_long timeout_msecs)
 					 rep_input_timeout_secs * 1000);
 	timeout.tv_sec = this_timeout_msecs / 1000;
 	timeout.tv_usec = (this_timeout_msecs % 1000) * 1000;
+	memcpy (&copy, inputs, sizeof (copy));
 
 	/* Dont test for interrupts before the first call to select() */
 	if (ready == 0)
@@ -375,12 +377,13 @@ wait_for_input(fd_set *inputs, u_long timeout_msecs)
 	/* Don't want select() to restart after a SIGCHLD;
 	   there may be a notification to dispatch.  */
 	rep_sigchld_restart(rep_FALSE);
-	ready = select(FD_SETSIZE, inputs, NULL, NULL, &timeout);
+	ready = select(FD_SETSIZE, &copy, NULL, NULL, &timeout);
 	rep_sigchld_restart(rep_TRUE);
 
 	timeout_msecs -= this_timeout_msecs;
     } while (ready == 0 && timeout_msecs > 0);
 
+    memcpy (inputs, &copy, sizeof (copy));
     return ready;
 }
 
@@ -696,6 +699,15 @@ termination_signal_handler(int sig)
     signal(sig, termination_signal_handler);
 }
 
+/* Invoked by SIGUSR1 */
+static RETSIGTYPE
+usr1_signal_handler (int sig)
+{
+    fprintf(stderr, "\n\nLisp backtrace:");
+    Fbacktrace(Fstderr_file());
+    fputs("\n\n\n", stderr);
+}    
+
 
 /* Initialisation */
 
@@ -750,6 +762,10 @@ rep_pre_sys_os_init(void)
 #ifdef SIGHUP
     if(signal(SIGHUP, termination_signal_handler) == SIG_IGN)
 	signal(SIGHUP, SIG_IGN);
+#endif
+
+#ifdef SIGUSR1
+    signal(SIGUSR1, usr1_signal_handler);
 #endif
 }
 
