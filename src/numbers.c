@@ -962,6 +962,26 @@ rep_integer_foldl (repv args, repv (*op)(repv, repv))
 }
 
 repv
+rep_foldl (repv args, repv (*op)(repv, repv))
+{
+    if (rep_CONSP (args))
+    {
+	repv sum = rep_CAR (args);
+	int i = 2;
+	args = rep_CDR (args);
+	while (sum && rep_CONSP (args))
+	{
+	    repv arg = rep_CAR (args);
+	    sum = op (sum, arg);
+	    args = rep_CDR (args);
+	    i++;
+	}
+	return sum;
+    }
+    return rep_signal_missing_arg (1);
+}
+
+repv
 rep_number_add (repv x, repv y)
 {
     repv out;
@@ -2147,7 +2167,7 @@ arguments. When comparing numbers, any inexact arguments cause the
 result to be inexact.
 ::end:: */
 {
-    return rep_number_foldl (args, rep_number_max);
+    return rep_foldl (args, rep_number_max);
 }
 
 DEFUN("min", Fmin, Smin, (repv args), rep_SubrN) /*
@@ -2159,7 +2179,7 @@ arguments. When comparing numbers, any inexact arguments cause the
 result to be inexact.
 ::end:: */
 {
-    return rep_number_foldl (args, rep_number_min);
+    return rep_foldl (args, rep_number_min);
 }
 
 DEFUN("string->number", Fstring_to_number,
