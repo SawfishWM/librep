@@ -1,3 +1,13 @@
+Sun May  3 12:20:21 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* misc.c (cmd_version_and_build_string): renamed as
+	build-id-string, doesn't have the version-string on the front,
+	but does have the HOST_TYPE (i.e. i586-pc-gnu, or whatever) on
+	the end
+
+	* unix_main.c (fatal_signal_handler): minor changes to try and
+	stop the infinite looping seen with Linux at times
+
 Wed Apr 29 09:48:37 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* debug-buffer.c, redisplay.c: change malloc/free for
