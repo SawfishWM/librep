@@ -1,3 +1,14 @@
+1999-10-13  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep.jl: don't add the current directory to the head of the
+	load-path, it's already at the end of the path where it should be
+
+	* lisp.jl (load-all): don't search in the current directory
+	(since it's unpredictable)
+
+	* compiler.jl: fix bug of `last' instruction being thought to
+	require two arguments
+
 1999-09-14  John Harper  <john@dcs.warwick.ac.uk>
 
 	* version 0.6
