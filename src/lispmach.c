@@ -227,6 +227,8 @@ list_ref (repv list, int elt)
 	    arg = insn - op;						\
 	rep_CONCAT(op_, op):
 
+DEFSTRING(max_depth, "max-lisp-depth exceeded, possible infinite recursion?");
+
 DEFUN("jade-byte-code", Fjade_byte_code, Sjade_byte_code,
       (repv code, repv consts, repv stkreq, repv frame), rep_Subr4) /*
 ::doc:jade-byte-code::
@@ -256,6 +258,12 @@ of byte code. See the functions `compile-file', `compile-directory' and
     int impurity;
 
     rep_DECLARE3(stkreq, rep_INTP);
+
+    if(++rep_lisp_depth > rep_max_lisp_depth)
+    {
+	rep_lisp_depth--;
+	return Fsignal(Qerror, rep_LIST_1(rep_VAL(&max_depth)));
+    }
 
     /* Jump to this label when tail-calling but the current stack
        is insufficiently large */
@@ -290,6 +298,12 @@ again:
     rep_PUSHGC(gc_consts, consts);
     rep_PUSHGC(gc_bindstack, bindstack);
     rep_PUSHGCN(gc_stackbase, stackbase, 0);
+
+    if(rep_data_after_gc >= rep_gc_threshold)
+    {
+	gc_stackbase.count = STK_USE;
+	Fgarbage_collect(Qt);
+    }
 
     pc = rep_STR(code);
 
@@ -1397,6 +1411,7 @@ quit:
 
     /* close the stack scope */ }
 
+    rep_lisp_depth--;
     rep_POPGCN; rep_POPGC; rep_POPGC; rep_POPGC;
     return bindstack;
 }
