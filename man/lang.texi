@@ -2813,9 +2813,8 @@ of their arguments, including the forms to be conditionally evaluated,
 were evaluated automatically this would defeat the object of being
 conditional!).
 
-The special forms supported by @code{librep} are: @code{case},
-@code{catch}, @code{cond}, @code{condition-case}, @code{defvar},
-@code{progn}, @code{quote}, @code{setq}, @code{unwind-protect}.
+The special forms supported by @code{librep} are: @code{cond},
+@code{defvar}, @code{progn}, @code{quote}, @code{setq}.
 
 @defun special-form-p arg
 Returns true if @var{arg} is a special form.
@@ -2832,7 +2831,7 @@ Returns true if @var{arg} is a special form.
 @cindex Autoload forms
 @cindex Forms, autoload
 
-Not all modules of @code{librep} are needed at once, autoload forms
+Not all parts of @code{librep} are needed at once, autoload forms
 provide a means of marking that a function (or macro) is contained by a
 specific Lisp library. The first time that the function is accessed the
 autoload form will be evaluated; this loads the file containing the

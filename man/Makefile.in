@@ -32,6 +32,9 @@ all : librep.info ../NEWS
 librep.info : $(SRCS)
 	$(MAKEINFO) $(MAKEINFOFLAGS) -I $(srcdir) $< -o librep.info
 
+librep.html : $(SRCS)
+	$(MAKEINFO) $(MAKEINFOFLAGS) --html -I $(srcdir) $< -o librep.html
+
 librep.dvi : $(SRCS)
 	$(TEXI2DVI) -I $(srcdir) $<
 
