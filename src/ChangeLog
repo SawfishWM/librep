@@ -1,4 +1,23 @@
+2000-03-12  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispmach.c (Fjade_byte_code): open-coded some fixnum
+	arithmetic operations
+
+	* unix_dl.c (x_dlsym) [DLSYM_NEED_USCORE]: use alloca instead
+	of malloc
+
+	* numbers.c (rep_parse_number): some optimizations
+
+2000-03-11  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispcmds.c (Fload): use Fexpand_file_name to concatenate
+	file names with directories
+
+	* tables.c (Fequal_hash): handle non-fixnum numbers
+
 2000-03-10  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep.c, main.c: updated usage information
 
 	* repgdbm.c (Fgdbm_fetch): always copy the returned string,
 	since it may not be zero terminated
