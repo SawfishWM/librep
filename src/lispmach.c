@@ -569,13 +569,13 @@ again:
 		   unrestricted environment.. */
 		repv tem = search_special_bindings (tmp);
 		if (tem != Qnil)
-		    tem = rep_CDR (tem);
-		else
-		    tem = rep_SYM(tmp)->value;
-		if (!rep_VOIDP(tem))
 		{
-		    PUSH (tem);
-		    goto fetch;
+		    tem = rep_CDR (tem);
+		    if (!rep_VOIDP(tem))
+		    {
+			PUSH (tem);
+			goto fetch;
+		    }
 		}
 	    }
 	    /* fall back to common case */
@@ -593,10 +593,10 @@ again:
 		   unrestricted environment.. */
 		repv tem = search_special_bindings (tmp);
 		if (tem != Qnil)
+		{
 		    rep_CDR (tem) = RET_POP;
-		else
-		    rep_SYM(tmp)->value = RET_POP;
-		goto fetch;
+		    goto fetch;
+		}
 	    }
 	    /* fall back to common case */
 	    Fset(rep_VECT(consts)->array[arg], RET_POP);
@@ -637,7 +637,8 @@ again:
 	    goto fetch;
 
 	CASE_OP_ARG(OP_REFG)
-	    tmp = rep_SYM(rep_VECT(consts)->array[arg])->value;
+	    tmp = F_structure_ref (rep_structure,
+				   rep_VECT(consts)->array[arg]);
 	    if (!rep_VOIDP(tmp))
 	    {
 		PUSH(tmp);
@@ -648,7 +649,7 @@ again:
 
 	CASE_OP_ARG(OP_SETG)
 	    tmp = rep_VECT(consts)->array[arg];
-	    rep_SYM(tmp)->value = RET_POP;
+	    F_structure_set (rep_structure, tmp, RET_POP);
 	    goto fetch;
 
 	case OP_REF:
@@ -656,15 +657,8 @@ again:
 	    break;
 
 	case OP_SET:
-	    CALL_2(Fset);
-
 	case OP_DSET:			/* XXX deprecated */
-	    tmp = RET_POP;
-	    tmp2 = TOP;
-	    TOP = Fset (tmp2, tmp);
-	    if (TOP != rep_NULL)
-		Fmark_symbol_defined (tmp2);
-	    break;
+	    CALL_2(Fset);
 
 	case OP_ENCLOSE:
 	    TOP = Fmake_closure (TOP, Qnil);
@@ -844,6 +838,13 @@ again:
 		TOP = Qt;
 	    else
 		TOP = Qnil;
+	    goto fetch;
+
+	case OP_STRUCT_REF:
+	    CALL_2 (F_external_structure_ref);
+
+	case OP_SCM_TEST:
+	    TOP = (TOP == rep_scm_f) ? Qnil : Qt;
 	    goto fetch;
 
 	case OP_GT:
