@@ -1,3 +1,8 @@
+2000-09-05  John Harper  <john@dcs.warwick.ac.uk>
+
+	* configure.in: adapted patch from Jacob for weird debian gmp
+	header file location. Misc other changes to gmp checks
+
 2000-09-04  John Harper  <john@dcs.warwick.ac.uk>
 
 	* librep.spec.in: added `--with-extra-cflags=-fstrength-reduce'
