@@ -6,7 +6,7 @@ TODO list for Jade
 Bugs are marked !, things that should be done soon are marked +,
 and more long-term ideas are marked -
 
-Last modified: November 23, 1998
+Last modified: January 13, 1999
 
 
 Outstanding bugs
@@ -40,9 +40,6 @@ Outstanding bugs
  ! It's relatively easy to blow the stack when regexp matching. Try
    searching for `/\*(.|\n)*\*/' in a C file with reasonable large
    comments.
-
- ! Some of the functions in keymap.jl, don't grok multiple prefix key
-   bindings to the same event
 
  ! If a compiled file FOO.jlc is made from source file FOO, but FOO is
    newer, load doesn't notice, and loads the invalid FOO.jlc

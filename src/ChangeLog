@@ -1,3 +1,17 @@
+1999-01-13  John Harper  <john@dcs.warwick.ac.uk>
+
+	* keys.c (cmd_lookup_event_binding): return multiple prefix
+	keymaps correctly, by faking a call to next-keymap-path. Also,
+	remove the optional RESET parameter, always reset
+	next-keymap-path to null
+
+	* edit.h (Lisp_Mark): new field `canon_file' used in
+	non-resident marks to store the canonical file name, `file'
+	reverts to being the possibly abbreviated file name
+	* buffers.c: changes for the modified Lisp_Mark structure, also
+	fix the mark_cmp function for non-resident marks
+	* values.c (mark_value): updated for `canon_file' mark field
+
 1998-12-09  John Harper  <john@dcs.warwick.ac.uk>
 
 	* keys.c (eval_input_event): don't overwrite prefix-arg after

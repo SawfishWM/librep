@@ -1,3 +1,10 @@
+1999-01-13  John Harper  <john@dcs.warwick.ac.uk>
+
+	* keymap.jl (active-keymaps): dereference symbols in the list
+	of keymaps
+	(map-keymap): deref. symbol in the correct buffer
+	(next-event, read-event, describe-key): miscellaneous fixes
+
 1999-01-12  John Harper  <john@dcs.warwick.ac.uk>
 
 	* dired.jl (dired-do-copy): only call summary-update when
