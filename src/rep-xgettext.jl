@@ -26,6 +26,10 @@ exec rep "$0" "$@"
 
 (defvar *write-c-file* nil)
 
+(defvar *included-defns* t)
+
+(defvar *only-commands* nil)
+
 (defun parse (filename)
   (let
       ((file (open-file filename 'read)))
@@ -45,6 +49,12 @@ exec rep "$0" "$@"
 (defmacro scan-list (x)
   `(when (consp ,x)
      (mapc scan ,x)))
+
+(defmacro includep (type)
+  `(or (eq *included-defns* t) (memq ,type *included-defns*)))
+
+(defmacro include-functionp (form)
+  `(or (not *only-commands*) (assq 'interactive ,form)))
 
 (defun scan (form)
   (if (and (consp form) (eq (car form) '_) (stringp (nth 1 form)))
@@ -92,21 +102,24 @@ exec rep "$0" "$@"
 	   ;; an inline lambda expression
 	   (scan (car form)))
 
-	  ((memq (car form) '(defun defmacro defsubst))
+	  ((and (memq (car form) '(defun defmacro defsubst))
+		(includep (car form)) (include-functionp form))
 	   (let
 	       ((doc (nth 3 form)))
 	     (when (stringp doc)
 	       (output doc))
 	     (scan-list (nthcdr 2 form))))
 
-	  ((memq (car form) '(defvar defconst defcustom))
+	  ((and (memq (car form) '(defvar defconst defcustom))
+		(includep (car form)))
 	   (let
 	       ((doc (nth 3 form)))
 	     (when (stringp doc)
 	       (output doc))
 	     (scan-list (nthcdr 2 form))))
 
-	  ((memq (car form) '(defgroup))
+	  ((and (memq (car form) '(defgroup))
+		(includep (car form)))
 	   (let
 	       ((doc (nth 2 form)))
 	     (when (stringp doc)
@@ -154,6 +167,14 @@ exec rep "$0" "$@"
   (setq *write-c-file* t))
 (when (or (get-command-line-option "-p") (get-command-line-option "--pot"))
   (setq *write-c-file* nil))
+
+(let
+    (tem)
+  (while (setq tem (get-command-line-option "--include" t))
+    (setq *included-defns* (cons (intern tem) *included-defns*))))
+
+(when (get-command-line-option "--only-commands")
+  (setq *only-commands* t))
 
 (if *write-c-file*
     (write standard-output "\
