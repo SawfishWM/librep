@@ -419,7 +419,7 @@ read_symbol(repv strm, int *c_p)
 			    radix = 10;
 			    exact = rep_FALSE;
 			}
-			else if(!isdigit(c))
+			else if(!(c >= '0' && c <= '9'))
 			    radix = 0;
 			else if(c == '0')
 			    radix = 1;	/* octal or hex */
@@ -430,12 +430,12 @@ read_symbol(repv strm, int *c_p)
 		    case 1:
 			/* We had a leading zero last character. If
 			   this char's an 'x' it's hexadecimal. */
-			if(toupper(c) == 'X')
+			if (c == 'x' || c == 'X')
 			{
 			    radix = 16;
 			    nfirst = i + 1;
 			}
-			else if(isdigit(c))
+			else if (c >= '0' && c <= '7')
 			{
 			    radix = 8;
 			    nfirst = i;
@@ -493,7 +493,7 @@ read_symbol(repv strm, int *c_p)
 			    {
 				radix = 0;
 			    }
-			    else if(!isxdigit(c))
+			    else if(radix == 16 && !isxdigit(c))
 				radix = 0;
 			}
 		    }
@@ -2256,12 +2256,7 @@ DEFUN("debug-frame-environment", Fdebug_frame_environment,
     while (fp != 0 && fp != ptr)
 	fp = fp->next;
     if (fp != 0)
-    {
-	return rep_list_4 (fp->saved_env,
-			   rep_STRUCTURE (fp->saved_structure)->special_env,
-			   rep_get_fh_env (),
-			   fp->saved_structure);
-    }
+	return Fcons (fp->saved_env, fp->saved_structure);
     else
 	return Qnil;
 }
