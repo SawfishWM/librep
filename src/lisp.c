@@ -1819,8 +1819,7 @@ one.
 repv
 rep_call_lispn (repv fun, int argc, repv *argv)
 {
-    if (rep_FUNARGP (fun) && rep_COMPILEDP (rep_FUNARG (fun)->fun)
-	&& rep_bytecode_interpreter != 0)
+    if (rep_FUNARGP (fun) && rep_COMPILEDP (rep_FUNARG (fun)->fun))
     {
 	/* Call to bytecode, avoid consing argument list */
 
@@ -1832,7 +1831,10 @@ rep_call_lispn (repv fun, int argc, repv *argv)
 	lc.args_evalled_p = Qt;
 	rep_PUSH_CALL (lc);
 	rep_USE_FUNARG (fun);
-	ret = rep_bytecode_interpreter (rep_FUNARG (fun)->fun, argc, argv);
+	if (rep_bytecode_interpreter != 0)
+	    ret = rep_bytecode_interpreter (rep_FUNARG (fun)->fun, argc, argv);
+	else
+	    ret = Fsignal (Qinvalid_function, rep_LIST_1 (fun));
 	rep_POP_CALL (lc);
 	return ret;
     }
