@@ -1826,7 +1826,7 @@ that files which shouldn't be compiled aren't."
   (put 'rassoc 'compile-opcode op-rassoc)
   (put 'rassq 'compile-fun 'comp-compile-2-args)
   (put 'rassq 'compile-opcode op-rassq)
-  (put 'last 'compile-fun 'comp-compile-2-args)
+  (put 'last 'compile-fun 'comp-compile-1-args)
   (put 'last 'compile-opcode op-last)
   (put 'mapcar 'compile-fun 'comp-compile-2-args)
   (put 'mapcar 'compile-opcode op-mapcar)
