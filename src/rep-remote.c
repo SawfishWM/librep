@@ -249,7 +249,8 @@ do_get (int argc, char **argv)
 	    {
 		u_char buf[BUFSIZ];
 		int this = (size > BUFSIZ ? BUFSIZ : size);
-		if (fread (buf, 1, this, fh) != this)
+		this = fread (buf, 1, this, fh);
+		if (this == 0)
 		    x_perror ("get-read");
 		if (write (1, buf, this) != this)
 		    x_perror ("get-write");
@@ -278,7 +279,8 @@ do_put (int argc, char **argv)
 	{
 	    u_char buf[BUFSIZ];
 	    int this = (todo > BUFSIZ ? BUFSIZ : todo);
-	    if (read (0, buf, this) != this)
+	    this = read (0, buf, this);
+	    if (this < 0)
 		x_perror ("put-read");
 	    if (fwrite (buf, 1, this, fh) != this)
 		x_perror ("put-write");
