@@ -36,10 +36,10 @@
    Some of the ideas here were inspired by the SCM/Guile implementation
    of continuations.
 
-   Note that continuations only save and restore lexical bindings, it
-   doesn't make sense to save dynamic bindings (this includes
-   catch/throw, unwind-protect, etc..), and I haven't worked out how to
-   do it anyway...
+   Note that continuations only save and restore variables bindings
+   (both lexical and dynamic). It doesn't make sense to save other
+   dynamic state (i.e. catch/throw, unwind-protect, etc..), and I
+   haven't worked out how to do it anyway...
 
    Hopefully this will be reasonably portable, I _think_ it only
    depends on having a linear stack that completely encapsulates the
@@ -104,6 +104,7 @@ typedef struct rep_continuation {
     char *stack_copy, *stack_top;
     size_t stack_size;
     struct rep_Call *call_stack;
+    repv special_bindings;
     rep_GC_root *gc_roots;
     rep_GC_n_roots *gc_n_roots;
     struct rep_saved_regexp_data *regexp_data;
@@ -264,6 +265,7 @@ values of any dynamic bindings currently in effect.
 	rep_saved_matches = c->regexp_data;
 	rep_gc_n_roots_stack = c->gc_n_roots;
 	rep_gc_root_stack = c->gc_roots;
+	rep_special_bindings = c->special_bindings;
 	rep_call_stack = c->call_stack;
 
 	ret = c->ret_value;
@@ -275,6 +277,7 @@ values of any dynamic bindings currently in effect.
 	repv proxy;
 
 	c->call_stack = rep_call_stack;
+	c->special_bindings = rep_special_bindings;
 	c->gc_roots = rep_gc_root_stack;
 	c->gc_n_roots = rep_gc_n_roots_stack;
 	c->regexp_data = rep_saved_matches;
@@ -329,6 +332,7 @@ mark (repv obj)
 
     rep_continuation *c = rep_CONTIN (obj);
     rep_MARKVAL (c->throw_value);
+    rep_MARKVAL (c->special_bindings);
 
     for (roots = c->gc_roots; roots != 0;
 	 roots = FIXUP(rep_GC_root *, roots)->next)
