@@ -194,8 +194,7 @@
       (make-closure . 0xbc)
       (unbindall-0 . 0xbd)
       (closurep . 0xbe)
-      (bindenv . 0xbf)
-      (pop-all . 0xc0)
+      (pop-all . 0xbf)
 
       (last-before-jmps . 0xf7)
 
@@ -243,7 +242,7 @@
      +1  +1  0   0   0   0   0   0	;0xa0
      0   0   0   0   0   0   0   0
      -1  0   0   0   0   0   0   0	;0xb0
-     0   -1  0   -1  -1  0   0   0
+     0   -1  0   -1  -1  0   0   nil
      nil nil nil nil nil nil nil nil	;0xc0
      nil nil nil nil nil nil nil nil
      -1  nil nil nil nil nil nil nil	;0xd0
