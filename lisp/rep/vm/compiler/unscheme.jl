@@ -51,15 +51,15 @@
   (put '\#define 'unscheme-compile-fun (get '%define 'rep-compile-fun))
 
   ;; compile let* specially to coalesce all bindings into a single frame
-  (put 'let* 'unscheme-compile-fun (get 'let* 'rep-compile-fun))
+  (put 'let* 'unscheme-compile-fun (get 'let* 'scheme-compile-fun))
 
   ;; let can be compiled straight from its macro definition
 
   ;; compile letrec specially to handle tail recursion elimination
-  (put 'letrec 'unscheme-compile-fun (get 'letrec 'rep-compile-fun))
+  (put 'letrec 'unscheme-compile-fun (get 'letrec 'scheme-compile-fun))
 
   (put '\#cond 'unscheme-compile-fun (get 'cond 'rep-compile-fun))
-  (put 'case 'unscheme-compile-fun (get 'case 'rep-compile-fun))
+  (put 'case 'unscheme-compile-fun (get 'case 'scheme-compile-fun))
 
   (put 'list-tail 'unscheme-compile-fun (get 'scheme-compile-fun 'list-tail))
   (put 'list-ref 'unscheme-compile-fun (get 'scheme-compile-fun 'list-ref))
