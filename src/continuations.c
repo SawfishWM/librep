@@ -1275,12 +1275,39 @@ print_thread (repv stream, repv obj)
 
 /* misc lisp functions */
 
+/* Bind one object, returning the handle to later unbind by. */
+static repv
+bind_object(repv obj)
+{
+    rep_type *t = rep_get_data_type(rep_TYPE(obj));
+    if (t->bind != 0)
+	return t->bind(obj);
+    else
+	return Qnil;
+}
+
+static void
+unbind_object (repv handle)
+{
+    repv obj;
+    rep_type *t;
+    if (handle == Qnil)
+	return;
+    else if (rep_CONSP (handle))
+	obj = rep_CAR (handle);
+    else
+	obj = handle;
+    t = rep_get_data_type (rep_TYPE (obj));
+    if (t->unbind != 0)
+	t->unbind(handle);
+}
+
 static void
 call_with_inwards (void *data_)
 {
     repv *data = data_;
     if (data[0] != rep_NULL)
-	data[1] = rep_bind_object (data[0]);
+	data[1] = bind_object (data[0]);
     else
 	data[1] = rep_NULL;
 }
@@ -1291,7 +1318,7 @@ call_with_outwards (void *data_)
     repv *data = data_;
     if (data[1] != rep_NULL)
     {
-	rep_unbind_object (data[1]);
+	unbind_object (data[1]);
 	data[1] = rep_NULL;
     }
 }
@@ -1312,7 +1339,7 @@ unbound. If THUNK is subsequently reentered, ARG will be rebound.
 {
     repv data[2];			/* { ARG, HANDLE } */
     data[0] = arg;
-    data[1] = rep_bind_object(data[0]);
+    data[1] = bind_object(data[0]);
     if (data[1] != rep_NULL)
     {
 	repv ret;
@@ -1321,7 +1348,7 @@ unbound. If THUNK is subsequently reentered, ARG will be rebound.
 	ret = rep_call_with_barrier (rep_call_lisp0, thunk,
 				     rep_FALSE, call_with_inwards,
 				     call_with_outwards, data);
-	rep_unbind_object (data[1]);
+	unbind_object (data[1]);
 	rep_POPGCN;
 	return ret;
     }
