@@ -318,7 +318,7 @@ typedef struct rep_type_struct {
 #define rep_Subr4	0x19
 #define rep_Subr5	0x1b
 #define rep_SubrN	0x1d
-#define rep_File	0x1f
+#define rep_Funarg	0x1f
 
 /* Assuming that V is a cell, return the type code */
 #define rep_CELL_TYPE(v) (rep_CONSP(v) ? rep_Cons		\
@@ -424,6 +424,19 @@ typedef struct {
    next evaluated form will invoke the Lisp debugger. */
 #define rep_SF_DEBUG	(1 << (rep_CELL8_TYPE_BITS + 3))
 
+/* Dynamically bound */
+#define rep_SF_SPECIAL	(1 << (rep_CELL8_TYPE_BITS + 4))
+
+/* A special, but was first set from an environment in which specials
+   can't normally be accessed; if the symbol is later defvar'd its
+   original value will be overwritten. */
+#define rep_SF_WEAK	(1 << (rep_CELL8_TYPE_BITS + 5))
+
+/* A variable that was weak, but has been modified via defvar from an
+   unrestricted special environment */
+#define rep_SF_WEAK_MOD	(1 << (rep_CELL8_TYPE_BITS + 6))
+
+
 /* Symbol allocation blocks */
 typedef struct rep_symbol_block_struct {
     struct rep_symbol_block_struct *next;
@@ -480,9 +493,8 @@ typedef struct rep_vector_struct {
 /* Third is constant vector */
 #define rep_COMPILED_CONSTANTS(v) rep_VECTI(v, 2)
 
-/* Fourth is an integer, low 16 bits is stack usage, bit 16=macrop */
-#define rep_COMPILED_STACK(v)	(rep_INT(rep_VECTI(v, 3)) & 0x0ffff)
-#define rep_COMPILED_MACRO_P(v)	(rep_INT(rep_VECTI(v, 3)) & 0x10000)
+/* Fourth is an integer: stack usage */
+#define rep_COMPILED_STACK(v)	rep_INT(rep_VECTI(v, 3))
 
 #define rep_COMPILED_MIN_SLOTS	4
 
@@ -499,7 +511,7 @@ typedef struct rep_vector_struct {
 
 /* A file object.  */
 typedef struct rep_file_struct {
-    repv car;				/* single flag at bit 8 */
+    repv car;				/* single flag at bit 16 */
     struct rep_file_struct *next;
 
     /* Name as user sees it */
@@ -524,10 +536,10 @@ typedef struct rep_file_struct {
 
 /* When this bit is set in flags, the file handle is never fclose()'d,
    i.e. this file points to something like stdin. */
-#define rep_LFF_DONT_CLOSE	(1 << rep_CELL8_TYPE_BITS)
+#define rep_LFF_DONT_CLOSE	(1 << rep_CELL16_TYPE_BITS)
 
 #define rep_FILE(v)		((rep_file *)rep_PTR(v))
-#define rep_FILEP(v)		rep_CELL8_TYPEP(v, rep_File)
+#define rep_FILEP(v)		rep_CELL16_TYPEP(v, rep_file_type)
 
 #define rep_LOCAL_FILE_P(v)	(rep_FILE(v)->handler == Qt)
 
@@ -572,6 +584,28 @@ typedef struct {
 #define rep_SUBRNFUN(v)	(rep_SUBR(v)->fun.fun1)
 #define rep_SFFUN(v)	(rep_SUBR(v)->fun.fun1)
 #define rep_VARFUN(v)	(rep_SUBR(v)->fun.fun1)
+
+
+/* Closures */
+
+typedef struct rep_funarg_struct {
+    repv car;
+    struct rep_funarg_struct *next;
+    repv fun;
+    repv env;
+    repv fenv;
+    repv special_env;
+} rep_funarg;
+
+#define rep_FUNARG(v) ((rep_funarg *)rep_PTR(v))
+#define rep_FUNARGP(v) (rep_CELL8_TYPEP(v, rep_Funarg))
+
+#define rep_USE_FUNARG(f)				\
+    do {						\
+	rep_env = rep_FUNARG(f)->env;			\
+	rep_fenv = rep_FUNARG(f)->fenv;			\
+	rep_special_env = rep_FUNARG(f)->special_env;	\
+    } while (0)
 
 
 /* Other definitions */
@@ -701,7 +735,26 @@ struct rep_Call {
     repv args;
     /* t if `args' is list of *evalled* arguments.  */
     repv args_evalled_p;
+    repv saved_env, saved_fenv;
+    rep_bool saved_special_env;
 };
+
+#define rep_PUSH_CALL(lc)		\
+    do {				\
+	(lc).saved_env = rep_env;	\
+	(lc).saved_special_env = rep_special_env; \
+	(lc).saved_fenv = rep_fenv;	\
+	(lc).next = rep_call_stack;	\
+	rep_call_stack = &(lc);		\
+    } while (0)
+
+#define rep_POP_CALL(lc)		\
+    do {				\
+	rep_env = (lc).saved_env;	\
+	rep_special_env = (lc).saved_special_env; \
+	rep_fenv = (lc).saved_fenv;	\
+	rep_call_stack = (lc).next;	\
+    } while (0)
 
 
 /* Macros for declaring functions */
@@ -740,6 +793,13 @@ struct rep_Call {
 /* Intern a symbol stored in QX, whose name (a lisp string) is stored
    in str_X (i.e. declared with DEFSYM) */
 #define rep_INTERN(x) rep_intern_static(& Q ## x, rep_VAL(& str_ ## x))
+
+/* Same as above, but also marks the variable as dynamically scoped */
+#define rep_INTERN_SPECIAL(x) 					\
+    do {							\
+	rep_intern_static (& Q ## x, rep_VAL(& str_ ## x));	\
+	rep_SYM(Q ## x)->car |= rep_SF_SPECIAL;			\
+    } while (0)
 
 /* Add an error string called err_X for symbol stored in QX */
 #define rep_ERROR(x) \
