@@ -821,6 +821,21 @@
 	(decrement-stack arg-count))))
   (put 'funcall 'rep-compile-fun compile-funcall)
 
+  (defun compile-apply (form &optional return-follows)
+    (compile-form-1 (nth 1 form))
+    (do ((args (nthcdr 2 form) (cdr args))
+	 (count 0 (1+ count)))
+	((null args)
+	 ;; merge the arguments into a single list
+	 (do ((i 0 (1+ i)))
+	     ((>= i (1- count)))
+	   (emit-insn (bytecode cons))
+	   (decrement-stack)))
+      (compile-form-1 (car args)))
+    (emit-insn (bytecode apply))
+    (decrement-stack))
+  (put 'apply 'rep-compile-fun compile-apply)
+
   (defun compile-nth (form)
     (let
 	((insn (cdr (assq (nth 1 form) byte-nth-insns))))
