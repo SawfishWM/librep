@@ -26,9 +26,9 @@
 (defvar gaol-safe-functions
   '(% * + - / /= 1+ 1- < <= = > >= add-hook alpha-char-p alphanumericp
     and append apply aref arrayp aset ash assoc assoc-regexp assq atom
-    backquote beep boundp bytecodep call-hook car catch cdr
-    char-downcase char-upcase closurep complete-string concat cond
-    condition-case cons consp const-variable-p copy-sequence
+    backquote beep boundp bytecodep call-hook car caar cadr catch cdr
+    cdar cddr char-downcase char-upcase closurep complete-string concat
+    cond condition-case cons consp const-variable-p copy-sequence
     copy-stream current-time current-time-string default-boundp
     default-value defconst defmacro defsubst defun defvar delete
     delete-if delete-if-not delete-timer delq digit-char-p
@@ -36,7 +36,7 @@
     expand-last-match featurep filter fix-time flet fmakunbound
     format funcall function functionp garbage-collect gensym get
     get-output-stream-string getenv identity if integerp interactive
-    lambda last length let let* list list* logand logior lognot logxor
+    lambda last length let let* letrec list list* logand logior lognot logxor
     lower-case-p lsh macroexpand macrolet macrop make-closure make-list
     make-string make-string-input-stream make-string-output-stream
     make-symbol make-vector makunbound mapc mapcar match-end
