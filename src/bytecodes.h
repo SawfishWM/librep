@@ -21,7 +21,7 @@
 #ifndef BYTECODES_H
 #define BYTECODES_H
 
-#define BYTECODE_MAJOR_VERSION 5
+#define BYTECODE_MAJOR_VERSION 6
 #define BYTECODE_MINOR_VERSION 0
 
 /* Number of bits encoded in each extra opcode forming the argument. */
@@ -55,13 +55,14 @@
 #define OP_REFQ 0x18
 
 /* Set the symbol-value of symbol const[ARG] to the value on the
-   stack. Leaves value on stack. */
+   stack. Pops the value off the stack. */
 #define OP_SETQ 0x20
 
 /* Push the list formed from the top ARG values on the stack. */
 #define OP_LIST 0x28
 
-/* Bind the value on the top of the stack to the symbol const[ARG]. */
+/* Bind the value on the top of the stack to the symbol const[ARG].
+   Pops the value off the stack. */
 #define OP_BIND 0x30
 
 #define OP_LAST_WITH_ARGS 0x38
@@ -85,7 +86,7 @@
 #define OP_CAR 0x4c			/* push (car pop[1]) */
 #define OP_CDR 0x4d			/* push (cdr pop[2])  */
 #define OP_RPLACA 0x4e			/* call-2 rplaca */
-#define OP_RPLACD 0x4f			/* call-2 rplaca */
+#define OP_RPLACD 0x4f			/* call-2 rplacd */
 #define OP_NTH 0x50			/* call-2 nth */
 #define OP_NTHCDR 0x51			/* call-2 nthcdr */
 #define OP_ASET 0x52			/* call-3 aset */
@@ -172,8 +173,9 @@
 #define OP_PUSHI2 0x9c			/* push #2 */
 #define OP_PUSHIM1 0x9d			/* push #-1 */
 #define OP_PUSHIM2 0x9e			/* push #-2 */
-#define OP_PUSHI 0x9f			/* push pc[0] */
-#define OP_PUSHIW 0xa0			/* push pc[0,1] */
+#define OP_PUSHI 0x9f			/* push (signed) pc[0] */
+#define OP_PUSHIWN 0xa0			/* push (- pc[0,1]) */
+#define OP_PUSHIWP 0xa1			/* push (+ pc[0,1]) */
 
 #define OP_BINDOBJ 0xb0			/* bind stk[0] */
 

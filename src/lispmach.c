@@ -424,14 +424,15 @@ fetch:
 		{
 		    if (!rep_CELL8_TYPEP(sym->value, rep_Var))
 		    {
-			sym->value = TOP;
+			sym->value = RET_POP;
 			break;
 		    }
 		}
 	    }
 	    /* fall back to common method */
-	    TOP = Fset(rep_VECT(consts)->array[arg], TOP);
-	    break;
+	    if (Fset(rep_VECT(consts)->array[arg], RET_POP) != rep_NULL)
+		break;
+	    goto error;
 
 	CASE_OP_ARG(OP_LIST)
 	    tmp = Qnil;
@@ -442,9 +443,10 @@ fetch:
 
 	CASE_OP_ARG(OP_BIND)
 	    tmp = rep_VECT(consts)->array[arg];
+	    tmp2 = RET_POP;
 	    if(rep_SYMBOLP(tmp))
 		rep_CAR(bindstack) = rep_bind_symbol(rep_CAR(bindstack),
-						     tmp, RET_POP);
+						     tmp, tmp2);
 	    else
 		rep_signal_arg_error(tmp, 1);
 	    break;
@@ -983,12 +985,14 @@ fetch:
 		PUSH(rep_MAKE_INT(((short)arg) - 256));
 	    break;
 
-	case OP_PUSHIW:
+	case OP_PUSHIWN:
 	    FETCH2(arg);
-	    if (arg < 32768)
-		PUSH(rep_MAKE_INT(arg));
-	    else
-		PUSH(rep_MAKE_INT(((long)arg) - 65536));
+	    PUSH(rep_MAKE_INT(-((long)arg)));
+	    break;
+
+	case OP_PUSHIWP:
+	    FETCH2(arg);
+	    PUSH(rep_MAKE_INT((long)arg));
 	    break;
 
 	case OP_BINDOBJ:
@@ -1082,7 +1086,7 @@ fetch:
 	default:
 	    Fsignal(Qerror, rep_LIST_1(rep_VAL(&unknown_op)));
 	}
-
+        assert (STK_USE <= rep_INT(stkreq));
 	if (rep_throw_value || !TOP)
 	{
 	    /* Some form of error occurred. Unbind the binding stack. */
