@@ -280,6 +280,11 @@ read_comment (repv strm, int *c_p)
     }
     if (c != EOF)
 	c = rep_stream_getc (strm);
+    else
+    {
+	signal_reader_error (Qpremature_end_of_stream,
+			     strm, "While reading a comment");
+    }
     *c_p = c;
 }
 
@@ -366,6 +371,8 @@ read_list(repv strm, register int *c_p)
 		{
 		    *c_p = c;
 		    read_comment (strm, c_p);
+		    if (rep_INTERRUPTP)
+			return rep_NULL;
 		    continue;
 		}
 		rep_stream_ungetc (strm, c);
@@ -946,6 +953,8 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 	    case '|':
 		/* comment delimited by `#| ... |#' */
 		read_comment (strm, c_p);
+		if (rep_INTERRUPTP)
+		    return rep_NULL;
 		continue;
 
 	    case '\\':
@@ -1015,6 +1024,8 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 		    {
 			/* #! at the start of the file. Skip until !# */
 			read_comment (strm, c_p);
+			if (rep_INTERRUPTP)
+			    return rep_NULL;
 			continue;
 		    }
 		}

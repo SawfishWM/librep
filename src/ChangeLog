@@ -1,5 +1,13 @@
 2001-08-02  John Harper  <jsh@pixelslut.com>
 
+	* lisp.c: signal an error if EOF is read while parsing a block
+	comment
+
+	* continuations.c: abuse exit_val field of thread structure
+	while threads are suspended to allow thread-suspend to return
+	true or false depending on whether the timeout was reached or
+	not
+
 	* rep_lisp.h (rep_DECLARE[1-5]_OPT): new macros, test for arg
 	being false or the given type
 

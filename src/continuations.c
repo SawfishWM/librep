@@ -1140,6 +1140,7 @@ thread_suspend (rep_thread *t, u_long msecs,
     }
     t->poll = poll;
     t->poll_arg = poll_arg;
+    t->exit_val = Qnil;
     enqueue_thread (t, root);
     if (root_barrier->active == t)
 	thread_invoke ();
@@ -1596,15 +1597,22 @@ Mark THREAD (or the current thread) as being suspended. It will not be
 selected until it has this status removed. Suspending the current
 thread will pass control to the next runnable thread. If there are no
 runnable threads, then sleep until the next thread becomes runnable.
+
+Returns true if the timeout was reached.
 ::end:: */
 {
 #ifdef WITH_CONTINUATIONS
+    long timeout;
+    repv no_timeout;
     if (th == Qnil)
 	th = Fcurrent_thread (Qnil);
     rep_DECLARE1 (th, THREADP);
     rep_DECLARE2_OPT (msecs, rep_NUMERICP);
-    thread_suspend (THREAD (th), rep_get_long_int (msecs), 0, 0);
-    return Qnil;
+    timeout = (msecs == Qnil) ? 1 : rep_get_long_int (msecs);
+    thread_suspend (THREAD (th), timeout, 0, 0);
+    no_timeout = THREAD (th)->exit_val;
+    THREAD (th)->exit_val = rep_NULL;
+    return no_timeout != Qnil ? Qt : Qnil;
 #else
     return rep_signal_arg_error (th, 1);
 #endif
@@ -1644,6 +1652,7 @@ current dynamic root.
 	thread_suspend (THREAD (self),
 			rep_get_long_int (msecs),
 			thread_join_poller, THREAD (th));
+	THREAD (self)->exit_val = rep_NULL;
 	rep_POPGC;
 	if ((THREAD (th)->car & TF_EXITED) && THREAD (th)->exit_val)
 	    return THREAD (th)->exit_val;
@@ -1666,6 +1675,7 @@ being runnable once more.
     if (th == Qnil)
 	th = Fcurrent_thread (Qnil);
     rep_DECLARE1 (th, THREADP);
+    THREAD (th)->exit_val = Qt;		/* signals timeout not reached */
     thread_wake (THREAD (th));
     return Qnil;
 #else
