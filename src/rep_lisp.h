@@ -25,15 +25,14 @@
 # include "value.h"
 #endif
 
-/*
- * These numbers weren't just plucked from the air, they make the blocks
- * of objects fit as close as possible into powers of 2 sized blocks.
- */
+/* These numbers weren't just plucked from the air, they make the blocks
+   of objects fit as close as possible into powers of 2 sized blocks. */
 #define CONSBLK_SIZE	682
-#define SYMBOLBLK_SIZE	170
+#define SYMBOLBLK_SIZE	340
 #define NUMBERBLK_SIZE	127
-#define LPOSBLK_SIZE	170
+#define POSBLK_SIZE	340
 
+/* This is a prime number */
 #define OBSIZE		509
 
 enum ValueType
@@ -84,8 +83,9 @@ enum ValueType
 #define VVECTI(v,i)	(VVECT(v)->vc_Array[(i)])
 #define VSYM(v)		((Symbol *)(v))
 #define VMARK(v)	((Mark *)(v))
-#define VLPOS(v)	((LPos *)(v))
-#define VPOS(v)		(VLPOS(v)->lp_Data.pos)
+#define VPOS(v)		((Pos *)(v))
+#define VCOL(v)		(PCOL(VPOS(v)))
+#define VROW(v)		(PROW(VPOS(v)))
 #define VXSUBR(v)	((XSubr *)(v))
 #define VSUBR(v)	((Subr *)(v))
 #define VSUBR0FUN(v)	(VSUBR(v)->subr_Fun.fun0)
@@ -260,19 +260,37 @@ typedef struct _SymbolBlk {
 } SymbolBlk;
 
 
-/* Lisp version of the POS structure. */
-typedef union _LPos {
+/* A pointer to a buffer position. There's a conventions that positions
+   accessed via VALUE pointers (and VCOL, VROW macros) are _read_only_,
+   while those accessed through Pos * pointers (and PCOL, PROW macros)
+   are _read_write_, probably allocated on the stack. */
+typedef union _Pos {
     struct {
-	u_char		type;
-	struct POS	pos;
-    }		    lp_Data;
-    union _LPos	   *lp_Next;
-} LPos;
+	u_char		type, pad1, pad2, pad3;
+	long		col, row;
+    }		    p_Data;
+    union _Pos	   *p_Next;
+} Pos;
 
-typedef struct _LPosBlk {
-    struct _LPosBlk *lb_Next;
-    LPos	    lb_Pos[LPOSBLK_SIZE];
-} LPosBlk;
+typedef struct _PosBlk {
+    struct _PosBlk *pb_Next;
+    Pos		    pb_Pos[POSBLK_SIZE];
+} PosBlk;
+
+#define PCOL(p) ((p)->p_Data.col)
+#define PROW(p) ((p)->p_Data.row)
+
+/* These all want VALUE pointers */
+#define POS_EQUAL_P(s,e) \
+    ((VROW(s) == VROW(e)) && (VCOL(s) == VCOL(e)))
+#define POS_GREATER_P(s,e) \
+    ((VROW(s) > VROW(e)) || ((VROW(s) == VROW(e)) && (VCOL(s) > VCOL(e))))
+#define POS_GREATER_EQUAL_P(s,e) \
+    ((VROW(s) > VROW(e)) || ((VROW(s) == VROW(e)) && (VCOL(s) >= VCOL(e))))
+#define POS_LESS_P(s,e) \
+    ((VROW(s) < VROW(e)) || ((VROW(s) == VROW(e)) && (VCOL(s) < VCOL(e))))
+#define POS_LESS_EQUAL_P(s,e) \
+    ((VROW(s) < VROW(e)) || ((VROW(s) == VROW(e)) && (VCOL(s) <= VCOL(e))))
 
 
 /* A file object.  */
