@@ -772,10 +772,43 @@ struct Lisp_Call {
 
 /* Macros for interrupt handling */
 
-/* This macro is called before testing INT_P, if necessary the target
-   operating system header files will define it to be something useful. */
+/* Defines how many calls to TEST_INT are required before actually
+   doing any checking (which might be costly). It shouldn't really
+   matter if this is large since interrupts are only normally used
+   when the editor is wedged.. */
+#ifndef TEST_INT_PERIOD
+# define TEST_INT_PERIOD 1000
+#endif
+
+/* TEST_INT is called before testing INT_P, if necessary the target
+   operating system header files will define it to be something useful.
+   There's also a variant TEST_INT_SLOW that should be used by code that
+   only checks a few times or less a second */
 #ifndef TEST_INT
-# define TEST_INT do { ; } while(0)
+
+/* TEST_INT_GUTS can be used for code that's costly to execute. It's
+   only evaluated one in TEST_INT_PERIOD calls to TEST_INT */
+# ifdef TEST_INT_GUTS
+#  define TEST_INT					\
+    do {						\
+	if(++lisp_test_int_counter > TEST_INT_PERIOD) {	\
+	    TEST_INT_GUTS;				\
+	    lisp_test_int_counter = 0;			\
+	}						\
+    } while(0)
+#  define TEST_INT_SLOW			\
+    do {				\
+	TEST_INT_GUTS;			\
+	lisp_test_int_counter = 0;	\
+    } while(0)
+# else
+#  define TEST_INT	\
+    do {		\
+    } while(0)
+#  define TEST_INT_SLOW TEST_INT
+# endif
+#else /* !TEST_INT */
+# define TEST_INT_SLOW TEST_INT
 #endif
 
 /* True when an interrupt has occurred; this means that the function
