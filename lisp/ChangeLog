@@ -1,3 +1,17 @@
+1998-08-28  John Harper  <john@dcs.warwick.ac.uk>
+
+	* yacc-mode.jl: new major mode, uses indented-text for yacc
+	grammar, and embeds minor-major c-modes for all C regions
+	* modes.jl (auto-mode-alist): added yacc-mode
+
+	* send-mail.jl (send-mail-find-header): avoid the read-only
+	header-separator
+
+	* minor-major.jl (minor-major-mode, delete-minor-major-mode):
+	new file, allows major-modes to be set for _regions_ of the
+	current buffer (uses extents and the `catch-variables'
+	property)
+
 1998-08-27  John Harper  <john@dcs.warwick.ac.uk>
 
 	* buffer-summary.jl: don't print the minor-modes

@@ -212,4 +212,6 @@
 (autoload 'thesaurus-lookup-word "thesaurus" t)
 (autoload 'thesaurus-show-words "thesaurus" t)
 (autoload 'dict-lookup "dict" t)
+(autoload 'minor-major-mode "minor-major" t)
+(autoload 'yacc-mode "yacc-mode" t)
 ;;; ::autoload-end::

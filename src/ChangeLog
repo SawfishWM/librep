@@ -1,3 +1,28 @@
+1998-08-28  John Harper  <john@dcs.warwick.ac.uk>
+
+	* main.c (on_idle): only call idle-hook once per idle period
+
+	* extent.c: various fixes, including reverting the last change
+	to unlink_extent_recursively. Mostly in the adjust_extents_X
+	functions
+
+	* extent.c (unlink_extent_recursively): fixed to unlink all
+	children in each node, not just the first
+	(make_global_extent, reset_global_extent): minor fixes, and
+	remember to invalidate the cache
+	(cmd_extent_get, cmd_extent_put): new special property
+	`catch-variables'. When set this hijacks any attempts at
+	setting non-permanent-local buffer-local symbols, and sets them
+	in the innermost extent with this property
+	(buffer_set_if_bound): function to implement the above
+	* edit.h (EXTFF_CATCH_VARIABLES): new flag in Lisp_Extent
+	* symbols.c (cmd_set): call buffer_set_if_bound if the symbol
+	has the SF_BUFFER_LOCAL property
+
+	* editcommands.c (cmd_clear_buffer): don't call
+	reset_global_extent until _after_ clearing the buffer
+
+
 1998-08-27  John Harper  <john@dcs.warwick.ac.uk>
 
 	* views.c (update-status-buffer): can now be customized through
