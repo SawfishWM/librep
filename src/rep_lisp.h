@@ -176,8 +176,11 @@ typedef struct {
 /* Build a repv out of a pointer to a Lisp_Normal object */
 #define rep_VAL(x)		((repv)(x))
 
+/* Is V of cell8 type? */
+#define rep_CELL8P(v)		(rep_PTR(v)->car & rep_CELL_IS_8)
+
 /* Is V a cons? */
-#define rep_CELL_CONS_P(v)	(!(rep_PTR(v)->car & rep_CELL_IS_8))
+#define rep_CELL_CONS_P(v)	(!rep_CELL8P(v))
 
 /* Is V statically allocated? */
 #define rep_CELL_STATIC_P(v)	(rep_PTR(v)->car & rep_CELL_STATIC_BIT)
@@ -318,6 +321,16 @@ typedef struct rep_type_struct {
 #define rep_TYPEP(v, t)	(rep_TYPE(v) == t)
 
 
+/* tuples, cells containing two values */
+
+typedef struct {
+    repv car;
+    repv a, b;
+} rep_tuple;
+
+#define rep_TUPLE(v)		((rep_tuple *) rep_PTR (v))
+
+
 /* Numbers (private defs in numbers.c) */
 
 /* Is V a non-fixnum number? */
@@ -391,10 +404,7 @@ typedef struct rep_string_struct {
 
 /* Symbols */
 
-/* Symbol object, each symbol has 4 basic attributes, a name, its value
-   as a variable, its value as a function and a property-list.
-   Symbols are generally stored in hash tables (rep_obarray) with collisions
-   chained from the `QNext' field.  */
+/* symbol object, actual allocated as a tuple */
 typedef struct {
     repv car;				/* bits 8->11 are flags */
     repv next;				/* next symbol in rep_obarray bucket */
