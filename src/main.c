@@ -39,6 +39,14 @@ periods only!
 ::end::
 ::doc:Vprogram-name::
 The name of the program running the rep interpreter.
+::end::
+::doc:Verror-mode::
+When nil, errors are handled at the current event loop, other possible
+values include `exit' and `top-level'.
+::end::
+::doc:Vinterrupt-mode::
+When nil, interrupts are handled at the current event loop, other possible
+values include `exit' and `top-level'.
 ::end:: */
 
 /* Called when we get a termination signal. */
@@ -54,6 +62,8 @@ DEFSYM(command_line_args, "command-line-args");
 DEFSYM(batch_mode, "batch-mode");
 DEFSYM(interpreted_mode, "interpreted-mode");
 DEFSYM(program_name, "program-name");
+DEFSYM(error_mode, "error-mode");
+DEFSYM(interrupt_mode, "interrupt-mode");
 
 DEFSTRING(definit, "init");
 static repv init_script = rep_VAL(&definit);
@@ -351,19 +361,40 @@ rep_handle_input_exception(repv *result_p)
     else if(car == Qquit)
 	return rep_TRUE;
     else if(car == Quser_interrupt)
-	rep_handle_error(car, Qnil);
+    {
+	repv tem = Fsymbol_value (Qinterrupt_mode, Qt);
+	if (tem == Qexit && rep_recurse_depth == 0)
+	    goto terminate;
+	else if (rep_recurse_depth == 0 || tem != Qtop_level)
+	    rep_handle_error(car, Qnil);
+	else
+	    goto unhandled;
+    }
+    else if(car == Qerror)
+    {
+	repv tem = Fsymbol_value (Qerror_mode, Qt);
+	if (tem == Qexit && rep_recurse_depth == 0)
+	{
+	    rep_handle_error(rep_CAR(rep_CDR(tv)), rep_CDR(rep_CDR(tv)));
+	    goto terminate;
+	}
+	else if (rep_recurse_depth == 0 || tem != Qtop_level)
+	    rep_handle_error(rep_CAR(rep_CDR(tv)), rep_CDR(rep_CDR(tv)));
+	else
+	    goto unhandled;
+    }
     else if(car == Qterm_interrupt)
     {
+    terminate:
 	if(rep_recurse_depth == 0 && rep_on_termination_fun != 0)
 	    (*rep_on_termination_fun)();
 	return rep_TRUE;
     }
-    else if(car == Qerror)
-	rep_handle_error(rep_CAR(rep_CDR(tv)), rep_CDR(rep_CDR(tv)));
     else if(rep_recurse_depth == 0)
 	rep_handle_error(Qno_catcher, rep_LIST_1(car));
     else
     {
+    unhandled:
 	rep_throw_value = tv;
 	return rep_TRUE;
     }
@@ -419,4 +450,8 @@ rep_main_init(void)
     rep_SYM(Qinterpreted_mode)->value = Qnil;
     rep_ADD_SUBR(Sget_command_line_option);
     rep_INTERN(program_name);
+    rep_INTERN(error_mode);
+    rep_SYM(Qerror_mode)->value = Qnil;
+    rep_INTERN(interrupt_mode);
+    rep_SYM(Qinterrupt_mode)->value = Qnil;
 }
