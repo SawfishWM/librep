@@ -558,16 +558,17 @@
 		(compile-form-1 (car subl) return-follows)
 		(decrement-stack)))
 	    (when (consp (cdr form))
-	      (compiler-warning
-	       'misc "Unreachable conditions after t in cond statement")
+	      ;;(compiler-warning
+	      ;; 'misc "Unreachable conditions after t in cond statement")
 	      ;; Ignore the rest of the statement
 	      (setq form nil))
 	    (setq need-trailing-nil nil))
 	   ((eq condition nil)
 	    ;; condition nil -- never taken
 	    (when (cdr subl)
-	      (compiler-warning
-	       'misc "Unreachable forms after nil in cond statement")))
+	      ;;(compiler-warning
+	      ;; 'misc "Unreachable forms after nil in cond statement")
+	      ))
 	   (t
 	    ;; non t-or-nil condition
 	    (compile-form-1 (car subl) (and return-follows
