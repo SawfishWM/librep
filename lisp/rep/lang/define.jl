@@ -68,7 +68,7 @@
   (if (atom form)
       form
     (case (car form)
-      ((let let* letrec)
+      ((let let* letrec let-fluids)
        (if (and (eq (car form) 'let) (cadr form) (symbolp (cadr form)))
 	   ;; named let, expand
 	   (define-scan-form (macroexpand-1 form macro-environment))
