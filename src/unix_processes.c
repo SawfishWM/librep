@@ -1810,6 +1810,61 @@ Note that output includes notification of process termination.
     return result;
 }
 
+/* Don't use libc system (), since it blocks signals. */
+repv
+rep_system (char *command)
+{
+    int pid, status;
+    int interrupt_count = 0;
+    pid = fork ();
+    switch (pid)
+    {
+	char *argv[4];
+
+    case -1:
+	return Fsignal (Qerror, Fcons (rep_string_dup ("Can't fork"), Qnil));
+
+    case 0:
+	argv[0] = "sh";
+	argv[1] = "-c";
+	argv[2] = command;
+	argv[3] = 0;
+	execve ("/bin/sh", argv, environ);
+	return Fsignal (Qerror, Fcons (rep_string_dup ("Can't exec /bin/sh"), Qnil));
+
+    default:
+	do {
+	    struct timeval timeout;
+	    rep_TEST_INT_SLOW;
+	    if (rep_INTERRUPTP)
+	    {
+		static int signals[] = { SIGINT, SIGTERM, SIGQUIT };
+		if (interrupt_count < 3)
+		    interrupt_count++;
+		kill (pid, signals[interrupt_count - 1]);
+		if (rep_throw_value == rep_int_cell)
+		    rep_throw_value = rep_NULL;
+	    }
+	    timeout.tv_sec = 1;
+	    timeout.tv_usec = 0;
+	    rep_sigchld_restart (rep_FALSE);
+	    select (FD_SETSIZE, NULL, NULL, NULL, &timeout);
+	    rep_sigchld_restart (rep_TRUE);
+	    switch (waitpid(pid, &status, WNOHANG))
+	    {
+	    case 0:
+		break;
+	    case -1:
+		if (errno != EINTR && errno != EAGAIN)
+		    return Fsignal (Qerror, Fcons (rep_string_dup ("Can't waitpid"), Qnil));
+		break;
+	    default:
+		return rep_MAKE_INT (status);
+	    }
+	} while (1);
+    }
+}
+
 /* Turns on or off restarted system calls */
 void
 rep_sigchld_restart(rep_bool flag)
