@@ -38,6 +38,9 @@ typedef int rep_bool;
 /* Version number */
 #undef rep_VERSION
 
+/* libtool interface revision number */
+#undef rep_INTERFACE
+
 /* Define if you have some flavour of Unix */
 #undef rep_HAVE_UNIX
 
