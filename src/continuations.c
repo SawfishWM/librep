@@ -352,9 +352,8 @@ rep_call_with_barrier (repv (*callback)(repv), repv arg,
 	{
 	    DB (("caught barrier exit throw\n"));
 	    rep_throw_value = rep_CDR (exit_barrier_cell);
-	    if (rep_throw_value == Qnil)
-		rep_throw_value = rep_NULL;
-	    ret = Qnil;
+	    ret = (rep_throw_value == rep_NULL) ? Qnil : rep_NULL;
+	    rep_CDR (exit_barrier_cell) = Qnil;
 	}
 
 	if (rep_throw_value == rep_NULL && b.active != 0)
@@ -432,10 +431,8 @@ common_ancestor (rep_barrier *current, rep_barrier **dest_hist, int dest_depth)
     for (ptr = current; ptr != 0; ptr = ptr->next)
     {
 	int i;
-	DB (("ptr: %p\n", ptr->point));
 	for (i = first_dest; i < dest_depth; i++)
 	{
-	    DB (("dest: %p\n", dest_hist[i]->point));
 	    if (dest_hist[i]->point == ptr->point)
 		return ptr;
 	    else if (SP_NEWER_P (dest_hist[i]->point, ptr->point))
@@ -907,8 +904,8 @@ again:
 	if (root_barrier->susp_head == 0)
 	{
 	    root_barrier->active = 0;
-	    if (rep_throw_value)
-		rep_CDR (exit_barrier_cell) = rep_throw_value;
+	    assert (rep_throw_value != exit_barrier_cell);
+	    rep_CDR (exit_barrier_cell) = rep_throw_value;
 	    rep_throw_value = exit_barrier_cell;
 	    DB (("no more threads, throwing to root..\n"));
 	    return;
@@ -1018,7 +1015,6 @@ make_thread (repv thunk, repv name)
 	{
 	    t->exit_val = ret;
 	    thread_delete (t);
-	    thread_invoke ();
 	    assert (rep_throw_value == exit_barrier_cell);
 	}
 	else
