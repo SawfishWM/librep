@@ -102,9 +102,11 @@ regsub(prog, source, dest, data)
 		    (void) strncpy(dst, prog->matches.string.startp[no], len);
 		    dst += len;
 		    if (len != 0 && *(dst - 1) == '\0')
+		    {
 			/* strncpy hit NUL. */
 			regerror("damaged match string");
-		    return;
+			return;
+		    }
 		}
 	    }
 #ifdef BUILD_JADE
