@@ -1452,9 +1452,10 @@ rep_lisp_prin(repv strm, repv obj)
 
     case rep_Int:
 #ifdef HAVE_SNPRINTF
-	snprintf(tbuf, sizeof(tbuf), "%ld", rep_INT(obj));
+	snprintf(tbuf, sizeof(tbuf),
+		 "%" rep_PTR_SIZED_INT_CONV "d", rep_INT(obj));
 #else
-	sprintf(tbuf, "%ld", rep_INT(obj));
+	sprintf(tbuf, "%" rep_PTR_SIZED_INT_CONV "d", rep_INT(obj));
 #endif
 	rep_stream_puts(strm, tbuf, -1, rep_FALSE);
 	break;

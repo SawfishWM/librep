@@ -1134,7 +1134,9 @@ fetch:
 		    /* car is an exception handler, but rep_throw_value isn't
 		       set, so there's nothing to handle. Keep unwinding. */
 #if 1
-		    fprintf(stderr, "lispmach: ignoring exception handler (%ld . %ld) pc=%d",
+		    fprintf(stderr, "lispmach: ignoring exception handler "
+			    "(%" rep_PTR_SIZED_INT_CONV "d . %"
+			    rep_PTR_SIZED_INT_CONV "d) pc=%d",
 			    rep_INT(rep_CAR(item)),
 			    rep_INT(rep_CDR(item)), pc - rep_STR(code));
 		    Fbacktrace(Fstderr_file());
