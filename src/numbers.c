@@ -2863,9 +2863,13 @@ random_seed (u_long seed)
 static repv
 random_new (repv limit_)
 {
-    u_long limit = rep_get_long_uint (limit_);
-    u_long divisor = rep_LISP_MAX_INT / limit;
-    u_long val;
+    long limit = rep_get_long_int (limit_);
+    long divisor, val;
+
+    if (limit <= 0 || limit > rep_LISP_MAX_INT)
+	return rep_signal_arg_error (limit_, 1);
+
+    divisor = rep_LISP_MAX_INT / limit;
     do {
 	val = rand ();
 	if (rep_LISP_INT_BITS-1 > RAND_BITS)
