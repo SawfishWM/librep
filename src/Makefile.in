@@ -50,7 +50,7 @@ X11LIBS=@X_PRE_LIBS@ -lX11 @X_LIBS@ @X_EXTRA_LIBS@
 HAVE_X11=@HAVE_X11@
 HAVE_UNIX=@HAVE_UNIX@
 
-VPATH=@top_srcdir@/src:../lib:.
+VPATH=@top_srcdir@/src:@top_srcdir@/lib-src:../lib:.
 
 # Check if we're building a dumped binary
 ifeq ($(notdir $(shell pwd)), jaded)
