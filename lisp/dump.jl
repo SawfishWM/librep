@@ -498,6 +498,7 @@ the lisp-lib-directory with .jlc as its suffix."
       (dump-output stream 'label (dump-get-label (car head)))
       (setq obj (dump-get-object (car head)))
       (dump-output stream 'value (logior (lsh (length obj) 8) 0x45))
+      (dump-output stream 'value 0)
       (if dump-inline-strings
 	  (dump-output stream 'string obj)
 	(let
