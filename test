@@ -1,0 +1,11 @@
+#!/bin/sh
+
+top=${REPTOP:-.}
+
+if [ "x$1" != "x-g" ]; then
+  REPEXECDIR=${top}/src/.libs REPLISPDIR=${top}/lisp REPDOCFILE=${top}/DOC ${top}/src/rep $*
+else
+  shift
+  REPEXECDIR=${top}/src/.libs REPLISPDIR=${top}/lisp REPDOCFILE=${top}/DOC ${top}/libtool gdb ${top}/src/rep $*  
+fi
+
