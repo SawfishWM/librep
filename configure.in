@@ -72,9 +72,18 @@ AC_CHECK_HEADER(dlfcn.h,
 [AC_DEFINE(HAVE_DLFCN_H)
  AC_DEFINE(HAVE_DYNAMIC_LOADING)
  dynamic_file_suffix="so"
+ dnl Flags given to compiler when compiling shared objects
  DL_CFLAGS=${DL_CFLAGS:-"-fpic -shared"}
- DL_LDFLAGS="-rdynamic"
- AC_DEFINE(DYNAMIC_FILE_SUFFIX, "so")])
+ dnl Flags given to compiler when linking main program
+ DL_LDFLAGS=""
+ dnl Specific system checks
+ case ${host_type} in
+   *-linux-*)
+     dnl Need -rdynamic to ensure the jade binary exports all symbols
+     DL_LDFLAGS="${DL_LDFLAGS} -rdynamic" ;;
+ esac
+ AC_DEFINE(DYNAMIC_FILE_SUFFIX, "so")],
+[AC_MSG_WARN([Can't figure out how to do dynamic loading])])
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
