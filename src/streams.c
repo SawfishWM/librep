@@ -372,13 +372,11 @@ top:
 	    if(curr_win->w_Flags & WINFF_MESSAGE)
 	    {
 		WIN *w = curr_win;
-		u_char *s;
-		s = str_dupn(w->w_Message, w->w_MessageLen + 1);
-		if(s)
+		u_char *s = sys_realloc(w->w_Message, w->w_MessageLen + 1);
+		if(s != 0)
 		{
 		    s[w->w_MessageLen++] = c;
 		    s[w->w_MessageLen] = 0;
-		    sys_free(w->w_Message);
 		    w->w_Message = s;
 		    w->w_Flags |= WINFF_MESSAGE;
 		}
@@ -503,12 +501,11 @@ top:
 		WIN *w = curr_win;
 		u_char *s;
 		newlen = w->w_MessageLen + bufLen;
-		s = str_dupn(w->w_Message, newlen);
-		if(s)
+		s = sys_realloc(w->w_Message, newlen);
+		if(s != 0)
 		{
 		    memcpy(s + w->w_MessageLen, buf, bufLen);
 		    s[newlen] = 0;
-		    sys_free(w->w_Message);
 		    w->w_Message = s;
 		    w->w_MessageLen = newlen;
 		    w->w_Flags |= WINFF_MESSAGE;
