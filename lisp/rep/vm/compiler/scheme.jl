@@ -29,6 +29,7 @@
 
     (open rep
 	  rep.lang.doc
+	  scheme.syntax-funs
 	  rep.vm.compiler.modules
 	  rep.vm.compiler.utils
 	  rep.vm.compiler.basic
@@ -154,20 +155,33 @@
       (decrement-stack)))
   (put 'set! 'scheme-compile-fun compile-set!)
 
-  (put '\#define 'unscheme-compile-fun (get '%define 'rep-compile-fun))
+  (put '\#define 'scheme-compile-fun (get '%define 'rep-compile-fun))
 
   (defun compile-\#test (form)
     (compile-form-1 (cadr form))
     (emit-insn '(scm-test)))
   (put '\#test 'scheme-compile-fun compile-\#test)
 
+  ;; this function is used to scan-out inner defines so that scheme let*
+  ;; and letrec forms can be compiled by the standard rep  translators
+  (defun compile-let-form (form return-follows)
+    (let loop ((body (nthcdr 2 form))
+	       (header '()))
+      (if (eq (caar body) 'define)
+	  (loop (cdr body) (cons (parse-define (car body)) header))
+	((get (car form) 'rep-compile-fun)
+	 (if header
+	     `(,(car form) ,(cadr form)
+	        (letrec ,(nreverse header) ,@body))
+	   form) return-follows))))
+
   ;; compile let* specially to coalesce all bindings into a single frame
-  (put 'let* 'scheme-compile-fun (get 'let* 'rep-compile-fun))
+  (put 'let* 'scheme-compile-fun compile-let-form)
 
   ;; let can be compiled straight from its macro definition
 
   ;; compile letrec specially to handle tail recursion elimination
-  (put 'letrec 'scheme-compile-fun (get 'letrec 'rep-compile-fun))
+  (put 'letrec 'scheme-compile-fun compile-let-form)
 
   (put '\#cond 'scheme-compile-fun (get 'cond 'rep-compile-fun))
 
