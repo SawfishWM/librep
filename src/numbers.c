@@ -1049,22 +1049,15 @@ rep_print_number_to_string (repv obj, int radix, int prec)
 	out = mpz_get_str (0, radix, rep_NUMBER(obj,z));
 #else
 	{
-	    static const char *map = "0123456789abcdefghijklmnopqrstuvwzyz";
+	    static const char *map = "0123456789abcdefghijklmnopqrstuvwxyz";
 	    char *ptr = buf, *optr;
 	    rep_long_long value = rep_NUMBER(obj,z);
-	    int sign = 1;
-	    if (value == 0)
-		*ptr++ = 0;
-	    else
+	    int sign = (value < 0) ? -1 : +1;
+	    while (value != 0)
 	    {
-		if (value < 0)
-		    sign = -1;
-		while (value != 0)
-		{
-		    int digit = value % radix;
-		    *ptr++ = map[ABS (digit)];
-		    value = value / radix;
-		}
+		int digit = value % radix;
+		*ptr++ = map[ABS (digit)];
+		value = value / radix;
 	    }
 	    if (sign < 0)
 		*ptr++ = '-';
