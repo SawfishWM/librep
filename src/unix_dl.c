@@ -32,6 +32,7 @@
 struct dl_lib_info {
     struct dl_lib_info *next;
     repv file_name;
+    repv feature_sym;
     void *handle;
 };
 
@@ -46,6 +47,20 @@ find_dl(repv file)
     {
 	assert(rep_STRINGP(x->file_name));
 	if(!strcmp(rep_STR(file), rep_STR(x->file_name)))
+	    return x;
+	x = x->next;
+    }
+    return 0;
+}
+
+static struct dl_lib_info *
+find_dl_by_feature(repv feature)
+{
+    struct dl_lib_info *x = dl_list;
+    assert(rep_SYMBOLP(feature));
+    while(x != 0)
+    {
+	if(x->feature_sym == feature)
 	    return x;
 	x = x->next;
     }
@@ -106,6 +121,7 @@ rep_open_dl_library(repv file_name)
 	{
 	    rep_xsubr **functions;
 	    repv (*init_func)(repv);
+	    repv *feature_sym;
 	    void *handle = dlopen(dlname,
 				  rep_SYM(Qdl_load_reloc_now)->value == Qnil
 				  ? RTLD_LAZY : RTLD_NOW);
@@ -139,6 +155,16 @@ rep_open_dl_library(repv file_name)
 		}
 	    }
 
+	    feature_sym = dlsym (handle, "rep_dl_feature");
+	    if (feature_sym != 0
+		&& *feature_sym != 0 && rep_SYMBOLP(*feature_sym))
+	    {
+		x->feature_sym = *feature_sym;
+		Fprovide (*feature_sym);
+	    }
+	    else
+		x->feature_sym = Qnil;
+
 	    functions = dlsym(handle, "rep_dl_subrs");
 	    if(functions != 0)
 	    {
@@ -163,6 +189,7 @@ rep_mark_dl_data(void)
     while(x != 0)
     {
 	rep_MARKVAL(x->file_name);
+	rep_MARKVAL(x->feature_sym);
 	x = x->next;
     }
 }
@@ -182,6 +209,16 @@ rep_kill_dl_libraries(void)
 	rep_free(x);
 	x = next;
     }
+}
+
+void *
+rep_find_dl_symbol (repv feature, char *symbol)
+{
+    struct dl_lib_info *x = find_dl_by_feature (feature);
+    if (x != 0)
+	return dlsym (x->handle, symbol);
+    else
+	return 0;
 }
 
 /* Attempt to find the name and address of the nearest symbol before or
