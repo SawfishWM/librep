@@ -1,3 +1,13 @@
+1999-11-18  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispcmds.c (Fstring_equal, Fstring_lessp): case-insensitive
+	string comparisons
+
+	* rep-xgettext.jl: new script, scan lisp files for strings that
+	should be translated
+	* gettext.c: new plugin, provides _, bindtextdomain and
+	textdomain functions
+
 1999-11-16  John Harper  <john@dcs.warwick.ac.uk>
 
 	* streams.c (Fformat): support the `n$' prefix for i18n, i.e.

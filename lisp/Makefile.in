@@ -18,8 +18,7 @@
 # along with rep; see the file COPYING.  If not, write to
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-rep_prog = ../libtool --mode=execute -dlopen ../src/libsdbm.la ../src/rep
-COMPILE_ENV = REPLISPDIR=. REPDOCFILE=../DOC
+top_builddir=..
 
 INSTALL_FILES = *.jl *.jlc
 

@@ -52,6 +52,7 @@ CPPFLAGS=-DHAVE_CONFIG_H -I. -I$(top_srcdir)/src -I.. @CPPFLAGS@
 CFLAGS=@CFLAGS@
 LDFLAGS=@LDFLAGS@
 LIBS=@LIBS@
+GETTEXT_LIBS=@GETTEXT_LIBS@
 LIBOBJS=@LIBOBJS@
 EXTRA_LIBOBJS=@EXTRA_LIBOBJS@
 ALLOCA=@ALLOCA@
@@ -71,6 +72,9 @@ HAVE_X11=@HAVE_X11@
 HAVE_UNIX=@HAVE_UNIX@
 
 .PHONY: clean realclean install
+
+rep_prog = $(top_builddir)/libtool --mode=execute -dlopen $(top_builddir)/src/libsdbm.la $(top_builddir)/src/rep
+COMPILE_ENV = REPLISPDIR=$(top_builddir)/lisp REPDOCFILE=$(top_builddir)/DOC
 
 # Rule for ``normal'' C objects
 %.o : %.c
