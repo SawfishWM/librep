@@ -1,5 +1,8 @@
 1998-07-12  John Harper  <john@dcs.warwick.ac.uk>
 
+	* redisplay.c (patch_display): fix warning about relative
+	precedence of && and || operators
+
 	* x11_main.c (x11_handle_input): when using WINFF_PRESERVING,
 	set it in all windows at once, since redisplay will update all
 	windows (possibly losing their original contents)
