@@ -152,8 +152,8 @@
   (put 'structure-ref 'rep-compile-fun compile-structure-ref)
 
   (put 'quote 'scheme-compile-fun (get 'quote 'rep-compile-fun))
-  (put '%lambda 'scheme-compile-fun (get 'lambda 'rep-compile-fun))
-  (put '%progn 'scheme-compile-fun (get 'progn 'rep-compile-fun))
+  (put '\#lambda 'scheme-compile-fun (get 'lambda 'rep-compile-fun))
+  (put '\#progn 'scheme-compile-fun (get 'progn 'rep-compile-fun))
 
   (defun compile-set! (form)
     (let ((sym (nth 1 form))
@@ -165,10 +165,10 @@
       (decrement-stack)))
   (put 'set! 'scheme-compile-fun compile-set!)
 
-  (defun compile-%test (form)
+  (defun compile-\#test (form)
     (compile-form-1 (cadr form))
     (emit-insn (bytecode scm-test)))
-  (put '%test 'scheme-compile-fun compile-%test)
+  (put '\#test 'scheme-compile-fun compile-\#test)
 
   ;; compile let* specially to coalesce all bindings into a single frame
   (put 'let* 'scheme-compile-fun (get 'let* 'rep-compile-fun))
@@ -178,8 +178,8 @@
   ;; compile letrec specially to handle tail recursion elimination
   (put 'letrec 'scheme-compile-fun (get 'letrec 'rep-compile-fun))
 
-  (put '%cond 'scheme-compile-fun (get 'cond 'rep-compile-fun))
-  (put '%case 'scheme-compile-fun (get 'case 'rep-compile-fun))
+  (put '\#cond 'scheme-compile-fun (get 'cond 'rep-compile-fun))
+  (put '\#case 'scheme-compile-fun (get 'case 'rep-compile-fun))
 
   (defun do-predicate (form)
     (let* ((rep-fun (or (get (car form) 'scheme-compile-rep) (car form)))

@@ -21,13 +21,13 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure scheme-utils (export %test
+(define-structure scheme-utils (export \#test
 				       make-predicate
 				       make-nil-predicate)
   (open rep)
 
   ;; given a scheme boolean, convert to a rep boolean
-  (define (%test value) (not (eq value #f)))
+  (define (\#test value) (not (eq value #f)))
 
   ;; create a scheme predicate from the rep predicate PRED
   (define (make-predicate pred)

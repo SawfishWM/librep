@@ -24,7 +24,7 @@
 (define-structure scheme-misc
 
     (export procedure? apply map for-each force
-	    %make-promise call-with-current-continuation
+	    \#make-promise call-with-current-continuation
 	    call/cc dynamic-wind eval
 	    scheme-report-environment null-environment
 	    interaction-environment
@@ -67,7 +67,7 @@
 
   (define (force promise) (promise))
 
-  (define (%make-promise thunk)
+  (define (\#make-promise thunk)
     (let ((result-ready nil)
 	  result)
       (lambda ()

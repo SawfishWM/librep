@@ -50,7 +50,7 @@
 
   (defmacro letrec args (apply expand-letrec args))
 
-  (defmacro begin forms (cons '%progn forms))
+  (defmacro begin forms (cons '\#progn forms))
 
   (defmacro do args (apply expand-do args))
 

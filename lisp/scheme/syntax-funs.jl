@@ -52,19 +52,19 @@
 	(setq header (cons (parse-define (car body)) header))
 	(setq body (cdr body)))
      (if header
-	 `(%lambda ,vars (letrec ,(nreverse header) ,@body))
-       `(%lambda ,vars ,@body))))
+	 `(\#lambda ,vars (letrec ,(nreverse header) ,@body))
+       `(\#lambda ,vars ,@body))))
 
   (define (expand-if test consequent . alternative)
     (cond ((cdr alternative)
 	   (error "Scheme `if' only takes one else form"))
 	  (alternative
-	   `(%cond ((%test ,test) ,consequent)
+	   `(\#cond ((\#test ,test) ,consequent)
 		   ('t ,(car alternative))))
-	  (t `(%cond ((%test ,test) ,consequent)))))
+	  (t `(\#cond ((\#test ,test) ,consequent)))))
 
   (define (expand-set! variable expression)
-    `(%setq ,variable ,expression))
+    `(\#setq ,variable ,expression))
 
   (define (expand-cond . args)
     (let ((first (car args))
@@ -83,7 +83,7 @@
 		  ,@(and rest `((cond ,@rest))))))))
 
   (define (expand-case key . clauses)
-    (list* '%case key
+    (list* '\#case key
 	   (mapcar (lambda (x)
 		     (if (eq (car x) 'else)
 			 `(t ,@(cdr x))
@@ -147,7 +147,7 @@
 				(car var))) vars)))))))
 
   (define (expand-delay expression)
-    `(%make-promise (lambda () ,expression)))
+    `(\#make-promise (lambda () ,expression)))
 
   (define (expand-define . args)
     (if (symbolp (car args))

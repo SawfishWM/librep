@@ -73,7 +73,7 @@
 ;;; equivalence
 
   (define (not obj)
-    (if (%test obj) #f #t))
+    (if (\#test obj) #f #t))
 
   (define eqv? (make-predicate eql))
   (define eq? (make-predicate eq))

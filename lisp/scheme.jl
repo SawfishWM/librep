@@ -89,7 +89,7 @@
 			  list->vector vector-fill!
 
 			  procedure? apply map for-each force
-			  %make-promise call-with-current-continuation
+			  \#make-promise call-with-current-continuation
 			  call/cc dynamic-wind eval
 			  scheme-report-environment null-environment
 			  interaction-environment
@@ -105,7 +105,7 @@
 			  write display newline write-char load
 
 			  ;; exported local kludges
-			  %cond %case %setq %progn %test %lambda
+			  \#cond \#case \#setq \#progn \#test \#lambda
 			  backquote list* %load-suffixes)
   ((access rep)
    (open scheme-utils
@@ -113,10 +113,10 @@
 	 scheme-data
 	 scheme-misc))
 
-  (rep#setq %cond rep#cond)
-  (rep#setq %case rep#case)
-  (rep#setq %setq rep#setq)
-  (rep#setq %progn rep#progn)
-  (rep#setq %lambda rep#lambda)
+  (rep#setq \#cond rep#cond)
+  (rep#setq \#case rep#case)
+  (rep#setq \#setq rep#setq)
+  (rep#setq \#progn rep#progn)
+  (rep#setq \#lambda rep#lambda)
   (rep#setq backquote rep#backquote)
   (rep#setq list* rep#list*))
