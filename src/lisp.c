@@ -915,7 +915,8 @@ eval_list(repv list)
    IMPORTANT: this expects the top of the call stack to have the
    saved environments in which arguments need to be evaluated */
 repv
-rep_bind_lambda_list(repv lambdaList, repv argList, rep_bool eval_args)
+rep_bind_lambda_list(repv lambdaList, repv argList,
+		     rep_bool eval_args, rep_bool eval_in_env)
 {
 #define STATE_REQUIRED 1
 #define STATE_OPTIONAL 2
@@ -942,7 +943,8 @@ rep_bind_lambda_list(repv lambdaList, repv argList, rep_bool eval_args)
 	evalled_nargs = rep_list_length(argList);
 	evalled_args = alloca(sizeof(repv) * evalled_nargs);
 	rep_PUSHGCN(gc_evalled_args, evalled_args, 0);
-	rep_env = rep_call_stack->saved_env;
+	if (!eval_in_env)
+	    rep_env = rep_call_stack->saved_env;
 	rep_PUSHGC(gc_old_env, old_env);
 	for(i = 0; i < evalled_nargs; i++)
 	{
@@ -1073,7 +1075,8 @@ rep_bind_lambda_list(repv lambdaList, repv argList, rep_bool eval_args)
 }
 
 repv
-rep_eval_lambda(repv lambdaExp, repv argList, rep_bool eval_args)
+rep_eval_lambda(repv lambdaExp, repv argList,
+		rep_bool eval_args, rep_bool eval_in_env)
 {
     repv result = rep_NULL;
     if(rep_CONSP(rep_CDR(lambdaExp)))
@@ -1083,8 +1086,8 @@ rep_eval_lambda(repv lambdaExp, repv argList, rep_bool eval_args)
 	rep_PUSHGC(gc_lambdaExp, lambdaExp);
 	rep_PUSHGC(gc_argList, argList);
 	lambdaExp = rep_CDR(lambdaExp);
-	boundlist = rep_bind_lambda_list(rep_CAR(lambdaExp),
-					 argList, eval_args);
+	boundlist = rep_bind_lambda_list(rep_CAR(lambdaExp), argList,
+					 eval_args, eval_in_env);
 	if(boundlist)
 	{
 	    rep_GC_root gc_boundlist;
@@ -1375,8 +1378,8 @@ again:
 		repv boundlist;
 		fun = rep_CDR(fun);
 		rep_USE_FUNARG(closure);
-		boundlist = rep_bind_lambda_list(rep_CAR(fun),
-						 arglist, eval_args);
+		boundlist = rep_bind_lambda_list(rep_CAR(fun), arglist,
+						 eval_args, rep_FALSE);
 		if(boundlist != rep_NULL)
 		{
 		    rep_GC_root gc_boundlist;
@@ -1422,7 +1425,7 @@ again:
 
 	    rep_USE_FUNARG(closure);
 	    boundlist = rep_bind_lambda_list(rep_COMPILED_LAMBDA(fun),
-					     arglist, eval_args);
+					     arglist, eval_args, rep_FALSE);
 	    if(boundlist != rep_NULL)
 	    {
 		result = (rep_bytecode_interpreter
@@ -1487,6 +1490,13 @@ eval(repv obj)
 	break;
 
     case rep_Cons:
+	if (rep_CONSP (rep_CAR (obj)) && rep_CAAR (obj) == Qlambda)
+	{
+	    /* inline lambda; don't need to enclose it.. */
+	    result = rep_eval_lambda (rep_CAR (obj), rep_CDR (obj),
+				      rep_TRUE, rep_TRUE);
+	    break;
+	}
 	funcobj = Feval (rep_CAR(obj));
 	if(funcobj == rep_NULL)
 	    goto end;
