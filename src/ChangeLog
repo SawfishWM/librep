@@ -1,3 +1,8 @@
+2001-04-05  John Harper  <jsh@eazel.com>
+
+	* numbers.c (INSTALL_LOCALE): fixed a really stupid bug in this
+	macro. It never actually installed the new locale!
+
 2001-03-26  John Harper  <jsh@eazel.com>
 
 	* Makefile.in: added a `check' target
