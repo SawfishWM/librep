@@ -49,6 +49,7 @@ char *alloca ();
 #undef CHECK_STACK_USAGE
 
 DEFSYM(bytecode_error, "bytecode-error");
+DEFSYM(jade_byte_code, "jade-byte-code");
 DEFSTRING(err_bytecode_error, "Invalid byte code version");
 DEFSTRING(unknown_op, "Unknown lisp opcode");
 
@@ -124,6 +125,16 @@ search_variable_environment (repv sym)
     while (env != Qnil && rep_CAR(rep_CAR(env)) != sym)
 	env = rep_CDR(env);
     return (env == Qnil) ? Qnil : rep_CAR(env);
+}
+
+/* copied from symbols.c */
+static inline repv
+search_function_environment (repv sym)
+{
+    register repv env = rep_fenv;
+    while (rep_CONSP(env) && rep_CAR(rep_CAR(env)) != sym)
+	env = rep_CDR(env);
+    return rep_CONSP(env) ? rep_CAR(env) : env;
 }
 
 
@@ -404,8 +415,13 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		}
 		else if (was_closed && rep_COMPILEDP(tmp))
 		{
-		    repv bindings = rep_bind_lambda_list(rep_COMPILED_LAMBDA(tmp),
-							 tmp2, rep_FALSE);
+		    repv bindings;
+
+		    if (search_function_environment (Qjade_byte_code) == Qnil)
+			goto invalid;
+
+		    bindings = rep_bind_lambda_list(rep_COMPILED_LAMBDA(tmp),
+						    tmp2, rep_FALSE);
 		    if(bindings != rep_NULL)
 		    {
 			rep_GC_root gc_bindings;
@@ -1294,6 +1310,7 @@ void
 rep_lispmach_init(void)
 {
     rep_ADD_SUBR(Sjade_byte_code);
+    rep_INTERN(jade_byte_code);
     rep_ADD_SUBR(Svalidate_byte_code);
     rep_ADD_SUBR(Smake_byte_code_subr);
     rep_INTERN(bytecode_error); rep_ERROR(bytecode_error);

@@ -1001,6 +1001,16 @@ rep_load_autoload(repv fun, repv aload_def, rep_bool is_variable)
 
 DEFSTRING(max_depth, "max-lisp-depth exceeded, possible infinite recursion?");
 
+/* copied from symbols.c */
+static inline repv
+search_function_environment (repv sym)
+{
+    register repv env = rep_fenv;
+    while (rep_CONSP(env) && rep_CAR(rep_CAR(env)) != sym)
+	env = rep_CDR(env);
+    return rep_CONSP(env) ? rep_CAR(env) : env;
+}
+
 /* Applies ARGLIST to FUN. If EVAL-ARGS is true, all arguments will be
    evaluated first. Note that both FUN and ARGLIST are gc-protected
    for the duration of this function. */
@@ -1202,6 +1212,10 @@ again:
 	if (was_closed)
 	{
 	    repv boundlist;
+
+	    if (search_function_environment (Qjade_byte_code) == Qnil)
+		goto invalid;
+
 	    boundlist = rep_bind_lambda_list(rep_COMPILED_LAMBDA(fun),
 					     arglist, eval_args);
 	    if(boundlist != rep_NULL)
@@ -2031,6 +2045,13 @@ too small (you get errors in normal use) set it to something larger.
 void
 rep_lisp_init(void)
 {
+    rep_env = Qnil;
+    rep_fenv = Qt;
+    rep_special_env = Fcons (Qnil, Qt);
+    rep_mark_static (&rep_env);
+    rep_mark_static (&rep_fenv);
+    rep_mark_static (&rep_special_env);
+
     rep_INTERN(quote); rep_INTERN(lambda); rep_INTERN(macro);
     rep_INTERN(backquote); rep_INTERN(backquote_unquote); rep_INTERN(backquote_splice);
     rep_INTERN(autoload); rep_INTERN(function);
@@ -2084,13 +2105,6 @@ rep_lisp_init(void)
     rep_mark_static(&rep_int_cell);
     rep_term_cell = Fcons(Qterm_interrupt, Qnil);
     rep_mark_static(&rep_term_cell);
-
-    rep_env = Qnil;
-    rep_fenv = Qt;
-    rep_special_env = Fcons (Qnil, Qt);
-    rep_mark_static (&rep_env);
-    rep_mark_static (&rep_fenv);
-    rep_mark_static (&rep_special_env);
 
     rep_INTERN_SPECIAL(print_escape); 
     rep_INTERN_SPECIAL(print_length);
