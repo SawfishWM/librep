@@ -1354,11 +1354,11 @@ Returns a true value if @var{arg} is the empty list.
 @cindex List structure
 
 Each element in a list is given its own cons cell and stored in the car
-of that cell. The list object is then constructed by making the cdr of
-a cell contain the cons cell of the next element (and hence the whole
-tail of the list). The cdr of the cell containing the last element in
-the list is @code{()}. A list of zero elements is represented by the
-@code{()}.
+of that cell. The list is then constructed by having the cdr of a cell
+point to the cons cell containing the next element (and hence the
+entire rest of the list). The cdr of the cell containing the last
+element in the list is @code{()}. A list of zero elements is
+represented by @code{()}.
 
 The read syntax of a list is an opening parenthesis, followed by the
 read syntax of zero or more space-separated objects, followed by a
@@ -4422,7 +4422,7 @@ is to add a clause with a @var{condition} of @code{t} and
 @end lisp
 @end defspec
 
-@defspec case key clauses@dots{}
+@defmac case key clauses@dots{}
 This special form is similar to @code{cond}, but switches on the result
 of evaluating a single form @var{key}, checking for equality with a
 number of other values, defined by the @var{clauses}. If any of these
@@ -4460,7 +4460,7 @@ Here is an example use of @code{case}:
   (t
     (print "I've no idea what it was...")))
 @end lisp
-@end defspec
+@end defmac
 
 There are also a number of special forms which combine conditions together
 by the normal logical rules.

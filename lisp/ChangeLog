@@ -1,3 +1,66 @@
+2000-08-11  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep/lang/doc.jl (doc-file-set): pass 'no-lock flag to
+	gdbm-open
+
+	* rep/vm/compiler/rep.jl (compile-cond): fixed bug of not
+	propagating return-follows information to body-less final
+	conditions. This meant that things like `(define (test a) (and
+	a (test a)))' wouldn't have had the tail call made into a jump
+
+	This has a _huge_ effect on the prime benchmark, iterations per
+	minute increases by 60%! for comparison:
+
+		current rep	2580 (1.0)
+		qscheme-0.3.3	1860 (.72)
+		scheme48-0.53	835  (.32)	; in benchmark mode
+		guile-0.4	314  (.12)	; with (debug-disable 'debug)
+
+	300MHz mobile Pentium II; code as follows:
+
+(define (prime n)
+  (letrec ((primep (lambda (n primes)
+                     (or (null primes)
+                         (and (not (zerop (remainder n (car primes))))
+                              (primep n (cdr primes)))))))
+    (let loop ((i 2) (candidate 2) (primes '()))
+      (cond ((not (primep candidate primes)) (loop i (+ 1 candidate) primes))
+            ((= i n) candidate)
+            (t (loop (+ 1 i) (+ 1 candidate) (cons candidate primes)))))))
+
+(define (test)
+  (let loop ((count 1))
+    (prime 100)
+    (format standard-output "%d\n" count)
+    (loop (+ 1 count))))
+
+	I need a new benchmark now..
+
+2000-08-10  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep/lang/doc.jl (describe-value): bytecode subrs no longer
+	include arg spec
+
+	* rep/vm/compiler.jl, rep/vm/compiler/utils.jl,
+	rep/vm/compiler/unscheme.jl, rep/vm/compiler/src.jl,
+	rep/vm/compiler/scheme.jl, rep/vm/compiler/rep.jl,
+	rep/vm/compiler/opt.jl, rep/vm/compiler/no-lang.jl,
+	rep/vm/compiler/modules.jl, rep/vm/compiler/lap.jl,
+	rep/vm/compiler/inline.jl, rep/vm/compiler/bindings.jl,
+	rep/vm/compiler/basic.jl:
+
+	Many compiler improvements: first order closure analysis; stack
+	allocation of uncaptured bindings; fixed `case' statements
+	without else clauses
+
+	* rep/vm/compiler/const.jl, rep/vm/compiler/asm.jl: deleted
+
+	* rep/util/repl.jl: fixed ,compile-proc command
+
+	* rep/vm/disassembler.jl, rep/vm/bytecodes.jl,
+	rep/vm/bytecode-defs.jl, rep/vm/assembler.jl: various changes
+	to the vm architecture. Bumped major version
+
 2000-08-03  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep/i18n/xgettext.jl: yanked the useful bits of

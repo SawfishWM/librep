@@ -10,9 +10,7 @@ and more long-term ideas are marked -
 Outstanding bugs
 ================
 
- ! `(one #| ... |# )' doesn't read properly
-
- ! disable all gdbm file locking?
+ ! (defvar SYM FORM) always evaluates FORM, even if SYM is bound
 
  ! (define foo bar "Doc") should do something with "Doc"
 

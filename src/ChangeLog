@@ -1,3 +1,63 @@
+2000-08-11  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.c (read_comment): new function. Also `#| ... #|' and
+	`<SOF>#! ... !#' comments now nest
+	(read_list, rep_readl): use read_comment ()
+
+	* repdoc.c (main): pass GDBM_NOLOCK to gdbm_open ()
+
+	* rep_lisp.h (DEFUN): cast the Ffoo value to (repv (*)()) when
+	assigning to the rep_xsubr struct (needed for C++, from Matt
+	Tucker <tuck@whistlingfish.net>)
+
+	* lispmach.c: changed repv_memset to repv_bzero and made it a
+	macro. Experimented with inline asm `cld; rep; stosl' on i386,
+	but no visible improvement. Move gc-protection initialization
+	before the `again:' label, then update it by hand when tail
+	calling
+
+2000-08-10  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispmach.c: implemented the vm architecture changes; these
+	include:
+
+	  - `slot-ref', `slot-set' instructions. Each vm instance gets
+	    how ever many slots it requires, basically registers. Used
+	    to avoid heap allocating variables that don't get captured
+
+	  - Removed `refq' and `setq' insns. Use `%set' and `ref'
+	    instead
+
+	  - subrs don't include their parameter spec. Each vm gets a
+	    vector of arguments; the `required-arg', `optional-arg' and
+	    `rest-arg' instructions access these (only guaranteed until
+	    the first gc)
+
+	  - when TRUST_NO_ONE is defined, heavy-duty assertions are
+	    included to check for compiler bugs
+
+	  - don't use GCC variable-length arrays to allocate stacks;
+	    use alloca. When tail-calling try to swap argv and stack
+	    arrays
+
+	  - remove `list' instruction; compiled to sequence of `cons'
+
+	* symbols.c (Fdefault_boundp): fixed bug of not converting C
+	boolean to lisp
+
+	* streams.c (rep_stream_getc): if an unbound file is given as
+	the stream, return EOF, not an error
+
+	* rep_lisp.h: removed rep_COMPILED_LAMBDA field
+
+	* lisp.c (rep_readl): when reading compiled subrs, check that
+	elements have correct type
+	(funcall): assert that either result or rep_throw_value isn't
+	rep_NULL
+
+	* bytecodes.h: various changes to the vm architecture. Bumped
+	major version
+
 2000-08-03  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep-xgettext.jl: use rep.i18n.gettext module, removed
