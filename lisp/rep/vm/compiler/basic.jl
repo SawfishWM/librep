@@ -307,20 +307,25 @@ their position in that file.")
 		      (when (eq state 'key)
 			(compile-constant (make-keyword var))
 			(setq pushed (1+ pushed)))
-		      (when (and (memq state '(optional key)) default)
-			(compile-constant (car default))
-			(setq pushed (1+ pushed)))
 		      (emit-insn (case state
 				   ((required) '(required-arg))
 				   ((optional) (if default
-						   '(optional-arg-with-default)
+						   '(optional-arg*)
 						 '(optional-arg)))
 				   ((key) (if default
-					      '(keyword-arg-with-default)
+					      '(keyword-arg*)
 					    '(keyword-arg)))
 				   ((rest) '(rest-arg))))
-		      (decrement-stack pushed)
-		      (increment-stack)
+		      (if (and (memq state '(optional key)) default)
+			  (progn
+			    (increment-stack (- 2 pushed))
+			    (let ((label (make-label)))
+			      (emit-insn `(jt ,label))
+			      (decrement-stack 2)
+			      (compile-form-1 (car default))
+			      (fix-label label)))
+			(decrement-stack pushed)
+			(increment-stack))
 		      (loop (cdr rest) state (cons var vars)))))))))
 
   ;; From LST, `(lambda (ARGS) BODY ...)' returns an assembly code object

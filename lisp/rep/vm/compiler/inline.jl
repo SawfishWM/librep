@@ -79,7 +79,7 @@
 		    (if (zerop args-left)
 			(let ((def (cdar lambda-list)))
 			  (if def
-			      (emit-insn `(push ,(car def)))
+			      (compile-form-1 (car def))
 			    (emit-insn '(push ())))
 			  (increment-stack))
 		      (setq args-left (1- args-left)))
