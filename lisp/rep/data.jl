@@ -27,7 +27,7 @@
 		   rep.regexp
 		   rep.io.files))
 
-(defun assoc-regexp (input alist &optional fold-case)
+(defun assoc-regexp (input alist #!optional fold-case)
   "Scan ALIST for an element whose car is a regular expression matching the
 string INPUT."
   (catch 'return

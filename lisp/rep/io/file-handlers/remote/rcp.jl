@@ -38,7 +38,7 @@
 
 ;; Code:
 
-(defun remote-rcp-command (&rest args)
+(defun remote-rcp-command (#!rest args)
   (message (format nil "Calling rcp with args: %s... " args) t)
   (let
       ((status (apply call-process nil nil rcp-program args)))

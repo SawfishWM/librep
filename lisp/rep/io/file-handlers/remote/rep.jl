@@ -97,7 +97,7 @@
   `(eq (aref ,session remote-rep-status) ,stat))
 
 ;; Return an rep structure for HOST and USER, with a running rep session
-(defun remote-rep-open-host (host &optional user)
+(defun remote-rep-open-host (host #!optional user)
   (unless user
     (setq user (remote-get-user host)))
   (catch 'foo
@@ -150,7 +150,7 @@
     (set-process-error-stream (aref session remote-rep-process) nil)
     (kill-process (aref session remote-rep-process))))
 
-(defun remote-rep-close-host (host &optional user)
+(defun remote-rep-close-host (host #!optional user)
   "Close the rep-remote subprocess connected to `USER@HOST'."
   (interactive "sHost:\nsUser:")
   (when (or (null user) (string= user ""))
@@ -178,7 +178,7 @@
 
 ;; Communicating with the remote process
 
-(defun remote-rep-write (session fmt &rest args)
+(defun remote-rep-write (session fmt #!rest args)
   (when (remote-rep-status-p session 'dying)
     (error "rep-remote session is dying"))
   (apply format (aref session remote-rep-process) fmt args)
@@ -191,7 +191,7 @@
   (remote-rep-send-int session (length string))
   (remote-rep-write session "%s" string))
 
-(defun remote-rep-while (session status &optional type)
+(defun remote-rep-while (session status #!optional type)
   (when (and (not (eq status 'dying))
 	     (remote-rep-status-p session 'dying))
     (error "rep-remote session is dying"))
@@ -201,7 +201,7 @@
       (aset session remote-rep-status 'timed-out)
       (error "rep-remote process timed out (%s)" (or type "unknown")))))
 
-(defun remote-rep-command (session type &optional output-fun &rest args)
+(defun remote-rep-command (session type #!optional output-fun #!rest args)
   (when remote-rep-display-progress
     (message (format nil "rep %c %s: " type args) t))
   (remote-rep-while session 'busy type)
@@ -216,7 +216,7 @@
   (remote-rep-error-if-unsuccessful session type args))
 
 ;; Return t if successful, else signal a file-error
-(defun remote-rep-error-if-unsuccessful (session &optional type args)
+(defun remote-rep-error-if-unsuccessful (session #!optional type args)
   (or (eq (aref session remote-rep-status) 'success)
       (signal 'file-error
 	      (list (aref session remote-rep-error)
@@ -522,7 +522,7 @@
 	  ;; construct the callback function to have the new cache entry
 	  ;; as the first argument
 	  (aset session remote-rep-callback
-		(lambda (&rest args)
+		(lambda (#!rest args)
 		  (apply remote-rep-dircache-callback entry args)))
 	  (unwind-protect
 	      (condition-case nil

@@ -181,10 +181,10 @@
 	    (end-of-stream))
 	(close-file file))))
 
-  (define (gaol-eval form &optional gaol)
+  (define (gaol-eval form #!optional gaol)
     (eval form (or gaol (default-gaol))))
 
-  (define (gaol-load file &optional gaol)
+  (define (gaol-load file #!optional gaol)
     (load-in file (or gaol (default-gaol))))
 
 ;;; compatibility

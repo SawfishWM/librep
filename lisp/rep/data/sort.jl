@@ -24,7 +24,7 @@
 (open-structures '(rep.lang.math))
 
 ;;;###autoload
-(defun sort (lst &optional pred)
+(defun sort (lst #!optional pred)
   "Sort LST destructively, but stably, returning the sorted list.
 
 If PRED is defined it is used to compare two objects, it should return t

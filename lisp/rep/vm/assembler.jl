@@ -54,7 +54,7 @@
 
   ;; Returns (BYTE-CODE-VECTOR . CONSTANT-VECTOR)
 
-  (define (assemble insns &optional start)
+  (define (assemble insns #!optional start)
     (let ((code '())
 	  (pc (or start 0))
 	  (labels (make-table symbol-hash eq))
@@ -94,7 +94,7 @@
 	  (label-forwards-set label (cons pc (label-forwards label)))
 	  (setq pc (+ pc 2))))
 
-      (define (emit-insn insn &optional arg)
+      (define (emit-insn insn #!optional arg)
 	(let ((op (bytecode-ref insn)))
 	  (if (>= op (bytecode last-with-args))
 	      (progn

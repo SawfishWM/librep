@@ -37,7 +37,7 @@
 			     (aset map ?+ ? )
 			     map))
 
-  (defun cgi-get-params (&optional query-string)
+  (defun cgi-get-params (#!optional query-string)
     (unless query-string
       (setq query-string (getenv "QUERY_STRING")))
     (let

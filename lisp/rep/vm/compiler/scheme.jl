@@ -172,7 +172,7 @@
   (put '\#cond 'scheme-compile-fun (get 'cond 'rep-compile-fun))
 
   ;; adapted from rep.vm.compiler.rep
-  (defun compile-case (form &optional return-follows)
+  (defun compile-case (form #!optional return-follows)
     (let
 	((end-label (make-label)))
       (setq form (cdr form))

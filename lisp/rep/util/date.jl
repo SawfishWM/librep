@@ -79,7 +79,7 @@ the current year, i.e. 1997 -> \"19\", 2001 -> \"20\".")
   ;; [DAY-ABBREV DAY MONTH-ABBREV MONTH YEAR HOUR MINUTE SECOND
   ;;  TZ-STRING TIME_T]
 
-  (defun parse-date (string &optional point)
+  (defun parse-date (string #!optional point)
     "Parse the date specifiction in STRING, optionally starting at the POINT'th
 character in the string. This will parse dates in RFC-822 mail messages."
     (unless point (setq point 0))

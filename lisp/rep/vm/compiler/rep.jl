@@ -346,7 +346,7 @@
 	(decrement-stack))))
   (put 'mapc 'rep-compile-fun compile-mapc)
 
-  (defun compile-progn (form &optional return-follows)
+  (defun compile-progn (form #!optional return-follows)
     (compile-body (cdr form) return-follows))
   (put 'progn 'rep-compile-fun compile-progn)
 
@@ -378,7 +378,7 @@
   (put 'set 'rep-compile-fun compile-set)
 
   ;; compile let* specially to coalesce all bindings into a single frame
-  (defun compile-let* (form &optional return-follows)
+  (defun compile-let* (form #!optional return-follows)
     (let
 	((lst (car (cdr form))))
       (call-with-frame
@@ -407,7 +407,7 @@
   ;; let can be compiled straight from its macro definition
 
   ;; compile letrec specially to handle tail recursion elimination
-  (defun compile-letrec (form &optional return-follows)
+  (defun compile-letrec (form #!optional return-follows)
     (let ((bindings (car (cdr form))))
       (call-with-frame
        (lambda ()
@@ -508,7 +508,7 @@
     (decrement-stack))
   (put 'defmacro 'rep-compile-fun compile-defmacro)
 
-  (defun compile-cond (form &optional return-follows)
+  (defun compile-cond (form #!optional return-follows)
     (let
 	((end-label (make-label))
 	 (need-trailing-nil t))
@@ -582,7 +582,7 @@
       (fix-label end-label)))
   (put 'cond 'rep-compile-fun compile-cond)
 
-  (defun compile-case (form &optional return-follows)
+  (defun compile-case (form #!optional return-follows)
     (let
 	((end-label (make-label))
 	 (had-default nil))
@@ -830,7 +830,7 @@
   ;; Funcall normally translates to a single call instruction. However,
   ;; if the function being called is a constant lambda expression, open
   ;; code it.
-  (defun compile-funcall (form &optional return-follows)
+  (defun compile-funcall (form #!optional return-follows)
     (let*
 	((fun (nth 1 form))
 	 (args (nthcdr 2 form))

@@ -29,7 +29,7 @@
 
 ;;; Hook manipulation
 
-(defun add-hook (hook-symbol new-func &optional at-end)
+(defun add-hook (hook-symbol new-func #!optional at-end)
   "Arrange it so that FUNCTION-NAME is added to the hook-list stored in
 symbol, HOOK-SYMBOL. It will added at the head of the list unless AT-END
 is true in which case it is added at the end."

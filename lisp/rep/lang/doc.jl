@@ -40,8 +40,9 @@
       ;; Print the arg list (one at a time)
       (while (consp lambda-list)
 	(let ((arg-name (symbol-name (car lambda-list))))
-	  ;; Unless the argument starts with a `&' print it in capitals
-	  (unless (= (aref arg-name 0) ?&)
+	  ;; Unless the it's a lambda-list keyword, print in capitals
+	  (unless (memq (car lambda-list)
+			'(#!optional #!key #!rest &optional &rest))
 	    (setq arg-name (string-upcase arg-name)))
 	  (format output " %s" arg-name))
 	(setq lambda-list (cdr lambda-list)))
@@ -49,7 +50,7 @@
 	(format output " . %s" (string-upcase (symbol-name lambda-list))))
       (get-output-stream-string output)))
 
-  (defun describe-value (value &optional name)
+  (defun describe-value (value #!optional name)
     "Print to standard-output a description of the lisp data object VALUE. If
 NAME is true, then it should be the symbol that is associated with VALUE."
     (let*
@@ -110,7 +111,7 @@ NAME is true, then it should be the symbol that is associated with VALUE."
 
 ;;; Accessing doc strings
 
-  (defun documentation (symbol &optional value)
+  (defun documentation (symbol #!optional value)
     "Returns the documentation-string for SYMBOL."
     (catch 'exit
       (let (doc)

@@ -74,7 +74,8 @@
      "make-closure" "unbindall-0" "closurep" "pop-all"
      "fluid-set" "fluid-bind" "memql" "num-eq"
      "test-scm" "test-scm-f" "%define" "spec-bind"	; #xc0
-     "set" "required-arg" "optional-arg" "rest-arg" "not-zero-p" nil nil nil
+     "set" "required-arg" "optional-arg" "rest-arg"
+     "not-zero-p" "keyword-arg" nil nil
      nil nil nil nil nil nil nil nil	; #xd0
      nil nil nil nil nil nil nil nil
      nil nil nil nil nil nil nil nil	; #xe0
@@ -82,7 +83,7 @@
      nil nil nil nil nil nil nil nil	; #xf0
      "ejmp\t%d" "jpn\t%d" "jpt\t%d" "jmp\t%d" "jn\t%d" "jt\t%d" "jnp\t%d" "jtp\t%d" ])
 
-  (defun disassemble-1 (code-string consts stream &optional depth)
+  (defun disassemble-1 (code-string consts stream #!optional depth)
     (unless depth (setq depth 0))
     (let
 	((i 0)
@@ -158,7 +159,7 @@
       (write stream ?\n)))
 
   ;;;###autoload
-  (defun disassemble (arg &optional stream depth)
+  (defun disassemble (arg #!optional stream depth)
     "Dissasembles ARG, with output to STREAM, or the *disassembly* buffer."
     (interactive "aFunction to disassemble:")
     (let

@@ -186,7 +186,7 @@
 	    (setq form (apply (cdr def) (cdr form)))))))
     form)
 
-  (defun compiler-macroexpand (form &optional pred)
+  (defun compiler-macroexpand (form #!optional pred)
     (let loop ((in form))
       (let
 	  ((out (compiler-macroexpand-1 in)))
@@ -314,7 +314,7 @@
   (defun compile-top-level-define-structure (form)
     (compile-structure-def (cadr form) (caddr form) (cdddr form) t))
 
-  (defun compile-structure-def (name sig body &optional top-level)
+  (defun compile-structure-def (name sig body #!optional top-level)
     (let
 	((opened '(rep.module-system))
 	 (accessed '())
@@ -379,7 +379,7 @@
 
 ;;; exported top-level functions
 
-  (defun compile-function (function &optional name)
+  (defun compile-function (function #!optional name)
     "Compiles the body of the function FUNCTION."
     (interactive "aFunction to compile:")
     (let-fluids ((defuns nil)

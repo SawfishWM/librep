@@ -38,7 +38,7 @@
   ;; nil, an `unknown-method' error is signalled.
 
   ;; PARAM-LIST isn't the full lambda spec, just a list of symbols. The
-  ;; list can be dotted to a symbol to make a &rest parameter. All
+  ;; list can be dotted to a symbol to make a #!rest parameter. All
   ;; parameters are optional (i.e. default to nil)
 
   ;; (object BASE-OBJECT

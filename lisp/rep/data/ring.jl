@@ -75,7 +75,7 @@
 
 ;;; higher level public api
 
-  (define (make-ring &optional size)
+  (define (make-ring #!optional size)
     "Create a ring buffer that can contain SIZE values. If SIZE is not
 specified the default capacity `ring-default-size' is used."
     (unless size (setq size default-size))
@@ -93,7 +93,7 @@ added object."
 	(set-size ring (1+ (ring-size ring))))
       (set-pos ring new-pos)))
 
-  (define (ring-ref ring &optional depth)
+  (define (ring-ref ring #!optional depth)
     "Read an object from the ring buffer RING. If DEPTH is true it
 defines the object to access, the most recently added item is at
 depth zero, the next at depth one, and so on. If there is no item at
@@ -121,7 +121,7 @@ If RING contains no items, add OBJECT as the first."
 
 ;;; compatibility api
 
-  (define (get-from-ring ring &optional depth)
+  (define (get-from-ring ring #!optional depth)
     (ring-ref ring (if depth (1- depth) 0)))
   (define add-to-ring ring-append)
   (define set-ring-head ring-replace))

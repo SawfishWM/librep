@@ -35,7 +35,7 @@
 
   (define current-repl (make-fluid))
 
-  (define (make-repl &optional initial-struct)
+  (define (make-repl #!optional initial-struct)
     (cons (or initial-struct *user-structure*) nil))
 
   (define repl-struct car)
@@ -79,7 +79,7 @@
 	    (error
 	     (error-handler (car data) (cdr data))))))))
 
-  (define (repl &optional initial-structure)
+  (define (repl #!optional initial-structure)
     ;; returns t if repl should run again
     (define (run-repl)
       (let ((input (readline
@@ -99,7 +99,7 @@
 	(when (call-with-exception-handler run-repl interrupt-handler)
 	  (loop)))))
 
-  (define (print-list data &optional map)
+  (define (print-list data #!optional map)
     (unless map (setq map identity))
     (let* ((count (length data))
 	   (mid (inexact->exact (ceiling (/ count 2)))))
@@ -131,7 +131,7 @@
 				(format nil "%s" x)) data ", "))))
 
   (put 'in 'repl-command
-       (lambda (struct &optional form)
+       (lambda (struct #!optional form)
 	 (if form
 	     (format standard-output "%S\n"
 		     (eval form (get-structure struct)))

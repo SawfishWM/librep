@@ -189,7 +189,7 @@ not the variables containing the fluids."
 
 ;; Conditional syntax
 
-(defmacro if (condition then &rest else)
+(defmacro if (condition then #!rest else)
   "First the CONDITION form is evaluated, if it returns true the
 TRUE-FORM is evaluated and its result returned. Otherwise the result of
 an implicit progn on the ELSE forms is returned. If there are no ELSE
@@ -223,12 +223,12 @@ undefined."
 	(list 'let (list (list tem key))
 	      (cons 'cond (nreverse body)))))))
 
-(defmacro when (condition &rest forms)
+(defmacro when (condition #!rest forms)
   "Evaluates CONDITION, if it is true an implicit progn is performed
 with FORMS."
   (list 'if condition (cons 'progn forms)))
 
-(defmacro unless (condition &rest forms)
+(defmacro unless (condition #!rest forms)
   "Evaluates CONDITION, if it is nil an implicit progn is performed with
 FORMS."
   (list 'if (list 'not condition) (cons 'progn forms)))
@@ -437,7 +437,7 @@ of the possible declaration types.")
 progn or the value given to any matching `throw' form."
   (list 'call-with-catch tag (list* 'lambda '() body)))
 
-(defun throw (tag &optional value)
+(defun throw (tag #!optional value)
   "Performs a non-local exit to the `catch' form waiting for TAG and return
 VALUE from it."
   (raise-exception (cons tag value)))
@@ -495,13 +495,13 @@ DATA)' while the handler is evaluated (these are the arguments given to
   (list 'make-closure
 	(list 'list* ''autoload symbol-form file (list 'quote rest))))
 
-(defmacro autoload (symbol-form file &rest extra)
+(defmacro autoload (symbol-form file #!rest extra)
   "Tell the evaluator that the value of SYMBOL will be initialised
 by loading FILE."
   (list '%define (nth 1 symbol-form)
 	(list* 'make-autoload symbol-form file extra)))
 
-(defmacro autoload-macro (symbol-form file &rest extra)
+(defmacro autoload-macro (symbol-form file #!rest extra)
   "Tell the evaluator that the value of the macro SYMBOL will be initialised
 by loading FILE."
   (list '%define (nth 1 symbol-form)
@@ -533,7 +533,7 @@ of THUNK) each function will be called exactly once."
 
 ;; misc
 
-(defun error (&rest args)
+(defun error (#!rest args)
   (signal 'error (list (apply format nil args))))
 
 (defun identity (arg)

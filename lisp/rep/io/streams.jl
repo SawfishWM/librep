@@ -34,7 +34,7 @@
   "Return a string representing ARG."
   (format nil "%S" arg))
 
-(defun read-from-string (string &optional start)
+(defun read-from-string (string #!optional start)
   "Reads an object from STRING, starting at character number START (default
 is 0)."
   (read (make-string-input-stream string start)))

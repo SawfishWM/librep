@@ -214,6 +214,8 @@
 
       (not-zero-p . #xcc)
 
+      (keyword-arg . #xcd)
+
       (last-before-jmps . #xf7)
 
 ;;; All jmps take two-byte arguments
@@ -262,7 +264,7 @@
      -1  0   0   0   0   0   0   0	;#xb0
      0   -1  0   -1  -1  0   0   nil
      -1  -2  -1  -1  0   0   -1  -2	;#xc0
-     -1  +1  +1  +1  nil nil nil nil
+     -1  +1  +1  +1  0   0   nil nil
      nil nil nil nil nil nil nil nil	;#xd0
      nil nil nil nil nil nil nil nil
      -1  nil nil nil nil nil nil nil	;#xe0

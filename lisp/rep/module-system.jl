@@ -57,7 +57,7 @@ interfaces."
   (list '%make-interface (list 'quote name)
 	(list '%parse-interface (list 'quote sig))))
 
-(defmacro structure (&optional sig config . body)
+(defmacro structure (#!optional sig config . body)
   "Create a new module whose interface is SIG, whose configuration is
 defined by CONFIG (either a single clause, or a list of clauses), and
 whose definitions are defined by the list of forms BODY.
@@ -79,7 +79,7 @@ using the `structure-ref' form."
 	(list* 'lambda nil (cons '(open rep.module-system) config))
 	(list* 'lambda nil body)))
 
-(defmacro define-structure (name &optional sig config . body)
+(defmacro define-structure (name #!optional sig config . body)
   "Create a module called NAME whose interface is SIG, whose
 configuration is defined by CONFIG (either a single clause, or a list
 of clauses), and whose definitions are defined by the list of forms

@@ -129,31 +129,31 @@
   (define-datum-printer 'scheme-eof-object (lambda (x s)
 					     (rep#write s "#<scheme-eof>")))
 
-  (define (read &optional port)
+  (define (read #!optional port)
     (condition-case nil
 	(rep#read port)
       (end-of-stream eof-object)))
 
-  (define (read-char &optional port)
+  (define (read-char #!optional port)
     (or (rep#read-char (or port standard-input)) eof-object))
 
-  (define (peek-char &optional port)
+  (define (peek-char #!optional port)
     (or (rep#peek-char (or port standard-input)) eof-object))
 
   (define eof-object? (lambda (obj) (eq obj eof-object)))
 
 ;;; output
 
-  (define (write obj &optional port)
+  (define (write obj #!optional port)
     (format (or port standard-output) "%S" obj))
 
-  (define (display obj &optional port)
+  (define (display obj #!optional port)
     (format (or port standard-output) "%s" obj))
 
-  (define (newline &optional port)
+  (define (newline #!optional port)
     (rep#write (or port standard-output) #\newline))
 
-  (define (write-char char &optional port)
+  (define (write-char char #!optional port)
     (rep#write (or port standard-output) char))
 
 ;;; system interface

@@ -38,7 +38,7 @@
 	 (substring file-name (match-end)))
       file-name))
 
-  (defun tilde-file-handler (op &rest args)
+  (defun tilde-file-handler (op #!rest args)
     (cond
      ((eq op 'file-name-absolute-p))	;~FOO always absolute
      ((eq op 'expand-file-name)

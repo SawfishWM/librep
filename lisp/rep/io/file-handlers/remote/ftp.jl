@@ -156,7 +156,7 @@ file types.")
   `(eq (aref ,session remote-ftp-status) ,stat))
 
 ;; Return an ftp structure for HOST and USER, with a running ftp session
-(defun remote-ftp-open-host (host &optional user)
+(defun remote-ftp-open-host (host #!optional user)
   (unless user
     (setq user (remote-get-user host)))
   (catch 'foo
@@ -210,7 +210,7 @@ file types.")
     (set-process-error-stream (aref session remote-ftp-process) nil)
     (kill-process (aref session remote-ftp-process))))
 
-(defun remote-ftp-close-host (host &optional user)
+(defun remote-ftp-close-host (host #!optional user)
   "Close the FTP subprocess connect to `USER@HOST'."
   (interactive "sHost:\nsUser:")
   (when (or (null user) (string= user ""))
@@ -244,7 +244,7 @@ file types.")
   (write (aref session remote-ftp-process) ?\n)
   (aset session remote-ftp-status 'busy))
 
-(defun remote-ftp-while (session status &optional type)
+(defun remote-ftp-while (session status #!optional type)
   (when (and (not (eq status 'dying))
 	     (remote-ftp-status-p session 'dying))
     (error "FTP session is dying"))
@@ -254,7 +254,7 @@ file types.")
       (aset session remote-ftp-status 'timed-out)
       (error "FTP process timed out (%s)" (or type "unknown")))))
 
-(defun remote-ftp-command (session type fmt &rest args)
+(defun remote-ftp-command (session type fmt #!rest args)
   (let
       ((retry t))
     (while retry
@@ -281,7 +281,7 @@ file types.")
     (remote-ftp-error-if-unsuccessful session fmt args)))
 
 ;; Return t if successful, else signal a file-error
-(defun remote-ftp-error-if-unsuccessful (session &optional fmt args)
+(defun remote-ftp-error-if-unsuccessful (session #!optional fmt args)
   (or (eq (aref session remote-ftp-status) 'success)
       (signal 'file-error
 	      (list 'ftp
@@ -600,7 +600,7 @@ file types.")
 	  ;; construct the callback function to have the new cache entry
 	  ;; as the first argument
 	  (aset session remote-ftp-callback
-		(lambda (&rest args)
+		(lambda (#!rest args)
 		  (apply
 		   (lambda (cache-entry session output point line-end)
 		     (let
@@ -652,7 +652,7 @@ file types.")
 
 ;; Password caching
 
-(defun remote-ftp-get-passwd (user host &optional retrying)
+(defun remote-ftp-get-passwd (user host #!optional retrying)
   (let*
       ((joined (concat user ?@ host))
        (cell (assoc joined remote-ftp-passwd-alist)))

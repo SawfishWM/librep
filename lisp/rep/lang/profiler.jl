@@ -37,7 +37,7 @@
 	(thunk)
       (stop-profiler)))
 
-  (define (print-profile &optional stream)
+  (define (print-profile #!optional stream)
     ;; each element is (SYMBOL . (LOCAL . TOTAL))
     (let ((profile '())
 	  (total-samples 0)

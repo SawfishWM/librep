@@ -40,7 +40,7 @@ accessed on specific hosts.")
 
 ;;; Entry point
 
-  (defun remote-file-handler (op &rest args)
+  (defun remote-file-handler (op #!rest args)
       (cond
        ((filep (car args))
 	;; A previously opened file handle. The backend should have stashed

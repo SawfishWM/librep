@@ -109,7 +109,7 @@
 	      (compiler-warning 'unused "Unused variable: %s" (caar new))))))))
 
   ;; note that symbol VAR has been bound
-  (define (note-binding var &optional without-location)
+  (define (note-binding var #!optional without-location)
     (if (spec-bound-p var)
 	(progn
 	  ;; specially bound (dynamic scope)
@@ -141,7 +141,7 @@
   (define (binding-enclosed-p var)
     (binding-tagged-p var 'enclosed))
 
-  (define (note-binding-referenced var &optional for-tail-call)
+  (define (note-binding-referenced var #!optional for-tail-call)
     (tag-binding var 'referenced)
     (unless for-tail-call
       (tag-binding var 'not-tail-call-only)))
@@ -186,7 +186,7 @@
 	   ;; update the global value
 	   (emit-insn `(setg ,sym)))))
 
-  (define (emit-varref form &optional in-tail-slot)
+  (define (emit-varref form #!optional in-tail-slot)
     (cond ((spec-bound-p form)
 	   ;; Specially bound
 	   (emit-insn `(push ,form))

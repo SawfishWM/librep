@@ -96,7 +96,7 @@
 	  (cons tarfh-gnu-tar-program tarfh-alternative-gnu-tar-programs))
     (error "Can't find/execute GNU tar")))
 
-(defun tarfh-call-tar (input-file output op tar-file &rest args)
+(defun tarfh-call-tar (input-file output op tar-file #!rest args)
   (unless tarfh-gnu-tar-version
     (tarfh-check-tar-program))
   ;; XXX handle non-local files by copying
@@ -351,7 +351,7 @@
   (cons (substring name 0 (match-start)) (substring name (match-end))))
 
 
-(defun tar-file-handler (op &rest args)
+(defun tar-file-handler (op #!rest args)
   (cond ((filep (car args))
 	 ;; an open file handle
 	 (let

@@ -143,7 +143,7 @@
 	     (define-scan-form expansion)))))))
 
 ;;;###autoload
-(defmacro define (&rest args)
+(defmacro define (#!rest args)
   (let ((def (define-parse args)))
     (if (eq (cadr def) 'lambda)
 	`(defun ,(car def) ,@(let ((body (cddr def)))
@@ -153,7 +153,7 @@
       `(%define ,(car def) ,(cdr def)))))
 
 ;;;###autoload
-(defmacro define-macro (&rest args)
+(defmacro define-macro (#!rest args)
   (let ((def (define-parse args)))
     (if (eq (cadr def) 'lambda)
 	`(defmacro ,(car def) ,@(let ((body (cddr def)))
@@ -164,5 +164,5 @@
       (error "Macros must be constant lambdas: %s" (car def)))))
 
 ;;;###autoload
-(defmacro with-internal-definitions (&rest body)
+(defmacro with-internal-definitions (#!rest body)
   (define-scan-internals body))

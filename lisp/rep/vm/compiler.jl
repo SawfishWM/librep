@@ -175,7 +175,7 @@ Currently warnings are generated for the following situations:
 	  not fboundp at compile-time
 	* Functions are called with an incorrect number of arguments,
 	  either too few required parameters, or too many supplied
-	  to a function without a &rest keyword
+	  to a function without a #!rest keyword
 	* Unreachable code in conditional statements
 	* Possibly some other things...
 
@@ -287,7 +287,7 @@ we would like. This is due to the view of folded functions as
 	   (when (file-exists-p temp-file)
 	     (delete-file temp-file))))))))
 
-(defun compile-directory (dir-name &optional force-p exclude-re)
+(defun compile-directory (dir-name #!optional force-p exclude-re)
   "Compiles all Lisp files in the directory DIRECTORY-NAME whose object
 files are either older than their source file or don't exist. If
 FORCE-P is true every lisp file is recompiled. Any subdirectories of
@@ -309,7 +309,7 @@ EXCLUDE-RE may be a regexp matching files which shouldn't be compiled."
 	(directory-files dir-name))
   t)
 
-(defun compile-lisp-lib (&optional directory force-p)
+(defun compile-lisp-lib (#!optional directory force-p)
   "Recompile all out of date files in the lisp library directory. If FORCE-P
 is true it's as though all files were out of date.
 This makes sure that all doc strings are written to their special file and
