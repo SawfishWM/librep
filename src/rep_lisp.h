@@ -290,7 +290,7 @@ typedef struct rep_type_struct {
 #define rep_String	0x05
 #define rep_Compiled	0x07
 #define rep_Void	0x09
-#define rep_Process	0x0b
+#define rep_Reserved	0x0b
 #define rep_Number	0x0d
 #define rep_SF		0x0f
 #define rep_Subr0	0x11
