@@ -89,6 +89,10 @@ repv rep_void_value = rep_VAL(&void_object);
    It can be any Lisp object which isn't a symbol.  */
 #define OB_NIL rep_VAL(&void_object)
 
+/* Used to mark lexical bindings */
+rep_ALIGN_CELL(static rep_cell lextag) = { rep_Void };
+#define LEXTAG rep_VAL(&lextag)
+
 static rep_symbol_block *symbol_block_chain;
 static rep_symbol *symbol_freelist;
 int rep_allocated_symbols, rep_used_symbols;
@@ -401,7 +405,7 @@ current environment.
     funarg_freelist = rep_FUNARG (f->car);
     rep_data_after_gc += sizeof (rep_funarg);
     f->car = rep_Funarg;
-    if (rep_bytecode_interpreter != Fjade_byte_code)
+    if (rep_bytecode_interpreter != rep_apply_bytecode)
 	f->car |= rep_FF_NO_BYTE_CODE;
     f->fun = fun;
     f->name = name;
@@ -505,8 +509,12 @@ search_environment (repv sym)
     register repv env;
     for (env = rep_env; env != Qnil; env = rep_CDR (env))
     {
-	if (rep_CAAR(env) == sym)
-	    return rep_CAR (env);
+	if (rep_CONSP (rep_CAR (env))
+	    && rep_CAAR(env) == LEXTAG
+	    && rep_CADAR(env) == sym)
+	{
+	    return rep_CDAR (env);
+	}
     }
     return Qnil;
 }
@@ -578,7 +586,7 @@ rep_bind_symbol(repv oldList, repv symbol, repv newVal)
     else
     {
 	/* lexical binding (also in lispmach.c:OP_BIND) */
-	rep_env = Fcons (Fcons (symbol, newVal), rep_env);
+	rep_env = Fcons (Fcons (LEXTAG, Fcons (symbol, newVal)), rep_env);
 	oldList = rep_MARK_LEX_BINDING (oldList);
     }
     return oldList;
@@ -607,7 +615,9 @@ rep_unbind_symbols(repv oldList)
 
 	tem = rep_special_bindings;
 	for (i = specials; i > 0; i--)
+	{
 	    tem = rep_CDR (tem);
+	}
 	rep_special_bindings = tem;
 
 	assert (rep_special_bindings != rep_void_value);
@@ -617,6 +627,12 @@ rep_unbind_symbols(repv oldList)
     }
     else
 	return 0;
+}
+
+repv
+rep_add_binding_to_env (repv env, repv sym, repv value)
+{
+    return Fcons (Fcons (LEXTAG, Fcons (sym, value)), env);
 }
 
 
