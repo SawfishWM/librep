@@ -37,8 +37,11 @@ General programming tasks:
  - Eliminate lexically-bound symbols from compiled code?
 
    currently the symbols are only used when the binding is created; all
-   access is done through lexical addressing. But this would break
-   symbol-value, set and eval..?
+   access is done through lexical addressing.
+
+   lexical leaf procedures (i.e. those without any `enclose' or
+   `make-closure' instructions) don't need to include symbols, since
+   there's no way they could be needed
 
  - Sandboxed bytecode interpreter
 

@@ -1,3 +1,13 @@
+2000-01-31  John Harper  <john@dcs.warwick.ac.uk>
+
+	* repdoc.c: check for errors from sdbm_store ()
+
+	* lisp.c (rep_bind_lambda_list): now handles improper lists of
+	bound variables (i.e. (foo . bar) == (foo &rest bar))
+
+	* lispmach.c (Fjade_byte_code): fixed bug in `unbindall'
+	instruction (not resetting impurity correctly)
+
 2000-01-30  John Harper  <john@dcs.warwick.ac.uk>
 
 	* values.c (rep_box_pointer, rep_unbox_pointer): new functions,
