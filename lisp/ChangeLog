@@ -1,4 +1,15 @@
+1998-09-07  John Harper  <john@dcs.warwick.ac.uk>
+
+	* info.jl (info-highlight-buffer): end highlighted menu entries
+	only by ":" not by "."
+	(info-keymap): bind "b" to start-of-buffer not
+	goto-start-of-buffer
+
 1998-09-06  John Harper  <john@dcs.warwick.ac.uk>
+
+	* read-mail.jl (rm-format-alist): add a `%A' format, like `%a'
+	but with five characters (all attributes) not three. For the
+	`%a' make deleted higher precedence than unread
 
 	* buffers.jl (find-file): if the buffer's name would be null,
 	look for the name of the parent
