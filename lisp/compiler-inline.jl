@@ -22,7 +22,6 @@
 |#
 
 (define-structure compiler-inline (export compile-lambda-inline
-					  compile-inline-function
 					  compile-tail-call)
   (open rep
 	compiler
@@ -163,11 +162,6 @@
 	  (compile-body body return-follows)))
       (fluid-set inline-depth (1- (fluid inline-depth)))))
   
-  ;; The defsubst form stores the defun in the compile-inline property
-  ;; of all defsubst declared functions
-  (defun compile-inline-function (form)
-    (compile-lambda-inline (get (car form) 'compile-inline) (cdr form)))
-
   (defun compile-tail-call (arg-spec args)
     (let*
 	((out (push-inline-args arg-spec args nil test-variable-ref))
