@@ -104,6 +104,7 @@ by loading FILE."
 symbol, HOOK-SYMBOL. It will added at the head of the list unless AT-END
 is non-nil in which case it is added at the end."
   (unless (boundp hook-symbol)
+    (make-variable-special hook-symbol)
     (set hook-symbol nil))
   (if at-end
       (set hook-symbol (nconc (symbol-value hook-symbol) (cons new-func nil)))
@@ -112,6 +113,10 @@ is non-nil in which case it is added at the end."
 (defun remove-hook (hook-symbol old-func)
   "Remove FUNCTION-NAME from the hook HOOK-SYMBOL."
   (set hook-symbol (delete old-func (symbol-value hook-symbol))))
+
+(defun in-hook-p (hook-symbol fun)
+  "Returns t if the function FUN is stored in the hook called HOOK-SYMBOL."
+  (and (boundp hook-symbol) (memq fun (symbol-value hook-symbol))))
 
 (defun eval-after-load (library form &aux tem)
   "Arrange for FORM to be evaluated immediately after the library of Lisp code
