@@ -45,7 +45,7 @@
 	  default-error-handler))
 
 (define-interface rep-bytecode
-  (export jade-byte-code validate-byte-code make-byte-code-subr))
+  (export run-byte-code validate-byte-code make-byte-code-subr))
 
 (define-interface rep-lisp
   (export t nil funcall progn prog1 while cond case quote catch throw
@@ -85,8 +85,7 @@
 	  %structure-imports %structure-accessible %set-interface
 	  %get-structure %intern-structure %open-structures
 	  %access-structures %current-structure %structurep
-	  %eval-in-structure %make-closure-in-structure
-	  %structure-walk %load-autoload))
+	  %make-closure-in-structure %structure-walk %load-autoload))
 
 (define-interface rep-data
   (export cons car cdr list list* make-list append nconc rplaca rplacd
@@ -209,7 +208,7 @@
 (define-interface module-system
   (compound-interface rep-structures (export lambda
 					     validate-byte-code
-					     jade-byte-code
+					     run-byte-code
 					     load %load-suffixes)))
 
 ;; this must be before the first use of `structure' or `define-structure'
