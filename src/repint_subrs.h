@@ -21,6 +21,9 @@
 #ifndef REPINT_SUBRS_H
 #define REPINT_SUBRS_H
 
+/* from continuations.c */
+extern void rep_continuations_init (void);
+
 /* from files.c */
 extern void rep_files_init(void);
 extern void rep_files_kill(void);

@@ -21,9 +21,9 @@
 top_builddir=..
 VPATH=@top_srcdir@/src:.
 
-COMMON_SRCS =	debug-buffer.c files.c find.c lisp.c lispcmds.c lispmach.c \
-		main.c message.c misc.c regexp.c regsub.c streams.c \
-		symbols.c values.c
+COMMON_SRCS =	continuations.c debug-buffer.c files.c find.c lisp.c \
+		lispcmds.c lispmach.c main.c message.c misc.c regexp.c \
+		regsub.c streams.c symbols.c values.c
 UNIX_SRCS =	unix_dl.c unix_files.c unix_main.c unix_processes.c
 
 INSTALL_HDRS = rep.h rep_lisp.h rep_regexp.h rep_subrs.h
@@ -35,8 +35,8 @@ SDBM_SRCS = sdbm.c sdbm_pair.c sdbm_hash.c
 SDBM_OBJS = $(SDBM_SRCS:.c=.o)
 SDBM_LOBJS = $(SDBM_SRCS:.c=.lo)
 
-DL_SRCS = repsdbm.c timers.c gettext.c readline.c tables.c continuations.c
-DL_OBJS = sdbm.la timers.la gettext.la readline.la tables.la callcc.la
+DL_SRCS = repsdbm.c timers.c gettext.c readline.c tables.c
+DL_OBJS = sdbm.la timers.la gettext.la readline.la tables.la
 
 REP_SRCS =	rep.c
 REP_OBJS =	$(REP_SRCS:.c=.o)

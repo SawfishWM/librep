@@ -1,3 +1,32 @@
+2000-02-06  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep.c: create a dynamic root
+
+	* continuations.c: introduced the idea of continuation
+	barriers, a method of limiting and/or detecting control flow
+	when using continuations. Can be similar to Guile's dynamic
+	roots. Added support for software threads
+
+	(call-with-object, call-with-dynamic-root, call-with-barrier,
+	continuation-callable-p): functions for manipulating barriers
+
+	(make-thread, thread-yield, thread-delete, thread-suspend,
+	thread-wake, threadp, thread-suspended-p, current-thread,
+	thread-queue-length, thread-forbid, thread-permit): thread
+	functions
+
+	* rep_lisp.h (rep_MAY_YIELD, rep_FORBID, rep_PERMIT): new
+	macros dealing with thread preemption
+	(rep_TEST_INT_SLOW): call rep_MAY_YIELD
+
+	* lisp.c, lispmach.c (rep_funcall, Fjade_byte_code): call
+	rep_MAY_YIELD (preempt threads) at suitable points
+
+	* unix_main.c (wait_for_input): if it might be beneficial,
+	don't sleep in select (), just poll then yield
+
+	* misc.c (rep-interface-id): new variable
+
 2000-02-04  John Harper  <john@dcs.warwick.ac.uk>
 
 	* tables.c (table_mark): remember to mark hash_fun and
