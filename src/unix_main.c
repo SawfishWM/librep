@@ -80,6 +80,7 @@ _PR VALUE sys_system_name(void);
 _PR void sys_register_input_fd(int fd, void (*callback)(int fd));
 _PR void sys_deregister_input_fd(int fd);
 _PR void unix_set_fd_nonblocking(int fd);
+_PR void unix_set_fd_blocking(int fd);
 _PR void unix_set_fd_cloexec(int fd);
 _PR VALUE sys_event_loop(void);
 _PR void *sys_alloc(u_int length);
@@ -314,6 +315,14 @@ unix_set_fd_nonblocking(int fd)
     int flags = fcntl(fd, F_GETFL, 0);
     if(flags != -1)
 	fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+}
+
+void
+unix_set_fd_blocking(int fd)
+{
+     int flags = fcntl(fd, F_GETFL, 0);
+    if(flags != -1)
+	fcntl(fd, F_SETFL, flags & ~O_NONBLOCK);
 }
 
 void
