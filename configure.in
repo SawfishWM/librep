@@ -57,7 +57,7 @@ repdir='${datadir}/rep'
 replispdir='${repdir}/${version}/lisp'
 repexecdir='${libexecdir}/rep/${version}/${host_type}'
 repcommonexecdir='${libexecdir}/rep/${host_type}'
-repdocfile='${repdir}/${version}/DOC'
+repdocfile='${repexecdir}/DOC'
 
 EXTRA_LIBOBJS=""
 AC_SUBST(EXTRA_LIBOBJS)

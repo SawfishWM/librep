@@ -43,7 +43,7 @@ install : all installdirs
 	set -e; for dir in $(INSTALL_SUBDIRS); do \
 	  ( cd $$dir && $(MAKE) $@ ); \
 	done
-	$(INSTALL_DATA) DOC $(DESTDIR)$(repdir)/$(version)
+	$(INSTALL_DATA) DOC $(DESTDIR)$(repexecdir)
 	$(INSTALL_SCRIPT) libtool $(DESTDIR)$(repcommonexecdir)
 	$(INSTALL_DATA) rules.mk $(DESTDIR)$(repcommonexecdir)
 	@echo "---------------------------------------------------------"
