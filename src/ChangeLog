@@ -1,3 +1,8 @@
+1999-09-17  John Harper  <john@dcs.warwick.ac.uk>
+
+	* realpath.c: bracketed function definition by #ifndef
+	HAVE_REALPATH just in case
+
 1999-09-15  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_files.c (rep_file_modes_as_string): change ulong to u_long
