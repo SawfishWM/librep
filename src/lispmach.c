@@ -65,6 +65,10 @@ static u_long byte_code_usage[256];
 		unwind-protect FORM to always evaluate
 	((SYM . OLD-VAL) ...)
 		list of symbol bindings to undo with rep_unbind_symbols()
+        INTEGER
+		unbind this many function bindings
+	FUNARG
+		instantiate this closure
 	(PC . STACK-DEPTH)
 		not unbound here; install exception handler at PC */
 inline void
@@ -77,7 +81,7 @@ rep_unbind_object(repv item)
 	    /* unwind-protect protection forms. */
 	    Feval(rep_CDR(item));
 	}
-	else if(rep_CONSP(rep_CAR(item)))
+	else if(rep_SYMBOLP(rep_CAR(item)) || rep_CONSP(rep_CAR(item)))
 	{
 	    /* A set of symbol bindings (let or let*). */
 	    rep_unbind_symbols(item);
@@ -89,6 +93,10 @@ rep_unbind_object(repv item)
 		t->unbind(item);
 	}
     }
+    else if (rep_INTP(item))
+	rep_unbind_functions (item);
+    else if (rep_FUNARGP(item))
+	rep_USE_FUNARG(item);
     else
     {
 	rep_type *t = rep_get_data_type(rep_TYPE(item));
@@ -106,6 +114,16 @@ rep_bind_object(repv obj)
 	return t->bind(obj);
     else
 	return Qnil;
+}
+
+/* copied from symbols.c */
+static inline repv
+search_variable_environment (repv sym)
+{
+    register repv env = rep_env;
+    while (env != Qnil && rep_CAR(rep_CAR(env)) != sym)
+	env = rep_CDR(env);
+    return (env == Qnil) ? Qnil : rep_CAR(env);
 }
 
 
@@ -212,6 +230,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 	{
 	    int arg;
 	    repv tmp, tmp2;
+	    struct rep_Call lc;
 
 	case 0:
 	    /* Terminating NUL character acts as return instruction */
@@ -238,14 +257,24 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		    goto error;
 	    }
 	    gc_stackbase.count = STK_USE;
+
+	    lc.fun = TOP;
+	    lc.args = Qnil;
+	    lc.args_evalled_p = Qt;
+	    rep_PUSH_CALL (lc);
+
 	    switch(rep_TYPE(tmp))
 	    {
+		rep_bool was_closed;
+
 	    case rep_Subr0:
 		TOP = rep_SUBR0FUN(tmp)();
 		break;
+
 	    case rep_Subr1:
 		TOP = rep_SUBR1FUN(tmp)(arg >= 1 ? stackp[1] : Qnil);
 		break;
+
 	    case rep_Subr2:
 		switch(arg)
 		{
@@ -260,6 +289,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		    break;
 		}
 		break;
+
 	    case rep_Subr3:
 		switch(arg)
 		{
@@ -277,6 +307,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		    break;
 		}
 		break;
+
 	    case rep_Subr4:
 		switch(arg)
 		{
@@ -302,6 +333,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		    break;
 		}
 		break;
+
 	    case rep_Subr5:
 		switch(arg)
 		{
@@ -331,78 +363,68 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		    break;
 		}
 		break;
+
 	    case rep_SubrN:
 		tmp2 = Qnil;
 		POPN(-arg); /* reclaim my args */
 		while(arg--)
 		    tmp2 = Fcons(RET_POP, tmp2);
+		lc.args = tmp2;
 		TOP = rep_SUBRNFUN(tmp)(tmp2);
 		break;
 
-	    case rep_Cons:
+	    default:
 		tmp2 = Qnil;
 		POPN(-arg);
 		while(arg--)
 		    tmp2 = Fcons(RET_POP, tmp2);
-		if(rep_CAR(tmp) == Qlambda)
+		lc.args = tmp2;
+		was_closed = rep_FALSE;
+		if (rep_FUNARGP(tmp))
 		{
-		    struct rep_Call lc;
-		    lc.next = rep_call_stack;
-		    lc.fun = TOP;
-		    lc.args = tmp2;
-		    lc.args_evalled_p = Qt;
-		    rep_call_stack = &lc;
-		    TOP = rep_eval_lambda(tmp, tmp2, rep_FALSE);
-		    rep_call_stack = lc.next;
+		    rep_USE_FUNARG(tmp);
+		    tmp = rep_FUNARG(tmp)->fun;
+		    was_closed = rep_TRUE;
 		}
-		else if(rep_CAR(tmp) == Qautoload)
-		    /* I can't be bothered to go to all the hassle
-		       of doing this here, it's going to be slow
-		       anyway so just pass it to rep_funcall.  */
-		    TOP = rep_funcall(TOP, tmp2, rep_FALSE);
-		else
-		    goto invalid;
-		break;
-
-	    case rep_Compiled:
-		tmp2 = Qnil;
-		POPN(-arg);
-		while(arg--)
-		    tmp2 = Fcons(RET_POP, tmp2);
-		if(!rep_COMPILED_MACRO_P(tmp))
+		if (rep_CONSP(tmp))
 		{
-		    repv bindings;
-		    struct rep_Call lc;
-		    lc.next = rep_call_stack;
-		    lc.fun = TOP;
-		    lc.args = tmp2;
-		    lc.args_evalled_p = Qt;
-		    rep_call_stack = &lc;
-
-		    bindings = rep_bind_lambda_list(rep_COMPILED_LAMBDA(tmp),
-					      tmp2, rep_FALSE);
+		    if(was_closed && rep_CAR(tmp) == Qlambda)
+			TOP = rep_eval_lambda(tmp, tmp2, rep_FALSE);
+		    else if(rep_CAR(tmp) == Qautoload)
+		    {
+			/* I can't be bothered to go to all the hassle
+			   of doing this here, it's going to be slow
+			   anyway so just pass it to rep_funcall.  */
+			rep_POP_CALL(lc);
+			TOP = rep_funcall(TOP, tmp2, rep_FALSE);
+			goto end;
+		    }
+		    else
+			goto invalid;
+		}
+		else if (was_closed && rep_COMPILEDP(tmp))
+		{
+		    repv bindings = rep_bind_lambda_list(rep_COMPILED_LAMBDA(tmp),
+							 tmp2, rep_FALSE);
 		    if(bindings != rep_NULL)
 		    {
 			rep_GC_root gc_bindings;
 			rep_PUSHGC(gc_bindings, bindings);
 			TOP = Fjade_byte_code(rep_COMPILED_CODE(tmp),
-						 rep_COMPILED_CONSTANTS(tmp),
-						 rep_MAKE_INT(rep_COMPILED_STACK(tmp)));
+					      rep_COMPILED_CONSTANTS(tmp),
+					      rep_MAKE_INT(rep_COMPILED_STACK(tmp)));
 			rep_POPGC;
 			rep_unbind_symbols(bindings);
 		    }
-		    else
-			goto error;
-		    rep_call_stack = lc.next;
 		}
 		else
-		    goto invalid;
-		break;
-		    
-	    default: invalid:
-		Fsignal(Qinvalid_function, rep_LIST_1(TOP));
-		goto error;
+		{
+		invalid:
+		    Fsignal(Qinvalid_function, rep_LIST_1(TOP));
+		}
+	        break;
 	    }
+	    rep_POP_CALL(lc);
 	    break;
 
 	CASE_OP_ARG(OP_PUSH)
@@ -410,17 +432,18 @@ of byte code. See the functions `compile-file', `compile-directory' and
 	    goto fetch;
 
 	CASE_OP_ARG(OP_REFQ)
-	    /* try to optimise the common case of normal shallow binding */
+	    /* optimise for common case of lexical binding */
 	    tmp = rep_VECT(consts)->array[arg];
 	    if (rep_SYMBOLP(tmp))
 	    {
-		register rep_symbol *sym = rep_SYM(tmp);
-		if ((sym->car & rep_SF_LOCAL) == 0)
+		register repv x = tmp;
+		if ((rep_SYM(x)->car & (rep_SF_LOCAL | rep_SF_SPECIAL)) == 0)
 		{
-		    if (!rep_VOIDP(sym->value)
-			&& !rep_CELL8_TYPEP(sym->value, rep_Var))
+		    /* lexically bound variable */
+		    x = search_variable_environment (x);
+		    if (x != Qnil)
 		    {
-			PUSH(sym->value);
+			PUSH(rep_CDR(x));
 			goto fetch;
 		    }
 		}
@@ -430,16 +453,18 @@ of byte code. See the functions `compile-file', `compile-directory' and
 	    break;
 
 	CASE_OP_ARG(OP_SETQ)
-	    /* try to optimise the common case of normal shallow binding */
+	    /* optimise for common case of lexical binding */
 	    tmp = rep_VECT(consts)->array[arg];
 	    if (rep_SYMBOLP(tmp))
 	    {
-		register rep_symbol *sym = rep_SYM(tmp);
-		if ((sym->car & rep_SF_LOCAL) == 0)
+		register repv x = tmp;
+		if ((rep_SYM(x)->car & (rep_SF_LOCAL | rep_SF_SPECIAL)) == 0)
 		{
-		    if (!rep_CELL8_TYPEP(sym->value, rep_Var))
+		    /* lexically bound variable */
+		    x = search_variable_environment (x);
+		    if (x != Qnil)
 		    {
-			sym->value = RET_POP;
+			rep_CDR(x) = RET_POP;
 			goto fetch;
 		    }
 		}
@@ -1024,6 +1049,32 @@ of byte code. See the functions `compile-file', `compile-directory' and
 	case OP_MOD:
 	    CALL_2(Fmod);
 
+	case OP_MAKE_CLOSURE:
+	    CALL_1(Fmake_closure);
+
+	case OP_FBIND:
+	    tmp = RET_POP;
+	    tmp2 = RET_POP;
+	    if (rep_SYMBOLP(tmp))
+	    {
+		rep_CAR(bindstack) = rep_bind_function (rep_CAR(bindstack),
+							tmp, tmp2);
+	    }
+	    else
+		rep_signal_arg_error (tmp, 1);
+	    break;
+
+	case OP_CLOSUREP:
+	    if(rep_FUNARGP(TOP))
+		TOP = Qt;
+	    else
+		TOP = Qnil;
+	    goto fetch;
+
+	case OP_BINDENV:
+	    bindstack = Fcons (Fmake_closure (Qnil), bindstack);
+	    break;
+
 	/* Jump instructions follow */
 
 	case OP_EJMP:
@@ -1098,7 +1149,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 	    break;
 
 	default:
-	    Fsignal(Qerror, rep_LIST_1(rep_VAL(&unknown_op)));
+	    Fsignal(Qerror, rep_list_2(rep_VAL(&unknown_op), rep_MAKE_INT(insn)));
 	}
 
 #ifdef CHECK_STACK_USAGE
@@ -1110,7 +1161,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 	   Checking for !TOP isn't strictly necessary, but I think
 	   there may still be some broken functions that return
 	   rep_NULL without setting rep_throw_value.. */
-
+    end:
 	if (rep_throw_value || !TOP)
 	{
 	    /* Some form of error occurred. Unwind the binding stack. */
@@ -1188,7 +1239,7 @@ executed. If not, an error will be signalled.
 
 DEFUN("make-byte-code-subr", Fmake_byte_code_subr, Smake_byte_code_subr, (repv args), rep_SubrN) /*
 ::doc:Smake-byte-code-subr::
-make-byte-code-subr ARGS CODE CONSTANTS STACK [rep_DOC] [INTERACTIVE] [MACROP]
+make-byte-code-subr ARGS CODE CONSTANTS STACK [DOC] [INTERACTIVE]
 
 Return an object that can be used as the function value of a symbol.
 ::end:: */
@@ -1220,8 +1271,6 @@ Return an object that can be used as the function value of a symbol.
 	if(rep_CONSP(args))
 	{
 	    obj[used++] = rep_CAR(args); args = rep_CDR(args);
-	    if(rep_CONSP(args) && !rep_NILP(rep_CAR(args)))
-		obj[3] = rep_MAKE_INT(rep_INT(obj[3]) | 0x10000);
 	    if(rep_NILP(obj[used - 1]))
 		used--;
 	}
@@ -1233,8 +1282,8 @@ Return an object that can be used as the function value of a symbol.
     if(vec != rep_NULL)
     {
 	int i;
-	rep_COMPILED(vec)->car = ((rep_COMPILED(vec)->car & ~rep_CELL8_TYPE_MASK)
-			       | rep_Compiled);
+	rep_COMPILED(vec)->car = ((rep_COMPILED(vec)->car
+				   & ~rep_CELL8_TYPE_MASK) | rep_Compiled);
 	for(i = 0; i < used; i++)
 	    rep_VECTI(vec, i) = obj[i];
     }
