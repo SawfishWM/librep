@@ -202,8 +202,47 @@ typedef struct rep_guardian_struct {
 } rep_guardian;
 
 
+/* cons' */
+
+#define rep_CONSBLK_SIZE	510		/* ~4k */
+
+/* Structure of cons allocation blocks */
+typedef struct rep_cons_block_struct {
+    union {
+	struct rep_cons_block_struct *p;
+	/* ensure that the following cons cell is aligned to at
+	   least sizeof (rep_cons) (for the dcache) */
+	rep_cons dummy;
+    } next;
+    rep_cons cons[rep_CONSBLK_SIZE];
+} rep_cons_block;
+
+
 /* prototypes */
 
 #include "repint_subrs.h"
+
+/* If using GCC, make inline_Fcons be Fcons that only takes a procedure
+   call when the heap needs to grow. */
+
+#ifdef __GNUC__
+extern __inline__ repv inline_Fcons (repv x, repv y);
+extern __inline__ repv
+inline_Fcons (repv x, repv y)
+{
+    rep_cons *c = rep_cons_freelist;
+    if (c == 0)
+	c = rep_allocate_cons ();
+    rep_cons_freelist = rep_CONS (c->cdr);
+    rep_used_cons++;
+    rep_data_after_gc += sizeof(rep_cons);
+
+    c->car = (x);
+    c->cdr = (y);
+    return rep_CONS_VAL (c);
+}
+#else
+# define inline_Fcons Fcons
+#endif
 
 #endif /* REPINT_H */
