@@ -94,7 +94,7 @@
 	   (list type fun values body)
 	 (list type values body))))
 
-    ((setq setq-default)
+    ((setq)
      (let loop ((rest (cdr form))
 		(out nil))
        (if rest
