@@ -884,7 +884,6 @@ again:
 	/* Dumped symbols are dumped read-write, so no worries.. */
 	rep_GC_SET_CELL(val);
 	rep_MARKVAL(rep_SYM(val)->name);
-	rep_MARKVAL(rep_SYM(val)->prop_list);
 	val = rep_SYM(val)->next;
 	if(val && !rep_INTP(val) && !rep_GC_MARKEDP(val))
 	    goto again;
@@ -1199,8 +1198,6 @@ rep_dumped_init(char *file)
 	    Fintern_symbol (rep_VAL(s), rep_void_value);
 	    if (s->value == rep_NULL)
 		s->value = rep_void_value;
-	    if (s->prop_list == rep_NULL)
-		s->prop_list = Qnil;
 	}
     }
 #endif
