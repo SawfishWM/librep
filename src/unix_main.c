@@ -947,9 +947,9 @@ fatal_signal_handler(int sig)
     psignal(sig, "jade: received fatal signal");
 #else
 # ifdef HAVE_STRSIGNAL
-    fprintf("jade: received fatal signal: %s\n", strsignal(sig));
+    fprintf(stderr, "jade: received fatal signal: %s\n", strsignal(sig));
 # else
-    fprintf("jade: received fatal signal: %d\n", sig);
+    fprintf(stderr, "jade: received fatal signal: %d\n", sig);
 # endif
 #endif
 
