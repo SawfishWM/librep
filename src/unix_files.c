@@ -161,8 +161,8 @@ rep_expand_file_name(repv file)
 		}
 		/* Check for `/..' */
 		else if (all_dots && end == back
-			 && back == buf && buf[0] == '/'
-			 && optr - end == 1)
+			 && back == buf && optr > buf
+			 && buf[0] == '/' && optr - end == 1)
 		{
 		    optr = back + 1;
 		}

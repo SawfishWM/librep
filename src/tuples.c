@@ -51,8 +51,12 @@ rep_make_tuple (repv car, repv a, repv b)
 	    sb->next = tuple_block_chain;
 	    tuple_block_chain = sb;
 	    for (i = 0; i < (rep_TUPLEBLK_SIZE - 1); i++)
+	    {
 		sb->tuples[i].a = rep_VAL (&sb->tuples[i + 1]);
+		sb->tuples[i].car = 0;
+	    }
 	    sb->tuples[i].a = rep_VAL (tuple_freelist);
+	    sb->tuples[i].car = 0;
 	    tuple_freelist = sb->tuples;
 	}
 	else

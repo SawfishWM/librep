@@ -1,3 +1,11 @@
+2002-07-12  John Harper  <jsh@unfactored.org>
+
+	* unix_files.c (rep_expand_file_name): avoid referencing
+	uninitialized data
+
+	* tuples.c (rep_make_tuple): initialize car field of new tuples
+	to zero, since the gc sweeper checks it (from #88015)
+
 2002-06-25  John Harper  <jsh@unfactored.org>
 
 	* numbers.c: only use GMP random numbers with version 4 and
