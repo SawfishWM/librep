@@ -465,7 +465,15 @@ file types.")
   ;; XXX chmod command. Perhaps we could use "quote site chmod .."
   ;; XXX but the Solaris ftpd doesn't support this either..
   (unwind-protect
-      (remote-ftp-command session 'chmod "chmod %o %s" mode file)
+      (condition-case nil
+	  (remote-ftp-command
+	   session 'chmod "quote site chmod %o %s" mode file)
+	(file-error
+	 ;; Assume the chmod failed
+	 (message (format nil "Warning: `chmod %o %s@%s:file' failed"
+			  mode (aref session remote-ftp-user)
+			  (aref session remote-ftp-host) file) t)
+	 nil))
     (remote-ftp-invalidate-directory
      session (file-name-directory file))))
 
