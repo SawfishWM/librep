@@ -4,6 +4,31 @@
 @cindex News
 
 
+@heading 0.13.1
+
+@itemize @bullet
+
+@item Added functions @code{remove-if} and @code{remove-if-not}
+
+@item Various bug-fixes for non-linux or solaris systems (John H.
+Palmieri, Philippe Defert)
+
+@item @code{#f}, @code{#t}, @code{#!optional}, @code{#!key} and
+@code{#!rest} are now uninterned symbols. Keywords are interned in a
+separate obarray
+
+@item Fixed bug of caching regexps even when their string has been
+modified
+
+@item Fixed some bugs in the ftp remote file handler and the
+@code{pwd-prompt} function
+
+@item Fixed @code{define} to ignore @code{structure} and
+@code{define-structure} forms
+
+@end itemize
+
+
 @heading 0.13
 
 @itemize @bullet
