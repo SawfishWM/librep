@@ -1,3 +1,23 @@
+2000-08-16  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep_lisp.h (rep_SF_KEYWORD, rep_SF_LITERAL): new flags
+	(rep_SF_KEYWORDP, rep_SYMBOL_LITERAL_P): new macros
+
+	* lisp.c (rep_readl): read #!SYMBOL as a symbol, and #:SYMBOL
+	as a keyword symbol (self evaluating)
+	(rep_bind_lambda_list_1): deprecated &optional and &rest, they
+	intrude too much on the symbol syntax. Replaced by #!optional
+	and #!rest (syntax from MIT Scheme). Also support #!key
+	defining keyword parameters. E.g. `((lambda (#!key a b) (list a
+	b)) #:b 2 #:a 1) -> (1 2)'
+
+	* symbols.c (Fmake_keyword, Fkeywordp): new functions
+	(lisp_print): if rep_SF_LITERAL is set, print without any
+	quoting; if a keyword, don't quote the initial `#'
+
+	* lispmach.c, bytecodes.h (OP_KEYWORD_ARG): new instruction,
+	extracts argument for a given keyword symbol
+
 2000-08-15  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lispmach.c: put cfa in a register variable, may help sparc

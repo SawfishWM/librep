@@ -10,6 +10,8 @@ and more long-term ideas are marked -
 Outstanding bugs
 ================
 
+ ! #!key params can't be inlined by the compiler
+
  ! (defvar SYM FORM) always evaluates FORM, even if SYM is bound
 
  ! (define foo bar "Doc") should do something with "Doc"

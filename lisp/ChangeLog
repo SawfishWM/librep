@@ -1,3 +1,20 @@
+2000-08-16  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep/vm/compiler/utils.jl (remember-function): handle
+	#!optional, #!rest and #!key
+	(compiler-deprecated): new function
+
+	* rep/vm/compiler/inline.jl (push-inline-args): handle
+	#!optional and #!rest. Error out if #!key is encountered
+
+	* rep/vm/compiler/basic.jl (compile-form-1): compile keyword
+	symbols as constants
+	(compile-lambda-spec): handle #!optional, #!rest and #!key,
+	deprecated &optional and &rest
+
+	* all lisp files: use #!optional and #!rest instead of
+	deprecated &optional and &rest
+
 2000-08-15  John Harper  <john@dcs.warwick.ac.uk>
 
 	* scheme/data.jl (symbol?, string-ci>?, string-ci>=?): fixed

@@ -495,6 +495,8 @@ extern repv Fspecial_variable_p(repv sym);
 extern repv Ftrace(repv sym);
 extern repv Funtrace(repv sym);
 extern repv Vobarray(repv val);
+extern repv Fmake_keyword (repv in);
+extern repv Fkeywordp (repv arg);
 
 /* from structures.c */
 extern repv rep_structure;
