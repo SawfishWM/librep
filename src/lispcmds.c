@@ -2061,18 +2061,19 @@ and return its value.
     return ret;
 }
 
-DEFUN("throw", Fthrow, Sthrow, (repv tag, repv val), rep_Subr2) /*
-::doc:throw::
-throw TAG repv
+DEFUN("raise-exception", Fraise_exception,
+      Sraise_exception, (repv ex), rep_Subr1) /*
+::doc:raise-exception::
+raise-exception DATA
 
-Performs a non-local exit to the `catch' waiting for TAG and return
-repv from it. TAG and repv are both evaluated fully.
+Raise the exception represented by the cons cell DATA.
 ::end:: */
 {
     /* Only one thing can use `rep_throw_value' at once.  */
-    if(!rep_throw_value)
-	rep_throw_value = Fcons(tag, val);
-    return(rep_NULL);
+    rep_DECLARE1 (ex, rep_CONSP);
+    if (rep_throw_value == rep_NULL)
+	rep_throw_value = ex;
+    return rep_NULL;
 }
 
 DEFSTRING(jl, ".jl");
@@ -2155,7 +2156,7 @@ rep_lispcmds_init(void)
     rep_ADD_SUBR(Ssubr_name);
     rep_ADD_SUBR(Scall_hook);
     rep_ADD_SUBR(Scall_with_exception_handler);
-    rep_ADD_SUBR(Sthrow);
+    rep_ADD_SUBR(Sraise_exception);
 
     rep_INTERN(provide);
 
