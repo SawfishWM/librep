@@ -21,7 +21,9 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure compiler-src (export source-code-transform)
+(define-structure compiler-src (export coalesce-constants
+				       mash-constants
+				       source-code-transform)
 
   (open rep
 	compiler-utils
@@ -38,7 +40,12 @@
       (let
 	  ((fun (get-procedure-handler name 'compiler-foldablep)))
 	(and fun (fun name)))))
-	
+
+  (defun quote-constant (value)
+    (if (or (symbolp value) (consp value))
+	(list 'quote value)
+      value))
+
   ;; This assumes that FORM is a list, and its car is one of the functions
   ;; in the comp-constant-functions list
   (defun fold-constants (form)
@@ -55,12 +62,32 @@
 			     (throw 'exit form)))
 			 (cdr form))))
 	;; Now we have ARGS, the constant [folded] arguments from FORM
-	(setq form (apply (compiler-symbol-value (car form)) args))
-	;; If the folded version is a symbol or a list, quote it to preserve
-	;; its constant-ness
-	(if (or (symbolp form) (consp form))
-	    (setq form (list 'quote form))
-	  form))))
+	(quote-constant (apply (compiler-symbol-value (car form)) args)))))
+
+  (defun coalesce-constants (folder forms)
+    (when forms
+      (let loop ((result '())
+		 (first (car forms))
+		 (rest (cdr forms)))
+	(cond ((null rest) (nreverse (cons first result)))
+	      ((and (compiler-constant-p first)
+		    rest (compiler-constant-p (car rest)))
+	       (loop result
+		     (quote-constant
+		      (folder (compiler-constant-value first)
+			      (compiler-constant-value (car rest))))
+		     (cdr rest)))
+	      (t (loop (cons first result) (car rest) (cdr rest)))))))
+
+  (defun mash-constants (folder forms)
+    (let ((consts (filter compiler-constant-p forms))
+	  (non-consts (filter (lambda (x)
+				(not (compiler-constant-p x))) forms)))
+      (if consts
+	  (cons (quote-constant
+		 (apply folder (mapcar compiler-constant-value consts)))
+		non-consts)
+	non-consts)))
 
 ;;; Entry point
 
