@@ -1,3 +1,29 @@
+1998-09-30  John Harper  <john@dcs.warwick.ac.uk>
+
+	* html-style.jl: require maildefs (for user-mail-address)
+
+	* remote-ftp.jl (remote-ftp-prompt-regexp): new variable
+
+	* ispell.jl (ispell-region-1): fix some bugs in how the
+	ispell-ignore-word-hook is used
+
+	* compiler.jl (comp-fold-constants): does what it says, in a
+	simple sort of way
+
+1998-09-29  John Harper  <john@dcs.warwick.ac.uk>
+
+	* windows.jl, minor-major.jl, ispell.jl, diff.jl: use `defface'
+	macro to declare/define all faces
+
+	* compiler.jl (comp-compile-cond): where a condition is a
+	constant, force it to be either t or nil. When dead code is
+	detected in conditionals, ignore it correctly
+	(comp-trans-defvar): source transformation to make `defvar'
+	work at other than the top-level
+
+	* lisp.jl (defface): new macro
+	* lisp-mode.jl: set indentation property of `defface'
+
 1998-09-22  John Harper  <john@dcs.warwick.ac.uk>
 
 	* sm-mail-dir.jl (expand-mail-aliases): attempts to expand
