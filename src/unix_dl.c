@@ -191,12 +191,9 @@ load_requires (char *ptr)
     while (*ptr != 0)
     {
 	char *end = ptr + strcspn (ptr, " \t");
-	repv name = rep_string_dupn (ptr, end - ptr);
-	if (find_dl_by_feature (name) == 0)
-	{
-	    if (Fload (name, Qnil, Qnil, Qnil, Qnil) == rep_NULL)
-		return rep_FALSE;
-	}
+	repv sym = Fintern (rep_string_dupn (ptr, end - ptr), Qnil);
+	if (Frequire (sym) == rep_NULL)
+	    return rep_FALSE;
 	ptr = end + strspn (end, " \t");
     }
     return rep_TRUE;
@@ -211,9 +208,10 @@ signal_error (char *msg)
 	fprintf (stderr, "error: %s\n", msg);
 }
 
-void *
+repv
 rep_open_dl_library(repv file_name)
 {
+    repv result = rep_NULL;
     struct dl_lib_info *x = find_dl(file_name);
     if(x == 0)
     {
@@ -336,6 +334,8 @@ rep_open_dl_library(repv file_name)
 	    x->next = dl_list;
 	    dl_list = x;
 
+	    result = Qt;
+
 	    init_func = x_dlsym(handle, "rep_dl_init");
 	    if(init_func != 0)
 	    {
@@ -357,6 +357,13 @@ rep_open_dl_library(repv file_name)
 		}
 		else if (ret && rep_SYMBOLP(ret) && ret != Qt)
 		    x->feature_sym = ret;
+		else if (ret && F_structurep (ret) != Qnil)
+		{
+		    result = ret;
+		    ret = F_structure_name (ret);
+		    if (ret && rep_STRINGP (ret))
+			x->feature_sym = Fintern (ret, Qnil);
+		}
 	    }
 
 	    feature_sym = x_dlsym (handle, "rep_dl_feature");
@@ -371,17 +378,21 @@ rep_open_dl_library(repv file_name)
 	    {
 		while(*functions != 0)
 		{
-		    rep_add_subr(*functions);
+		    rep_add_subr(*functions, rep_TRUE);
 		    functions++;
 		}
 	    }
 
-	    if (x->feature_sym != Qnil)
+	    if (x->feature_sym != Qnil
+		/* XXX kludge: only `provide' if this is not a module */
+		&& F_structurep (result) == Qnil)
+	    {
 		Fprovide (x->feature_sym);
+	    }
 	}
     }
 out:
-    return x;
+    return result;
 }
 
 void
