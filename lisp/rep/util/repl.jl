@@ -174,17 +174,40 @@
        (setq *repl-in-struct* name)))
 (put 'new 'repl-help "STRUCT")
 
+(put 'expand 'repl-command
+     (lambda (form)
+       (format standard-output "%s\n" (%eval-in-structure
+				       `(,macroexpand ',form)
+				       (%intern-structure *repl-in-struct*)))))
+(put 'expand 'repl-help "FORM")
+
+(put 'step 'repl-command
+     (lambda (form)
+       (format standard-output "%s\n" (%eval-in-structure
+				       `(,step ',form)
+				       (%intern-structure *repl-in-struct*)))))
+(put 'step 'repl-help "FORM")
+
 (put 'help 'repl-command
      (lambda ()
-       (let ((commands (apropos "" (lambda (x)
-				     (get x 'repl-command)))))
+       (let* ((commands (sort (apropos "" (lambda (x)
+					    (get x 'repl-command)))))
+	      (count (length commands))
+	      (mid (ceiling (/ count 2))))
 	 (write standard-output "
 Either enter lisp forms to be evaluated, and their result printed, or
-enter a meta-command prefixed by a `,' character.\n\n")
-	 (mapc (lambda (com)
-		 (format standard-output "  ,%s %s\n"
-			 com (or (get com 'repl-help) "")))
-	       (sort commands))
+enter a meta-command prefixed by a `,' character.\n")
+	 (let loop ((i 0)
+		    (left commands)
+		    (right (nthcdr mid commands)))
+	   (when (< i mid)
+	     (format standard-output "\n  ,%-30s"
+		     (format nil "%s %s" (car left)
+			     (or (get (car left) 'repl-help) "")))
+	     (when right
+	       (format standard-output " ,%s %s"
+		       (car right) (or (get (car right) 'repl-help) ""))
+	       (loop (1+ i) (cdr left) (cdr right)))))
 	 (write standard-output #\newline))))
 
 (put 'quit 'repl-command (lambda () (throw 'quit 0)))
