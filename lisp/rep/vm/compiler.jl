@@ -258,7 +258,7 @@ we would like. This is due to the view of folded functions as
 			     (setq body (cons (read src-file) body)))
 			 (end-of-stream)))
 		   (close-file src-file))
-		 (setq body (compile-module-body (nreverse body) nil t t))
+		 (setq body (compile-module-body (nreverse body) t t))
 		 (when (setq dst-file (open-file temp-file 'write))
 		   (condition-case error-info
 		       (unwind-protect
