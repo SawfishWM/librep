@@ -1,3 +1,12 @@
+2001-04-09  John Harper  <jsh@eazel.com>
+
+	merged from HEAD:
+
+	2001-04-05  John Harper  <jsh@eazel.com>
+
+	* numbers.c (INSTALL_LOCALE): fixed a really stupid bug in this
+	macro. It never actually installed the new locale!
+
 2001-03-22  John Harper  <jsh@eazel.com>
 
 	* version 0.13.5

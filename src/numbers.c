@@ -891,6 +891,7 @@ parse_integer_to_float (char *buf, u_int len, u_int radix,
 	    memcpy (copy, tem, len);		\
 	    copy[len] = 0;			\
 	    (var) = copy;			\
+	    setlocale (type, locale);		\
 	}					\
 	else					\
 	    (var) = 0;				\
