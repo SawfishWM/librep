@@ -215,6 +215,14 @@
       (emit-insn '(pop))))
   (put 'case 'scheme-compile-fun compile-case)
 
+  (define (compile-list-tail form)
+    ((get 'nthcdr 'rep-compile-fun) `(nthcdr ,(nth 2 form) ,(nth 1 form))))
+  (put 'list-tail 'scheme-compile-fun compile-list-tail)
+  
+  (define (compile-list-ref form)
+    ((get 'nth 'rep-compile-fun) `(nth ,(nth 2 form) ,(nth 1 form))))
+  (put 'list-ref 'scheme-compile-fun compile-list-ref)
+  
   (defun do-predicate (form)
     (let* ((rep-fun (or (get (car form) 'scheme-compile-rep) (car form)))
 	   (rep-compiler (get rep-fun 'rep-compile-fun)))
@@ -237,7 +245,8 @@
 	    (let ((op (get (cdr cell) 'rep-compile-opcode)))
 	      (when op
 		(put (car cell) 'rep-compile-opcode op)))))
-	'(list list* cons apply
+	'(list list* cons car cdr apply
+	  caar cadr cdar cddr caddr cadddr
 	  (set-car! . rplaca)
 	  (set-cdr! . rplacd)
 	  (string-set! . aset)
