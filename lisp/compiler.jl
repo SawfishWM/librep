@@ -274,34 +274,38 @@ is one of these that form is compiled.")
        (comp-bindings '())
        src-file dst-file form)
     (message (concat "Compiling " file-name "...") t)
-    (when (setq src-file (open-file file-name "r"))
+    (when (setq src-file (open-file file-name 'read))
       (unwind-protect
 	  ;; Pass 1. Scan for top-level definitions in the file.
-	  (while (not (file-eof-p src-file))
-	    (setq form (read src-file))
-	    (cond
-	     ((eq (car form) 'defun)
-	      (comp-remember-fun (nth 1 form) (nth 2 form)))
-	     ((eq (car form) 'defmacro)
-	      (comp-remember-fun (nth 1 form) (nth 2 form))
-	      (setq comp-macro-env (cons (cons (nth 1 form)
-					       (cons 'lambda (nthcdr 2 form)))
-					 comp-macro-env)))
-	     ((eq (car form) 'defsubst)
-	      (comp-remember-fun (nth 1 form) (nth 2 form))
-	      (setq comp-inline-env (cons (cons (nth 1 form)
-						(cons 'lambda (nthcdr 2 form)))
-					  comp-inline-env)))
-	     ((eq (car form) 'defvar)
-	      (comp-remember-var (nth 1 form)))
-	     ((eq (car form) 'defconst)
-	      (comp-remember-var (nth 1 form))
-	      (setq comp-const-env (cons (cons (nth 1 form)
-					       (nth 2 form))
-					 comp-const-env)))))
+	  (condition-case nil
+	      (while t
+		(setq form (read src-file))
+		(cond
+		 ((eq (car form) 'defun)
+		  (comp-remember-fun (nth 1 form) (nth 2 form)))
+		 ((eq (car form) 'defmacro)
+		  (comp-remember-fun (nth 1 form) (nth 2 form))
+		  (setq comp-macro-env (cons (cons (nth 1 form)
+						   (cons 'lambda
+							 (nthcdr 2 form)))
+					     comp-macro-env)))
+		 ((eq (car form) 'defsubst)
+		  (comp-remember-fun (nth 1 form) (nth 2 form))
+		  (setq comp-inline-env (cons (cons (nth 1 form)
+						    (cons 'lambda
+							  (nthcdr 2 form)))
+					      comp-inline-env)))
+		 ((eq (car form) 'defvar)
+		  (comp-remember-var (nth 1 form)))
+		 ((eq (car form) 'defconst)
+		  (comp-remember-var (nth 1 form))
+		  (setq comp-const-env (cons (cons (nth 1 form)
+						   (nth 2 form))
+					     comp-const-env)))))
+	    (end-of-stream))
 	(close-file src-file))
-      (when (and (setq src-file (open-file file-name "r"))
-		 (setq dst-file (open-file (concat file-name ?c) "w")))
+      (when (and (setq src-file (open-file file-name 'read))
+		 (setq dst-file (open-file (concat file-name ?c) 'write)))
 	(condition-case error-info
 	    (unwind-protect
 		(progn
@@ -317,17 +321,19 @@ is one of these that form is compiled.")
 			  (minor-version-number)
 			  bytecode-major bytecode-minor
 			  (major-version-number) (minor-version-number))
-		  (while (not (file-eof-p src-file))
-		    (when (setq form (read src-file))
-		      (cond
-		       ((memq (car form) '(defun defmacro defvar
-					    defconst defsubst require))
-			(setq form (comp-compile-top-form form)))
-		       ((memq (car form) comp-top-level-compiled)
-			;; Compile this form
-			(setq form (compile-form form))))
-		      (when form
-			(print form dst-file)))))
+		  (condition-case nil
+		      (while t
+			(when (setq form (read src-file))
+			  (cond
+			   ((memq (car form) '(defun defmacro defvar
+						defconst defsubst require))
+			    (setq form (comp-compile-top-form form)))
+			   ((memq (car form) comp-top-level-compiled)
+			    ;; Compile this form
+			    (setq form (compile-form form))))
+			  (when form
+			    (print form dst-file))))
+		    (end-of-stream)))
 	      (close-file dst-file)
 	      (close-file src-file))
 	  (error
@@ -354,7 +360,7 @@ EXCLUDE-LIST is a list of files which shouldn't be compiled."
       (when (and (string-match "\\.jl$" (car dir))
 		 (null (member (car dir) exclude-list)))
 	(let*
-	    ((file (file-name-concat dir-name (car dir)))
+	    ((file (expand-file-name (car dir) dir-name))
 	     (cfile (concat file ?c)))
 	  (when (or (not (file-exists-p cfile))
 		    (file-newer-than-file-p file cfile))
@@ -383,7 +389,7 @@ that files which shouldn't be compiled aren't."
   (let
       ((comp-write-docs t)
        (comp-batch-compile t)
-       (file (file-name-concat lisp-lib-dir "compiler.jl")))
+       (file (expand-file-name "compiler.jl" lisp-lib-dir)))
     (when (or (not (file-exists-p (concat file ?c)))
 	      (file-newer-than-file-p file (concat file ?c)))
       (compile-file file))))
@@ -433,9 +439,9 @@ that files which shouldn't be compiled aren't."
       (when comp-write-docs
 	(cond
 	 ((stringp (nth 3 form))
-	  (rplaca (nthcdr 3 form) (add-doc-string (nth 3 form))))
+	  (rplaca (nthcdr 3 form) (add-documentation (nth 3 form))))
 	 ((stringp (nth 4 form))
-	  (rplaca (nthcdr 4 form) (add-doc-string (nth 4 form))))))
+	  (rplaca (nthcdr 4 form) (add-documentation (nth 4 form))))))
       (unless (assq (nth 1 form) comp-inline-env)
 	(comp-error "Inline function wasn't in environment" (nth 1 form)))
       form)
@@ -444,7 +450,7 @@ that files which shouldn't be compiled aren't."
 	  ((value (eval (nth 2 form)))
 	   (doc (nth 3 form)))
 	(when (and comp-write-docs (stringp doc))
-	  (rplaca (nthcdr 3 form) (add-doc-string doc)))
+	  (rplaca (nthcdr 3 form) (add-documentation doc)))
 	(unless (assq (nth 1 form) comp-const-env)
 	  (comp-error "Constant wasn't in environment" (nth 1 form))))
       form)
@@ -452,7 +458,7 @@ that files which shouldn't be compiled aren't."
       (let
 	  ((doc (nth 3 form)))
 	(when (and comp-write-docs (stringp doc))
-	  (rplaca (nthcdr 3 form) (add-doc-string doc))))
+	  (rplaca (nthcdr 3 form) (add-documentation doc))))
       form)
      ((eq fun 'require)
       (eval form)
@@ -549,15 +555,23 @@ that files which shouldn't be compiled aren't."
      (comp-test-funcall (car form) (length (cdr form)))
      (let
 	 (fun)
-       ;; Check if there's a special handler for this function
-       (if (and (symbolp (car form))
-		(setq fun (get (car form) 'compile-fun)))
-	   (funcall fun form)
-	 ;; Expand macros, and try again for a special handler
-	 (setq form (macroexpand form comp-macro-env))
-	 (if (and (symbolp (car form))
-		  (setq fun (get (car form) 'compile-fun)))
-	     (funcall fun form)
+       (cond
+	;; Check if there's a source code transformation
+	((and (symbolp (car form))
+	      (setq fun (get (car form) 'compile-transform)))
+	 ;; Yes, there is, so call it.
+	 (comp-compile-form (funcall fun form)))
+
+	;; Check if there's a special handler for this function
+	((and (symbolp (car form))
+	      (setq fun (get (car form) 'compile-fun)))
+	 (funcall fun form))
+
+	(t
+	 ;; Expand macros
+	 (if (not (eq (setq fun (macroexpand form comp-macro-env)) form))
+	     ;; The macro did something, so start again
+	     (comp-compile-form fun)
 	   ;; No special handler, so do it ourselves
 	   (setq fun (car form))
 	   (cond
@@ -581,8 +595,9 @@ that files which shouldn't be compiled aren't."
 		 (setq i (1+ i)
 		       form (cdr form)))
 	       (comp-write-op op-call i)
-	       (comp-dec-stack i))))))))
+	       (comp-dec-stack i)))))))))
     (t
+     ;; Not a variable reference or a function call; so what is it?
      (comp-compile-constant form))))
 
 ;; Push a constant onto the stack
@@ -637,7 +652,7 @@ that files which shouldn't be compiled aren't."
        doc interactive form)
     (when (stringp (car body))
       (setq doc (if comp-write-docs
-		    (add-doc-string (nth 2 list))
+		    (add-documentation (nth 2 list))
 		  (nth 2 list))
 	    body (cdr body)))
     (when (eq (car (car body)) 'interactive)
@@ -714,6 +729,10 @@ that files which shouldn't be compiled aren't."
 				  comp-output))
 	  label (cdr label))))
 
+
+;; Source code transformations. These are basically macros that are only
+;; used at compile-time; currently there aren't any..
+  
 
 ;; Functions which compile non-standard functions (ie special-forms)
 
