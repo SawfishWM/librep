@@ -357,6 +357,25 @@ fi
 AC_MSG_RESULT([${with_value_type}])
 AC_DEFINE_UNQUOTED(rep_PTR_SIZED_INT, ${with_value_type})
 
+dnl Find the size (in bits) of the chosen value type
+AC_MSG_CHECKING([for size of Lisp value type])
+AC_ARG_WITH(value-sizeof,
+ [  --with-value-sizeof=N   Size (in bytes) of value type. [N=<probed>]], [],
+ [with_value_sizeof="undef"])
+if test "${with_value_sizeof}" = "undef"; then
+  dnl the following fragment is inspired by AC_CHECK_SIZEOF
+  AC_TRY_RUN([#include <stdio.h>
+	      main () {
+		FILE *f = fopen ("conftestval", "w");
+		if (!f) exit (1);
+		fprintf (f, "%d\n", sizeof (${with_value_type}));
+		exit (0);
+	      }],
+	      [ with_value_sizeof=`cat conftestval`; rm -f conftestval])
+fi
+AC_MSG_RESULT([${with_value_sizeof} bytes])
+AC_DEFINE_UNQUOTED(rep_PTR_SIZED_INT_SIZEOF, ${with_value_sizeof})
+
 dnl What's the suffix to get an integer constant of the above size?
 AC_MSG_CHECKING([for value type constant suffix])
 case "${with_value_type}" in
@@ -396,12 +415,13 @@ AC_TRY_COMPILE([],[long long int foo = 42;],
 	       [AC_MSG_RESULT(no)])
 
 dnl This is the malloc granularity. It's unlikely that anything has
-dnl less alignment than the default value of four bytes
+dnl less alignment than the default value of the number of bytes in
+dnl the value type
 AC_ARG_WITH(malloc-alignment,
  [  --with-malloc-alignment=BYTES
 			  Must be less than or equal to the alignment
-			   returned by the malloc function. [BYTES=4]], [],
- [with_malloc_alignment=4])
+			   returned by the malloc function. [BYTES=N]], [],
+ [with_malloc_alignment=${with_value_sizeof}])
 AC_DEFINE_UNQUOTED(rep_MALLOC_ALIGNMENT, ${with_malloc_alignment})
 
 dnl Check for gcc crashes on alpha (seems to be fixed in new snapshots, but
@@ -417,7 +437,8 @@ AC_MSG_CHECKING([for stack growth direction])
 AC_ARG_WITH(stack-direction,
  [  --with-stack-direction=DIR
 			  Stack growth direction. -1 for downwards,
-			   +1 for upwards.], [],
+			   +1 for upwards.],
+ [AC_MSG_RESULT(${with_stack_direction})],
  [with_stack_direction=unknown])
 if test "${with_stack_direction}" = unknown; then
   case ${host} in
