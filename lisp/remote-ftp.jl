@@ -777,6 +777,7 @@ file types.")
 					 type		;access type
 					 file-name	;remote name
 					 local-file))	;local copy
+	  (remote-register-file-handle local-fh)
 	  local-fh))
        (t
 	(let
