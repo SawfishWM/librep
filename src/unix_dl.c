@@ -86,6 +86,25 @@ dlclose (void *handle)
 }
 #endif
 
+#ifndef DLSYM_NEED_USCORE
+# define x_dlsym dlsym
+#else
+static void *
+x_dlsym (void *handle, char *sym)
+{
+    void *ptr = 0;
+    char *tem = rep_alloc (strlen(sym) + 2);
+    if (tem != 0)
+    {
+	tem[0] = '_';
+	strcpy (tem + 1, sym);
+	ptr = dlsym (handle, tem);
+	free (tem);
+    }
+    return ptr;
+}
+#endif
+
 static struct dl_lib_info *
 find_dl(repv file)
 {
@@ -205,7 +224,7 @@ rep_open_dl_library(repv file_name)
 	    x->file_name = file_name;
 	    x->handle = handle;
 
-	    init_func = dlsym(handle, "rep_dl_init");
+	    init_func = x_dlsym(handle, "rep_dl_init");
 	    if(init_func != 0)
 	    {
 		repv ret = init_func(file_name);
@@ -218,7 +237,7 @@ rep_open_dl_library(repv file_name)
 		}
 	    }
 
-	    feature_sym = dlsym (handle, "rep_dl_feature");
+	    feature_sym = x_dlsym (handle, "rep_dl_feature");
 	    if (feature_sym != 0
 		&& *feature_sym != 0 && rep_SYMBOLP(*feature_sym))
 	    {
@@ -228,7 +247,7 @@ rep_open_dl_library(repv file_name)
 	    else
 		x->feature_sym = Qnil;
 
-	    functions = dlsym(handle, "rep_dl_subrs");
+	    functions = x_dlsym(handle, "rep_dl_subrs");
 	    if(functions != 0)
 	    {
 		while(*functions != 0)
@@ -265,7 +284,7 @@ rep_kill_dl_libraries(void)
     while(x != 0)
     {
 	struct dl_lib_info *next = x->next;
-	void (*exit_func)(void) = dlsym(x->handle, "rep_dl_kill");
+	void (*exit_func)(void) = x_dlsym(x->handle, "rep_dl_kill");
 	if(exit_func != 0)
 	    exit_func();
 #if 0
@@ -285,7 +304,7 @@ rep_find_dl_symbol (repv feature, char *symbol)
 {
     struct dl_lib_info *x = find_dl_by_feature (feature);
     if (x != 0)
-	return dlsym (x->handle, symbol);
+	return x_dlsym (x->handle, symbol);
     else
 	return 0;
 }
