@@ -1,3 +1,11 @@
+1999-01-11  John Harper  <john@dcs.warwick.ac.uk>
+
+	* dired.jl (dired-do-copy, dired-do-rename): set default file
+	name to name of source file
+
+	* prompt.jl (prompt-for-file, prompt-for-directory): when
+	setting prompt-default-value, call expand-file-name on it
+
 1999-01-10  John Harper  <john@dcs.warwick.ac.uk>
 
 	* edit.jl (save-excursion, save-restriction): use un-interned
