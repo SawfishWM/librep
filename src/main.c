@@ -39,8 +39,10 @@ _PR int recurse_depth;
 int recurse_depth = -1;
 
 _PR VALUE sym_exit, sym_quit, sym_top_level, sym_command_line_args;
-DEFSYM(exit, "exit"); DEFSYM(quit, "quit");
-DEFSYM(top_level, "top-level"); DEFSYM(command_line_args, "command-line-args");
+DEFSYM(exit, "exit");
+DEFSYM(quit, "quit");
+DEFSYM(top_level, "top-level");
+DEFSYM(command_line_args, "command-line-args");
 
 static u_char *init_script = INIT_SCR;
 

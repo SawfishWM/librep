@@ -79,9 +79,10 @@ struct Proc
     ((p)->pr_Car = (((p)->pr_Car & ~(PR_ACTIVE | PR_STOPPED)) | (s)))
 
 /* Connection types, pty-echo is a pty with the ECHO bit set in c_lflag */
-static DEFSYM(pipe, "pipe");
-static DEFSYM(pty, "pty");
-static DEFSYM(pty_echo, "pty-echo");
+_PR VALUE sym_pipe, sym_pty, sym_pty_echo;
+DEFSYM(pipe, "pipe");
+DEFSYM(pty, "pty");
+DEFSYM(pty_echo, "pty-echo");
 
 #define PR_CONN_PTY_P(p) \
     (((p)->pr_ConnType == sym_pty) || ((p)->pr_ConnType == sym_pty_echo))

@@ -48,7 +48,8 @@ _PR VALUE obarray;
 VALUE obarray;
 
 _PR VALUE sym_nil, sym_t;
-DEFSYM(nil, "nil"); DEFSYM(t, "t");
+DEFSYM(nil, "nil");
+DEFSYM(t, "t");
 
 _PR VALUE sym_variable_documentation;
 DEFSYM(variable_documentation, "variable-documentation");

@@ -63,8 +63,11 @@ DEFSYM(debug_exit, "debug-exit");
 DEFSYM(debug_error_entry, "debug-error-entry");
 
 _PR VALUE sym_quote, sym_lambda, sym_macro, sym_autoload, sym_function;
-DEFSYM(quote, "quote"); DEFSYM(lambda, "lambda"); DEFSYM(macro, "macro");
-DEFSYM(autoload, "autoload"); DEFSYM(function, "function");
+DEFSYM(quote, "quote");
+DEFSYM(lambda, "lambda");
+DEFSYM(macro, "macro");
+DEFSYM(autoload, "autoload");
+DEFSYM(function, "function");
 
 _PR VALUE sym_standard_input, sym_standard_output, sym_defun;
 DEFSYM(standard_input, "standard-input");
@@ -73,7 +76,8 @@ DEFSYM(defun, "defun");
 
 _PR VALUE sym_amp_optional, sym_amp_rest, sym_amp_aux;
 DEFSYM(amp_optional, "&optional");
-DEFSYM(amp_rest, "&rest"); DEFSYM(amp_aux, "&aux");
+DEFSYM(amp_rest, "&rest");
+DEFSYM(amp_aux, "&aux");
 
 /* When a `throw' happens a function stuffs a cons-cell in here with,
    (TAG . VALUE).
@@ -622,7 +626,7 @@ readl(VALUE strm, register int *c_p)
 		    VALUE vec = read_vector(strm, c_p);
 		    if(vec != LISP_NULL)
 		    {
-			if(VVECT_LEN(vec) == COMPILED_NSLOTS)
+			if(VVECT_LEN(vec) >= COMPILED_MIN_SLOTS)
 			{
 			    VCOMPILED(vec)->car = (VCOMPILED(vec)->car
 						   & ~CELL8_TYPE_MASK)
@@ -1059,14 +1063,14 @@ again:
 	    lc.args_evalled_p = eval_args ? sym_nil : sym_t;
 	    lisp_call_stack = &lc;
 
-	    boundlist = bindlambdalist(VVECTI(fun, COMPILED_LAMBDA),
+	    boundlist = bindlambdalist(COMPILED_LAMBDA(fun),
 				       arglist, eval_args);
 	    if(boundlist != LISP_NULL)
 	    {
 		GC_root gc_boundlist;
 		PUSHGC(gc_boundlist, boundlist);
-		result = cmd_jade_byte_code(VVECTI(fun, COMPILED_CODE),
-					    VVECTI(fun, COMPILED_CONSTANTS),
+		result = cmd_jade_byte_code(COMPILED_CODE(fun),
+					    COMPILED_CONSTANTS(fun),
 					    MAKE_INT(COMPILED_STACK(fun)));
 		POPGC;
 		unbind_symbols(boundlist);
@@ -1658,16 +1662,15 @@ top:
 		lc.args = VCDR(form);
 		lc.args_evalled_p = TRUE;
 		lisp_call_stack = &lc;
-		boundlist = bindlambdalist(VVECTI(car, COMPILED_LAMBDA),
+		boundlist = bindlambdalist(COMPILED_LAMBDA(car),
 					   VCDR(form), FALSE);
 		if(boundlist != LISP_NULL)
 		{
 		    GC_root gc_boundlist;
 		    PUSHGC(gc_boundlist, boundlist);
-		    form = cmd_jade_byte_code
-			     (VVECTI(car, COMPILED_CODE),
-			      VVECTI(car, COMPILED_CONSTANTS),
-			      MAKE_INT(COMPILED_STACK(car)));
+		    form = cmd_jade_byte_code(COMPILED_CODE(car),
+					      COMPILED_CONSTANTS(car),
+					      MAKE_INT(COMPILED_STACK(car)));
 		    POPGC;
 		    unbind_symbols(boundlist);
 		}
