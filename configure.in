@@ -25,7 +25,7 @@ AC_CONFIG_HEADER(config.h src/rep.h)
 AC_CONFIG_AUX_DIR(etc)
 
 dnl Release versioning info
-version="0.6.2"
+version="0.6.3"
 
 dnl libtool versioning info: `CURRENT:REVISION:AGE'. CURRENT is the
 dnl current interface id, REVISION is the version number of this
@@ -90,17 +90,32 @@ doug_lea_malloc=yes
 AC_CHECK_FUNC(malloc_get_state, , doug_lea_malloc=no)
 AC_CHECK_FUNC(malloc_set_state, , doug_lea_malloc=no)
 if test "$doug_lea_malloc" = "no"; then
-  EXTRA_LIBOBJS="${EXTRA_LIBOBJS} dlmalloc.o"
+  case ${host} in
+    *-dec-osf*)
+      # dlmalloc is broken on Tru64
+      AC_DEFINE(LIBC_MALLOC)
+      ;;
+    *)
+      EXTRA_LIBOBJS="${EXTRA_LIBOBJS} dlmalloc.o"
+      AC_DEFINE(DOUG_LEA_MALLOC)
+      ;;
+  esac
 else
+  AC_DEFINE(DOUG_LEA_MALLOC)
   AC_DEFINE(LIBC_MALLOC)
 fi
-AC_DEFINE(DOUG_LEA_MALLOC)
 
-dnl Check for dynamic loading; currently only <dlfcn.h> with dlopen() etc
-AC_CHECK_HEADER(dlfcn.h,
-[AC_DEFINE(HAVE_DLFCN_H)
- AC_DEFINE(HAVE_DYNAMIC_LOADING)],
-[AC_MSG_WARN([Can't figure out how to do dynamic loading])])
+dnl Check for dynamic loading
+AC_CHECK_HEADER(dlfcn.h, [AC_DEFINE(HAVE_DLFCN_H)])
+AC_CHECK_HEADER(dl.h, [AC_DEFINE(HAVE_DL_H)])
+dl_ok=no
+AC_CHECK_FUNC(dlopen, [AC_DEFINE(HAVE_DLOPEN) dl_ok=yes])
+AC_CHECK_FUNC(shl_load, [AC_DEFINE(HAVE_SHL_LOAD) dl_ok=yes])
+if test $dl_ok = yes; then
+  AC_DEFINE(HAVE_DYNAMIC_LOADING)
+else
+  AC_MSG_ERROR([can't figure out how to do dynamic loading])
+fi
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -113,7 +128,7 @@ dnl Checks for library functions.
 AC_FUNC_ALLOCA
 AC_FUNC_MEMCMP
 AC_FUNC_VPRINTF
-AC_CHECK_FUNCS(getcwd gethostname select socket strcspn strerror strstr stpcpy strtol psignal strsignal snprintf grantpt lrand48 getpagesize setitimer dladdr)
+AC_CHECK_FUNCS(getcwd gethostname select socket strcspn strerror strstr stpcpy strtol psignal strsignal snprintf grantpt lrand48 getpagesize setitimer dladdr dlerror)
 AC_REPLACE_FUNCS(realpath)
 
 dnl Custom tests
@@ -123,7 +138,7 @@ if test "x${GCC}" = "xyes"; then
   MAKEDEP='$(CC) -MM -MG'
 else
   case ${host} in
-    *-dec-*)
+    *-dec-osf*)
       # works on Tru64
       MAKEDEP='$(CC) -M'
       ;;
