@@ -156,7 +156,7 @@
     (rep#write (or port standard-output) #\newline))
 
   (define (write-char char &optional port)
-    (rep#write (rep#or port standard-output) char))
+    (rep#write (or port standard-output) char))
 
 ;;; system interface
 
