@@ -1,5 +1,8 @@
 Thu Apr 30 10:43:36 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* buffer-summary.jl (bs-print-item): substitute `Fundamental'
+	for `Generic'
+
 	* help.jl (lisp-documentation-file): name of the file
 	containing the Lisp library's documentation strings
 	(add-documentation, get-documentation): use the
