@@ -1,3 +1,9 @@
+2000-07-29  John Harper  <john@dcs.warwick.ac.uk>
+
+	* configure.in: signal an error if no gmp and --without-gmp
+	wasn't given (the error message says to use --without-gmp if
+	that's want is wanted)
+
 2000-07-28  John Harper  <john@dcs.warwick.ac.uk>
 
 	* Makedefs.in: in COMPILE_ENV changed REPEXECDIR to

@@ -511,6 +511,7 @@ extern void rep_alias_structure (const char *name);
 extern repv rep_bootstrap_structure (const char *s);
 extern repv rep_add_subr(rep_xsubr *, rep_bool);
 extern void rep_structure_exports_all (repv s, rep_bool status);
+extern void rep_structure_set_binds (repv s, rep_bool status);
 
 /* from tuples.c */
 extern repv rep_make_tuple (repv car, repv a, repv b);

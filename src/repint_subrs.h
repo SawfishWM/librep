@@ -102,6 +102,7 @@ extern rep_struct_node *rep_search_imports (rep_struct *s, repv var);
 extern repv Fmake_structure (repv, repv, repv, repv);
 extern repv F_structure_ref (repv, repv);
 extern repv Fstructure_set (repv, repv, repv);
+extern repv Fstructure_define (repv, repv, repv);
 extern repv Fstructure_bound_p (repv, repv);
 extern repv Fexternal_structure_ref (repv, repv);
 extern repv Fintern_structure (repv);
@@ -114,6 +115,7 @@ extern void rep_structures_init (void);
 extern int rep_pre_symbols_init(void);
 extern void rep_symbols_init(void);
 extern int rep_allocated_funargs, rep_used_funargs;
+extern repv Freal_set (repv var, repv value);
 
 /* from tuples.c */
 extern int rep_allocated_tuples, rep_used_tuples;

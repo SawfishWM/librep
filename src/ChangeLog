@@ -1,3 +1,59 @@
+2000-07-31  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.c: changed error message for void-value
+
+	* symbols.c, record-profile.c, files.c: use Fstructure_define
+	instead of Fstructure_set where appropriate
+
+	* symbols.c (Fset): now uses Fstructure_define (for C code)
+	(Freal_set): the actual Lisp `set' function (doesn't define)
+	(F_define): new special form
+
+	* structures.c (Fstructure_define): new function
+	(Fstructure_set): only create bindings if rep_STF_SET_BINDS
+	flag is set for the structure (unset by default)
+	(Fbinding_immutable_p): check imported bindings as well
+	(Fstructure_exports_all, rep_structure_exports_all): added
+
+	* repint.h (rep_STF_SET_BINDS): new flag
+
+	* lispmach.c, bytecodes.h (OP__DEFINE): new instruction
+
+	* symbols.c (Fdefvar): ignore non-stringp documentation
+
+2000-07-30  John Harper  <john@dcs.warwick.ac.uk>
+
+	* repint.h: added `#define rep_INTERNAL 1'
+
+	* rep_lisp.h, datums.c: allocate the '() datum statically, then
+	#define Qnil to this location internally to the library
+
+	* values.c, repint.h, main.c: hid dumping-specific code behind
+	`#ifdef ENABLE_BROKEN_DUMPING'
+
+	* values.c (rep_mark_value): removed some redundant tests
+
+	* datums.c (Qnil): now defined here, no longer a symbol, but a
+	datum denoting end-of-list and boolean-false
+	* symbols.c: don't intern `nil'
+
+	* lispcmds.c, lisp.c: minor changes for Qnil no longer being a
+	symbol
+
+2000-07-29  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispmach.c, bytecodes.h (OP_APPLY): new instruction, applies
+	a function to a list of arguments. Implementation handles tail
+	recursive calls properly (also bumped bytecode minor version)
+
+	* lisp.c (eval): when recognizing tail recursive function
+	calls, also handle calls made using the `apply' subr
+
+	* symbols.c, datums.c: #f and #t are now just normal symbols.
+	However their `#' doesn't get quoted when printed
+
+	* numbers.c (Fdivide): if only one argument, compute (/ 1 X)
+
 2000-07-28  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lispcmds.c (rep_lispcmds_init): check REP_LOAD_PATH and

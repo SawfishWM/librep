@@ -85,6 +85,8 @@ Outstanding bugs
 General programming tasks:
 ==========================
 
+ + add a facility for dumping a set of structures, for later reloading
+
  + should index doc strings by MODULE.FUNCTION not just FUNCTION
 
  + %make-structure shouldn't map names to structures itself
@@ -141,7 +143,7 @@ General programming tasks:
 
    cond defvar lambda progn quote setq
 
- - subrs can't be called tail recursively (e.g. call/cc apply ..?)
+ - most subrs can't be called tail recursively (apply is special-cased)
 
  - add a hygienic macro facility
 

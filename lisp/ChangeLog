@@ -1,3 +1,81 @@
+2000-07-31  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep.jl: always define _
+
+	* unscheme.jl, scheme.jl, scheme/syntax-funs.jl: export
+	\#define as %define, then use this for `define' forms
+
+	* rep/data/symbol-table.jl, rep/io/file-handlers.jl,
+	rep/util/gaol.jl: use structure-define instead of structure-set
+
+	* rep/user.jl: setq creates bindings in this structure
+
+	* rep/vm/compiler/unscheme.jl, rep/vm/compiler/scheme.jl,
+	rep/vm/compiler/rep.jl: use %define instruction
+
+	* rep/vm/compiler/modules.jl (compile-structure-def): don't
+	drop unknown configuration items
+
+	* rep/vm/disassembler.jl, rep/vm/bytecode-defs.jl (%define):
+	new instruction
+
+	* rep/lang/interpreter.jl (#f, #t): set to '() and 't respectively
+
+	* rep/lang/interpreter.jl, rep/lang/math.jl,
+	rep/lang/define.jl, rep/lang/data.jl,
+	rep/lang/module-system.jl: use %define to create definitions
+
+	* rep/lang/module-system.jl: new clauses `(set-binds)' and
+	`(export-all)' in module configuration language
+
+2000-07-30  John Harper  <john@dcs.warwick.ac.uk>
+
+	* dump.jl: deleted this file, it needs a lot of attention
+	before being useful again..
+
+	* unscheme.jl, scheme.jl, scheme/syntax-funs.jl,
+	scheme/data.jl, unscheme/data.jl: various changes for distinct
+	() object. This means that the scheme implementations no longer
+	have to confuse 'nil and '()
+
+	* rep/vm/compiler/const.jl (compile-constant): check for '()
+	not 'nil when emitting `nil' instruction
+
+	* rep/lang/interpreter.jl: (defconst `nil' ()) and (defconst t t),
+	exporting both of them
+
+	* rep/user.jl: call this structure `user', not `rep.user'
+
+	* rep/vm/compiler/rep.jl (compile-list*): compile `list*' forms
+	into a sequence of `cons' instructions
+	* rep/vm/compiler/unscheme.jl, rep/vm/compiler/scheme.jl: use
+	rep list* compiler
+
+2000-07-29  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep/vm/compiler/rep.jl (compile-apply): compiles `apply'
+	calls
+
+	* rep/vm/disassembler.jl, rep/vm/bytecode-defs.jl: new
+	instruction `apply'. Bumped bytecode minor version
+
+	* rep/vm/compiler.jl, rep/vm/compiler/unscheme.jl: support
+	for unscheme language
+
+	* unscheme.jl, unscheme/syntax.jl, unscheme/syntax-funs.jl,
+	unscheme/misc.jl, unscheme/data.jl: _Another_ scheme
+	implementation! This one intentionally ignores the Scheme
+	standard where it helps the language fit the rep environment
+	(see unscheme.jl for the details)
+
+	* scheme/utils.jl: define and export #f and #t as themselves
+
+	* scheme/syntax-funs.jl: don't depend on value of #f, just
+	quote and return it where necessary
+
+	* scheme/data.jl: no need for special `/'. Redefine symbol? to
+	ignore #f and #t
+
 2000-07-28  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep/lang/define.jl (define-macro): new macro, similar to
