@@ -413,6 +413,7 @@ that files which shouldn't be compiled aren't."
     ;; Now transform the intermediate code to byte codes
     (when *compiler-debug*
       (format standard-error "lap-2 code: %S\n\n" (fluid intermediate-code)))
-    (list 'jade-byte-code (assemble-bytecodes (fluid intermediate-code))
+    (list 'run-byte-code
+	  (assemble-bytecodes (fluid intermediate-code))
 	  (make-constant-vector)
 	  (+ (fluid max-stack) (ash (fluid max-b-stack) 16))))))
