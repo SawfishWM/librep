@@ -279,7 +279,6 @@ check_for_zombies(void)
 		    break;
 		}
 	    }
-	    assert(pr != 0);
 	}
 	else if(pid == 0)
 	    break;
