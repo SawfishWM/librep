@@ -120,7 +120,7 @@ top:
 	if (rep_FILEP(stream))
 	{
 	    if(rep_NILP(rep_FILE(stream)->name))
-		return rep_unbound_file_error(stream);
+		c = EOF;
 	    else if(rep_LOCAL_FILE_P(stream))
 		c = getc(rep_FILE(stream)->file.fh);
 	    else
