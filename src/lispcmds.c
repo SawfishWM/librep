@@ -1586,6 +1586,8 @@ research:
 	    if(trying_dl)
 		i = 0;
 #endif
+	    if (rep_SYM(Qinterpreted_mode)->value != Qnil)
+		i = 0;
 	    for(; i >= 0; i--)
 	    {
 #ifdef HAVE_DYNAMIC_LOADING
