@@ -1,5 +1,11 @@
 2000-01-25  John Harper  <john@dcs.warwick.ac.uk>
 
+	* unix_main.c (interrupt_signal_handler,
+	termination_signal_handler): if a signal arrives before a
+	previous signal has been handled (i.e. the system is
+	unreponsive) then raise the signal causing the default action
+	(i.e. termination)
+
 	* rep-xgettext.jl: support for outputting strings as a file of
 	C code
 
