@@ -208,22 +208,15 @@
     (let
 	;; find language pass-1 and pass-2 compilers
 	((pass-1 (get-language-property 'compiler-pass-1))
-	 (pass-2 (get-language-property 'compiler-pass-2))
-	 next-body)
+	 (pass-2 (get-language-property 'compiler-pass-2)))
 
       ;; pass 1. remember definitions in the body for pass 2
       (when pass-1
-	(mapc (lambda (form)
-		(setq next-body (cons (pass-1 form) next-body))) body)
-	(setq body next-body)
-	(setq next-body nil))
+	(setq body (pass-1 body)))
 
       ;; pass 2. the actual compilation
       (when pass-2
-	(mapc (lambda (form)
-		(setq next-body (cons (pass-2 form) next-body))) body)
-	(setq body next-body)
-	(setq next-body nil))
+	(setq body (pass-2 body)))
 
       ;; return the compiled representation of the body
       body)))
