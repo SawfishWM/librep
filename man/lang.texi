@@ -715,7 +715,7 @@ Returns @code{t} if @var{object} is a number.
 
 
 @node Arithmetic Functions, Integer Functions, , Numbers
-@section Arithmetic Functions
+@subsection Arithmetic Functions
 @cindex Arithmetic Functions
 @cindex Numbers, arithmetic functions
 
@@ -781,7 +781,7 @@ Returns @var{number} minus one.
 
 
 @node Integer Functions, Rational Functions, Arithmetic Functions, Numbers
-@section Integer Functions
+@subsection Integer Functions
 @cindex Integer functions
 @cindex Numbers, integer functions
 
@@ -816,7 +816,7 @@ Return the lowest common multiple of integers @var{x} and @var{y}.
 
 
 @node Rational Functions, Real Number Functions, Integer Functions, Numbers
-@section Rational Functions
+@subsection Rational Functions
 @cindex Rational functions
 @cindex Numbers, rational functions
 
@@ -836,7 +836,7 @@ Returns an inexact version of rational number @var{x}.
 
 
 @node Real Number Functions, Mathematical Functions, Rational Functions, Numbers
-@section Real Number Functions
+@subsection Real Number Functions
 @cindex Real number functions
 @cindex Numbers, real number functions
 
@@ -870,7 +870,7 @@ accuracy.
 
 
 @node Mathematical Functions, Bitwise Functions, Real Number Functions, Numbers
-@section Mathematical Functions
+@subsection Mathematical Functions
 @cindex Mathematical functions
 @cindex Numbers, mathematical functions
 
@@ -923,7 +923,7 @@ error is signalled (mathematically should return a complex number).
 
 
 @node Bitwise Functions, Numeric Predicates, Mathematical Functions, Numbers
-@section Bitwise Functions
+@subsection Bitwise Functions
 @cindex Bitwise functions
 @cindex Numbers, bitwise functions
 
@@ -994,7 +994,7 @@ This function inverts all the bits in @var{number}.
 
 
 @node Numeric Predicates, Random Numbers, Bitwise Functions, Numbers
-@section Numeric Predicates
+@subsection Numeric Predicates
 @cindex Numeric predicates
 @cindex Numbers, predicates on
 @cindex Predicates on numbers
