@@ -63,6 +63,10 @@ Ctrl-c Ctrl-b	: Print backtrace
 Ctrl-c Ctrl-x	: Set value of form\n\n"))
 
 
+
+;; Form stopped on
+(defvar debug-obj nil)
+
 ;;;###autoload
 (defun debug-entry (debug-obj debug-depth)
   (with-buffer debug-buffer
