@@ -186,39 +186,54 @@ proc_notification(void)
 static bool
 check_for_zombies(void)
 {
-    int status;
-    pid_t pid;
-
     if(!got_sigchld)
 	return FALSE;
 
     got_sigchld = FALSE;
-    while((pid = waitpid(-1, &status, WNOHANG | WUNTRACED)) > 0
-	  || errno == EINTR)
+    while(process_run_count > 0)
     {
-	struct Proc *pr = process_chain;
-	while(pr)
+	struct Proc *pr;
+	int status;
+	pid_t pid;
+
+	pid = waitpid(-1, &status, WNOHANG | WUNTRACED);
+	if(pid > 0)
 	{
-	    if((pr->pr_Status > 0) && (pr->pr_Pid == pid))
+	    /* Got a process id, find its process structure. */
+	    for(pr = process_chain; pr != 0; pr = pr->pr_Next)
+	    {
+		if((pr->pr_Status > 0) && (pr->pr_Pid == pid))
+		{
+		    /* Got it. */
+		    if(WIFSTOPPED(status))
+		    {
+			/* Process is suspended. */
+			pr->pr_Status = PR_STOPPED;
+			queue_notify(pr);
+		    }
+		    else
+		    {
+			/* Process is dead. */
+			pr->pr_ExitStatus = status;
+			process_run_count--;
+			close_proc_files(pr);
+			pr->pr_Status = PR_DEAD;
+			queue_notify(pr);
+		    }
+		}
 		break;
-	    pr = pr->pr_Next;
+	    }
+	    if(pr == 0)
+		abort();		/* Shouldn't happen. */
 	}
-	if(pr)
+	else if(pid == 0)
+	    break;
+	else if(pid < 0)
 	{
-	    if(WIFSTOPPED(status))
-	    {
-		pr->pr_Status = PR_STOPPED;
-		queue_notify(pr);
-	    }
+	    if(errno == EINTR)
+		continue;
 	    else
-	    {
-		/* Process is dead. */
-		pr->pr_ExitStatus = status;
-		process_run_count--;
-		close_proc_files(pr);
-		pr->pr_Status = PR_DEAD;
-		queue_notify(pr);
-	    }
+		break;
 	}
     }
     return TRUE;
