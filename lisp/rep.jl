@@ -30,10 +30,8 @@
   (defun rep ()
     (repl 'user))
 
-  ;; Install all autoload hooks. This is done last so that it works
-  ;; when dumped. We load autoload.jl to ensure that we don't get a
-  ;; compiled (and possibly out of date) version
-  (load-all "autoload.jl" (lambda (f) (load f nil t)))
+  ;; Install all autoload hooks.
+  (load-all "autoload" (lambda (f) (load f nil t)))
 
   ;; Do operating-system initialisation
   (load-all (concat "os-" (symbol-name operating-system)) t)
