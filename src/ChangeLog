@@ -1,3 +1,10 @@
+2001-02-10  John Harper  <jsh@eazel.com>
+
+	* sockets.c (make_inet_socket): remember to convert the port
+	number to network byte order before storing it in sin_port
+	(fill_in_address): convert the port number from network to host
+	byte order
+
 2001-01-28  John Harper  <jsh@eazel.com>
 
 	* continuations.c (Fthread_join): as part of the THREAD

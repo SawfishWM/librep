@@ -327,7 +327,7 @@ make_inet_socket (repv hostname, int port,
     rep_socket *s = 0;
 
     name.sin_family = AF_INET;
-    name.sin_port = port;
+    name.sin_port = htons (port);
     hostinfo = gethostbyname (rep_STR (hostname));
     if (hostinfo != 0)
     {
@@ -478,7 +478,7 @@ fill_in_address (rep_socket *s)
 		if (addr != 0)
 		{
 		    s->addr = rep_string_dup (addr);
-		    s->port = rep_MAKE_INT (name.sin_port);
+		    s->port = rep_MAKE_INT (ntohs (name.sin_port));
 		}
 	    }
 	}
