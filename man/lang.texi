@@ -232,11 +232,11 @@ described, they also have a list of parameters which the object will
 accept. Each parameter in the list is named and may be referred to in
 the body of the description.
 
-Three keyword parameters may also be used: @samp{#!optional},
-@samp{#!key} and @code{#!rest}. They have the same meaning as when used
+Three keyword parameters may also be used: @code{#!optional},
+@code{#!key} and @code{#!rest}. They have the same meaning as when used
 in the lambda-list of a function definition (@pxref{Lambda
-Expressions}). That is, @samp{#!optional} means that all further
-parameters are optional, and @samp{#!rest} means that the following
+Expressions}). That is, @code{#!optional} means that all further
+parameters are optional, and @code{#!rest} means that the following
 parameter actually receives a list of any unused argument values.
 
 An example function definition follows.
@@ -598,12 +598,12 @@ Similar to @code{>}, but for the ``less than or equal to'' relation.
 There are two related functions for finding the maximum or minimum of a
 sequence of values.
 
-@defun max @code{#!rest} args
+@defun max @t{#!rest} args
 Return the maximum value from the list of @var{args}. When comparing
 numbers, any inexact arguments cause the result to be inexact.
 @end defun
 
-@defun min @code{#!rest} args
+@defun min @t{#!rest} args
 Return the minimum value from the list of @var{args}. When comparing
 numbers, any inexact arguments cause the result to be inexact.
 @end defun
@@ -779,11 +779,11 @@ numbers, they take a varying number of values as their arguments
 returning a new number as their result. When given only exact
 arguments, an exact result will be returned.
 
-@defun + number1 @code{#!rest} numbers
+@defun + number1 @t{#!rest} numbers
 This functions adds its arguments then returns their sum. 
 @end defun
 
-@defun - number1 @code{#!rest} numbers
+@defun - number1 @t{#!rest} numbers
 If this function is just given one argument (@var{number1}) that number is
 negated and returned. Otherwise each of @var{numbers} is subtracted from
 a running total starting with the value of @var{number1}.
@@ -797,11 +797,11 @@ a running total starting with the value of @var{number1}.
 @end lisp
 @end defun
 
-@defun * number1 @code{#!rest} numbers
+@defun * number1 @t{#!rest} numbers
 This function multiplies its arguments then returns the result.
 @end defun
 
-@defun / number1 @code{#!rest} numbers
+@defun / number1 @t{#!rest} numbers
 This function performs division, a running-total (initialised from
 @var{number1} is successively divided by each of @var{numbers} then
 the result is returned.
@@ -1000,7 +1000,7 @@ instead.
 @end lisp
 @end defun
 
-@defun logand number1 @code{#!rest} numbers
+@defun logand number1 @t{#!rest} numbers
 This function uses a bit-wise logical `and' operation to combine all its
 arguments (there must be at least one argument).
 
@@ -1013,7 +1013,7 @@ arguments (there must be at least one argument).
 @end lisp
 @end defun
 
-@defun logior number1 @code{#!rest} numbers
+@defun logior number1 @t{#!rest} numbers
 Uses a bit-wise logical `inclusive-or' to combine all its arguments (there
 must always be at least one argument).
 
@@ -1023,7 +1023,7 @@ must always be at least one argument).
 @end lisp
 @end defun
 
-@defun logxor number1 @code{#!rest} numbers
+@defun logxor number1 @t{#!rest} numbers
 Uses a bitwise logical `exclusive-or' to combine all its arguments
 (there must be at least one).
 
@@ -1110,7 +1110,7 @@ Returns true if @var{x} is equal to zero.
 The @code{random} function allows pseudo-random numbers to be
 generated.
 
-@defun random @code{#!optional} limit
+@defun random @t{#!optional} limit
 Return a pseudo-random number between zero and @var{limit}-1 inclusive.
 If @var{limit} is undefined, it is taken as being the largest positive
 integer representable in a fixnum.
@@ -1460,7 +1460,7 @@ This example is totally contrived---no one would ever write a
 function like the one in the example but it does demonstrate the need
 for a dynamic method of creating lists.
 
-@defun list @code{#!rest} elements
+@defun list @t{#!rest} elements
 This function creates a list out of its arguments, if zero arguments are
 given the empty list, @code{()}, is returned.
 
@@ -1486,7 +1486,7 @@ Creates a new list @code{(@var{arg1} @var{arg2} @dots{} @var{argn-1} .
 @end lisp
 @end defun
 
-@defun make-list length @code{#!optional} initial-value
+@defun make-list length @t{#!optional} initial-value
 This function creates a list @var{length} elements long. If the
 @var{initial-value} argument is given it defines the value of all
 elements in the list, if it is not defined they are all @code{()}.
@@ -1503,7 +1503,7 @@ elements in the list, if it is not defined they are all @code{()}.
 @end lisp
 @end defun
 
-@defun append @code{#!rest} lists
+@defun append @t{#!rest} lists
 This function creates a new list with the elements of each of its arguments
 (which must be lists). Unlike the function @code{nconc} this function
 preserves the structure of all its arguments.
@@ -1688,7 +1688,7 @@ are called @dfn{destructive} operations because they modify the actual
 structure of a list---no copy is made. This can lead to unpleasant
 side effects if care is not taken.
 
-@defun nconc @code{#!rest} lists
+@defun nconc @t{#!rest} lists
 This function is the destructive equivalent of the function @code{append},
 it modifies its arguments so that it can return a list which is the
 concatenation of the elements in its arguments lists.
@@ -1773,7 +1773,7 @@ of the elements in @var{list}, instead of the @code{equal} function which
 is used by @code{delete}.
 @end defun
 
-@defun sort list @code{#!optional} predicate
+@defun sort list @t{#!optional} predicate
 Destructively sorts (i.e. by modifying cdrs) the list of values
 @var{list}, to satisfy the function @var{predicate}, returning the
 sorted list. If @var{predicate} is undefined, the @code{<} function is
@@ -1931,7 +1931,7 @@ stored is known and lists when the sequence may grow or shrink.
 This function returns true if its argument, @var{object}, is a vector.
 @end defun
 
-@defun vector @code{#!rest} elements
+@defun vector @t{#!rest} elements
 This function creates a new vector containing the arguments given to the
 function.
 
@@ -1944,7 +1944,7 @@ function.
 @end lisp
 @end defun
 
-@defun make-vector size @code{#!optional} initial-value
+@defun make-vector size @t{#!optional} initial-value
 Returns a new vector, @var{size} elements big. If @var{initial-value} is
 defined each element of the new vector is set to @var{initial-value}, otherwise
 they are all @code{()}.
@@ -2026,7 +2026,7 @@ an @samp{x} character followed by one or two hex digits.
 This function returns true if its argument is a string.
 @end defun
 
-@defun make-string length @code{#!optional} initial-character
+@defun make-string length @t{#!optional} initial-character
 Creates a new string containing @var{length} characters, each character
 is initialised to @var{initial-character} (or to spaces if
 @var{initial-character} is not defined).
@@ -2040,7 +2040,7 @@ is initialised to @var{initial-character} (or to spaces if
 @end lisp
 @end defun
 
-@defun concat @code{#!rest} args
+@defun concat @t{#!rest} args
 This function concatenates all of its arguments, @var{args}, into a single
 string which is returned. If no arguments are given then the null string
 (@samp{}) results.
@@ -2063,7 +2063,7 @@ characters. Characters are stored in strings modulo 256.
 @end lisp
 @end defun
 
-@defun substring string start @code{#!optional} end
+@defun substring string start @t{#!optional} end
 This function creates a new string which is a partial copy of the string
 @var{string}. The first character copied is @var{start} characters from
 the beginning of the string. If the @var{end} argument is defined it is
@@ -2359,7 +2359,7 @@ This is the only way of creating an obarray. @code{make-vector} is
 @emph{not suitable}.
 @end defun
 
-@defun find-symbol symbol-name @code{#!optional} obarray
+@defun find-symbol symbol-name @t{#!optional} obarray
 This function scans the specified obarray (@var{obarray} or the value of
 the variable @code{obarray} if @var{obarray} is undefined) for a symbol
 whose name is the string @var{symbol-name}. The value returned is the
@@ -2371,7 +2371,7 @@ symbol if it can be found or false otherwise.
 @end lisp
 @end defun
 
-@defun apropos regexp @code{#!optional} predicate obarray
+@defun apropos regexp @t{#!optional} predicate obarray
 Returns a list of symbols from the obarray @var{obarray} (or the
 default) whose print name matches the regular expression @var{regexp}
 (@pxref{Regular Expressions}). If @var{predicate} is true, each symbol
@@ -2449,7 +2449,7 @@ symbol always produces the same object (unless the value of
     @result{} t
 @end lisp
 
-@defun intern symbol-name @code{#!optional} obarray
+@defun intern symbol-name @t{#!optional} obarray
 This function uses @code{find-symbol} to search the @var{obarray} (or the
 standard obarray) for a symbol called @var{symbol-name}. If a symbol of
 that name is found it is returned, otherwise a new symbol of that name is
@@ -2464,7 +2464,7 @@ created, interned into the obarray, and returned.
 @end lisp
 @end defun
 
-@defun intern-symbol symbol @code{#!optional} obarray
+@defun intern-symbol symbol @t{#!optional} obarray
 Interns the symbol @var{symbol} into the obarray @var{obarray} (or the
 standard one) then returns the symbol. If @var{symbol} is currently
 interned in an obarray an error is signalled.
@@ -2478,7 +2478,7 @@ interned in an obarray an error is signalled.
 @end lisp
 @end defun
 
-@defun unintern symbol @code{#!optional} obarray
+@defun unintern symbol @t{#!optional} obarray
 This function removes the symbol @var{symbol} from the obarray @var{obarray}
 then returns the symbol.
 
@@ -3302,7 +3302,7 @@ other Lisp object. It's sole function is to provide a location from
 which dynamic bindings may be created. Fluids are anonymous objects,
 they are usually named by being stored in lexically scoped variables.
 
-@defun make-fluid @code{#!optional} value
+@defun make-fluid @t{#!optional} value
 Create and return a new fluid, it will have an initial binding of
 @var{value} (or false if @var{value} is undefined).
 @end defun
@@ -3723,12 +3723,12 @@ it finds a functional value after evaluating the first element of a
 list form. However two functions are available for manually calling
 functions.
 
-@defun funcall function @code{#!rest} args
+@defun funcall function @t{#!rest} args
 Applies the argument values @var{args} to the function @var{function}, then
 returns its result.
 @end defun
 
-@defun apply function @code{#!rest} args
+@defun apply function @t{#!rest} args
 Similar to @code{funcall} except that the last of its arguments is
 a @emph{list} of arguments which are appended to the other members of
 @var{args} to form the list of argument values to apply to the
@@ -3969,7 +3969,7 @@ will finally be evaluated.
 There is a function which performs macro expansion, its main use is to
 let the Lisp compiler expand macro calls at compile time.
 
-@defun macroexpand form @code{#!optional} environment
+@defun macroexpand form @t{#!optional} environment
 If @var{form} is a macro call @code{macroexpand} will expand that call
 by calling the macro's expansion function (the cdr of the macro definition).
 If this expansion is another macro call the process is repeated until
@@ -3996,7 +3996,7 @@ parameter in the containing call to @code{macroexpand}. This allows
 macros to expand inner macros correctly.
 @end defun
 
-@defun macroexpand-1 form @code{#!optional} environment
+@defun macroexpand-1 form @t{#!optional} environment
 Similar to @code{macroexpand}, but only a single macro expansion is
 ever performed, i.e. if @var{form} is a macro call the result of
 expanding that call will be returned, otherwise @var{form} is returned.
@@ -4487,7 +4487,7 @@ evaluated sequentially, the value of the last is returned.
 The @code{cond} special form is used to choose between an arbitrary
 number of conditions. Each @var{clause} is a list; the car of which is
 a @var{condition}, the cdr is a list of forms to evaluate (in an
-implicit @code{progn} if the @var{condition} evaluates to true.
+implicit @code{progn}) if the @var{condition} evaluates to true.
 This means that each @var{clause} looks something like:
 
 @lisp
@@ -4823,7 +4823,7 @@ form.
 Before exiting, the tag installed by this form is removed.
 @end defmac
 
-@defun throw tag @code{#!optional} catch-value
+@defun throw tag @t{#!optional} catch-value
 This function transfers the point of control to the catch form with a
 tag which is @code{eq} to @var{tag}. The value returned by this catch
 form is either @var{catch-value} or false if @var{catch-value} is
@@ -5151,7 +5151,7 @@ Return true if lisp object @var{arg} represents a thread of
 execution in the lisp environment.
 @end defun
 
-@defun make-thread thunk @code{#!optional} name
+@defun make-thread thunk @t{#!optional} name
 Create and return a new thread of execution; it will initially invoke
 the zero-parameter function @var{thunk}. If the call to @var{thunk}
 returns the thread is automatically deleted.
@@ -5181,7 +5181,7 @@ when it was created, or by explicit deletion. Also, the implicit thread
 created by the @code{call-with-dynamic-root} function may be deleted by
 exiting from the function called in the new context.
 
-@defun thread-delete @code{#!optional} thread
+@defun thread-delete @t{#!optional} thread
 Mark @var{thread} (or the current thread), as being deleted. It will
 not be switched to in the future. If the current thread is deleted,
 control will be passed to the next runnable thread. Deleting the last
@@ -5206,7 +5206,7 @@ this function since running threads will be preempted after a period of
 time.
 @end defun
 
-@defun thread-suspend @code{#!optional} thread milliseconds
+@defun thread-suspend @t{#!optional} thread milliseconds
 Mark @var{thread} (or the current thread) as being suspended. It will
 not be selected until either it has had this status removed, or
 @var{milliseconds} milliseconds time has passed.
@@ -5216,7 +5216,7 @@ thread in the same dynamic root. If there are no runnable threads, then
 the interpreter will sleep until the next thread becomes runnable.
 @end defun
 
-@defun thread-join thread @code{#!optional} timeout default-value
+@defun thread-join thread @t{#!optional} timeout default-value
 Suspends the current thread until either @var{thread} has exited, or
 @var{timeout} milliseconds have passed.
 
@@ -5246,7 +5246,7 @@ Increment the forbid count.
 Decrement the forbid count.
 @end defun
 
-@defmac without-interrupts @code{#!rest} forms
+@defmac without-interrupts @t{#!rest} forms
 Evaluate the list of forms @var{forms} with thread preemption
 temporarily disabled.
 @end defmac
@@ -5339,7 +5339,7 @@ the file, i.e. instantiating all function definitions, or whatever.
 @cindex Load function
 @cindex Functions, loading
 
-@defun load program @code{#!optional} no-error no-path no-suffix
+@defun load program @t{#!optional} no-error no-path no-suffix
 This function loads the file containing the program called @var{program};
 first the file is located then each top-level form contained by the file
 is read and evaluated in order.
@@ -5468,7 +5468,7 @@ and therefore the call may proceed as normal.
 
 Autoload stubs may be created through the @code{autoload} function.
 
-@defun autoload symbol file @code{#!optional} is-command
+@defun autoload symbol file @t{#!optional} is-command
 Installs an autoload form into the symbol @var{symbol}. It marks that
 when @var{symbol} is called as a function the lisp library @var{file}
 should be loaded to provided the actual definition of @var{symbol}.
@@ -5561,7 +5561,7 @@ to this function is normally one of the top-level forms in a file.
 @end lisp
 @end defun
 
-@defun require feature @code{#!optional} file
+@defun require feature @t{#!optional} file
 Show that the caller is planning to use the feature @var{feature} (a symbol).
 This function will check the @code{features} variable to see if @var{feature}
 is already loaded, if so it will return immediately.
@@ -5660,7 +5660,7 @@ When called interactively this function will ask for the value of
 @var{file-name}.
 @end deffn
 
-@deffn Command compile-directory directory @code{#!optional} force exclude
+@deffn Command compile-directory directory @t{#!optional} force exclude
 Compiles all the Lisp files in the directory called @var{directory} which
 either haven't been compiled or whose compiled version is older than
 the source file (Lisp files are those ending in @samp{.jl}).
@@ -5974,7 +5974,7 @@ Naturally, the output of the disassembler is a listing in the assembly
 language of the @code{librep} virtual machine---it won't take a
 byte-code form and produce the equivalent Lisp code!
 
-@deffn Command disassemble-fun function @code{#!optional} stream
+@deffn Command disassemble-fun function @t{#!optional} stream
 This function disassembles the compile Lisp function @var{function}. It
 writes a listing to the output stream @var{stream} (normally the
 value of the @code{standard-output} variable).
@@ -6474,7 +6474,7 @@ It is also possible to use a string as an input stream. The string to
 be read from must be applied to the @code{make-string-input-stream} function
 and the result from this function used as the input stream.
 
-@defun make-string-input-stream string @code{#!optional} start
+@defun make-string-input-stream string @t{#!optional} start
 Returns an input stream which will supply the characters of the string
 @var{string} in order starting with the character at position @var{start}
 (or from position zero if this argument is undefined).
@@ -6591,7 +6591,7 @@ stream @var{stream} as required to form the read syntax of a single
 Lisp object (@pxref{Read Syntax}), this object is then returned.
 @end defun
 
-@defun read-from-string string @code{#!optional} start
+@defun read-from-string string @t{#!optional} start
 Reads one Lisp object from the string @var{string}, the first character
 is read from position @var{start} (or position zero).
 
@@ -6609,7 +6609,7 @@ is read from position @var{start} (or position zero).
 @cindex Functions, output
 @cindex Streams, output functions
 
-@defun write stream data @code{#!optional} length
+@defun write stream data @t{#!optional} length
 Writes the specified character(s) to the output stream @var{stream}.
 @var{data} is either the character or the string to be written. If
 @var{data} is a string the optional argument @var{length} may
@@ -6633,7 +6633,7 @@ Be warned, if you don't choose the streams carefully you may get a
 deadlock which only an interrupt signal can break!
 @end defun
 
-@defun print object @code{#!optional} stream
+@defun print object @t{#!optional} stream
 Outputs a newline character to the output stream @var{stream}, then
 writes a textual representation of @var{object} to the stream.
 
@@ -6650,7 +6650,7 @@ If possible, this representation will be the read syntax of
 @end lisp
 @end defun
 
-@defun prin1 object @code{#!optional} stream
+@defun prin1 object @t{#!optional} stream
 Similar to @code{print} but no initial newline is output.
 
 @lisp
@@ -6674,7 +6674,7 @@ output when it prints @var{object}.
 @end lisp
 @end defun
 
-@defun princ object @code{#!optional} stream
+@defun princ object @t{#!optional} stream
 Prints a textual representation of @var{object} to the output stream
 @var{stream}. No steps are taken to create output that @code{read} can
 parse; in particular, no double-quote characters surround strings.
@@ -6727,7 +6727,7 @@ printing lists.
 @cindex Output, formatted
 @cindex Streams, formatted output
 
-@defun format stream template @code{#!rest} values
+@defun format stream template @t{#!rest} values
 Writes to a stream, @var{stream}, a string constructed from the
 format string, @var{template}, and list of arguments @var{values}.
 
@@ -6881,7 +6881,7 @@ The names of hooks of this type will normally end in @code{-hook}.
 
 These functions are exported by the @code{rep.system} module.
 
-@defun add-hook hook function @code{#!optional} at-end
+@defun add-hook hook function @t{#!optional} at-end
 This function adds a new function @var{function} to the list of
 functions installed in the (list) hook @var{hook} (a symbol).
 
@@ -6913,7 +6913,7 @@ returned true. As soon as the first function in the hook returns
 false, no others will be called. Finally, an @code{or} type hook
 aborts when a function returns a true result.
 
-@defun call-hook hook arg-list @code{#!optional} type
+@defun call-hook hook arg-list @t{#!optional} type
 
 Call the hook named by the symbol @var{hook}, passing all functions the
 arguments in the list @var{arg-list}. Note that @var{hook} may also be
@@ -7032,7 +7032,7 @@ Returns a string through which the directory named by
 @end lisp
 @end defun
 
-@defun expand-file-name file-name @code{#!optional} base-dir
+@defun expand-file-name file-name @t{#!optional} base-dir
 Expands @var{file-name} assuming that it specifies a file relative to
 @var{base-dir}. If @var{base-dir} is undefined it is taken as the
 current value of the @code{default-directory} variable. While expanding
@@ -7207,7 +7207,7 @@ will signal an error.
 @cindex Functions on File Objects
 @cindex File objects, functions
 
-@defun seek-file file @code{#!optional} offset where
+@defun seek-file file @t{#!optional} offset where
 When called as @code{(seek-file @var{file})}, returns the distance in
 bytes from the start of the file that the next character would be read
 from.
@@ -7705,7 +7705,7 @@ component to decide how to connect to the I/O channels of the subprocess.
 Current options include pseudo-terminals and pipes.
 @end table
 
-@defun make-process @code{#!optional} output-stream state-function directory program args
+@defun make-process @t{#!optional} output-stream state-function directory program args
 This functions creates and returns a new process object. @emph{No subprocess
 will be started.}
 
@@ -7794,7 +7794,7 @@ pipes will be more efficient and are used by default. However, there
 are cases where the buffering characteristics of pipes mean that ptys
 must be used.
 
-@defun start-process @code{#!optional} process program @code{#!rest} args
+@defun start-process @t{#!optional} process program @t{#!rest} args
 This function starts an asynchronous subprocess running on the process
 object @var{process}. If @var{process} is undefined a new process
 object is created (by calling the function @code{make-process} with all
@@ -7871,7 +7871,7 @@ pseudo-terminals for connecting to a subprocess. Instead, it is
 possible to link the @code{stdin} channel of a synchronous process to a
 named file.
 
-@defun call-process @code{#!optional} process input-file-name program @code{#!rest} args
+@defun call-process @t{#!optional} process input-file-name program @t{#!rest} args
 This function starts a process running on the process object
 @var{process}. If @var{process} is undefined a new process object is
 created by calling the @code{make} function.
@@ -7974,14 +7974,14 @@ Either when in the read stage of the read-eval-print, or input, loop,
 or when the @code{accept-process-output} or @code{sit-for} functions
 are called.
 
-@defun accept-process-output @code{#!optional} seconds milliseconds
+@defun accept-process-output @t{#!optional} seconds milliseconds
 Wait @var{seconds} plus @var{milliseconds} for output from any
 asynchronous subprocesses. If any arrives, process it, then return
 false. Otherwise return true. If either of the arguments is
 undefined, they count as zero in the addition.
 @end defun
 
-@defun sit-for @code{#!optional} seconds milliseconds
+@defun sit-for @t{#!optional} seconds milliseconds
 Wait for input to arrive and be processed. No more than @var{seconds}
 seconds plus @var{milliseconds} milliseconds will be waited. If at the
 end of this time no input has arrived, return true. Otherwise
@@ -8041,7 +8041,7 @@ state.
 The following two functions are used to stop and then subsequently
 continue a process running.
 
-@defun stop-process process-object @code{#!optional} whole-group
+@defun stop-process process-object @t{#!optional} whole-group
 This function suspends execution of the subprocess running on the
 process object @var{process-object}.
 
@@ -8049,7 +8049,7 @@ If @var{whole-group} is true all subprocesses in the
 process group of @var{process-object} are stopped.
 @end defun
 
-@defun continue-process process-object @code{#!optional} whole-group
+@defun continue-process process-object @t{#!optional} whole-group
 Use this function to continue a subprocess executing after it has been
 stopped (by the @code{stop-process} function).
 
@@ -8077,18 +8077,18 @@ Sets the value of the state change function component of the process object
 @cindex Signalling processes
 @cindex Processes, signalling
 
-@defun interrupt-process process-object @code{#!optional} whole-group
+@defun interrupt-process process-object @t{#!optional} whole-group
 Sends the @code{SIGINT} signal to @var{process-object}.
 @end defun
 
-@defun kill-process process-object @code{#!optional} whole-group
+@defun kill-process process-object @t{#!optional} whole-group
 Sends the @code{SIGKILL} signal to the @var{process-object}.
 @end defun
 
 Note that the functions @code{stop-process} and @code{continue-process}
 also send signals to the subprocess.
 
-@defun signal-process process signal @code{#!optional} whole-group
+@defun signal-process process signal @t{#!optional} whole-group
 Send the signal @var{signal} to the process @var{process}; if
 @var{whole-group} is true the signal is also sent to all
 processes in the process group of @var{process}.
@@ -8300,7 +8300,7 @@ else. This involves quoting regexp meta-characters.
 @end lisp
 @end defun
 
-@defun string-match regexp string @code{#!optional} start ignore-case
+@defun string-match regexp string @t{#!optional} start ignore-case
 Returns true if the string @var{string} matches the regular
 expression @var{regexp}. The string matches if executing the regexp at
 @emph{any} position in the string succeeds.
@@ -8319,7 +8319,7 @@ character classes are still case-significant.
 @end lisp
 @end defun
 
-@defun string-looking-at regexp string @code{#!optional} start ignore-case
+@defun string-looking-at regexp string @t{#!optional} start ignore-case
 Similar to @code{string-match}, but only returns true if
 @var{string} matches @var{regexp} starting at the character at index
 @var{start} in the string (or the first character if @var{start} is
@@ -8337,7 +8337,7 @@ undefined).
 @end lisp
 @end defun
 
-@defun match-start @code{#!optional} n
+@defun match-start @t{#!optional} n
 Returns the position at which the @var{n}'th parenthesised expression
 started in the last successful regexp match. If @var{n} is false
 or zero the position of the start of the whole match is returned
@@ -8357,7 +8357,7 @@ different position values.
 @end lisp
 @end defun
 
-@defun match-end @code{#!optional} n
+@defun match-end @t{#!optional} n
 Similar to @code{match-start}, but returns the position of the
 character following the matched item.
 
@@ -8504,7 +8504,7 @@ The number of seconds in a 24-hour day.
 Given a timestamp value it is possible to format it as a string, in
 many different formats.
  
-@defun current-time-string @code{#!optional} timestamp format
+@defun current-time-string @t{#!optional} timestamp format
 Return a string defining @var{timestamp} according to the string
 @var{format}. If @var{timestamp} is undefined, the current time is
 used.
@@ -8615,7 +8615,7 @@ date and time descriptions to their individual components, and to
 timestamps. Evaluate the form @code{(require 'date)} to load this
 library.
 
-@defun parse-date string @code{#!optional} start
+@defun parse-date string @t{#!optional} start
 Returns a vector encoding the date described by @var{string}. If
 @var{start} is defined, it specifies the index of the character in the
 string to start parsing from.
@@ -8784,7 +8784,7 @@ This function returns a string containing the login name of the user.
 @end lisp
 @end defun
 
-@defun user-full-name @code{#!optional} real-name
+@defun user-full-name @t{#!optional} real-name
 This function returns a string containing the `real' name of the user; the
 format of the string will depend on the host system.
 
@@ -8797,7 +8797,7 @@ returned by subsequent calls to this function.
 @end lisp
 @end defun
 
-@defun user-home-directory @code{#!optional} user
+@defun user-home-directory @t{#!optional} user
 This function returns the home directory of the user whose login name is
 @var{user}, or the current user if @var{user} is undefined. The
 returned string will be as returned by @code{file-name-as-directory}
@@ -8882,7 +8882,7 @@ A translation map to convert newline characters to spaces.
     @result{} "foo"
 @end lisp
 
-@defun complete-string template list @code{#!optional} ignore-case
+@defun complete-string template list @t{#!optional} ignore-case
 Return a string whose beginning matches the string @var{template}, and
 is unique in the set of all strings in @var{list} which also match
 @var{template}. If @var{ignore-case} is true, all matching
@@ -8942,7 +8942,7 @@ Return the resulting string.
 @section Sleeping
 @cindex Sleeping
 
-@defun sleep-for seconds @code{#!optional} milliseconds
+@defun sleep-for seconds @t{#!optional} milliseconds
 Pause for a @var{seconds} (plus the optional @var{milliseconds}
 component) long period of time. Input becoming available will
 @emph{not} break the sleep (@pxref{Process I/O}).
@@ -8973,7 +8973,7 @@ displaying the text in a status bar or something similar. In a
 console-based environment, the message will be printed to the
 @code{stderr} stream, followed by a line break.
 
-@defun message @code{#!optional} display-now
+@defun message @t{#!optional} display-now
 Displays a one-line message, the string @var{message}. If
 @var{display-now}, every effort will be made to display the message as
 soon as possible, possibly before the next scheduled screen update (if
@@ -9000,7 +9000,7 @@ The list of unused command line arguments, in their original order.
 The @code{get-command-line-option} function may be used to scan this
 list of arguments. The @code{rep.system} module exports this function.
 
-@defun get-command-line-option option @code{#!optional} requires-arg
+@defun get-command-line-option option @t{#!optional} requires-arg
 Returns t if @var{option} was specified on the command line
 (@var{option} is typically a phrase beginning with @samp{--}).
 
@@ -9072,7 +9072,7 @@ a specified function after a specified period of time. These functions
 only work when the Lisp event loop is being used (i.e. at least one
 @code{recursive-edit} is currently in progress).
 
-@defun make-timer function @code{#!optional} seconds milliseconds
+@defun make-timer function @t{#!optional} seconds milliseconds
 Create and return a new timer object. It will be set to call the Lisp
 function @var{function} after @var{seconds} seconds plus
 @var{milliseconds} milliseconds. @var{function} will be called with a
@@ -9091,7 +9091,7 @@ Prevent the timer object @var{timer} from calling the Lisp function
 associated with it. Use the @code{set-timer} function to reset it.
 @end defun
 
-@defun set-timer timer @code{#!optional} seconds milliseconds
+@defun set-timer timer @t{#!optional} seconds milliseconds
 Reset the timer object @var{timer}. If either/both of @var{seconds} and
 @var{milliseconds} are defined the interval of the timer will be set to
 the specified time period. If neither are defined then the current
@@ -9156,7 +9156,7 @@ This function invokes the debugger to step through the form @var{form}.
 When called interactively @var{form} is prompted for.
 @end deffn
 
-@defun backtrace @code{#!optional} stream
+@defun backtrace @t{#!optional} stream
 Prints a description of the current Lisp function call stack to
 @var{stream} (or @code{standard-output} if @var{stream} is undefined).
 

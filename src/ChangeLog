@@ -1,3 +1,32 @@
+2000-11-12  John Harper  <jsh@eazel.com>
+
+	* readline.c (Freadline): accept optional second arg the
+	function to call to generate completions of a given word. When
+	supplied this overrides the `rl-completion-generator' global.
+	Also, when no libreadline is present, don't use printf to print
+	a user-supplied string, use fputs (and send it to stderr, not
+	stdout)
+
+2000-11-11  John Harper  <jsh@eazel.com>
+
+	* lisp.c (rep_readl, fast_getc): instead of checking whether
+	the stream is a local file each time fast_getc () is called,
+	check in rep_readl () then save the result. Added a local
+	function readl () -- the body of rep_readl ()
+
+2000-11-10  John Harper  <jsh@eazel.com>
+
+	* rep_regexp.h, regexp.c (rep_regexp_max_depth): new variable,
+	upper bound on the number of times that regmatch () may be
+	called recursively. Prevents the stack from exploding on
+	pathological matches
+
+2000-11-03  John Harper  <jsh@eazel.com>
+
+	* numbers.c: if LONG_LONG_{MIN,MAX} aren't defined, define as
+	LONG_{MIN,MAX} (evil hack, but should allow compilation to
+	succeed)
+
 2000-10-27  John Harper  <jsh@eazel.com>
 
 	* unix_files.c (rep_expand_file_name): added extra case to

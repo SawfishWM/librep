@@ -52,10 +52,6 @@ Outstanding bugs
  ! Putting a breakpoint in a .jaderc file doesn't work correctly; the
    debugger is entered, but the commands don't work
 
- ! It's relatively easy to blow the stack when regexp matching. Try
-   searching for `/\*(.|\n)*\*/' in a C file with reasonable large
-   comments.
-
  ! if load can't find the file, its error message is confusing
    (especially if the named file does exist, but no suffixed file
    exists)
