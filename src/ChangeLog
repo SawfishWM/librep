@@ -1,3 +1,9 @@
+Fri May 22 10:13:26 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* buffers.c (cmd_set_buffer_name): if the buffer-status-id
+	looks as though it still just names the buffer, reset it to
+	use the new name
+
 Mon May 18 09:21:33 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lispcmds.c (cmd_delete_if, cmd_delete_if_not): added gc
