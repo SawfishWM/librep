@@ -1,3 +1,9 @@
+2000-06-21  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compiler-rep.jl (compile-list): if (= #args 0) emit `push
+	nil' instead of `list #0' (also fixes a bug of stack use not
+	being incremented with zero args)
+
 2000-06-19  John Harper  <john@dcs.warwick.ac.uk>
 
 	* compiler-rep.jl (do-pass-2): don't evaluate constants, pass-1
