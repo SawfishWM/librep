@@ -312,4 +312,8 @@
 /* Define if using LIBC gettext */
 #undef LIBC_GETTEXT
 
+/* Define the sizes of long and long long */
+#undef SIZEOF_LONG
+#undef SIZEOF_LONG_LONG
+
 #endif /* CONFIG_H */
