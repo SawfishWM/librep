@@ -7,3 +7,4 @@ config.status
 config.cache
 config.h
 config.log
+configure
