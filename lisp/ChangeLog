@@ -1,3 +1,9 @@
+1998-08-01  John Harper  <john@dcs.warwick.ac.uk>
+
+	* buffers.jl (find-file): check that the file exists before
+	testing it's timestamp
+	(save-file): signal an error if the buffer has no file-name
+
 1998-07-31  John Harper  <john@dcs.warwick.ac.uk>
 
 	* shell.jl (shell-output-filter, shell-output-limit,
