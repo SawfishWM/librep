@@ -31,7 +31,7 @@ COMMON_SRCS =	buffers.c commands.c edit.c editcommands.c editrect.c \
 		render.c streams.c stringmem.c symbols.c undo.c values.c \
 		views.c windows.c
 COMMON_HDRS =	jade.h edit.h lisp.h value.h keys.h config.h stringmem.h \
-		doc-strings.h
+		doc-strings.h revision.h
 
 X11_SRCS +=	x11_display.c x11_eventloop.c x11_keys.c x11_misc.c \
 		x11_render.c x11_windows.c
@@ -139,8 +139,8 @@ keys.o		: $(HDRS)
 lisp.o		: $(HDRS)
 lispcmds.o	: $(HDRS)
 lispmach.o	: $(HDRS) bytecodes.h
-main.o		: $(HDRS) revision.h
-misc.o		: $(HDRS) revision.h
+main.o		: $(HDRS)
+misc.o		: $(HDRS)
 movement.o	: $(HDRS)
 refresh.o	: $(HDRS)
 render.o	: $(HDRS)
@@ -159,7 +159,7 @@ x11_eventloop.o : $(HDRS)
 x11_keys.o	: $(HDRS)
 x11_misc.o	: $(HDRS)
 x11_render.o	: $(HDRS)
-x11_windows.o	: $(HDRS) revision.h
+x11_windows.o	: $(HDRS)
 #endif /* HAVE_X11 */
 
 #ifdef HAVE_UNIX
@@ -183,7 +183,7 @@ amiga_misc.o	: $(HDRS)
 amiga_render.o	: $(HDRS)
 amiga_server.o	: $(HDRS) amiga_server.h
 amiga_stksize.o : $(HDRS)
-amiga_windows.o : $(HDRS) revision.h
+amiga_windows.o : $(HDRS)
 #else
 lists.o		: $(HDRS)
 #endif /* HAVE_AMIGA */
