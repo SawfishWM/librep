@@ -1,3 +1,7 @@
+2001-09-14  John Harper  <jsh@pixelslut.com>
+
+	* configure.in: bumped libcurrent and libage
+
 2001-08-09  John Harper  <jsh@pixelslut.com>
 
 	* rep-debugger.el: fixed for new debugger command line option
