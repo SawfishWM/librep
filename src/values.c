@@ -759,7 +759,8 @@ again:
 	    /* TXs don't get marked here. They should still be able to
 	       be gc'd if there's marks pointing to them. The marks will
 	       just get made non-resident. But to do this we'll need
-	       the name of the file they point to.. */
+	       the names of the file they point to.. */
+	    MARKVAL(VTX(VMARK(val)->file)->tx_FileName);
 	    MARKVAL(VTX(VMARK(val)->file)->tx_CanonicalFileName);
 	}
 	MARKVAL(VMARK(val)->pos);
