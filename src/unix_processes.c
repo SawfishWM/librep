@@ -38,6 +38,7 @@ _PR void protect_procs(void);
 _PR void unprotect_procs(void);
 _PR bool proc_notification(void);
 static void check_for_zombies(void);
+_PR void proc_on_idle(void);
 static void read_from_process(int);
 _PR int	 write_to_process(VALUE, u_char *, int);
 _PR void proc_mark(VALUE);
@@ -203,6 +204,36 @@ check_for_zombies(void)
     }
 }
 
+/* Called from the eventloop when the editor is idle. */
+void
+proc_on_idle(void)
+{
+    struct Proc *pr;
+    protect_procs();
+    for(pr = process_chain; pr != 0; pr = pr->pr_Next)
+    {
+	if(pr->pr_Status == PR_EXITED)
+	{
+	    /* Found a dead-but-no-EOF process. It's had enough time
+	       for output to get through. Mark it as dead. */
+	    if(pr->pr_Stdout)
+	    {
+#ifdef HAVE_X11
+		FD_CLR(pr->pr_Stdout, &x11_fd_read_set);
+		x11_fd_read_action[pr->pr_Stdout] = NULL;
+#endif
+		close(pr->pr_Stdout);
+		if(pr->pr_Stdin && (pr->pr_Stdin != pr->pr_Stdout))
+		    close(pr->pr_Stdin);
+		pr->pr_Stdout = pr->pr_Stdin = 0;
+	    }
+	    pr->pr_Status = PR_DEAD;
+	    queue_notify(pr);
+	}
+    }
+    unprotect_procs();
+}
+
 static void
 sigchld_handler(int sig)
 {
@@ -215,8 +246,9 @@ sigchld_handler(int sig)
 static void
 read_from_process(int fd)
 {
-    struct Proc *pr = process_chain;
+    struct Proc *pr;
     protect_procs();
+    pr = process_chain;
     while(pr)
     {
 	if((pr->pr_Status != PR_DEAD) && (pr->pr_Stdout == fd))
