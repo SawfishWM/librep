@@ -1,3 +1,31 @@
+2000-08-17  John Harper  <john@dcs.warwick.ac.uk>
+
+	* continuations.c: moved get_stack_top () into save_stack ();
+	should remove possibility from reading above current top of
+	stack
+
+	* rep_regexp.h, regexp.c, continuations.c, find.c: renamed
+	NSUBEXP as rep_NSUBEXP to avoid namespace pollution
+
+	* lispmach.h: factored out the core of the vm from lispmach.c;
+	it's parameterized by a number of preprocessor macros
+
+	* lispmach.c: include lispmach.h
+
+	* safemach.c: module `rep.vm.safe-interpreter'. An error
+	checking virtual machine as a plugin
+
+	* symbols.c (rep_bind_special): new function
+
+	* lisp.c (rep_bind_lambda_list_1): support default values for
+	#!optional and #!key parameters. Syntax is `(<var> <default>)'.
+	But note that unlike CL, <default> is _not_ evaluated. This may
+	change in the future, so only use self-evaluating objects for
+	now..
+
+	* lispmach.c, bytecodes.h (OP_OPTIONAL_ARG_WITH_DEFAULT,
+	OP_KEYWORD_ARG_WITH_DEFAULT): new instructions
+
 2000-08-16  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep_lisp.h (rep_SF_KEYWORD, rep_SF_LITERAL): new flags

@@ -10,6 +10,8 @@ and more long-term ideas are marked -
 Outstanding bugs
 ================
 
+ ! can throw out the top of the program in sawfish/jade
+
  ! #!key params can't be inlined by the compiler
 
  ! (defvar SYM FORM) always evaluates FORM, even if SYM is bound
@@ -93,6 +95,8 @@ Outstanding bugs
 
 General programming tasks:
 ==========================
+
+ + add restricted load to gaol? (same directory only?)
 
  + should index doc strings by MODULE.FUNCTION not just FUNCTION
 
@@ -184,24 +188,6 @@ General programming tasks:
    1. handle constant keys
 
    2. optimize the search
-
- - Sandboxed bytecode interpreter
-
-   the default vm assumes that the compiler makes no errors (i.e. it
-   ignores some range/type checks)
-
-   a `safe' vm would check for things like:
-
-     * stack overflow
-     * range of indices to the vector of constants
-     * validity of refg/setg instructions
-     * invalid lexical addresses to refn/setn
-     * etc..
-
-   implement this as a plugin?
-
-   OCaml uses cryptographic signatures to ensure that bytecode was
-   created by a trusted source
 
  - Implement weak-pairs or equivalent
 

@@ -1,4 +1,29 @@
+2000-08-17  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep/util/gaol.jl (gaol-define-vm): new function, installs a
+	given virtual machine in the gaol
+
+	* rep/vm/compiler/bindings.jl: added `(unused VARS...)'
+	declaration to selectively turn off unused variable warnings
+
+	* rep/lang/doc.jl, rep/vm/compiler/utils.jl,
+	rep/vm/compiler/inline.jl, rep/vm/compiler/basic.jl: support
+	default values in #!optional and #!key params
+
+	* rep/vm/disassembler.jl, rep/vm/bytecode-defs.jl
+	(optional-arg-with-default, keyword-arg-with-default): new
+	instructions
+
+	* rep/util/gaol.jl: added `intern' and `do'
+
 2000-08-16  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep/vm/compiler/utils.jl (test-function-call): don't warn
+	about too many args if the function has #!key params
+
+	* rep/vm/compiler/rep.jl (compile-condition-case): when
+	creating an unused binding for `(condition-case nil ...)' mark
+	it as referenced to avoid a compiler warning
 
 	* rep/vm/compiler/utils.jl (remember-function): handle
 	#!optional, #!rest and #!key

@@ -5687,6 +5687,10 @@ This tells the compiler that all symbols @var{variables} have special
 bindings from lexical bindings, since different instruction sequences
 must be generated to access the different types of binding.)
 
+@item (unused @var{variables}@dots{})
+Directs the compiler not to warn about bindings for
+@var{variables}@dots{} being unreferenced.
+
 @item (inline @var{names}@dots{})
 Tells the compiler that it should consider inlining calls to the
 functions called @var{names}@dots{}. Inlining will only occur if these
