@@ -23,7 +23,8 @@
 
 (define-structure scheme-utils (export %test
 				       make-predicate
-				       make-nil-predicate)
+				       make-nil-predicate
+				       parse-define)
   (open rep)
 
   ;; given a scheme boolean, convert to a rep boolean
@@ -40,4 +41,12 @@
   ;; interesting non-false value
   (define (make-nil-predicate pred)
     (lambda args
-      (cond ((apply pred args)) (t #f)))))
+      (cond ((apply pred args)) (t #f))))
+
+  ;; returns (VAR BODY) suitable for putting in a letrec
+  (define (parse-define form)
+    (let loop ((name (cadr form))
+	       (body (caddr form)))
+      (if (symbolp name)
+	  `(,name ,body)
+	(loop (car name) `(lambda ,(cdr name) ,body))))))

@@ -102,7 +102,7 @@
 			  load %load-suffixes
 
 			  ;; exported local kludges
-			  %cond %case %setq %while %progn %test
+			  %cond %case %setq %while %progn %test %lambda
 			  backquote list*)
   ((access rep)
    (open scheme-utils
@@ -115,6 +115,6 @@
   (rep#setq %setq rep#setq)
   (rep#setq %while rep#while)
   (rep#setq %progn rep#progn)
+  (rep#setq %lambda rep#lambda)
   (rep#setq backquote rep#backquote)
   (rep#setq list* rep#list*))
-  

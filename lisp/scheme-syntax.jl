@@ -21,8 +21,6 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-;; XXX add support for internal definitions (scanning lambda?)
-
 ;; ugh! rep's macros really suck when used across module boundaries..
 
 (define-structure scheme-syntax (export quote lambda if set! cond case
@@ -33,7 +31,15 @@
 
 ;;; syntax
 
-  ;; lambda is the usual rep special form (for now..)
+  (defmacro lambda (vars . body)
+    ((rep#lambda (header)
+       (while (eq (caar body) 'define)
+	 (setq header (cons (parse-define (car body)) header))
+	 (setq body (cdr body)))
+     (rep#cond
+      (header `(%lambda ,vars (letrec ,(nreverse header) ,@body)))
+      (t `(%lambda ,vars ,@body))))
+     nil))
 
   (defmacro if (test consequent . alternative)
     (rep#cond
@@ -47,14 +53,14 @@
 
   (defmacro cond clauses
     (cons '%cond
-	  (mapcar (lambda (x)
+	  (mapcar (rep#lambda (x)
 		    (rep#cond
 		     ((eq (car x) 'else) `('t ,@(cdr x)))
 		     (t `((%test ,(car x)) ,@(cdr x))))) clauses)))
 
   (defmacro case (key . clauses)
     (cons '%case
-	  (mapcar (lambda (x)
+	  (mapcar (rep#lambda (x)
 		    (rep#cond
 		     ((eq (car x) 'else) `('t ,@(cdr x)))
 		     (t x))) clauses)))
@@ -63,7 +69,7 @@
     (rep#cond
      ((null args) #f)
      ((null (cdr args)) (car args))
-     (t ((lambda (tem)
+     (t ((rep#lambda (tem)
 	   `((lambda (,tem)
 	       (if ,tem ,tem (or ,@(cdr args))))
 	     ,(car args)))
@@ -75,18 +81,18 @@
      (t `(cond (,(car args) (and ,@(cdr args))) (else #f)))))
 
   (defmacro let args
-    ((lambda (fun vars values)
+    ((rep#lambda (fun vars values)
        (rep#cond
 	((symbolp (car args))
 	 ;; named let
 	 (setq fun (car args))
 	 (setq args (cdr args))))
-       (setq vars (mapcar (lambda (x)
+       (setq vars (mapcar (rep#lambda (x)
 			    (rep#cond
 			     ((consp x) (car x))
 			     (t x)))
 			  (car args)))
-       (setq values (mapcar (lambda (x)
+       (setq values (mapcar (rep#lambda (x)
 			      (rep#cond
 			       ((consp x) (cons 'begin (cdr x)))
 			       (t #f)))
@@ -109,14 +115,14 @@
 	  ,(cadar bindings)))))
 
   (defmacro letrec (bindings . body)
-    ((lambda (vars setters)
+    ((rep#lambda (vars setters)
        (list* 'let vars (nconc setters body)))
-     (mapcar (lambda (x)
+     (mapcar (rep#lambda (x)
 	       (rep#cond
 		((consp x) (car x))
 		(t x)))
 	     bindings)
-     (mapcar (lambda (x)
+     (mapcar (rep#lambda (x)
 	       (rep#cond
 		((consp x) (cons 'set! x))
 		(t (list 'set! x nil))))
@@ -129,13 +135,13 @@
   ;; interpreter, but that doesn't create fresh bindings for each
   ;; iteration
   (defmacro do (vars test . body)
-    ((lambda (tem)
-       `(let ,tem ,(mapcar (lambda (var)
+    ((rep#lambda (tem)
+       `(let ,tem ,(mapcar (rep#lambda (var)
 			     (list (car var) (cadr var))) vars)
 	  (if ,(car test)
 	      (begin ,@(cdr test))
 	    ,@body
-	    (,tem ,@(mapcar (lambda (var)
+	    (,tem ,@(mapcar (rep#lambda (var)
 			      (rep#cond
 			       ((cddr var) (caddr var))
 			       (t (car var))))
@@ -143,9 +149,9 @@
      (gensym)))
 
   (defmacro delay (expression)
-    `(%make-promise (lambda () ,expression)))
+    `(%make-promise (rep#lambda () ,expression)))
 
   (defmacro define args
     (rep#cond
      ((symbolp (car args)) (cons 'set! args))
-     (t `(set! ,(caar args) (lambda ,(cdar args) ,@(cdr args)))))))
+     (t `(define ,(caar args) (lambda ,(cdar args) ,@(cdr args)))))))
