@@ -496,6 +496,31 @@ none:
     return 0;
 }
 
+static void
+child_build_environ (void)
+{
+    /* Build the environment */
+    repv tem = Fsymbol_value(Qprocess_environment, Qt);
+    if(rep_CONSP(tem))
+    {
+	repv len = Flength(tem);
+	if(len && rep_INTP(len))
+	{
+	    environ = rep_alloc(sizeof(char *) * (rep_INT(len) + 1));
+	    if(environ != 0)
+	    {
+		char **ptr = environ;
+		while(rep_CONSP(tem))
+		{
+		    *ptr++ = rep_STR(rep_CAR(tem));
+		    tem = rep_CDR(tem);
+		}
+		*ptr++ = 0;
+	    }
+	}
+    }
+}
+
 /* does the dirty stuff of getting the process running. if SYNC_INPUT
    is non-NULL it means to run the process synchronously with it's
    stdin connected to the file SYNC_INPUT. Otherwise this function returns
@@ -568,31 +593,10 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 	{
 	    switch(pr->pr_Pid = fork())
 	    {
-		repv tem;
-
 	    case 0:
 		/* Child process */
 
-		/* Build the environment */
-		tem = Fsymbol_value(Qprocess_environment, Qt);
-		if(rep_CONSP(tem))
-		{
-		    repv len = Flength(tem);
-		    if(len && rep_INTP(len))
-		    {
-			environ = rep_alloc(sizeof(char *) * (rep_INT(len) + 1));
-			if(environ != 0)
-			{
-			    char **ptr = environ;
-			    while(rep_CONSP(tem))
-			    {
-				*ptr++ = rep_STR(rep_CAR(tem));
-				tem = rep_CDR(tem);
-			    }
-			    *ptr++ = 0;
-			}
-		    }
-		}
+		child_build_environ ();
 
 		if(usepty)
 		{
@@ -1869,6 +1873,7 @@ rep_system (char *command)
 	return Fsignal (Qerror, Fcons (rep_string_dup ("Can't fork"), Qnil));
 
     case 0:
+	child_build_environ ();
 	argv[0] = "sh";
 	argv[1] = "-c";
 	argv[2] = command;
