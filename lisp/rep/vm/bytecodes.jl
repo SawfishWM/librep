@@ -46,7 +46,7 @@
 
 ;; Instruction set version
 (defconst bytecode-major 2)
-(defconst bytecode-minor 4)
+(defconst bytecode-minor 5)
 
 ;; Opcodes
 (defconst op-call 0x08)			;call (stk[n] stk[n-1] ... stk[0])
