@@ -454,6 +454,98 @@ When read, the syntax `FOO#BAR' expands to `(structure-ref FOO BAR)'."
 (setq *root-structure* 'rep)
 
 
+;; exception handling and syntax
+
+;; rethrow exception DATA (a list)
+(defun ignore-exception (data)
+  ;; should do something about this..
+  (throw (car data) (cdr data)))
+
+;; Call and return value of THUNK with a catch for TAG
+(defun call-with-catch (tag thunk)
+  (call-with-exception-handler
+   thunk
+   (lambda (data)
+     (if (eq (car data) tag)
+	 (cdr data)
+       (ignore-exception data)))))
+
+;; Call and return value of THUNK. PROT-THUNK will always be called
+;; after THUNK terminates, exception or no exception
+(defun call-with-unwind-protect (thunk prot-thunk)
+  (let (saved-data)
+    (let ((ret (call-with-exception-handler
+		thunk
+		(lambda (data) (setq saved-data data)))))
+      (prot-thunk)
+      (if saved-data
+	  (ignore-exception saved-data)
+	ret))))
+
+;; HANDLERS is list of (ERROR-SPEC . HANDLER-FUN) HANDLER-FUN will be
+;; called with a single arg, the list of error data
+(defun call-with-error-handlers (thunk . handlers)
+  (call-with-exception-handler
+   thunk
+   (lambda (data)
+     (if (not (eq (car data) 'error))
+	 (ignore-exception data)
+       (let ((type (cadr data)))
+	 (let loop ((rest handlers))
+	   (if (null rest)
+	       (ignore-exception data)
+	     (let ((h-type (caar rest)))
+	       (if (or (and (listp h-type) (memq type h-type))
+		       (eq h-type 'error) (eq h-type type))
+		   ((cdar rest) (cdr data))
+		 (loop (cdr rest)))))))))))
+
+(defmacro catch (tag . body)
+  "Evaluate BODY in an implicit progn; non-local exits are allowed with
+`(throw TAG)'. The value of the `catch' form is either the value of the
+progn or the value given to any matching `throw' form."
+  `(call-with-catch ,tag (lambda () ,@body)))
+
+(defmacro unwind-protect (form . body)
+  "Return the result of evaluating FORM. When execution leaves the
+dynamic extent of FORM evaluate `(progn BODY)' (even if exiting due to
+an exception within FORM).
+
+Note that when FORM is exited by calling a continuation, it is
+undefined whether or not BODY will be evaluated."
+  `(call-with-unwind-protect (lambda () ,form) (lambda () ,@body)))
+
+(defmacro condition-case (var form . handlers)
+  "Evaluates FORM with error-handlers in place, if no errors occur
+return the value returned by FORM, else the value of whichever
+handler's body was evaluated.
+
+Each HANDLER is a list of `(ERROR BODY...)'. ERROR defines which types
+of errors the handler catches, either a symbol or a list of symbols.
+The special symbol `error' matches all types of errors.
+
+If VAR is non-nil it's a symbol whose values is bound to `(ERROR-SYMBOL
+. DATA)' while the handler is evaluated (these are the arguments given
+to `signal' when the error was raised)."
+  `(call-with-error-handlers
+    (lambda () ,form)
+    ,@(mapcar (lambda (h)
+		`(cons (quote ,(car h))
+		       (lambda (,@(and var (list var)))
+			 ,@(cdr h))))
+		handlers)))
+
+;; default error handler
+(defun default-error-handler (err data)
+  (beep)
+  (write t (format nil "*** %s: %s"
+		   (or (get err 'error-message) err)
+		   (mapconcat (lambda (x)
+				(format nil "%s" x)) data ", "))))
+
+(defvar error-handler-function default-error-handler)
+
+
 ;; Function to allow easy creation of autoload stubs
 
 (defmacro make-autoload (symbol-form file . rest)
@@ -727,18 +819,6 @@ exist that have not already been returned."
 
 (defun file-handler-ref (name)
   (%structure-ref (%current-structure) name))
-
-
-;; default error handler
-
-(defun default-error-handler (err data)
-  (beep)
-  (write t (format nil "*** %s: %s"
-		   (or (get err 'error-message) err)
-		   (mapconcat (lambda (x)
-				(format nil "%s" x)) data ", "))))
-
-(defvar error-handler-function default-error-handler)
 
 
 ;; entry point
