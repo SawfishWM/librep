@@ -203,7 +203,7 @@ if test $dl_ok = dl; then
   case ${host} in
     *-dec-osf5*)
       AC_MSG_CHECKING([for broken RTLD_GLOBAL on Tru64])
-      if /usr/sbin/sizer -v | grep -E -q -e 'UNIX [[TVX]]5\.0A?(-[[[[:digit:]]]]+)? '; then
+      if /usr/sbin/sizer -v | grep -E -q -e 'UNIX [[TVX]]5\.0A?(-[[[:digit:]]]+)? '; then
 	  AC_DEFINE(BROKEN_RTLD_GLOBAL)
 	  AC_MSG_RESULT(yes)
       else
