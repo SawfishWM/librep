@@ -432,6 +432,8 @@ extern rep_cons *rep_dumped_cons_start, *rep_dumped_cons_end;
 extern rep_symbol *rep_dumped_symbols_start, *rep_dumped_symbols_end;
 extern repv rep_dumped_non_constants;
 extern int rep_guardian_type;
+extern repv rep_box_pointer (void *p);
+void *rep_unbox_pointer (repv v);
 extern void rep_register_type(u_int code, char *name,
 			      int (*compare)(repv, repv),
 			      void (*princ)(repv, repv),

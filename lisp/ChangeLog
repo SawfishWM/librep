@@ -1,5 +1,16 @@
 2000-01-30  John Harper  <john@dcs.warwick.ac.uk>
 
+	* debug.jl: better support for debugging in lexical
+	environments
+
+	* compiler-opt.jl (comp-peephole-opt): added pattern `jt X; nil
+	--> jpt X'
+
+	* compiler.jl (compile-compiler): compile `sort.jl' as well
+	(it's used by compiler-opt)
+
+	* lisp-doc.jl (describe-function-1): dereference closures
+
 	* threads.jl: first attempt at a (very basic) threading
 	interface
 
