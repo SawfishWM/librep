@@ -926,7 +926,7 @@ rep_readl(repv strm, register int *c_p)
 			goto read_comment;
 		    }
 		}
-		/* fall through */
+		goto error;
 
 	    case 't': case 'T':
 	    case 'f': case 'F':
