@@ -44,7 +44,11 @@ char *alloca ();
 #include <assert.h>
 #include <math.h>
 #include <ctype.h>
+#include <limits.h>
+
+#ifdef HAVE_GMP
 #include <gmp.h>
+#endif
 
 #ifdef NEED_MEMORY_H
 # include <memory.h>
@@ -58,12 +62,18 @@ DEFSTRING(domain_error, "Domain error");
 
 typedef struct {
     repv car;
+#ifdef HAVE_GMP
     mpz_t z;
+#else
+    rep_long_long z;
+#endif
 } rep_number_z;
 
 typedef struct {
     repv car;
+#ifdef HAVE_GMP
     mpq_t q;
+#endif
 } rep_number_q;
 
 typedef struct {
@@ -75,8 +85,12 @@ typedef struct rep_number_block_struct {
     union {
 	struct rep_number_block_struct *p;
 	/* ensure that the following is aligned correctly */
+#ifdef HAVE_GMP
 	mpz_t dummy_z;
 	mpq_t dummy_q;
+#else
+	rep_long_long dummy_z;
+#endif
 	double dummy_f;
     } next;
     rep_number data[1];
@@ -172,11 +186,17 @@ number_sweep(void)
 			switch (idx)
 			{
 			case 0:
+#ifdef HAVE_GMP
 			    mpz_clear (((rep_number_z *)this)->z);
+#else
+			    ((rep_number_z *)this)->z = 0;
+#endif
 			    break;
 
 			case 1:
+#ifdef HAVE_GMP
 			    mpq_clear (((rep_number_q *)this)->q);
+#endif
 			    break;
 			}
 		    }
@@ -222,19 +242,25 @@ dup__ (repv in)
     switch (rep_NUMBER_TYPE (in))
     {
 	rep_number_z *z;
-	rep_number_q *q;
 	rep_number_f *f;
 
     case rep_NUMBER_BIGNUM:
 	z = make_number (rep_NUMBER_BIGNUM);
+#ifdef HAVE_GMP
 	mpz_init_set (z->z, rep_NUMBER(in,z));
+#else
+	z->z = rep_NUMBER(in,z);
+#endif
 	return rep_VAL (z);
 
-    case rep_NUMBER_RATIONAL:
-	q = make_number (rep_NUMBER_RATIONAL);
+#ifdef HAVE_GMP
+    case rep_NUMBER_RATIONAL: {
+	rep_number_q *q = make_number (rep_NUMBER_RATIONAL);
 	mpq_init (q->q);
 	mpq_set (q->q, rep_NUMBER(in,q));
-        return rep_VAL (q);
+	return rep_VAL (q);
+    }
+#endif
 
     case rep_NUMBER_FLOAT:
 	f = make_number (rep_NUMBER_FLOAT);
@@ -264,7 +290,6 @@ promote_to (repv in, int type)
     switch (in_type)
     {
 	rep_number_z *z;
-	rep_number_q *q;
 	rep_number_f *f;
 
     case rep_NUMBER_INT:
@@ -273,15 +298,23 @@ promote_to (repv in, int type)
 
 	case rep_NUMBER_BIGNUM:
 	    z = make_number (rep_NUMBER_BIGNUM);
+#ifdef HAVE_GMP
 	    mpz_init_set_si (z->z, rep_INT(in));
+#else
+	    z->z = rep_INT (in);
+#endif
 	    return rep_VAL (z);
 
 	case rep_NUMBER_RATIONAL:
-	    q = make_number (rep_NUMBER_RATIONAL);
+#ifdef HAVE_GMP
+	{
+	    rep_number_q *q = make_number (rep_NUMBER_RATIONAL);
 	    mpq_init (q->q);
 	    mpq_set_si (q->q, rep_INT(in), 1);
 	    mpq_canonicalize (q->q);
 	    return rep_VAL (q);
+	}
+#endif
 
 	case rep_NUMBER_FLOAT:
 	    f = make_number (rep_NUMBER_FLOAT);
@@ -297,25 +330,35 @@ promote_to (repv in, int type)
 	switch (type)
 	{
 	case rep_NUMBER_RATIONAL:
-	    q = make_number (rep_NUMBER_RATIONAL);
+#ifdef HAVE_GMP
+	{
+	    rep_number_q *q = make_number (rep_NUMBER_RATIONAL);
 	    mpq_init (q->q);
 	    mpq_set_z (q->q, rep_NUMBER(in,z));
 	    return rep_VAL (q);
+	}
+#endif
 
 	case rep_NUMBER_FLOAT:
 	    f = make_number (rep_NUMBER_FLOAT);
+#ifdef HAVE_GMP
 	    f->f = mpz_get_d (rep_NUMBER(in,z));
+#else
+	    f->f = rep_NUMBER(in,z);
+#endif
 	    return rep_VAL (f);
 
 	default:
 	    abort();
 	}
 
+#ifdef HAVE_GMP
     case rep_NUMBER_RATIONAL:
 	assert (type == rep_NUMBER_FLOAT);
 	f = make_number (rep_NUMBER_FLOAT);
 	f->f = mpq_get_d (rep_NUMBER(in,q));
 	return rep_VAL (f);
+#endif
 
     default:
 	abort ();
@@ -329,6 +372,7 @@ maybe_demote (repv in)
     assert (rep_NUMBERP(in));
     switch (rep_NUMBER_TYPE(in))
     {
+#ifdef HAVE_GMP
     case rep_NUMBER_RATIONAL:
 	if (mpz_cmp_ui (mpq_denref (rep_NUMBER (in,q)), 1) == 0)
 	{
@@ -338,14 +382,23 @@ maybe_demote (repv in)
 	    goto do_bignum;
 	}
 	break;
+#endif
 
     case rep_NUMBER_BIGNUM:
+#ifdef HAVE_GMP
     do_bignum:
 	if (mpz_cmp_si (rep_NUMBER (in,z), rep_LISP_MAX_INT) <= 0
 	    && mpz_cmp_si (rep_NUMBER (in,z), rep_LISP_MIN_INT) >= 0)
 	{
 	    in = rep_MAKE_INT (mpz_get_si (rep_NUMBER (in,z)));
 	}
+#else
+	if (rep_NUMBER (in,z) <= rep_LISP_MAX_INT
+	    && rep_NUMBER (in,z) >= rep_LISP_MIN_INT)
+	{
+	    in = rep_MAKE_INT (rep_NUMBER (in,z));
+	}
+#endif
     }
     return in;
 }
@@ -362,7 +415,11 @@ coerce (repv in, int type)
 	switch (type)
 	{
 	case rep_NUMBER_INT:
+#ifdef HAVE_GMP
 	    return rep_MAKE_INT (mpz_get_si (rep_NUMBER (in,z)));
+#else
+	    return rep_MAKE_INT (rep_NUMBER (in,z));
+#endif
 
 	default:
 	    abort ();
@@ -435,7 +492,11 @@ rep_make_long_uint (u_long in)
     else
     {
 	rep_number_z *z = make_number (rep_NUMBER_BIGNUM);
+#ifdef HAVE_GMP
 	mpz_init_set_ui (z->z, in);
+#else
+	z->z = in;
+#endif
 	return rep_VAL (z);
     }
 }
@@ -448,7 +509,11 @@ rep_make_long_int (long in)
     else
     {
 	rep_number_z *z = make_number (rep_NUMBER_BIGNUM);
+#ifdef HAVE_GMP
 	mpz_init_set_si (z->z, in);
+#else
+	z->z = in;
+#endif
 	return rep_VAL (z);
     }
 }
@@ -463,10 +528,16 @@ rep_get_long_uint (repv in)
 	switch (rep_NUMBER_TYPE(in))
 	{
 	case rep_NUMBER_BIGNUM:
+#ifdef HAVE_GMP
 	    return mpz_get_ui (rep_NUMBER(in,z));
+#else
+	    return rep_NUMBER (in,z);
+#endif
 
+#ifdef HAVE_GMP
 	case rep_NUMBER_RATIONAL:
 	    return (u_long) mpq_get_d (rep_NUMBER(in,q));
+#endif
 
 	case rep_NUMBER_FLOAT:
 	    return (u_long) rep_NUMBER(in,f);
@@ -490,10 +561,16 @@ rep_get_long_int (repv in)
 	switch (rep_NUMBER_TYPE(in))
 	{
 	case rep_NUMBER_BIGNUM:
+#ifdef HAVE_GMP
 	    return mpz_get_ui (rep_NUMBER(in,z));
+#else
+	    return rep_NUMBER (in,z);
+#endif
 
+#ifdef HAVE_GMP
 	case rep_NUMBER_RATIONAL:
 	    return (u_long) mpq_get_d (rep_NUMBER(in,q));
+#endif
 
 	case rep_NUMBER_FLOAT:
 	    return (u_long) rep_NUMBER(in,f);
@@ -516,6 +593,7 @@ rep_make_longlong_int (rep_long_long in)
 	return rep_MAKE_INT (in);
     else
     {
+#ifdef HAVE_GMP
 	int sign = (in < 0) ? -1 : 1;
 	unsigned rep_long_long uin = (sign < 0) ? -in : in;
 	u_long bottom = (u_long) uin;
@@ -532,6 +610,10 @@ rep_make_longlong_int (rep_long_long in)
 	}
 	if (sign < 0)
 	    mpz_neg (z->z, z->z);
+#else
+	rep_number_z *z = make_number (rep_NUMBER_BIGNUM);
+	z->z = in;
+#endif
 	return rep_VAL (z);
     }
 }
@@ -546,6 +628,7 @@ rep_get_longlong_int (repv in)
 	switch (rep_NUMBER_TYPE(in))
 	{
 	case rep_NUMBER_BIGNUM:
+#ifdef HAVE_GMP
 	    {
 		int sign = mpz_sgn (rep_NUMBER(in,z));
 		rep_long_long bottom, top, out;
@@ -562,9 +645,14 @@ rep_get_longlong_int (repv in)
 		mpz_clear (tem);
 		return out;
 	    }
+#else
+	    return rep_NUMBER (in,z);
+#endif
 
+#ifdef HAVE_GMP
 	case rep_NUMBER_RATIONAL:
 	    return (rep_long_long) mpq_get_d (rep_NUMBER(in,q));
+#endif
 
 	case rep_NUMBER_FLOAT:
 	    return (rep_long_long) rep_NUMBER(in,f);
@@ -621,10 +709,16 @@ rep_get_float (repv in)
 	    return rep_INT (in);
 
 	case rep_NUMBER_BIGNUM:
+#ifdef HAVE_GMP
 	    return mpz_get_d (rep_NUMBER(in,z));
+#else
+	    return rep_NUMBER (in,z);
+#endif
 
+#ifdef HAVE_GMP
 	case rep_NUMBER_RATIONAL:
 	    return mpq_get_d (rep_NUMBER(in,q));
+#endif
 
 	case rep_NUMBER_FLOAT:
 	    return rep_NUMBER(in,f);
@@ -648,10 +742,16 @@ rep_compare_numbers (repv v1, repv v2)
 	return rep_INT(v1) - rep_INT(v2);
 
     case rep_NUMBER_BIGNUM:
+#ifdef HAVE_GMP
 	return mpz_cmp (rep_NUMBER(v1,z), rep_NUMBER(v2,z));
+#else
+	return rep_NUMBER(v1,z) - rep_NUMBER(v2,z);
+#endif
 
+#ifdef HAVE_GMP
     case rep_NUMBER_RATIONAL:
 	return mpq_cmp (rep_NUMBER(v1,q), rep_NUMBER(v2,q));
+#endif
 
     case rep_NUMBER_FLOAT:
 	d = rep_NUMBER(v1,f) - rep_NUMBER(v2,f);
@@ -683,10 +783,16 @@ number_cmp (repv v1, repv v2)
 	return rep_INT(v1) - rep_INT(v2);
 
     case rep_NUMBER_BIGNUM:
+#ifdef HAVE_GMP
 	return mpz_cmp (rep_NUMBER(v1,z), rep_NUMBER(v2,z));
+#else
+	return rep_NUMBER(v1,z) - rep_NUMBER(v2,z);
+#endif
 
+#ifdef HAVE_GMP
     case rep_NUMBER_RATIONAL:
 	return mpq_cmp (rep_NUMBER(v1,q), rep_NUMBER(v2,q));
+#endif
 
     case rep_NUMBER_FLOAT:
 	d = rep_NUMBER(v1,f) - rep_NUMBER(v2,f);
@@ -704,7 +810,9 @@ rep_parse_number (char *buf, u_int len, u_int radix, int sign, u_int type)
     switch (type)
     {
 	rep_number_z *z;
+#ifdef HAVE_GMP
 	rep_number_q *q;
+#endif
 	rep_number_f *f;
 	char *tem, *copy;
 	double d;
@@ -733,7 +841,6 @@ rep_parse_number (char *buf, u_int len, u_int radix, int sign, u_int type)
 	default:
 	    abort();
 	}
-
 	if (bits < rep_LISP_INT_BITS)
 	{
 	    static const signed char map[] = {
@@ -749,8 +856,9 @@ rep_parse_number (char *buf, u_int len, u_int radix, int sign, u_int type)
 	    if (radix == 10)
 	    {
 		/* optimize most common case */
-		while ((c = *buf++) != 0)
+		while (len-- > 0)
 		{
+		    c = *buf++;
 		    if (c < '0' || c > '9')
 			goto error;
 		    value = value * 10 + (c - '0');
@@ -758,9 +866,11 @@ rep_parse_number (char *buf, u_int len, u_int radix, int sign, u_int type)
 	    }
 	    else
 	    {
-		while ((c = *buf++) != 0)
+		while (len-- > 0)
 		{
-		    int d = toupper (c) - '0';
+		    int d;
+		    c = *buf++;
+		    d = toupper (c) - '0';
 		    if (d < 0 || d >= sizeof (map))
 			goto error;
 		    value = value * radix + map[d];
@@ -775,6 +885,7 @@ rep_parse_number (char *buf, u_int len, u_int radix, int sign, u_int type)
 	else
 	{
 	    z = make_number (rep_NUMBER_BIGNUM);
+#ifdef HAVE_GMP
 	    if (mpz_init_set_str (z->z, buf, radix) == 0)
 	    {
 		if (sign < 0)
@@ -783,11 +894,38 @@ rep_parse_number (char *buf, u_int len, u_int radix, int sign, u_int type)
 	    }
 	    else
 		goto error;
+#else
+	    {
+		rep_long_long value;
+		char *tail;
+		copy = alloca (len + 1);
+		memcpy (copy, buf, len);
+		copy[len] = 0;
+# ifdef HAVE_STRTOLL
+		value = strtoll (copy, &tail, radix);
+		if (value == LONG_LONG_MIN || value == LONG_LONG_MAX
+		    || *tail != 0)
+		{
+		    goto error;
+		}
+# else
+		value = strtol (copy, &tail, radix);
+		if (value == LONG_MIN || value == LONG_MIN || *tail == 0)
+		    goto error;
+# endif
+		if (sign < 0)
+		    value = -value;
+
+		z->z = value;
+		return maybe_demote (rep_VAL (z));
+	    }
+#endif
 	}
 
     case rep_NUMBER_RATIONAL:
 	tem = strchr (buf, '/');
 	assert (tem != 0);
+#ifdef HAVE_GMP
 	q = make_number (rep_NUMBER_RATIONAL);
 	mpq_init (q->q);
 	copy = alloca (tem - buf + 1);
@@ -806,6 +944,19 @@ rep_parse_number (char *buf, u_int len, u_int radix, int sign, u_int type)
 	}
 	else
 	    goto error;
+#else
+	{
+	    repv num = rep_parse_number (buf, tem - buf, radix, 1, 0);
+	    repv den = rep_parse_number (tem + 1, len - (tem + 1 - buf),
+					 radix, 1, 0);
+	    if (!num || !den)
+		goto error;
+	    num = rep_number_div (num, den);
+	    if (num && sign < 0)
+		num = rep_number_neg (num);
+	    return num;
+	}
+#endif
 
     case rep_NUMBER_FLOAT:
 	d = strtod (buf, &tem);
@@ -829,8 +980,7 @@ rep_print_number_to_string (repv obj, int radix, int prec)
 
     switch (rep_NUMERIC_TYPE (obj))
     {
-	u_char buf[64], fmt[8], *tem;
-	size_t len;
+	char buf[128], fmt[8], *tem;
 
     case rep_NUMBER_INT:
 	if (radix == 10)
@@ -858,10 +1008,42 @@ rep_print_number_to_string (repv obj, int radix, int prec)
 
     case rep_NUMBER_BIGNUM:
     do_bignum:
+#ifdef HAVE_GMP
 	out = mpz_get_str (0, radix, rep_NUMBER(obj,z));
+#else
+	{
+	    static const char *map = "0123456789abcdefghijklmnopqrstuvwzyz";
+	    char *ptr = buf, *optr;
+	    rep_long_long value = rep_NUMBER(obj,z);
+	    int sign = 1;
+	    if (value == 0)
+		*ptr++ = 0;
+	    else
+	    {
+		if (value < 0)
+		{
+		    sign = -1;
+		    value = -value;
+		}
+		while (value != 0)
+		{
+		    *ptr++ = map[value % radix];
+		    value = value / radix;
+		}
+	    }
+	    if (sign < 0)
+		*ptr++ = '-';
+	    out = malloc ((ptr - buf) + 1);
+	    for (optr = out; ptr > buf;)
+		*optr++ = *(--ptr);
+	    *optr = 0;
+	}
+#endif
 	break;
 
-    case rep_NUMBER_RATIONAL:
+#ifdef HAVE_GMP
+    case rep_NUMBER_RATIONAL: {
+	size_t len;
 	len = (mpz_sizeinbase (mpq_numref (rep_NUMBER (obj, q)), radix)
 	       + mpz_sizeinbase (mpq_denref (rep_NUMBER (obj, q)), radix) + 4);
 	out = malloc (len);
@@ -870,6 +1052,8 @@ rep_print_number_to_string (repv obj, int radix, int prec)
 	out[len++] = '/';
 	mpz_get_str (out + len, radix, mpq_denref (rep_NUMBER (obj,q)));
 	break;
+    }
+#endif
 
     case rep_NUMBER_FLOAT:		/* XXX handle radix arg */
 	sprintf (fmt, "%%.%dg", prec < 0 ? 16 : prec);
@@ -996,14 +1180,20 @@ rep_number_add (repv x, repv y)
 	    break;
 
 	case rep_NUMBER_BIGNUM:
+#ifdef HAVE_GMP
 	    mpz_add (rep_NUMBER (out,z), rep_NUMBER (x,z), rep_NUMBER (y,z));
+#else
+	    rep_NUMBER(out,z) = rep_NUMBER(x,z) + rep_NUMBER(y,z);
+#endif
 	    out = maybe_demote (out);
 	    break;
 
+#ifdef HAVE_GMP
 	case rep_NUMBER_RATIONAL:
 	    mpq_add (rep_NUMBER (out,q), rep_NUMBER (x,q), rep_NUMBER (y,q));
 	    out = maybe_demote (out);
 	    break;
+#endif
     
 	case rep_NUMBER_FLOAT:
 	    rep_NUMBER (out,f) = rep_NUMBER (x,f) + rep_NUMBER (y,f);
@@ -1025,12 +1215,18 @@ rep_number_neg (repv x)
 	break;
 
     case rep_NUMBER_BIGNUM:
+#ifdef HAVE_GMP
 	mpz_neg (rep_NUMBER(out,z), rep_NUMBER(x,z));
+#else
+	rep_NUMBER(out,z) = - rep_NUMBER(x,z);
+#endif
 	break;
 
+#ifdef HAVE_GMP
     case rep_NUMBER_RATIONAL:
 	mpq_neg (rep_NUMBER(out,q), rep_NUMBER(x,q));
 	break;
+#endif
 
     case rep_NUMBER_FLOAT:
 	rep_NUMBER(out,f) = -rep_NUMBER(x,f);
@@ -1053,14 +1249,20 @@ rep_number_sub (repv x, repv y)
 	break;
 
     case rep_NUMBER_BIGNUM:
+#ifdef HAVE_GMP
 	mpz_sub (rep_NUMBER (out,z), rep_NUMBER (x,z), rep_NUMBER (y,z));
+#else
+	rep_NUMBER (out,z) = rep_NUMBER (x,z) - rep_NUMBER (y,z);
+#endif
 	out = maybe_demote (out);
 	break;
 
+#ifdef HAVE_GMP
     case rep_NUMBER_RATIONAL:
 	mpq_sub (rep_NUMBER (out,q), rep_NUMBER (x,q), rep_NUMBER (y,q));
 	out = maybe_demote (out);
 	break;
+#endif
     
     case rep_NUMBER_FLOAT:
 	rep_NUMBER (out,f) = rep_NUMBER (x,f) - rep_NUMBER (y,f);
@@ -1086,14 +1288,20 @@ rep_number_mul (repv x, repv y)
 	break;
 
     case rep_NUMBER_BIGNUM:
+#ifdef HAVE_GMP
 	mpz_mul (rep_NUMBER (out,z), rep_NUMBER (x,z), rep_NUMBER (y,z));
+#else
+	rep_NUMBER (out,z) = rep_NUMBER (x,z) * rep_NUMBER (y,z);
+#endif
 	out = maybe_demote (out);
 	break;
 
+#ifdef HAVE_GMP
     case rep_NUMBER_RATIONAL:
 	mpq_mul (rep_NUMBER (out,q), rep_NUMBER (x,q), rep_NUMBER (y,q));
 	out = maybe_demote (out);
 	break;
+#endif
     
     case rep_NUMBER_FLOAT:
 	rep_NUMBER (out,f) = rep_NUMBER (x,f) * rep_NUMBER (y,f);
@@ -1120,6 +1328,7 @@ rep_number_div (repv x, repv y)
 	    out = rep_MAKE_INT (rep_INT (x) / rep_INT (y));
 	else
 	{
+#ifdef HAVE_GMP
 	    u_long uy = (rep_INT (y) < 0 ? - rep_INT (y) : rep_INT (y));
 	    rep_number_q *q = make_number (rep_NUMBER_RATIONAL);
 	    mpq_init (q->q);
@@ -1128,10 +1337,16 @@ rep_number_div (repv x, repv y)
 	    if (rep_INT (y) < 0)
 		mpq_neg (q->q, q->q);
 	    out = rep_VAL (q);
+#else
+	    rep_number_f *f = make_number (rep_NUMBER_FLOAT);
+	    f->f = ((double) rep_INT (x)) / ((double) rep_INT (y));
+	    out = rep_VAL (f);
+#endif
 	}
 	break;
 
     case rep_NUMBER_BIGNUM:
+#ifdef HAVE_GMP
 	{
 	    mpz_t rem;
 	    int sign;
@@ -1158,12 +1373,28 @@ rep_number_div (repv x, repv y)
 		out = rep_VAL (q);
 	    }
 	}
+#else
+	if (rep_NUMBER (x,z) % rep_NUMBER (y,z) == 0)
+	{
+	    rep_number_z *z = make_number (rep_NUMBER_BIGNUM);
+	    z->z = rep_NUMBER (x,z) / rep_NUMBER (y,z);
+	    out = rep_VAL (z);
+	}
+	else
+	{
+	    rep_number_f *f = make_number (rep_NUMBER_FLOAT);
+	    f->f = ((double) rep_NUMBER (x,z)) / ((double) rep_NUMBER (y,z));
+	    out = rep_VAL (f);
+	}
+#endif
 	break;
 
+#ifdef HAVE_GMP
     case rep_NUMBER_RATIONAL:
 	mpq_div (rep_NUMBER (out,q), rep_NUMBER (x,q), rep_NUMBER (y,q));
 	out = maybe_demote (out);
 	break;
+#endif
     
     case rep_NUMBER_FLOAT:
 	rep_NUMBER (out,f) = rep_NUMBER (x,f) / rep_NUMBER (y,f);
@@ -1187,8 +1418,12 @@ rep_number_lognot (repv x)
 
     case rep_NUMBER_BIGNUM:
 	z = make_number (rep_NUMBER_BIGNUM);
+#ifdef HAVE_GMP
 	mpz_init (z->z);
 	mpz_com (z->z, rep_NUMBER (x,z));
+#else
+	z->z = ~ rep_NUMBER (x,z);
+#endif
 	out = rep_VAL (z);
 	break;
 
@@ -1212,7 +1447,11 @@ rep_number_logior (repv x, repv y)
 	break;
 
     case rep_NUMBER_BIGNUM:
+#ifdef HAVE_GMP
 	mpz_ior (rep_NUMBER (out,z), rep_NUMBER (x,z), rep_NUMBER (y,z));
+#else
+	rep_NUMBER (out,z) = rep_NUMBER (x,z) | rep_NUMBER (y,z);
+#endif
 	break;
 
     default:
@@ -1230,13 +1469,16 @@ rep_number_logxor (repv x, repv y)
     out = promote_dup (&x, &y);
     switch (rep_NUMERIC_TYPE (out))
     {
+#ifdef HAVE_GMP
 	mpz_t tem;
+#endif
 
     case rep_NUMBER_INT:
 	out = rep_MAKE_INT (rep_INT (x) ^ rep_INT (y));
 	break;
 
     case rep_NUMBER_BIGNUM:
+#ifdef HAVE_GMP
 	/* XXX is this correct: x^y = x|y & ~(x&y) */
 	mpz_init (tem);
 	mpz_ior (tem, rep_NUMBER (x,z), rep_NUMBER (y,z));
@@ -1244,6 +1486,9 @@ rep_number_logxor (repv x, repv y)
 	mpz_com (rep_NUMBER (out,z), rep_NUMBER (out,z));
 	mpz_and (rep_NUMBER (out,z), rep_NUMBER (out,z), tem);
 	mpz_clear (tem);
+#else
+	rep_NUMBER (out,z) = rep_NUMBER (x,z) ^ rep_NUMBER (y,z);
+#endif
 	break;
 
     default:
@@ -1266,7 +1511,11 @@ rep_number_logand (repv x, repv y)
 	break;
 
     case rep_NUMBER_BIGNUM:
+#ifdef HAVE_GMP
 	mpz_and (rep_NUMBER (out,z), rep_NUMBER (x,z), rep_NUMBER (y,z));
+#else
+	rep_NUMBER (out,z) = rep_NUMBER (x,z) & rep_NUMBER (y,z);
+#endif
 	break;
 
     default:
@@ -1323,7 +1572,22 @@ rep_integer_gcd (repv x, repv y)
 	out = rep_MAKE_INT (n);
     }
     else
+    {
+#ifdef HAVE_GMP
 	mpz_gcd (rep_NUMBER(out,z), rep_NUMBER(x,z), rep_NUMBER(y,z));
+#else
+	/* Euclid's algorithm */
+	rep_long_long m = rep_NUMBER (x,z), n = rep_NUMBER (y,z);
+	m = ABS (m); n = ABS (n);
+	while(m != 0)
+	{
+	    rep_long_long t = n % m;
+	    n = m;
+	    m = t;
+	}
+	rep_NUMBER (out,z) = n;
+#endif
+    }
     return out;
 }
 
@@ -1400,7 +1664,15 @@ Returns the integer remainder after dividing DIVIDEND by DIVISOR.
 	break;
 
     case rep_NUMBER_BIGNUM:
+#ifdef HAVE_GMP
 	mpz_tdiv_r (rep_NUMBER(out,z), rep_NUMBER(n1,z), rep_NUMBER(n2,z));
+#else
+	{
+	    rep_number_z *z = make_number (rep_NUMBER_BIGNUM);
+	    z->z = rep_NUMBER (n1,z) % rep_NUMBER (n2,z);
+	    out = rep_VAL (z);
+	}
+#endif
 	out = maybe_demote (out);
 	break;
 
@@ -1434,7 +1706,11 @@ and that floating point division is used.
     switch (rep_NUMERIC_TYPE (out))
     {
 	long tem;
+#ifdef HAVE_GMP
 	int sign;
+#else
+        rep_number_z *z;
+#endif
 
     case rep_NUMBER_INT:
 	/* This code from GNU Emacs */
@@ -1446,11 +1722,19 @@ and that floating point division is used.
 	break;
 
     case rep_NUMBER_BIGNUM:
+#ifdef HAVE_GMP
 	mpz_tdiv_r (rep_NUMBER(out,z), rep_NUMBER(n1,z), rep_NUMBER(n2,z));
 	/* If the "remainder" comes out with the wrong sign, fix it.  */
 	sign = mpz_sgn (rep_NUMBER(out,z));
 	if (mpz_sgn (rep_NUMBER(n2,z)) < 0 ? sign > 0 : sign < 0)
 	    mpz_add (rep_NUMBER(out,z), rep_NUMBER(out,z), rep_NUMBER(n2,z));
+#else
+	z = make_number (rep_NUMBER_BIGNUM);
+	z->z = rep_NUMBER (n1,z) % rep_NUMBER (n2,z);
+	if (rep_NUMBER (n2,z) < 0 ? z->z > 0 : z->z < 0)
+	    z->z += rep_NUMBER (n2,z);
+	out = rep_VAL (z);
+#endif
 	out = maybe_demote (out);
 	break;
 
@@ -1478,7 +1762,11 @@ DIVISOR.
 	out = rep_MAKE_INT (rep_INT (x) / rep_INT (y));
     else
     {
+#ifdef HAVE_GMP
 	mpz_tdiv_q (rep_NUMBER(out,z), rep_NUMBER(x,z), rep_NUMBER(y,z));
+#else
+	rep_NUMBER(out,z) = rep_NUMBER (x,z) / rep_NUMBER (y,z);
+#endif
 	out = maybe_demote (out);
     }
     return out;
@@ -1492,22 +1780,7 @@ Returns the bitwise logical `not' of NUMBER.
 ::end:: */
 {
     rep_DECLARE1(num, rep_NUMERICP);
-    switch (rep_NUMERIC_TYPE (num))
-    {
-	rep_number_z *z;
-
-    case rep_NUMBER_INT:
-	return rep_MAKE_INT (~rep_INT (num));
-
-    case rep_NUMBER_BIGNUM:
-	z = make_number (rep_NUMBER_BIGNUM);
-	mpz_init (z->z);
-	mpz_com (z->z, rep_NUMBER (num,z));
-	return rep_VAL (z);
-
-    default:
-	return rep_signal_arg_error (num, 1);
-    }
+    return rep_number_lognot (num);
 }
 
 DEFUN("logior", Flogior, Slogior, (repv args), rep_SubrN) /*
@@ -1576,10 +1849,16 @@ Return t if NUMBER is zero.
 	    return num == rep_MAKE_INT (0) ? Qt : Qnil;
 
 	case rep_NUMBER_BIGNUM:
+#ifdef HAVE_GMP
 	    return mpz_sgn (rep_NUMBER(num,z)) == 0 ? Qt : Qnil;
+#else
+	    return rep_NUMBER (num,z) == 0 ? Qt : Qnil;
+#endif
 
+#ifdef HAVE_GMP
 	case rep_NUMBER_RATIONAL:
 	    return mpq_sgn (rep_NUMBER(num,q)) == 0 ? Qt : Qnil;
+#endif
 
 	case rep_NUMBER_FLOAT:
 	    return rep_NUMBER(num,f) == 0 ? Qt : Qnil;
@@ -1598,16 +1877,23 @@ Return NUMBER plus 1.
     rep_DECLARE1(num, rep_NUMERICP);
     switch (rep_NUMERIC_TYPE (num))
     {
+#ifdef HAVE_GMP
 	mpq_t temq;
+#endif
 
     case rep_NUMBER_INT:
 	return rep_make_long_int (rep_INT (num) + 1);
 
     case rep_NUMBER_BIGNUM:
 	num = dup (num);
+#ifdef HAVE_GMP
 	mpz_add_ui (rep_NUMBER (num,z), rep_NUMBER (num,z), 1);
+#else
+	rep_NUMBER (num,z) = rep_NUMBER (num,z) + 1;
+#endif
 	return maybe_demote (num);
 
+#ifdef HAVE_GMP
     case rep_NUMBER_RATIONAL:
 	num = dup (num);
 	mpq_init (temq);
@@ -1615,6 +1901,7 @@ Return NUMBER plus 1.
 	mpq_add (rep_NUMBER (num,q), rep_NUMBER (num,q), temq);
 	mpq_clear (temq);
 	return maybe_demote (num);
+#endif
 
     case rep_NUMBER_FLOAT:
 	num = dup (num);
@@ -1634,16 +1921,23 @@ Return NUMBER minus 1.
     rep_DECLARE1(num, rep_NUMERICP);
     switch (rep_NUMERIC_TYPE (num))
     {
+#ifdef HAVE_GMP
 	mpq_t temq;
+#endif
 
     case rep_NUMBER_INT:
 	return rep_make_long_int (rep_INT (num) - 1);
 
     case rep_NUMBER_BIGNUM:
 	num = dup (num);
+#ifdef HAVE_GMP
 	mpz_sub_ui (rep_NUMBER (num,z), rep_NUMBER (num,z), 1);
+#else
+	rep_NUMBER (num,z) = rep_NUMBER (num,z) - 1;
+#endif
 	return maybe_demote (num);
 
+#ifdef HAVE_GMP
     case rep_NUMBER_RATIONAL:
 	num = dup (num);
 	mpq_init (temq);
@@ -1651,6 +1945,7 @@ Return NUMBER minus 1.
 	mpq_sub (rep_NUMBER (num,q), rep_NUMBER (num,q), temq);
 	mpq_clear (temq);
 	return maybe_demote (num);
+#endif
 
     case rep_NUMBER_FLOAT:
 	num = dup (num);
@@ -1697,11 +1992,18 @@ Both NUMBER and COUNT must be integers.
     case rep_NUMBER_BIGNUM:
     do_bignum:
 	z = make_number (rep_NUMBER_BIGNUM);
+#ifdef HAVE_GMP
 	mpz_init (z->z);
 	if (rep_INT (shift) > 0)
 	    mpz_mul_2exp (z->z, rep_NUMBER (num,z), rep_INT (shift));
 	else
 	    mpz_div_2exp (z->z, rep_NUMBER (num,z), - rep_INT (shift));
+#else
+	if (rep_INT (shift) > 0)
+	    z->z = rep_NUMBER (num,z) << rep_INT (shift);
+	else
+	    z->z = rep_NUMBER (num,z) >> -rep_INT (shift);
+#endif
 	return maybe_demote (rep_VAL (z));
 
     default:
@@ -1724,8 +2026,10 @@ NUMBER.
     case rep_NUMBER_BIGNUM:
 	return arg;
 
+#ifdef HAVE_GMP
     case rep_NUMBER_RATIONAL:
 	return rep_make_long_int (floor (mpq_get_d (rep_NUMBER (arg,q))));
+#endif
 
     case rep_NUMBER_FLOAT:
 	return rep_make_float (floor (rep_NUMBER (arg,f)), rep_TRUE);
@@ -1748,8 +2052,10 @@ NUMBER.
     case rep_NUMBER_BIGNUM:
 	return arg;
 
+#ifdef HAVE_GMP
     case rep_NUMBER_RATIONAL:
 	return rep_make_long_int (ceil (mpq_get_d (rep_NUMBER (arg,q))));
+#endif
 
     case rep_NUMBER_FLOAT:
 	return rep_make_float (ceil (rep_NUMBER (arg,f)), rep_TRUE);
@@ -1774,14 +2080,18 @@ Round NUMBER to the nearest integer between NUMBER and zero.
 	return arg;
 
     default:
+#ifdef HAVE_GMP
         if (rep_NUMBER_RATIONAL_P (arg))
 	    d = mpq_get_d (rep_NUMBER(arg,q));
 	else
+#endif
 	    d = rep_NUMBER(arg,f);
 	d = (d < 0.0) ? -floor (-d) : floor (d);
+#ifdef HAVE_GMP
         if (rep_NUMBER_RATIONAL_P (arg))
 	    return rep_make_long_int ((long) d);
 	else
+#endif
 	    return rep_make_float (d, rep_TRUE);
     }
     abort ();
@@ -1805,9 +2115,11 @@ nearest even integer.
 	return arg;
 
     default:
+#ifdef HAVE_GMP
         if (rep_NUMBER_RATIONAL_P (arg))
 	    d = mpq_get_d (rep_NUMBER(arg,q));
 	else
+#endif
 	    d = rep_NUMBER(arg,f);
 	/* from guile */
 	plus_half = d + 0.5;
@@ -1815,9 +2127,11 @@ nearest even integer.
 	/* Adjust so that the round is towards even.  */
 	d = ((plus_half == result && plus_half / 2 != floor (plus_half / 2))
 	     ? result - 1 : result);
+#ifdef HAVE_GMP
         if (rep_NUMBER_RATIONAL_P (arg))
 	    return rep_make_long_int ((long) d);
 	else
+#endif
 	    return rep_make_float (d, rep_TRUE);
     }
     abort ();
@@ -1979,8 +2293,18 @@ signalled (mathematically should return a complex number).
 	}
 	else
 	    out = dup (arg1);
+#ifdef HAVE_GMP
 	mpz_pow_ui (rep_NUMBER(out,z), rep_NUMBER(arg1,z),
 		    neg ? -rep_INT(arg2) : rep_INT (arg2));
+#else
+	{
+	    int y = rep_INT (arg2);
+	    if (y == 0)
+		out = rep_MAKE_INT (0);
+	    while (y-- > 0)
+		rep_NUMBER (out,z) = rep_NUMBER (out,z) * rep_NUMBER (arg1,z);
+	}
+#endif
 	if (neg)
 	    out = rep_number_div (rep_MAKE_INT (1), out);
     }
@@ -2113,7 +2437,11 @@ accuracy.
 	else
 	{
 	    rep_number_z *z = make_number (rep_NUMBER_BIGNUM);
+#ifdef HAVE_GMP
 	    mpz_init_set_d (z->z, d);
+#else
+	    z->z = d;
+#endif
 	    return rep_VAL (z);
 	}
     }
@@ -2129,12 +2457,14 @@ Return the numerator of rational number X.
     rep_DECLARE1(x, rep_NUMERICP);
     if (rep_INTP (x) || rep_NUMBER_BIGNUM_P (x))
 	return x;
+#ifdef HAVE_GMP
     else if (rep_NUMBER_RATIONAL_P (x))
     {
 	rep_number_z *z = make_number (rep_NUMBER_BIGNUM);
 	mpz_init_set (z->z, mpq_numref (rep_NUMBER(x,q)));
 	return maybe_demote (rep_VAL (z));
     }
+#endif
     else
 	return rep_signal_arg_error (x, 1);
 }
@@ -2149,12 +2479,14 @@ Return the denominator of rational number X.
     rep_DECLARE1(x, rep_NUMERICP);
     if (rep_INTP (x) || rep_NUMBER_BIGNUM_P (x))
 	return rep_MAKE_INT (1);
+#ifdef HAVE_GMP
     else if (rep_NUMBER_RATIONAL_P (x))
     {
 	rep_number_z *z = make_number (rep_NUMBER_BIGNUM);
 	mpz_init_set (z->z, mpq_denref (rep_NUMBER(x,q)));
 	return maybe_demote (rep_VAL (z));
     }
+#endif
     else
 	return rep_signal_arg_error (x, 1);
 }
