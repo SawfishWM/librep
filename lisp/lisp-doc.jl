@@ -18,11 +18,26 @@
 ;;; along with Jade; see the file COPYING.  If not, write to
 ;;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-(structure (export describe-value
+(structure (export describe-lambda-list
+		   describe-value
 		   documentation
 		   document-var
 		   add-documentation)
   (open rep)
+
+  (defun describe-lambda-list (lambda-list)
+    (let ((output (make-string-output-stream)))
+      ;; Print the arg list (one at a time)
+      (while (consp lambda-list)
+	(let ((arg-name (symbol-name (car lambda-list))))
+	  ;; Unless the argument starts with a `&' print it in capitals
+	  (unless (= (aref arg-name 0) ?&)
+	    (setq arg-name (string-upcase arg-name)))
+	  (format output " %s" arg-name))
+	(setq lambda-list (cdr lambda-list)))
+      (when (and lambda-list (symbolp lambda-list))
+	(format output " . %s" (string-upcase (symbol-name lambda-list))))
+      (get-output-stream-string output)))
 
   (defun describe-value (value &optional name)
     "Print to standard-output a description of the lisp data object VALUE. If
@@ -46,26 +61,12 @@ NAME is non-nil, then it should be the symbol that is associated with VALUE."
       ;; Check if it's been compiled.
       (when (bytecodep value)
 	(setq type (concat "Compiled " type)))
-      (format standard-output "%s: \(%s" type (or name value))
-      (when (or (eq (car value) 'lambda) (bytecodep value))
-	;; A Lisp function or macro, print its argument spec.
-	(let
-	    ((lambda-list (if (consp value)
-			      (nth (if (eq (car value) 'macro) 2 1) value)
-			    (aref value 0))))
-	  ;; Print the arg list (one at a time)
-	  (while (consp lambda-list)
-	    (let
-		((arg-name (symbol-name (car lambda-list))))
-	      ;; Unless the argument starts with a `&' print it in capitals
-	      (unless (= (aref arg-name 0) ?&)
-		(setq arg-name (string-upcase arg-name)))
-	      (format standard-output " %s" arg-name))
-	    (setq lambda-list (cdr lambda-list)))
-	  (when (and lambda-list (symbolp lambda-list))
-	    (format standard-output " . %s" (string-upcase
-					     (symbol-name lambda-list))))))
-      (write standard-output "\)\n")))
+      (format standard-output "%s: " type)
+      (if (eq (car value) 'lambda)
+	  (format standard-output "\(%s%s\)\n" (or name value)
+		  (describe-lambda-list
+		   (nth (if (eq (car value) 'macro) 2 1) value)))
+	(format standard-output "%s\n" (or name value)))))
 
 
 ;;; Accessing doc strings
