@@ -35,6 +35,10 @@
 ;; compiled (and possibly out of date) version
 (load "autoload.jl")
 
+;; Do operating- and window-system initialisation
+(load (concat "os-" (symbol-name operating-system)) t)
+(load (concat "ws-" (symbol-name window-system)) t)
+
 ;; Load site specific initialisation. Errors here are trapped since
 ;; they're probably not going to leave the editor in an unusable state
 (if (not (member "-no-rc" command-line-args))
