@@ -213,3 +213,9 @@ available as the reader shortcut #', i.e. #'foo == (function foo)."
 (defmacro pos-line (p)
   "Return the row pointed to by position P."
   (list 'car p))
+
+
+;; Setup format-hooks-alist to a few default'ish things
+
+(setq format-hooks-alist '((?D . file-name-directory)
+			   (?F . file-name-nondirectory)))
