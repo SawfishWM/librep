@@ -45,6 +45,7 @@ char *alloca ();
 #include <math.h>
 #include <ctype.h>
 #include <limits.h>
+#include <errno.h>
 
 #ifdef HAVE_GMP
 #include <gmp.h>
@@ -68,6 +69,16 @@ typedef struct {
     rep_long_long z;
 #endif
 } rep_number_z;
+
+#ifndef HAVE_GMP
+# if SIZEOF_LONG_LONG > SIZEOF_LONG
+#  define BIGNUM_MIN LONG_LONG_MIN
+#  define BIGNUM_MAX LONG_LONG_MAX
+# else
+#  define BIGNUM_MIN LONG_MIN
+#  define BIGNUM_MAX LONG_MAX
+# endif
+#endif
 
 typedef struct {
     repv car;
@@ -668,7 +679,6 @@ rep_get_longlong_int (repv in)
     return 0;
 }
 
-
 #else /* SIZEOF_LONG_LONG > SIZEOF_LONG */
 
 repv
@@ -688,14 +698,20 @@ rep_get_longlong_int (repv in)
 repv
 rep_make_float (double in, rep_bool force)
 {
-    if (!force && floor (in) == in && in < LONG_MAX && in > LONG_MIN)
-	return rep_make_long_int ((long) in);
-    else
+    rep_number_f *f;
+    if (!force && floor (in) == in)
     {
-	rep_number_f *f = make_number (rep_NUMBER_FLOAT);
-	f->f = in;
-	return rep_VAL (f);
+	if (in < LONG_MAX && in > LONG_MIN)
+	    return rep_make_long_int ((long) in);
+#if SIZEOF_LONG_LONG > SIZEOF_LONG
+	else if (in < LONG_LONG_MAX && in > LONG_LONG_MIN)
+	    return rep_make_longlong_int (in);
+#endif
     }
+
+    f = make_number (rep_NUMBER_FLOAT);
+    f->f = in;
+    return rep_VAL (f);
 }
 
 double
@@ -901,18 +917,17 @@ rep_parse_number (char *buf, u_int len, u_int radix, int sign, u_int type)
 		copy = alloca (len + 1);
 		memcpy (copy, buf, len);
 		copy[len] = 0;
+		errno = 0;
 # ifdef HAVE_STRTOLL
 		value = strtoll (copy, &tail, radix);
-		if (value == LONG_LONG_MIN || value == LONG_LONG_MAX
-		    || *tail != 0)
-		{
-		    goto error;
-		}
 # else
 		value = strtol (copy, &tail, radix);
-		if (value == LONG_MIN || value == LONG_MIN || *tail == 0)
-		    goto error;
 # endif
+		if (errno != 0)
+		    goto do_float;	/* overflow */
+		else if (*tail != 0)
+		    goto error;		/* not all characters used */
+
 		if (sign < 0)
 		    value = -value;
 
@@ -959,6 +974,9 @@ rep_parse_number (char *buf, u_int len, u_int radix, int sign, u_int type)
 #endif
 
     case rep_NUMBER_FLOAT:
+#ifndef HAVE_GMP
+    do_float:
+#endif
 	d = strtod (buf, &tem);
 	if (tem - buf != len)
 	    goto error;
@@ -1021,13 +1039,11 @@ rep_print_number_to_string (repv obj, int radix, int prec)
 	    else
 	    {
 		if (value < 0)
-		{
 		    sign = -1;
-		    value = -value;
-		}
 		while (value != 0)
 		{
-		    *ptr++ = map[value % radix];
+		    int digit = value % radix;
+		    *ptr++ = map[ABS (digit)];
 		    value = value / radix;
 		}
 	    }
@@ -1179,14 +1195,19 @@ rep_number_add (repv x, repv y)
 	    out = rep_make_long_int (rep_INT (x) + rep_INT (y));
 	    break;
 
-	case rep_NUMBER_BIGNUM:
+	case rep_NUMBER_BIGNUM: {
 #ifdef HAVE_GMP
 	    mpz_add (rep_NUMBER (out,z), rep_NUMBER (x,z), rep_NUMBER (y,z));
 #else
-	    rep_NUMBER(out,z) = rep_NUMBER(x,z) + rep_NUMBER(y,z);
+	    double t = (double) rep_NUMBER(x,z) + (double) rep_NUMBER (y,z);
+	    if (t > BIGNUM_MIN && t < BIGNUM_MAX)
+		rep_NUMBER(out,z) = rep_NUMBER(x,z) + rep_NUMBER(y,z);
+	    else
+		out = rep_make_float (t, rep_TRUE);
 #endif
 	    out = maybe_demote (out);
 	    break;
+	}
 
 #ifdef HAVE_GMP
 	case rep_NUMBER_RATIONAL:
@@ -1214,13 +1235,18 @@ rep_number_neg (repv x)
 	out = rep_make_long_int (-rep_INT (x));
 	break;
 
-    case rep_NUMBER_BIGNUM:
+    case rep_NUMBER_BIGNUM: {
 #ifdef HAVE_GMP
 	mpz_neg (rep_NUMBER(out,z), rep_NUMBER(x,z));
 #else
-	rep_NUMBER(out,z) = - rep_NUMBER(x,z);
+	double t = - (double) rep_NUMBER(x,z);
+	if (t > BIGNUM_MIN && t < BIGNUM_MAX)
+	    rep_NUMBER(out,z) = - rep_NUMBER(x,z);
+	else
+	    out = rep_make_float (t, rep_TRUE);
 #endif
 	break;
+    }
 
 #ifdef HAVE_GMP
     case rep_NUMBER_RATIONAL:
@@ -1248,14 +1274,19 @@ rep_number_sub (repv x, repv y)
 	out = rep_make_long_int (rep_INT (x) - rep_INT (y));
 	break;
 
-    case rep_NUMBER_BIGNUM:
+    case rep_NUMBER_BIGNUM: {
 #ifdef HAVE_GMP
 	mpz_sub (rep_NUMBER (out,z), rep_NUMBER (x,z), rep_NUMBER (y,z));
 #else
-	rep_NUMBER (out,z) = rep_NUMBER (x,z) - rep_NUMBER (y,z);
+	double t = (double) rep_NUMBER (x,z) - (double) rep_NUMBER (y,z);
+	if (t > BIGNUM_MIN && t < BIGNUM_MAX)
+	    rep_NUMBER (out,z) = rep_NUMBER (x,z) - rep_NUMBER (y,z);
+	else
+	    out = rep_make_float (t, rep_TRUE);
 #endif
 	out = maybe_demote (out);
 	break;
+    }
 
 #ifdef HAVE_GMP
     case rep_NUMBER_RATIONAL:
@@ -1287,14 +1318,19 @@ rep_number_mul (repv x, repv y)
 	out = rep_make_longlong_int (tot);
 	break;
 
-    case rep_NUMBER_BIGNUM:
+    case rep_NUMBER_BIGNUM: {
 #ifdef HAVE_GMP
 	mpz_mul (rep_NUMBER (out,z), rep_NUMBER (x,z), rep_NUMBER (y,z));
 #else
-	rep_NUMBER (out,z) = rep_NUMBER (x,z) * rep_NUMBER (y,z);
+	double t = (double) rep_NUMBER (x,z) * (double) rep_NUMBER (y,z);
+	if (t > BIGNUM_MIN && t < BIGNUM_MAX)
+	    rep_NUMBER (out,z) = rep_NUMBER (x,z) * rep_NUMBER (y,z);
+	else
+	    out = rep_make_float (t, rep_TRUE);
 #endif
 	out = maybe_demote (out);
 	break;
+    }
 
 #ifdef HAVE_GMP
     case rep_NUMBER_RATIONAL:
@@ -2000,7 +2036,20 @@ Both NUMBER and COUNT must be integers.
 	    mpz_div_2exp (z->z, rep_NUMBER (num,z), - rep_INT (shift));
 #else
 	if (rep_INT (shift) > 0)
-	    z->z = rep_NUMBER (num,z) << rep_INT (shift);
+	{
+	    long i, this;
+	    double factor = 1, t;
+	    for (i = rep_INT (shift); i > 0; i -= this)
+	    {
+		this = MIN (sizeof (long) * CHAR_BIT - 1, i);
+		factor = factor * (1L << this);
+	    }
+	    t = (double) rep_NUMBER (num,z) * factor;
+	    if (t > BIGNUM_MIN && t < BIGNUM_MAX)
+		z->z = rep_NUMBER (num,z) << rep_INT (shift);
+	    else
+		return rep_make_float (t, rep_TRUE);
+	}
 	else
 	    z->z = rep_NUMBER (num,z) >> -rep_INT (shift);
 #endif
@@ -2285,7 +2334,6 @@ signalled (mathematically should return a complex number).
 
     if (rep_INTEGERP (arg1) && rep_INTP (arg2))
     {
-	int neg = rep_INT (arg2) < 0;
 	if (rep_INTP (arg1))
 	{
 	    arg1 = promote_to (arg1, rep_NUMBER_BIGNUM);
@@ -2294,19 +2342,19 @@ signalled (mathematically should return a complex number).
 	else
 	    out = dup (arg1);
 #ifdef HAVE_GMP
-	mpz_pow_ui (rep_NUMBER(out,z), rep_NUMBER(arg1,z),
-		    neg ? -rep_INT(arg2) : rep_INT (arg2));
+	{
+	    int neg = rep_INT (arg2) < 0;
+	    mpz_pow_ui (rep_NUMBER(out,z), rep_NUMBER(arg1,z),
+			neg ? -rep_INT(arg2) : rep_INT (arg2));
+	    if (neg)
+		out = rep_number_div (rep_MAKE_INT (1), out);
+	}
 #else
 	{
-	    int y = rep_INT (arg2);
-	    if (y == 0)
-		out = rep_MAKE_INT (0);
-	    while (y-- > 0)
-		rep_NUMBER (out,z) = rep_NUMBER (out,z) * rep_NUMBER (arg1,z);
+	    double t = pow (rep_NUMBER (arg1,z), rep_INT (arg2));
+	    out = rep_make_float (t, rep_FALSE);
 	}
 #endif
-	if (neg)
-	    out = rep_number_div (rep_MAKE_INT (1), out);
     }
     else
     {
@@ -2440,7 +2488,12 @@ accuracy.
 #ifdef HAVE_GMP
 	    mpz_init_set_d (z->z, d);
 #else
-	    z->z = d;
+	    if (d >= BIGNUM_MAX)
+		z->z = BIGNUM_MAX;
+	    else if (d <= BIGNUM_MIN)
+		z->z = BIGNUM_MIN;
+	    else
+		z->z = (rep_long_long) d;
 #endif
 	    return rep_VAL (z);
 	}
