@@ -112,8 +112,8 @@
 	(if (numberp args)
 	    (progn
 	      ;; decode numeric arg-spec
-	      (aset count 0 (logand args 0xfff))
-	      (aset count 1 (logand (ash args -12) 0xfff))
+	      (aset count 0 (logand args #xfff))
+	      (aset count 1 (logand (ash args -12) #xfff))
 	      (aset count 2 (not (zerop (ash args -24)))))
 	  (while args
 	    (if (symbolp args)

@@ -531,7 +531,7 @@ Note that each input file will be loaded from the lisp-lib-directory with
 	       (label (dump-get-label cell)))
 	    (@ "const u_char %s_data[] = %S;\n" label string)
 	    (@ "const const_rep_string %s = {\n" label)
-	    (@ "  0x%x,\n" (logior (ash (length string) 8) 0x45))
+	    (@ "  0x%x,\n" (logior (ash (length string) 8) #x45))
 	    (@ "  rep_VAL(%s_data)\n" label)
 	    (@ "};\n\n"))) head))
     
@@ -572,7 +572,7 @@ Note that each input file will be loaded from the lisp-lib-directory with
 	       (plist (dump-get-state cell 'plist)))
 	    (@ "/* %s */\n" symbol)
 	    (@ "rep_symbol %s = {\n" label)
-	    (@ "  0x%x,\n" (logior 0x41
+	    (@ "  0x%x,\n" (logior #x41
 				   (if is-constant (ash 1 (+ 8 0)) 0)
 				   (if is-defined  (ash 1 (+ 8 7)) 0)
 				   (if is-special  (ash 1 (+ 8 4)) 0)))
@@ -605,7 +605,7 @@ Note that each input file will be loaded from the lisp-lib-directory with
   ;; Output to vector cells in the list HEAD, TYPE should be vector or bytecode
   (defun dump-output-vectors (head type)
     (let
-	((type-value (if (eq type 'vector) 0x43 0x47)))
+	((type-value (if (eq type 'vector) #x43 #x47)))
       (@ "\n\f\n/* Constant %ss */\n\n" type)
       (mapc (lambda (cell)
 	      (let

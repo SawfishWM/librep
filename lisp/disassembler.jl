@@ -25,51 +25,51 @@
 
   ;; Lookup table of strings naming instructions
   (define disassembler-opcodes
-   [ nil nil nil nil nil nil nil nil	; 0x00
+   [ nil nil nil nil nil nil nil nil	; #x00
      "call" nil nil nil nil nil nil nil
-     "push" nil nil nil nil nil nil nil	; 0x10
+     "push" nil nil nil nil nil nil nil	; #x10
      "refq" nil nil nil nil nil nil nil
-     "setq" nil nil nil nil nil nil nil	; 0x20
+     "setq" nil nil nil nil nil nil nil	; #x20
      "list" nil nil nil nil nil nil nil
-     nil nil nil nil nil nil nil nil	; 0x30
+     nil nil nil nil nil nil nil nil	; #x30
      "refn" nil nil nil nil nil nil nil
      "ref" "set" "fluid-ref" "enclose"
-     "init-bind" "unbind" "dup" "swap"	; 0x40
+     "init-bind" "unbind" "dup" "swap"	; #x40
      "pop" "push\tnil" "push\tt" "cons"
      "car" "cdr" "rplaca" "rplacd"
      "nth" "nthcdr" "aset" "aref"
-     "length" "bind" "add" "neg" "sub"	; 0x50
+     "length" "bind" "add" "neg" "sub"	; #x50
      "mul" "div" "rem" "lnot" "not" "lor" "land"
      "equal" "eq" "structure-ref" "scm-test"
-     "gt" "ge" "lt" "le"		; 0x60
+     "gt" "ge" "lt" "le"		; #x60
      "inc" "dec" "ash" "zerop" "null" "atom" "consp" "listp"
      "numberp" "stringp" "vectorp" "catch"
-     "throw" "binderr" "return" "unbindall"	; 0x70
+     "throw" "binderr" "return" "unbindall"	; #x70
      "boundp" "symbolp" "get" "put"
      "errorpro" "signal" "quotient" "reverse"
      "nreverse" "assoc" "assq" "rassoc"
-     "rassq" "last" "mapcar" "mapc"	; 0x80
+     "rassq" "last" "mapcar" "mapc"	; #x80
      "member" "memq" "delete" "delq"
      "delete-if" "delete-if-not" "copy-sequence" "sequencep"
      "functionp" "special-form-p" "subrp" "eql"
-     "lxor" "max" "min" "filter"	; 0x90
+     "lxor" "max" "min" "filter"	; #x90
      "macrop" "bytecodep" "pushi\t0" "pushi\t1"
      "pushi\t2" "pushi\t-1" "pushi\t-2" "pushi\t%d"
      "pushi\t%d" "pushi\t%d" "caar" "cadr"
-     "cdar" "cddr" "caddr" "cadddr"	; 0xa0
+     "cdar" "cddr" "caddr" "cadddr"	; #xa0
      "caddddr" "cadddddr" "caddddddr" "cadddddddr"
      "floor" "ceiling" "truncate" "round"
      nil "forbid" "permit" "exp"
-     "log" "sin" "cos" "tan"		; 0xb0
+     "log" "sin" "cos" "tan"		; #xb0
      "sqrt" "expt" "swap2" "mod"
      "make-closure" "unbindall-0" "closurep" "pop-all"
-     "fluid-set" "fluid-bind" "memql" "num-eq" "test-scm" "test-scm-f" nil nil	; 0xc0
+     "fluid-set" "fluid-bind" "memql" "num-eq" "test-scm" "test-scm-f" nil nil	; #xc0
      nil nil nil nil nil nil nil nil
-     nil nil nil nil nil nil nil nil	; 0xd0
+     nil nil nil nil nil nil nil nil	; #xd0
      nil nil nil nil nil nil nil nil
-     nil nil nil nil nil nil nil nil	; 0xe0
+     nil nil nil nil nil nil nil nil	; #xe0
      "setn" nil nil nil nil nil nil nil
-     nil nil nil nil nil nil nil nil	; 0xf0
+     nil nil nil nil nil nil nil nil	; #xf0
      "ejmp\t%d" "jpn\t%d" "jpt\t%d" "jmp\t%d" "jn\t%d" "jt\t%d" "jnp\t%d" "jtp\t%d" ])
 
   ;;;###autoload
@@ -115,10 +115,10 @@
 	    (if (listp spec)
 		(format stream "Arguments: %s\n" spec)
 	      (write stream "Arguments: ")
-	      (unless (zerop (logand spec 0xfff))
-		(format stream "%s required " (logand spec 0xfff)))
-	      (unless (zerop (logand (ash spec -12) 0xfff))
-		(format stream "%s optional " (logand (ash spec -12) 0xfff)))
+	      (unless (zerop (logand spec #xfff))
+		(format stream "%s required " (logand spec #xfff)))
+	      (unless (zerop (logand (ash spec -12) #xfff))
+		(format stream "%s optional " (logand (ash spec -12) #xfff)))
 	      (unless (zerop (ash spec -24))
 		(write stream "1 rest arg"))
 	      (write stream #\newline)))
@@ -132,7 +132,7 @@
       (when (zerop depth)
 	(format stream "%d bytes, %d constants, and (%d,%d) stack slots\n"
 		(length code-string) (length consts)
-		(logand stack 0xffff) (ash stack -16)))
+		(logand stack #xffff) (ash stack -16)))
       (let
 	  ((i 0)
 	   (indent (make-string depth))
@@ -144,11 +144,11 @@
 	   ((or (< c (bytecode last-with-args))
 		(and (>= c (bytecode first-with-args-2))
 		     (<= c (bytecode last-with-args-2))))
-	    (setq op (logand c 0xf8))
+	    (setq op (logand c #xf8))
 	    (cond
-	     ((< (logand c 0x07) 6)
-	      (setq arg (logand c 0x07)))
-	     ((= (logand c 0x07) 6)
+	     ((< (logand c #x07) 6)
+	      (setq arg (logand c #x07)))
+	     ((= (logand c #x07) 6)
 	      (setq i (1+ i)
 		    arg (aref code-string i)))
 	     (t
