@@ -1,3 +1,24 @@
+Fri Jun  5 10:21:32 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compiler.jl (compile-file): ensure that the output file ends
+	in .jlc; expand all top level uses of macros. Also change how
+	eval-when-compile works (a default macro definition for it)
+
+	* rm-restrict.jl (defrule): now fully expands the rule. This
+	allows files of defrule forms to be compiled down to bytecode
+	(rm-defrule): renamed as define-rule
+
+	* disassembler.jl (disassemble): fix disassembly of nested
+	bytecode objects
+
+	* info.jl: deleted the info-buffer variable, all state is now
+	local to the *Info* buffer. This allows multiple info sessions
+	to run concurrently, and for all buffers to be gc'd (the info
+	function with a prefix arg creates a new info buffer)
+
+	* compile.jl (compile-buffer): deleted this global variable,
+	allows *compilation* buffers to be garbage collected
+
 Thu Jun  4 14:53:30 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* prompt.jl (prompt-complete): pass prompt-list-fold-case along
