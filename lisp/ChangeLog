@@ -1,5 +1,20 @@
 2000-06-05  John Harper  <john@dcs.warwick.ac.uk>
 
+	* compiler-modules.jl (compile-top-level-structure,
+	compile-top-level-define-structure): new exported functions
+	* compiler-rep.jl: leave top-level structure definitions
+	unexpanded in output
+
+	* rep-repl.jl (,load-file): will now load more than one file
+
+	* scheme.jl, scheme-utils.jl, scheme-syntax-funs.jl,
+	scheme-misc.jl, scheme-data.jl, compiler-scheme.jl: prefix most
+	exported non-r4rs symbols by `#' (not allowed in scheme
+	identifiers)
+
+	* compiler-modules.jl (compile-structure-ref): check
+	open-modules for structure being referenced as well
+
 	* scheme-data.jl (symbol?): (symbol? '()) => #f
 	(string->symbol): copy the name if a symbol needs to be created
 	and interned

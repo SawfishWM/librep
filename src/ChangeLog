@@ -1,5 +1,10 @@
 2000-06-05  John Harper  <john@dcs.warwick.ac.uk>
 
+	* unix_processes.c: allocate a cell16 type instead of cell8
+
+	* structures.c (F_external_structure_ref): allow foo#bar refs
+	to succeed if `foo' has been opened but not accessed
+
 	* datums.c, lisp.c: moved rep_scm_f and rep_scm_t to datums.c;
 	initialize always, not just when first read
 

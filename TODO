@@ -10,7 +10,12 @@ and more long-term ideas are marked -
 Before release
 ==============
 
+ ! (compile-form '(while X Y Z)) broken
+   (compile-form '(while 0 1 2)) doesn't terminate
+
  ! scheme define/lambda doesn't splice begin forms
+
+ ! scheme `load' broken?
 
  + do something with the define-value ugliness?
 
@@ -123,6 +128,21 @@ General programming tasks:
  - subrs can't be called tail recursively (e.g. call/cc apply ..?)
 
  - add a hygienic macro facility
+
+   this may be overkill? capture of introduced bindings can be avoided
+   using gensyms, capture of introduced free variables could be avoided
+   by introducing a way of tagging variable references with the
+   structure they need to be dereferenced in. E.g. I had:
+
+   #`SYM => #<CURRENT-STRUCTURE:SYM>
+
+   then write macros as:
+
+   (defmacro push (a l)
+     `(,#`setq ,l (,#`cons ,a ,l)))
+
+   but this is ugly, and only solves the problem for global bindings.
+   (it also makes problems for code-walking after macro expansion)
 
  - do JIT compilation of bytecode where profitable
 
