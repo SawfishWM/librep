@@ -43,9 +43,11 @@
 
   (defmacro if (test consequent . alternative)
     (rep#cond
+     ((cdr alternative)
+      (error "Scheme `if' only takes one else form"))
      (alternative
       `(%cond ((%test ,test) ,consequent)
-		  ('t ,@alternative)))
+		  ('t ,(car alternative))))
      (t `(%cond ((%test ,test) ,consequent)))))
 
   (defmacro set! (variable expression)
@@ -83,7 +85,7 @@
   (defmacro let args
     ((rep#lambda (fun vars values)
        (rep#cond
-	((symbolp (car args))
+	((cond ((car args) (symbolp (car args))))	;and expanded
 	 ;; named let
 	 (setq fun (car args))
 	 (setq args (cdr args))))
