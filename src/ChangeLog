@@ -1,3 +1,13 @@
+1999-08-15  John Harper  <john@dcs.warwick.ac.uk>
+
+	* timers.c: added some documentation strings
+
+1999-08-13  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep_lisp.h (rep_CELL8_TYPE_MASK): changed from 0x1f to 0x3f
+	to include the rep_CELL_IS_16 bit (otherwise all cell16 types
+	are reported as being symbolp!)
+
 1999-08-06  John Harper  <john@dcs.warwick.ac.uk>
 
 	* main.c (rep_handle_input_exception): if Qerror_mode is

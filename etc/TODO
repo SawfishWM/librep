@@ -6,7 +6,7 @@ TODO list for librep
 Bugs are marked !, things that should be done soon are marked +,
 and more long-term ideas are marked -
 
-Last modified: February 28, 1999
+Last modified: August 15, 1999
 
 
 Outstanding bugs
@@ -53,5 +53,7 @@ General programming tasks:
 
 Manual tasks:
 =============
+
+ + Document the error-mode and interrupt-mode variables
 
  + Document the internals (i.e. the C interface)
