@@ -107,7 +107,7 @@ libsdbm.la : $(SDBM_OBJS) repsdbm.lo
 
 libgettext.la : gettext.lo
 	$(LIBTOOL) $(CC) $(LDFLAGS) -module -o $@ \
-	 $^ -rpath $(repexecdir) $(GETTEXT_LIBS)
+	 $^ ../intl/*.lo -rpath $(repexecdir)
 
 clean :
 	rm -f *~ *.o *.lo *.la build.h

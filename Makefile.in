@@ -20,10 +20,11 @@
 
 top_builddir=.
 
-SUBDIRS = src lisp man
+ALL_SUBDIRS = intl src lisp man
+INSTALL_SUBDIRS = src lisp man
 
 all : build.h rules.mk DOC.dir
-	set -e; for dir in $(SUBDIRS); do \
+	set -e; for dir in $(ALL_SUBDIRS); do \
 	  [ -d $$dir ] && ( cd $$dir && $(MAKE) $@ ); \
  	done
 
@@ -37,7 +38,7 @@ rules.mk : rules.mk.sh config.status
 	  '$(repcommonexecdir)' '$(repdocfile)' >$@
 
 install : all installdirs
-	set -e; for dir in $(SUBDIRS); do \
+	set -e; for dir in $(INSTALL_SUBDIRS); do \
 	  ( cd $$dir && $(MAKE) $@ ); \
 	done
 	$(INSTALL_DATA) DOC.* $(DESTDIR)$(repdir)/$(version)
@@ -51,7 +52,7 @@ installdirs : $(top_srcdir)/mkinstalldirs
 	  $(DESTDIR)$(repcommonexecdir)
 
 uninstall :
-	-set -e; for dir in $(SUBDIRS); do \
+	-set -e; for dir in $(INSTALL_SUBDIRS); do \
 	  ( cd $$dir && $(MAKE) $@ ); \
 	done
 	rm -rf $(DESTDIR)$(repdir)/$(version)
@@ -75,13 +76,13 @@ nobak :
 	rm -f `find . -name '*~' -print`
 
 clean :
-	-set -e; for dir in $(SUBDIRS); do \
+	-set -e; for dir in $(ALL_SUBDIRS); do \
 	  [ -d $$dir ] && ( cd $$dir && $(MAKE) $@ ); \
 	done
 	rm -f *~ NEWS DOC.* TAGS build.h
 
 realclean :
-	-set -e; for dir in $(SUBDIRS); do \
+	-set -e; for dir in $(ALL_SUBDIRS); do \
 	  [ -d $$dir ] && ( cd $$dir && $(MAKE) $@ ); \
 	done
 	rm -f config.cache config.h config.log config.status Makefile libtool

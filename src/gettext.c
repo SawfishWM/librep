@@ -23,9 +23,9 @@
 #include <config.h>
 #include <rep.h>
 
-#ifdef HAVE_LIBINTL_H
-# include <libintl.h>
-#endif
+extern char *gettext (const char *msgid);
+extern char *textdomain (const char *domainname);
+extern char *bindtextdomain (const char *domainname, const char *dirname);
 
 DEFSYM(gettext, "gettext");
 
@@ -34,21 +34,16 @@ DEFUN("_", Fgettext, Sgettext, (repv in), rep_Subr1)
     char *out;
     rep_DECLARE1(in, rep_STRINGP);
 
-#ifdef HAVE_GETTEXT
     out = gettext (rep_STR(in));
     if (out == 0 || (u_char *) out == rep_STR(in))
 	return in;
     else
 	return rep_string_dup (out);
-#else
-    return in;
-#endif
 }
 
 DEFUN("bindtextdomain", Fbindtextdomain,
       Sbindtextdomain, (repv dom, repv dir), rep_Subr2)
 {
-#ifdef HAVE_GETTEXT
     char *domainname = 0, *dirname = 0, *out;
 
     if (rep_STRINGP(dom))
@@ -58,14 +53,10 @@ DEFUN("bindtextdomain", Fbindtextdomain,
 
     out = bindtextdomain (domainname, dirname);
     return out ? rep_string_dup (out) : Qnil;
-#else
-    return Qnil;
-#endif
 }
 
 DEFUN("textdomain", Ftextdomain, Stextdomain, (repv dom), rep_Subr1)
 {
-#ifdef HAVE_GETTEXT
     char *domainname = 0, *out;
 
     if (rep_STRINGP(dom))
@@ -73,9 +64,6 @@ DEFUN("textdomain", Ftextdomain, Stextdomain, (repv dom), rep_Subr1)
 
     out = textdomain (domainname);
     return out ? rep_string_dup (out) : Qnil;
-#else
-    return Qnil;
-#endif
 }
 
 

@@ -38,7 +38,7 @@ output_files="src/Makefile:Makedefs.in:src/Makefile.in\
  lisp/Makefile:Makedefs.in:lisp/Makefile.in\
  Makefile:Makedefs.in:Makefile.in\
  man/Makefile:Makedefs.in:man/Makefile.in\
- librep.spec"
+ intl/Makefile librep.spec"
 
 dnl Find the system type
 AC_CANONICAL_HOST
@@ -84,17 +84,12 @@ AC_CHECK_LIB(nsl, xdr_void)
 AC_CHECK_LIB(socket, bind)
 AC_CHECK_LIB(dl, dlopen)
 
-AC_CHECK_LIB(intl, gettext, [
-  AC_DEFINE(HAVE_LIBINTL)
-  GETTEXT_LIBS=-lintl])
-AC_SUBST(GETTEXT_LIBS)
-
 dnl Checks for header files.
 AC_HEADER_DIRENT
 AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
-AC_CHECK_HEADERS(fcntl.h sys/ioctl.h sys/time.h sys/utsname.h unistd.h siginfo.h memory.h stropts.h termios.h libintl.h)
+AC_CHECK_HEADERS(fcntl.h sys/ioctl.h sys/time.h sys/utsname.h unistd.h siginfo.h memory.h stropts.h termios.h string.h)
 
 dnl Check for Doug Lea's malloc in libc, otherwise compile dlmalloc.c
 doug_lea_malloc=yes
@@ -162,12 +157,6 @@ AC_FUNC_MEMCMP
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS(getcwd gethostname select socket strcspn strerror strstr stpcpy strtol psignal strsignal snprintf grantpt lrand48 getpagesize setitimer dladdr dlerror)
 AC_REPLACE_FUNCS(realpath)
-
-dnl Check for gettext ()
-saved_LIBS="$LIBS"
-LIBS="$LIBS $GETTEXT_LIBS"
-AC_CHECK_FUNCS(gettext)
-LIBS="$saved_LIBS"
 
 dnl Custom tests
 
@@ -340,6 +329,26 @@ AC_SUBST(HAVE_X11)
 AC_SUBST(LIBOBJS)
 
 AC_DEFINE_UNQUOTED(rep_VERSION, "${version}")
+
+dnl Hacks for libintl
+VERSION="$version"
+PACKAGE="librep"
+DATADIRNAME="share"
+MKINSTALLDIRS='${top_srcdir}/mkinstalldirs'
+USE_INCLUDED_LIBINTL=yes
+INTLOBJS="\$(GETTOBJS)"
+GT_YES='#'
+GT_NO=''
+l=l
+AC_SUBST(VERSION)
+AC_SUBST(PACKAGE)
+AC_SUBST(DATADIRNAME)
+AC_SUBST(MKINSTALLDIRS)
+AC_SUBST(USE_INCLUDED_LIBINTL)
+AC_SUBST(INTLOBJS)
+AC_SUBST(GT_YES)
+AC_SUBST(GT_NO)
+AC_SUBST(l)
 
 dnl Build all files
 AC_OUTPUT(${output_files})
