@@ -1,3 +1,9 @@
+2000-11-21  John Harper  <jsh@eazel.com>
+
+	* rules.mk.sh: rename repexecdir variable as repcommonexecdir
+	so it doesn't conflict with Makedefs.in (shouldn't affect other
+	users of this file.. I hope)
+
 2000-11-15  John Harper  <jsh@eazel.com>
 
 	* Makedefs.in: include rules.mk and redefine $(rep_DL_LIBTOOL)
