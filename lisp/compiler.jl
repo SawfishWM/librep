@@ -471,10 +471,14 @@ don't macroexpand the form before compiling.")
 		 (delete-file temp-file)
 		 ;; Hack to signal error without entering the debugger (again)
 		 (throw 'error error-info)))
-	      ;; Copy the file to its correct location
-	      (copy-file temp-file (concat file-name (if (string-match
-							  "\\.jl$" file-name)
-							 ?c ".jlc")))
+	      ;; Copy the file to its correct location, and copy
+	      ;; permissions from source file
+	      (let
+		  ((real-name (concat file-name (if (string-match
+						     "\\.jl$" file-name)
+						    ?c ".jlc"))))
+		(copy-file temp-file real-name)
+		(set-file-modes real-name (file-modes file-name)))
 	      t)))
       (when (file-exists-p temp-file)
 	(delete-file temp-file)))))
