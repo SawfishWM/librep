@@ -172,7 +172,7 @@ search_environment (repv sym)
 	rep_CONCAT(op_, op):
 
 DEFUN("jade-byte-code", Fjade_byte_code, Sjade_byte_code, (repv code, repv consts, repv stkreq), rep_Subr3) /*
-::doc:Sjade-byte-code::
+::doc:jade-byte-code::
 jade-byte-code CODE-STRING CONST-VEC MAX-STACK
 
 Evaluates the string of byte codes CODE-STRING, the constants that it
@@ -1207,7 +1207,7 @@ quit:
 }
 
 DEFUN("validate-byte-code", Fvalidate_byte_code, Svalidate_byte_code, (repv bc_major, repv bc_minor), rep_Subr2) /*
-::doc:Svalidate-byte-code::
+::doc:validate-byte-code::
 validate-byte-code BC-MAJOR BC-MINOR
 
 Check that byte codes from instruction set BC-MAJOR.BC-MINOR, may be
@@ -1223,7 +1223,7 @@ executed. If not, an error will be signalled.
 }
 
 DEFUN("make-byte-code-subr", Fmake_byte_code_subr, Smake_byte_code_subr, (repv args), rep_SubrN) /*
-::doc:Smake-byte-code-subr::
+::doc:make-byte-code-subr::
 make-byte-code-subr ARGS CODE CONSTANTS STACK [DOC] [INTERACTIVE]
 
 Return an object that can be used as the function value of a symbol.

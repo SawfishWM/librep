@@ -68,7 +68,7 @@ char *alloca ();
 #endif
 
 DEFSYM(format_hooks_alist, "format-hooks-alist"); /*
-::doc:Vformat-hooks-alist::
+::doc:format-hooks-alist::
 Alist of (CHAR . FUNCTION) defining extra format conversions for the
 format function. FUNCTION is called as (FUNCTION repv), and should
 return the string to be inserted.
@@ -488,7 +488,7 @@ rep_stream_read_esc(repv stream, int *c_p)
 }
 
 DEFUN("write", Fwrite, Swrite, (repv stream, repv data, repv len), rep_Subr3) /*
-::doc:Swrite::
+::doc:write::
 write STREAM DATA [LENGTH]
 
 Writes DATA, which can either be a string or a character, to the stream
@@ -536,7 +536,7 @@ a string LENGTH can define how many characters to write.
 }
 
 DEFUN("read-char", Fread_char, Sread_char, (repv stream), rep_Subr1) /*
-::doc:Sread-char::
+::doc:read-char::
 read-char STREAM
 
 Reads the next character from the input-stream STREAM, if no more characters
@@ -551,7 +551,7 @@ are available returns nil.
 
 DEFUN("read-chars", Fread_chars, Sread_chars,
       (repv stream, repv count), rep_Subr2) /*
-::doc:Sread-chars::
+::doc:read-chars::
 read-chars STREAM COUNT
 
 Read upto COUNT characters from the input stream STREAM, returning a
@@ -587,7 +587,7 @@ that point. If no characters are read, nil will be returned.
 }
 
 DEFUN("read-line", Fread_line, Sread_line, (repv stream), rep_Subr1) /*
-::doc:Sread-line::
+::doc:read-line::
 read-line STREAM
 
 Read one line of text from STREAM.
@@ -619,7 +619,7 @@ Read one line of text from STREAM.
 }
 
 DEFUN("copy-stream", Fcopy_stream, Scopy_stream, (repv source, repv dest), rep_Subr2) /*
-::doc:Scopy-stream::
+::doc:copy-stream::
 copy-stream SOURCE-STREAM DEST-STREAM
 
 Copy all characters from SOURCE-STREAM to DEST-STREAM until an EOF is
@@ -653,7 +653,7 @@ read. Returns the number of characters copied.
 }
 
 DEFUN("read", Fread, Sread, (repv stream), rep_Subr1) /*
-::doc:Sread::
+::doc:read::
 read [STREAM]
 
 Reads one lisp-object from the input-stream STREAM (or the value of the
@@ -680,7 +680,7 @@ variable `standard-input' if STREAM is unspecified) and return it.
 }
 
 DEFUN("print", Fprint, Sprint, (repv obj, repv stream), rep_Subr2) /*
-::doc:Sprint::
+::doc:print::
 print OBJECT [STREAM]
 
 First outputs a newline, then prints a text representation of OBJECT to
@@ -700,7 +700,7 @@ for `read'.
 }
 
 DEFUN("prin1", Fprin1, Sprin1, (repv obj, repv stream), rep_Subr2) /*
-::doc:Sprin1::
+::doc:prin1::
 prin1 OBJECT [STREAM]
 
 Prints a text representation of OBJECT to STREAM (or the contents of the
@@ -718,7 +718,7 @@ variable `standard-output') in a form suitable for `read'.
 }
 
 DEFUN("princ", Fprinc, Sprinc, (repv obj, repv stream), rep_Subr2) /*
-::doc:Sprinc::
+::doc:princ::
 princ OBJECT [STREAM]
 
 Prints a text representation of OBJECT to STREAM (or the contents of the
@@ -737,7 +737,7 @@ are printed around strings.
 }
 
 DEFUN("format", Fformat, Sformat, (repv args), rep_SubrN) /*
-::doc:Sformat::
+::doc:format::
 format STREAM FORMAT-STRING ARGS...
 
 Writes a string created from the format specification FORMAT-STRING and
@@ -1022,7 +1022,7 @@ exit:
 }
 
 DEFUN("make-string-input-stream", Fmake_string_input_stream, Smake_string_input_stream, (repv string, repv start), rep_Subr2) /*
-::doc:Smake-string-input-stream::
+::doc:make-string-input-stream::
 make-string-input-stream STRING [START]
 
 Returns a input stream, it will supply, in order, the characters in STRING,
@@ -1034,7 +1034,7 @@ starting from START (or the beginning of the string).
 }
 
 DEFUN("make-string-output-stream", Fmake_string_output_stream, Smake_string_output_stream, (void), rep_Subr0) /*
-::doc:Smake-string-output-stream::
+::doc:make-string-output-stream::
 make-string-output-stream
 
 Returns an output stream which will accumulate the characters written to
@@ -1045,7 +1045,7 @@ it for the use of the `get-output-stream-string' function.
 }
 
 DEFUN("get-output-stream-string", Fget_output_stream_string, Sget_output_stream_string, (repv strm), rep_Subr1) /*
-::doc:Sget-output-stream-string::
+::doc:get-output-stream-string::
 get-output-stream-string STRING-OUTPUT-STREAM
 
 Returns a string containing the characters written to the stream STRING-
@@ -1071,7 +1071,7 @@ return the new characters.
 }
 
 DEFUN("streamp", Fstreamp, Sstreamp, (repv arg), rep_Subr1) /*
-::doc:Sstreamp::
+::doc:streamp::
 streamp ARG
 
 Returns t if ARG is a stream.

@@ -30,21 +30,21 @@ int rep_recurse_depth = -1;
 
 rep_bool (*rep_on_idle_fun)(int since_last);
 DEFSYM(idle_hook, "idle-hook"); /*
-::doc:Vidle-hook::
+::doc:idle-hook::
 This hook gets evaluated every second while the editor is idle. Don't depend
 on how regularly this gets called, any events from the window-system will
 delay it. Also, auto-saving files and garbage-collection take precedence
 when there's idle time available. Use this hook sparingly, or for short
 periods only!
 ::end::
-::doc:Vprogram-name::
+::doc:program-name::
 The name of the program running the rep interpreter.
 ::end::
-::doc:Verror-mode::
+::doc:error-mode::
 When nil, errors are handled at the current event loop, other possible
 values include `exit' and `top-level'.
 ::end::
-::doc:Vinterrupt-mode::
+::doc:interrupt-mode::
 When nil, interrupts are handled at the current event loop, other possible
 values include `exit' and `top-level'.
 ::end:: */
@@ -391,7 +391,7 @@ rep_handle_input_exception(repv *result_p)
 }
 
 DEFUN_INT("recursive-edit", Frecursive_edit, Srecursive_edit, (void), rep_Subr0, "") /*
-::doc:Srecursive-edit::
+::doc:recursive-edit::
 recursive-edit
 
 Enter a new recursive-edit.
@@ -413,7 +413,7 @@ Enter a new recursive-edit.
 }
 
 DEFUN("recursion-depth", Frecursion_depth, Srecursion_depth, (void), rep_Subr0) /*
-::doc:Srecursion-depth::
+::doc:recursion-depth::
 recursion-depth
 
 Returns the number of recursive-edit's deep we are, zero signifies the

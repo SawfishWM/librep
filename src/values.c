@@ -341,7 +341,7 @@ static rep_cons *cons_freelist;
 static int allocated_cons, used_cons;
 
 DEFUN("cons", Fcons, Scons, (repv car, repv cdr), rep_Subr2) /*
-::doc:Scons::
+::doc:cons::
 cons CAR CDR
 
 Returns a new cons-cell with car CAR and cdr CDR.
@@ -711,7 +711,7 @@ again:
 }
 
 DEFUN("garbage-threshold", Vgarbage_threshold, Sgarbage_threshold, (repv val), rep_Var) /*
-::doc:Vgarbage-threshold::
+::doc:garbage-threshold::
 The number of bytes of storage which must be used before a garbage-
 collection is triggered.
 ::end:: */
@@ -720,7 +720,7 @@ collection is triggered.
 }
 
 DEFUN("idle-garbage-threshold", Vidle_garbage_threshold, Sidle_garbage_threshold, (repv val), rep_Var) /*
-::doc:Vidle-garbage-threshold::
+::doc:idle-garbage-threshold::
 The number of bytes of storage which must be used before a garbage-
 collection is triggered when the editor is idle.
 ::end:: */
@@ -729,7 +729,7 @@ collection is triggered when the editor is idle.
 }
 
 DEFUN_INT("garbage-collect", Fgarbage_collect, Sgarbage_collect, (repv noStats), rep_Subr1, "") /*
-::doc:Sgarbage-collect::
+::doc:garbage-collect::
 garbage-collect
 
 Scans all allocated storage for unusable data, and puts it onto the free-

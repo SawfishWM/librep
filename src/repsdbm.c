@@ -33,7 +33,7 @@ DEFSYM(replace, "replace");
 
 DEFUN("sdbm-open", Fsdbm_open, Ssdbm_open, (repv file, repv flags, repv mode),
       rep_Subr3) /*
-::doc:Ssdbm-open::
+::doc:sdbm-open::
 sdbm-open PATH ACCESS-TYPE [MODE]
 ::end:: */
 {
@@ -77,7 +77,7 @@ sdbm-open PATH ACCESS-TYPE [MODE]
 }
 
 DEFUN("sdbm-close", Fsdbm_close, Ssdbm_close, (repv dbm), rep_Subr1) /*
-::doc:Ssdbm-close::
+::doc:sdbm-close::
 sdbm-close DBM
 ::end:: */
 {
@@ -91,7 +91,7 @@ sdbm-close DBM
 }
 
 DEFUN("sdbm-fetch", Fsdbm_fetch, Ssdbm_fetch, (repv dbm, repv key), rep_Subr2) /*
-::doc:Ssdbm-fetch::
+::doc:sdbm-fetch::
 sdbm-fetch DBM KEY
 ::end:: */
 {
@@ -108,7 +108,7 @@ sdbm-fetch DBM KEY
 }
 
 DEFUN("sdbm-store", Fsdbm_store, Ssdbm_store, (repv dbm, repv key, repv val, repv flags), rep_Subr4) /*
-::doc:Ssdbm-store::
+::doc:sdbm-store::
 sdbm-store DBM KEY VALUE [FLAGS]
 ::end:: */
 {
@@ -127,7 +127,7 @@ sdbm-store DBM KEY VALUE [FLAGS]
 }
 
 DEFUN("sdbm-delete", Fsdbm_delete, Ssdbm_delete, (repv dbm, repv key), rep_Subr2) /*
-::doc:Ssdbm-delete::
+::doc:sdbm-delete::
 sdbm-delete DBM KEY
 ::end:: */
 {
@@ -140,7 +140,7 @@ sdbm-delete DBM KEY
 }
 
 DEFUN("sdbm-firstkey", Fsdbm_firstkey, Ssdbm_firstkey, (repv dbm), rep_Subr1) /*
-::doc:Ssdbm-firstkey::
+::doc:sdbm-firstkey::
 sdbm-firstkey DBM
 ::end:: */
 {
@@ -154,7 +154,7 @@ sdbm-firstkey DBM
 }
 
 DEFUN("sdbm-nextkey", Fsdbm_nextkey, Ssdbm_nextkey, (repv dbm), rep_Subr1) /*
-::doc:Ssdbm-nextkey::
+::doc:sdbm-nextkey::
 sdbm-nextkey DBM
 ::end:: */
 {
@@ -168,7 +168,7 @@ sdbm-nextkey DBM
 }
 
 DEFUN("sdbm-rdonly", Fsdbm_rdonly, Ssdbm_rdonly, (repv dbm), rep_Subr1) /*
-::doc:Ssdbm-rdonly::
+::doc:sdbm-rdonly::
 sdbm-rdonly DBM
 ::end:: */
 {
@@ -177,7 +177,7 @@ sdbm-rdonly DBM
 }
 
 DEFUN("sdbm-error", Fsdbm_error, Ssdbm_error, (repv dbm), rep_Subr1) /*
-::doc:Ssdbm-error::
+::doc:sdbm-error::
 sdbm-error DBM
 ::end:: */
 {
@@ -186,7 +186,7 @@ sdbm-error DBM
 }
 
 DEFUN("sdbmp", Fsdbmp, Ssdbmp, (repv arg), rep_Subr1) /*
-::doc:Ssdbmp::
+::doc:sdbmp::
 sdbmp ARG
 
 Returns t if ARG is an sdbm object (created by `sdbm-open').

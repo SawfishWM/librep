@@ -85,14 +85,14 @@
    WHENCE is one off `nil', `start', `end'. */
 
 DEFSYM(file_handler_alist, "file-handler-alist"); /*
-::doc:Vfile-handler-alist::
+::doc:file-handler-alist::
 a list of `(REGEXP . HANDLER)'. If REGEXP matches the name of a file
 being manipulated the function HANDLER is called as (HANDLER OPERATION
 ARGS...) where ARGS matches how the original function is called.
 ::end:: */
 
 DEFSYM(default_directory, "default-directory"); /*
-::doc:Vdefault-directory::
+::doc:default-directory::
 Buffer-local variable absolutely defining the directory to which all files
 accessed in the buffer are resolved from (unless they're absolute.) 
 ::end:: */
@@ -400,7 +400,7 @@ rep_localise_and_get_handler(repv *file_namep, int op)
 
 DEFUN("file-name-absolute-p", Ffile_name_absolute_p,
       Sfile_name_absolute_p, (repv file), rep_Subr1) /*
-::doc:Sfile-name-absolute-p::
+::doc:file-name-absolute-p::
 file-name-absolute-p FILE-NAME
 
 Returns t if FILE-NAME is context-independent, i.e. it does not name a file
@@ -419,7 +419,7 @@ relative to the default-directory.
 
 DEFUN("expand-file-name", Fexpand_file_name, Sexpand_file_name,
       (repv file_name, repv dir_name), rep_Subr2) /*
-::doc:Sexpand-file-name::
+::doc:expand-file-name::
 expand-file-name FILE-NAME [BASE-DIR]
 
 Expands FILE-NAME assuming that it specifies a file relative to BASE-DIR.
@@ -481,7 +481,7 @@ or whatever).
 
 DEFUN("local-file-name", Flocal_file_name, Slocal_file_name,
       (repv file), rep_Subr1) /*
-::doc:Slocal-file-name::
+::doc:local-file-name::
 local-file-name FILE-NAME
 
 When possible, return a string absolutely naming the file in the local
@@ -502,7 +502,7 @@ a file in the local system, return nil.
 
 DEFUN("canonical-file-name", Fcanonical_file_name, Scanonical_file_name,
       (repv file), rep_Subr1) /*
-::doc:Scanonical-file-name::
+::doc:canonical-file-name::
 canonical-file-name FILE-NAME
 
 Return the canonical name of the file called FILE-NAME. The canonical name
@@ -526,7 +526,7 @@ operating systems, symbolic links will be expanded where possible.)
 
 DEFUN("file-name-nondirectory", Ffile_name_nondirectory,
       Sfile_name_nondirectory, (repv file), rep_Subr1) /*
-::doc:Sfile-name-nondirectory::
+::doc:file-name-nondirectory::
 file-name-nondirectory FILE-NAME
 
 Return the directory component of FILE-NAME, including the final
@@ -545,7 +545,7 @@ directory separator.
 
 DEFUN("file-name-directory", Ffile_name_directory,
       Sfile_name_directory, (repv file), rep_Subr1) /*
-::doc:Sfile-name-directory::
+::doc:file-name-directory::
 file-name-directory FILE-NAME
 
 Return the file name component of FILE-NAME, i.e. everything following
@@ -564,7 +564,7 @@ the final directory separator.
 
 DEFUN("file-name-as-directory", Ffile_name_as_directory,
       Sfile_name_as_directory, (repv file), rep_Subr1) /*
-::doc:Sfile-name-as-directory::
+::doc:file-name-as-directory::
 file-name-as-directory FILE-NAME
 
 Return FILE-NAME such that it names a directory (i.e with a terminating
@@ -583,7 +583,7 @@ directory separator character.)
 
 DEFUN("directory-file-name", Fdirectory_file_name,
       Sdirectory_file_name, (repv file), rep_Subr1) /*
-::doc:Sdirectory-file-name::
+::doc:directory-file-name::
 directory-file-name DIR-NAME
 
 Return the name of the file representing the directory called DIR-NAME.
@@ -628,7 +628,7 @@ input_handler_callback (int fd)
 
 DEFUN("set-input-handler", Fset_input_handler, Sset_input_handler,
       (repv file, repv function), rep_Subr2) /*
-::doc:Sset-input-handler::
+::doc:set-input-handler::
 set-input-handler LOCAL-FILE FUNCTION
 
 Arrange for FUNCTION to be called whenever pending input is available
@@ -755,7 +755,7 @@ file_mark(repv val)
 }
 
 DEFUN("filep", Ffilep, Sfilep, (repv arg), rep_Subr1) /*
-::doc:Sfilep::
+::doc:filep::
 filep ARG
 
 Returns t if ARG is a file object.
@@ -766,7 +766,7 @@ Returns t if ARG is a file object.
 
 DEFUN("file-binding", Ffile_binding, Sfile_binding,
       (repv file), rep_Subr1) /*
-::doc:Sfile-binding::
+::doc:file-binding::
 file-binding FILE
 
 Returns the name of the logical file that FILE was opened to access, or nil
@@ -779,7 +779,7 @@ if it has been closed, but is still to be garbage collected.
 
 DEFUN("file-bound-stream", Ffile_bound_stream, Sfile_bound_stream,
       (repv file), rep_Subr1) /*
-::doc:Sfile-bound-stream::
+::doc:file-bound-stream::
 file-bound-stream FILE
 
 If file object FILE doesn't refer to a local file, return the stream
@@ -792,7 +792,7 @@ that it's bound to.
 
 DEFUN("file-handler-data", Ffile_handler_data, Sfile_handler_data,
       (repv file), rep_Subr1) /*
-::doc:Sfile-handler-data::
+::doc:file-handler-data::
 file-handler-data FILE
 
 Return the handler-specific data for FILE.
@@ -804,7 +804,7 @@ Return the handler-specific data for FILE.
 
 DEFUN("set-file-handler-data", Fset_file_handler_data,
       Sset_file_handler_data, (repv file, repv data), rep_Subr2) /*
-::doc:Sset-file-handler-data::
+::doc:set-file-handler-data::
 set-file-handler-data FILE DATA
 
 Set the handler-specific data of file object FILE to DATA.
@@ -820,7 +820,7 @@ Set the handler-specific data of file object FILE to DATA.
 
 DEFUN("open-file", Fopen_file, Sopen_file,
       (repv file_name, repv access_type), rep_Subr2) /*
-::doc:Sopen-file::
+::doc:open-file::
 open-file FILE-NAME ACCESS-TYPE
 
 Return a new file object referencing the logical file called FILE-NAME,
@@ -874,7 +874,7 @@ DEFUN("make-file-from-stream", Fmake_file_from_stream,
       Smake_file_from_stream,
       (repv file_name, repv stream, repv handler),
       rep_Subr3) /*
-::doc:Smake-file-from-stream::
+::doc:make-file-from-stream::
 make-file-from-stream FILE-NAME STREAM HANDLER
 
 Return a new file object that refers to the logical file called FILE-NAME,
@@ -896,7 +896,7 @@ function HANDLER.
 }
 
 DEFUN("close-file", Fclose_file, Sclose_file, (repv file), rep_Subr1) /*
-::doc:Sclose-file::
+::doc:close-file::
 close-file FILE
 
 Signal that there will be no more I/O through the file object FILE.
@@ -933,7 +933,7 @@ Signal that there will be no more I/O through the file object FILE.
 
 DEFUN("flush-file", Fflush_file, Sflush_file,
       (repv file), rep_Subr1) /*
-::doc:Sflush-file::
+::doc:flush-file::
 flush-file FILE
 
 Flush any buffered output on FILE. This is usually unnecessary since
@@ -953,7 +953,7 @@ all output will be flushed when FILE is eventually closed.
 
 DEFUN("seek-file", Fseek_file, Sseek_file,
       (repv file, repv offset, repv where), rep_Subr3) /*
-::doc:Sseek-file::
+::doc:seek-file::
 seek-file FILE [OFFSET] [WHERE-FROM]
 
 Called as (seek-file FILE), returns the distance in bytes from the start
@@ -1001,7 +1001,7 @@ current position will also fail.
 
 DEFUN_INT("delete-file", Fdelete_file, Sdelete_file, (repv file_name),
 	  rep_Subr1, "fFile to delete:") /*
-::doc:Sdelete-file::
+::doc:delete-file::
 delete-file FILE-NAME
 
 Delete the file called FILE-NAME.
@@ -1021,7 +1021,7 @@ DEFSTRING(cant_rename, "Can't rename files across handlers");
 DEFUN_INT("rename-file", Frename_file, Srename_file,
 	  (repv old, repv new), rep_Subr2,
 	  "fOld name of file:" rep_DS_NL "FNew name of file:") /*
-::doc:Srename-file::
+::doc:rename-file::
 rename-file OLD-NAME NEW-NAME
 
 Rename the file called OLD-NAME so that it is called NEW-NAME. Note that
@@ -1056,7 +1056,7 @@ this almost certainly won't work across filing systems.
 DEFUN_INT("make-directory", Fmake_directory, Smake_directory,
 	  (repv dir_name), rep_Subr1,
 	  "DDirectory to create:") /*
-::doc:Smake-directory::
+::doc:make-directory::
 make-directory DIRECTORY-NAME
 
 Create a directory called DIRECTORY-NAME.
@@ -1075,7 +1075,7 @@ Create a directory called DIRECTORY-NAME.
 DEFUN_INT("delete-directory", Fdelete_directory, Sdelete_directory,
 	  (repv dir_name), rep_Subr1,
 	  "DDirectory to delete:") /*
-::doc:Sdelete-directory::
+::doc:delete-directory::
 delete-directory DIRECTORY-NAME
 
 Delete the directory called DIRECTORY-NAME. Note that the directory in
@@ -1094,7 +1094,7 @@ question should be empty.
 
 DEFUN_INT("copy-file", Fcopy_file, Scopy_file, (repv src, repv dst),
 	  rep_Subr2, "fSource file:" rep_DS_NL "FDestination file:") /*
-::doc:Scopy-file::
+::doc:copy-file::
 copy-file SOURCE DESTINATION
 
 Create a new copy of the file called SOURCE, as the file called DESTINATION.
@@ -1160,7 +1160,7 @@ Create a new copy of the file called SOURCE, as the file called DESTINATION.
 
 DEFUN("file-readable-p", Ffile_readable_p, Sfile_readable_p,
       (repv file), rep_Subr1) /*
-::doc:Sfile-readable-p::
+::doc:file-readable-p::
 file-readable-p FILE-NAME
 
 Returns t if the file called FILE-NAME is available for reading from.
@@ -1178,7 +1178,7 @@ Returns t if the file called FILE-NAME is available for reading from.
 
 DEFUN("file-writable-p", Ffile_writable_p, Sfile_writable_p,
       (repv file), rep_Subr1) /*
-::doc:Sfile-writeable-p::
+::doc:file-writeable-p::
 file-writable-p FILE-NAME
 
 Returns t if the file called FILE-NAME is available for writing to.
@@ -1196,7 +1196,7 @@ Returns t if the file called FILE-NAME is available for writing to.
 
 DEFUN("file-exists-p", Ffile_exists_p, Sfile_exists_p,
       (repv file), rep_Subr1) /*
-::doc:Sfile-exists-p::
+::doc:file-exists-p::
 file-exists-p FILE-NAME
 
 Returns t if the file called FILE-NAME exists.
@@ -1214,7 +1214,7 @@ Returns t if the file called FILE-NAME exists.
 
 DEFUN("file-regular-p", Ffile_regular_p, Sfile_regular_p,
       (repv file), rep_Subr1) /*
-::doc:Sfile-regular-p::
+::doc:file-regular-p::
 file-regular-p FILE-NAME
 
 Returns t if the file called FILE-NAME is a normal file, ie, not a
@@ -1233,7 +1233,7 @@ directory, device, symbolic link, etc...
 
 DEFUN("file-directory-p", Ffile_directory_p, Sfile_directory_p,
       (repv file), rep_Subr1) /*
-::doc:Sfile-directory-p::
+::doc:file-directory-p::
 file-directory-p FILE-NAME
 
 Returns t if the file called FILE-NAME is a directory.
@@ -1251,7 +1251,7 @@ Returns t if the file called FILE-NAME is a directory.
 
 DEFUN("file-symlink-p", Ffile_symlink_p, Sfile_symlink_p,
       (repv file), rep_Subr1) /*
-::doc:Sfile-symlink-p::
+::doc:file-symlink-p::
 file-symlink-p FILE-NAME
 
 Returns t if the file called FILE-NAME is a symbolic link to another file.
@@ -1269,7 +1269,7 @@ Returns t if the file called FILE-NAME is a symbolic link to another file.
 
 DEFUN("file-owner-p", Ffile_owner_p, Sfile_owner_p,
       (repv file), rep_Subr1) /*
-::doc:Sfile-owner-p::
+::doc:file-owner-p::
 file-owner-p FILE-NAME
 
 Returns t if the ownership (uid & gid) of the file called FILE-NAME is the
@@ -1288,7 +1288,7 @@ same as that of any files written by the editor.
 
 DEFUN("file-nlinks", Ffile_nlinks, Sfile_nlinks,
       (repv file), rep_Subr1) /*
-::doc:Sfile-nlinks::
+::doc:file-nlinks::
 file-nlinks FILE-NAME
 
 Returns the number of links pointing to the file called FILE-NAME. This will
@@ -1307,7 +1307,7 @@ be one if FILE-NAME has only one name. Doesn't count symbolic links.
 
 DEFUN("file-size", Ffile_size, Sfile_size,
       (repv file), rep_Subr1) /*
-::doc:Sfile-size::
+::doc:file-size::
 file-size FILE-NAME
 
 Returns the size of the file called FILE-NAME in bytes.
@@ -1325,7 +1325,7 @@ Returns the size of the file called FILE-NAME in bytes.
 
 DEFUN("file-modes", Ffile_modes, Sfile_modes,
       (repv file), rep_Subr1) /*
-::doc:Sfile-modes::
+::doc:file-modes::
 file-modes FILE-NAME
 
 Return the access permissions of the file called FILE-NAME. Note that the
@@ -1345,7 +1345,7 @@ is as an argument to set-file-modes.
 
 DEFUN("set-file-modes", Fset_file_modes, Sset_file_modes,
       (repv file, repv modes), rep_Subr2) /*
-::doc:Sset-file-modes::
+::doc:set-file-modes::
 set-file-modes FILE-NAME MODES
 
 Sets the access permissions of the file called FILE-NAME to MODES. The only
@@ -1365,7 +1365,7 @@ may change across filing systems.
 
 DEFUN("file-modes-as-string", Ffile_modes_as_string,
       Sfile_modes_as_string, (repv file), rep_Subr1) /*
-::doc:Sfile-modes-as-string::
+::doc:file-modes-as-string::
 file-modes-as-string FILE-NAME
 
 Returns a ten character string describing the attributes of the file
@@ -1384,7 +1384,7 @@ called FILE-NAME.
 
 DEFUN("file-modtime", Ffile_modtime, Sfile_modtime,
       (repv file), rep_Subr1) /*
-::doc:Sfile-modtime::
+::doc:file-modtime::
 file-modtime FILE-NAME
 
 Return the time that the file called FILE-NAME was last modified, as a cons
@@ -1434,7 +1434,7 @@ rep_file_newer_than(repv name1, repv name2)
 
 DEFUN("directory-files", Fdirectory_files, Sdirectory_files,
       (repv dir), rep_Subr1) /*
-::doc:Sdirectory-files::
+::doc:directory-files::
 directory-files DIRECTORY
 
 Returns a list of the names of all files in the directory called DIRECTORY.
@@ -1452,7 +1452,7 @@ The list is unsorted.
 }
 
 DEFUN("read-symlink", Fread_symlink, Sread_symlink, (repv file), rep_Subr1) /*
-::doc:Sread-symlink::
+::doc:read-symlink::
 read-symlink FILENAME
 
 Return the string that is the contents of the symbolic link FILENAME. This
@@ -1473,7 +1473,7 @@ Signals an error if FILENAME isn't a symbolic link.
 
 DEFUN("make-symlink", Fmake_symlink, Smake_symlink,
       (repv file, repv contents), rep_Subr2) /*
-::doc:Smake-symlink::
+::doc:make-symlink::
 make-symlink FILENAME CONTENTS
 
 Create a symbolic link FILENAME pointing to the file called CONTENTS.
@@ -1496,7 +1496,7 @@ CONTENTS may be relative to the directory containing FILENAME.
 
 DEFSTRING(stdin_name, "<stdin>");
 DEFUN("stdin-file", Fstdin_file, Sstdin_file, (void), rep_Subr0) /*
-::doc:Sstdin-file::
+::doc:stdin-file::
 stdin-file
 
 Returns the file object representing the editor's standard input.
@@ -1516,7 +1516,7 @@ Returns the file object representing the editor's standard input.
 
 DEFSTRING(stdout_name, "<stdout>");
 DEFUN("stdout-file", Fstdout_file, Sstdout_file, (void), rep_Subr0) /*
-::doc:Sstdout-file::
+::doc:stdout-file::
 stdout-file
 
 Returns the file object representing the editor's standard output.
@@ -1536,7 +1536,7 @@ Returns the file object representing the editor's standard output.
 
 DEFSTRING(stderr_name, "<stderr>");
 DEFUN("stderr-file", Fstderr_file, Sstderr_file, (void), rep_Subr0) /*
-::doc:Sstderr-file::
+::doc:stderr-file::
 stderr-file
 
 Returns the file object representing the editor's standard output.
@@ -1556,7 +1556,7 @@ Returns the file object representing the editor's standard output.
 
 DEFSTRING(no_temp, "Can't create temporary file name");
 DEFUN("make-temp-name", Fmake_temp_name, Smake_temp_name, (void), rep_Subr0) /*
-::doc:Smake-temp-name::
+::doc:make-temp-name::
 make-temp-name
 
 Returns the name of a unique file in the local filing system.
@@ -1571,7 +1571,7 @@ Returns the name of a unique file in the local filing system.
 
 DEFUN("set-file-handler-environment", Fset_file_handler_environment,
       Sset_file_handler_environment, (repv env), rep_Subr1) /*
-::doc:Sset-file-handler-environment::
+::doc:set-file-handler-environment::
 set-file-handler-environment ENV
 ::end:: */
 {

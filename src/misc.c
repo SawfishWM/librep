@@ -38,18 +38,18 @@ DEFSYM(operating_system, "operating-system");
 DEFSYM(process_environment, "process-environment");
 DEFSYM(rep_version, "rep-version");
 DEFSYM(rep_build_id, "rep-build-id"); /*
-::doc:Voperating-system::
+::doc:operating-system::
 A symbol defining the type of operating system that Jade is running
 under. Currently this is always the symbol `unix'.
 ::end::
-::doc:Vprocess-environment::
+::doc:process-environment::
 A list of all environment variables (as strings "NAME=VALUE") passed
 to the interpreter. Also used to specify the environment of subprocesses.
 ::end::
-::doc:Vrep-version::
+::doc:rep-version::
 A string defining the current version of the REP interpreter.
 ::end::
-::doc:Vrep-build-id::
+::doc:rep-build-id::
 A string describing when, where, and by who the running version of the
 LISP interpreter was built.
 ::end:: */
@@ -62,15 +62,15 @@ DEFSYM(upcase_table, "upcase-table");
 DEFSYM(downcase_table, "downcase-table");
 DEFSYM(flatten_table, "flatten-table");
 /* Some doc strings
-::doc:Vupcase-table::
+::doc:upcase-table::
 256-byte string holding translations to turn each character into its
 upper-case equivalent.
 ::end::
-::doc:Vdowncase-table::
+::doc:downcase-table::
 256-byte string holding translations to turn each character into its
 lower-case equivalent.
 ::end::
-::doc:Vflatten-table::
+::doc:flatten-table::
 Translation table to convert newline characters to spaces.
 ::end:: */
 
@@ -109,7 +109,7 @@ default_beep (void)
 }
 
 DEFUN_INT("beep", Fbeep, Sbeep, (void), rep_Subr0, "") /*
-::doc:Sbeep::
+::doc:beep::
 beep
 
 Rings a bell.
@@ -122,7 +122,7 @@ Rings a bell.
 
 DEFUN("complete-string", Fcomplete_string, Scomplete_string,
       (repv existing, repv arg_list, repv fold), rep_Subr3) /*
-::doc:Scomplete-string::
+::doc:complete-string::
 complete-string TEMPLATE LIST [FOLD-CASE]
 
 Return a string whose beginning matches the string TEMPLATE, and is unique
@@ -180,7 +180,7 @@ is t, all matching ignores character case.
 }
 
 DEFUN("current-time", Fcurrent_time, Scurrent_time, (void), rep_Subr0) /*
-::doc:Scurrent-time::
+::doc:current-time::
 current-time
 
 Return a value denoting the current system time. This will be a cons cell
@@ -193,7 +193,7 @@ number of seconds since the start of the day (universal time).
 }
 
 DEFUN("fix-time", Ffix_time, Sfix_time, (repv time), rep_Subr1) /*
-::doc:Sfix-time::
+::doc:fix-time::
 fix-time TIMESTAMP
 
 Ensure that the two parts of TIMESTAMP are mutually consistent. If not
@@ -210,7 +210,7 @@ TIMESTAMP is altered. Returns TIMESTAMP.
 
 DEFUN("current-time-string", Fcurrent_time_string,
       Scurrent_time_string, (repv time, repv format), rep_Subr2) /*
-::doc:Scurrent-time-string::
+::doc:current-time-string::
 current-time-string [TIME] [FORMAT]
 
 Returns a human-readable string defining the current date and time, or if
@@ -243,7 +243,7 @@ the same conventions as the template to the C library's strftime function.
 }
 
 DEFUN("time-later-p", Ftime_later_p, Stime_later_p, (repv t1, repv t2), rep_Subr2) /*
-::doc:Stime-later-p::
+::doc:time-later-p::
 time-later-p TIME-STAMP1 TIME-STAMP2
 
 Returns t when TIME-STAMP1 refers to a later time than TIME-STAMP2.
@@ -259,7 +259,7 @@ Returns t when TIME-STAMP1 refers to a later time than TIME-STAMP2.
 
 DEFUN("sleep-for", Fsleep_for, Ssleep_for, (repv secs, repv msecs),
       rep_Subr2) /*
-::doc:Ssleep-for::
+::doc:sleep-for::
 sleep-for SECONDS [MILLISECONDS]
 
 Pause for SECONDS (plus the optional MILLISECOND component) length of time.
@@ -272,7 +272,7 @@ Pause for SECONDS (plus the optional MILLISECOND component) length of time.
 
 DEFUN("sit-for", Fsit_for, Ssit_for, (repv secs, repv msecs),
       rep_Subr2) /*
-::doc:Ssit-for::
+::doc:sit-for::
 sit-for [SECONDS] [MILLISECONDS]
 
 Wait for input to arrive and be processed. No more than SECONDS seconds plus
@@ -288,7 +288,7 @@ immediately, using a null timeout.
 }
 
 DEFUN("user-login-name", Fuser_login_name, Suser_login_name, (void), rep_Subr0) /*
-::doc:Suser-login-name::
+::doc:user-login-name::
 user-login-name
 
 Returns the login name of the user (a string).
@@ -298,7 +298,7 @@ Returns the login name of the user (a string).
 }
 
 DEFUN("user-full-name", Fuser_full_name, Suser_full_name, (repv arg), rep_Subr1) /*
-::doc:Suser-full-name::
+::doc:user-full-name::
 user-full-name [REAL-NAME]
 
 Returns the real name of the user (a string). If REAL-NAME is non-nil, it's
@@ -317,7 +317,7 @@ the name to return in subsequent calls.
 
 DEFUN("user-home-directory", Fuser_home_directory,
       Suser_home_directory, (repv user), rep_Subr1) /*
-::doc:Suser-home-directory::
+::doc:user-home-directory::
 user-home-directory [USER]
 
 Return the path to USER's home directory (a string). When USER is undefined
@@ -330,7 +330,7 @@ the directory of the user who executed Jade is found.
 }
 
 DEFUN("system-name", Fsystem_name, Ssystem_name, (void), rep_Subr0) /*
-::doc:Ssystem-name::
+::doc:system-name::
 system-name
 
 Returns the name of the host which the editor is running on.
@@ -340,7 +340,7 @@ Returns the name of the host which the editor is running on.
 }
 
 DEFUN("message", Fmessage, Smessage, (repv string, repv now), rep_Subr2) /*
-::doc:Smessage::
+::doc:message::
 message STRING [DISPLAY-NOW]
 
 Temporarily sets the status display to STRING, this may not happen until the
@@ -373,7 +373,7 @@ next complete redisplay, unless DISPLAY-NOW is non-nil.
 #endif
 
 DEFUN("random", Frandom, Srandom, (repv arg), rep_Subr1) /*
-::doc:Srandom::
+::doc:random::
 random [LIMIT]
 
 Produce a pseudo-random number between zero and LIMIT (or the largest positive
@@ -452,7 +452,7 @@ Note that the STRING really is modified, no copy is made!
 }
 
 DEFUN("alpha-char-p", Falpha_char_p, Salpha_char_p, (repv ch), rep_Subr1) /*
-::doc:Salpha-char-p::
+::doc:alpha-char-p::
 alpha-char-p CHAR
 
 Returns t if CHAR is an alphabetic character.
@@ -462,7 +462,7 @@ Returns t if CHAR is an alphabetic character.
 }
 
 DEFUN("upper-case-p", Fupper_case_p, Supper_case_p, (repv ch), rep_Subr1) /*
-::doc:Supper-case-p::
+::doc:upper-case-p::
 upper-case-p CHAR
 
 Returns t if CHAR is upper case.
@@ -472,7 +472,7 @@ Returns t if CHAR is upper case.
 }
 
 DEFUN("lower-case-p", Flower_case_p, Slower_case_p, (repv ch), rep_Subr1) /*
-::doc:Slower-case-p::
+::doc:lower-case-p::
 lower-case-p CHAR
 
 Returns t if CHAR is lower case.
@@ -482,7 +482,7 @@ Returns t if CHAR is lower case.
 }
 
 DEFUN("digit-char-p", Fdigit_char_p, Sdigit_char_p, (repv ch), rep_Subr1) /*
-::doc:Sdigit-char-p::
+::doc:digit-char-p::
 digit-char-p CHAR
 
 Returns t if CHAR is a digit.
@@ -492,7 +492,7 @@ Returns t if CHAR is a digit.
 }
 
 DEFUN("alphanumericp", Falphanumericp, Salphanumericp, (repv ch), rep_Subr1) /*
-::doc:Salphanumericp::
+::doc:alphanumericp::
 alphanumericp CHAR
 
 Returns t if CHAR is alpha-numeric.
@@ -502,7 +502,7 @@ Returns t if CHAR is alpha-numeric.
 }
 
 DEFUN("space-char-p", Fspace_char_p, Sspace_char_p, (repv ch), rep_Subr1) /*
-::doc:Sspace-char-p::
+::doc:space-char-p::
 space-char-p CHAR
 
 Returns t if CHAR is whitespace.
@@ -512,7 +512,7 @@ Returns t if CHAR is whitespace.
 }
 
 DEFUN("char-upcase", Fchar_upcase, Schar_upcase, (repv ch), rep_Subr1) /*
-::doc:Schar-upcase::
+::doc:char-upcase::
 char-upcase CHAR
 
 Returns the upper-case equivalent of CHAR.
@@ -523,7 +523,7 @@ Returns the upper-case equivalent of CHAR.
 }
 
 DEFUN("char-downcase", Fchar_downcase, Schar_downcase, (repv ch), rep_Subr1) /*
-::doc:Schar-downcase::
+::doc:char-downcase::
 char-downcase CHAR
 
 Returns the lower-case equivalent of CHAR.
@@ -534,7 +534,7 @@ Returns the lower-case equivalent of CHAR.
 }
 
 DEFUN("system", Fsystem, Ssystem, (repv command), rep_Subr1) /*
-::doc:Ssystem::
+::doc:system::
 system SHELL-COMMAND
 
 Synchronously execute the shell command string SHELL-COMMAND. Returns the

@@ -125,19 +125,19 @@ DEFSTRING(err_stack_error, "Out of stack space");
 DEFSYM(debug_on_error, "debug-on-error");
 DEFSYM(backtrace_on_error, "backtrace-on-error");
 DEFSYM(debug_macros, "debug-macros"); /*
-::doc:Vdebug-on-error::
+::doc:debug-on-error::
 When an error is signalled this variable controls whether or not to
 enter the Lisp debugger immediately. If the variable's value is t or a
 list of symbols--one of which is the signalled error symbol--the
 debugger is entered.
 ::end::
-::doc:Vbacktrace-on-error::
+::doc:backtrace-on-error::
 When an error is signalled this variable controls whether or not to
 print a backtrace immediately. If the variable's value is t or a list
 of symbols--one of which is the signalled error symbol--the debugger is
 entered.
 ::end::
-::doc:Vdebug-macros::
+::doc:debug-macros::
 When nil, the debugger isn't entered while expanding macro definitions.
 ::end:: */
 
@@ -145,7 +145,7 @@ DEFSYM(print_escape, "print-escape");
 DEFSYM(print_length, "print-length");
 DEFSYM(print_level, "print-level");
 DEFSYM(newlines, "newlines"); /*
-::doc:Vprint-escape::
+::doc:print-escape::
 Defines which control characters `print' should quote. Acceptable values
 are:
 	nil		Only escape double-quote and backslash
@@ -155,10 +155,10 @@ are:
 			 value less than 32), and all characters with
 			 a value greater than 126.
 ::end::
-::doc:Vprint-length::
+::doc:print-length::
 The maximum number of list elements to print before abbreviating.
 ::end::
-::doc:Vprint-level::
+::doc:print-level::
 The number of list levels to descend when printing before abbreviating.
 ::end:: */
 
@@ -1284,7 +1284,7 @@ end:
 }
 
 DEFUN("funcall", Ffuncall, Sfuncall, (repv args), rep_SubrN) /*
-::doc:Sfuncall::
+::doc:funcall::
 funcall FUNCTION ARGS...
 
 Calls FUNCTION with arguments ARGS... and returns the result.
@@ -1365,7 +1365,7 @@ end:
 }
 
 DEFUN("eval", Feval, Seval, (repv obj), rep_Subr1) /*
-::doc:Seval::
+::doc:eval::
 eval FORM
 
 Evaluates FORM and returns its value.
@@ -1452,7 +1452,7 @@ Evaluates FORM and returns its value.
 }
 
 DEFUN("progn", Fprogn, Sprogn, (repv args), rep_SF) /*
-::doc:Sprogn::
+::doc:progn::
 progn FORMS...
 
 Eval's each of the FORMS in order returning the value of the last
@@ -1776,7 +1776,7 @@ rep_handle_var_long_int(repv val, long *data)
 }
 
 DEFUN("break", Fbreak, Sbreak, (void), rep_Subr0) /*
-::doc:Sbreak::
+::doc:break::
 break
 
 The next form to be evaluated will be done so through the Lisp debugger.
@@ -1787,7 +1787,7 @@ The next form to be evaluated will be done so through the Lisp debugger.
 }
 
 DEFUN_INT("step", Fstep, Sstep, (repv form), rep_Subr1, "xForm to step through") /*
-::doc:Sstep::
+::doc:step::
 step FORM
 
 Use the Lisp debugger to evaluate FORM.
@@ -1802,7 +1802,7 @@ Use the Lisp debugger to evaluate FORM.
 }
 
 DEFUN("macroexpand", Fmacroexpand, Smacroexpand, (repv form, repv env), rep_Subr2) /*
-::doc:Smacroexpand::
+::doc:macroexpand::
 macroexpand FORM [ENVIRONMENT]
 
 If FORM is a macro call, expand it until it isn't. If ENVIRONMENT is
@@ -1847,7 +1847,7 @@ end:
 }
 
 DEFUN("signal", Fsignal, Ssignal, (repv error, repv data), rep_Subr2) /*
-::doc:Ssignal::
+::doc:signal::
 signal ERROR-SYMBOL DATA
 
 Signal that an error has happened. ERROR-SYMBOL is the name of a symbol
@@ -1919,7 +1919,7 @@ rep_compare_error(repv error, repv handler)
 }
 
 DEFUN("condition-case", Fcondition_case, Scondition_case, (repv args), rep_SF) /*
-::doc:Scondition-case::
+::doc:condition-case::
 condition-case VAR FORM HANDLERS...
 
 Evaluates FORM with error-handlers in place, if no errors occur return the
@@ -2044,7 +2044,7 @@ rep_mem_error(void)
 }
 
 DEFUN("backtrace", Fbacktrace, Sbacktrace, (repv strm), rep_Subr1) /*
-::doc:Sbacktrace::
+::doc:backtrace::
 backtrace [STREAM]
 
 Prints a backtrace of the current Lisp call stack to STREAM (or to
@@ -2076,7 +2076,7 @@ ARGLIST had been evaluated or not before being put into the stack.
 }
 
 DEFUN("max-lisp-depth", Vmax_lisp_depth, Smax_lisp_depth, (repv val), rep_Var) /*
-::doc:Smax-lisp-depth::
+::doc:max-lisp-depth::
 The maximum number of times that rep_funcall can be called recursively.
 
 This is intended to stop infinite recursion, if the default value of 250 is

@@ -47,48 +47,48 @@ DEFSYM(documentation_file, "documentation-file");
 DEFSYM(documentation_files, "documentation-files");
 DEFSYM(dl_load_reloc_now, "dl-load-reloc-now");
 DEFSYM(load_filename, "load-filename"); /*
-::doc:Vload-path::
+::doc:load-path::
 A list of directory names. When `load' opens a lisp-file it searches each
 directory named in this list in turn until the file is found or the list
 is exhausted.
 ::end::
-::doc:Vdl-load-path::
+::doc:dl-load-path::
 List of directories searched for dynamically loaded object files.
 ::end::
-::doc:Vafter-load-alist::
+::doc:after-load-alist::
 A list of (LIBRARY FORMS...). Whenever the `load' command reads a file
 of Lisp code LIBRARY, it executes each of FORMS. Note that LIBRARY must
 exactly match the FILE argument given to `load'.
 ::end::
-::doc:Vrep-directory::
+::doc:rep-directory::
 The directory in which all installed data files live.
 ::end::
-::doc:Vlisp-lib-directory::
+::doc:lisp-lib-directory::
 The name of the directory in which the standard lisp files live.
 ::end::
-::doc:Vsite-lisp-directory::
+::doc:site-lisp-directory::
 The name of the directory in which site-specific Lisp files are stored.
 ::end::
-::doc:Vexec-directory::
+::doc:exec-directory::
 The name of the directory containing architecture specific files.
 ::end::
-::doc:Vdocumentation-file::
+::doc:documentation-file::
 The name of the database containing the lisp-library's documentation strings.
 ::end::
-::doc:Vdocumentation-files::
+::doc:documentation-files::
 A list of database names containing all documentation strings.
 ::end::
-::doc:Vdl-load-reloc-now::
+::doc:dl-load-reloc-now::
 When non-nil, dynamically loaded libraries have all symbol relocations
 perfromed at load-time, not as required.
 ::end::
-::doc:Vload-filename::
+::doc:load-filename::
 While using the `load' function to load a Lisp library, this variable is
 set to the name of the file being loaded.
 ::end:: */
 
 DEFUN("quote", Fquote, Squote, (repv args), rep_SF) /*
-::doc:Squote::
+::doc:quote::
 quote ARG
 'ARG
 
@@ -101,7 +101,7 @@ Returns ARG.
 }
 
 DEFUN("function", Ffunction, Sfunction, (repv args), rep_SF) /*
-::doc:Sfunction::
+::doc:function::
 function ARG
 #'ARG
 
@@ -114,7 +114,7 @@ Returns the closure of ARG.
 }
 
 DEFUN("lambda", Flambda, Slambda, (repv args), rep_SF) /*
-::doc:Slambda::
+::doc:lambda::
 lambda LAMBDA-LIST BODY...
 
 Evaluates to an anonymous function.
@@ -127,7 +127,7 @@ Evaluates to an anonymous function.
 }
 
 DEFUN("defmacro", Fdefmacro, Sdefmacro, (repv args), rep_SF) /*
-::doc:Sdefmacro::
+::doc:defmacro::
 defmacro NAME LAMBDA-LIST [DOC-STRING] BODY...
 defmacro NAME BYTECODE-OBJECT
 
@@ -169,7 +169,7 @@ code has not been compiled).
 }
 
 DEFUN("defun", Fdefun, Sdefun, (repv args), rep_SF) /*
-::doc:Sdefun::
+::doc:defun::
 defun NAME LAMBDA-LIST [DOC-STRING] BODY...
 defun NAME BYTECODE-OBJECT
 
@@ -202,7 +202,7 @@ value is,
 DEFSTRING(const_bound, "Constant already bound");
 
 DEFUN("defconst", Fdefconst, Sdefconst, (repv args), rep_SF) /*
-::doc:Sdefconst::
+::doc:defconst::
 defconst NAME repv [DOC-STRING]
 
 Define a constant NAME whose (default) value is repv. If NAME is already
@@ -230,7 +230,7 @@ the compiler source (`lisp/compiler.jl').
 }
 
 DEFUN("car", Fcar, Scar, (repv cons), rep_Subr1) /*
-::doc:Scar::
+::doc:car::
 car CONS-CELL
 
 Returns the value stored in the car slot of CONS-CELL, or nil if CONS-CELL
@@ -242,7 +242,7 @@ is nil.
     return(Qnil);
 }
 DEFUN("cdr", Fcdr, Scdr, (repv cons), rep_Subr1) /*
-::doc:Scdr::
+::doc:cdr::
 cdr CONS-CELL
 
 Returns the value stored in the cdr slot of CONS-CELL, or nil if CONS-CELL
@@ -255,7 +255,7 @@ is nil.
 }
 
 DEFUN("list", Flist, Slist, (repv args), rep_SubrN) /*
-::doc:Slist::
+::doc:list::
 list ARGS...
 
 Returns a new list with elements ARGS...
@@ -277,7 +277,7 @@ Returns a new list with elements ARGS...
 }
 
 DEFUN("list*", Flist_star, Slist_star, (repv args), rep_SubrN) /*
-::doc:Slist*::
+::doc:list*::
 list* ARG1 ARG2 ... ARGN
 
 Returns a new list (ARG1 ARG2 ... ARGN-1 . ARGN). That is, the same as from
@@ -305,7 +305,7 @@ Returns a new list (ARG1 ARG2 ... ARGN-1 . ARGN). That is, the same as from
 }
 
 DEFUN("make-list", Fmake_list, Smake_list, (repv len, repv init), rep_Subr2) /*
-::doc:Smake-list::
+::doc:make-list::
 make-list LENGTH [INITIAL-repv]
 
 Returns a new list with LENGTH members, each of which is initialised to
@@ -323,7 +323,7 @@ INITIAL-repv, or nil.
 }
 
 DEFUN("append", Fappend, Sappend, (repv args), rep_SubrN) /*
-::doc:Sappend::
+::doc:append::
 append LISTS...
 
 Non-destructively concatenates each of it's argument LISTS... into one
@@ -359,7 +359,7 @@ new list which is returned.
 }
 
 DEFUN("nconc", Fnconc, Snconc, (repv args), rep_SubrN) /*
-::doc:Snconc::
+::doc:nconc::
 nconc LISTS...
 
 Destructively concatenates each of it's argument LISTS... into one new
@@ -395,7 +395,7 @@ to the beginning of the next list. Returns the new list.
 }
 
 DEFUN("rplaca", Frplaca, Srplaca, (repv cons, repv car), rep_Subr2) /*
-::doc:Srplaca::
+::doc:rplaca::
 rplaca CONS-CELL NEW-CAR
 
 Sets the value of the car slot in CONS-CELL to NEW-CAR. Returns the new
@@ -410,7 +410,7 @@ value.
 }
 
 DEFUN("rplacd", Frplacd, Srplacd, (repv cons, repv cdr), rep_Subr2) /*
-::doc:Srplacd::
+::doc:rplacd::
 rplacd CONS-CELL NEW-CDR
 
 Sets the value of the cdr slot in CONS-CELL to NEW-CAR. Returns the new
@@ -425,7 +425,7 @@ value.
 }
 
 DEFUN("reverse", Freverse, Sreverse, (repv head), rep_Subr1) /*
-::doc:Sreverse::
+::doc:reverse::
 reverse LIST
 
 Returns a new list which is a copy of LIST except that the members are in
@@ -446,7 +446,7 @@ reverse order.
 }
 
 DEFUN("nreverse", Fnreverse, Snreverse, (repv head), rep_Subr1) /*
-::doc:Snreverse::
+::doc:nreverse::
 nreverse LIST
 
 Returns LIST altered so that it's members are in reverse order to what they
@@ -475,7 +475,7 @@ were. This function is destructive towards it's argument.
 }
 
 DEFUN("assoc", Fassoc, Sassoc, (repv elt, repv list), rep_Subr2) /*
-::doc:Sassoc::
+::doc:assoc::
 assoc ELT ASSOC-LIST
 
 Searches ASSOC-LIST for a list whose first element is ELT. `assoc' uses
@@ -501,7 +501,7 @@ For example,
 }
 
 DEFUN("assq", Fassq, Sassq, (repv elt, repv list), rep_Subr2) /*
-::doc:Sassq::
+::doc:assq::
 assq ELT ASSOC-LIST
 
 Searches ASSOC-LIST for a list whose first element is ELT. `assq' uses `eq'
@@ -524,7 +524,7 @@ association.
 }
 
 DEFUN("rassoc", Frassoc, Srassoc, (repv elt, repv list), rep_Subr2) /*
-::doc:Srassoc::
+::doc:rassoc::
 rassoc ELT ASSOC-LIST
 
 Searches ASSOC-LIST for a cons-cell whose cdr element is `equal' to ELT. 
@@ -549,7 +549,7 @@ For example,
 }
 
 DEFUN("rassq", Frassq, Srassq, (repv elt, repv list), rep_Subr2) /*
-::doc:Srassq::
+::doc:rassq::
 rassq ELT ASSOC-LIST
 
 Searches ASSOC-LIST for a cons-cell whose cdr is `eq' to ELT.
@@ -571,7 +571,7 @@ Returns the first matching cons-cell, else nil.
 }
 
 DEFUN("nth", Fnth, Snth, (repv index, repv list), rep_Subr2) /*
-::doc:Snth::
+::doc:nth::
 nth INDEX LIST
 
 Returns the INDEXth element of LIST. The first element has an INDEX of zero.
@@ -594,7 +594,7 @@ Returns the INDEXth element of LIST. The first element has an INDEX of zero.
 }
 
 DEFUN("nthcdr", Fnthcdr, Snthcdr, (repv index, repv list), rep_Subr2) /*
-::doc:Snthcdr::
+::doc:nthcdr::
 nthcdr INDEX LIST
 
 Returns the INDEXth cdr of LIST. The first is INDEX zero.
@@ -617,7 +617,7 @@ Returns the INDEXth cdr of LIST. The first is INDEX zero.
 }
 
 DEFUN("last", Flast, Slast, (repv list), rep_Subr1) /*
-::doc:Slast::
+::doc:last::
 last LIST
 
 Returns the last element of LIST.
@@ -639,7 +639,7 @@ Returns the last element of LIST.
 }
 
 DEFUN("mapcar", Fmapcar, Smapcar, (repv fun, repv list), rep_Subr2) /*
-::doc:Smapcar::
+::doc:mapcar::
 mapcar FUNCTION LIST
 
 Calls FUNCTION-NAME with each element of LIST as an argument in turn and
@@ -674,7 +674,7 @@ returns a new list constructed from the results, ie,
 }
 
 DEFUN("mapc", Fmapc, Smapc, (repv fun, repv list), rep_Subr2) /*
-::doc:Smapc::
+::doc:mapc::
 mapc FUNCTION LIST
 
 Applies FUNCTION to each element in LIST, discards the results.
@@ -697,7 +697,7 @@ Applies FUNCTION to each element in LIST, discards the results.
 }
 
 DEFUN("filter", Ffilter, Sfilter, (repv pred, repv list), rep_Subr2) /*
-::doc:Sfilter::
+::doc:filter::
 filter PREDICATE LIST
 
 Return a new list, consisting of the elements in LIST which the function
@@ -736,7 +736,7 @@ PREDICATE returns t when applied to; i.e. something like
 }
 
 DEFUN("member", Fmember, Smember, (repv elt, repv list), rep_Subr2) /*
-::doc:Smember::
+::doc:member::
 member ELT LIST
 
 If ELT is a member of list LIST then return the tail of the list starting
@@ -760,7 +760,7 @@ from the matched ELT, ie,
 }
 
 DEFUN("memq", Fmemq, Smemq, (repv elt, repv list), rep_Subr2) /*
-::doc:Smemq::
+::doc:memq::
 memq ELT LIST
 
 If ELT is a member of list LIST then return the tail of the list starting
@@ -784,7 +784,7 @@ from the matched ELT, ie,
 }
 
 DEFUN("delete", Fdelete, Sdelete, (repv elt, repv list), rep_Subr2) /*
-::doc:Sdelete::
+::doc:delete::
 delete ELT LIST
 
 Returns LIST with any members `equal' to ELT destructively removed.
@@ -806,7 +806,7 @@ Returns LIST with any members `equal' to ELT destructively removed.
 }
 
 DEFUN("delq", Fdelq, Sdelq, (repv elt, repv list), rep_Subr2) /*
-::doc:Sdelq::
+::doc:delq::
 delq ELT LIST
 
 Returns LIST with any members `eq' to ELT destructively removed.
@@ -828,7 +828,7 @@ Returns LIST with any members `eq' to ELT destructively removed.
 }
 
 DEFUN("delete-if", Fdelete_if, Sdelete_if, (repv pred, repv list), rep_Subr2) /*
-::doc:Sdelete-if::
+::doc:delete-if::
 delete-if FUNCTION LIST
 
 Similar to `delete' except that a predicate function, FUNCTION-NAME, is
@@ -863,7 +863,7 @@ applied to that element, ie,
 }
 
 DEFUN("delete-if-not", Fdelete_if_not, Sdelete_if_not, (repv pred, repv list), rep_Subr2) /*
-::doc:Sdelete-if-not::
+::doc:delete-if-not::
 delete-if-not FUNCTION LIST
 
 Similar to `delete' except that a predicate function, FUNCTION-NAME, is
@@ -898,7 +898,7 @@ applied to that element, ie,
 }
 
 DEFUN("vector", Fvector, Svector, (repv args), rep_SubrN) /*
-::doc:Svector::
+::doc:vector::
 vector ARGS...
 
 Returns a new vector with ARGS... as its elements.
@@ -922,7 +922,7 @@ Returns a new vector with ARGS... as its elements.
 }
 
 DEFUN("make-vector", Fmake_vector, Smake_vector, (repv size, repv init), rep_Subr2) /*
-::doc:Smake-vector::
+::doc:make-vector::
 make-vector SIZE [INITIAL-repv]
 
 Creates a new vector of size SIZE. If INITIAL-repv is provided each element
@@ -946,7 +946,7 @@ will be set to that value, else they will all be nil.
 }
 
 DEFUN("arrayp", Farrayp, Sarrayp, (repv arg), rep_Subr1) /*
-::doc:Sarrayp::
+::doc:arrayp::
 arrayp ARG
 
 Returns t when ARG is an array.
@@ -956,7 +956,7 @@ Returns t when ARG is an array.
 }
 
 DEFUN("aset", Faset, Saset, (repv array, repv index, repv new), rep_Subr3) /*
-::doc:Saset::
+::doc:aset::
 aset ARRAY INDEX NEW-VALUE
 
 Sets element number INDEX (a positive integer) of ARRAY (can be a vector
@@ -994,7 +994,7 @@ can only contain characters (ie, integers).
 }
 
 DEFUN("aref", Faref, Saref, (repv array, repv index), rep_Subr2) /*
-::doc:Saref::
+::doc:aref::
 aref ARRAY INDEX
 
 Returns the INDEXth (a non-negative integer) element of ARRAY, which
@@ -1020,7 +1020,7 @@ can be a vector or a string. INDEX starts at zero.
 }
 
 DEFUN("make-string", Fmake_string, Smake_string, (repv len, repv init), rep_Subr2) /*
-::doc:Smake-string::
+::doc:make-string::
 make-string LENGTH [INITIAL-repv]
 
 Returns a new string of length LENGTH, each character is initialised to
@@ -1041,7 +1041,7 @@ INITIAL-repv, or to space if INITIAL-repv is not given.
 }
 
 DEFUN("substring", Fsubstring, Ssubstring, (repv string, repv start, repv end), rep_Subr3) /*
-::doc:Ssubstring::
+::doc:substring::
 substring STRING START [END]
 
 Returns the portion of STRING starting at character number START and ending
@@ -1086,7 +1086,7 @@ extend_concat(u_char **buf, int *bufLen, int i, int addLen)
     return(rep_FALSE);
 }
 DEFUN("concat", Fconcat, Sconcat, (repv args), rep_SubrN) /*
-::doc:Sconcat::
+::doc:concat::
 concat ARGS...
 
 Concatenates all ARGS... into a single string, each argument can be a string,
@@ -1168,7 +1168,7 @@ error:
 }
 
 DEFUN("length", Flength, Slength, (repv sequence), rep_Subr1) /*
-::doc:Slength::
+::doc:length::
 length SEQUENCE
 
 Returns the number of elements in SEQUENCE (a string, list or vector).
@@ -1206,7 +1206,7 @@ Returns the number of elements in SEQUENCE (a string, list or vector).
 }
 
 DEFUN("copy-sequence", Fcopy_sequence, Scopy_sequence, (repv seq), rep_Subr1) /*
-::doc:Scopy-sequence::
+::doc:copy-sequence::
 copy-sequence SEQUENCE
 
 Returns a new sequence whose elements are eq to those in SEQUENCE.
@@ -1254,7 +1254,7 @@ Returns a new sequence whose elements are eq to those in SEQUENCE.
 }
 
 DEFUN("elt", Felt, Selt, (repv seq, repv index), rep_Subr2) /*
-::doc:Selt::
+::doc:elt::
 elt SEQUENCE INDEX
 
 Return the element of SEQUENCE at position INDEX (counting from zero).
@@ -1267,7 +1267,7 @@ Return the element of SEQUENCE at position INDEX (counting from zero).
 }
 
 DEFUN("prog1", Fprog1, Sprog1, (repv args), rep_SF) /*
-::doc:Sprog1::
+::doc:prog1::
 prog1 FORM1 FORMS...
 
 First evals FORM1 then FORMS, returns the value that FORM1 gave.
@@ -1293,7 +1293,7 @@ First evals FORM1 then FORMS, returns the value that FORM1 gave.
 }
 
 DEFUN("prog2", Fprog2, Sprog2, (repv args), rep_SF) /*
-::doc:Sprog2::
+::doc:prog2::
 prog2 FORM1 FORM2 FORMS...
 
 Evals FORM1 then FORM2 then the rest. Returns whatever FORM2 gave.
@@ -1324,7 +1324,7 @@ Evals FORM1 then FORM2 then the rest. Returns whatever FORM2 gave.
 }
 
 DEFUN("while", Fwhile, Swhile, (repv args), rep_SF) /*
-::doc:Swhile::
+::doc:while::
 while CONDITION FORMS...
 
 Eval CONDITION, if it is non-nil then execute FORMS and repeat the
@@ -1354,7 +1354,7 @@ procedure, else return nil.
 }
 
 DEFUN("cond", Fcond, Scond, (repv args), rep_SF) /*
-::doc:Scond::
+::doc:cond::
 cond (CONDITION FORMS... ) ...
 
 Find the first CONDITION which has a value of t when eval'ed, then perform
@@ -1398,7 +1398,7 @@ like the last else in an else-if statement in C.
 }
 
 DEFUN("if", Fif, Sif, (repv args), rep_SF) /*
-::doc:Sif::
+::doc:if::
 if CONDITION THEN-FORM [ELSE-FORMS...]
 
 Evaluate CONDITION, if it is non-nil then evaluate THEN-FORM and return
@@ -1425,7 +1425,7 @@ its value.
 }
 
 DEFUN("and", Fand, Sand, (repv args), rep_SF) /*
-::doc:Sand::
+::doc:and::
 and FORMS...
 
 Evaluates each member of FORMS in turn, until one returns nil, and returns
@@ -1451,7 +1451,7 @@ returned.
 }
 
 DEFUN("or", For, Sor, (repv args), rep_SF) /*
-::doc:Sor::
+::doc:or::
 or FORMS...
 
 Evaluates each member of FORMS in turn until one returns t, the result of
@@ -1476,7 +1476,7 @@ which is returned. If none are t then return nil.
 }
 
 DEFUN("apply", Fapply, Sapply, (repv args), rep_SubrN) /*
-::doc:Sapply::
+::doc:apply::
 apply FUNCTION ARGS... ARG-LIST
 
 Calls FUNCTION passing all of ARGS to it as well as all elements in ARG-LIST.
@@ -1522,7 +1522,7 @@ load_file_exists_p (repv name)
 }
 
 DEFUN_INT("load", Fload, Sload, (repv file, repv noerr_p, repv nopath_p, repv nosuf_p, repv in_env), rep_Subr5, "fLisp file to load:") /*
-::doc:Sload::
+::doc:load::
 load FILE [NO-ERROR] [NO-PATH] [NO-SUFFIX] [IN-CURRENT-ENVIRONMENT]
 
 Attempt to open and then read-and-eval the file of Lisp code FILE.
@@ -1787,7 +1787,7 @@ path_error:
 	    : rep_signal_missing_arg(1));
 
 DEFUN("+", Fplus, Splus, (repv args), rep_SubrN) /*
-::doc:S+::
+::doc:+::
 + NUMBERS...
 
 Adds all NUMBERS together. If no arguments are given returns 0.
@@ -1799,7 +1799,7 @@ Adds all NUMBERS together. If no arguments are given returns 0.
 }
 
 DEFUN("-", Fminus, Sminus, (repv args), rep_SubrN) /*
-::doc:S-::
+::doc:-::
 - NUMBER [NUMBERS...]
 
 Either returns the negation of NUMBER or the value of NUMBER minus
@@ -1817,7 +1817,7 @@ NUMBERS
 }
 
 DEFUN("*", Fproduct, Sproduct, (repv args), rep_SubrN) /*
-::doc:S*::
+::doc:*::
 * NUMBERS...
 
 Multiplies all NUMBERS together. If no numbers are given returns 1.
@@ -1829,7 +1829,7 @@ Multiplies all NUMBERS together. If no numbers are given returns 1.
 }
 
 DEFUN("/", Fdivide, Sdivide, (repv args), rep_SubrN) /*
-::doc:S/::
+::doc:/::
 / NUMBERS...
 
 Divides NUMBERS (in left-to-right order), ie,
@@ -1862,7 +1862,7 @@ Divides NUMBERS (in left-to-right order), ie,
 }
 
 DEFUN("%", Fremainder, Sremainder, (repv n1, repv n2), rep_Subr2) /*
-::doc:S%::
+::doc:%::
 % DIVIDEND DIVISOR
 
 Returns the integer remainder after dividing DIVIDEND by DIVISOR.
@@ -1876,7 +1876,7 @@ Returns the integer remainder after dividing DIVIDEND by DIVISOR.
 }
 
 DEFUN("mod", Fmod, Smod, (repv n1, repv n2), rep_Subr2) /*
-::doc:Smod::
+::doc:mod::
 mod DIVIDEND DIVISOR
 
 Returns the value of DIVIDEND modulo DIVISOR; unlike the % (remainder)
@@ -1905,7 +1905,7 @@ and that floating point division is used.
 }
 
 DEFUN("lognot", Flognot, Slognot, (repv num), rep_Subr1) /*
-::doc:Slognot::
+::doc:lognot::
 lognot NUMBER
 
 Returns the bitwise logical `not' of NUMBER.
@@ -1916,7 +1916,7 @@ Returns the bitwise logical `not' of NUMBER.
 }
 
 DEFUN("not", Fnot, Snot, (repv arg), rep_Subr1) /*
-::doc:Snot::
+::doc:not::
 not ARG
 
 If ARG is nil returns t, else returns nil.
@@ -1928,7 +1928,7 @@ If ARG is nil returns t, else returns nil.
 }
 
 DEFUN("logior", Flogior, Slogior, (repv args), rep_SubrN) /*
-::doc:Slogior::
+::doc:logior::
 logior NUMBERS...
 
 Returns the bitwise logical `inclusive-or' of its arguments.
@@ -1938,7 +1938,7 @@ Returns the bitwise logical `inclusive-or' of its arguments.
 }
 
 DEFUN("logxor", Flogxor, Slogxor, (repv args), rep_SubrN) /*
-::doc:Slogxor::
+::doc:logxor::
 logxor NUMBERS...
 
 Returns the bitwise logical `exclusive-or' of its arguments.
@@ -1948,7 +1948,7 @@ Returns the bitwise logical `exclusive-or' of its arguments.
 }
 
 DEFUN("logand", Flogand, Slogand, (repv args), rep_SubrN) /*
-::doc:Slogand::
+::doc:logand::
 logand NUMBERS...
 
 Returns the bitwise logical `and' of its arguments.
@@ -1958,7 +1958,7 @@ Returns the bitwise logical `and' of its arguments.
 }
 
 DEFUN("equal", Fequal, Sequal, (repv val1, repv val2), rep_Subr2) /*
-::doc:Sequal::
+::doc:equal::
 equal VALUE1 VALUE2
 
 Compares VALUE1 and VALUE2, compares the actual structure of the objects not
@@ -1971,7 +1971,7 @@ location in memory is different.
 }
 
 DEFUN("eq", Feq, Seq, (repv val1, repv val2), rep_Subr2) /*
-::doc:Seq::
+::doc:eq::
 eq VALUE1 VALUE2
 
 Returns t if VALUE1 and VALUE2 are one and the same object. Note that
@@ -1982,7 +1982,7 @@ this may or may not be true for numbers of the same value (see `eql').
 }
 
 DEFUN("eql", Feql, Seql, (repv arg1, repv arg2), rep_Subr2) /*
-::doc:Seql::
+::doc:eql::
 eql ARG1 ARG2
 Similar to `eq' except that numbers (integers, characters) with the same
 value will always be considered `eql' (this may or may not be the case
@@ -1996,7 +1996,7 @@ with `eq'.
 }
 
 DEFUN("string-head-eq", Fstring_head_eq, Sstring_head_eq, (repv str1, repv str2), rep_Subr2) /*
-::doc:Sstring-head-eq::
+::doc:string-head-eq::
 string-head-eq STRING1 STRING2
 
 Returns t if STRING2 matches the beginning of STRING1, ie,
@@ -2022,7 +2022,7 @@ Returns t if STRING2 matches the beginning of STRING1, ie,
 }
 
 DEFUN("string-equal", Fstring_equal, Sstring_equal, (repv str1, repv str2), rep_Subr2) /*
-::doc:Sstring-equal::
+::doc:string-equal::
 string-equal STRING1 STRING2
 
 Returns t if STRING1 and STRING2 are the same, ignoring case.
@@ -2043,7 +2043,7 @@ Returns t if STRING1 and STRING2 are the same, ignoring case.
 }
 
 DEFUN("string-lessp", Fstring_lessp, Sstring_lessp, (repv str1, repv str2), rep_Subr2) /*
-::doc:Sstring-lessp::
+::doc:string-lessp::
 string-lessp STRING1 STRING2
 
 Returns t if STRING1 is `less' than STRING2, ignoring case.
@@ -2065,7 +2065,7 @@ Returns t if STRING1 is `less' than STRING2, ignoring case.
 
 
 DEFUN("=", Fnum_eq, Snum_eq, (repv num1, repv num2), rep_Subr2) /*
-::doc:S=::
+::doc:=::
 = NUMBER1 NUMBER2
 
 Returns t if NUMBER1 and NUMBER2 are equal.
@@ -2079,7 +2079,7 @@ Returns t if NUMBER1 and NUMBER2 are equal.
 }
 
 DEFUN("/=", Fnum_noteq, Snum_noteq, (repv num1, repv num2), rep_Subr2) /*
-::doc:S/=::
+::doc:/=::
 /= NUMBER1 NUMBER2
 
 Returns t if NUMBER1 and NUMBER2 are unequal.
@@ -2114,7 +2114,7 @@ Returns t if NUMBER1 and NUMBER2 are unequal.
     return rep_signal_missing_arg(rep_CONSP(args) ? 2 : 1);					\
 
 DEFUN(">", Fgtthan, Sgtthan, (repv args), rep_SubrN) /*
-::doc:S>::
+::doc:>::
 > ARG1 ARG2 [ARG3 ...]
 
 Returns t if ARG1 is greater than ARG2, and if ARG2 is greater than ARG3,
@@ -2126,7 +2126,7 @@ strings, positions, marks, etc as well.
 }
 
 DEFUN(">=", Fgethan, Sgethan, (repv args), rep_SubrN) /*
-::doc:S>=::
+::doc:>=::
 >= ARG1 ARG2 [ARG3 ...]
 
 Returns t if ARG1 is greater-or-equal than ARG2. Note that this command
@@ -2137,7 +2137,7 @@ isn't limited to numbers, it can do strings, positions, marks, etc as well.
 }
 
 DEFUN("<", Fltthan, Sltthan, (repv args), rep_SubrN) /*
-::doc:S<::
+::doc:<::
 < ARG1 ARG2 [ARG3 ...]
 
 Returns t if ARG1 is less than ARG2. Note that this command isn't limited to
@@ -2148,7 +2148,7 @@ numbers, it can do strings, positions, marks, etc as well.
 }
 
 DEFUN("<=", Flethan, Slethan, (repv args), rep_SubrN) /*
-::doc:S<=::
+::doc:<=::
 <= ARG1 ARG2 [ARG3 ...]
 
 Returns t if ARG1 is less-or-equal than ARG2. Note that this command isn't
@@ -2159,7 +2159,7 @@ limited to numbers, it can do strings, positions, marks, etc as well.
 }
 
 DEFUN("max", Fmax, Smax, (repv args), rep_SubrN) /*
-::doc:Smax::
+::doc:max::
 max ARGS...
 
 Returns the greatest of its arguments. There must be at least two
@@ -2184,7 +2184,7 @@ arguments.
 }
 
 DEFUN("min", Fmin, Smin, (repv args), rep_SubrN) /*
-::doc:Smin::
+::doc:min::
 min ARGS...
 
 Returns the smallest of its arguments. There must be at least two
@@ -2209,7 +2209,7 @@ arguments.
 }
 
 DEFUN("1+", Fplus1, Splus1, (repv num), rep_Subr1) /*
-::doc:S1+::
+::doc:1+::
 1+ NUMBER
 
 Return NUMBER plus 1.
@@ -2220,7 +2220,7 @@ Return NUMBER plus 1.
 }
 
 DEFUN("1-", Fsub1, Ssub1, (repv num), rep_Subr1) /*
-::doc:S1-::
+::doc:1-::
 1- NUMBER
 
 Return NUMBER minus 1.
@@ -2231,7 +2231,7 @@ Return NUMBER minus 1.
 }
 
 DEFUN("lsh", Flsh, Slsh, (repv num, repv shift), rep_Subr2) /*
-::doc:Slsh::
+::doc:lsh::
 lsh NUMBER COUNT
 
 Shift the bits in NUMBER by COUNT bits to the left, a negative COUNT means
@@ -2247,7 +2247,7 @@ shift right.
 }
 
 DEFUN("ash", Fash, Sash, (repv num, repv shift), rep_Subr2) /*
-::doc:Sash::
+::doc:ash::
 ash NUMBER COUNT
 
 Use an arithmetic shift to shift the bits in NUMBER by COUNT bits to the left,
@@ -2262,7 +2262,7 @@ a negative COUNT means shift right.
 }
 
 DEFUN("zerop", Fzerop, Szerop, (repv num), rep_Subr1) /*
-::doc:Szerop::
+::doc:zerop::
 zerop NUMBER
 
 t if NUMBER is zero.
@@ -2274,7 +2274,7 @@ t if NUMBER is zero.
 }
 
 DEFUN("null", Fnull, Snull, (repv arg), rep_Subr1) /*
-::doc:Snull::
+::doc:null::
 null ARG
 
 Returns t if ARG is nil.
@@ -2284,7 +2284,7 @@ Returns t if ARG is nil.
 }
 
 DEFUN("atom", Fatom, Satom, (repv arg), rep_Subr1) /*
-::doc:Satom::
+::doc:atom::
 atom ARG
 
 Returns t if ARG is not a cons-cell.
@@ -2294,7 +2294,7 @@ Returns t if ARG is not a cons-cell.
 }
 
 DEFUN("consp", Fconsp, Sconsp, (repv arg), rep_Subr1) /*
-::doc:Sconsp::
+::doc:consp::
 consp ARG
 
 Returns t if ARG is a cons-cell.
@@ -2304,7 +2304,7 @@ Returns t if ARG is a cons-cell.
 }
 
 DEFUN("listp", Flistp, Slistp, (repv arg), rep_Subr1) /*
-::doc:Slistp::
+::doc:listp::
 listp ARG
 
 Returns t if ARG is a list, (either a cons-cell or nil).
@@ -2314,7 +2314,7 @@ Returns t if ARG is a list, (either a cons-cell or nil).
 }
 
 DEFUN("numberp", Fnumberp, Snumberp, (repv arg), rep_Subr1) /*
-::doc:Snumberp::
+::doc:numberp::
 numberp ARG
 
 Return t if ARG is a number.
@@ -2324,7 +2324,7 @@ Return t if ARG is a number.
 }
 
 DEFUN("integerp", Fintegerp, Sintegerp, (repv arg), rep_Subr1) /*
-::doc:Sintegerp::
+::doc:integerp::
 integerp ARG
 
 Return t if ARG is a integer.
@@ -2334,7 +2334,7 @@ Return t if ARG is a integer.
 }
 
 DEFUN("stringp", Fstringp, Sstringp, (repv arg), rep_Subr1) /*
-::doc:Sstringp::
+::doc:stringp::
 stringp ARG
 
 Returns t is ARG is a string.
@@ -2344,7 +2344,7 @@ Returns t is ARG is a string.
 }
 
 DEFUN("vectorp", Fvectorp, Svectorp, (repv arg), rep_Subr1) /*
-::doc:Svectorp::
+::doc:vectorp::
 vectorp ARG
 
 Returns t if ARG is a vector.
@@ -2354,7 +2354,7 @@ Returns t if ARG is a vector.
 }
 
 DEFUN("bytecodep", Fbytecodep, Sbytecodep, (repv arg), rep_Subr1) /*
-::doc:Sbytecodep::
+::doc:bytecodep::
 bytecodep ARG
 
 Returns t if ARG is a byte code subroutine (i.e. compiled Lisp code).
@@ -2364,7 +2364,7 @@ Returns t if ARG is a byte code subroutine (i.e. compiled Lisp code).
 }
 
 DEFUN("functionp", Ffunctionp, Sfunctionp, (repv arg), rep_Subr1) /*
-::doc:Sfunctionp::
+::doc:functionp::
 functionp ARG
 
 Returns t if ARG is a function.
@@ -2394,7 +2394,7 @@ Returns t if ARG is a function.
 }
 
 DEFUN("macrop", Fmacrop, Smacrop, (repv arg), rep_Subr1) /*
-::doc:Smacrop::
+::doc:macrop::
 macrop ARG
 
 Returns t if ARG is a macro.
@@ -2407,7 +2407,7 @@ Returns t if ARG is a macro.
 }
 	
 DEFUN("special-form-p", Fspecial_form_p, Sspecial_form_p, (repv arg), rep_Subr1) /*
-::doc:Sspecial-form-p::
+::doc:special-form-p::
 special-form-p ARG
 
 Returns t if ARG is a special-form.
@@ -2419,7 +2419,7 @@ Returns t if ARG is a special-form.
 }
 
 DEFUN("subrp", Fsubrp, Ssubrp, (repv arg), rep_Subr1) /*
-::doc:Ssubrp::
+::doc:subrp::
 subrp ARG
 
 Returns t if arg is a primitive function.
@@ -2443,7 +2443,7 @@ Returns t if arg is a primitive function.
 }
 
 DEFUN("sequencep", Fsequencep, Ssequencep, (repv arg), rep_Subr1) /*
-::doc:Ssequencep::
+::doc:sequencep::
 sequencep ARG
 
 Returns t is ARG is a sequence (a list, vector or string).
@@ -2456,7 +2456,7 @@ Returns t is ARG is a sequence (a list, vector or string).
 }
 
 DEFUN("subr-name", Fsubr_name, Ssubr_name, (repv subr, repv useVar), rep_Subr2) /*
-::doc:Ssubr-name::
+::doc:subr-name::
 subr-name SUBR [USE-VAR]
 
 Returns the name (a string) associated with SUBR.
@@ -2480,7 +2480,7 @@ Returns the name (a string) associated with SUBR.
 }
 
 DEFUN("call-hook", Fcall_hook, Scall_hook, (repv hook, repv arg_list, repv type), rep_Subr3) /*
-::doc:Scall-hook::
+::doc:call-hook::
 call-hook HOOK ARG-LIST [TYPE]
 
 Call the hook named by the symbol HOOK, passing all functions the arguments
@@ -2526,7 +2526,7 @@ returned.
 }
 
 DEFUN("catch", Fcatch, Scatch, (repv args), rep_SF) /*
-::doc:Scatch::
+::doc:catch::
 catch TAG FORMS...
 
 Evaluates FORMS, non-local exits are allowed with `(throw TAG)'.
@@ -2576,7 +2576,7 @@ There are several pre-defined `catch'es which are,
 }
 
 DEFUN("throw", Fthrow, Sthrow, (repv tag, repv val), rep_Subr2) /*
-::doc:Sthrow::
+::doc:throw::
 throw TAG repv
 
 Performs a non-local exit to the `catch' waiting for TAG and return
@@ -2590,7 +2590,7 @@ repv from it. TAG and repv are both evaluated fully.
 }
 
 DEFUN("unwind-protect", Funwind_protect, Sunwind_protect, (repv args), rep_SF) /*
-::doc:Sunwind-protect::
+::doc:unwind-protect::
 unwind-protect BODY CLEANUP-FORMS...
 
 Eval and return the value of BODY guaranteeing that the CLEANUP-FORMS will
@@ -2622,7 +2622,7 @@ BODY is being evaluated.
 }
 
 DEFUN("with-object", Fwith_object, Swith_object, (repv args), rep_SF) /*
-::doc:Swith-object::
+::doc:with-object::
 with-object ARG FORMS...
 
 Evaluate ARG and make its value ``current'' in some way meaningful for
