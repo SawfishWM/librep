@@ -120,6 +120,10 @@ extern void rep_tuples_kill(void);
 /* from values.c */
 extern int rep_type_cmp(repv, repv);
 extern int rep_ptr_cmp(repv, repv);
+extern rep_cons_block *rep_cons_block_chain;
+extern rep_cons *rep_cons_freelist;
+extern int rep_allocated_cons, rep_used_cons;
+extern rep_cons *rep_allocate_cons (void);
 extern void rep_cons_free(repv);
 extern void rep_pre_values_init (void);
 extern void rep_values_init(void);

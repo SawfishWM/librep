@@ -1,5 +1,17 @@
 2000-06-16  John Harper  <john@dcs.warwick.ac.uk>
 
+	* repint.h (inline_Fcons): when using GCC define this function
+	`external inline'. It mimics Fcons except it will only cause a
+	procedure call if the cons heap needs to grow
+
+	* values.c (rep_allocate_cons): new function, factored from
+	Fcons, allocates a new cons block
+
+	* lispmach.c (make_bytecode_frame, vm): use inline_Fcons where
+	appropriate (for speedup of 4-5%)
+
+2000-06-16  John Harper  <john@dcs.warwick.ac.uk>
+
 	* version 0.12
 
 2000-06-14  John Harper  <john@dcs.warwick.ac.uk>
