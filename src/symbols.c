@@ -432,16 +432,14 @@ values look for one of those first.
 /* Second argument (NO-ERR) means don't signal an error if the value is
    void. */
 {
-    VALUE val;
+    VALUE val = void_value;
     DECLARE1(sym, SYMBOLP);
-    if((VSYM(sym)->car & SF_BUFFER_LOCAL)
-       && (val = cmd_assq(sym, curr_vw->vw_Tx->tx_LocalVariables))
-       && CONSP(val))
-    {
-	val = VCDR(val);
-    }
-    else
+
+    if(VSYM(sym)->car & SF_BUFFER_LOCAL)
+	val = cmd_buffer_symbol_value(sym, sym_nil, sym_nil, sym_t);
+    if(val == void_value)
 	val = VSYM(sym)->value;
+
     if(val && (VCELL8_TYPEP(val, V_Var)))
     {
 	val = VVARFUN(val)(LISP_NULL);
@@ -471,7 +469,7 @@ SYMBOL the buffer-local value in the current buffer is set. Returns VALUE.
     {
 	TX *tx = curr_vw->vw_Tx;
 	VALUE tmp;
-	if((tmp = cmd_assq(sym, tx->tx_LocalVariables)) && CONSP(tmp))
+	if((tmp = cmd_assq(sym, tx->tx_GlobalExtent->locals)) && CONSP(tmp))
 	{
 	    /* A buffer-local value exists, modify it. */
 	    VCDR(tmp) = val;
@@ -480,8 +478,8 @@ SYMBOL the buffer-local value in the current buffer is set. Returns VALUE.
 	else if(VSYM(sym)->car & SF_SET_BUFFER_LOCAL)
 	{
 	    /* Create a new buffer-local value */
-	    tx->tx_LocalVariables = cmd_cons(cmd_cons(sym, val),
-					     tx->tx_LocalVariables);
+	    tx->tx_GlobalExtent->locals
+		= cmd_cons(cmd_cons(sym, val), tx->tx_GlobalExtent->locals);
 	    return(val);
 	}
 	/* Fall through and set the default value. */
@@ -972,12 +970,12 @@ Returns SYMBOL.
     TX *tx = curr_vw->vw_Tx;
     DECLARE1(sym, SYMBOLP);
     VSYM(sym)->car |= SF_BUFFER_LOCAL;
-    slot = cmd_assq(sym, tx->tx_LocalVariables);
+    slot = cmd_assq(sym, tx->tx_GlobalExtent->locals);
     if(!slot || !CONSP(slot))
     {
 	/* Need to create a binding. */
-	tx->tx_LocalVariables = cmd_cons(cmd_cons(sym, VSYM(sym)->value),
-					 tx->tx_LocalVariables);
+	tx->tx_GlobalExtent->locals = cmd_cons(cmd_cons(sym, VSYM(sym)->value),
+					       tx->tx_GlobalExtent->locals);
     }
     return(sym);
 }
@@ -1003,12 +1001,13 @@ DEFUN("buffer-variables", cmd_buffer_variables, subr_buffer_variables, (VALUE tx
 buffer-variables [BUFFER]
 
 Returns a list of (SYMBOL . VALUE) bindings which take effect when the
-current buffer is BUFFER.
+current buffer is BUFFER. (Only the buffer-wide bindings, not those
+for each minor extent.)
 ::end:: */
 {
     if(!BUFFERP(tx))
 	tx = VAL(curr_vw->vw_Tx);
-    return(VTX(tx)->tx_LocalVariables);
+    return(VTX(tx)->tx_GlobalExtent->locals);
 }
 
 _PR VALUE cmd_kill_all_local_variables(VALUE);
@@ -1023,8 +1022,8 @@ permanent (i.e. their `permanent-local' property is unset or non-nil.)
     VALUE list;
     if(!BUFFERP(tx))
 	tx = VAL(curr_vw->vw_Tx);
-    list = VTX(tx)->tx_LocalVariables;
-    VTX(tx)->tx_LocalVariables = sym_nil;
+    list = VTX(tx)->tx_GlobalExtent->locals;
+    VTX(tx)->tx_GlobalExtent->locals = sym_nil;
     while(CONSP(list))
     {
 	if(NILP(cmd_get(VCAR(VCAR(list)), sym_permanent_local)))
@@ -1032,8 +1031,8 @@ permanent (i.e. their `permanent-local' property is unset or non-nil.)
 	else
 	{
 	    VALUE next = VCDR(list);
-	    VCDR(list) = VTX(tx)->tx_LocalVariables;
-	    VTX(tx)->tx_LocalVariables = list;
+	    VCDR(list) = VTX(tx)->tx_GlobalExtent->locals;
+	    VTX(tx)->tx_GlobalExtent->locals = list;
 	    list = next;
 	}
     }
@@ -1053,15 +1052,15 @@ Remove the buffer-local value of the symbol SYMBOL in the specified buffer.
     DECLARE1(sym, SYMBOLP);
     if(!BUFFERP(tx))
 	tx = VAL(curr_vw->vw_Tx);
-    list = VTX(tx)->tx_LocalVariables;
-    VTX(tx)->tx_LocalVariables = sym_nil;
+    list = VTX(tx)->tx_GlobalExtent->locals;
+    VTX(tx)->tx_GlobalExtent->locals = sym_nil;
     while(CONSP(list))
     {
 	VALUE nxt = VCDR(list);
 	if(VCAR(list) != sym)
 	{
-	    VCDR(list) = VTX(tx)->tx_LocalVariables;
-	    VTX(tx)->tx_LocalVariables = list;
+	    VCDR(list) = VTX(tx)->tx_GlobalExtent->locals;
+	    VTX(tx)->tx_GlobalExtent->locals = list;
 	}
 	list = nxt;
     }
