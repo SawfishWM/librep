@@ -29,8 +29,7 @@
 		(describe-function-1 sym)
 	      (describe-variable-1 sym))
 	    (format standard-output "%s\n\n"
-		    (or (documentation sym (not use-function))
-			"Undocumented"))) symbols)))
+		    (or (documentation sym) "Undocumented"))) symbols)))
 
 ;;;###autoload
 (defun apropos-function (regexp &optional all-functions)
@@ -102,7 +101,7 @@
 ;;;###autoload
 (defun describe-variable (var)
   (let
-      ((doc (documentation var t))
+      ((doc (documentation var))
        (old-buf (current-buffer)))
     (describe-variable-1 var)
     (format standard-output "%s\n" (or doc "Undocumented."))))
@@ -111,52 +110,45 @@
 ;; Accessing doc strings
 
 ;;;###autoload
-(defun documentation (symbol &optional is-variable)
-  "Returns the documentation-string for SYMBOL. If IS-VARIABLE is t the
-documentation for the variable stored in SYMBOL is returned, else
-the function doc is provided."
+(defun documentation (symbol)
+  "Returns the documentation-string for SYMBOL."
   (catch 'exit
     (let
-	(doc key dbm) 
-    ;; First check for in-core documentation
-    (if is-variable
-	(when (and (boundp symbol)
-		   (setq doc (get symbol 'variable-documentation)))
-	  (throw 'exit doc))
-      ;; a function
+	(doc dbm)
+      ;; First check for in-core documentation
+      (when (setq doc (get symbol 'documentation))
+	(throw 'exit doc))
       (when (boundp symbol)
 	(setq doc (symbol-value symbol))
-	(when (consp doc)
-	  (if (eq 'macro (car doc))
-	      (setq doc (nth 3 doc))
-	    (setq doc (nth 2 doc)))
+	(when (eq 'macro (car doc))
+	  (setq doc (car doc)))
+	(when (and (closurep doc) (eq (car (closure-function doc)) 'lambda))
+	  (setq doc (nth 2 (closure-function doc)))
 	  (when (stringp doc)
-	    (throw 'exit doc)))))
-    ;; Then for doc strings in the databases
-    (require 'sdbm)
-    (setq key (concat (if is-variable ?V ?S) (symbol-name symbol)))
-    (mapc (lambda (file)
-	    (setq dbm (sdbm-open file 'read))
-	    (when dbm
-	      (unwind-protect
-		  (setq doc (sdbm-fetch dbm key))
-		(sdbm-close dbm))
-	      (when doc
-		(throw 'exit doc))))
-	  documentation-files))))
+	    (throw 'exit doc))))
+      ;; Then for doc strings in the databases
+      (require 'sdbm)
+      (mapc (lambda (file)
+	      (setq dbm (sdbm-open file 'read))
+	      (when dbm
+		(unwind-protect
+		    (setq doc (sdbm-fetch dbm (symbol-name symbol)))
+		  (sdbm-close dbm))
+		(when doc
+		  (throw 'exit doc))))
+	    documentation-files))))
   
 ;;;###autoload
 (defun document-var (symbol doc-string)
-  "Sets the `variable-documentation' property of SYMBOL to DOC-STRING."
-  (put symbol 'variable-documentation doc-string)
+  "Sets the `documentation' property of SYMBOL to DOC-STRING."
+  (put symbol 'documentation doc-string)
   symbol)
 
 ;;;###autoload
-(defun add-documentation (symbol string &optional is-variable)
+(defun add-documentation (symbol string)
   "Adds a documentation string STRING to the file of such strings."
   (require 'sdbm)
   (let
-      ((dbm (sdbm-open documentation-file 'append))
-       (key (concat (if is-variable ?V ?S) (symbol-name symbol))))
-    (sdbm-store dbm key string 'replace)
+      ((dbm (sdbm-open documentation-file 'append)))
+    (sdbm-store dbm (symbol-name symbol) string 'replace)
     (sdbm-close dbm)))

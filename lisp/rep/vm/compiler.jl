@@ -549,7 +549,7 @@ that files which shouldn't be compiled aren't."
 	  ((value (eval (nth 2 form)))
 	   (doc (nth 3 form)))
 	(when (and comp-write-docs (stringp doc))
-	  (add-documentation (nth 1 form) doc t)
+	  (add-documentation (nth 1 form) doc)
 	  (setq form (delq (nth 3 form) form)))
 	(unless (memq (nth 1 form) comp-defvars)
 	  (comp-remember-var (nth 1 form)))
@@ -565,7 +565,7 @@ that files which shouldn't be compiled aren't."
 	  ;; Compile the definition. A good idea?
 	  (rplaca (nthcdr 2 form) (compile-form (nth 2 form))))
 	(when (and comp-write-docs (stringp doc))
-	  (add-documentation (nth 1 form) doc t)
+	  (add-documentation (nth 1 form) doc)
 	  (setq form (delq (nth 3 form) form)))
 	(unless (memq (nth 1 form) comp-defvars)
 	  (comp-remember-var (nth 1 form))))
