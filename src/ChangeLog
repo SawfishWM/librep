@@ -1,5 +1,8 @@
 1998-10-27  John Harper  <john@dcs.warwick.ac.uk>
 
+	* streams.c (stream_puts, stream_putc): when growing the window
+	message remember to allocate a byte for the zero terminator..
+
 	* values.c (data_types): remove mark_sweep
 	(mark_value): when marking a resident mark, mark the canonical
 	name of the associated buffer (it's required if the mark is
