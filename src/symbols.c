@@ -20,6 +20,8 @@
 
 #define _GNU_SOURCE
 
+#define NDEBUG
+
 /* AIX requires this to be the first thing in the file.  */
 #include <config.h>
 #ifdef __GNUC__
@@ -71,9 +73,6 @@ repv rep_void_value = rep_VAL(&void_object);
 static rep_symbol_block *symbol_block_chain;
 static rep_symbol *symbol_freelist;
 int rep_allocated_symbols, rep_used_symbols;
-
-/* When true, warn about hiding functions when binding */
-rep_bool rep_warn_shadowing = rep_FALSE;
 
 
 /* Symbol management */
@@ -212,8 +211,6 @@ rep_add_subr(rep_xsubr *subr)
     {
 	rep_SYM(sym)->value = rep_VAL(subr);
 	rep_SYM(sym)->car |= rep_SF_DEFVAR;
-	if(subr->car == rep_Var)
-	    rep_SYM(sym)->car |= rep_SF_SPECIAL;
     }
     return(sym);
 }
@@ -224,8 +221,9 @@ rep_add_const_num(repv name, long num)
     repv sym = Fintern(name, rep_obarray);
     if(sym)
     {
+	rep_SYM(sym)->car |= rep_SF_SPECIAL;
 	rep_SYM(sym)->value = rep_MAKE_INT(num);
-	rep_SYM(sym)->car |= rep_SF_CONSTANT | rep_SF_SPECIAL | rep_SF_DEFVAR;
+	rep_SYM(sym)->car |= rep_SF_CONSTANT;
     }
     return(sym);
 }
@@ -502,11 +500,9 @@ funarg_sweep (void)
     }
 }
 
-/* this is also in lispmach.c
-
-   Returns (SYM . VALUE) if a lexical binding. Returns t if the actual
+/* Returns (SYM . VALUE) if a lexical binding. Returns t if the actual
    value is in the symbol's function slot */
-static inline repv
+static repv
 search_environment (repv sym)
 {
     register repv env = rep_env;
@@ -515,8 +511,24 @@ search_environment (repv sym)
     return rep_CONSP(env) ? rep_CAR(env) : env;
 }
 
+/* this is also in lispmach.c */
+static inline repv
+inlined_search_special_bindings (repv sym)
+{
+    register repv env = rep_special_bindings;
+    while (env != Qnil && rep_CAAR(env) != sym)
+	env = rep_CDR(env);
+    return env != Qnil ? rep_CAR(env) : env;
+}
+
+static repv
+search_special_bindings (repv sym)
+{
+    return inlined_search_special_bindings (sym);
+}
+
 static inline int
-search_special_environment (repv sym)
+inlined_search_special_environment (repv sym)
 {
     register repv env = rep_CDR(rep_special_env);
     while (rep_CONSP(env) && rep_CAR(env) != sym)
@@ -530,48 +542,43 @@ search_special_environment (repv sym)
 	return 0;
 }
 
+static int
+search_special_environment (repv sym)
+{
+    return inlined_search_special_environment (sym);
+}
+
 
 /* Symbol binding */
 
 /* This give SYMBOL a new value, saving the old one onto the front of
-   the list OLDLIST. OLDLIST is structured like,
-     ((SYMBOL . OLDVALUE) ...)
+   the list OLDLIST. OLDLIST is structured like (NSPECIALS . NLEXICALS)
    Returns the new version of OLDLIST.   */
 repv
 rep_bind_symbol(repv oldList, repv symbol, repv newVal)
 {
-    if (rep_warn_shadowing
-	&& Fboundp (symbol) != Qnil
-	&& Ffunctionp (Fsymbol_value (symbol, Qt)) != Qnil)
-    {
-	fprintf (stderr, "warning: shadowing %s\n",
-		 rep_STR(rep_SYM(symbol)->name));
-    }
+    if (oldList == Qnil)
+	oldList = Fcons (rep_MAKE_INT(0), rep_MAKE_INT(0));
 
     if (rep_SYM(symbol)->car & rep_SF_SPECIAL)
     {
-	if (search_special_environment (symbol))
+	/* special binding */
+	if (inlined_search_special_environment (symbol))
 	{
-	    repv newbl = Fcons(Fcons(symbol, Qnil), oldList);
-	    /* Binding to buffer-local values is a recipe for disaster */
-	    rep_CDR(rep_CAR(newbl)) = Fdefault_value(symbol, Qt);
-	    Fset_default(symbol, newVal);
-	    return newbl;
+	    rep_special_bindings = Fcons (Fcons (symbol, newVal),
+					  rep_special_bindings);
+	    rep_CAR(oldList) = rep_MAKE_INT(rep_INT(rep_CAR(oldList)) + 1);
 	}
 	else
-	{
 	    Fsignal (Qvoid_value, rep_LIST_1(symbol));
-	    /* no one expects this function to fail :-( */
-	    return oldList;
-	}
     }
     else
     {
-	/* lexical binding (this code also in lispmach.c:OP_BIND,
-	    and lisp.c:local_bind_symbol) */
+	/* lexical binding (also in lispmach.c:OP_BIND) */
 	rep_env = Fcons (Fcons (symbol, newVal), rep_env);
-	return Fcons (symbol, oldList);
+	rep_CDR(oldList) = rep_MAKE_INT(rep_INT(rep_CDR(oldList)) + 1);
     }
+    return oldList;
 }
 
 /* Undoes what the above function does. Returns the number of special
@@ -579,24 +586,32 @@ rep_bind_symbol(repv oldList, repv symbol, repv newVal)
 int
 rep_unbind_symbols(repv oldList)
 {
-    int specials = 0;
-    while(rep_CONSP(oldList))
+    if (oldList != Qnil)
     {
-	repv tmp = rep_CAR(oldList);
-	if (rep_CONSP(tmp))
-	{
-	    /* dynamic binding */
-	    Fset_default(rep_CAR(tmp), rep_CDR(tmp));
-	    specials++;
-	}
-	else
-	{
-	    /* lexical binding */
-	    rep_env = rep_CDR(rep_env);
-	}
-	oldList = rep_CDR(oldList);
+	register repv tem;
+	int i;
+
+	assert (rep_CONSP(oldList));
+	assert (rep_INTP(rep_CAR(oldList)));
+	assert (rep_INTP(rep_CDR(oldList)));
+
+	tem = rep_env;
+	for (i = rep_INT (rep_CDR (oldList)); i > 0; i--)
+	    tem = rep_CDR (tem);
+	rep_env = tem;
+
+	tem = rep_special_bindings;
+	for (i = rep_INT (rep_CAR (oldList)); i > 0; i--)
+	    tem = rep_CDR (tem);
+	rep_special_bindings = tem;
+
+	assert (rep_special_bindings != rep_void_value);
+	assert (rep_env != rep_void_value);
+
+	return rep_INT (rep_CAR (oldList));
     }
-    return specials;
+    else
+	return 0;
 }
 
 
@@ -653,10 +668,7 @@ variable will be set (if necessary) not the local value.
 	       && !(rep_SYM(sym)->car & rep_SF_WEAK_MOD)
 	       && rep_CDR(rep_special_env) == Qt))
 	{
-	    if(rep_CELL8_TYPEP(rep_SYM(sym)->value, rep_Var))
-		rep_VARFUN(rep_SYM(sym)->value)(val);
-	    else
-		rep_SYM(sym)->value = val;
+	    rep_SYM(sym)->value = val;
 	}
 
 	rep_SYM(sym)->car |= rep_SF_SPECIAL | rep_SF_DEFVAR;
@@ -724,7 +736,7 @@ values look for one of those first.
 
     if (rep_SYM(sym)->car & rep_SF_SPECIAL)
     {
-	int spec = search_special_environment (sym);
+	int spec = inlined_search_special_environment (sym);
 	/* modified-weak specials can only be accessed from an
 	   unrestricted environment */
 	if (spec < 0 || !(rep_SYM(sym)->car & rep_SF_WEAK_MOD))
@@ -732,7 +744,13 @@ values look for one of those first.
 	    if(rep_SYM(sym)->car & rep_SF_LOCAL)
 		val = (*rep_deref_local_symbol_fun)(sym);
 	    if (val == rep_void_value)
-		val = rep_SYM(sym)->value;
+	    {
+		repv tem = inlined_search_special_bindings (sym);
+		if (tem != Qnil)
+		    val = rep_CDR (tem);
+		else
+		    val = rep_SYM(sym)->value;
+	    }
 	}
     }
     else
@@ -743,13 +761,6 @@ values look for one of those first.
 	    val = rep_CDR(tem);
 	else if (tem == Qt)
 	    val = rep_SYM(sym)->value;
-    }
-
-    if(val && (rep_CELL8_TYPEP(val, rep_Var)))
-    {
-	val = rep_VARFUN(val)(rep_NULL);
-	if(val == rep_NULL)
-	    val = rep_void_value;
     }
 
     if (rep_SYM(sym)->car & rep_SF_DEBUG)
@@ -776,13 +787,12 @@ SYMBOL in buffers or windows which do not have their own local value.
     
     spec = search_special_environment (sym);
     if (spec < 0 || !(rep_SYM(sym)->car & rep_SF_WEAK_MOD))
-	val = rep_SYM(sym)->value;
-
-    if(val && (rep_CELL8_TYPEP(val, rep_Var)))
     {
-	val = rep_VARFUN(val)(rep_NULL);
-	if(val == rep_NULL)
-	    val = rep_void_value;
+	repv tem = search_special_bindings (sym);
+	if (tem != Qnil)
+	    val = rep_CDR (tem);
+	else
+	    val = rep_SYM(sym)->value;
     }
 
     if(no_err == Qnil && rep_VOIDP(val))
@@ -810,9 +820,11 @@ SYMBOL the buffer-local value in the current buffer is set. Returns repv.
 
     if (rep_SYM(sym)->car & rep_SF_SPECIAL)
     {
-	int spec = search_special_environment (sym);
+	int spec = inlined_search_special_environment (sym);
 	if (spec)
 	{
+	    repv tem;
+
 	    /* Not allowed to set `modified' variables unless
 	       our environment includes all variables implicitly */
 	    if (spec > 0 && rep_SYM(sym)->car & rep_SF_WEAK_MOD)
@@ -825,8 +837,9 @@ SYMBOL the buffer-local value in the current buffer is set. Returns repv.
 		    return tem;
 		/* Fall through and set the default value. */
 	    }
-	    if (rep_CELL8_TYPEP(rep_SYM(sym)->value, rep_Var))
-		rep_VARFUN(rep_SYM(sym)->value)(val);
+	    tem = inlined_search_special_bindings (sym);
+	    if (tem != Qnil)
+		rep_CDR (tem) = val;
 	    else
 		rep_SYM(sym)->value = val;
 	}
@@ -889,11 +902,14 @@ Sets the default value of SYMBOL to VALUE, then returns VALUE.
     spec = search_special_environment (sym);
     if (spec)
     {
+	repv tem;
+
 	if (spec > 0 && rep_SYM(sym)->car & rep_SF_WEAK_MOD)
 	    return Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
 
-	if(rep_CELL8_TYPEP(rep_SYM(sym)->value, rep_Var))
-	    rep_VARFUN(rep_SYM(sym)->value)(val);
+	tem = search_special_bindings (sym);
+	if (tem != Qnil)
+	    rep_CDR (tem) = val;
 	else
 	    rep_SYM(sym)->value = val;
 	rep_SYM(sym)->car |= rep_SF_SPECIAL;
@@ -938,8 +954,13 @@ default-boundp SYMBOL
 Returns t if SYMBOL has a default value.
 ::end:: */
 {
+    repv tem;
     rep_DECLARE1(sym, rep_SYMBOLP);
-    return((rep_VOIDP(rep_SYM(sym)->value)) ? Qnil : Qt);
+    tem = search_special_bindings (sym);
+    if (tem != Qnil)
+	return rep_VOIDP (rep_CDR (tem));
+    else
+	return (rep_VOIDP (rep_SYM (sym)->value)) ? Qnil : Qt;
 }
 
 DEFUN("boundp", Fboundp, Sboundp, (repv sym), rep_Subr1) /*
@@ -1061,25 +1082,10 @@ DEFUN("makunbound", Fmakunbound, Smakunbound, (repv sym), rep_Subr1) /*
 ::doc:makunbound::
 makunbound SYMBOL
 
-Make SYMBOL have no value as a variable. If the variable was marked
-as being special, this status is removed.
+Make SYMBOL have no value as a variable.
 ::end:: */
 {
-    rep_DECLARE1(sym, rep_SYMBOLP);
-    if (rep_SYM(sym)->car & rep_SF_SPECIAL)
-    {
-	rep_SYM(sym)->value = rep_void_value;
-	rep_SYM(sym)->car &= ~(rep_SF_SPECIAL | rep_SF_WEAK | rep_SF_WEAK_MOD);
-    }
-    else
-    {
-	repv tem = search_environment (sym);
-	if (rep_CONSP(tem))
-	    rep_CDR(tem) = rep_void_value;
-	else if (tem == Qt)
-	    rep_SYM(sym)->value = rep_void_value;
-    }
-    return(sym);
+    return Fset (sym, rep_void_value);
 }
 
 DEFSTRING(no_symbol, "No symbol to bind to in let");
@@ -1438,14 +1444,17 @@ Cancel the effect of (trace SYMBOL).
     return(sym);
 }
 
-DEFUN("obarray", Vobarray, Sobarray, (repv val), rep_Var) /*
+DEFUN("obarray", Fobarray, Sobarray, (repv val), rep_Subr1) /*
 ::doc:obarray::
-The obarray used by the Lisp reader.
+obarray [NEW-VALUE]
 ::end:: */
 {
-    if(val && rep_VECTORP(val))
+    if(val != Qnil)
+    {
+	rep_DECLARE1(val, rep_VECTORP);
 	rep_obarray = val;
-    return(rep_obarray);
+    }
+    return rep_obarray;
 }
 
 int
@@ -1480,6 +1489,12 @@ rep_symbols_init(void)
     rep_INTERN_SPECIAL(t);
     rep_SYM(Qt)->value = Qt;
     rep_SYM(Qt)->car |= rep_SF_CONSTANT;
+
+    rep_USE_DEFAULT_ENV;
+    rep_special_bindings = Qnil;
+    rep_mark_static (&rep_env);
+    rep_mark_static (&rep_special_env);
+    rep_mark_static (&rep_special_bindings);
 
     rep_INTERN(documentation);
     rep_INTERN(permanent_local);
