@@ -26,7 +26,7 @@
 (defvar gaol-safe-functions
   '(% * + - / /= 1+ 1- < <= = > >= add-hook alpha-char-p alphanumericp
     and append apply aref arrayp aset ash assoc assoc-regexp assq atom
-    backquote beep boundp bytecodep call-hook car caar cadr catch cdr
+    backquote beep boundp bytecodep call-hook car caar cadr case catch cdr
     cdar cddr char-downcase char-upcase closurep complete-string concat
     cond condition-case cons consp const-variable-p copy-sequence
     copy-stream current-time current-time-string default-boundp
