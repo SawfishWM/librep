@@ -360,8 +360,8 @@ rep_open_dl_library(repv file_name)
 		{
 		    x->structure = ret;
 		    ret = F_structure_name (ret);
-		    if (ret && rep_STRINGP (ret))
-			x->feature_sym = Fintern (ret, Qnil);
+		    if (ret && rep_SYMBOLP (ret))
+			x->feature_sym = ret;
 		}
 	    }
 
