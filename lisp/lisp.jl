@@ -205,6 +205,45 @@ string INPUT."
 (defmacro interactive ())
 
 
+;; cons accessors
+
+(defmacro caar (x)
+  (list 'car (list 'car x)))
+
+(defmacro cdar (x)
+  (list 'cdr (list 'car x)))
+
+(defmacro cadr (x)
+  (list 'car (list 'cdr x)))
+
+(defmacro cddr (x)
+  (list 'cdr (list 'cdr x)))
+
+(defmacro caaar (x)
+  (list 'car (list 'car (list 'car x))))
+
+(defmacro cdaar (x)
+  (list 'cdr (list 'car (list 'car x))))
+
+(defmacro cadar (x)
+  (list 'car (list 'cdr (list 'car x))))
+
+(defmacro cddar (x)
+  (list 'cdr (list 'cdr (list 'car x))))
+
+(defmacro caadr (x)
+  (list 'car (list 'car (list 'cdr x))))
+
+(defmacro cdadr (x)
+  (list 'cdr (list 'car (list 'cdr x))))
+
+(defmacro caddr (x)
+  (list 'car (list 'cdr (list 'cdr x))))
+
+(defmacro cdddr (x)
+  (list 'cdr (list 'cdr (list 'cdr x))))
+
+
 ;; null i18n function until gettext is loaded
 
 (unless (boundp '_)
