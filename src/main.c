@@ -248,6 +248,7 @@ rep_init_from_dump(char *prog_name, int *argc, char ***argv,
 	   XXX any other way to reliably find the real base of the
 	   XXX stack.. */
 	rep_stack_bottom = (char *) argc;
+	rep_continuations_init ();
 
 	if (sys_symbols != 0)
 	    (*sys_symbols)();
