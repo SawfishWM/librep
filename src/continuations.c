@@ -590,6 +590,12 @@ DEFUN("primitive-invoke-continuation", Fprimitive_invoke_continuation,
     return rep_NULL;
 }
 
+static repv
+get_cont (repv arg)
+{
+    return Fsymbol_value (Qcontinuation, Qnil);
+}
+
 DEFUN("continuation-callable-p", Fcontinuation_callable_p,
       Scontinuation_callable_p, (repv cont), rep_Subr1) /*
 ::doc:continuation-callable-p::
@@ -604,9 +610,11 @@ execution point of the interpreter.
     int depth;
 
     rep_DECLARE1(cont, rep_FUNARGP);
-    cont = rep_FUNARG(cont)->env;
-    rep_DECLARE(1, cont, rep_CAAR (cont) == Qcontinuation);
-    c = rep_CONTIN (rep_CDAR (cont));
+    cont = rep_call_with_closure (cont, get_cont, Qnil);
+    if (cont == rep_NULL)
+	return rep_NULL;
+    rep_DECLARE1(cont, rep_CONTINP);
+    c = rep_CONTIN (cont);
 
     if (c->car & CF_INVALID)
 	return Qnil;
