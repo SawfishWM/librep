@@ -58,6 +58,18 @@ char *alloca ();
 DEFSTRING(div_zero, "Divide by zero");
 DEFSTRING(domain_error, "Domain error");
 
+#if !defined (LONG_LONG_MIN)
+# if defined (LONGLONG_MIN)
+   /* AIX and IRIX use LONGLONG_ */
+#  define LONG_LONG_MIN LONGLONG_MIN
+#  define LONG_LONG_MAX LONGLONG_MAX
+# elif defined (LLONG_MIN)
+   /* Solaris uses LLONG_ */
+#  define LONG_LONG_MIN LLONG_MIN
+#  define LONG_LONG_MAX LLONG_MAX
+# endif
+#endif
+
 
 /* Private type definitions */
 
@@ -72,11 +84,6 @@ typedef struct {
 
 #ifndef HAVE_GMP
 # if SIZEOF_LONG_LONG > SIZEOF_LONG
-#  if !defined (LONG_LONG_MIN) && defined (LONGLONG_MIN)
-    /* AIX uses LONGLONG_ */
-#   define LONG_LONG_MIN LONGLONG_MIN
-#   define LONG_LONG_MAX LONGLONG_MAX
-#  endif
 #  define BIGNUM_MIN LONG_LONG_MIN
 #  define BIGNUM_MAX LONG_LONG_MAX
 # else
