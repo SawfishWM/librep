@@ -130,7 +130,7 @@ unbind_one_level(VALUE bind_stack)
 #define STK_USE	    (stackp - (stackbase - 1))
 
 #define FETCH	    (*pc++)
-#define FETCH2	    ((FETCH << ARG_SHIFT) | FETCH)
+#define FETCH2(var) ((var) = (FETCH << ARG_SHIFT), (var) += FETCH)
 
 /* These macros pop as many args as required then call the specified
    function properly. */
@@ -158,7 +158,7 @@ unbind_one_level(VALUE bind_stack)
    piece of code. */
 #define CASE_OP_ARG(op)							\
 	case op+7:							\
-	    arg = FETCH2; goto CONCAT(op_, op);				\
+	    FETCH2(arg); goto CONCAT(op_, op);				\
 	case op: case op+1: case op+2: case op+3: case op+4: case op+5:	\
 	    arg = c - op; goto CONCAT(op_, op);				\
 	case op+6:							\
@@ -955,6 +955,42 @@ fetch:
 	case OP_BYTECODEP:
 	    CALL_1(cmd_bytecodep);
 
+	case OP_PUSHI0:
+	    PUSH(MAKE_INT(0));
+	    break;
+
+	case OP_PUSHI1:
+	    PUSH(MAKE_INT(1));
+	    break;
+
+	case OP_PUSHI2:
+	    PUSH(MAKE_INT(2));
+	    break;
+
+	case OP_PUSHIM1:
+	    PUSH(MAKE_INT(-1));
+	    break;
+
+	case OP_PUSHIM2:
+	    PUSH(MAKE_INT(-2));
+	    break;
+
+	case OP_PUSHI:
+	    arg = FETCH;
+	    if (arg < 128)
+		PUSH(MAKE_INT(arg));
+	    else
+		PUSH(MAKE_INT(((short)arg) - 256));
+	    break;
+
+	case OP_PUSHIW:
+	    FETCH2(arg);
+	    if (arg < 32768)
+		PUSH(MAKE_INT(arg));
+	    else
+		PUSH(MAKE_INT(((long)arg) - 65536));
+	    break;
+
 	case OP_SET_CURRENT_BUFFER:
 	    CALL_2(cmd_set_current_buffer);
 
@@ -1216,9 +1252,9 @@ will be signalled.
     if(!INTP(bc_major) || !INTP(bc_minor)
        || !INTP(e_major) || !INTP(e_minor)
        || VINT(bc_major) != BYTECODE_MAJOR_VERSION
-       || VINT(bc_minor) < BYTECODE_MINOR_VERSION
+       || VINT(bc_minor) > BYTECODE_MINOR_VERSION
        || VINT(e_major) != MAJOR
-       || VINT(e_minor) < MINOR)
+       || VINT(e_minor) > MINOR)
 	return cmd_signal(sym_bytecode_error, sym_nil);
     else
 	return sym_t;
