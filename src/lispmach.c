@@ -307,6 +307,7 @@ fetch:
 		case 4:
 		    TOP = rep_SUBR5FUN(tmp)(stackp[1], stackp[2], stackp[3],
 					 stackp[4], Qnil);
+		    break;
 		default:
 		    TOP = rep_SUBR5FUN(tmp)(stackp[1], stackp[2], stackp[3],
 					 stackp[4], stackp[5]);
