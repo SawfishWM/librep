@@ -2797,8 +2797,7 @@ in base 10.
 
 /* Random number generation */
 
-/* XXX GMP random number operation is buggy? (gmp 3.1.1) */
-#if 0 && defined (HAVE_GMP) && defined (HAVE_GMP_RANDINIT)
+#if defined (HAVE_GMP) && defined (HAVE_GMP_RANDINIT)
 
 static gmp_randstate_t random_state;
 
@@ -2834,6 +2833,7 @@ random_new (repv limit_)
     repv limit = promote_to (limit_, rep_NUMBER_BIGNUM);
 
     ensure_random_state ();
+    mpz_init (z->z);
     mpz_urandomm (z->z, random_state, rep_NUMBER (limit, z));
 
     return maybe_demote (rep_VAL (z));
@@ -2920,6 +2920,9 @@ generator is seeded with the current time of day.
 	limit = arg;
     else
 	limit = rep_MAKE_INT (rep_LISP_MAX_INT);
+
+    if (rep_compare_numbers (limit, rep_MAKE_INT (0)) <= 0)
+	return rep_signal_arg_error (limit, 1);
 
     return random_new (limit);
 }

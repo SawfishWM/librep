@@ -1,3 +1,11 @@
+2001-10-20  John Harper  <jsh@unfactored.org>
+
+	* numbers.c (random_new): call mpz_init () on the output value
+	before passing it to mpz_urandomm (). This seems to stop things
+	crashing
+
+	(Frandom): signal an error if LIMIT <= 0
+
 2001-10-19  John Harper  <jsh@unfactored.org>
 
 	* repgdbm.c (Fgdbm_walk): fixed doc string
