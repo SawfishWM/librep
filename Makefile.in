@@ -55,7 +55,7 @@ install : all installdirs
 installdirs : $(top_srcdir)/mkinstalldirs
 	$(SHELL) $(top_srcdir)/mkinstalldirs $(DESTDIR)$(repdir)/$(version) \
 	  $(DESTDIR)$(bindir) $(DESTDIR)$(aclocaldir) \
-	  $(DESTDIR)$(repcommonexecdir)
+	  $(DESTDIR)$(repcommonexecdir) $(DESTDIR)$(repexecdir)
 
 uninstall :
 	-set -e; for dir in $(INSTALL_SUBDIRS); do \
