@@ -169,6 +169,7 @@ DEFSTRING(cant_start, "Can't start");
 DEFSTRING(dev_null, "/dev/null");
 DEFSTRING(dot, ".");
 DEFSTRING(not_local, "Need a local file");
+DEFSTRING(forkstr, "fork");
 
 
 
@@ -663,11 +664,24 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 		}
 
 		execvp(argv[0], argv);
-		perror("child: execvp");
+		perror("child subprocess can't exec");
 		exit(255);
 
 	    case -1:
-		perror("fork()");
+		/* Clean up all open files */
+		if (sync_input != 0 || !usepty)
+		{
+		    /* pipes */
+		    close(stdout_fds[0]); close(stdout_fds[1]);
+		    close(stderr_fds[0]); close(stderr_fds[1]);
+		    close(stdin_fds[0]);
+		    if (sync_input != 0)
+			close(stdin_fds[1]);
+		}
+		else
+		    close(pr->pr_Stdin);
+		pr->pr_Stdin = pr->pr_Stdout = pr->pr_Stderr = 0;
+		signal_file_error(VAL(&forkstr));
 		break;
 
 	    default:
