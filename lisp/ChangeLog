@@ -1,3 +1,8 @@
+2000-09-22  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep/vm/compiler/modules.jl (note-require): try to fix this
+	slightly in the presence of unmodularized files
+
 2000-09-20  John Harper  <john@dcs.warwick.ac.uk>
 
 	* version 0.13

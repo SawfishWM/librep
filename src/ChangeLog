@@ -1,3 +1,8 @@
+2000-09-22  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_dl.c (rep_open_dl_library): check if snprintf () exists
+	before using it (patch from Philippe.Defert@cern.ch)
+
 2000-09-20  John Harper  <john@dcs.warwick.ac.uk>
 
 	* version 0.13
