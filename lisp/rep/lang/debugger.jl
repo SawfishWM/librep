@@ -24,6 +24,7 @@
 ;; Form stopped on
 (defvar debug-obj nil)
 (defvar debug-depth nil)
+(defvar debug-frame-pointer nil)
 
 (defvar debug-last nil)
 
@@ -49,12 +50,14 @@
 		(eval (read-from-string (substring input (match-end))))))
 	      ((string-match "^\\s*p\\w*\\s+" input)
 	       (format standard-error "%S\n"
-		       (eval (read-from-string
-			      (substring input (match-end))))))
+		       (debug-eval-in-frame
+			(read-from-string (substring input (match-end))))))
 	      ((string-match "^\\s*b" input)
 	       (debug-backtrace 0))
 	      ((string-match "^\\s*f" input)
 	       (format standard-error "<%d> %S\n" debug-depth debug-obj))
+	      ((string-match "^\\s*l" input)
+	       (debug-print-locals))
 	      ((string-match "^\\s*$" input)
 	       (if debug-last
 		   (progn
@@ -64,19 +67,39 @@
 	      (t
 	       (write standard-error "\
 commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM',
-          `p[rint] FORM', `b[acktrace]', `f[orm]'\n")))
+          `p[rint] FORM', `b[acktrace]', `f[orm], `l[ocals]''\n")))
 	(setq debug-last next-last)))))
 
-;;;###autoload
-(defun debug-entry (debug-obj debug-depth)
-    (catch 'debug
-      (debug-rep)))
+(defun debug-print-locals ()
+  (let
+      ;; (ENV SPECIAL-ENV FH-ENV)
+      ((data (debug-frame-environment debug-frame-pointer)))
+    (when data
+      (mapc (lambda (cell)
+	      (format standard-error "%16s %S\n" (car cell) (cdr cell)))
+	    (nth 0 data)))))
 
-(defun debug-exit (debug-val debug-depth)
+(defun debug-eval-in-frame (form)
+  (let
+      ;; (ENV SPECIAL-ENV FH-ENV)
+      ((data (debug-frame-environment debug-frame-pointer)))
+    (when data
+      (eval `(save-environment
+	      (set-special-environment ',(nth 1 data))
+	      (set-file-handler-environment ',(nth 2 data))
+	      (set-environment ',(nth 0 data))
+	      ,form)))))
+
+;;;###autoload
+(defun debug-entry (debug-obj debug-depth debug-frame-pointer)
+  (catch 'debug
+    (debug-rep)))
+
+(defun debug-exit (debug-val debug-depth debug-frame-pointer)
   (format standard-error "<%d> => %S\n" debug-depth debug-val))
 
 ;;;###autoload
-(defun debug-error-entry (error-list)
+(defun debug-error-entry (error-list debug-frame-pointer)
   (format standard-error "*** Error: %s: %S\n"
 	  (or (get (car error-list) 'error-message)
 	      (car error-list)) (cdr error-list))
