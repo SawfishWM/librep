@@ -383,7 +383,10 @@ rep_handle_input_exception(repv *result_p)
     else if((car == Qtop_level) && (rep_recurse_depth == 0))
 	*result_p = rep_CDR(tv);
     else if(car == Qquit)
+    {
+	*result_p = rep_CDR(tv);
 	return rep_TRUE;
+    }
     else if(car == Quser_interrupt)
     {
 	repv tem = Fsymbol_value (Qinterrupt_mode, Qt);
@@ -412,6 +415,7 @@ rep_handle_input_exception(repv *result_p)
     terminate:
 	if(rep_recurse_depth == 0 && rep_on_termination_fun != 0)
 	    (*rep_on_termination_fun)();
+	*result_p = Qnil;
 	return rep_TRUE;
     }
 #if 0
