@@ -171,6 +171,10 @@ functions."
 ;; Conditional syntax
 
 (defmacro if (condition then &rest else)
+  "First the CONDITION form is evaluated, if it returns `t' (not `nil') the
+TRUE-FORM is evaluated and its result returned. Otherwise the result of an
+implicit progn on the ELSE forms is returned. If there are no ELSE forms
+`nil' is returned."
   (cond (else (list 'cond (list condition then) (cons t else)))
 	(t (list 'cond (list condition then)))))
 
@@ -185,9 +189,22 @@ FORMS."
   (list 'if (list 'not condition) (cons 'progn forms)))
 
 (defmacro or args
+  "The first of the ARGS is evaluated, if it is non-`nil' its value is the
+value of the `or' form and no more arguments are evaluated. Otherwise this
+step is repeated for the next member of ARGS.
+
+If all of the ARGS have been evaluated and none have a non-`nil' value
+`nil' is the value of the `or' form.
+
+If there are no ARGS `nil' is returned."
   (cons 'cond (mapcar list args)))
 
 (defmacro and args
+  "The first of the ARGS is evaluated. If it is `nil' no more of the
+ARGS are evaluated and `nil' is the value of the `and' statement.
+Otherwise the next member of ARGS is evaluated and its value tested. If
+none of the ARGS are `nil' the computed value of the last member of ARGS
+is returned from the `and' form."
   (let loop ((rest (nreverse args))
 	     (body nil))
     (cond ((null rest) body)
