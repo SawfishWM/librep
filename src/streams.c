@@ -49,9 +49,15 @@
 # include <memory.h>
 #endif
 
-_PR VALUE sym_start, sym_end;
+_PR VALUE sym_start, sym_end, sym_format_hooks_alist;
 DEFSYM(start, "start");
 DEFSYM(end, "end");
+DEFSYM(format_hooks_alist, "format-hooks-alist"); /*
+::doc:format_hooks_alist::
+Alist of (CHAR . FUNCTION) defining extra format conversions for the
+format function. FUNCTION is called as (FUNCTION VALUE), and should
+return the string to be inserted.
+::end:: */
 
 _PR int stream_getc(VALUE);
 _PR int stream_ungetc(VALUE, int);
@@ -858,20 +864,48 @@ the argument-values ARGS to the stream, STREAM. If STREAM is nil a string
 is created and returned.
 
 FORMAT-STRING is a template for the result, any `%' characters introduce
-a substitution, using the next unused ARG. These format specifiers are
-implemented:
-   d	  print next ARG as decimal integer
-   x	  print next ARG as hexadecimal integer
-   o	  print next ARG in octal
-   c	  print next ARG as ASCII character
-   s	  unquoted representation (as from `princ') of next ARG
-   S	  normal print'ed representation of next ARG
-   %	  literal percentage character
+a substitution, using the next unused ARG. The substitutions have the
+following syntax,
+
+	%[FLAGS][FIELD-WIDTH]CONVERSION
+
+FIELD-WIDTH is a positive decimal integer, defining the size in characters
+of the substitution output.
+
+CONVERSION is a character defining how to convert the corresponding ARG
+to text. The default options are:
+
+	d	Output ARG as a decimal integer
+	x	Output ARG as a hexadecimal integer
+	o	Output ARG as an octal integer
+	c	Output ARG as a character
+	s	Output the result of `(prin1 ARG)'
+	S	Output the result of `(princ ARG)'
+
+FLAGS is a sequence of zero or more of the following characters,
+
+	-	Left justify substitution within field
+	^	Truncate substitution at size of field
+	+	For d, x, and o conversions, output a leading plus
+		 sign if ARG is positive
+	` '	(A space) For d, x, and o conversions, if the result
+		 doesn't start with a plus or minus sign, output a
+		 leading space
+	0	For d, x, and o conversions, pad the field with zeros
+		 instead of spaces
+
+The list of CONVERSIONS can be extended through the format-hooks-alist
+variable; the strings created by these extra conversions are formatted
+as if by the `s' conversion. 
+
+Note that the FIELD-WIDTH and all flags currently have no effect on the
+`S' conversion, (or the `s' conversion when the ARG isn't a string).
 ::end:: */
 {
     u_char *fmt, *last_fmt;
     bool mk_str;
-    VALUE stream, format;
+    VALUE stream, format, extra_formats = LISP_NULL;
+    GC_root gc_stream, gc_format, gc_extra_formats;
     u_char c;
 
     if(!CONSP(args))
@@ -886,7 +920,6 @@ implemented:
     else
 	mk_str = FALSE;
 
-
     if(!CONSP(args))
 	return signal_missing_arg(2);
     format = VCAR(args);
@@ -894,47 +927,151 @@ implemented:
     DECLARE2(format, STRINGP);
     fmt = VSTR(format);
 
+    PUSHGC(gc_stream, stream);
+    PUSHGC(gc_format, format);
+    PUSHGC(gc_extra_formats, extra_formats);
+
     last_fmt = fmt;
     while((c = *fmt++))
     {
 	if(c == '%')
 	{
+	    bool left_justify = FALSE, truncate_field = TRUE;
+	    char *flags_start, *flags_end;
+	    char *width_start, *width_end;
+	    int field_width = 0;
+
 	    if(last_fmt != fmt)
 		stream_puts(stream, last_fmt, fmt - last_fmt - 1, FALSE);
+
+	    /* First scan for flags */
+	    flags_start = fmt;
 	    c = *fmt++;
+	    while(1)
+	    {
+		switch(c)
+		{
+		case '-':
+		    left_justify = TRUE; break;
+
+		case '^':
+		    truncate_field = TRUE; break;
+
+		case '+': case ' ': case '0':
+		    break;
+
+		default:
+		    flags_end = fmt - 1;
+		    goto parse_field_width;
+		}
+		c = *fmt++;
+	    }
+
+	    /* Now look for the field width */
+	parse_field_width:
+	    width_start = fmt-1;
+	    while(isdigit(c))
+	    {
+		field_width = field_width * 10 + (c - '0');
+		c = *fmt++;
+	    }
+	    width_end = fmt-1;
+
+	    /* Finally, the format specifier */
 	    if(c == '%')
 		stream_putc(stream, '%');
 	    else
 	    {
-		u_char tbuf[40], nfmt[4];
-		VALUE val;
+		VALUE val, fun;
+
 		if(!CONSP(args))
-		    return signal_missing_arg(0); /* ?? */
+		{
+		    stream = signal_missing_arg(0);
+		    goto exit;
+		}
 		val = VCAR(args);
 		args = VCDR(args);
+
 		switch(c)
 		{
+		    u_char buf[256], fmt[32], *ptr;
+
 		case 'd': case 'x': case 'o': case 'c':
-		    nfmt[0] = '%';
-		    nfmt[1] = 'l';
-		    nfmt[2] = c;
-		    nfmt[3] = 0;
-		    sprintf(tbuf, nfmt, INTP(val) ? VINT(val) : (long)val);
-		    stream_puts(stream, tbuf, -1, FALSE);
+		    fmt[0] = '%';
+		    strncpy(fmt+1, flags_start, flags_end - flags_start);
+		    ptr = fmt+1 + (flags_end - flags_start);
+		    strncpy(ptr, width_start, width_end - width_start);
+		    ptr += width_end - width_start;
+		    *ptr++ = c;
+		    *ptr = 0;
+		    sprintf(buf, fmt, INTP(val) ? VINT(val) : (long)val);
+		    stream_puts(stream, buf, -1, FALSE);
 		    break;
 
 		case 's':
-		    princ_val(stream, val);
+		unquoted:
+		    if(STRINGP(val) && (left_justify || field_width > 0))
+		    {
+			/* Only handle field width, justification, etc
+			   for strings */
+			size_t len = STRING_LEN(val);
+			if(len >= field_width)
+			    stream_puts(stream, VPTR(val),
+					truncate_field ? field_width : len,
+					TRUE);
+			else
+			{
+			    len = MIN(field_width - len, sizeof(buf));
+			    memset(buf, ' ', len);
+			    if(left_justify)
+				stream_puts(stream, VPTR(val), -1, TRUE);
+			    stream_puts(stream, buf, len, FALSE);
+			    if(!left_justify)
+				stream_puts(stream, VPTR(val), -1, TRUE);
+			}
+		    }
+		    else
+			princ_val(stream, val);
 		    break;
 
 		case 'S':
 		    print_val(stream, val);
 		    break;
+
+		case 0:
+		    last_fmt = fmt;
+		    goto end_of_input;
+
+		default:
+		    if(extra_formats == LISP_NULL)
+		    {
+			extra_formats
+			    = cmd_symbol_value(sym_format_hooks_alist, sym_t);
+		    }
+		    if(CONSP(extra_formats)
+		       && (fun = cmd_assq(MAKE_INT(c), extra_formats))
+		       && CONSP(fun))
+		    {
+			val = call_lisp1(VCDR(fun), val);
+			if(val == LISP_NULL)
+			{
+			    stream = LISP_NULL;
+			    goto exit;
+			}
+			else
+			{
+			    if(NILP(val))
+				val = null_string();
+			    goto unquoted;
+			}
+		    }
 		}
 	    }
 	    last_fmt = fmt;
 	}
     }
+
+end_of_input:
     if(last_fmt != fmt - 1)
 	stream_puts(stream, last_fmt, fmt - last_fmt - 1, FALSE);
     if(mk_str)
@@ -947,6 +1084,9 @@ implemented:
 	else
 	    stream = VCAR(stream);
     }
+
+exit:
+    POPGC; POPGC; POPGC;
     return(stream);
 }
 
@@ -1326,6 +1466,8 @@ Returns the file object representing the editor's standard output.
 void
 streams_init(void)
 {
+    INTERN(start); INTERN(end);
+    INTERN(format_hooks_alist); DOC(format_hooks_alist);
     ADD_SUBR(subr_write);
     ADD_SUBR(subr_read_char);
     ADD_SUBR(subr_read_line);
