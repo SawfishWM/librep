@@ -366,20 +366,17 @@ rep_open_dl_library(repv file_name)
 	    }
 
 	    feature_sym = x_dlsym (handle, "rep_dl_feature");
-	    if (feature_sym != 0
-		&& *feature_sym != 0 && rep_SYMBOLP(*feature_sym))
+	    if (feature_sym != 0)
 	    {
-		x->feature_sym = *feature_sym;
+		fprintf (stderr, "warning: %s uses obsolete `rep_dl_feature'\n",
+			 rep_STR (file_name));
 	    }
 
 	    functions = x_dlsym(handle, "rep_dl_subrs");
 	    if(functions != 0)
 	    {
-		while(*functions != 0)
-		{
-		    rep_add_subr(*functions, rep_TRUE);
-		    functions++;
-		}
+		fprintf (stderr, "warning: %s uses obsolete `rep_dl_subrs'\n",
+			 rep_STR (file_name));
 	    }
 	}
     }
