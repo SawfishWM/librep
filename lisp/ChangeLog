@@ -1,3 +1,7 @@
+2001-06-28  John Harper  <jsh@pixelslut.com>
+
+	* rep/net/rpc.jl (make-proxy): precalculate global-id value
+
 2001-06-27  John Harper  <jsh@pixelslut.com>
 
 	* rep/net/rpc.jl: added some comments, some API changes

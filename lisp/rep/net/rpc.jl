@@ -300,18 +300,20 @@ becomes invalid."
   ;; magic object used to get information from proxies
   (define proxy-token (cons))
 
+  ;; XXX shouldn't keep consing new proxies..
   (define (make-proxy server port servant-id)
-    (lambda args
-      (if (eq (car args) proxy-token)
-	  ;; when called like this, do special things
-	  (case (cadr args)
-	    ((global-id) (make-global-id server port servant-id))
-	    ((servant-id) servant-id))
+    (let ((global-id (make-global-id server port servant-id)))
+      (lambda args
+	(if (eq (car args) proxy-token)
+	    ;; when called like this, do special things
+	    (case (cadr args)
+	      ((global-id) global-id)
+	      ((servant-id) servant-id))
 
-	;; otherwise, just forward to the server
-	(let ((socket (server-socket server port)))
-	  (write socket (prin1-to-string (cons servant-id args)))
-	  (wait-for-reponse socket)))))
+	  ;; otherwise, just forward to the server
+	  (let ((socket (server-socket server port)))
+	    (write socket (prin1-to-string (cons servant-id args)))
+	    (wait-for-reponse socket))))))
 
   (define (rpc-proxy->global-id proxy)
     "Return the globally-valid servant-id (a string) that can be used to
