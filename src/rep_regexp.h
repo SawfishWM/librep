@@ -5,12 +5,10 @@
  * not the System V one.
  */
 
-#define NSUBEXP  10
+#ifndef REGEXP_H
+#define REGEXP_H
 
-#ifdef JADE
-#include "jade.h"
-#include "jade_protos.h"
-#endif
+#define NSUBEXP  10
 
 typedef enum regtype {
     reg_string = 0,
@@ -42,6 +40,16 @@ typedef struct regexp {
 	int regmlen;		/* Internal use only. */
 	char program[1];	/* Unwarranted chumminess with compiler. */
 } regexp;
+
+#ifdef JADE
+/* Data structure used to save and restore regexp data internally */
+struct saved_regexp_data {
+    struct saved_regexp_data *next;
+    regtype type;
+    VALUE data;
+    regsubs matches;
+};
+#endif
 
 /* eflags for regexec2() */
 #define REG_NOTBOL 1		/* start of input isn't start of line */
@@ -75,3 +83,4 @@ extern int regmatch_tx(regexp *prog, TX *tx, VALUE start, int eflags);
 # endif
 #endif
 
+#endif /* REGEXP_H */
