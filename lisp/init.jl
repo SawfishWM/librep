@@ -128,13 +128,9 @@ form. Thus the execution of BODY... may be repeated by invoking VAR."
 			    (if (consp x)
 				(cons 'progn (cdr x))
 			      nil)) (car args)))
-     (cond (fun
-	    ;; use the progn so the compiler notices the inner letrec
-	    ;; (else it will get macroexpanded away too soon)
-	    (list 'progn
-		  (list 'letrec
-			(list (list fun (list* 'lambda vars (cdr args))))
-			(cons fun values))))
+     (cond (fun (list 'letrec
+		      (list (list fun (list* 'lambda vars (cdr args))))
+		      (cons fun values)))
 	   (t (cons (list* 'lambda vars (cdr args)) values))))
    nil nil nil))
 
