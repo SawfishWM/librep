@@ -822,7 +822,8 @@ again:
     if(rep_INTP(val))
 	return;
 
-    if(rep_CONSP(val))
+    /* must be a cell */
+    if(rep_CELL_CONS_P(val))
     {
 	if(rep_CONS_WRITABLE_P(val))
 	{
@@ -1150,13 +1151,10 @@ rep_values_kill(void)
 
 /* Support for dumped Lisp code */
 
+#ifdef ENABLE_BROKEN_DUMPING
 void
 rep_dumped_init(char *file)
 {
-#if 1
-    fputs ("dumped startup is currently broken\n", stderr);
-    exit (1);
-#else
     void *dl = rep_open_dl_library (rep_string_dup (file));
     if (dl == 0)
 	fprintf (stderr, "warning: couldn't open dumped filed %s\n", file);
@@ -1180,5 +1178,5 @@ rep_dumped_init(char *file)
 		s->value = rep_void_value;
 	}
     }
-#endif
 }
+#endif
