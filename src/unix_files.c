@@ -197,17 +197,12 @@ sys_expand_file_name(VALUE file)
 VALUE
 sys_canonical_file_name(VALUE file)
 {
-#ifdef HAVE_REALPATH
     char buf[PATH_MAX];
     if(realpath(VSTR(file), buf) != 0)
 	return string_dup(buf);
     else
 	/* Bail out */
 	return file;
-#else
-    /* TODO: provide an implementation of realpath. GNU libc? */
-    return file;
-#endif
 }
 
 VALUE

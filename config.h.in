@@ -165,9 +165,6 @@
 /* Define if you have the strsignal function.  */
 #undef HAVE_STRSIGNAL
 
-/* Define if you have the realpath function.  */
-#undef HAVE_REALPATH
-
 /* Define if you have the stpcpy function.  */
 #undef HAVE_STPCPY
 
