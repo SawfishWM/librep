@@ -1096,7 +1096,9 @@ again:
 	BEGIN_INSN (OP_GT)
 	    tmp = RET_POP;
 	    tmp2 = TOP;
-	    if (rep_NUMBERP (tmp2) || rep_NUMBERP (tmp))
+	    if (rep_INTP (tmp2) && rep_INTP (tmp))
+		TOP = (rep_INT (tmp2) > rep_INT (tmp)) ? Qt : Qnil;
+	    else if (rep_NUMBERP (tmp2) || rep_NUMBERP (tmp))
 		TOP = (rep_compare_numbers (tmp2, tmp) > 0) ? Qt : Qnil;
 	    else
 		TOP = (rep_value_cmp (tmp2, tmp) > 0) ? Qt : Qnil;
@@ -1106,7 +1108,9 @@ again:
 	BEGIN_INSN (OP_GE)
 	    tmp = RET_POP;
 	    tmp2 = TOP;
-	    if (rep_NUMBERP (tmp2) || rep_NUMBERP (tmp))
+	    if (rep_INTP (tmp2) && rep_INTP (tmp))
+		TOP = (rep_INT (tmp2) >= rep_INT (tmp)) ? Qt : Qnil;
+	    else if (rep_NUMBERP (tmp2) || rep_NUMBERP (tmp))
 		TOP = (rep_compare_numbers (tmp2, tmp) >= 0) ? Qt : Qnil;
 	    else
 		TOP = (rep_value_cmp (tmp2, tmp) >= 0) ? Qt : Qnil;
@@ -1116,7 +1120,9 @@ again:
 	BEGIN_INSN (OP_LT)
 	    tmp = RET_POP;
 	    tmp2 = TOP;
-	    if (rep_NUMBERP (tmp2) || rep_NUMBERP (tmp))
+	    if (rep_INTP (tmp2) && rep_INTP (tmp))
+		TOP = (rep_INT (tmp2) < rep_INT (tmp)) ? Qt : Qnil;
+	    else if (rep_NUMBERP (tmp2) || rep_NUMBERP (tmp))
 		TOP = (rep_compare_numbers (tmp2, tmp) < 0) ? Qt : Qnil;
 	    else
 		TOP = (rep_value_cmp (tmp2, tmp) < 0) ? Qt : Qnil;
@@ -1126,7 +1132,9 @@ again:
 	BEGIN_INSN (OP_LE)
 	    tmp = RET_POP;
 	    tmp2 = TOP;
-	    if (rep_NUMBERP (tmp2) || rep_NUMBERP (tmp))
+	    if (rep_INTP (tmp2) && rep_INTP (tmp))
+		TOP = (rep_INT (tmp2) <= rep_INT (tmp)) ? Qt : Qnil;
+	    else if (rep_NUMBERP (tmp2) || rep_NUMBERP (tmp))
 		TOP = (rep_compare_numbers (tmp2, tmp) <= 0) ? Qt : Qnil;
 	    else
 		TOP = (rep_value_cmp (tmp2, tmp) <= 0) ? Qt : Qnil;
