@@ -653,9 +653,12 @@ that files which shouldn't be compiled aren't."
 	  ((= form -2)
 	   (comp-write-op op-pushi-minus-2))
 	  ((and (<= form 127) (>= form -128))
-	   (comp-write-raw-op op-pushi (logand form 255)))
+	   (comp-write-op op-pushi)
+	   (comp-byte-out (logand form 255)))
 	  (t
-	   (comp-write-raw-op op-pushi-pair (lsh form -8) (logand form 255)))))
+	   (comp-write-op op-pushi-pair)
+	   (comp-byte-out (lsh form -8))
+	   (comp-byte-out (logand form 255)))))
    (t
     (comp-write-op op-push (comp-add-constant form))))
   (comp-inc-stack))
@@ -752,14 +755,6 @@ that files which shouldn't be compiled aren't."
 
 ;; Managing the output code
 
-;; Return a new label
-(defmacro comp-make-label ()
-  ;; a label is, (PC-OF-LABEL . (LIST-OF-REFERENCES))
-  '(cons nil nil))
-
-(defmacro comp-get-label-addr (label)
-  (list 'car label))
-
 ;; Output one byte
 (defsubst comp-byte-out (byte)
   (setq comp-output (cons (cons byte comp-output-pc) comp-output)
@@ -784,10 +779,20 @@ that files which shouldn't be compiled aren't."
    (t
     (comp-error "Opcode overflow!"))))
 
-(defun comp-write-raw-op (byte0 &optional byte1 byte2)
-  (comp-byte-out byte0)
-  (and byte1 (comp-byte-out byte1))
-  (and byte2 (comp-byte-out byte2)))
+;; Create a new label
+(defmacro comp-make-label ()
+  ;; a label is, (PC-OF-LABEL . (LIST-OF-REFERENCES))
+  '(cons nil nil))
+
+;; Arrange for the address of LABEL to be pushed onto the stack
+(defun comp-push-label-addr (label)
+  (if (car label)
+      ;; Address is already known
+      (comp-compile-constant (car label))
+    ;; Unknown address, so add to list for back-patcher
+    (comp-byte-out op-pushi-pair)
+    (rplacd label (cons comp-output-pc (cdr label)))
+    (comp-inc-stack)))
 
 ;; Output a branch instruction to the label LABEL, if LABEL has not been
 ;; located yet this branch is recorded for later backpatching.
@@ -1282,7 +1287,7 @@ that files which shouldn't be compiled aren't."
     ;;		unbind
     ;; end:
     (comp-set-label start-label)
-    (comp-compile-constant (comp-get-label-addr catch-label))
+    (comp-push-label-addr catch-label)
     (comp-write-op op-binderr)
     (comp-dec-stack)
     (comp-compile-body (nthcdr 2 form))
@@ -1320,7 +1325,7 @@ that files which shouldn't be compiled aren't."
     ;;		jmp cleanup
     ;; [overall, stack +2]
     (comp-set-label start-label)
-    (comp-compile-constant (comp-get-label-addr cleanup-label))
+    (comp-push-label-addr cleanup-label)
     (comp-write-op op-binderr)
     (comp-dec-stack)
     (comp-compile-form (nth 1 form))
@@ -1401,7 +1406,7 @@ that files which shouldn't be compiled aren't."
     ;;		FORM
     (comp-set-label start-label)
     (comp-compile-constant (nth 1 form))
-    (comp-compile-constant (comp-get-label-addr cleanup-label))
+    (comp-push-label-addr cleanup-label)
     (comp-write-op op-binderr)
     (comp-dec-stack)
     (comp-compile-form (nth 2 form))
