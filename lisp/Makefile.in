@@ -72,7 +72,7 @@ uninstall :
 
 clean :
 	-rm -f *.jlc *.jld dump.out *~
-	-cp ../jade/lib/DOC-bare ../DOC
+	-cp ../lib/DOC-bare ../DOC
 
 realclean : clean
 	-rm -f Makefile
