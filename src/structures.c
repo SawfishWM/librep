@@ -954,17 +954,25 @@ DEFUN ("%eval-in-structure", F_eval_in_structure,
 ::doc:%eval-in-structure::
 %eval-in-structure FORM STRUCTURE
 
-Return the result of evaluating FORM inside structure object STRUCTURE.
+Return the result of evaluating FORM inside structure object STRUCTURE
+(with a null lexical environment).
 ::end:: */
 {
-    repv old = rep_structure, result;
-    rep_GC_root gc_old;
+    repv result;
+    repv old = rep_structure, old_env = rep_env;
+    rep_GC_root gc_old, gc_old_env;
+
     rep_DECLARE2 (structure, rep_STRUCTUREP);
-    rep_structure = structure;
+
     rep_PUSHGC (gc_old, old);
+    rep_PUSHGC (gc_old_env, old_env);
+    rep_structure = structure;
+    rep_env = Qnil;
     result = Feval (form);
-    rep_POPGC;
     rep_structure = old;
+    rep_env = old_env;
+    rep_POPGC; rep_POPGC;
+
     return result;
 }
 
