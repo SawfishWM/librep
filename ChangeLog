@@ -1,3 +1,9 @@
+2000-12-06  John Harper  <jsh@eazel.com>
+
+	* install-aliases (dosome): patch from Peter Teichman
+	<peter@helixcode.com> to avoid clobbering a variable that's
+	needed in the next iteration of the loop
+
 2000-12-03  John Harper  <jsh@eazel.com>
 
 	* configure.in: version 0.13.3

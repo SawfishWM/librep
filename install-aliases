@@ -76,8 +76,8 @@ dosome () {
 	    ;;
 	  *)
 	    # make sure links are relative to their own directory
-	    src=`strip_common_prefix "$dest" "$src"`
-	    ln -s "${src}${suf}" "${destroot}/${dest}${suf}"
+	    local_src=`strip_common_prefix "$dest" "$src"`
+	    ln -s "${local_src}${suf}" "${destroot}/${dest}${suf}"
 	    ;;
 	esac
       fi
