@@ -138,7 +138,10 @@
   (let
       ((def (define-parse args)))
     (if (eq (cadr def) 'lambda)
-	(list* 'defun (car def) (cddr def))
+	(list* 'defun (car def) (let ((body (cddr def)))
+				  (if (eq (caadr body) 'progn)
+				      (cons (car body) (cdadr body))
+				    body)))
       (list 'define-value (list 'quote (car def)) (cdr def)))))
 
 ;;;###autoload
