@@ -76,20 +76,34 @@ assembler's various pseudo-operations.")
   "Must mirror the INLINE_STATIC_STRINGS definition in lisp.h")
 
 
-;; Top level entrypoint
+;; Top level entrypoints
 
 ;; Call Jade something like:
-;;	jade -l dump -f dump-batch -o OUTPUT SRCS... -q
+;;
+;;	jade -l dump -f dump-batch [OPTIONS...] SRCS... -q
+;;
+;; where OPTIONS may be any of:
+;;
+;;	-o OUTPUT-FILE			Specify the output file
+;;	--enable-inline-strings		Dump for inlined string constants
+;;	--disable-inline-strings	Dump for non-inline strings
+
 (defun dump-batch ()
   (let
       (files output)
     (while (and (consp command-line-args)
 		(not (equal (car command-line-args) "-q")))
-      (if (equal (car command-line-args) "-o")
-	  (setq output (car (cdr command-line-args))
-		command-line-args (nthcdr 2 command-line-args))
-	(setq files (cons (car command-line-args) files)
-	      command-line-args (cdr command-line-args))))
+      (cond
+       ((equal (car command-line-args) "-o")
+	(setq output (car (cdr command-line-args))
+	      command-line-args (cdr command-line-args)))
+       ((equal (car command-line-args) "--enable-inline-strings")
+	(setq dump-inline-strings t))
+       ((equal (car command-line-args) "--disable-inline-strings")
+	(setq dump-inline-strings nil))
+       (t
+	(setq files (cons (car command-line-args) files))))
+      (setq command-line-args (cdr command-line-args)))
     (setq files (nreverse files))
     (format (stdout-file) "Dumping %S to %S\n" files output)
     (dump files output)))
@@ -371,8 +385,7 @@ the lisp-lib-dir with .jlc as its suffix."
       (setq sym (dump-add-constant sym))
       (dump-add-state sym 'value (dump-constant-value value))
       (when (nth 3 form)
-	;; Should be a more general plist tag
-	(dump-state-put sym 'documentation (nth 3 form))))))
+	(dump-state-put sym 'variable-documentation (nth 3 form))))))
 
 (defun dump-defconst (form)
   (let
@@ -384,7 +397,7 @@ the lisp-lib-dir with .jlc as its suffix."
       (dump-add-state sym 'value (dump-constant-value value))
       (dump-add-state sym 'constant t)
       (when (nth 3 form)
-	(dump-state-put sym 'documentation (nth 3 form))))))
+	(dump-state-put sym 'variable-documentation (nth 3 form))))))
 
 (defun dump-make-variable-buffer-local (form)
   (if (and (eq (car (car (nthcdr 1 form))) 'quote)
