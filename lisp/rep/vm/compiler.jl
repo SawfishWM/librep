@@ -129,10 +129,14 @@ is one of these that form is compiled.")
 		  (format dst-file
 			  ";;; Source file: %s
 ;;; Compiled by %s@%s on %s
-;;; Jade %d.%d\n"
+;;; Jade %d.%d
+
+(validate-byte-code %d %d %d %d)\n\n"
 			  file-name (user-login-name) (system-name)
 			  (current-time-string) (major-version-number)
-			  (minor-version-number))
+			  (minor-version-number)
+			  bytecode-major bytecode-minor
+			  (major-version-number) (minor-version-number))
 		  (while (not (file-eof-p src-file))
 		    (when (setq form (read src-file))
 		      (cond
