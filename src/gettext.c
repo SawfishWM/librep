@@ -23,6 +23,12 @@
 #include <config.h>
 #include <rep.h>
 
+#ifdef LIBC_GETTEXT
+# define gnu_gettext gettext
+# define gnu_textdomain textdomain
+# define gnu_bindtextdomain bindtextdomain
+#endif
+
 extern char *gnu_gettext (const char *msgid);
 extern char *gnu_textdomain (const char *domainname);
 extern char *gnu_bindtextdomain (const char *domainname, const char *dirname);
