@@ -1,3 +1,16 @@
+1998-10-13  John Harper  <john@dcs.warwick.ac.uk>
+
+	* views.c (format_mode_string): added `%m' format, represents
+	the state of the marked block
+
+	* value.h (VALUE_BITS): defined as PTR_SIZED_INT_BITS
+	* main.c (main): validate PTR_SIZED_INT_BITS at startup
+	* lisp.h (LISP_INT_BITS): define from VALUE_BITS, don't assume
+	32-bit VALUEs
+	* misc.c (cmd_random): handle case where RAND_MAX is too small
+	to get all random bits in a single call to rand(). Also, prefer
+	lrand48() over rand() if it's available
+
 1998-10-12  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_files.c (sys_file_modes_as_string): use stat_file

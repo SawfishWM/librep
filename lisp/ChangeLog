@@ -1,3 +1,8 @@
+1998-10-13  John Harper  <john@dcs.warwick.ac.uk>
+
+	* modes.jl (mode-line-format): add a `%m' as the first
+	character
+
 1998-10-12  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rcs-hooks.jl (rcs-file-p): test if the file is a directory
