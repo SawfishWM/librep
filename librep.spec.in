@@ -58,8 +58,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_prefix}/share/rep/%{ver}/lisp/*.jl
 %{_prefix}/share/rep/%{ver}/lisp/*.jlc
 %{_prefix}/share/rep/%{ver}/DOC.*
-%{_prefix}/libexec/rep/%{ver}/%{_host}/lib*.so*
-%{_prefix}/libexec/rep/%{ver}/%{_host}/lib*.la
+%{_prefix}/libexec/rep/%{ver}/%{_host}/*.so
+%{_prefix}/libexec/rep/%{ver}/%{_host}/*.la
 %{_prefix}/info/librep*
 
 %files devel
@@ -67,7 +67,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_prefix}/bin/rep-config
 %{_prefix}/bin/rep-xgettext
 %{_prefix}/bin/repdoc
-%{_prefix}/lib/librep.a
 %{_prefix}/lib/librep.so
 %{_prefix}/include/rep.h
 %{_prefix}/include/rep_*.h

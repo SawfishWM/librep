@@ -1,9 +1,12 @@
 [ this is -*-Text-*- ]
 
-This is librep, an Emacs Lisp-like runtime library for UNIX. It
-contains a LISP interpreter, byte-code compiler and virtual machine.
-Applications may use the LISP interpreter as an extension language, or
-it may be used for standalone scripts.
+This is librep, a Lisp system for UNIX. It contains a Lisp interpreter,
+byte-code compiler and virtual machine. Applications may use the Lisp
+interpreter as an extension language, or it may be used for stand-alone
+scripts.
+
+The Lisp dialect was originally inspired by Emacs Lisp, but with the
+worst features removed. It also borrows many ideas from Scheme.
 
 It is known to compile on at least Solaris/sparc and Linux/ix86; it is
 released under the terms of the GNU GPL, copyright John Harper
@@ -13,10 +16,10 @@ For more details see:
 
 	http://librep.sourceforge.net/
 
-To compile this you'll need GNU make and (preferably) GCC. Basically,
+To compile this you'll need GNU make and the GNU MP library. Basically,
 just do:
 
-	$ ./configure
+	$ ./configure --with-readline
 	$ make
 	$ make install
 
