@@ -1,3 +1,8 @@
+2001-06-20  John Harper  <jsh@pixelslut.com>
+
+	* Makefile.in: fixed SUBDIRS commands to exit if an error
+	occurs
+
 2001-06-14  John Harper  <jsh@pixelslut.com>
 
 	* configure.in, config.h.in: check for crypt () in default libs
