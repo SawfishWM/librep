@@ -1,3 +1,8 @@
+2000-05-27  John Harper  <john@dcs.warwick.ac.uk>
+
+	* scheme-misc.jl, records.jl, queues.jl: updated for datum
+	printer interface
+
 2000-05-26  John Harper  <john@dcs.warwick.ac.uk>
 
 	* compiler-src.jl (coalesce-constants, mash-constants): new

@@ -1,3 +1,26 @@
+2000-05-28  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.c, numbers.c (read_symbol, rep_readl,
+	Fstring_to_number): added support for the scheme numeric
+	prefixes, i.e. #b, #o, #d, #x, and #e, #i
+
+2000-05-27  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep_lisp.h (rep_tuple, rep_TUPLE): new structure
+	(rep_CELL8P): new macro
+
+	* tuples.c: abstracted the old symbol cell memory management to
+	work for any cells containing two values (plus the car)
+
+	* values.c (Fgarbage_collect): call rep_sweep_tuples
+
+	* symbols.c, datums.c: use tuples for memory management of
+	symbols and datums
+
+	* datums.c (Fmake_datum): removed the PRINTER arg
+	(Fdefine_datum_printer): new function, associates a datum ID
+	with a PRINTER function
+
 2000-05-26  John Harper  <john@dcs.warwick.ac.uk>
 
 	* repint.h (POS, ABS): new macros
