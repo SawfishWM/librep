@@ -361,6 +361,7 @@
 	((struct (nth 1 form))
 	 (var (nth 2 form)))
       (or (memq struct (fluid accessed-modules))
+	  (memq struct (fluid open-modules))
 	  (compiler-error "Referencing non-accessible structure" struct))
       (or (module-exports-p struct var)
 	  (compiler-error "Referencing non-exported variable" struct var))
