@@ -2019,7 +2019,18 @@ rep_string_print(repv strm, repv obj)
 {
     int len = rep_STRING_LEN(obj);
     u_char *s = rep_STR(obj);
+    u_char buf[BUFSIZ];
+    int bufptr = 0;
     u_char c;
+
+#define OUT(c)							\
+    do {							\
+	if (bufptr == BUFSIZ) {					\
+	    rep_stream_puts (strm, buf, BUFSIZ, rep_FALSE);	\
+	    bufptr = 0;						\
+	}							\
+	buf[bufptr++] = (c);					\
+    } while (0)
 
     rep_bool escape_all, escape_newlines;
     repv tem = Fsymbol_value(Qprint_escape, Qt);
@@ -2030,16 +2041,16 @@ rep_string_print(repv strm, repv obj)
     else
 	escape_all = rep_FALSE, escape_newlines = rep_FALSE;
 
-    rep_stream_putc(strm, '\"');
+    OUT ('"');
     while(len-- > 0)
     {
 	c = *s++;
 	if(escape_all && (c < 32 || c > 126))
 	{
-	    rep_stream_putc(strm, '\\');
-	    rep_stream_putc(strm, '0' + c / 64);
-	    rep_stream_putc(strm, '0' + (c % 64) / 8);
-	    rep_stream_putc(strm, '0' + c % 8);
+	    OUT ('\\');
+	    OUT ('0' + c / 64);
+	    OUT ('0' + (c % 64) / 8);
+	    OUT ('0' + c % 8);
 	}
 	else
 	{
@@ -2049,28 +2060,35 @@ rep_string_print(repv strm, repv obj)
 	    case '\n':
 	    case '\f':
 		if(!escape_newlines)
-		    rep_stream_putc(strm, (int)c);
-		else
-		    rep_stream_puts(strm, (c == '\t' ? "\\t"
-				       : ((c == '\n') ? "\\n" : "\\f")),
-				2, rep_FALSE);
+		    OUT (c);
+		else {
+		    OUT ('\\');
+		    c = (c == '\t' ? 't' : ((c == '\n') ? 'n' : 'f'));
+		    OUT (c);
+		}
 		break;
 
 	    case '\\':
-		rep_stream_puts(strm, "\\\\", 2, rep_FALSE);
+		OUT ('\\');
+		OUT ('\\');
 		break;
 
 	    case '"':
-		rep_stream_puts(strm, "\\\"", 2, rep_FALSE);
+		OUT ('\\');
+		OUT ('"');
 		break;
 
 	    default:
-		rep_stream_putc(strm, (int)c);
+		OUT (c);
 	    }
 	}
     }
-    rep_stream_putc(strm, '\"');
+    OUT ('"');
+    if (bufptr > 0)
+	rep_stream_puts (strm, buf, bufptr, rep_FALSE);
 }
+
+#undef OUT
 
 int
 rep_list_length(repv list)
