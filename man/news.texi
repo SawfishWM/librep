@@ -4,6 +4,60 @@
 @cindex News
 
 
+@unnumberedsec 0.12.3
+
+@itemize @bullet
+
+@item New function @code{thread-join}, waits for a specified thread to
+exit, then returns the value of the last form it evaluated
+
+@item Added a rudimentary profiler (@samp{,profile @var{form}} command
+in repl)
+
+@item Reorganized @code{ring} module, sanitized the interface
+(preserving compatibility with old functions), also added a
+@code{ring->list} function
+
+@item @code{rplaca} and @code{rplacd} (but not @code{setcar} and
+@code{setcdr}) functions now return the cell being modified, not the
+value being stored into it, for compatibility with CL (Karl Hegbloom)
+
+@item @code{unwind-protect}, @code{catch}, @code{condition-case}: these
+special forms are now macros
+
+@item When signalling @code{bad-arg} or @code{missing-arg} errors,
+try to include the function as the first element of the error data
+
+@item @code{load} function now @emph{only} loads files without suffixes
+if @var{no-suffix} arg is non-@code{nil} (prevents picking up
+un-suffixed files by mistake, e.g. from the current directory)
+
+@item Fixed some bugs when reading rationals
+
+@item Fixed bug of @code{gettext} module not redefining @code{_}
+binding in @code{rep} module
+
+@item Fixed bug when building @code{rep-config} script (Mark Hewitt,
+Dan Winship)
+
+@item Fixed bug of @code{rep_INTERN_SPECIAL} macro not looking for
+default values of special variables
+
+@item Fixed interpreted versions of @code{min} and @code{max} when
+operating on non-numeric values
+
+@item If unable to allocate heap space, just print an error and
+terminate the program (the low-memory handling doesn't currently work
+properly)
+
+@item Fixed bug when extracting doc strings from @code{define} forms
+
+@item Fixed bug when compiling structure definitions in non-top-level
+environments
+
+@end itemize
+
+
 @unnumberedsec 0.12.2
 
 @itemize @bullet

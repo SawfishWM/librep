@@ -1,3 +1,36 @@
+2000-07-09  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep-repl.jl (repl): only catch end-of-stream errors when
+	reading, not when evaluating
+
+	* init.jl (setcar, setcdr): no longer pseudonyms for rplaca and
+	rplacd (they return the inserted value, not the cell)
+	* compiler-rep.jl: removed code making setc[ad]r compile as rplac[ad]
+
+2000-07-08  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compiler-modules.jl (compile-structure-def): compile bodies
+	of non-top-level structures (so they can access their
+	environment)
+
+	* init.jl (catch, unwind-protect, condition-case): these are
+	all now macros (in terms of call-with-catch,
+	call-with-unwind-protect and call-with-error-handlers
+	respectively. These functions are written in terms of the
+	call-with-exception handler primitive). This has no effect on
+	compiled code
+
+	* rep-packages.jl, gaol.jl (call-with-catch,
+	call-with-unwind-protect, call-with-error-handlers): added
+
+2000-07-07  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep.jl (rep): do the file-exists-p test when loading scheme
+	scripts
+
+	* mutex.jl, disassembler.jl, date.jl, cgi-get.jl, bytecodes.jl:
+	use define-structure instead of structure
+
 2000-07-05  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep.jl: load-all "autoload" not "autoload.jl"

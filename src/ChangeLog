@@ -1,3 +1,24 @@
+2000-07-09  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_dl.c (load_requires): use F_intern_structure instead of
+	Frequire (so that the secondary modules aren't opened in the
+	caller's environment)
+	(rep_open_dl_library): provide the feature (if not a
+	structure), event when it was already loaded
+
+2000-05-31  Karl M. Hegbloom  <karlheg@debian.org>
+
+	* lispcmds.c (Frplaca, Frplacd): Make both return CONS, like
+	Common Lisp.  Update docstrings.
+
+2000-07-08  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispcmds.c (Fcall_with_exception_handler): new function, used
+	to implement all exception handling syntax
+
+	* lispcmds.c (Fcatch, Funwind_protect): deleted, now macros
+	* lisp.c (Fcondition_case): deleted now a macro
+
 2000-07-07  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lisp.c (rep_mem_error): made this just print a message abort

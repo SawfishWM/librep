@@ -10,13 +10,11 @@ and more long-term ideas are marked -
 Outstanding bugs
 ================
 
- ! requiring a dl module with a req_requires line opens those as well
-
- ! (read-from-string "((a)") doesn't terminate?
-
  ! scheme define/lambda doesn't splice begin forms
 
  ! the scheme module fails some of the guile test.scm cases
+
+   [ also scheme `load' is broken, since it requires a .scm extension ]
 
  ! can't do numerator/denominator of flonums
 
@@ -89,6 +87,12 @@ Outstanding bugs
 General programming tasks:
 ==========================
 
+ + %make-structure shouldn't map names to structures itself
+
+   it's done this way to allow mutually recursive structures (debatable
+   itself) but really %make-structure should just create the thing
+   (with an optional name for printing)
+
  + do something with the define-value ugliness?
 
  + fall back to .jl if .jlc fails with byte-code error
@@ -137,9 +141,9 @@ General programming tasks:
  - remove special forms (replacing them with macros) where both
    possible and desirable
 
-   The current (29-3-99) list of special forms is:
+   The current (July 2000) list of special forms is:
 
-   case catch cond condition-case defvar lambda progn quote setq unwind-protect
+   case cond defvar lambda progn quote setq
 
  - subrs can't be called tail recursively (e.g. call/cc apply ..?)
 
