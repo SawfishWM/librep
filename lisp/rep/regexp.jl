@@ -26,14 +26,22 @@
 (open-structures '(rep.data))
 
 (defun string-replace (regexp template string)
-  "Return the string created by replacing all matches of REGEXP in STRING
-with the result of expanding TEMPLATE using the `expand-last-match'
-function."
+  "Return the string created by replacing all matches of REGEXP in
+STRING with the expansion of TEMPLATE.
+
+If TEMPLATE is a string, it is expanded using the `expand-last-match'
+function, otherwise TEMPLATE is called as a function with STRING as its
+sole argument. It should return a string. Also it is guaranteed that
+the last regular expression to have been matched was REGEXP when
+TEMPLATE is called."
+
   (let loop ((point 0)
 	     (out '()))
     (if (string-match regexp string point)
 	(loop (match-end)
-	      (cons (expand-last-match template)
+	      (cons (if (stringp template)
+			(expand-last-match template)
+		      (template string))
 		    (cons (substring string point (match-start)) out)))
       (if (null out)
 	  string

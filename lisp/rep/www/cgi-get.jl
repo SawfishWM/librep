@@ -27,7 +27,8 @@
 
     (open rep
 	  rep.system
-	  rep.regexp)
+	  rep.regexp
+	  rep.test.framework)
 
   (define-structure-alias cgi-get rep.www.cgi-get)
 
@@ -76,4 +77,24 @@
       (if (zerop point)
 	  string
 	(setq frags (cons (substring string point) frags))
-	(apply concat (nreverse frags))))))
+	(apply concat (nreverse frags)))))
+
+
+;; Tests
+
+  (define (self-test)
+    (test (equal (cgi-get-params "")
+		 '()))
+    (test (equal (cgi-get-params "foo=bar")
+		 '((foo . "bar"))))
+    (test (equal (cgi-get-params "foo=bar&baz=quux")
+		 '((foo . "bar") (baz . "quux"))))
+    (test (equal (cgi-get-params "foo=&baz=quux")
+		 '((foo . ()) (baz . "quux"))))
+    (test (equal (cgi-get-params "foo=%3A%2F%3D")
+		 '((foo . ":/="))))
+    (test (equal (cgi-get-params "foo=+bar+")
+		 '((foo . " bar ")))))
+
+  ;;###autoload
+  (define-self-test 'rep.www.cgi-get self-test))

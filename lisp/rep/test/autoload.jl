@@ -34,4 +34,6 @@ Jade, select this file, then evaluate:
 ;;; ::autoload-start::
 (autoload-self-test 'rep.data.queues 'rep.data.queues)
 (autoload-self-test 'rep.data 'rep.test.data)
+(autoload-self-test 'rep.www.quote-url 'rep.www.quote-url)
+(autoload-self-test 'rep.www.cgi-get 'rep.www.cgi-get)
 ;;; ::autoload-end::

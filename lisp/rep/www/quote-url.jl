@@ -33,7 +33,8 @@
 	    unquote-url)
 
     (open rep
-	  rep.regexp)
+	  rep.regexp
+	  rep.test.framework)
 
   (defconst url-meta-re "[^a-zA-Z0-9$_.!~*'(),-]"
     "A regexp matching a single character that is reserved in the URL spec.
@@ -42,25 +43,31 @@ internet drafts directory for a copy.")
        
   (define (quote-url string)
     "Escape URL meta-characters in STRING."
-    (let loop ((point 0)
-	       (out '()))
-      (if (string-match url-meta-re string point)
-	  (loop (match-end)
-		(cons (string-upcase
-		       (format nil "%%%02x" (aref string (match-start))))
-		      (cons (substring string point (match-start)) out)))
-	(if (null out)
-	    string
-	  (apply concat (nreverse (cons (substring string point) out)))))))
+    (string-replace url-meta-re
+		    (lambda (s)
+		      (string-upcase
+		       (format nil "%%%02x" (aref s (match-start)))))
+		    string))
 
   (define (unquote-url string)
     "Unescape URL meta-characters in STRING."
-    (let loop ((point 0)
-	       (out '()))
-      (if (string-match "%([0-9A-Fa-f][0-9A-Fa-f])" string point)
-	  (loop (match-end)
-		(cons (string->number (expand-last-match "\\1") 16)
-		      (cons (substring string point (match-start)) out)))
-	(if (null out)
-	    string
-	  (apply concat (nreverse (cons (substring string point) out))))))))
+    (string-replace "%([0-9A-Fa-f][0-9A-Fa-f])"
+		    (lambda ()
+		      (string->number (expand-last-match "\\1") 16))
+		    string))
+
+
+;; Tests
+
+  (define (self-test)
+    (test (string= (quote-url "http://www.foo.com/bar.html")
+		   "http%3A%2F%2Fwww.foo.com%2Fbar.html"))
+    (test (string= (quote-url "http://www.foo.com/~jsh/")
+		   "http%3A%2F%2Fwww.foo.com%2F~jsh%2F"))
+    (test (string= (unquote-url "http%3A%2F%2Fwww.foo.com%2Fbar.html")
+		   "http://www.foo.com/bar.html"))
+    (test (string= (unquote-url "http%3A%2F%2Fwww.foo.com%2F~jsh%2F")
+		   "http://www.foo.com/~jsh/")))
+
+  ;;###autoload
+  (define-self-test 'rep.www.quote-url self-test))
