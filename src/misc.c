@@ -297,13 +297,17 @@ tmp-file-name
 Returns the name of a unique file.
 ::end:: */
 {
-    return(string_dup(tmpnam(NULL)));
+    char buf[L_tmpnam];
+    if(tmpnam(buf))
+	return string_dup(buf);
+    else
+	return signal_file_error(MKSTR("Can't create temporary file name"));
 }
 
 _PR VALUE cmd_make_completion_string(VALUE args);
 DEFUN("make-completion-string", cmd_make_completion_string, subr_make_completion_string, (VALUE args), V_SubrN, DOC_make_completion_string) /*
 ::doc:make_completion_string::
-make-completion-string EXISTING [POSSIBLE | POSIIBLE...]
+make-completion-string EXISTING [POSSIBLE | POSSIBLE...]
 ::end:: */
 {
     u_char *orig, *match = NULL;
