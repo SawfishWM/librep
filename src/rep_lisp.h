@@ -310,7 +310,7 @@ typedef struct rep_type_struct {
 #define rep_Compiled	0x07
 #define rep_Void	0x09
 #define rep_Process	0x0b
-#define rep_Var		0x0d
+#define rep_Unused1	0x0d
 #define rep_SF		0x0f
 #define rep_Subr0	0x11
 #define rep_Subr1	0x13
@@ -579,7 +579,6 @@ typedef struct {
 #define rep_SUBR5FUN(v)	(rep_SUBR(v)->fun.fun5)
 #define rep_SUBRNFUN(v)	(rep_SUBR(v)->fun.fun1)
 #define rep_SFFUN(v)	(rep_SUBR(v)->fun.fun1)
-#define rep_VARFUN(v)	(rep_SUBR(v)->fun.fun1)
 
 
 /* Closures */
