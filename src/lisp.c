@@ -818,6 +818,12 @@ eval_lambda(VALUE lambdaExp, VALUE argList, bool eval_args)
 	    result = cmd_progn(VCDR(lambdaExp));
 	    POPGC;
 	    unbind_symbols(boundlist);
+	    if(throw_value != LISP_NULL
+	       && (VCAR(throw_value) == sym_defun))
+	    {
+		result = VCDR(throw_value);
+		throw_value = LISP_NULL;
+	    }
 	}
 	else
 	    result = LISP_NULL;
@@ -1035,6 +1041,13 @@ again:
 		    result = LISP_NULL;
 	    }
 	    lisp_call_stack = lc.next;
+
+	    if(throw_value != LISP_NULL
+	       && (VCAR(throw_value) == sym_defun))
+	    {
+		result = VCDR(throw_value);
+		throw_value = LISP_NULL;
+	    }
 	}
 	else if(car == sym_autoload)
 	{
@@ -1078,6 +1091,13 @@ again:
 	    else
 		result = LISP_NULL;
 	    lisp_call_stack = lc.next;
+
+	    if(throw_value != LISP_NULL
+	       && (VCAR(throw_value) == sym_defun))
+	    {
+		result = VCDR(throw_value);
+		throw_value = LISP_NULL;
+	    }
 	    break;
 	}
 
@@ -1091,13 +1111,6 @@ again:
 
 end:
     POPGC; POPGC;
-
-    if(result == LISP_NULL && throw_value
-       && (VCAR(throw_value) == sym_defun))
-    {
-	result = VCDR(throw_value);
-	throw_value = LISP_NULL;
-    }
 
     lisp_depth--;
     return result;
@@ -1641,14 +1654,6 @@ top:
 	    if(CONSP(car) && VCAR(car) == sym_lambda)
 	    {
 		form = eval_lambda(car, VCDR(form), FALSE);
-
-		if(form == LISP_NULL && throw_value
-		   && (VCAR(throw_value) == sym_defun))
-		{
-		    form = VCDR(throw_value);
-		    throw_value = LISP_NULL;
-		}
-
 		if(form != LISP_NULL)
 		    goto top;
 	    }
@@ -1678,7 +1683,7 @@ top:
 		    form = LISP_NULL;
 		lisp_call_stack = lc.next;
 
-		if(form == LISP_NULL && throw_value
+		if(throw_value != LISP_NULL
 		   && (VCAR(throw_value) == sym_defun))
 		{
 		    form = VCDR(throw_value);
@@ -1835,6 +1840,8 @@ arguments given to `signal' when the error was raised).
     {
 	/* an error.  */
 	VALUE error = VCDR(throw_value);
+	VALUE throw_val = throw_value;
+	throw_value = LISP_NULL;
 	while(CONSP(args) && CONSP(VCAR(args)))
 	{
 	    VALUE handler = VCAR(args);
@@ -1844,11 +1851,9 @@ arguments given to `signal' when the error was raised).
 		GC_root gc_bindlist;
 		if(SYMBOLP(var) && !NILP(var))
 		{
-		    bindlist = bind_symbol(sym_nil, var,
-					   VCDR(throw_value));
+		    bindlist = bind_symbol(sym_nil, var, error);
 		    PUSHGC(gc_bindlist, bindlist);
 		}
-		throw_value = LISP_NULL;
 		res = cmd_progn(VCDR(handler));
 		if(SYMBOLP(var) && !NILP(var))
 		{
@@ -1864,6 +1869,8 @@ arguments given to `signal' when the error was raised).
 		res = LISP_NULL;
 		break;
 	    }
+	    if(!CONSP(args))
+		throw_value = throw_val; /* reinstall the error */
 	}
     }
     POPGC;
