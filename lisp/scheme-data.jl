@@ -158,9 +158,6 @@
 
   ;; XXX rep's gcd and lcm only take two parameters..
   
-  ;; XXX rep's rounding functions return exact values given
-  ;; inexact arguments..
-
   (define (rationalize x y)
     (error "rationalize is unimplemented"))
 

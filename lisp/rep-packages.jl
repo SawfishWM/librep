@@ -99,7 +99,7 @@
 
 	  random translate-string alpha-char-p upper-case-p lower-case-p
 	  digit-char-p alphanumericp space-char-p char-upcase char-downcase
-	  complete-string
+	  complete-string upcase-table downcase-table flatten-table
 
 	  make-fluid fluid fluid-set with-fluids fluid-let
 
@@ -164,7 +164,8 @@
 	  time-later-p sleep-for sit-for user-login-name user-full-name
 	  user-home-directory system-name message system pwd-prompt
 	  call-hook add-hook remove-hook
-	  in-hook-p eval-after-load getenv setenv unsetenv))
+	  in-hook-p eval-after-load getenv setenv unsetenv
+	  operating-system rep-version rep-interface-id rep-build-id))
 
 (define-interface rep-process
   (export make-process start-process call-process interrupt-process

@@ -68,16 +68,15 @@
       inexactp exact->inexact inexact->exact numerator denominator
       positivep negativep oddp evenp abs lcm make-table make-weak-table
       string-hash symbol-hash eq-hash equal-hash tablep table-ref
-      table-set table-unset table-walk))
+      table-set table-unset table-walk
+      downcase-table flatten-table upcase-table operating-system rep-version))
 
   ;; alist mapping functions to their safe versions
   (define gaol-redefined-functions)
 
   ;; list of accessible special variables
   (define gaol-safe-specials
-    '(batch-mode downcase-table file-handler-alist
-      flatten-table operating-system rep-version upcase-table
-      load-filename macro-environment))
+    '(file-handler-alist load-filename macro-environment))
 
   ;; list of file handlers that may be called. These functions shouldn't
   ;; be added to the function environment, since that would allow _any_
