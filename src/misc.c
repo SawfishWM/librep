@@ -294,37 +294,24 @@ Returns the name of a unique file.
     }
 }
 
-_PR VALUE cmd_make_completion_string(VALUE args);
-DEFUN("make-completion-string", cmd_make_completion_string, subr_make_completion_string, (VALUE args), V_SubrN, DOC_make_completion_string) /*
+_PR VALUE cmd_make_completion_string(VALUE existing, VALUE arg_list);
+DEFUN("make-completion-string", cmd_make_completion_string, subr_make_completion_string, (VALUE existing, VALUE arg_list), V_Subr2, DOC_make_completion_string) /*
 ::doc:make_completion_string::
-make-completion-string EXISTING [POSSIBLE | POSSIBLE...]
+make-completion-string EXISTING STRING-LIST
 ::end:: */
 {
     u_char *orig, *match = NULL;
     int matchlen = 0, origlen;
-    VALUE arg;
-    if(!CONSP(args))
-	return LISP_NULL;
-    arg = VCAR(args);
-    DECLARE1(arg, STRINGP);
-    orig = VSTR(arg);
-    origlen = strlen(orig);
-    arg = ARG2;
-    switch(VTYPE(arg))
+
+    DECLARE1(existing, STRINGP);
+    DECLARE2(arg_list, LISTP);
+
+    orig = VSTR(existing);
+    origlen = STRING_LEN(existing);
+
+    while(CONSP(arg_list))
     {
-    case V_Cons:
-	args = arg;
-	break;
-    case V_StaticString:
-    case V_DynamicString:
-	args = VCDR(args);
-	break;
-    default:
-	return(sym_nil);
-    }
-    while(CONSP(args))
-    {
-	arg = VCAR(args);
+	VALUE arg = VCAR(arg_list);
 	if(STRINGP(arg))
 	{
 	    u_char *tmp = VSTR(arg);
@@ -352,7 +339,7 @@ make-completion-string EXISTING [POSSIBLE | POSSIBLE...]
 		}
 	    }
 	}
-	args = VCDR(args);
+	arg_list = VCDR(arg_list);
     }
     if(match)
 	return(string_dupn(match, matchlen));
