@@ -236,6 +236,7 @@ rep_init_from_dump(char *prog_name, int *argc, char ***argv,
 
 	rep_values_init();
 	rep_lisp_init();
+	rep_macros_init ();
 	rep_lispcmds_init();
 	rep_lispmach_init();
 	rep_find_init();
