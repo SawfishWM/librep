@@ -409,6 +409,8 @@ typedef struct lisp_vector {
 
 #define VECTORP(v)	VCELL8_TYPEP(v, V_Vector)
 
+#define VECTOR_WRITABLE_P(v) (!VCELL8_STATIC_P(v))
+
 
 /* Compiled Lisp functions; this is a constant-sized vector. */
 
