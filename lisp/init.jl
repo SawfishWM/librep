@@ -593,6 +593,11 @@ string INPUT."
 ;; Hide interactive decls
 (defmacro interactive ())
 
+(defun member-if (fun lst)
+  (cond ((null lst) '())
+	((fun (car lst)) lst)
+	(t (member-if fun (cdr lst)))))
+
 
 ;; cons accessors
 
