@@ -780,7 +780,11 @@ rep_print_number_to_string (repv obj, int radix, int prec)
 	else if (radix == 8)
 	    tem = "%" rep_PTR_SIZED_INT_CONV "o";
 	else
-	    tem = 0;			/* XXX handle arbitrary bases */
+	{
+	    /* XXX implement properly..? */
+	    obj = promote_to (obj, rep_NUMBER_BIGNUM);
+	    goto do_bignum;
+	}
 	if (tem != 0)
 	{
 #ifdef HAVE_SNPRINTF
@@ -793,6 +797,7 @@ rep_print_number_to_string (repv obj, int radix, int prec)
 	break;
 
     case rep_NUMBER_BIGNUM:
+    do_bignum:
 	out = mpz_get_str (0, radix, rep_NUMBER(obj,z));
 	break;
 
@@ -2060,6 +2065,57 @@ result to be inexact.
     return rep_number_foldl (args, rep_number_min);
 }
 
+DEFUN("string->number", Fstring_to_number,
+      Sstring_to_number, (repv string, repv radix), rep_Subr2)
+{
+    int type = 0;
+    int sign = 1;
+    u_char *ptr;
+
+    rep_DECLARE1 (string, rep_STRINGP);
+    if (radix == Qnil)
+	radix = rep_MAKE_INT (10);
+    rep_DECLARE (2, radix, rep_INTP (radix) && rep_INT (radix) > 0);
+
+    ptr = rep_STR (string);
+    if (*ptr == '-' || *ptr == '+')
+    {
+	if (*ptr == '-')
+	    sign = -1;
+	ptr++;
+    }
+
+    /* XXX handle scheme-like explicit radix prefixes.. */
+
+    if (strchr (ptr, '/'))
+	type = rep_NUMBER_RATIONAL;
+    else if (rep_INT (radix) == 10)
+    {
+	if (strchr (ptr, '.') || strchr (ptr, 'e') || strchr (ptr, 'E'))
+	    type = rep_NUMBER_FLOAT;
+    }
+
+    return rep_parse_number (ptr, rep_STRING_LEN (string)
+			     - (ptr - rep_STR (string)),
+			     rep_INT (radix), sign, type);
+}
+
+DEFUN("number->string", Fnumber_to_string,
+      Snumber_to_string, (repv z, repv radix), rep_Subr2)
+{
+    char *out;
+    rep_DECLARE1 (z, rep_NUMERICP);
+    if (radix == Qnil)
+	radix = rep_MAKE_INT (10);
+    rep_DECLARE (2, radix, rep_INTP (radix) && rep_INT (radix) > 0);
+
+    out = rep_print_number_to_string (z, rep_INT (radix), -1);
+    if (out == 0)
+	return Qnil;
+    else
+	return rep_box_string (out, strlen (out));
+}
+
 
 /* init */
 
@@ -2124,4 +2180,6 @@ rep_numbers_init (void)
     rep_ADD_SUBR(Sdenominator);
     rep_ADD_SUBR(Smax);
     rep_ADD_SUBR(Smin);
+    rep_ADD_SUBR(Sstring_to_number);
+    rep_ADD_SUBR(Snumber_to_string);
 }
