@@ -667,12 +667,7 @@ again:
 	    CALL_2(Fset);
 
 	case OP_DSET:
-	    tmp = RET_POP;
-	    tmp2 = TOP;
-	    TOP = Fset (tmp2, tmp);
-	    if (TOP != rep_NULL)
-		rep_SYM(tmp2)->car |= rep_SF_DEFVAR;
-	    break;
+	    CALL_2(Fdefine_value);
 
 	case OP_ENCLOSE:
 	    TOP = Fmake_closure (TOP, Qnil);
