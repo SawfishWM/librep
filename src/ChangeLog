@@ -1,3 +1,8 @@
+2001-01-08  John Harper  <jsh@eazel.com>
+
+	* lisp.c: changed the Lisp reader to treat #\return characters
+	as whitespace. (Fixes sawfish bug 5231)
+
 2001-01-04  John Harper  <jsh@eazel.com>
 
 	* version 0.13.4

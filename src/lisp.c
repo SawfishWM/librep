@@ -278,6 +278,7 @@ read_list(repv strm, register int *c_p)
 	case ' ':
 	case '\t':
 	case '\n':
+	case '\r':
 	case '\f':
 	    *c_p = fast_getc(strm);
 	    continue;
@@ -285,7 +286,8 @@ read_list(repv strm, register int *c_p)
 	case ';':
 	    {
 		register int c;
-		while((c = fast_getc(strm)) != EOF && c != '\n' && c != '\f')
+		while((c = fast_getc(strm)) != EOF
+		      && c != '\n' && c != '\f' && c != '\r')
 		    ;
 		*c_p = fast_getc(strm);
 		continue;
@@ -304,7 +306,7 @@ read_list(repv strm, register int *c_p)
 		result = Fsignal(Qpremature_end_of_stream, rep_LIST_1(strm));
 		goto end;
 
-	    case ' ': case '\t': case '\n': case '\f':
+	    case ' ': case '\t': case '\n': case '\f': case '\r':
 		if(last)
 		{
 		    repv this = readl(strm, c_p, Qpremature_end_of_stream);
@@ -403,7 +405,7 @@ read_symbol(repv strm, int *c_p, repv obarray)
 	}
 	switch(c)
 	{
-	case ' ':  case '\t': case '\n': case '\f':
+	case ' ':  case '\t': case '\n': case '\f': case '\r':
 	case '(':  case ')':  case '[':  case ']':
 	case '\'': case '"':  case ';':  case ',':
 	case '`':
@@ -761,13 +763,15 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 	case '\t':
 	case '\n':
 	case '\f':
+	case '\r':
 	    *c_p = fast_getc(strm);
 	    continue;
 
 	case ';':
 	    {
 		register int c;
-		while((c = fast_getc(strm)) != EOF && c != '\n' && c != '\f')
+		while((c = fast_getc(strm)) != EOF
+		      && c != '\n' && c != '\f' && c != '\r')
 		    ;
 		*c_p = rep_stream_getc(strm);
 		continue;
@@ -2231,12 +2235,16 @@ rep_string_print(repv strm, repv obj)
 	    {
 	    case '\t':
 	    case '\n':
+	    case '\r':
 	    case '\f':
 		if(!escape_newlines)
 		    OUT (c);
 		else {
 		    OUT ('\\');
-		    c = (c == '\t' ? 't' : ((c == '\n') ? 'n' : 'f'));
+		    c = (c == '\t' ? 't'
+			 : c == '\n' ? 'n'
+			 : c == '\r' ? 'r'
+			 : 'f');
 		    OUT (c);
 		}
 		break;
