@@ -187,6 +187,7 @@ value when given the same inputs. Used when constant folding.")
 (defvar comp-defuns nil)		;alist of (NAME REQ OPT RESTP)
 					; for all functions/macros in the file
 (defvar comp-defvars nil)		;all variables declared at top-level
+(defvar comp-defines nil)		;all lex. vars. declared at top-level
 (defvar comp-spec-bindings '())		;list of currently bound variables
 (defvar comp-lex-bindings '())		;list of currently bound variables
 (defvar comp-current-file nil)		;the file being compiled
@@ -258,17 +259,31 @@ value when given the same inputs. Used when constant folding.")
 
 ;; Similar for variables
 (defun comp-remember-var (name)
-  (if (memq name comp-defvars)
-      (comp-warning "Multiply defined variable: %s" name)
-    (setq comp-defvars (cons name comp-defvars))))
+  (cond ((memq name comp-defines)
+	 (comp-error "Variable %s was previously declared lexically" name))
+	((memq name comp-defvars)
+	 (comp-warning "Multiply defined variable: %s" name))
+	(t
+	 (setq comp-defvars (cons name comp-defvars)))))
+
+(defun comp-remember-lexical-var (name)
+  (cond ((memq name comp-defvars)
+	 (comp-error "Variable %s was previously declared special" name))
+	((memq name comp-defines)
+	 (comp-warning "Multiply defined lexical variable: %s" name))
+	(t
+	 (setq comp-defines (cons name comp-defines)))))
 
 ;; Test that a reference to variable NAME appears valid
 (defun comp-test-varref (name)
   (when (and (symbolp name)
 	     (null (memq name comp-defvars))
+	     (null (memq name comp-defines))
 	     (null (memq name comp-spec-bindings))
 	     (null (memq name comp-lex-bindings))
 	     (null (assq name comp-defuns))
+	     (not (special-variable-p name))
+	     (not (const-variable-p name))
 	     (not (boundp name)))
     (comp-warning "Reference to undeclared free variable: %s" name)))
 
@@ -308,7 +323,8 @@ value when given the same inputs. Used when constant folding.")
 	(if (null decl)
 	    (unless (or (memq name comp-spec-bindings)
 			(memq name comp-lex-bindings)
-			(memq name comp-defvars))
+			(memq name comp-defvars)
+			(memq name comp-defines))
 	      (comp-warning "Call to undeclared function: %s" name))
 	  (let
 	      ((required (nth 1 decl))
@@ -342,89 +358,104 @@ is one of these that form is compiled.")
        (comp-inline-env '())
        (comp-defuns '())
        (comp-defvars '())
+       (comp-defines '())
        (comp-spec-bindings '())
        (comp-lex-bindings '())
        (comp-output-stream nil)
        (temp-file (make-temp-name))
-       src-file dst-file form)
+       src-file dst-file input-forms header form)
     (unwind-protect
 	(progn
 	  (message (concat "Compiling " file-name "...") t)
 	  (when (setq src-file (open-file file-name 'read))
 	    (unwind-protect
-		;; Pass 1. Scan for top-level definitions in the file.
-		;; Also eval require forms (for macro defs)
-		(condition-case nil
-		    (while t
-		      (setq form (macroexpand (read src-file) comp-macro-env))
-		      (cond
-		       ((eq (car form) 'defun)
-			(comp-remember-fun (nth 1 form) (nth 2 form)))
-		       ((eq (car form) 'defmacro)
-			(comp-remember-fun (nth 1 form) (nth 2 form))
-			(setq comp-macro-env
-			      (cons (cons (nth 1 form)
-					  (make-closure
-					   (cons 'lambda (nthcdr 2 form))))
-				    comp-macro-env)))
-		       ((eq (car form) 'defsubst)
-			(setq comp-inline-env
-			      (cons (cons (nth 1 form)
-					  (cons 'lambda (nthcdr 2 form)))
-				    comp-inline-env)))
-		       ((eq (car form) 'defvar)
-			(comp-remember-var (nth 1 form)))
-		       ((eq (car form) 'defconst)
-			(comp-remember-var (nth 1 form))
-			(setq comp-const-env (cons (cons (nth 1 form)
-							 (nth 2 form))
-						   comp-const-env)))
-		       ((eq (car form) 'require)
-			(eval form))))
-		  (end-of-stream))
+		(progn
+		  ;; Pass 1. [read the file, remembering definitions]
+
+		  ;; First check for `#! .. !#' at start of file
+		  (if (and (= (read-char src-file) ?#)
+			   (= (read-char src-file) ?!))
+		      (let
+			  ((out (make-string-output-stream))
+			   tem)
+			(write out "#!")
+			(catch 'done
+			  (while (setq tem (read-char src-file))
+			    (write out tem)
+			    (when (and (= tem ?!)
+				       (setq tem (read-char src-file)))
+			      (write out tem)
+			      (when (= tem ?#)
+				(throw 'done t)))))
+			(setq header (get-output-stream-string out)))
+		    (seek-file src-file 0 'start))
+
+
+		  ;; Scan for top-level definitions in the file.
+		  ;; Also eval require forms (for macro defs)
+		  (condition-case nil
+		      (while t
+			(setq form (macroexpand (read src-file)
+						comp-macro-env))
+			(setq input-forms (cons form input-forms))
+			(cond
+			 ((eq (car form) 'defun)
+			  (comp-remember-fun (nth 1 form) (nth 2 form)))
+			 ((eq (car form) 'defmacro)
+			  (comp-remember-fun (nth 1 form) (nth 2 form))
+			  (setq comp-macro-env
+				(cons (cons (nth 1 form)
+					    (make-closure
+					     (cons 'lambda (nthcdr 2 form))))
+				      comp-macro-env)))
+			 ((eq (car form) 'defsubst)
+			  (setq comp-inline-env
+				(cons (cons (nth 1 form)
+					    (cons 'lambda (nthcdr 2 form)))
+				      comp-inline-env)))
+			 ((eq (car form) 'defvar)
+			  (comp-remember-var (nth 1 form)))
+			 ((eq (car form) 'defconst)
+			  (comp-remember-var (nth 1 form))
+			  (setq comp-const-env (cons (cons (nth 1 form)
+							   (nth 2 form))
+						     comp-const-env)))
+			 ((eq (car form) 'define-value)
+			  (let
+			      ((sym (nth 1 form)))
+			    (when (comp-constant-p sym)
+			      (comp-remember-lexical-var
+			       (comp-constant-value sym)))))
+			 ((eq (car form) 'require)
+			  (eval form))))
+		    (end-of-stream)))
 	      (close-file src-file))
-	    (when (and (setq src-file (open-file file-name 'read))
-		       (setq dst-file (open-file temp-file 'write)))
+	    (setq input-forms (nreverse input-forms))
+	    (when (setq dst-file (open-file temp-file 'write))
 	      (condition-case error-info
 		  (unwind-protect
 		      (progn
 			;; Pass 2. The actual compile
-			;; First check for `#! .. !#' at start of file
-			(if (and (= (read-char src-file) ?#)
-				 (= (read-char src-file) ?!))
-			    (let
-				(tem)
-			      (write dst-file "#!")
-			      (catch 'done
-				(while (setq tem (read-char src-file))
-				  (write dst-file tem)
-				  (when (and (= tem ?!)
-					     (setq tem (read-char src-file)))
-				    (write dst-file tem)
-				    (when (= tem ?#)
-				      (throw 'done t))))))
-			  (seek-file src-file 0 'start))
+			(when header
+			  (write dst-file header))
 			(format dst-file
 				";; Source file: %s\n(validate-byte-code %d %d)\n"
 				file-name bytecode-major bytecode-minor)
-			(condition-case nil
-			    (while t
-			      (when (setq form (read src-file))
-				(setq form (macroexpand form comp-macro-env))
-				(cond
-				 ((memq (car form)
-					'(defun defmacro defvar
-					  defconst defsubst require))
-				  (setq form (comp-compile-top-form form)))
-				 ((memq (car form) comp-top-level-compiled)
-				  ;; Compile this form
-				  (setq form (compile-form form))))
-				(when form
-				  (print form dst-file))))
-			  (end-of-stream
-			   (write dst-file ?\n))))
-		    (close-file dst-file)
-		    (close-file src-file))
+			(while (setq form (car input-forms))
+			  ;; just in case?
+			  (setq form (macroexpand form comp-macro-env))
+			  (cond
+			   ((memq (car form) '(defun defmacro defvar defconst
+					       defsubst require define-value))
+			    (setq form (comp-compile-top-form form)))
+			   ((memq (car form) comp-top-level-compiled)
+			    ;; Compile this form
+			    (setq form (compile-form form))))
+			  (when form
+			    (print form dst-file))
+			  (setq input-forms (cdr input-forms)))
+			(write dst-file ?\n))
+		    (close-file dst-file))
 		(error
 		 ;; Be sure to remove any partially written dst-file.
 		 ;; Also, signal the error again so that the user sees it.
@@ -517,6 +548,7 @@ that files which shouldn't be compiled aren't."
        (comp-current-fun function)
        (comp-defuns nil)
        (comp-defvars nil)
+       (comp-defines nil)
        (comp-output-stream nil))
     (when (assq 'jade-byte-code body)
       (comp-error "Function already compiled" function))
@@ -595,6 +627,17 @@ that files which shouldn't be compiled aren't."
 	(unless (memq (nth 1 form) comp-defvars)
 	  (comp-remember-var (nth 1 form))))
       form)
+     ((eq fun 'define-value)
+      (let
+	  ((sym (nth 1 form))
+	   (value (nth 2 form)))
+	(when (comp-constant-p sym)
+	  (setq sym (comp-constant-value sym))
+	  (unless (memq sym comp-defines)
+	    (comp-remember-lexical-var (comp-constant-value sym))))
+	(when (and (listp value) (not (comp-constant-p value)))
+	  ;; Compile the definition. A good idea?
+	  (rplaca (nthcdr 2 form) (compile-form (nth 2 form))))))
      ((eq fun 'require)
       (eval form)
       form)
