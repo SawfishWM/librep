@@ -207,6 +207,7 @@ typedef struct rep_cons_block_struct {
 /* Get the car or cdr from a cons repv. */
 #define rep_CAR(v)	(rep_CONS(v)->car)
 #define rep_CDR(v)	(rep_CONS(v)->cdr)
+#define rep_CDRLOC(v)	(&(rep_CONS(v)->cdr))
 
 /* Get the cdr when GC is in progress. */
 #define rep_GCDR(v)	(rep_CDR(v) & ~rep_VALUE_CONS_MARK_BIT)
@@ -599,6 +600,37 @@ typedef struct {
 #define rep_LIST_4(v1,v2,v3,v4)		Fcons(v1, rep_LIST_3(v2, v3, v4))
 #define rep_LIST_5(v1,v2,v3,v4,v5)	Fcons(v1, rep_LIST_4(v2, v3, v4, v5))
 
+#define rep_CAAR(obj)           rep_CAR (rep_CAR (obj))
+#define rep_CDAR(obj)           rep_CDR (rep_CAR (obj))
+#define rep_CADR(obj)           rep_CAR (rep_CDR (obj))
+#define rep_CDDR(obj)           rep_CDR (rep_CDR (obj))
+
+#define rep_CAAAR(obj)          rep_CAR (rep_CAR (rep_CAR (obj)))
+#define rep_CDAAR(obj)          rep_CDR (rep_CAR (rep_CAR (obj)))
+#define rep_CADAR(obj)          rep_CAR (rep_CDR (rep_CAR (obj)))
+#define rep_CDDAR(obj)          rep_CDR (rep_CDR (rep_CAR (obj)))
+#define rep_CAADR(obj)          rep_CAR (rep_CAR (rep_CDR (obj)))
+#define rep_CDADR(obj)          rep_CDR (rep_CAR (rep_CDR (obj)))
+#define rep_CADDR(obj)          rep_CAR (rep_CDR (rep_CDR (obj)))
+#define rep_CDDDR(obj)          rep_CDR (rep_CDR (rep_CDR (obj)))
+
+#define rep_CAAAAR(obj)         rep_CAR (rep_CAR (rep_CAR (rep_CAR (obj))))
+#define rep_CDAAAR(obj)         rep_CDR (rep_CAR (rep_CAR (rep_CAR (obj))))
+#define rep_CADAAR(obj)         rep_CAR (rep_CDR (rep_CAR (rep_CAR (obj))))
+#define rep_CDDAAR(obj)         rep_CDR (rep_CDR (rep_CAR (rep_CAR (obj))))
+#define rep_CAADAR(obj)         rep_CAR (rep_CAR (rep_CDR (rep_CAR (obj))))
+#define rep_CDADAR(obj)         rep_CDR (rep_CAR (rep_CDR (rep_CAR (obj))))
+#define rep_CADDAR(obj)         rep_CAR (rep_CDR (rep_CDR (rep_CAR (obj))))
+#define rep_CDDDAR(obj)         rep_CDR (rep_CDR (rep_CDR (rep_CAR (obj))))
+#define rep_CAAADR(obj)         rep_CAR (rep_CAR (rep_CAR (rep_CDR (obj))))
+#define rep_CDAADR(obj)         rep_CDR (rep_CAR (rep_CAR (rep_CDR (obj))))
+#define rep_CADADR(obj)         rep_CAR (rep_CDR (rep_CAR (rep_CDR (obj))))
+#define rep_CDDADR(obj)         rep_CDR (rep_CDR (rep_CAR (rep_CDR (obj))))
+#define rep_CAADDR(obj)         rep_CAR (rep_CAR (rep_CDR (rep_CDR (obj))))
+#define rep_CDADDR(obj)         rep_CDR (rep_CAR (rep_CDR (rep_CDR (obj))))
+#define rep_CADDDR(obj)         rep_CAR (rep_CDR (rep_CDR (rep_CDR (obj))))
+#define rep_CDDDDR(obj)         rep_CDR (rep_CDR (rep_CDR (rep_CDR (obj))))
+
 
 /* Garbage collection definitions */
 
@@ -726,20 +758,20 @@ struct rep_Call {
 /* Macros for ensuring an object is of a certain type i.e. to ensure
    first arg `foo' is a string, rep_DECLARE1(foo, rep_STRINGP);  */
 
-#define rep_DECLARE(n,x,t)		\
+#define rep_DECLARE(n,x,e)		\
     do { 				\
-	if(! t(x)) 			\
+	if(! (e)) 			\
 	{ 				\
 	    rep_signal_arg_error(x, n); \
 	    return rep_NULL; 		\
 	} 				\
     } while(0)
 
-#define rep_DECLARE1(x,t) rep_DECLARE(1,x,t)
-#define rep_DECLARE2(x,t) rep_DECLARE(2,x,t)
-#define rep_DECLARE3(x,t) rep_DECLARE(3,x,t)
-#define rep_DECLARE4(x,t) rep_DECLARE(4,x,t)
-#define rep_DECLARE5(x,t) rep_DECLARE(5,x,t)
+#define rep_DECLARE1(x,t) rep_DECLARE(1,x,t(x))
+#define rep_DECLARE2(x,t) rep_DECLARE(2,x,t(x))
+#define rep_DECLARE3(x,t) rep_DECLARE(3,x,t(x))
+#define rep_DECLARE4(x,t) rep_DECLARE(4,x,t(x))
+#define rep_DECLARE5(x,t) rep_DECLARE(5,x,t(x))
 
 
 /* Macros for interrupt handling */
