@@ -30,4 +30,6 @@
 (setq file-handler-alist (cons '("#tar\\b" . tar-file-handler) file-handler-alist))
 (autoload-file-handler 'tar-file-handler 'tar-file-handler)
 (autoload 'pwd-prompt "pwd-prompt")
+(autoload 'debug-entry 'debug)
+(autoload 'debug-error-entry 'debug)
 ;;; ::autoload-end::

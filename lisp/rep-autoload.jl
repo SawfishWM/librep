@@ -22,8 +22,6 @@
 |#
 
 ;;; ::autoload-start::
-(autoload 'debug-entry "debug")
-(autoload 'debug-error-entry "debug")
 (autoload 'sort "sort")
 (autoload 'getenv "environ")
 (autoload 'setenv "environ")
