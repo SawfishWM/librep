@@ -1,3 +1,27 @@
+2000-07-14  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compiler-utils.jl (declare-inline): handler for `(declare
+	(inline NAMES...))' marking functions that should be inlined
+	(remember-function): optional arg BODY, so that functions
+	previously declared inline can be stored
+
+	* compiler-rep.jl (do-pass-1): pass defun bodies to
+	remember-function, in case they've been declared inline
+	(do-pass-2): defsubst forms are compiled as defuns now
+
+	* compiler-modules.jl (variable-stem): new function to extract
+	the local name of a variable
+
+	* compiler-basic.jl (compile-form-1): removed code to check for
+	'compile-inline property. This was totally bogus after the
+	module system arrived
+	* compiler-inline.jl (compile-inline-function): deleted
+
+	* init.jl (defsubst): just an alias for defun now
+
+	* init.jl (throw): now in lisp
+	(raise-exception): deleted, now in C
+
 2000-07-12  John Harper  <john@dcs.warwick.ac.uk>
 
 	* define.jl (define-scan-form): don't expand let-fluids forms

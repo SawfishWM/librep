@@ -5557,6 +5557,12 @@ This tells the compiler that all symbols @var{variables} have special
 bindings from lexical bindings, since different instruction sequences
 must be generated to access the different types of binding.)
 
+@item (inline @var{names}@dots{})
+Tells the compiler that it should consider inlining calls to the
+functions called @var{names}@dots{}. Inlining will only occur if these
+functions are declared in the same module as, and after, the
+declaration itself.
+
 @item (in-module @var{module-name})
 This declaration should occur at the top-level of a program; it tells
 the compiler that the forms in the program will be evaluated within the

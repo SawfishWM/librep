@@ -5,9 +5,6 @@
 	aclocal isn't installed (patch from Albert Chin-A-Young
 	<china@thewrittenword.com>)
 
-	* configure.in: define `inline' to `' on irix when not using
-	gcc. Seems the native cc makes all inline functions static
-
 2000-07-12  John Harper  <john@dcs.warwick.ac.uk>
 
 	* configure.in: version 0.12.3, bumped ${librevision}

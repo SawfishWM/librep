@@ -1,5 +1,13 @@
 2000-07-14  John Harper  <john@dcs.warwick.ac.uk>
 
+	* lispcmds.c (Fraise_exception): this replaces Fthrow as most
+	primitive
+
+	* files.c (rep_get_fh_env): made static, only this file uses it
+
+	* numbers.c, values.c: don't declare non-static inline
+	functions, C99 makes `inline' imply `static'
+
 	* record-profile.c: added alloca magic to start of file
 
 2000-07-13  John Harper  <john@dcs.warwick.ac.uk>
