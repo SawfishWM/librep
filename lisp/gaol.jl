@@ -22,6 +22,7 @@
 
 ;; configuration/variables
 
+;; list of all safe functions
 (defvar gaol-safe-functions
   '(% * + - / /= 1+ 1- < <= = > >= add-hook alpha-char-p alphanumericp
     and append apply aref arrayp aset ash assoc assoc-regexp assq atom
@@ -53,20 +54,32 @@
     user-full-name user-login-name vector vectorp when while
     with-object write zerop))
 
+;; alist mapping functions to their safe versions
 (defvar gaol-redefined-functions
   '((require . gaol:require)
     (make-timer . gaol:make-timer)))
 
+;; list of accessible special variables
 (defvar gaol-safe-specials
   '(nil t batch-mode downcase-table features file-handler-alist flatten-table
     operating-system rep-version upcase-table load-filename))
 
+;; features that the restricted code may ask for
 (defvar gaol-safe-features '(timers))
+
+;; list of file handlers that may be called. These functions shouldn't
+;; be added to the function environment, since that would allow _any_
+;; file operation to be performed
+(defvar gaol-safe-file-handlers '(tilde-file-handler tar-file-handler))
+
+;; alist of (HANDLER . SYMBOL)
+(defvar gaol-redefined-file-handlers nil)
 
 
 ;; building the actual environments
 
 (defvar gaol-function-env nil)
+(defvar gaol-fh-env nil)
 (defvar gaol-fenv-built nil)
 
 (defun gaol-rebuild-environment ()
@@ -76,16 +89,23 @@
 					      (symbol-function sym))))
 			   gaol-safe-functions)
 		   (mapcar #'(lambda (cell)
-			       (cons (car cell)
-				     (symbol-function
-				      (cdr cell))))
-			   gaol-redefined-functions))))
+			       (cons (car cell) (symbol-function (cdr cell))))
+			   gaol-redefined-functions)))
+       (fh-env (nconc (mapcar #'(lambda (sym)
+				  (cons sym t)) gaol-safe-file-handlers)
+		      (mapcar #'(lambda (cell)
+				  (cons (car cell)
+					(symbol-function (cdr cell))))
+			      gaol-redefined-file-handlers))))
     (if gaol-function-env
 	(progn
 	  ;; affect existing environments
 	  (rplaca gaol-function-env (car env))
-	  (rplacd gaol-function-env (cdr env)))
-      (setq gaol-function-env env))
+	  (rplacd gaol-function-env (cdr env))
+	  (rplaca gaol-fh-env (car fh-env))
+	  (rplacd gaol-fh-env (cdr fh-env)))
+      (setq gaol-function-env env)
+      (setq gaol-fh-env fh-env))
     (setq gaol-fenv-built t)))
 
 
@@ -111,6 +131,17 @@
 (defun gaol-add-feature (feature)
   (setq gaol-safe-features (cons feature (delq feature gaol-safe-features))))
 
+;;;###autoload
+(defun gaol-add-file-handler (fun)
+  (setq gaol-fenv-built nil)
+  (setq gaol-safe-file-handlers (nconc gaol-safe-file-handlers (list fun))))
+
+;;;###autoload
+(defun gaol-replace-file-handler (fun def)
+  (setq gaol-fenv-built nil)
+  (setq gaol-redefined-file-handlers (nconc gaol-redefined-file-handlers
+					    (list (cons fun def)))))
+
 
 ;; evaluating in the restricted environment
 
@@ -122,6 +153,7 @@
   `(save-environment
     (set-variable-environment nil)
     (set-special-environment ',gaol-safe-specials)
+    (set-file-handler-environment ',gaol-fh-env)
     (set-function-environment ',gaol-function-env)
     ,form))
 
