@@ -335,9 +335,9 @@ static int allocated_cons, used_cons;
 
 DEFUN("cons", Fcons, Scons, (repv car, repv cdr), rep_Subr2) /*
 ::doc:Scons::
-cons CAR-repv CDR-repv
+cons CAR CDR
 
-Returns a new cons-cell with car CAR-repv and cdr CDR-repv.
+Returns a new cons-cell with car CAR and cdr CDR.
 ::end:: */
 {
     rep_cons *cn;
