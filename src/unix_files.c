@@ -57,6 +57,7 @@
 _PR u_long sys_file_length(VALUE file);
 _PR VALUE sys_file_name_absolute_p(VALUE file);
 _PR VALUE sys_expand_file_name(VALUE file);
+_PR VALUE sys_canonical_file_name(VALUE file);
 _PR VALUE sys_file_name_nondirectory(VALUE file);
 _PR VALUE sys_file_name_directory(VALUE file);
 _PR VALUE sys_file_name_as_directory(VALUE file);
@@ -153,7 +154,7 @@ sys_expand_file_name(VALUE file)
 			back--;
 		    while(back > buf && back[-1] != '/')
 			back--;
-		    if(back != buf)
+		    if(back != buf || *back != '/')
 			optr = back;
 		    else
 		    {
@@ -191,6 +192,22 @@ sys_expand_file_name(VALUE file)
 	return string_dupn(buf, optr - buf);
     else
 	return file;
+}
+
+VALUE
+sys_canonical_file_name(VALUE file)
+{
+#ifdef HAVE_REALPATH
+    char buf[PATH_MAX];
+    if(realpath(VSTR(file), buf) != 0)
+	return string_dup(buf);
+    else
+	/* Bail out */
+	return file;
+#else
+    /* TODO: provide an implementation of realpath. GNU libc? */
+    return file;
+#endif
 }
 
 VALUE
