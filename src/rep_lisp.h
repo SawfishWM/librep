@@ -470,7 +470,7 @@ typedef struct rep_vector_struct {
 #define rep_COMPILED_CONSTANTS(v) rep_VECTI(v, 2)
 
 /* Fourth is an integer: stack usage */
-#define rep_COMPILED_STACK(v)	rep_INT(rep_VECTI(v, 3))
+#define rep_COMPILED_STACK(v)	rep_VECTI(v, 3)
 
 #define rep_COMPILED_MIN_SLOTS	4
 
