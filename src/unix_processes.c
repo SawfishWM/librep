@@ -688,6 +688,7 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 		    if(rep_STRING_LEN(pr->pr_Dir) > 0)
 			chdir(rep_STR(pr->pr_Dir));
 		}
+		signal (SIGPIPE, SIG_DFL);
 
 		execvp(argv[0], argv);
 		perror("child subprocess can't exec");
@@ -1885,6 +1886,7 @@ rep_system (char *command)
 	argv[1] = "-c";
 	argv[2] = command;
 	argv[3] = 0;
+	signal (SIGPIPE, SIG_DFL);
 	execve ("/bin/sh", argv, environ);
 	perror ("exec /bin/sh");
 	exit (255);
