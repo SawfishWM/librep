@@ -42,6 +42,14 @@ main(int argc, char **argv)
 	    fputs("exiting due to error\n", stderr);
 	rep_throw_value = old_tv;
 	rep_POPGC;
+	return 10;
+    }
+
+    if (rep_throw_value
+	&& rep_CAR (rep_throw_value) == Qquit
+	&& rep_INTP (rep_CDR(rep_throw_value)))
+    {
+	return rep_INT (rep_CDR(rep_throw_value));
     }
 
     return 0;
