@@ -74,6 +74,14 @@ DEFSTRING(domain_error, "Domain error");
 # endif
 #endif
 
+/* XXX hmm.. */
+#if !defined (LONG_LONG_MAX)
+# define LONG_LONG_MAX LONG_MAX
+#endif
+#if !defined (LONG_LONG_MIN)
+# define LONG_LONG_MIN LONG_MIN
+#endif
+
 #if !defined (HAVE_STRTOLL) && defined (HAVE_STRTOQ)
 # define strtoll strtoq
 # define HAVE_STRTOLL 1
