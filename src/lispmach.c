@@ -186,7 +186,10 @@ list_ref (repv list, int elt)
     TOP = cmd (TOP, tmp2, tmp);		\
     NEXT;
 
-#define ERROR_OCCURRED_P (rep_throw_value || !TOP)
+/* We used to check for both rep_throw_value != 0, and TOP == 0. But since
+   rep_throw_value is a (volatile) global, this is slower than just
+   checking TOP (by about 1%) */
+#define ERROR_OCCURRED_P (TOP == rep_NULL)
 
 #ifndef THREADED_VM
 
@@ -213,6 +216,7 @@ list_ref (repv list, int elt)
 # define END_INSN }
 
 # define SAFE_NEXT	goto fetch
+# define INLINE_NEXT	if (!ERROR_OCCURRED_P) SAFE_NEXT; else HANDLE_ERROR
 # define NEXT		goto check_error
 # define RETURN		goto quit
 # define HANDLE_ERROR	goto error
@@ -255,6 +259,7 @@ list_ref (repv list, int elt)
     BEGIN_INSN(op)
 
 # define SAFE_NEXT	goto *cfa[FETCH]
+# define INLINE_NEXT	if (!ERROR_OCCURRED_P) SAFE_NEXT; else HANDLE_ERROR
 # define NEXT		goto check_error
 # define RETURN		goto quit
 # define HANDLE_ERROR	goto error
@@ -686,26 +691,9 @@ again:
 		TOP = rep_SUBRNFUN(tmp)(tmp2);
 		break;
 
-	    default:
-		tmp2 = Qnil;
-		if (rep_CONSP(tmp))
+	    case rep_Compiled:
+		if (was_closed && rep_bytecode_interpreter != 0)
 		{
-		    /* a call to intepreted code, just cons up the args
-		       and send it to the interpreter.. */
-		    POPN(-arg);
-		    while (arg--)
-			tmp2 = Fcons (RET_POP, tmp2);
-		    rep_POP_CALL (lc);
-		    TOP = rep_funcall(TOP, tmp2, rep_FALSE);
-		    NEXT;
-		}
-		else if (was_closed && rep_COMPILEDP(tmp))
-		{
-		    repv bindings;
-
-		    if (rep_bytecode_interpreter == 0)
-			goto invalid;
-
 		    if (impurity != 0 || *pc != OP_RETURN)
 		    {
 			TOP = APPLY (tmp, arg, stackp+1);
@@ -713,6 +701,7 @@ again:
 		    else
 		    {
 			/* A tail call that's safe for eliminating */
+			repv bindings;
 
 			/* snap the call stack */
 			rep_call_stack = lc.next;
@@ -753,14 +742,25 @@ again:
 		    }
 		}
 		else
-		{
-		invalid:
-		    Fsignal(Qinvalid_function, rep_LIST_1(TOP));
-		    HANDLE_ERROR;
-		}
+		    goto invalid;
+		break;
+
+	    case rep_Cons:
+		/* a call to intepreted code, just cons up the args
+		   and send it to the interpreter.. */
+		POPN(-arg);
+		for (tmp2 = Qnil; arg-- > 0;)
+		    tmp2 = Fcons (RET_POP, tmp2);
+		rep_POP_CALL (lc);
+		TOP = rep_funcall(TOP, tmp2, rep_FALSE);
+		NEXT;
+
+	    default:
+	    invalid:
+		TOP = Fsignal(Qinvalid_function, rep_LIST_1(TOP));
 	    }
 	    rep_POP_CALL(lc);
-	    NEXT;
+	    INLINE_NEXT;
 	END_INSN
 
 	BEGIN_INSN_WITH_ARG (OP_PUSH)
@@ -911,7 +911,7 @@ again:
 
 	BEGIN_INSN (OP_ENCLOSE)
 	    TOP = Fmake_closure (TOP, Qnil);
-	    NEXT;
+	    INLINE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_INIT_BIND)
@@ -922,7 +922,7 @@ again:
 	BEGIN_INSN (OP_UNBIND)
 	    SYNC_GC;
 	    impurity -= inline_unbind(BIND_RET_POP);
-	    NEXT;
+	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_DUP)
@@ -1017,7 +1017,7 @@ again:
 		}
 	    }
 	    TOP = rep_number_add (tmp2, tmp);
-	    NEXT;
+	    INLINE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_NEG)
@@ -1033,7 +1033,7 @@ again:
 		}
 	    }
 	    TOP = rep_number_neg (tmp);
-	    NEXT;
+	    INLINE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_SUB)
@@ -1050,7 +1050,7 @@ again:
 		}
 	    }
 	    TOP = rep_number_sub (tmp2, tmp);
-	    NEXT;
+	    INLINE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_MUL)
@@ -1122,48 +1122,80 @@ again:
 	    tmp = RET_POP;
 	    tmp2 = TOP;
 	    if (rep_INTP (tmp2) && rep_INTP (tmp))
+	    {
 		TOP = (rep_INT (tmp2) > rep_INT (tmp)) ? Qt : Qnil;
+		SAFE_NEXT;
+	    }
 	    else if (rep_NUMBERP (tmp2) || rep_NUMBERP (tmp))
+	    {
 		TOP = (rep_compare_numbers (tmp2, tmp) > 0) ? Qt : Qnil;
+		SAFE_NEXT;
+	    }
 	    else
+	    {
 		TOP = (rep_value_cmp (tmp2, tmp) > 0) ? Qt : Qnil;
-	    NEXT;
+		NEXT;
+	    }
 	END_INSN
 
 	BEGIN_INSN (OP_GE)
 	    tmp = RET_POP;
 	    tmp2 = TOP;
 	    if (rep_INTP (tmp2) && rep_INTP (tmp))
+	    {
 		TOP = (rep_INT (tmp2) >= rep_INT (tmp)) ? Qt : Qnil;
+		SAFE_NEXT;
+	    }
 	    else if (rep_NUMBERP (tmp2) || rep_NUMBERP (tmp))
+	    {
 		TOP = (rep_compare_numbers (tmp2, tmp) >= 0) ? Qt : Qnil;
+		SAFE_NEXT;
+	    }
 	    else
+	    {
 		TOP = (rep_value_cmp (tmp2, tmp) >= 0) ? Qt : Qnil;
-	    NEXT;
+		NEXT;
+	    }
 	END_INSN
 
 	BEGIN_INSN (OP_LT)
 	    tmp = RET_POP;
 	    tmp2 = TOP;
 	    if (rep_INTP (tmp2) && rep_INTP (tmp))
+	    {
 		TOP = (rep_INT (tmp2) < rep_INT (tmp)) ? Qt : Qnil;
+		SAFE_NEXT;
+	    }
 	    else if (rep_NUMBERP (tmp2) || rep_NUMBERP (tmp))
+	    {
 		TOP = (rep_compare_numbers (tmp2, tmp) < 0) ? Qt : Qnil;
+		SAFE_NEXT;
+	    }
 	    else
+	    {
 		TOP = (rep_value_cmp (tmp2, tmp) < 0) ? Qt : Qnil;
-	    NEXT;
+		NEXT;
+	    }
 	END_INSN
 
 	BEGIN_INSN (OP_LE)
 	    tmp = RET_POP;
 	    tmp2 = TOP;
 	    if (rep_INTP (tmp2) && rep_INTP (tmp))
+	    {
 		TOP = (rep_INT (tmp2) <= rep_INT (tmp)) ? Qt : Qnil;
+		SAFE_NEXT;
+	    }
 	    else if (rep_NUMBERP (tmp2) || rep_NUMBERP (tmp))
+	    {
 		TOP = (rep_compare_numbers (tmp2, tmp) <= 0) ? Qt : Qnil;
+		SAFE_NEXT;
+	    }
 	    else
+	    {
 		TOP = (rep_value_cmp (tmp2, tmp) <= 0) ? Qt : Qnil;
-	    NEXT;
+		NEXT;
+	    }
 	END_INSN
 
 	BEGIN_INSN (OP_INC)
@@ -1260,11 +1292,11 @@ again:
 	END_INSN
 
 	BEGIN_INSN (OP_CATCH)
-	    /* This takes two arguments, TAG and THROW-repv.
-	       THROW-repv is the saved copy of rep_throw_value,
-	       if (car THROW-repv) == TAG we match, and we
+	    /* This takes two arguments, TAG and THROW-VALUE.
+	       THROW-VALUE is the saved copy of rep_throw_value,
+	       if (car THROW-VALUE) == TAG we match, and we
 	       leave two values on the stack, nil on top (to
-	       pacify EJMP), (cdr THROW-repv) below that. */
+	       pacify EJMP), (cdr THROW-VALUE) below that. */
 	    tmp = RET_POP;		/* tag */
 	    tmp2 = TOP;		/* rep_throw_value */
 	    if(rep_CONSP(tmp2) && rep_CAR(tmp2) == tmp)
@@ -1272,14 +1304,17 @@ again:
 		TOP = rep_CDR(tmp2);	/* leave result at stk[1] */
 		PUSH(Qnil);		/* cancel error */
 	    }
-	    NEXT;
+	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_THROW)
 	    tmp = RET_POP;
-	    if(!rep_throw_value)
+	    if(rep_throw_value == rep_NULL)
+	    {
 		rep_throw_value = Fcons(TOP, tmp);
-	    NEXT;
+		HANDLE_ERROR;
+	    }
+	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_BINDERR)
@@ -1290,7 +1325,7 @@ again:
 	    tmp = RET_POP;
 	    BIND_PUSH (Fcons (Qerror, Fcons (tmp, rep_MAKE_INT(STK_USE))));
 	    impurity++;
-	    NEXT;
+	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_RETURN)
@@ -1304,7 +1339,7 @@ again:
 	    unbind_n (bindbase + 1, BIND_USE - 1);
 	    bindp = bindbase;
 	    impurity = rep_SPEC_BINDINGS (BIND_TOP);
-	    NEXT;
+	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_BOUNDP)
@@ -1655,7 +1690,7 @@ again:
 	    unbind_n (bindbase, BIND_USE);
 	    bindp = bindbase - 1;
 	    impurity = 0;
-	    NEXT;
+	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_CLOSUREP)
@@ -1697,10 +1732,15 @@ again:
 		SAFE_NEXT;
 	    }
 	    else if (rep_NUMBERP (tmp2) || rep_NUMBERP (tmp))
+	    {
 		TOP = (rep_compare_numbers (tmp2, tmp) == 0) ? Qt : Qnil;
+		SAFE_NEXT;
+	    }
 	    else
+	    {
 		TOP = (rep_value_cmp (tmp2, tmp) == 0) ? Qt : Qnil;
-	    NEXT;
+		NEXT;
+	    }
 	END_INSN
 
 	BEGIN_INSN (OP_TEST_SCM)
@@ -1811,11 +1851,7 @@ again:
 
 	END_DISPATCH
 	
-	/* Check if the instruction raised an exception.
-
-	   Checking for !TOP isn't strictly necessary, but I think
-	   there may still be some broken functions that return
-	   rep_NULL without setting rep_throw_value.. */
+	/* Check if the instruction raised an exception. */
     check_error:
 	if (ERROR_OCCURRED_P)
 	{
