@@ -704,6 +704,7 @@ again:
 	MARKVAL(VTX(val)->tx_ModeName);
 	MARKVAL(VTX(val)->tx_MinorModeNameList);
 	MARKVAL(VTX(val)->tx_MinorModeNameString);
+	MARKVAL(VTX(val)->tx_StatusId);
 	MARKVAL(VTX(val)->tx_GlyphTable);
 	MARKVAL(VTX(val)->tx_UndoList);
 	MARKVAL(VTX(val)->tx_ToUndoList);
@@ -737,6 +738,7 @@ again:
 	MARKVAL(VVIEW(val)->vw_DisplayOrigin);
 	MARKVAL(VVIEW(val)->vw_BlockS);
 	MARKVAL(VVIEW(val)->vw_BlockE);
+	MARKVAL(VVIEW(val)->vw_StatusOverride);
 	val = VAL(VVIEW(val)->vw_NextView);
 	if(val != 0 && !INTP(val) && !GC_MARKEDP(val) && !NILP(val))
 	    goto again;
