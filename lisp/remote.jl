@@ -34,7 +34,7 @@ accessed on specific hosts.")
   "Backend used for otherwise unspecified hosts.")
 
 ;; Remote filename syntax
-(defvar remote-file-regexp "^/((.*)@)?(.*):")
+(defvar remote-file-regexp "^/(([a-zA-Z0-9._-]+)@)?([a-zA-Z0-9._-]+):")
 
 
 ;; Entry point
@@ -103,4 +103,4 @@ accessed on specific hosts.")
 
 ;; Initialise handler
 
-;;;###autoload (setq file-handler-alist (cons '("^/((.*)@)?(.*):" . remote-file-handler) file-handler-alist))
+;;;###autoload (setq file-handler-alist (cons '("^/(([a-zA-Z0-9._-]+)@)?([a-zA-Z0-9._-]+):" . remote-file-handler) file-handler-alist))
