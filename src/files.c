@@ -97,9 +97,6 @@ Buffer-local variable absolutely defining the directory to which all files
 accessed in the buffer are resolved from (unless they're absolute.) 
 ::end:: */
 
-/* file-handler environment, (SYMBOL . FUNCTION) or Qt */
-repv rep_fh_env;
-
 /* List of all allocated file objects */
 static rep_file *file_list;
 
@@ -159,11 +156,27 @@ int rep_op_insert_file_contents = op_insert_file_contents;
 
 
 
+DEFSYM (rep_io_file_handlers, "rep.io.file-handlers");
+
 static inline repv
 get_fh_env (void)
 {
     repv ret = F_structure_ref (rep_structure, Qfh_env_key);
     return rep_VOIDP (ret) ? Qt : ret;
+}
+
+/* this is duplicated in rep/io/file-handlers.jl */
+static inline repv
+file_handler_ref (repv handler)
+{
+    repv tem = Fget_structure (Qrep_io_file_handlers);
+    if (tem != Qnil)
+    {
+	tem = F_structure_ref (tem, handler);
+	if (!tem || rep_VOIDP (tem))
+	    tem = Qnil;
+    }
+    return tem;
 }
 
 repv
@@ -238,7 +251,6 @@ rep_call_file_handler(repv handler, int op, repv sym, int nargs, ...)
     repv res;
     int i;
     va_list args;
-    struct rep_Call lc;
 
     va_start(args, nargs);
     for(i = 0; i < nargs; i++)
@@ -249,11 +261,6 @@ rep_call_file_handler(repv handler, int op, repv sym, int nargs, ...)
     va_end(args);
     arg_list = Fcons(sym, arg_list);
 
-    lc.fun = Qnil;
-    lc.args = Qnil;
-    lc.args_evalled_p = Qnil;
-    rep_PUSH_CALL(lc);
-
     /* before it gets dereferenced */
     op_data.handler = handler;
 
@@ -261,20 +268,14 @@ rep_call_file_handler(repv handler, int op, repv sym, int nargs, ...)
     {
 	repv fh_env = get_fh_env ();
 	if (fh_env == Qt)
-	{
-	    rep_USE_DEFAULT_ENV;
-	    handler = Fsymbol_value (handler, Qt);
-	}
+	    handler = file_handler_ref (handler);
 	else
 	{
 	    repv tem = Fassq (handler, fh_env);
 	    if (tem && rep_CONSP(tem))
 	    {
 		if (rep_CDR(tem) == Qt)
-		{
-		    rep_USE_DEFAULT_ENV;
-		    handler = Fsymbol_value (handler, Qt);
-		}
+		    handler = file_handler_ref (handler);
 		else if (rep_FUNARGP(rep_CDR(tem)))
 		    handler = rep_CDR(tem);
 	    }
@@ -294,7 +295,6 @@ rep_call_file_handler(repv handler, int op, repv sym, int nargs, ...)
     else
 	res = rep_NULL;
 
-    rep_POP_CALL(lc);
     return res;
 }
 
@@ -1625,6 +1625,10 @@ rep_files_init(void)
     rep_INTERN(start); rep_INTERN(end);
     rep_INTERN(read); rep_INTERN(write); rep_INTERN(append);
 
+    rep_INTERN(rep_io_file_handlers);
+
+    tem = rep_push_structure ("rep.io.files");
+
     rep_ADD_SUBR(Sfilep);
     rep_ADD_SUBR(Sfile_binding);
     rep_ADD_SUBR(Sfile_bound_stream);
@@ -1677,14 +1681,13 @@ rep_files_init(void)
     rep_ADD_SUBR(Smake_temp_name);
     rep_ADD_SUBR(Sset_file_handler_environment);
 
+    rep_pop_structure (tem);
+
     /* Initialise the type information. */
     rep_file_type = rep_register_new_type("file", rep_ptr_cmp,
 					  file_prin, file_prin, file_sweep,
 					  file_mark, mark_input_handlers,
 					  0, 0, 0, 0, 0, 0);
-
-    rep_fh_env = Qt;
-    rep_mark_static (&rep_fh_env);
 }
 
 void
