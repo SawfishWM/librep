@@ -707,9 +707,6 @@ again:
 	MARKVAL(VTX(val)->tx_FileName);
 	MARKVAL(VTX(val)->tx_CanonicalFileName);
 	MARKVAL(VTX(val)->tx_BufferName);
-	MARKVAL(VTX(val)->tx_ModeName);
-	MARKVAL(VTX(val)->tx_MinorModeNameList);
-	MARKVAL(VTX(val)->tx_MinorModeNameString);
 	MARKVAL(VTX(val)->tx_StatusId);
 	MARKVAL(VTX(val)->tx_UndoList);
 	MARKVAL(VTX(val)->tx_ToUndoList);
