@@ -1505,7 +1505,7 @@ Return an object that can be used as the function value of a symbol.
     if(len < rep_COMPILED_MIN_SLOTS)
 	return rep_signal_missing_arg(len + 1);
     
-    if(!rep_LISTP(rep_CAR(args)))
+    if(!rep_CONSP(rep_CAR(args)) && !rep_SYMBOLP(rep_CAR(args)))
 	return rep_signal_arg_error(rep_CAR(args), 1);
     obj[0] = rep_CAR(args); args = rep_CDR(args);
     if(!rep_STRINGP(rep_CAR(args)))
