@@ -894,12 +894,12 @@ event_loop(void)
 	}
 	else if(ready == 0)
 	{
-	    /* A timeout. The following isn't accurate, but it's
-	       not important */
-	    idle_period += EVENT_TIMEOUT_LENGTH;
-
+	    /* A timeout. */
 	    if(on_idle(idle_period))
 		refreshp = TRUE;
+
+	    /* The following isn't accurate, but it's not important */
+	    idle_period += EVENT_TIMEOUT_LENGTH;
 	}
 
 #ifdef HAVE_SUBPROCESSES

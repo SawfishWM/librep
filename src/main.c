@@ -209,20 +209,24 @@ inner_main(int argc, char **argv)
 
 /* This function gets called when we have idle time available. The
    single argument is the number of seconds since we weren't idle.
+   The first idle period after a non-idle period should pass zero.
    Returns TRUE if the display should be refreshed. */
 bool
 on_idle(long since_last_event)
 {
+    bool res = FALSE;
+
     /* A timeout; do one of:
 	* Remove messages in minibuffers
 	* Print the current key-prefix
 	* Auto-save a buffer
 	* GC if enough data allocated
 	* Run the `idle-hook'  */
+
     if(remove_all_messages(TRUE)
        || print_event_prefix()
        || auto_save_buffers(FALSE))
-	return TRUE;
+	res = TRUE;
     else if(data_after_gc > idle_gc_threshold)
 	/* nothing was saved so try a GC */
 	cmd_garbage_collect(sym_t);
@@ -232,10 +236,10 @@ on_idle(long since_last_event)
 	if(!VOIDP(hook) && !NILP(hook))
 	{
 	    cmd_call_hook(sym_idle_hook, sym_nil, sym_nil);
-	    return TRUE;
+	    res = TRUE;
 	}
     }
-    return FALSE;
+    return res;
 }
 
 /* The input loop should call this function when throw_value == LISP_NULL.
