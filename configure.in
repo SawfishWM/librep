@@ -201,6 +201,40 @@ if test "$with_readline" != "no"; then
 fi
 AC_SUBST(READLINE_LIBS)
 
+dnl Check for ffi
+AC_ARG_WITH(ffi,
+ [  --with-ffi              Support for ffi
+  --without-ffi           Don't use ffi], [], [with_ffi=maybe])
+
+if test "$with_ffi" != "no"; then
+  AC_ARG_WITH(ffi-prefix,
+  [  --with-ffi-prefix=DIR   path to ffi],
+  [ if test "$withval" != "no" -a "$withval" != "yes"; then
+    # Save in case test with directory specified fails
+    _cppflags=${CPPFLAGS}
+    _ldflags=${LDFLAGS}
+
+    CPPFLAGS="${CPPFLAGS} -I$withval/include"
+    LDFLAGS="${LDFLAGS} -L$withval/lib"
+  fi ])
+
+  AC_CHECK_HEADER(ffi.h,
+    AC_DEFINE(HAVE_FFI_H)
+    AC_CHECK_LIB(ffi, ffi_call,[
+      FFI_LIBS="-lffi"
+      AC_DEFINE(HAVE_LIBFFI)]))
+
+  if test -z "$FFI_LIBS"; then
+    if test "$with_ffi_prefix" = "yes"; then
+      AC_MSG_ERROR([Can't find libffi])
+    else
+      CPPFLAGS=${_cppflags}
+      LDFLAGS=${_ldflags}
+    fi
+  fi
+fi
+AC_SUBST(FFI_LIBS)
+
 dnl Check for dynamic loading
 AC_CHECK_HEADER(dlfcn.h, [AC_DEFINE(HAVE_DLFCN_H)])
 AC_CHECK_HEADER(dl.h, [AC_DEFINE(HAVE_DL_H)])
@@ -470,19 +504,14 @@ esac
 AC_MSG_RESULT([${rep_value_conv}])
 AC_DEFINE_UNQUOTED(rep_PTR_SIZED_INT_CONV, "${rep_value_conv}")
 
-dnl Check for size of long
+dnl Check for size of some types
 AC_CHECK_SIZEOF(long)
+AC_CHECK_SIZEOF(long long)
+AC_CHECK_SIZEOF(void *)
 
-dnl Check if `long long int' is available, also check it's size, if not
-dnl available, then set it's size to the same as long
-AC_MSG_CHECKING([for long long int])
-AC_TRY_COMPILE([],[long long int foo = 42;],
-	       [AC_MSG_RESULT(yes)
-		AC_DEFINE(rep_HAVE_LONG_LONG,1)
-		AC_CHECK_SIZEOF(long long)],
-	       [AC_MSG_RESULT(no)
-		AC_DEFINE(SIZEOF_LONG_LONG,SIZEOF_LONG)])
-
+if test "x$ac_cv_sizeof_long_long" != "x0"; then
+  AC_DEFINE(rep_HAVE_LONG_LONG,1)
+fi
 
 dnl This is the malloc granularity. It's unlikely that anything has
 dnl less alignment than the default value of the number of bytes in

@@ -1,8 +1,8 @@
 # $Id$
 
-# prints $$ to standard output
+# prints $arg0 to standard output
 define v
-call rep_print_val(Fstdout_file(), $)
+call rep_print_val(Fstdout_file(), $arg0)
 call rep_stream_putc(Fstdout_file(), '\n')
 end
 
