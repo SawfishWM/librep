@@ -159,23 +159,48 @@ fi
 
 dnl Check for readline
 AC_ARG_WITH(readline,
- [  --with-readline         support fancy command input editing], [],
- [with_readline=maybe])
+ [  --with-readline         support fancy command input editing
+  --without-readline      Don't use readline], [], [with_readline=maybe])
 
-dnl Only look if explicitly asked for..
-if test "$with_readline" = "yes"; then
-  READLINE_LIBS=""
-  AC_SUBST(READLINE_LIBS)
-  AC_CHECK_LIB(ncurses, tparm, TERMLIB=-lncurses,
-   AC_CHECK_LIB(termcap, tgetent, TERMLIB=-ltermcap))
-  saved_LIBS="$LIBS"
-  LIBS="$LIBS $TERMLIB"
-  AC_CHECK_LIB(readline, readline,
-   [AC_CHECK_HEADER(readline/readline.h,
-    [READLINE_LIBS="-lreadline $TERMLIB"
-     AC_DEFINE(HAVE_LIBREADLINE)])])
-  LIBS="$saved_LIBS"
+if test "$with_readline" != "no"; then
+  AC_ARG_WITH(readline-prefix,
+  [  --with-readline-prefix=DIR path to readline],
+  [ if test "$withval" != "no" -a "$withval" != "yes"; then
+    # Save in case test with directory specified fails
+    _cppflags=${CPPFLAGS}
+    _ldflags=${LDFLAGS}
+
+    CPPFLAGS="${CPPFLAGS} -I$withval/include"
+    LDFLAGS="${LDFLAGS} -L$withval/lib"
+  fi ])
+
+  dnl check for terminal library
+  dnl this is a very cool solution from octave's configure.in
+  unset tcap
+  for termlib in ncurses curses termcap terminfo termlib; do
+    AC_CHECK_LIB(${termlib}, tputs, [tcap="$tcap -l$termlib"])
+    case "$tcap" in
+      *-l${termlib}*)
+        break
+      ;;
+    esac
+  done
+
+  AC_CHECK_HEADER(readline/readline.h,
+    AC_CHECK_LIB(readline, readline,[
+      READLINE_LIBS="-lreadline $tcap"
+      AC_DEFINE(HAVE_LIBREADLINE)], , $tcap))
+
+  if test -z "$READLINE_LIBS"; then
+    if test "$with_readline_prefix" = "yes"; then
+      AC_MSG_ERROR([Can't find readline libraries])
+    else
+      CPPFLAGS=${_cppflags}
+      LDFLAGS=${_ldflags}
+    fi
+  fi
 fi
+AC_SUBST(READLINE_LIBS)
 
 dnl Check for dynamic loading
 AC_CHECK_HEADER(dlfcn.h, [AC_DEFINE(HAVE_DLFCN_H)])
@@ -444,8 +469,7 @@ dnl This is the malloc granularity. It's unlikely that anything has
 dnl less alignment than the default value of the number of bytes in
 dnl the value type
 AC_ARG_WITH(malloc-alignment,
- [  --with-malloc-alignment=BYTES
-			  Must be less than or equal to the alignment
+ [  --with-malloc-alignment=BYTES Must be less than or equal to the alignment
 			   returned by the malloc function. [BYTES=N]], [],
  [with_malloc_alignment=${with_value_sizeof}])
 AC_DEFINE_UNQUOTED(rep_MALLOC_ALIGNMENT, ${with_malloc_alignment})
@@ -463,8 +487,7 @@ fi
 
 AC_MSG_CHECKING([for stack growth direction])
 AC_ARG_WITH(stack-direction,
- [  --with-stack-direction=DIR
-			  Stack growth direction. -1 for downwards,
+ [  --with-stack-direction=DIR Stack growth direction. -1 for downwards,
 			   +1 for upwards.],
  [AC_MSG_RESULT(${with_stack_direction})],
  [with_stack_direction=unknown])
