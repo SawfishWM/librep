@@ -1004,7 +1004,7 @@ new_thread (repv name)
 }
 
 static rep_thread *
-make_thread (repv thunk, repv name)
+make_thread (repv thunk, repv name, rep_bool suspended)
 {
     repv ret;
     rep_GC_root gc_thunk;
@@ -1014,13 +1014,15 @@ make_thread (repv thunk, repv name)
 	return 0;
 
     t = new_thread (name);
+    if (suspended)
+	t->car |= TF_SUSPENDED;
     thread_save_environ (t);
 
     if (root_barrier->active == 0)
     {
 	/* entering threaded execution. make the default thread */
 	rep_thread *x = new_thread (Qnil);
-	thread_save_environ (t);
+	thread_save_environ (x);
 	/* this continuation will never get called,
 	   but it simplifies things.. */
 	if (primitive_call_cc (inner_make_thread, x, 0) != -1)
@@ -1521,7 +1523,23 @@ parameters.
 ::end:: */
 {
 #ifdef WITH_CONTINUATIONS
-    return rep_VAL (make_thread (thunk, name));
+    return rep_VAL (make_thread (thunk, name, rep_FALSE));
+#else
+    return call_cc_missing ();
+#endif
+}
+
+DEFUN("make-suspended-thread", Fmake_suspended_thread, Smake_suspended_thread,
+      (repv thunk, repv name), rep_Subr2) /*
+::doc:rep.threads#make-suspended-thread::
+make-suspended-thread THUNK [NAME]
+
+Identical to `make-thread', except that the created thread will be
+immediately put in the suspended state.
+::end:: */
+{
+#ifdef WITH_CONTINUATIONS
+    return rep_VAL (make_thread (thunk, name, rep_TRUE));
 #else
     return call_cc_missing ();
 #endif
@@ -1815,6 +1833,7 @@ rep_continuations_init (void)
 
     tem = rep_push_structure ("rep.threads");
     rep_ADD_SUBR(Smake_thread);
+    rep_ADD_SUBR(Smake_suspended_thread);
     rep_ADD_SUBR(Sthread_yield);
     rep_ADD_SUBR(Sthread_delete);
     rep_ADD_SUBR(Sthread_suspend);

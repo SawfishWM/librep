@@ -5160,6 +5160,11 @@ returns the thread is automatically deleted.
 If @var{name} is defined, it is a string naming the current thread.
 @end defun
 
+@defun make-suspended-thread @t{#!optional} name
+Similar to @code{make-thread}, except that the newly created thread
+will be immediately suspended from running.
+@end defun
+
 @defun current-thread
 Returns the currently executing thread. If no threads have been created
 yet in the current dynamic root (i.e. there is a single ``implicit''
