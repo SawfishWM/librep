@@ -41,6 +41,10 @@
 ;; within a with-internal-definitions block) [the reason for this
 ;; ugliness is to avoid redefining lambda]
 
+;; List of currently bound variables. Used to avoid expanding macros
+;; that have been rebound locally
+(%define define-bound-vars (make-fluid '()))
+
 ;; returns (SYM DEF [DOC])
 (defun define-parse (args)
   (if (consp (car args))
@@ -68,32 +72,75 @@
   `(mapcar (lambda (f)
 	     (define-scan-form f)) ,body))
 
+(defun define-macroexpand-1 (form)
+  (if (memq (car form) (fluid define-bound-vars))
+      form
+    (macroexpand-1 form macro-environment)))
+
 ;; This needs to handle all special forms. It also needs to handle any
 ;; macros that the compiler wants to see without being expanded..
 (defun define-scan-form (form)
   (if (atom form)
       form
-    (case (car form)
-      ((let let* letrec let-fluids)
+    (case (if (memq (car form) (fluid define-bound-vars)) '() (car form))
+      ((let)
        (if (and (eq (car form) 'let) (cadr form) (symbolp (cadr form)))
 	   ;; named let, expand
-	   (define-scan-form (macroexpand-1 form macro-environment))
-	 (let* ((type (car form))
-		fun values body)
-	   (setq form (cdr form))
-	   (when (and (eq type 'let) (car form) (symbolp (car form)))
-	     (setq fun (car form))
-	     (setq form (cdr form)))
-	   (setq values (mapcar (lambda (lst)
-				  (if (consp lst)
-				      (cons (car lst) (define-scan-body
-						       (cdr lst)))
-				    lst))
-				(car form)))
-	   (setq body (define-scan-internals (cdr form)))
-	   (if fun
-	       (list type fun values body)
-	     (list type values body)))))
+	   (define-scan-form (define-macroexpand-1 form))
+	 (let loop ((rest (cadr form))
+		    (vars '())
+		    (clauses '()))
+	   (cond ((null rest)
+		  (list 'let (nreverse clauses)
+			(let-fluids ((define-bound-vars
+				      (nconc vars (fluid define-bound-vars))))
+			  (define-scan-internals (cddr form)))))
+		 ((consp (car rest))
+		  (loop (cdr rest)
+			(cons (caar rest) vars)
+			(cons (cons (caar rest)
+				    (define-scan-body (cdar rest))) clauses)))
+		 (t (loop (cdr rest)
+			  (cons (car rest) vars)
+			  (cons (car rest) clauses)))))))
+
+      ((let*)
+       (let-fluids ((define-bound-vars (fluid define-bound-vars)))
+	 (let loop ((rest (cadr form))
+		    (clauses '()))
+	   (cond ((null rest)
+		  (list 'let* (nreverse clauses)
+			(define-scan-internals (cddr form))))
+		 ((consp (car rest))
+		  (fluid-set define-bound-vars
+			     (cons (caar rest) (fluid define-bound-vars)))
+		  (loop (cdr rest)
+			(cons (cons (caar rest)
+				    (define-scan-body (cdar rest))) clauses)))
+		 (t
+		  (fluid-set define-bound-vars
+			     (cons (car rest) (fluid define-bound-vars)))
+		  (loop (cdr rest)
+			(cons (car rest) clauses)))))))
+
+      ((letrec)
+       (let-fluids ((define-bound-vars
+		     (nconc (mapcar (lambda (x) (or (car x) x)) (cadr form))
+			    (fluid define-bound-vars))))
+	 (list 'letrec
+	       (mapcar (lambda (x)
+			 (if (consp x)
+			     (cons (car x) (define-scan-body (cdr x)))
+			   x)) (cadr form))
+	       (define-scan-internals (cddr form)))))
+
+      ((let-fluids)
+       (list 'let-fluids
+	     (mapcar (lambda (x)
+		       (if (consp x)
+			   (cons (car x) (define-scan-body (cdr x)))
+			 x)) (cadr form))
+	     (define-scan-internals (cddr form))))
 
       ((setq)
        (let loop ((rest (cdr form))
@@ -116,7 +163,10 @@
 		      (nthcdr 2 form))))
 
       ((condition-case)
-       (list* 'condition-case (nth 1 form) (define-scan-body (nthcdr 2 form))))
+       (let ((var (if (eq (cadr form) 'nil) nil (cadr form))))
+	 (let-fluids ((define-bound-vars (cons var (fluid define-bound-vars))))
+	   (list* 'condition-case (cadr form)
+		  (define-scan-body (cddr form))))))
 
       ((catch unwind-protect progn)
        (cons (car form) (define-scan-body (cdr form))))
@@ -124,7 +174,15 @@
       ((quote structure-ref) form)
 
       ((lambda)
-       (let ((body (nthcdr 2 form))
+       (let ((vars (let loop ((rest (cadr form))
+			      (vars '()))
+		     (cond ((null rest) vars)
+			   ((memq (or (caar rest) (car rest))
+				  '(#!optional #!key #!rest &optional &rest))
+			    (loop (cdr rest) vars))
+			   (t (loop (cdr rest) (cons (or (caar rest)
+							 (car rest)) vars))))))
+	     (body (nthcdr 2 form))
 	     (header nil))
 	 ;; skip doc strings and interactive decls..
 	 (while (or (stringp (car body)) (eq (caar body) 'interactive))
@@ -132,7 +190,9 @@
 	   (setq body (cdr body)))
 	 `(lambda ,(cadr form)
 	    ,@(nreverse header)
-	    ,(define-scan-internals body))))
+	    ,(let-fluids ((define-bound-vars
+			   (nconc vars (fluid define-bound-vars))))
+	       (define-scan-internals body)))))
 
       ((defvar)
        (list* 'defvar (nth 1 form) (define-scan-form (nth 2 form))
@@ -140,7 +200,7 @@
 
       ((structure define-structure) form)
 
-      (t (let ((expansion (macroexpand-1 form macro-environment)))
+      (t (let ((expansion (define-macroexpand-1 form)))
 	   (if (eq expansion form)
 	       (define-scan-body form)
 	     (define-scan-form expansion)))))))
