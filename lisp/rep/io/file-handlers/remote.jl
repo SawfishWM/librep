@@ -44,6 +44,9 @@ explicitly, or by the remote-ftp-host-user-alist variable.")
 ;; Remote filename syntax
 (defvar remote-file-regexp "^/(([a-zA-Z0-9._-]+)@)?([a-zA-Z0-9._-]+):")
 
+;; guards remote file handles (closes them if necessary)
+(defvar remote-fh-guardian (make-guardian))
+
 
 ;; Entry point
 
@@ -115,6 +118,18 @@ explicitly, or by the remote-ftp-host-user-alist variable.")
 ;; Create a remote file name. USER may be nil
 (defun remote-join-filename (user host file)
   (concat ?/ (and user (concat user ?@)) host ?: file))
+
+(defun remote-register-file-handle (fh)
+  (remote-fh-guardian fh))
+
+(defun remote-after-gc ()
+  (let
+      (fh)
+    (while (setq fh (remote-fh-guardian))
+      (when (file-binding fh)
+	(close-file fh)))))
+
+(add-hook 'after-gc-hook remote-after-gc)
 
 
 ;; Initialise handler
