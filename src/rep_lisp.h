@@ -120,7 +120,7 @@ enum ValueType
 #define FILEP(v)	VTYPEP(v, V_File)
 #define PROCESSP(v)	VTYPEP(v, V_Process)
 #define WINDOWP(v)	(VTYPEP(v, V_Window) && VWIN(v)->w_Window)
-#define VIEWP(v)	VTYPEP(v, V_View)
+#define VIEWP(v)	(VTYPEP(v, V_View) && VVIEW(v)->vw_Win)
 #define GLYPHTABP(v)	VTYPEP(v, V_GlyphTable)
 #define VOIDP(v)	VTYPEP(v, V_Void)
 
