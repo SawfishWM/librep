@@ -1,8 +1,8 @@
-#| opt.jl -- low-level compiler optimisations
+#| peephole.jl -- peephole optimizer for rep assembly code
 
    $Id$
 
-   Copyright (C) 1999 John Harper <john@dcs.warwick.ac.uk>
+   Copyright (C) 1999, 2000 John Harper <john@dcs.warwick.ac.uk>
 
    This file is part of librep.
 
@@ -26,7 +26,7 @@
 
 (declare (unsafe-for-call/cc))
 
-(define-structure rep.vm.compiler.opt
+(define-structure rep.vm.peephole
 
     (export peephole-optimizer)
 
