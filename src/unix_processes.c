@@ -1980,10 +1980,12 @@ rep_system (char *command)
 {
     int pid, status;
     int interrupt_count = 0;
+
     pid = fork ();
     switch (pid)
     {
 	char *argv[4];
+	repv ret;
 	DEFSTRING (cant_fork, "can't fork ()");
 
     case -1:
@@ -2001,8 +2003,13 @@ rep_system (char *command)
 	_exit (255);
 
     default:
-	do {
+	ret = Qnil;
+	rep_sig_restart (SIGCHLD, rep_FALSE);
+	while (1)
+	{
 	    struct timeval timeout;
+	    int x;
+
 	    rep_TEST_INT_SLOW;
 	    if (rep_INTERRUPTP)
 	    {
@@ -2013,26 +2020,30 @@ rep_system (char *command)
 		if (rep_throw_value == rep_int_cell)
 		    rep_throw_value = rep_NULL;
 	    }
-	    timeout.tv_sec = 1;
-	    timeout.tv_usec = 0;
-	    rep_sig_restart (SIGCHLD, rep_FALSE);
-	    select (FD_SETSIZE, NULL, NULL, NULL, &timeout);
-	    rep_sig_restart (SIGCHLD, rep_TRUE);
-	    switch (waitpid(pid, &status, WNOHANG))
+
+	    x = waitpid (pid, &status, WNOHANG);
+	    if (x == -1)
 	    {
-	    case 0:
-		break;
-	    case -1:
 		if (errno != EINTR && errno != EAGAIN)
 		{
 		    DEFSTRING (cant_waitpid, "can't waitpid ()");
-		    return Fsignal (Qerror, Fcons (rep_VAL (&cant_waitpid), Qnil));
+		    ret = Fsignal (Qerror,
+				   Fcons (rep_VAL (&cant_waitpid), Qnil));
+		    break;
 		}
-		break;
-	    default:
-		return rep_MAKE_INT (status);
 	    }
-	} while (1);
+	    else if (x == pid)
+	    {
+		ret = rep_MAKE_INT (status);
+		break;
+	    }
+
+	    timeout.tv_sec = 1;
+	    timeout.tv_usec = 0;
+	    select (FD_SETSIZE, NULL, NULL, NULL, &timeout);
+	}
+	rep_sig_restart (SIGCHLD, rep_TRUE);
+	return ret;
     }
 }
 

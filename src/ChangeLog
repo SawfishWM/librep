@@ -1,3 +1,11 @@
+2003-10-28  John Harper  <jsh@unfactored.org>
+
+	* unix_processes.c (rep_system): rearranged code so we don't
+	wait in select () when the process has already exited
+
+	* readline.c: include <unistd.h>, and conditionalize header
+	inclusions where appropriate
+
 2003-09-03  John Harper  <jsh@unfactored.org>
 
 	* unix_dl.c: fixes for Mac OS X
