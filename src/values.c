@@ -630,7 +630,8 @@ run_guardians (void)
 	    {
 		/* move object to inaccessible list */
 		struct saved *new;
-		*ptr = rep_CDR (cell);
+		/* have to preserve the cons mark bit in *ptr */
+		*ptr = rep_GCDR (cell) | (*ptr & rep_VALUE_CONS_MARK_BIT);
 		rep_CDR (cell) = g->inaccessible;
 		g->inaccessible = cell;
 
