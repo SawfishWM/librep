@@ -980,6 +980,24 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		pc += 2;
 		break;
 
+	    case OP_JPN:
+		if(NILP(TOP))
+		{
+		    POP;
+		    goto do_jmp;
+		}
+		pc += 2;
+		break;
+
+	    case OP_JPT:
+		if(!NILP(TOP))
+		{
+		    POP;
+		    goto do_jmp;
+		}
+		pc += 2;
+		break;
+
 	    case OP_JNP:
 		if(NILP(TOP))
 		    goto do_jmp;
