@@ -1,0 +1,88 @@
+# Makefile for Jade version 3
+# Copyright (C) 1993, 1994 John Harper <john@dcs.warwick.ac.uk>
+# $Id$
+
+# Jade is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+
+# Jade is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with Jade; see the file COPYING.  If not, write to
+# the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
+
+VERSION = 4.0
+
+SHELL = /bin/sh
+INSTALL = install
+INSTALL_PROG = $(INSTALL)
+INSTALL_DATA = $(INSTALL) -m 0644
+CPP = /lib/cpp
+CFLAGS = -g
+LDFLAGS =
+
+# Default directory to install in. Override the `prefix' arg on the command
+# line if you want.
+prefix := /usr/local
+exec_prefix := $(prefix)
+bindir := $(exec_prefix)/bin
+infodir := $(prefix)/info
+datadir := $(prefix)/lib
+jadedir := $(datadir)/jade/$(VERSION)
+lispdir := $(jadedir)/lisp
+
+CLEANDIRS = src lisp man
+
+all : src/Makefile
+	(cd src && $(MAKE))
+
+src/Makefile : src/Makefile.in src/config.h
+	(cd src \
+	&& $(CPP) $(CPPFLAGS) -D_JADE_DIR=$(jadedir) \
+	   -D_CFLAGS="$(CFLAGS)" -D_LDFLAGS="$(LDFLAGS)" Makefile.in Makefile \
+	|| rm -f Makefile)
+
+NEWS : man/news.texi
+	(cd man && $(MAKE) ../NEWS )
+
+install : all installdirs
+	$(INSTALL_PROG) src/jade $(bindir)/jade
+	$(INSTALL_PROG) src/jadeclient $(bindir)/jadeclient
+	(cd man && $(MAKE) install.info 'INSTALL_DATA=$(INSTALL_DATA)' \
+		infodir=$(infodir))
+	(cd lisp && $(MAKE) install lispdir=$(lispdir) bindir=$(bindir) \
+		'INSTALL_DATA=$(INSTALL_DATA)')
+
+installdirs :
+	$(SHELL) mkinstalldirs $(jadedir) $(bindir) $(infodir) $(lispdir)
+
+uninstall :
+	rm -f $(bindir)/jade $(bindir)/jadeclient
+	(cd man && $(MAKE) uninstall.info infodir=$(infodir))
+	(cd lisp && $(MAKE) uninstall lispdir=$(lispdir))
+	rm -rf $(jadedir)
+
+lispfiles :
+	(cd lisp && $(MAKE) lisp BINDIR=src)
+
+tar :
+	tar -zcT FILES -f jade.tar.gz
+
+distfiles : all NEWS
+	(cd dist && $(MAKE) VERSION=$(VERSION))
+
+nobak :
+	rm -f *~ */*~
+
+clean :
+	rm -f *~ NEWS
+	set -e; for dir in $(CLEANDIRS); do $(MAKE) -C $$dir clean; done
+
+realclean :
+	rm -f *~ NEWS
+	set -e; for dir in $(CLEANDIRS); do $(MAKE) -C $$dir realclean; done
