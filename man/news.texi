@@ -4,6 +4,137 @@
 @cindex News
 
 
+@unnumberedsec 0.13
+
+@itemize @bullet
+
+@item The end-of-list / boolean-false object is no longer the symbol
+@code{nil}. Instead there is a special object @code{()} fulfulling
+these two roles. For modules importing the @code{rep} module, the
+symbol @code{nil} evaluates to @code{()}. This allows the @code{scheme}
+module to be more compliant with the Scheme standard
+
+@item Parameter list changes:
+
+@itemize @minus
+@item Deprecated @code{&optional} and @code{&rest}, in favour of
+@code{#!optional} and @code{#!rest}.
+
+@item Added keyword parameters. Use @code{#!key} to declare them.
+Keyword syntax is @samp{#:@var{param}}. For example:
+
+@lisp
+((lambda (#!key a b) (list a b)) #:b 2 #:a 1) @result{} (1 2)
+@end lisp
+
+@item @code{#!optional} and @code{#!key} parameters may now have
+default values, syntax is @code{(@var{var} @var{default})}. For
+example:
+
+@lisp
+((lambda (#!optional (a 1)) a)) @result{} 1
+@end lisp
+@end itemize
+
+@item The module namespace is now hierarchical. @samp{.} characters in
+module names denote directory separators, e.g. @samp{foo.bar}
+translates to the file @file{foo/bar}
+
+All module names prefixed with @samp{rep.} are reserved for librep,
+other top-level names should be picked to be as unique as possible
+
+The existing modules have been renamed to fit this scheme (see the file
+@file{TREE} in the distribution for the hierarchy details). However,
+old module names will still work for the time being
+
+@item Incompatible virtual machine changes, hence bytecode files will
+need to be recompiled. Improvements include:
+
+@itemize @minus
+@item Only heap-allocate variables when absolutely necessary
+
+@item Closure analysis to allow inlining of some types of @code{letrec}
+expressions
+
+@item Added a `safe' virtual machine, which makes no assumptions
+regarding validity of bytecode, so is safe for untrusted code
+@end itemize
+
+@item Added an @code{unscheme} module. Another Scheme implementation,
+but the goal of this one is to integrate cleanly with the librep
+runtime environment, even if this is at the expense of R4RS compliance
+
+For example, in @code{unscheme} code, @code{#f @result{} ()} and
+@code{#t @result{} t}. This allows rep and unscheme functions to call
+each other without needing to convert any data
+
+@item By default, it is now illegal to modify top-level variables that
+have not previously been defined
+
+@item New macro @code{define-structures} to export multiple views of a
+single underlying environment
+
+@item The librep runtime no longer handles the @samp{--help} option
+itself, this should be done by scripts
+
+@item Don't search @code{$LD_LIBRARY_PATH} for plugins, but prepend all
+directories in colon-separated @code{$REP_DL_LOAD_PATH} to
+@code{dl-load-path}. Similarly, the contents of @code{$REP_LOAD_PATH}
+is prepended to @code{rep-load-path}
+
+@item @code{(/ @var{x}) @result{} (/ 1 @var{x})}
+
+@item @code{#f} and @code{#t} are now primitive symbols, not special
+objects
+
+@item Special case tail-recursive calls to @code{apply}, to ensure they
+get eliminated
+
+@item The @samp{0x123} and @samp{0123} read syntaxes have been
+deprecated, use @samp{#x123} and @samp{#o123} instead
+
+@item @samp{#| @dots{} |#} comments now nest correctly
+
+@item New modules: @code{rep.i18n.gettext},
+@code{rep.vm.safe-interpreter}, @code{rep.vm.assembler},
+@code{unscheme}, @code{rep.data.objects}, @code{rep.www.quote-url},
+@code{rep.www.fetch-url}, @code{rep.util.ispell},
+@code{rep.util.base64}, @code{rep.util.autoloader}
+
+@item Bug fixes, including:
+
+@itemize @minus
+
+@item Find size of @code{long long} type on AIX, IRIX and Solaris (Dan
+McNichol, Albert Chin-A-Young)
+
+@item Never allow macros to be called as functions
+
+@item Make bitfields unsigned (Albert Chin-A-Young)
+
+@item Fixed bounds-checking when parsing non-base-10 fixnums
+
+@item Thread fixes (and much lower thread-switch latency in many cases)
+
+@item Fixed @code{DEFUN} macro for C++ (Matt Tucker); also fixed header
+files to avoid C++ keywords
+
+@item Make error message for bytecode version mismatches more
+meaningful
+
+@item Fixed: @code{default-boundp}, @code{continuation-callable-p}
+
+@item Only the evaluate the value of @code{defvar} forms if the symbol
+isn't already bound
+
+@item Compile else-less @code{case} expressions correctly; eliminate
+tail-recursion in @code{cond} forms when possible
+
+@item Various fixes in @code{scheme} module
+@end itemize
+@end itemize
+
+
 @unnumberedsec 0.12.4
 
 @itemize @bullet

@@ -10,6 +10,8 @@ and more long-term ideas are marked -
 Outstanding bugs
 ================
 
+ ! modules with `(set-binds)' config shouldn't inline constants?
+
  ! #!key params can't be inlined by the compiler
 
  ! (define foo bar "Doc") should do something with "Doc"
