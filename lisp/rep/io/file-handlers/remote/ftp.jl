@@ -1,4 +1,4 @@
-;;;; remote-ftp.jl -- Remote file access via ftp
+;;;; remote-ftp.jl -- Remote file access via FTP
 ;;;  Copyright (C) 1998 John Harper <john@dcs.warwick.ac.uk>
 ;;;  $Id$
 
@@ -26,19 +26,19 @@
 ;; Configuration:
 
 (defvar ftp-program "ftp"
-  "Program used for ftp sessions.")
+  "Program used for FTP sessions.")
 
 (defvar remote-ftp-args '("-v" "-n" "-i" "-g")
-  "List of arguments to remote ftp sessions.")
+  "List of arguments to remote FTP sessions.")
 
 (defvar remote-ftp-show-messages t
   "When t, informational messages from FTP sessions are displayed.")
 
 (defvar remote-ftp-max-message-lines nil
-  "When non-nil, the maximum number of message lines to keep.")
+  "When non-nil, the maximum number of FTP message lines to keep.")
 
 (defvar remote-ftp-timeout 30
-  "Number of seconds to wait for ftp output before giving up.")
+  "Number of seconds to wait for FTP output before giving up.")
 
 (defvar remote-ftp-max-sessions 5
   "If non-nil, the maximum number of FTP clients that may be running
@@ -50,8 +50,18 @@ concurrently.")
 (defvar remote-ftp-anon-passwd user-mail-address
   "Password sent to anonymous FTP sessions.")
 
+;; XXX Allow this to be set by filename?
+(defvar remote-ftp-transfer-type 'binary
+  "Mode in which to transfer files, one of the symbols `binary' or `ascii'.")
+
+(defvar remote-ftp-display-progress t
+  "When non-nil, show progress of FTP transfers.")
+
+(defvar remote-ftp-passwd-alist nil
+  "Alist of (USER@HOST . PASSWD) defining all known FTP passwords.")
+
 (defvar remote-ftp-sessions nil
-  "List of ftp structures defining all running ftp sessions.")
+  "List of FTP structures defining all running FTP sessions.")
 
 
 ;; Output templates, mostly copied from ange-ftp :-)
@@ -63,6 +73,9 @@ concurrently.")
 (defvar remote-ftp-good-msgs
   "220 |230 |226 |25. |221 |200 |[Hh]ash mark"
   "Regular expression matching ftp \"success\" messages.")
+
+(defvar remote-ftp-bad-msgs "55. |500 "
+  "Regular expression matching ftp \"failure\" messages.")
 
 (defvar remote-ftp-skip-msgs
   (concat "200 (PORT|Port) |331 |150 |350 |[0-9]+ bytes |"
@@ -96,12 +109,13 @@ file types.")
 (defconst remote-ftp-host 0)
 (defconst remote-ftp-user 1)
 (defconst remote-ftp-process 2)
-(defconst remote-ftp-status 3)		;ready,busy,nil
+(defconst remote-ftp-status 3)		;success,failure,busy,nil,dying,dead
 (defconst remote-ftp-callback 4)
 (defconst remote-ftp-cached-dir 5)
 (defconst remote-ftp-dircache 6)
 (defconst remote-ftp-pending-output 7)
-(defconst remote-ftp-struct-size 8)
+(defconst remote-ftp-progress 8)
+(defconst remote-ftp-struct-size 9)
 
 (defmacro remote-ftp-status-p (session stat)
   `(eq (aref ,session remote-ftp-status) ,stat))
@@ -184,9 +198,11 @@ file types.")
 	 (error "FTP process timed out (%s)" (or type "unknown")))))
 
 (defun remote-ftp-command (session type format &rest args)
+  (aset session remote-ftp-progress nil)
   (remote-ftp-while session 'busy type)
   (remote-ftp-write session format args)
-  (remote-ftp-while session 'busy type))
+  (remote-ftp-while session 'busy type)
+  (eq (aref session remote-ftp-status) 'success))
 
 (defun remote-ftp-output-filter (session output)
 ;  (let
@@ -199,8 +215,18 @@ file types.")
       ((point 0)
        line-end)
     (while (< point (length output))
-      (while (string-looking-at "ftp> *" output point)
+      ;; Skip any prompts
+      (when (string-looking-at "(ftp> *)+" output point)
 	(setq point (match-end)))
+      ;; Look for `#' progress characters
+      (when (string-looking-at "#+" output point)
+	(setq point (match-end))
+	(aset session remote-ftp-progress
+	      (+ (or (aref session remote-ftp-progress) 0)
+		 (- (match-end) (match-start))))
+	(message (format nil "FTP transfer: %dk"
+			 ;; XXX Assumes each # is one kilobyte
+			 (aref session remote-ftp-progress)) t))
       (if (string-looking-at remote-ftp-passwd-msgs output point)
 	  ;; Send password
 	  (progn
@@ -209,9 +235,8 @@ file types.")
 	     (list (if (string-match remote-ftp-anon-users
 				     (aref session remote-ftp-user))
 		       remote-ftp-anon-passwd
-		     (pwd-prompt (format nil "Password for %s@%s:"
-					 (aref session remote-ftp-user)
-					 (aref session remote-ftp-host))))))
+		     (remote-ftp-get-passwd (aref session remote-ftp-user)
+					    (aref session remote-ftp-host)))))
 	    ;; Can't be anything more?
 	    (setq point (length output)))
 	(if (string-match "\n" output point)
@@ -221,35 +246,28 @@ file types.")
 	      (cond
 	       ((string-looking-at remote-ftp-skip-msgs output point)
 		;; Ignore this line of output
-;		(format (stderr-file) "Ignoring line: %S\n"
-;			(substring output point line-end))
 		(setq point line-end))
 	       ((string-looking-at remote-ftp-good-msgs output point)
 		;; Success!
-;		(format (stderr-file) "Success line: %S\n"
-;			(substring output point line-end))
-		(aset session remote-ftp-status 'ready)
+		(aset session remote-ftp-status 'success)
+		(setq point line-end))
+	       ((string-looking-at remote-ftp-bad-msgs output point)
+		;; Failure!
+		(aset session remote-ftp-status 'failure)
 		(setq point line-end))
 	       ((string-looking-at remote-ftp-multi-msgs output point)
 		;; One line of a multi-line message
-;		(format (stderr-file) "Multi line: %S\n"
-;			(substring output point line-end))
 		(remote-ftp-show-multi output point line-end)
 		(setq point line-end))
 	       ((string-looking-at remote-ftp-fatal-msgs output point)
 		;; Fatal error. Kill the session
-;		(format (stderr-file) "Fatal line: %S\n"
-;			(substring output point line-end))
 		(remote-ftp-close-session session)
 		(error "FTP process had fatal error"))
 	       (t
 		;; Hmm. something else. If one exists invoke the callback
 		(if (aref session remote-ftp-callback)
 		    (funcall (aref session remote-ftp-callback)
-			     session output point line-end)
-;		  (format (stderr-file) "Dropping line: %S\n"
-;			  (substring output point line-end))
-		  )
+			     session output point line-end))
 		(setq point line-end))))
 	  ;; A partial line. Store it as pending
 	  (aset session remote-ftp-pending-output (substring output point))
@@ -288,7 +306,11 @@ file types.")
 ;; Starts the process structure already defined in SESSION, then
 ;; logs in as the named user
 (defun remote-ftp-login (session)
-  (remote-ftp-command session 'login "user %s" (aref session remote-ftp-user)))
+  (and (remote-ftp-command session 'login "user %s"
+			   (aref session remote-ftp-user))
+       (remote-ftp-command session 'type "type %s" remote-ftp-transfer-type)
+       (and remote-ftp-display-progress
+	    (remote-ftp-command session 'hash "hash"))))
 
 (defun remote-ftp-get (session remote-file local-file)
   (remote-ftp-command session 'get "get %s %s" remote-file local-file))
@@ -304,6 +326,12 @@ file types.")
 
 (defun remote-ftp-rmdir (session remote-dir)
   (remote-ftp-command session 'rmdir "rmdir %s" remote-dir))
+
+(defun remote-ftp-mkdir (session remote-dir)
+  (remote-ftp-command session 'mkdir "mkdir %s" remote-dir))
+
+(defun remote-ftp-chmod (session mode file)
+  (remote-ftp-command session 'chmod "chmod %o %s" mode file))
 
 
 ;; Directory handling/caching
@@ -348,8 +376,21 @@ file types.")
 
 (defun remote-ftp-file-modes (file-struct)
   (unless (aref file-struct remote-ftp-file-modes)
-    ;; XXX Magically translate mode-string to numeric value
-    (aset file-struct remote-ftp-file-modes 0644))
+    (let*
+	((string (aref file-struct remote-ftp-file-mode-string))
+	 (tuple-function
+	  #'(lambda (point tuple)
+	      (+ (ash (+ (if (/= (aref string point) ?-) 4 0)
+			 (if (/= (aref string (1+ point)) ?-) 2 0)
+			 (if (lower-case-p (aref string (+ point 2))) 1 0))
+		      (* tuple 3))
+		 (if (memq (aref string (+ point 2)) '(?s ?S ?t ?T))
+		     (ash 01000 tuple)
+		   0)))))
+      (aset file-struct remote-ftp-file-modes
+	    (+ (funcall tuple-function 1 2)
+	       (funcall tuple-function 4 1)
+	       (funcall tuple-function 7 0)))))
   (aref file-struct remote-ftp-file-modes))
 
 (defun remote-ftp-file-owner-p (session file)
@@ -388,6 +429,35 @@ file types.")
     (when file-struct
       (aset session remote-ftp-dircache
 	    (cons file-struct (aref session remote-ftp-dircache))))))
+
+
+;; Password caching
+
+(defun remote-ftp-get-passwd (user host)
+  (let*
+      ((joined (concat user ?@ host))
+       (cell (assoc joined remote-ftp-passwd-alist)))
+    (if cell
+	(cdr cell)
+      (setq cell (pwd-prompt (concat "Password for " joined ?:)))
+      (when cell
+	(remote-ftp-add-passwd user host cell)
+	cell))))
+
+;;;###autoload
+(defun remote-ftp-add-passwd (user host passwd)
+  "Add the string PASSWD as the password for FTP session of USER@HOST."
+  (interactive "sUsername:\nsHost:\nPassword for %s@%s:")
+  (let
+      ((joined (concat user ?@ host)))
+    (catch 'foo
+      (mapc #'(lambda (cell)
+		(when (string= (car cell) joined)
+		  (setcdr cell passwd)
+		  (throw 'foo)))
+	    remote-ftp-passwd-alist)
+      (setq remote-ftp-passwd-alist (cons (cons joined passwd)
+					  remote-ftp-passwd-alist)))))
 
 
 ;; Backend handler
@@ -452,6 +522,8 @@ file types.")
 		(aref session remote-ftp-dircache)))
        ((eq op 'delete-file)
 	(remote-ftp-rm session file-name))
+       ((eq op 'set-file-modes)
+	(remote-ftp-chmod session (nth 1 args) file-name))
        (t
 	(let
 	    ((file (remote-ftp-get-file-details session file-name)))
@@ -484,7 +556,5 @@ file types.")
 	    (and file (/= (logand (remote-ftp-file-modes file)
 				  (if (remote-ftp-file-owner-p session file)
 				      0200 0002)) 0)))
-	   ((eq op 'set-file-modes)
-	    (message "Warning: can't set file modes in FTP session [yet]" t))
 	   (t
 	    (error "Unsupported FTP op: %s %s" op args))))))))))
