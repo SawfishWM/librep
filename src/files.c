@@ -100,6 +100,8 @@ accessed in the buffer are resolved from (unless they're absolute.)
 /* List of all allocated file objects */
 static rep_file *file_list;
 
+int rep_file_type;
+
 DEFSYM(file_name_absolute_p, "file-name-absolute-p");
 DEFSYM(expand_file_name, "expand-file-name");
 DEFSYM(local_file_name, "local-file-name");
@@ -659,7 +661,7 @@ make_file(void)
     repv file = rep_VAL(rep_ALLOC_CELL(sizeof(rep_file)));
     if(file == rep_NULL)
 	return rep_mem_error();
-    rep_FILE(file)->car = rep_File;
+    rep_FILE(file)->car = rep_file_type;
     rep_FILE(file)->name = Qnil;
     rep_FILE(file)->handler = Qnil;
     rep_FILE(file)->handler_data = Qnil;
@@ -1540,10 +1542,10 @@ Returns the name of a unique file in the local filing system.
 void
 rep_files_init(void)
 {
-    rep_INTERN(file_handler_alist);
+    rep_INTERN_SPECIAL(file_handler_alist);
     rep_SYM(Qfile_handler_alist)->value = Qnil;
 
-    rep_INTERN(default_directory);
+    rep_INTERN_SPECIAL(default_directory);
     rep_SYM(Qdefault_directory)->value = rep_getpwd();
     if(rep_SYM(Qdefault_directory)->value == rep_NULL)
 	rep_SYM(Qdefault_directory)->value = rep_null_string();
@@ -1639,9 +1641,10 @@ rep_files_init(void)
     rep_ADD_SUBR(Smake_temp_name);
 
     /* Initialise the type information. */
-    rep_register_type(rep_File, "file", rep_ptr_cmp,
-		  file_prin, file_prin, file_sweep,
-		  file_mark, mark_input_handlers, 0, 0, 0, 0, 0, 0);
+    rep_file_type = rep_register_new_type("file", rep_ptr_cmp,
+					  file_prin, file_prin, file_sweep,
+					  file_mark, mark_input_handlers,
+					  0, 0, 0, 0, 0, 0);
 }
 
 void
