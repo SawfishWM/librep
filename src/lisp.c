@@ -882,7 +882,7 @@ load_autoload(VALUE fun, VALUE aload_def)
 	    u_long old_msg_len;
 	    save_message(curr_win, &old_msg, &old_msg_len);
 	    messagef("Loading %s...", VSTR(VCAR(autoload)));
-	    cmd_redisplay(sym_nil);
+	    redisplay_message(curr_win);
 
 	    PUSHGC(gc_fun, fun); PUSHGC(gc_aload_def, aload_def);
 	    VCAR(aload_def) = sym_nil;
@@ -890,7 +890,7 @@ load_autoload(VALUE fun, VALUE aload_def)
 	    POPGC; POPGC;
 
 	    messagef("Loading %s...done.", VSTR(VCAR(autoload)));
-	    cmd_redisplay(sym_nil);
+	    redisplay_message(curr_win);
 	    restore_message(curr_win, old_msg, old_msg_len);
 
 	    if(tmp && !NILP(tmp))
