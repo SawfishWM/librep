@@ -1,3 +1,14 @@
+2000-02-01  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispmach.c (Fjade_byte_code): check if needing to gc before
+	entering the main loop (needed when tail-calling). Also, check
+	for exceeding max-lisp-depth. (First pointed out by Ceri Storey)
+
+	* rep-xgettext.jl: new options --include and --only-commands
+
+	* unix_dl.c, timers.c: remember alloca preprocessor magic
+	(pointed out by Daniel Burrows)
+
 2000-01-31  John Harper  <john@dcs.warwick.ac.uk>
 
 	* repdoc.c: check for errors from sdbm_store ()

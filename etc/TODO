@@ -28,6 +28,12 @@ Outstanding bugs
 General programming tasks:
 ==========================
 
+ - allow modules to run with customized environments, but for the
+   compiler to detect and handle this correctly
+
+   basically, it needs to work out when primitives have been redefined,
+   so as not to use the built-in compilers/transformations for them
+
  - Optimize compilation of case statements
 
    1. handle constant keys
