@@ -18,9 +18,11 @@
    along with librep; see the file COPYING.  If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
+/* Uncomment the next line to print cache miss ratios */
 /* #define DEBUG 1 */
 
-#define SINGLE_DM_CACHE 1
+/* The cache type */
+#define SINGLE_SA_CACHE 1
 
 /* Notes:
 
@@ -92,6 +94,7 @@
 
 #include "repint.h"
 #include <string.h>
+#include <assert.h>
 #ifdef NEED_MEMORY_H
 # include <memory.h>
 #endif
@@ -123,8 +126,10 @@ DEFSYM(rep, "rep");
 DEFSYM(_specials, "%specials");
 DEFSYM(_user_structure_, "*user-structure*");
 DEFSYM(_root_structure_, "*root-structure*");
+DEFSYM(rep_structures, "rep.structures");
+DEFSYM(rep_lang_interpreter, "rep.lang.interpreter");
+DEFSYM(rep_vm_interpreter, "rep.vm.interpreter");
 
-repv Fget_structure (repv);
 static rep_struct_node *lookup_or_add (rep_struct *s, repv var);
 
 
@@ -148,11 +153,10 @@ print_cache_stats (void)
 }
 #endif
 
-#ifdef SINGLE_DM_CACHE
+#if defined SINGLE_DM_CACHE
 
 /* This is a very simple cache; a single direct-mapped table, indexed by
-   symbol address. Miss ratios vary, running the compiler ~ .1, 
-   building the gtk-glue.c ~ .002 */
+   symbol address */
 
 #define CACHE_SETS 256
 #define CACHE_HASH(x) (((x) >> 4) % CACHE_SETS)
@@ -227,7 +231,117 @@ cache_flush (void)
     memset (ref_cache, 0, sizeof (ref_cache));
 }
 
-#else /* SINGLE_DM_CACHE */
+#elif defined SINGLE_SA_CACHE 
+
+/* The above doesn't work so well now that there are more modules,
+   moving to 4-way set-associative eliminates significant conflict
+   misses in most cases. */
+
+#define CACHE_SETS 128
+#define CACHE_HASH(x) (((x) >> 3) % CACHE_SETS)
+#define CACHE_ASSOC 4
+
+struct cache_line {
+    rep_struct *s;
+    rep_struct_node *n;
+    int age;
+};
+
+static struct cache_line ref_cache[CACHE_SETS][CACHE_ASSOC];
+static int ref_age;
+
+static inline void
+enter_cache (rep_struct *s, rep_struct_node *binding)
+{
+    u_int hash = CACHE_HASH (binding->symbol);
+    int i, oldest_i, oldest_age = INT_MAX;
+    for (i = 0; i < CACHE_ASSOC; i++)
+    {
+	if (ref_cache[hash][i].s == 0)
+	{
+	    oldest_i = i;
+	    break;
+	}
+	else if (ref_cache[hash][i].age < oldest_age)
+	{
+	    oldest_i = i;
+	    oldest_age = ref_cache[hash][i].age;
+	}
+    }
+    assert (oldest_i < CACHE_ASSOC);
+#ifdef DEBUG
+    if (ref_cache[hash][oldest_i].s != 0)
+    {
+	if (ref_cache[hash][oldest_i].n->symbol == binding->symbol)
+	    ref_cache_conflicts++;
+	else
+	    ref_cache_collisions++;
+    }
+#endif
+    ref_cache[hash][oldest_i].s = s;
+    ref_cache[hash][oldest_i].n = binding;
+    ref_cache[hash][oldest_i].age = ++ref_age;
+}
+
+static inline rep_struct_node *
+lookup_cache (rep_struct *s, repv var)
+{
+    u_int hash = CACHE_HASH (var);
+    int i;
+    for (i = 0; i < CACHE_ASSOC; i++)
+    {
+	if (ref_cache[hash][i].s == s && ref_cache[hash][i].n->symbol == var)
+	{
+#ifdef DEBUG
+	    ref_cache_hits++;
+#endif
+	    ref_cache[hash][i].age++;
+	    return ref_cache[hash][i].n;
+	}
+    }
+#ifdef DEBUG
+    ref_cache_misses++;
+#endif
+    return 0;
+}
+
+static inline void
+cache_invalidate_symbol (repv symbol)
+{
+    u_int hash = CACHE_HASH (symbol);
+    int i;
+    for (i = 0; i < CACHE_ASSOC; i++)
+    {
+	if (ref_cache[hash][i].s != 0
+	    && ref_cache[hash][i].n->symbol == symbol)
+	{
+	    ref_cache[hash][i].s = 0;
+	}
+    }
+}
+
+static void
+cache_invalidate_struct (rep_struct *s)
+{
+    int i, j;
+    for (i = 0; i < CACHE_SETS; i++)
+    {
+	for (j = 0; j < CACHE_ASSOC; j++)
+	{
+	    if (ref_cache[i][j].s == s)
+		ref_cache[i][j].s = 0;
+	}
+    }
+}
+
+static inline void
+cache_flush (void)
+{
+    /* assumes null pointer == all zeros.. */
+    memset (ref_cache, 0, sizeof (ref_cache));
+}
+
+#else /* SINGLE_SA_CACHE */
 
 /* no cache at all */
 
@@ -887,8 +1001,10 @@ Return a string that would be used to locate a structure called NAME (a
 symbol).
 ::end:: */
 {
-    rep_DECLARE1 (name, rep_SYMBOLP);
-    return rep_structure_file (rep_SYM (name)->name);
+    if (rep_SYMBOLP (name))
+	name = rep_SYM (name)->name;
+    rep_DECLARE1 (name, rep_STRINGP);
+    return rep_structure_file (name);
 }
 
 DEFUN("intern-structure", Fintern_structure,
@@ -1063,17 +1179,6 @@ Return the result of evaluating FORM inside structure object STRUCTURE
     return result;
 }
 
-DEFUN ("make-closure-in-structure", Fmake_closure_in_structure,
-       Smake_closure_in_structure, (repv fun, repv structure), rep_Subr2)
-{
-    repv closure;
-    rep_DECLARE2 (structure, rep_STRUCTUREP);
-    closure = Fmake_closure (fun, Qnil);
-    if (closure && rep_FUNARGP (closure))
-	rep_FUNARG (closure)->structure = structure;
-    return closure;
-}
-
 DEFUN ("structure-walk", Fstructure_walk,
        Sstructure_walk, (repv fun, repv structure), rep_Subr2) /*
 ::doc:structure-walk::
@@ -1168,6 +1273,27 @@ constant.
 	structure = rep_structure;
     n = lookup (rep_STRUCTURE (structure), var);
     return (n != 0 && n->is_constant) ? Qt : Qnil;
+}
+
+DEFUN ("export-bindings", Fexport_bindings,
+       Sexport_bindings, (repv vars), rep_Subr1)
+{
+    rep_struct *s = rep_STRUCTURE (rep_structure);
+    rep_DECLARE1 (vars, rep_LISTP);
+    while (rep_CONSP (vars) && rep_SYMBOLP (rep_CAR (vars)))
+    {
+	repv var = rep_CAR (vars);
+	rep_struct_node *n = lookup (s, var);
+	if (n != 0)
+	    n->is_exported = 1;
+	else if (!structure_exports_inherited_p (s, var))
+	{
+	    s->inherited = Fcons (var, s->inherited);
+	    cache_invalidate_symbol (var);
+	}
+	vars = rep_CDR (vars);
+    }
+    return Qnil;
 }
 
 
@@ -1298,12 +1424,31 @@ rep_pop_structure (repv old)
 }
 
 void
-rep_alias_structure (repv name)
+rep_alias_structure (const char *name)
 {
-    if (rep_STRINGP (name))
-	name = Fintern (name, Qnil);
-    if (rep_SYMBOLP (name))
-	Fname_structure (rep_structure, name);
+    repv sym = Fintern (rep_string_dup (name), Qnil);
+    Fname_structure (rep_structure, sym);
+}
+
+repv
+rep_bootstrap_structure (const char *s)
+{
+    repv name = rep_string_dup (s);
+    repv tem = rep_push_structure_name (name);
+    repv ret;
+
+    /* Allow the bootstrap code to manipulate modules.. */
+    { rep_struct *tem = rep_STRUCTURE (rep_structure);
+      if (tem->name != Qrep_structures)
+	  tem->imports = Fcons (Qrep_structures, tem->imports);
+      if (tem->name != Qrep_lang_interpreter)
+	  tem->imports = Fcons (Qrep_lang_interpreter, tem->imports);
+      tem->imports = Fcons (Qrep_vm_interpreter, tem->imports); }
+
+    ret = Fload (Fstructure_file (name), Qnil, Qnil, Qnil, Qnil);
+
+    rep_pop_structure (tem);
+    return ret;
 }
 
 repv
@@ -1408,38 +1553,42 @@ rep_pre_structures_init (void)
 void
 rep_structures_init (void)
 {
+    repv tem = rep_push_structure ("rep.structures");
+
     rep_ADD_SUBR (Smake_structure);
-    rep_ADD_INTERNAL_SUBR (S_structure_ref);
-    rep_ADD_INTERNAL_SUBR (Sstructure_bound_p);
-    rep_ADD_INTERNAL_SUBR (Sstructure_set);
+    rep_ADD_SUBR (S_structure_ref);
+    rep_ADD_SUBR (Sstructure_bound_p);
+    rep_ADD_SUBR (Sstructure_set);
     rep_ADD_SUBR (Sexternal_structure_ref);
-    rep_ADD_INTERNAL_SUBR (Sstructure_name);
-    rep_ADD_INTERNAL_SUBR (Sstructure_interface);
-    rep_ADD_INTERNAL_SUBR (Sstructure_exports_p);
-    rep_ADD_INTERNAL_SUBR (Sstructure_imports);
-    rep_ADD_INTERNAL_SUBR (Sstructure_accessible);
-    rep_ADD_INTERNAL_SUBR (Sset_interface);
-    rep_ADD_INTERNAL_SUBR (Sget_structure);
-    rep_ADD_INTERNAL_SUBR (Sname_structure);
-    rep_ADD_INTERNAL_SUBR (Sstructure_file);
-    rep_ADD_INTERNAL_SUBR (Sintern_structure);
-    rep_ADD_INTERNAL_SUBR (Sopen_structures);
-    rep_ADD_INTERNAL_SUBR (Saccess_structures);
-    rep_ADD_INTERNAL_SUBR (Scurrent_structure);
-    rep_ADD_INTERNAL_SUBR (Sstructurep);
-    rep_ADD_INTERNAL_SUBR (Seval_real);
-    rep_ADD_INTERNAL_SUBR (Smake_closure_in_structure);
-    rep_ADD_INTERNAL_SUBR (Sstructure_walk);
+    rep_ADD_SUBR (Sstructure_name);
+    rep_ADD_SUBR (Sstructure_interface);
+    rep_ADD_SUBR (Sstructure_exports_p);
+    rep_ADD_SUBR (Sstructure_imports);
+    rep_ADD_SUBR (Sstructure_accessible);
+    rep_ADD_SUBR (Sset_interface);
+    rep_ADD_SUBR (Sget_structure);
+    rep_ADD_SUBR (Sname_structure);
+    rep_ADD_SUBR (Sstructure_file);
+    rep_ADD_SUBR (Sintern_structure);
+    rep_ADD_SUBR (Sopen_structures);
+    rep_ADD_SUBR (Saccess_structures);
+    rep_ADD_SUBR (Scurrent_structure);
+    rep_ADD_SUBR (Sstructurep);
+    rep_ADD_SUBR (Seval_real);
+    rep_ADD_SUBR (Sstructure_walk);
 #ifdef DEBUG
     rep_ADD_SUBR (Sstructure_stats);
 #endif
     rep_ADD_SUBR (Smake_binding_immutable);
     rep_ADD_SUBR (Sbinding_immutable_p);
+    rep_ADD_SUBR (Sexport_bindings);
     rep_ADD_SUBR (Sfeaturep);
     rep_ADD_SUBR (Sprovide);
     rep_ADD_SUBR_INT (Srequire);
-    rep_ADD_INTERNAL_SUBR (Sstructure_exports_all);
-    rep_ADD_INTERNAL_SUBR (Sstructure_install_vm);
+    rep_ADD_SUBR (Sstructure_exports_all);
+    rep_ADD_SUBR (Sstructure_install_vm);
+
+    rep_pop_structure (tem);
 
     rep_INTERN (features);
     rep_INTERN (_structures);
@@ -1448,6 +1597,9 @@ rep_structures_init (void)
     rep_INTERN (_specials);
     rep_INTERN_SPECIAL (_user_structure_);
     rep_INTERN_SPECIAL (_root_structure_);
+    rep_INTERN (rep_structures);
+    rep_INTERN (rep_lang_interpreter);
+    rep_INTERN (rep_vm_interpreter);
 
     rep_mark_static (&rep_structure);
     rep_mark_static (&rep_default_structure);
