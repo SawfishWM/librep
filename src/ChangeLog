@@ -1,3 +1,7 @@
+2001-10-28  John Harper  <jsh@unfactored.org>
+
+	* version 0.15.2
+
 2001-10-20  John Harper  <jsh@unfactored.org>
 
 	* numbers.c (random_new): call mpz_init () on the output value

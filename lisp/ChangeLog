@@ -1,3 +1,7 @@
+2001-10-28  John Harper  <jsh@unfactored.org>
+
+	* version 0.15.2
+
 2001-10-19  John Harper  <jsh@unfactored.org>
 
 	* rep/util/repl.jl: renamed ,dis as ,disassemble (since the
