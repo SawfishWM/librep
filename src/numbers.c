@@ -2066,7 +2066,13 @@ result to be inexact.
 }
 
 DEFUN("string->number", Fstring_to_number,
-      Sstring_to_number, (repv string, repv radix), rep_Subr2)
+      Sstring_to_number, (repv string, repv radix), rep_Subr2) /*
+::doc:string->number::
+string->number STRING [RADIX]
+
+Return the number represented by STRING. If RADIX is specified, the
+number is parsed from that base, otherwise base 10 is assumed.
+::end:: */
 {
     int type = 0;
     int sign = 1;
@@ -2101,7 +2107,14 @@ DEFUN("string->number", Fstring_to_number,
 }
 
 DEFUN("number->string", Fnumber_to_string,
-      Snumber_to_string, (repv z, repv radix), rep_Subr2)
+      Snumber_to_string, (repv z, repv radix), rep_Subr2) /*
+::doc:number->string::
+number->string Z [RADIX]
+
+Return a string containing a printed representation of the number Z. If
+RADIX is specified, print the number in that base, otherwise print it
+in base 10.
+::end:: */
 {
     char *out;
     rep_DECLARE1 (z, rep_NUMERICP);
