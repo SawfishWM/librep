@@ -93,6 +93,8 @@ int rep_allocated_funargs, rep_used_funargs;
 /* support for scheme boolean type */
 repv rep_scm_t, rep_scm_f;
 
+repv rep_undefined_value;
+
 
 /* Symbol management */
 
@@ -1160,7 +1162,7 @@ be overwritten.
 	}
     }
 
-    return value;
+    return rep_undefined_value;
 }
 
 DEFUN("makunbound", Fmakunbound, Smakunbound, (repv sym), rep_Subr1) /*
@@ -1425,6 +1427,7 @@ rep_symbols_init(void)
 {
     DEFSTRING (hash_f, "#f");
     DEFSTRING (hash_t, "#t");
+    DEFSTRING (hash_undefined, "#undefined");
 
     repv tem;
 
@@ -1445,10 +1448,13 @@ rep_symbols_init(void)
 
     rep_scm_f = Fmake_symbol (rep_VAL (&hash_f));
     rep_scm_t = Fmake_symbol (rep_VAL (&hash_t));
+    rep_undefined_value = Fmake_symbol (rep_VAL (&hash_undefined));
     rep_SYM(rep_scm_f)->car |= rep_SF_LITERAL;
     rep_SYM(rep_scm_t)->car |= rep_SF_LITERAL;
+    rep_SYM(rep_undefined_value)->car |= rep_SF_LITERAL;
     rep_mark_static (&rep_scm_f);
     rep_mark_static (&rep_scm_t);
+    rep_mark_static (&rep_undefined_value);
 
     tem = rep_push_structure ("rep.lang.symbols");
     rep_ADD_SUBR(Smake_symbol);

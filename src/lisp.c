@@ -220,12 +220,35 @@ static inline int
 fast_getc (repv stream)
 {
     if (read_local_file)
-	return getc (rep_FILE (stream)->file.fh);
+    {
+	int c = getc (rep_FILE (stream)->file.fh);
+	if (c == '\n')
+	    rep_FILE (stream)->line_number++;
+	return c;
+    }
     else
 	return rep_stream_getc (stream);
 }
  
-DEFSTRING(nodot, "Nothing to dot second element of cons-cell to");
+static repv
+signal_reader_error (repv type, repv stream, char *message)
+{
+    repv error_data = Qnil;
+    if (message != 0)
+	error_data = Fcons (rep_string_dup (message), error_data);
+    if (rep_FILEP (stream))
+    {
+	if ((rep_FILE (stream)->car & rep_LFF_BOGUS_LINE_NUMBER) == 0)
+	{
+	    error_data = Fcons (rep_MAKE_INT (rep_FILE (stream)->line_number),
+				error_data);
+	}
+	error_data = Fcons (rep_FILE (stream)->name, error_data);
+    }
+    else
+	error_data = Fcons (stream, error_data);
+    return Fsignal (type, error_data);
+}
 
 static void
 read_comment (repv strm, int *c_p)
@@ -273,7 +296,8 @@ read_list(repv strm, register int *c_p)
 	switch(*c_p)
 	{
 	case EOF:
-	    result = Fsignal(Qpremature_end_of_stream, rep_LIST_1(strm));
+	    result = signal_reader_error (Qpremature_end_of_stream,
+					  strm, "While reading a list");
 	    break;
 
 	case ' ':
@@ -304,7 +328,8 @@ read_list(repv strm, register int *c_p)
 	    switch (*c_p)
 	    {
 	    case EOF:
-		result = Fsignal(Qpremature_end_of_stream, rep_LIST_1(strm));
+		result = signal_reader_error (Qpremature_end_of_stream,
+					      strm, "After `.' in list");
 		goto end;
 
 	    case ' ': case '\t': case '\n': case '\f': case '\r':
@@ -321,8 +346,8 @@ read_list(repv strm, register int *c_p)
 		}
 		else
 		{
-		    result = Fsignal(Qinvalid_read_syntax,
-				     rep_LIST_1(rep_VAL(&nodot)));
+		    result = signal_reader_error (Qinvalid_read_syntax,
+						  strm, "Nothing to dot second element of cons to");
 		    goto end;
 		}
 		continue;
@@ -422,7 +447,8 @@ read_symbol(repv strm, int *c_p, repv obarray)
 	    radix = 0;
 	    c = rep_stream_getc(strm);
 	    if(c == EOF)
-		return Fsignal(Qpremature_end_of_stream, rep_LIST_1(strm));
+		return signal_reader_error (Qpremature_end_of_stream,
+					    strm, "After `\\' in identifer");
 	    buf[i++] = c;
 	    break;
 
@@ -435,7 +461,8 @@ read_symbol(repv strm, int *c_p, repv obarray)
 		c = rep_stream_getc(strm);
 	    }
 	    if(c == EOF)
-		return Fsignal(Qpremature_end_of_stream, rep_LIST_1(strm));
+		return signal_reader_error (Qpremature_end_of_stream,
+					    strm, "After `|' in identifier");
 	    break;
 
 	default:
@@ -606,7 +633,10 @@ read_symbol(repv strm, int *c_p, repv obarray)
 done:
     buf[i] = 0;
     if (i == 0)
-	result = Fsignal (Qinvalid_read_syntax, rep_LIST_1 (strm));
+    {
+	result = signal_reader_error (Qinvalid_read_syntax, strm,
+				      "Zero length identifier");
+    }
     else if (radix > 0 && nfirst < i)
     {
 	/* It was a number of some sort */
@@ -719,7 +749,8 @@ read_str(repv strm, int *c_p)
 	    }
 	}
 	if(c == EOF)
-	    result = Fsignal(Qpremature_end_of_stream, rep_LIST_1(strm));
+	    result = signal_reader_error (Qpremature_end_of_stream,
+					  strm, "While reading a string");
 	else
 	{
 	    *c_p = rep_stream_getc(strm);
@@ -738,7 +769,15 @@ skip_chars (repv stream, const char *str, repv ret, int *ptr)
     {
 	int c = rep_stream_getc (stream);
 	if (c != *str++)
-	    return Fsignal (Qinvalid_read_syntax, rep_LIST_1(stream));
+	{
+	    char buf[256];
+#ifdef HAVE_SNPRINTF
+	    snprintf (buf, sizeof (buf), "Expecting `%s'", str - 1);
+#else
+	    sprintf (buf, "Expecting `%s'", str - 1);
+#endif
+	    return signal_reader_error (Qinvalid_read_syntax, stream, buf);
+	}
     }
     *ptr = rep_stream_getc (stream);
     return ret;
@@ -790,7 +829,8 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 	    if((*c_p = rep_stream_getc(strm)) == EOF)
 	    {
 		rep_POPGC;
-		return Fsignal(Qpremature_end_of_stream, rep_LIST_1(strm));
+		return signal_reader_error (Qpremature_end_of_stream,
+					    strm, "During ` or ' syntax");
 	    }
 	    rep_CADR(form) = readl(strm, c_p, Qpremature_end_of_stream);
 	    rep_POPGC;
@@ -808,14 +848,16 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 	    {
 	    case EOF:
 		rep_POPGC;
-		return Fsignal(Qpremature_end_of_stream, rep_LIST_1(strm));
+		return signal_reader_error (Qpremature_end_of_stream,
+					    strm, "During , syntax");
 
 	    case '@':
 		rep_CAR(form) = Qbackquote_splice;
 		if((*c_p = rep_stream_getc(strm)) == EOF)
 		{
 		    rep_POPGC;
-		    return Fsignal(Qpremature_end_of_stream, rep_LIST_1(strm));
+		    return signal_reader_error (Qpremature_end_of_stream,
+						strm, "During ,@ syntax");
 		}
 	    }
 	    rep_CADR(form) = readl(strm, c_p, Qpremature_end_of_stream);
@@ -837,10 +879,12 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 		switch(c = rep_stream_getc(strm))
 		{
 		case EOF:
-		    return Fsignal(Qpremature_end_of_stream, rep_LIST_1(strm));
+		    return signal_reader_error (Qpremature_end_of_stream,
+						strm, "During ? syntax");
 		case '\\':
 		    if((*c_p = rep_stream_getc(strm)) == EOF)
-			return Fsignal(Qpremature_end_of_stream, rep_LIST_1(strm));
+			return signal_reader_error (Qpremature_end_of_stream,
+						    strm, "During ? syntax");
 		    else
 			return rep_MAKE_INT(rep_stream_read_esc(strm, c_p));
 		    break;
@@ -856,7 +900,8 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 		int c;
 
 	    case EOF:
-		return Fsignal(Qpremature_end_of_stream, rep_LIST_1(strm));
+		return signal_reader_error (Qpremature_end_of_stream,
+					    strm, "During # syntax");
 
 	    case '\'':
 		form = Fcons(Qfunction, Fcons(Qnil, Qnil));
@@ -864,7 +909,8 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 		if((*c_p = rep_stream_getc(strm)) == EOF)
 		{
 		    rep_POPGC;
-		    return Fsignal(Qpremature_end_of_stream, rep_LIST_1(strm));
+		    return signal_reader_error (Qpremature_end_of_stream,
+						strm, "During #' syntax");
 		}
 		rep_CADR(form) = readl(strm, c_p, Qpremature_end_of_stream);
 		rep_POPGC;
@@ -888,7 +934,8 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 						  | rep_Compiled;
 			    return vec;
 			}
-			goto error;
+			return signal_reader_error (Qinvalid_read_syntax,
+						    strm, "Invalid bytecode object");
 		    }
 		    break;
 		}
@@ -922,7 +969,8 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 
 		    c = rep_stream_getc (strm);
 		    if (c == EOF)
-			return Fsignal(Qpremature_end_of_stream, rep_LIST_1(strm));
+			return signal_reader_error (Qpremature_end_of_stream,
+						    strm, "During #\\ syntax");
 		    if (!isalpha (c))
 		    {
 			*c_p = rep_stream_getc (strm);
@@ -931,7 +979,7 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 		    c2 = rep_stream_getc (strm);
 		    if (!isalpha (c2) || c2 == EOF)
 		    {
-			*c_p = EOF;
+			*c_p = c2;
 			return rep_MAKE_INT (c);
 		    }
 
@@ -952,11 +1000,11 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 				    return rep_MAKE_INT (char_names[i].value);
 				}
 				if (c == EOF || tolower (c) != *ptr++)
-				    goto error;
+				    return signal_reader_error (Qinvalid_read_syntax, strm, "Unknown character name");
 			    }
 			}
 		    }
-		    goto error;
+		    return signal_reader_error (Qinvalid_read_syntax, strm, "Unknown character name");
 		}
 
 	    case '!':
@@ -976,7 +1024,7 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 		case 'o': return skip_chars (strm, "ptional", ex_optional, c_p);
 		case 'r': return skip_chars (strm, "est", ex_rest, c_p);
 		case 'k': return skip_chars (strm, "ey", ex_key, c_p);
-		default:  goto error;
+		default:  return signal_reader_error (Qinvalid_read_syntax, strm, "Unknown #! prefixed identifier");
 		}
 
 	    case ':':
@@ -1000,8 +1048,12 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 		*c_p = '#';
 		goto identifier;
 
-	    default: error:
-		return Fsignal(Qinvalid_read_syntax, rep_LIST_1(strm));
+	    case 'u':
+		return skip_chars (strm, "ndefined", rep_undefined_value, c_p);
+
+	    default:
+		return signal_reader_error (Qinvalid_read_syntax,
+					    strm, "Invalid token");
 	    }
 
 	default: identifier:
@@ -1024,7 +1076,7 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
     /* not reached */
 
 eof:
-    return Fsignal(end_of_stream_error, rep_LIST_1(strm));
+    return signal_reader_error (end_of_stream_error, rep_LIST_1(strm), 0);
 }
 
 repv

@@ -1,3 +1,26 @@
+2001-07-26  John Harper  <jsh@pixelslut.com>
+
+	* lisp.c (readl): parse `#undefined'. Fixed bug when reading
+	`(#\A)' (would signal an eof too soon)
+
+	* lisp.c (signal_reader_error): new function, used to signal
+	parse errors. Reports filename and line number for file
+	streams. Also gives a description of why the error occurred in
+	most cases
+
+	* symbols.c (F_define): return #undefined
+
+	* symbols.c (rep_undefined_value):: new symbol called
+	`#undefined'
+
+	* rep_lisp.h, files.c: files get a new field `line_number', and
+	a new flag rep_LFF_BOGUS_LINE_NUMBER.
+
+	* streams.c (rep_stream_getc, rep_stream_ungetc): update the
+	line_number field of files
+
+	* lisp.c (fast_getc): handle line_number field of files
+
 2001-07-22  John Harper  <jsh@pixelslut.com>
 
 	* lisp.c (readl): don't signal an error when reading EOF

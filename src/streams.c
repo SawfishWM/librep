@@ -81,7 +81,6 @@ rep_stream_getc(repv stream)
     if(rep_NILP(stream)
        && !(stream = Fsymbol_value(Qstandard_input, Qnil)))
 	return c;
-top:
     switch(rep_TYPE(stream))
     {
 	repv res;
@@ -126,10 +125,10 @@ top:
 	    else if(rep_LOCAL_FILE_P(stream))
 		c = getc(rep_FILE(stream)->file.fh);
 	    else
-	    {
-		stream = rep_FILE(stream)->file.stream;
-		goto top;
-	    }
+		c = rep_stream_getc (rep_FILE(stream)->file.stream);
+
+	    if (c == '\n')
+		rep_FILE (stream)->line_number++;
 	    break;
 	}
 
@@ -192,6 +191,9 @@ top:
     default:
 	if (rep_FILEP(stream))
 	{
+	    if (c == '\n')
+		rep_FILE (stream)->line_number--;
+
 	    if(rep_LOCAL_FILE_P(stream))
 		c = ungetc(c, rep_FILE(stream)->file.fh);
 	    else
@@ -589,6 +591,9 @@ that point. If no characters are read, nil will be returned.
 	/* Special case for local file streams. */
 	len = fread (buf, sizeof (u_char), rep_INT(count),
 		     rep_FILE(stream)->file.fh);
+
+	/* XXX one possibility is to scan for newlines in the buffer.. */
+	rep_FILE (stream)->car |= rep_LFF_BOGUS_LINE_NUMBER;
     }
     else
     {

@@ -664,7 +664,7 @@ make_file(void)
     if(file == rep_NULL)
 	return rep_mem_error();
     rep_data_after_gc += sizeof (rep_file);
-    rep_FILE(file)->car = rep_file_type;
+    rep_FILE(file)->car = rep_file_type | rep_LFF_BOGUS_LINE_NUMBER;
     rep_FILE(file)->name = Qnil;
     rep_FILE(file)->handler = Qnil;
     rep_FILE(file)->handler_data = Qnil;
@@ -827,6 +827,11 @@ for ACCESS-TYPE requests. ACCESS-TYPE can be one of the symbols:
 		return rep_signal_file_error(file_name);
 	    rep_FILE(file)->handler = Qt;
 	    rep_FILE(file)->handler_data = file_name;
+	    if (access_type != Qwrite)
+	    {
+		rep_FILE (file)->line_number = 1;
+		rep_FILE (file)->car &= ~rep_LFF_BOGUS_LINE_NUMBER;
+	    }
 	}
     }
     else
@@ -955,6 +960,9 @@ current position will also fail.
 		whence = SEEK_SET;
 	    else if(where == Qend)
 		whence = SEEK_END;
+
+            rep_FILE (file)->car |= rep_LFF_BOGUS_LINE_NUMBER;
+
 	    if(fseek(rep_FILE(file)->file.fh, rep_INT(offset), whence) != 0)
 		return rep_signal_file_error(rep_LIST_1(file));
 	    else
