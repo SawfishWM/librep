@@ -7,11 +7,11 @@ it may be used for standalone scripts.
 
 It is known to compile on at least Solaris/sparc and Linux/ix86; it is
 released under the terms of the GNU GPL, copyright John Harper
-<john@dcs.warwick.ac.uk>
+<jsh@librep.sourceforge.net>
 
 For more details see:
 
-	http://www.dcs.warwick.ac.uk/~john/sw/librep.html
+	http://librep.sourceforge.net/
 
 To compile this you'll need GNU make and (preferably) GCC. Basically,
 just do:
