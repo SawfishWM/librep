@@ -71,6 +71,8 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 AC_PROG_GCC_TRADITIONAL
 AC_PROG_RANLIB
+
+AC_DISABLE_STATIC
 AM_PROG_LIBTOOL
 
 dnl Workaround etc/install-sh not being found from subdirectories
