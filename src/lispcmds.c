@@ -1435,6 +1435,87 @@ like the last else in an else-if statement in C.
     return(res);
 }
 
+_PR VALUE cmd_if(VALUE args);
+DEFUN("if", cmd_if, subr_if, (VALUE args), V_SF, DOC_if) /*
+::doc:if::
+if CONDITION THEN-FORM [ELSE-FORMS...]
+
+Evaluate CONDITION, if it is non-nil then evaluate THEN-FORM and return
+it's result. Otherwise do an implicit progn with the ELSE-FORMS returning
+its value.
+::end:: */
+{
+    GC_root gc_args;
+    VALUE res;
+    if(!CONSP(args))
+	return signal_missing_arg(1);
+    PUSHGC(gc_args, args);
+    res = cmd_eval(VCAR(args));
+    POPGC;
+    args = VCDR(args);
+    if(res != LISP_NULL && CONSP(args))
+    {
+	if(!NILP(res))
+	    res = cmd_eval(VCAR(args));
+	else
+	    res = cmd_progn(VCDR(args));
+    }
+    return res;
+}
+
+_PR VALUE cmd_and(VALUE);
+DEFUN("and", cmd_and, subr_and, (VALUE args), V_SF, DOC_and) /*
+::doc:and::
+and FORMS...
+
+Evaluates each member of FORMS in turn, until one returns nil, and returns
+nil. If none return nil then the value of the last form evaluated is
+returned.
+::end:: */
+{
+    VALUE res = sym_t;
+    GC_root gc_args, gc_res;
+    PUSHGC(gc_args, args);
+    PUSHGC(gc_res, res);
+    while(res && CONSP(args) && !NILP(res))
+    {
+	res = cmd_eval(VCAR(args));
+	args = VCDR(args);
+	TEST_INT;
+	if(INT_P)
+	    res = LISP_NULL;
+    }
+    POPGC;
+    POPGC;
+    return res;
+}
+
+_PR VALUE cmd_or(VALUE);
+DEFUN("or", cmd_or, subr_or, (VALUE args), V_SF, DOC_or) /*
+::doc:or::
+or FORMS...
+
+Evaluates each member of FORMS in turn until one returns t, the result of
+which is returned. If none are t then return nil.
+::end:: */
+{
+    VALUE res = sym_nil;
+    GC_root gc_args, gc_res;
+    PUSHGC(gc_args, args);
+    PUSHGC(gc_res, res);
+    while(res && CONSP(args) && NILP(res))
+    {
+	res = cmd_eval(VCAR(args));
+	args = VCDR(args);
+	TEST_INT;
+	if(INT_P)
+	    res = LISP_NULL;
+    }
+    POPGC;
+    POPGC;
+    return res;
+}
+
 _PR VALUE cmd_apply(VALUE);
 DEFUN("apply", cmd_apply, subr_apply, (VALUE args), V_SubrN, DOC_apply) /*
 ::doc:apply::
@@ -2611,6 +2692,9 @@ lispcmds_init(void)
     ADD_SUBR(subr_prog2);
     ADD_SUBR(subr_while);
     ADD_SUBR(subr_cond);
+    ADD_SUBR(subr_if);
+    ADD_SUBR(subr_and);
+    ADD_SUBR(subr_or);
     ADD_SUBR(subr_apply);
     ADD_SUBR_INT(subr_load);
     ADD_SUBR(subr_plus);
