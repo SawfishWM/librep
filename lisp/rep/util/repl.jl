@@ -308,7 +308,17 @@
 		  (intern-structure
 		   (repl-struct (fluid current-repl)))))))
 
-  (define-repl-command 'collect garbage-collect)
+  (define-repl-command
+   'collect
+   (lambda ()
+     (let ((stats (garbage-collect t)))
+       (format standard-output "Used %d/%d cons, %d/%d tuples, %d strings, %d vector slots, %d/%d closures\n"
+	       (car (nth 0 stats)) (+ (car (nth 0 stats)) (cdr (nth 0 stats)))
+	       (car (nth 1 stats)) (+ (car (nth 1 stats)) (cdr (nth 1 stats)))
+	       (car (nth 2 stats))
+	       (nth 3 stats)
+	       (car (nth 4 stats)) (+ (car (nth 4 stats))
+				      (cdr (nth 4 stats)))))))
 
   (define-repl-command
    'disassemble

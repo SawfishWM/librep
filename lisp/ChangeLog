@@ -1,3 +1,7 @@
+2003-05-08  John Harper  <jsh@unfactored.org>
+
+	* rep/util/repl.jl (,collect): print memory usage statistics
+
 2003-07-08  John Harper  <jsh@unfactored.org>
 
 	* rep/xml/reader.jl (read-tag-body): unreverse items when
