@@ -3,6 +3,55 @@
 @chapter News
 @cindex News
 
+
+@unnumberedsec 0.11.3
+
+@itemize @bullet
+@item Fixed bug of throwing uninitialized errors when autoloading
+
+@item Fixed bug of interpreting @code{(let () @dots{})} as a named let
+@end itemize
+
+
+@unnumberedsec 0.11.2
+
+@itemize @bullet
+
+@item Replaced many special forms by macros---@code{let}, @code{let*},
+@code{function}, @code{if}, @code{and}, @code{or}, @code{prog2},
+@code{defmacro}, @code{defun}, @code{defconst}, @code{define-value},
+@code{setq-default}
+
+@item @code{let} now supports Scheme's named-let construct for
+iteration via tail recursion
+
+@item Parse some standard Common Lisp and Scheme syntax: @samp{#|
+@dots{} |#} block comments, @samp{#\@var{c}} or @samp{#\@var{name}}
+characters (where @var{name} may be one of: @code{space},
+@code{newline}, @code{backspace}, @code{tab}, @code{linefeed},
+@code{return}, @code{page}, @code{rubout}), and @samp{#(@dots{})}
+vectors
+
+@item When comparing symbols, compare their names as strings
+
+@item Implemented Scheme's @code{dynamic-wind} function
+
+@item Fixed bug of sometimes evaluating function arguments in the
+environment of the callee not the caller
+
+@item Fixed bug when calculating how long to sleep for when no threads
+are available
+
+@item Fixed bugs in mutex implementation (Damon Anderson)
+
+@item Work around bugs in Tru64 @code{RTLD_GLOBAL}; everything should
+work on Tru64 now (Aron Griffis)
+
+@item Fixed bug of not saving current regexp state across continuations
+
+@end itemize
+
+
 @unnumberedsec 0.11.1
 
 @itemize @bullet
