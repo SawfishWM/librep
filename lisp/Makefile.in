@@ -42,19 +42,22 @@ INSTALL=@INSTALL@
 INSTALL_DATA=@INSTALL_DATA@
 INSTALL_PROGRAM=@INSTALL_PROGRAM@
 
-jade_prog = ../jade/jade
+jade_prog := ../jade/jade
+
+COMPILE_ENV := JADELISPLIB=. JADEDOCFILE=../DOC
 
 all :
 
 lisp :
-	$(jade_prog) -geometry +0+0 -log-msgs -f sleep-window -l compiler \
-		-f compile-compiler -q
-	$(jade_prog) -geometry +0+0 -log-msgs -f sleep-window \
-		-f compile-lisp-lib -q
+	$(COMPILE_ENV) $(jade_prog) -geometry +0+0 -log-msgs \
+		-f sleep-window -l compiler -f compile-compiler -q
+	$(COMPILE_ENV) $(jade_prog) -geometry +0+0 -log-msgs \
+		-f sleep-window -f compile-lisp-lib -q
 
 dumped :
-	$(jade_prog) -geometry +0+0 -log-msgs -f sleep-window -l dump \
-		-f dump-batch -o $(DUMPED_OUT) $(DUMPED_SRCS) -q
+	$(COMPILE_ENV) $(jade_prog) -geometry +0+0 -log-msgs \
+		-f sleep-window -l dump -f dump-batch -o $(DUMPED_OUT) \
+		$(DUMPED_SRCS) -q
 
 install :
 	for f in *.jl; \
@@ -62,10 +65,10 @@ install :
 	  $(INSTALL_DATA) $$f $(lispdir)/$$f; \
 	done
 	$(INSTALL_DATA) ../DOC $(lispdir)/../DOC
-	$(jade_prog) -geometry +0+0 -log-msgs -f sleep-window -l compiler \
-		-f compile-compiler -q
-	$(jade_prog) -geometry +0+0 -log-msgs -f sleep-window \
-		-f compile-lisp-lib -q
+	$(COMPILE_ENV) $(jade_prog) -geometry +0+0 -log-msgs \
+		-f sleep-window -l compiler -f compile-compiler -q
+	$(COMPILE_ENV) $(jade_prog) -geometry +0+0 -log-msgs \
+		-f sleep-window -f compile-lisp-lib -q
 
 uninstall :
 	-rm -f *.jl "$(lispdir)/*.jlc" $(lispdir)/../DOC

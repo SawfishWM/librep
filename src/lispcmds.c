@@ -22,6 +22,7 @@
 #include "jade_protos.h"
 
 #include <string.h>
+#include <stdlib.h>
 
 #ifdef NEED_MEMORY_H
 # include <memory.h>
@@ -30,17 +31,18 @@
 _PR void lispcmds_init(void);
 _PR VALUE sym_or, sym_and;
 _PR VALUE sym_load_path, sym_after_load_alist, sym_lisp_lib_dir;
+_PR VALUE sym_site_lisp_dir, sym_documentation_file;
 
-DEFSTRING(lisp_lib_dir, LISP_LIB_DIR);
-DEFSTRING(site_lisp_dir, SITE_LISP_DIR);
+DEFSTRING(default_jade_dir, QUOTE(JADE_DIR));
 DEFSTRING(div_zero, "Divide by zero");
-DEFSTRING(doc_file, DOC_FILE);
 
 DEFSYM(or, "or");
 DEFSYM(and, "and");
 DEFSYM(load_path, "load-path");
 DEFSYM(after_load_alist, "after-load-alist");
+DEFSYM(jade_dir, "jade-dir");
 DEFSYM(lisp_lib_dir, "lisp-lib-dir");
+DEFSYM(site_lisp_dir, "site-lisp-dir");
 DEFSYM(documentation_file, "documentation-file"); /*
 ::doc:load_path::
 A list of directory names. When `load' opens a lisp-file it searches each
@@ -52,8 +54,14 @@ A list of (LIBRARY FORMS...). Whenever the `load' command reads a file
 of Lisp code LIBRARY, it executes each of FORMS. Note that LIBRARY must
 exactly match the FILE argument given to `load'.
 ::end::
+::doc:jade_dir::
+The directory in which all of Jade's installed data files live.
+::end::
 ::doc:lisp_lib_dir::
 The name of the directory in which the standard lisp files live.
+::end::
+::doc:site_lisp_dir::
+The name of the directory in which site-specific Lisp files are stored.
 ::end::
 ::doc:documentation_file::
 The name of the file containing all Jade's documentation strings.
@@ -2635,16 +2643,40 @@ lispcmds_init(void)
     ADD_SUBR(subr_throw);
     ADD_SUBR(subr_unwind_protect);
 
-    INTERN(load_path); DOC(load_path);
-    VSYM(sym_load_path)->value = list_2(VAL(&site_lisp_dir),
-					VAL(&lisp_lib_dir));
-    INTERN(after_load_alist); DOC(after_load_alist);
-    VSYM(sym_after_load_alist)->value = sym_nil;
+    INTERN(jade_dir); DOC(jade_dir);
+    if(getenv("JADEDIR") != 0)
+	VSYM(sym_jade_dir)->value = string_dup(getenv("JADEDIR"));
+    else
+	VSYM(sym_jade_dir)->value = VAL(&default_jade_dir);
+
     INTERN(lisp_lib_dir); DOC(lisp_lib_dir);
-    VSYM(sym_lisp_lib_dir)->value = VAL(&lisp_lib_dir);
+    if(getenv("JADELISPLIB") != 0)
+	VSYM(sym_lisp_lib_dir)->value = string_dup(getenv("JADELISPLIB"));
+    else
+	VSYM(sym_lisp_lib_dir)->value
+	    = concat2(VSTR(VSYM(sym_jade_dir)->value), LISP_LIB_DIR_SUFFIX);
+
+    INTERN(site_lisp_dir); DOC(site_lisp_dir);
+    if(getenv("JADESITELISP") != 0)
+	VSYM(sym_site_lisp_dir)->value = string_dup(getenv("JADESITELISP"));
+    else
+	VSYM(sym_site_lisp_dir)->value
+	    = concat2(VSTR(VSYM(sym_jade_dir)->value), SITE_LISP_DIR_SUFFIX);
 
     INTERN(documentation_file); DOC(documentation_file);
-    VSYM(sym_documentation_file)->value = VAL(&doc_file);
+    if(getenv("JADEDOCFILE") != 0)
+	VSYM(sym_documentation_file)->value
+	    = string_dup(getenv("JADEDOCFILE"));
+    else
+	VSYM(sym_documentation_file)->value
+	    = concat2(VSTR(VSYM(sym_jade_dir)->value), DOC_FILE_SUFFIX);
+
+    INTERN(load_path); DOC(load_path);
+    VSYM(sym_load_path)->value = list_2(VSYM(sym_lisp_lib_dir)->value,
+					VSYM(sym_site_lisp_dir)->value);
+
+    INTERN(after_load_alist); DOC(after_load_alist);
+    VSYM(sym_after_load_alist)->value = sym_nil;
 
     INTERN(or); INTERN(and);
 }

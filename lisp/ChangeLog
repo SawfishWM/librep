@@ -1,3 +1,8 @@
+Sat Apr 18 00:19:49 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* Makefile.in: use JADELISPLIB and JADEDOCFILE to allow proper
+	compilation of Lisp files before they've been installed
+
 Fri Apr 17 14:18:22 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* tilde.jl (tilde-file-handler): handle the expand-file-name

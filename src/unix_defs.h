@@ -26,13 +26,13 @@
 #define HAVE_SUBPROCESSES
 
 /* default directory to look for scripts in */
-#define LISP_LIB_DIR QUOTE(JADE_DIR) "/" VERSID "/lisp/"
+#define LISP_LIB_DIR_SUFFIX "/" VERSID "/lisp/"
 
 /* Site scripts directory */
-#define SITE_LISP_DIR QUOTE(JADE_DIR) "/site-lisp/"
+#define SITE_LISP_DIR_SUFFIX "/site-lisp/"
 
 /* file containing doc-strings */
-#define DOC_FILE QUOTE(JADE_DIR) "/" VERSID "/DOC"
+#define DOC_FILE_SUFFIX "/" VERSID "/DOC"
 
 /* These are related to the definition of sys_alloc() in unix_main.c */
 #define sys_free(p) do { if(p != 0) free(p); } while(0)
