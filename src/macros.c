@@ -119,7 +119,7 @@ pass the value of the `macro-environment' variable to this parameter.
 ::end:: */
 {
     repv input = form, pred, ptr;
-    rep_GC_root gc_input;
+    rep_GC_root gc_input, gc_pred;
 
     if (!rep_CONSP (form))
 	return form;
@@ -138,6 +138,7 @@ pass the value of the `macro-environment' variable to this parameter.
     macro_misses++;
 
     rep_PUSHGC(gc_input, input);
+    rep_PUSHGC(gc_pred, pred);
     pred = form;
     while (1)
     {
@@ -146,7 +147,7 @@ pass the value of the `macro-environment' variable to this parameter.
 	    break;
 	pred = form;
     }
-    rep_POPGC;
+    rep_POPGC; rep_POPGC;
 
     if (form != rep_NULL)
     {
