@@ -87,7 +87,8 @@
    (setq thread-2 (make-thread (lambda () (thread-fun 2)) "thread-2"))
 
    [ the dynamic root is a serialization point, it won't be exited
-     until _all_ threads it contains have exited / been deleted ]
+   until _all_ threads it contains have exited / been deleted, or it's
+   been thrown threw (which deletes all running threads)  ]
 
    The lisp debugger runs in it's own dynamic root, so debugging
    threads works for free!  */
@@ -726,9 +727,6 @@ the current state of the interpreter. Subsequently calling the
 continuation function (with an optional single argument) will pass
 control immediately back to the statement following the call to the
 `call/cc' function (even if that stack frame has since been exited).
-
-Note that invoking continuation functions do not currently affect the
-values of any dynamic bindings currently in effect.
 ::end:: */
 {
     return primitive_call_cc (inner_call_cc, (void *) fun);
@@ -845,7 +843,7 @@ inner_thread_invoke (rep_continuation *c, void *data)
 }
 
 static void
-thread_invoke ()
+thread_invoke (void)
 {
 again:
     if (root_barrier->head != 0)
@@ -916,7 +914,7 @@ thread_delete (rep_thread *t)
     unlink_thread (t);
     t->car |= TF_EXITED;
     if (active == t)
-	thread_invoke (active);
+	thread_invoke ();
 }
 
 static repv
@@ -1375,7 +1373,7 @@ thread-delete [THREAD]
 Mark THREAD (or the current thread), as being deleted. It will not be
 switched to in the future. If the current thread is deleted, control
 will be passed to the next runnable thread. Deleting the last runnable
-thread results in undefined behaviour.
+thread results forces the containing dynamic root to be closed.
 ::end:: */
 {
     if (th == Qnil)
@@ -1392,8 +1390,8 @@ thread-suspend [THREAD] [MSECS]
 
 Mark THREAD (or the current thread) as being suspended. It will not be
 selected until it has this status removed. Suspending the current
-thread will pass control to the next runnable thread. Suspending the
-last runnable thread results in undefined behaviour.
+thread will pass control to the next runnable thread. If there are no
+runnable threads, then sleep until the next thread becomes runnable.
 ::end:: */
 {
     if (th == Qnil)
