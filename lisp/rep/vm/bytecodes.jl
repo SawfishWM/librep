@@ -46,7 +46,7 @@
 
 ;; Instruction set version
 (defconst bytecode-major 8)
-(defconst bytecode-minor 0)
+(defconst bytecode-minor 1)
 
 ;; Opcodes
 (defconst op-call 0x08)			;call (stk[n] stk[n-1] ... stk[0])
@@ -63,6 +63,7 @@
 (defconst op-ref 0x40)			;replace symbol with it's value
 (defconst op-set 0x41)
 (defconst op-dset 0x42)
+(defconst op-enclose 0x43)
 (defconst op-init-bind 0x44)		;initialise a new set of bindings
 (defconst op-unbind 0x45)		;unbind all bindings in the top set
 (defconst op-dup 0x46)			;duplicate top of stack
@@ -207,7 +208,7 @@
    nil nil nil nil nil nil nil nil
    -1  nil nil nil nil nil nil nil	;0x30
    nil nil nil nil nil nil nil nil
-   0   -1  -1  nil 0   0   +1  0	;0x40
+   0   -1  -1  0   0   0   +1  0	;0x40
    -1  +1  +1  -1  0   0   -1  -1
    -1  -1  -1  -1  0   0   -1  0	;0x50
    -1  -1  -1  -1  0   0   -1  -1
@@ -255,7 +256,7 @@
 	 op-land op-num-eq op-num-noteq op-gt op-ge op-lt op-le op-inc
 	 op-dec op-lsh op-boundp op-get op-reverse op-assoc
 	 op-assq op-rassoc op-rassq op-last op-copy-sequence op-lxor
-	 op-max op-min op-mod op-make-closure
+	 op-max op-min op-mod op-make-closure op-enclose
 	 comp-varref-free-insns))
 
 ;; list of all conditional jumps

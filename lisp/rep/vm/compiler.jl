@@ -787,11 +787,12 @@ that files which shouldn't be compiled aren't."
 ;; Put a constant into the alist of constants, returning its index number.
 ;; It won't be added twice if it's already there.
 (defun comp-add-constant (const)
-  (unless (cdr (assoc const comp-constant-alist))
-    (setq comp-constant-alist (cons (cons const comp-constant-index)
-				    comp-constant-alist)
-	  comp-constant-index (1+ comp-constant-index))
-    (1- comp-constant-index)))
+  (or (cdr (assoc const comp-constant-alist))
+      (progn
+	(setq comp-constant-alist (cons (cons const comp-constant-index)
+					comp-constant-alist)
+	      comp-constant-index (1+ comp-constant-index))
+	(1- comp-constant-index))))
 
 ;; Compile a list of forms, the last form's evaluated value is left on
 ;; the stack. If the list is empty nil is pushed.
@@ -1096,18 +1097,12 @@ that files which shouldn't be compiled aren't."
   (if (symbolp form)
       (comp-compile-constant form)
     (comp-compile-constant (comp-compile-lambda form)))
-  (comp-write-op op-nil)
-  (comp-inc-stack)
-  (comp-write-op op-make-closure)
-  (comp-dec-stack))
+  (comp-write-op op-enclose))
 (put 'function 'compile-fun comp-compile-function)
 
 (defun comp-compile-lambda-form (form)
   (comp-compile-constant (comp-compile-lambda form))
-  (comp-write-op op-nil)
-  (comp-inc-stack)
-  (comp-write-op op-make-closure)
-  (comp-dec-stack))
+  (comp-write-op op-enclose))
 (put 'lambda 'compile-fun comp-compile-lambda-form)
 
 (defun comp-compile-while (form)
@@ -1376,10 +1371,7 @@ that files which shouldn't be compiled aren't."
   (comp-write-op op-dup)
   (comp-inc-stack)
   (comp-compile-constant (comp-compile-lambda (cons 'lambda (nthcdr 2 form))))
-  (comp-write-op op-nil)
-  (comp-inc-stack)
-  (comp-write-op op-make-closure)
-  (comp-dec-stack)
+  (comp-write-op op-enclose)
   (comp-write-op op-dset)
   (comp-write-op op-pop)
   (comp-dec-stack 2))
@@ -1391,10 +1383,7 @@ that files which shouldn't be compiled aren't."
   (comp-inc-stack)
   (comp-compile-constant (cons 'macro (comp-compile-lambda
 				       (cons 'lambda (nthcdr 2 form)))))
-  (comp-write-op op-nil)
-  (comp-inc-stack)
-  (comp-write-op op-make-closure)
-  (comp-dec-stack)
+  (comp-write-op op-enclose)
   (comp-write-op op-dset)
   (comp-write-op op-pop)
   (comp-dec-stack 2))
