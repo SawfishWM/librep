@@ -83,7 +83,8 @@
 	  %structure-imports %structure-accessible %set-interface
 	  %get-structure %intern-structure %open-structures
 	  %access-structures %current-structure %structurep
-	  %eval-in-structure %make-closure-in-structure %structure-walk))
+	  %eval-in-structure %make-closure-in-structure
+	  %structure-walk %load-autoload))
 
 (define-interface rep-data
   (export cons car cdr list list* make-list append nconc rplaca rplacd
@@ -121,10 +122,10 @@
 	  oddp evenp abs lcm % modulo lsh))
 
 (define-interface rep-streams
-  (export write read-char read-chars read-line copy-stream
+  (export write read-char peek-char read-chars read-line copy-stream
 	  read print prin1 princ format make-string-input-stream
 	  make-string-output-stream get-output-stream-string streamp
-	  prin1-to-string read-from-string))
+	  input-stream-p output-stream-p prin1-to-string read-from-string))
 
 (define-interface rep-continuations
   (export call/cc call-with-current-continuation continuation-callable-p

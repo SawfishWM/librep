@@ -97,9 +97,7 @@
 			  close-output-port
 
 			  read read-char peek-char eof-object?
-			  write display newline write-char
-
-			  load %load-suffixes
+			  write display newline write-char load
 
 			  ;; exported local kludges
 			  %cond %case %setq %while %progn %test %lambda

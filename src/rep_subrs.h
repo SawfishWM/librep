@@ -428,6 +428,7 @@ extern int rep_stream_puts(repv, void *, int, rep_bool);
 extern int rep_stream_read_esc(repv, int *);
 extern repv Fwrite(repv stream, repv data, repv len);
 extern repv Fread_char(repv stream);
+extern repv Fpeek_char(repv stream);
 extern repv Fread_chars(repv stream, repv count);
 extern repv Fread_line(repv stream);
 extern repv Fcopy_stream(repv source, repv dest);
@@ -439,7 +440,8 @@ extern repv Fformat(repv);
 extern repv Fmake_string_input_stream(repv string, repv start);
 extern repv Fmake_string_output_stream(void);
 extern repv Fget_output_stream_string(repv strm);
-extern repv Fstreamp(repv arg);
+extern repv Finput_stream_p(repv arg);
+extern repv Foutput_stream_p(repv arg);
 
 /* from symbols.c */
 extern repv (*rep_deref_local_symbol_fun)(repv sym);
