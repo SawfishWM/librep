@@ -314,13 +314,12 @@ again:
     rep_PUSHGC(gc_code, code);
     rep_PUSHGC(gc_consts, consts);
     rep_PUSHGC(gc_bindstack, bindstack);
-    rep_PUSHGCN(gc_stackbase, stackbase, 0);
+    rep_PUSHGCN(gc_stackbase, stackbase, STK_USE);
 
     if(rep_data_after_gc >= rep_gc_threshold)
-    {
-	gc_stackbase.count = STK_USE;
 	Fgarbage_collect(Qt);
-    }
+
+    rep_MAY_YIELD;
 
     pc = rep_STR(code);
 
@@ -1293,6 +1292,16 @@ again:
 	    bindstack = Fcons(rep_bind_object(tmp), bindstack);
 	    impurity++;
 	    break;
+
+	case OP_FORBID:
+	    rep_FORBID;
+	    PUSH (rep_PREEMPTABLE_P ? Qnil : Qt);
+	    goto fetch;
+
+	case OP_PERMIT:
+	    rep_PERMIT;
+	    PUSH (rep_PREEMPTABLE_P ? Qnil : Qt);
+	    goto fetch;
 
 	case OP_SWAP2:
 	    tmp = TOP;

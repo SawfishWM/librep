@@ -205,6 +205,8 @@
 #define OP_CADDDDDDDR 0xab
 
 #define OP_BINDOBJ 0xb0			/* bind stk[0] */
+#define OP_FORBID 0xb1
+#define OP_PERMIT 0xb2
 
 #define OP_SWAP2 0xba			/* stk[0] = stk[1], stk[1] = stk[2],
 					   stk[2] = stk[0]. */
