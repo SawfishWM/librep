@@ -922,6 +922,12 @@
     (decrement-stack))
   (put 'make-closure 'rep-compile-fun compile-make-closure)
 
+  (defun compile-call/cc (form)
+    (note-call/cc)
+    (compile-funcall (cons 'funcall form)))
+  (put 'call/cc 'rep-compile-fun compile-call/cc)
+  (put 'call-with-current-continuation 'rep-compile-fun compile-call/cc)
+
   (defun get-form-opcode (form)
     (cond ((symbolp form) (get form 'rep-compile-opcode))
 	  ;; must be a structure-ref
