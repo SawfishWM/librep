@@ -1,3 +1,10 @@
+1999-03-28  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispmach.c (Fjade_byte_code): don't test for called function
+	returning rep_NULL individually, since some don't even though
+	an error has been signalled. Instead check for, and handle,
+	errors outside the big switch
+
 1999-03-23  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_processes.c (rep_sigchld_fun): new hook, called by the
