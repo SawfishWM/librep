@@ -49,13 +49,13 @@ COMPILE_ENV := JADELISPLIB=.
 all :
 
 lisp :
-	$(COMPILE_ENV) $(jade_prog) -geometry +0+0 -log-msgs \
+	$(COMPILE_ENV) $(jade_prog) -geometry +0+0 -log-msgs -no-rc \
 		-f sleep-window -l compiler -f compile-compiler -q
-	$(COMPILE_ENV) $(jade_prog) -geometry +0+0 -log-msgs \
+	$(COMPILE_ENV) $(jade_prog) -geometry +0+0 -log-msgs -no-rc \
 		-f sleep-window -f compile-lisp-lib -q
 
 dumped :
-	$(COMPILE_ENV) $(jade_prog) -geometry +0+0 -log-msgs \
+	$(COMPILE_ENV) $(jade_prog) -geometry +0+0 -log-msgs -no-rc \
 		-f sleep-window -l dump -f dump-batch -o $(DUMPED_OUT) \
 		$(DUMPED_SRCS) -q
 
@@ -65,9 +65,9 @@ install :
 	  $(INSTALL_DATA) $$f $(lispdir)/$$f; \
 	done
 	$(INSTALL_DATA) ../DOC $(lispdir)/../DOC
-	$(COMPILE_ENV) $(jade_prog) -geometry +0+0 -log-msgs \
+	$(COMPILE_ENV) $(jade_prog) -geometry +0+0 -log-msgs -no-rc \
 		-f sleep-window -l compiler -f compile-compiler -q
-	$(COMPILE_ENV) $(jade_prog) -geometry +0+0 -log-msgs \
+	$(COMPILE_ENV) $(jade_prog) -geometry +0+0 -log-msgs -no-rc \
 		-f sleep-window -f compile-lisp-lib -q
 
 uninstall :
