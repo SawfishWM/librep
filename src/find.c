@@ -27,55 +27,61 @@
 #include <ctype.h>
 #include <stdlib.h>
 
-_PR int buffer_strpbrk(TX *tx, POS *pos, const char *chars);
-_PR int buffer_reverse_strpbrk(TX *tx, POS *pos, const char *chars);
-_PR int buffer_strchr(TX *tx, POS *pos, char c);
-_PR int buffer_reverse_strchr(TX *tx, POS *pos, char c);
-_PR int buffer_compare_n(TX *tx, POS *pos, const char *str, int n, void *cmpfn);
-_PR int forward_char(int count, TX *tx, POS *pos);
-_PR int backward_char(long count, TX *tx, POS *pos);
+_PR int buffer_strpbrk(TX *tx, Pos *pos, const char *chars);
+_PR int buffer_reverse_strpbrk(TX *tx, Pos *pos, const char *chars);
+_PR int buffer_strchr(TX *tx, Pos *pos, char c);
+_PR int buffer_reverse_strchr(TX *tx, Pos *pos, char c);
+_PR int buffer_compare_n(TX *tx, Pos *pos, const char *str, int n, void *cmpfn);
+_PR int forward_char(long count, TX *tx, Pos *pos);
+_PR int backward_char(long count, TX *tx, Pos *pos);
+
+_PR void mark_regexp_data(void);
 
 _PR bool mystrcmp(u_char *, u_char *);
 _PR u_char *mystrrstrn(u_char *, u_char *, int);
 _PR u_char *mystrrchrn(u_char *, u_char, int);
 _PR void find_init(void);
-
+_PR void find_kill(void);
 
 
 /* Basic buffer utility functions. These are also used by the regjade.c
-   regexp code. */
+   regexp code.
+
+   All of these break the rule about not modifying the contents of
+   position objects. They all do! This is to reduce allocation when
+   executing regular expressions. */
 
 /* Set POS to the position of the first char in TX from POS that is in
    the set of characters CHARS. Returns non-zero if such a character was
    found, zero if not (POS undefined in this case). */
 int
-buffer_strpbrk(TX *tx, POS *pos, const char *chars)
+buffer_strpbrk(TX *tx, Pos *pos, const char *chars)
 {
-    LINE *line = tx->tx_Lines + pos->pos_Line;
+    LINE *line = tx->tx_Lines + PROW(pos);
     int chars_has_newline = strchr(chars, '\n') ? 1 : 0;
 
-    if(pos->pos_Col >= line->ln_Strlen)
+    if(PCOL(pos) >= line->ln_Strlen)
     {
-	pos->pos_Col = 0;
-	pos->pos_Line++;
+	PCOL(pos) = 0;
+	PROW(pos)++;
 	line++;
     }
 
-    while(pos->pos_Line < tx->tx_LogicalEnd)
+    while(PROW(pos) < tx->tx_LogicalEnd)
     {
-	u_char *ptr = strpbrk(line->ln_Line + pos->pos_Col, chars);
+	u_char *ptr = strpbrk(line->ln_Line + PCOL(pos), chars);
 	if(ptr != NULL)
 	{
-	    pos->pos_Col = ptr - line->ln_Line;
+	    PCOL(pos) = ptr - line->ln_Line;
 	    return 1;
 	}
 	else if(chars_has_newline)
 	{
-	    pos->pos_Col = line->ln_Strlen - 1;
+	    PCOL(pos) = line->ln_Strlen - 1;
 	    return 1;
 	}
-	pos->pos_Col = 0;
-	pos->pos_Line++;
+	PCOL(pos) = 0;
+	PROW(pos)++;
 	line++;
     }
     return 0;
@@ -83,33 +89,33 @@ buffer_strpbrk(TX *tx, POS *pos, const char *chars)
 
 /* Same as buffer_strpbrk() but searches backwards. */
 int
-buffer_reverse_strpbrk(TX *tx, POS *pos, const char *chars)
+buffer_reverse_strpbrk(TX *tx, Pos *pos, const char *chars)
 {
-    LINE *line = tx->tx_Lines + pos->pos_Line;
+    LINE *line = tx->tx_Lines + PROW(pos);
     int chars_has_newline = strchr(chars, '\n') ? 1 : 0;
 
-    if(pos->pos_Col >= line->ln_Strlen)
+    if(PCOL(pos) >= line->ln_Strlen)
     {
-	pos->pos_Col = line->ln_Strlen - 2;
+	PCOL(pos) = line->ln_Strlen - 2;
 	if(chars_has_newline)
 	    return 1;
     }
     while(1)
     {
-	u_char *match = line->ln_Line + pos->pos_Col;
+	u_char *match = line->ln_Line + PCOL(pos);
 	while(match >= line->ln_Line)
 	{
 	    if(strchr(chars, *match) != NULL)
 	    {
-		pos->pos_Col = match - line->ln_Line;
+		PCOL(pos) = match - line->ln_Line;
 		return 1;
 	    }
 	    match--;
 	}
 	line--;
-	if(--pos->pos_Line < tx->tx_LogicalStart)
+	if(--PROW(pos) < tx->tx_LogicalStart)
 	    return 0;
-	pos->pos_Col = line->ln_Strlen - 2;
+	PCOL(pos) = line->ln_Strlen - 2;
 	if(chars_has_newline)
 	    return 1;
     }
@@ -118,21 +124,21 @@ buffer_reverse_strpbrk(TX *tx, POS *pos, const char *chars)
 /* Set POS to the first character C in TX from POS. Returns non-zero for
    success. */
 int
-buffer_strchr(TX *tx, POS *pos, char c)
+buffer_strchr(TX *tx, Pos *pos, char c)
 {
-    LINE *line = tx->tx_Lines + pos->pos_Line;
-    if(pos->pos_Col >= line->ln_Strlen)
+    LINE *line = tx->tx_Lines + PROW(pos);
+    if(PCOL(pos) >= line->ln_Strlen)
     {
-	pos->pos_Col = 0;
-	pos->pos_Line++;
+	PCOL(pos) = 0;
+	PROW(pos)++;
 	line++;
     }
 
     if(c == '\n')
     {
-	if(pos->pos_Line < tx->tx_LogicalEnd - 1)
+	if(PROW(pos) < tx->tx_LogicalEnd - 1)
 	{
-	    pos->pos_Col = tx->tx_Lines[pos->pos_Line].ln_Strlen - 1;
+	    PCOL(pos) = tx->tx_Lines[PROW(pos)].ln_Strlen - 1;
 	    return 1;
 	}
 	else
@@ -143,16 +149,16 @@ buffer_strchr(TX *tx, POS *pos, char c)
     }
     else
     {
-	while(pos->pos_Line < tx->tx_LogicalEnd)
+	while(PROW(pos) < tx->tx_LogicalEnd)
 	{
-	    u_char *match = strchr(line->ln_Line + pos->pos_Col, c);
+	    u_char *match = strchr(line->ln_Line + PCOL(pos), c);
 	    if(match)
 	    {
-		pos->pos_Col = match - line->ln_Line;
+		PCOL(pos) = match - line->ln_Line;
 		return 1;
 	    }
-	    pos->pos_Line++;
-	    pos->pos_Col = 0;
+	    PROW(pos)++;
+	    PCOL(pos) = 0;
 	    line++;
 	}
 	return 0;
@@ -161,24 +167,24 @@ buffer_strchr(TX *tx, POS *pos, char c)
 
 /* Same as buffer_strchr() but searches backwards. */
 int
-buffer_reverse_strchr(TX *tx, POS *pos, char c)
+buffer_reverse_strchr(TX *tx, Pos *pos, char c)
 {
-    LINE *line = tx->tx_Lines + pos->pos_Line;
+    LINE *line = tx->tx_Lines + PROW(pos);
 
-    if(pos->pos_Col >= line->ln_Strlen)
-	pos->pos_Col = line->ln_Strlen - 1;
+    if(PCOL(pos) >= line->ln_Strlen)
+	PCOL(pos) = line->ln_Strlen - 1;
 
     if(c == '\n')
     {
-	if(pos->pos_Col == line->ln_Strlen - 1)
+	if(PCOL(pos) == line->ln_Strlen - 1)
 	    return 1;
-	if(pos->pos_Line == tx->tx_LogicalStart)
+	if(PROW(pos) == tx->tx_LogicalStart)
 	    return 0;
 	else
 	{
 	    line--;
-	    pos->pos_Line--;
-	    pos->pos_Col = line->ln_Strlen - 1;
+	    PROW(pos)--;
+	    PCOL(pos) = line->ln_Strlen - 1;
 	    return 1;
 	}
     }
@@ -186,21 +192,21 @@ buffer_reverse_strchr(TX *tx, POS *pos, char c)
     {
 	while(1)
 	{
-	    u_char *match = line->ln_Line + pos->pos_Col;
+	    u_char *match = line->ln_Line + PCOL(pos);
 	    while(match >= line->ln_Line)
 	    {
 		if(*match == c)
 		{
-		    pos->pos_Col = match - line->ln_Line;
+		    PCOL(pos) = match - line->ln_Line;
 		    return 1;
 		}
 		match--;
 	    }
-	    if(pos->pos_Line == tx->tx_LogicalStart)
+	    if(PROW(pos) == tx->tx_LogicalStart)
 		return 0;
 	    line--;
-	    pos->pos_Line--;
-	    pos->pos_Col = line->ln_Strlen - 1;
+	    PROW(pos)--;
+	    PCOL(pos) = line->ln_Strlen - 1;
 	}
     }
 }
@@ -214,18 +220,18 @@ buffer_reverse_strchr(TX *tx, POS *pos, char c)
    compiler warnings. */
 #define CMPFN ((int (*)(const char *, const char *, size_t))cmpfn)
 int
-buffer_compare_n(TX *tx, POS *pos, const char *str, int n, void *cmpfn)
+buffer_compare_n(TX *tx, Pos *pos, const char *str, int n, void *cmpfn)
 {
-    LINE *line = tx->tx_Lines + pos->pos_Line;
+    LINE *line = tx->tx_Lines + PROW(pos);
 
-    if(pos->pos_Col >= line->ln_Strlen)
+    if(PCOL(pos) >= line->ln_Strlen)
     {
-	pos->pos_Col = 0;
-	pos->pos_Line++;
+	PCOL(pos) = 0;
+	PROW(pos)++;
 	line++;
     }
 
-    while(n > 0 && pos->pos_Line < tx->tx_LogicalEnd)
+    while(n > 0 && PROW(pos) < tx->tx_LogicalEnd)
     {
 	char *chunk = strchr(str, '\n');
 	int len;
@@ -237,18 +243,18 @@ buffer_compare_n(TX *tx, POS *pos, const char *str, int n, void *cmpfn)
 	    len = n;
 	if(len > 0)
 	{
-	    if(CMPFN(line->ln_Line + pos->pos_Col, str, len) != 0)
+	    if(CMPFN(line->ln_Line + PCOL(pos), str, len) != 0)
 		return 0;
-	    pos->pos_Col += len;
+	    PCOL(pos) += len;
 	    n -= len;
 	    if(len == 0 || chunk == NULL)
 		return 1;	/* looked at all n */
 	}
-	if(pos->pos_Col != line->ln_Strlen - 1)
+	if(PCOL(pos) != line->ln_Strlen - 1)
 	    return 0;
 	n--;
-	pos->pos_Col = 0;
-	pos->pos_Line++;
+	PCOL(pos) = 0;
+	PROW(pos)++;
 	line++;
 	str = chunk + 1;
     }
@@ -258,26 +264,26 @@ buffer_compare_n(TX *tx, POS *pos, const char *str, int n, void *cmpfn)
 /* Move POS forward COUNT characters in TX. Returns non-zero if the end
    of the buffer wasn't reached. */
 int
-forward_char(int count, TX *tx, POS *pos)
+forward_char(long count, TX *tx, Pos *pos)
 {
-    LINE *line = tx->tx_Lines + pos->pos_Line;
-    if(pos->pos_Col >= line->ln_Strlen)
-	pos->pos_Col = line->ln_Strlen - 1;
+    LINE *line = tx->tx_Lines + PROW(pos);
+    if(PCOL(pos) >= line->ln_Strlen)
+	PCOL(pos) = line->ln_Strlen - 1;
     while(count > 0)
     {
-	if(count < (line->ln_Strlen - pos->pos_Col))
+	if(count < (line->ln_Strlen - PCOL(pos)))
 	{
-	    pos->pos_Col += count;
+	    PCOL(pos) += count;
 	    count = 0;
 	}
 	else
 	{
-	    count -= line->ln_Strlen - pos->pos_Col;
-	    pos->pos_Line++;
-	    if(pos->pos_Line >= tx->tx_LogicalEnd)
+	    count -= line->ln_Strlen - PCOL(pos);
+	    PROW(pos)++;
+	    if(PROW(pos) >= tx->tx_LogicalEnd)
 		return 0;
 	    line++;
-	    pos->pos_Col = 0;
+	    PCOL(pos) = 0;
 	}
     }
     return 1;
@@ -286,24 +292,24 @@ forward_char(int count, TX *tx, POS *pos)
 /* Move POS backward COUNT characters in TX. Returns non-zero if the start
    of the buffer wasn't reached. */
 int
-backward_char(long count, TX *tx, POS *pos)
+backward_char(long count, TX *tx, Pos *pos)
 {
-    LINE *line = tx->tx_Lines + pos->pos_Line;
+    LINE *line = tx->tx_Lines + PROW(pos);
     while(count > 0)
     {
-	if(count <= pos->pos_Col)
+	if(count <= PCOL(pos))
 	{
-	    pos->pos_Col -= count;
+	    PCOL(pos) -= count;
 	    count = 0;
 	}
 	else
 	{
-	    count -= pos->pos_Col + 1; /* `+ 1' for the assumed '\n' */
-	    pos->pos_Line--;
-	    if(pos->pos_Line < tx->tx_LogicalStart)
+	    count -= PCOL(pos) + 1; /* `+ 1' for the assumed '\n' */
+	    PROW(pos)--;
+	    if(PROW(pos) < tx->tx_LogicalStart)
 		return 0;
 	    line--;
-	    pos->pos_Col = line->ln_Strlen - 1;
+	    PCOL(pos) = line->ln_Strlen - 1;
 	}
     }
     return 1;
@@ -312,75 +318,104 @@ backward_char(long count, TX *tx, POS *pos)
 
 /* Regexp stuff. */
 
+/* We cache the most recently compiled regexp (until GC, at least) */
+static VALUE last_regexp;
+static regexp *last_compiled_regexp;
+static int regexp_hits, regexp_misses;
+
 /* Storage for remembering where the last match was.
-   LAST_STRING is the string that was matched against, only it's address is
-   used.
-   LAST_START and LAST_END is copied straight out of the regexp struct
-   LAST_LINE is either -1 meaning the string was not in a buffer, or the
-   line number it came from.  */
-static char *last_string;
-static regsubs last_matches;
+   last_match_data is the string or buffer that was matched against.
+   last_matches is a copy of the subexpression data of the last match.  */
 static regtype last_match_type;
+static VALUE last_match_data;
+static regsubs last_matches;
 
 static VALUE sym_regexp_error;
 
-static void
-update_last_match(char *str, regexp *prog)
+static regexp *
+compile_regexp(VALUE re)
 {
-    last_string = str;
-    memcpy(&last_matches, &prog->matches, sizeof(regsubs));
-    last_match_type = prog->lasttype;
+    if(last_regexp != 0
+       && STRING_LEN(last_regexp) == STRING_LEN(re)
+       && memcmp(VSTR(last_regexp), VSTR(re), STRING_LEN(re)) == 0)
+    {
+	regexp_hits++;
+	return last_compiled_regexp;
+    }
+    else
+    {
+	regexp_misses++;
+	if(last_regexp != 0)
+	    free(last_compiled_regexp);
+	last_compiled_regexp = regcomp(VSTR(re));
+	if(last_compiled_regexp != 0)
+	    last_regexp = re;
+	return last_compiled_regexp;
+    }
 }
 
-/* Kludge the saved startp/endp pointers as if the string STR
-   had just been matched at LINENO. */
 static void
-translate_last_match(TX *tx, long lineno, char *str, regexp *prog)
+release_cached_regexp(void)
 {
-    int i;
-    for(i = 0; i < NSUBEXP; i++)
+    if(last_regexp != 0)
     {
-	if(prog->matches.string.startp[i] == NULL)
-	    last_matches.tx.startp[i].pos_Line = -1;
-	else
+	last_regexp = 0;
+	free(last_compiled_regexp);
+	last_compiled_regexp = 0;
+    }
+}
+	
+static void
+update_last_match(VALUE data, regexp *prog)
+{
+    last_match_type = prog->lasttype;
+    last_match_data = data;
+    memcpy(&last_matches, &prog->matches, sizeof(last_matches));
+}
+
+/* Called by GC */
+void
+mark_regexp_data(void)
+{
+    if(last_regexp != 0)
+    {
+	/* Don't keep cached REs through GC. */
+	release_cached_regexp();
+    }
+
+    if(last_match_type == reg_tx)
+    {
+	int i;
+	for(i = 0; i < NSUBEXP; i++)
 	{
-	    last_matches.tx.startp[i].pos_Line = lineno;
-	    last_matches.tx.startp[i].pos_Col
-		= prog->matches.string.startp[i] - str;
-	}
-	if(prog->matches.string.endp[i] == NULL)
-	    last_matches.tx.endp[i].pos_Line = -1;
-	else
-	{
-	    last_matches.tx.endp[i].pos_Line = lineno;
-	    last_matches.tx.endp[i].pos_Col
-		= prog->matches.string.endp[i] - str;
+	    MARKVAL(last_matches.tx.startp[i]);
+	    MARKVAL(last_matches.tx.endp[i]);
 	}
     }
-    last_match_type = reg_tx;
+    MARKVAL(last_match_data);
+
 }
 
-/* Fix the match buffers to reflect matching the a string from START
-   to END. */
+/* Fix the match buffers to reflect matching a string from START to END. */
 static void
-set_string_match(POS *start, POS *end)
+set_string_match(TX *tx, VALUE start, VALUE end)
 {
     int i;
-    last_string = NULL;
+    last_match_data = VAL(tx);
     last_match_type = reg_tx;
-    last_matches.tx.startp[0] = *start;
-    last_matches.tx.endp[0] = *end;
+    last_matches.tx.startp[0] = start;
+    last_matches.tx.endp[0] = end;
     for(i = 1; i < NSUBEXP; i++)
     {
-	last_matches.tx.startp[i].pos_Line = -1;
-	last_matches.tx.endp[i].pos_Line = -1;
+	last_matches.tx.startp[i] = NULL;
+	last_matches.tx.endp[i] = NULL;
     }
 }
 
-_PR VALUE cmd_find_next_regexp(VALUE re, VALUE pos, VALUE tx, VALUE nocase_p);
-DEFUN("find-next-regexp", cmd_find_next_regexp, subr_find_next_regexp, (VALUE re, VALUE pos, VALUE tx, VALUE nocase_p), V_Subr4, DOC_find_next_regexp) /*
-::doc:find_next_regexp::
-find-next-regexp REGEXP [POS] [BUFFER] [IGNORE-CASE-P]
+_PR VALUE cmd_re_search_forward(VALUE re, VALUE pos, VALUE tx, VALUE nocase_p);
+DEFUN("re-search-forward", cmd_re_search_forward, subr_re_search_forward, (VALUE re, VALUE pos, VALUE tx, VALUE nocase_p), V_Subr4, DOC_re_search_forward) /*
+::doc:re_search_forward::
+re-search-forward REGEXP [POS] [BUFFER] [IGNORE-CASE-P]
 
 Scans forwards from POS (or the cursor), in BUFFER, looking for a match
 with REGEXP. Returns the position of the next match or nil.
@@ -389,38 +424,35 @@ When IGNORE-CASE-P is non-nil the case of matched strings are ignored. Note
 that character classes are still case-significant.
 ::end:: */
 {
-    POS res;
     DECLARE1(re, STRINGP);
-    if(POSP(pos))
-	res = VPOS(pos);
-    else
-	res = curr_vw->vw_CursorPos;
+    if(!POSP(pos))
+	pos = curr_vw->vw_CursorPos;
     if(!BUFFERP(tx))
 	tx = VAL(curr_vw->vw_Tx);
-    if(check_line(VTX(tx), &res))
+    if(check_line(VTX(tx), pos))
     {
 	VALUE ret = sym_nil;
 	regexp *prog;
-	prog = regcomp(VSTR(re));
+	prog = compile_regexp(re);
 	if(prog != NULL)
 	{
-	    if(regexec_tx(prog, VTX(tx), &res,
-			  NILP(nocase_p) ? 0 : REG_NOCASE))
+	    if(regexec_tx(prog, VTX(tx), pos, NILP(nocase_p) ? 0 : REG_NOCASE))
 	    {
-		update_last_match(NULL, prog);
-		ret = make_lpos(&prog->matches.tx.startp[0]);
+		update_last_match(tx, prog);
+		ret = prog->matches.tx.startp[0];
 	    }
-	    free(prog);
+	    else
+		ret = sym_nil;
 	}
 	return(ret);
     }
     return NULL;
 }
 
-_PR VALUE cmd_find_prev_regexp(VALUE re, VALUE pos, VALUE tx, VALUE nocase_p);
-DEFUN("find-prev-regexp", cmd_find_prev_regexp, subr_find_prev_regexp, (VALUE re, VALUE pos, VALUE tx, VALUE nocase_p), V_Subr4, DOC_find_prev_regexp) /*
-::doc:find_prev_regexp::
-find-prev-regexp REGEXP [POS] [BUFFER] [IGNORE-CASE-P]
+_PR VALUE cmd_re_search_backward(VALUE re, VALUE pos, VALUE tx, VALUE nocase_p);
+DEFUN("re-search-backward", cmd_re_search_backward, subr_re_search_backward, (VALUE re, VALUE pos, VALUE tx, VALUE nocase_p), V_Subr4, DOC_re_search_backward) /*
+::doc:re_search_backward::
+re-search-backward REGEXP [POS] [BUFFER] [IGNORE-CASE-P]
 
 Scans backwards from POS (or the cursor), in BUFFER, looking for a match
 with REGEXP. Returns the position of the next match or nil.
@@ -429,64 +461,62 @@ When IGNORE-CASE-P is non-nil the case of matched strings are ignored. Note
 that character classes are still case-significant.
 ::end:: */
 {
-    POS res;
     DECLARE1(re, STRINGP);
-    if(POSP(pos))
-	res = VPOS(pos);
-    else
-	res = curr_vw->vw_CursorPos;
+    if(!POSP(pos))
+	pos = curr_vw->vw_CursorPos;
     if(!BUFFERP(tx))
 	tx = VAL(curr_vw->vw_Tx);
-    if(check_line(VTX(tx), &res))
+    if(check_line(VTX(tx), pos))
     {
 	VALUE ret = sym_nil;
-	regexp *prog = regcomp(VSTR(re));
+	regexp *prog = compile_regexp(re);
 	if(prog != NULL)
 	{
-	    if(regexec_reverse_tx(prog, VTX(tx), &res,
-				  NILP(nocase_p) ? 0 : REG_NOCASE))
+	    if(regexec_reverse_tx(prog, VTX(tx), pos,
+				     NILP(nocase_p) ? 0 : REG_NOCASE))
 	    {
-		update_last_match(NULL, prog);
-		ret = make_lpos(&prog->matches.tx.startp[0]);
+		update_last_match(tx, prog);
+		ret = prog->matches.tx.startp[0];
 	    }
-	    free(prog);
+	    else
+		ret = sym_nil;
 	}
 	return(ret);
     }
     return NULL;
 }
 
-_PR VALUE cmd_find_next_string(VALUE str, VALUE pos, VALUE tx, VALUE nocasep);
-DEFUN("find-next-string", cmd_find_next_string, subr_find_next_string, (VALUE str, VALUE pos, VALUE tx, VALUE nocasep), V_Subr4, DOC_find_next_string) /*
-::doc:find_next_string::
-find-next-string STRING [POS] [BUFFER] [IGNORE-CASE-P]
+_PR VALUE cmd_search_forward(VALUE str, VALUE pos, VALUE tx, VALUE nocasep);
+DEFUN("search-forward", cmd_search_forward, subr_search_forward, (VALUE str, VALUE pos, VALUE tx, VALUE nocasep), V_Subr4, DOC_search_forward) /*
+::doc:search_forward::
+search-forward STRING [POS] [BUFFER] [IGNORE-CASE-P]
 
 Scans forwards from POS (or the cursor), in BUFFER, looking for a match
 with STRING. Returns the position of the next match or nil.
 ::end:: */
 {
-    POS res;
     DECLARE1(str, STRINGP);
-    if(POSP(pos))
-	res = VPOS(pos);
-    else
-	res = curr_vw->vw_CursorPos;
+    if(!POSP(pos))
+	pos = curr_vw->vw_CursorPos;
     if(!BUFFERP(tx))
 	tx = VAL(curr_vw->vw_Tx);
-    if(check_line(VTX(tx), &res))
+    if(check_line(VTX(tx), pos))
     {
+	Pos start = *VPOS(pos);
 	char first = VSTR(str)[0];
 	long len = STRING_LEN(str);
-	while(buffer_strchr(VTX(tx), &res, first))
+	while(buffer_strchr(VTX(tx), &start, first))
 	{
-	    POS tem = res;
-	    if(buffer_compare_n(VTX(tx), &tem, VSTR(str), len,
+	    Pos end = start;
+	    if(buffer_compare_n(VTX(tx), &end, VSTR(str), len,
 				NILP(nocasep) ? strncmp : strncasecmp))
 	    {
-		set_string_match(&res, &tem);
-		return make_lpos(&res);
+		VALUE vstart = make_pos(PCOL(&start), PROW(&start));
+		set_string_match(VTX(tx), vstart,
+				 make_pos(PCOL(&end), PROW(&end)));
+		return vstart;
 	    }
-	    if(!forward_char(1, VTX(tx), &res))
+	    if(!forward_char(1, VTX(tx), &start))
 		break;
 	}
 	return(sym_nil);
@@ -494,37 +524,37 @@ with STRING. Returns the position of the next match or nil.
     return NULL;
 }
 
-_PR VALUE cmd_find_prev_string(VALUE str, VALUE pos, VALUE tx, VALUE nocasep);
-DEFUN("find-prev-string", cmd_find_prev_string, subr_find_prev_string, (VALUE str, VALUE pos, VALUE tx, VALUE nocasep), V_Subr4, DOC_find_prev_string) /*
-::doc:find_prev_string::
-find-prev-string STRING [POS] [BUFFER] [IGNORE-CASE-P]
+_PR VALUE cmd_search_backward(VALUE str, VALUE pos, VALUE tx, VALUE nocasep);
+DEFUN("search-backward", cmd_search_backward, subr_search_backward, (VALUE str, VALUE pos, VALUE tx, VALUE nocasep), V_Subr4, DOC_search_backward) /*
+::doc:search_backward::
+search-backward STRING [POS] [BUFFER] [IGNORE-CASE-P]
 
 Scans backwards from POS (or the cursor), in BUFFER, looking for a match
 with STRING. Returns the position of the next match or nil.
 ::end:: */
 {
-    POS res;
     DECLARE1(str, STRINGP);
-    if(POSP(pos))
-	res = VPOS(pos);
-    else
-	res = curr_vw->vw_CursorPos;
+    if(!POSP(pos))
+	pos = curr_vw->vw_CursorPos;
     if(!BUFFERP(tx))
 	tx = VAL(curr_vw->vw_Tx);
-    if(check_line(VTX(tx), &res))
+    if(check_line(VTX(tx), pos))
     {
+	Pos start = *VPOS(pos);
 	char first = VSTR(str)[0];
 	long len = STRING_LEN(str);
-	while(buffer_reverse_strchr(VTX(tx), &res, first))
+	while(buffer_reverse_strchr(VTX(tx), &start, first))
 	{
-	    POS tem = res;
-	    if(buffer_compare_n(VTX(tx), &tem, VSTR(str), len,
+	    Pos end = start;
+	    if(buffer_compare_n(VTX(tx), &end, VSTR(str), len,
 				NILP(nocasep) ? strncmp : strncasecmp))
 	    {
-		set_string_match(&res, &tem);
-		return make_lpos(&res);
+		VALUE vstart = make_pos(PCOL(&start), PROW(&start));
+		set_string_match(VTX(tx), vstart,
+				 make_pos(PCOL(&end), PROW(&end)));
+		return vstart;
 	    }
-	    if(!backward_char(1, VTX(tx), &res))
+	    if(!backward_char(1, VTX(tx), &start))
 		break;
 	}
 	return(sym_nil);
@@ -532,194 +562,58 @@ with STRING. Returns the position of the next match or nil.
     return NULL;
 }
 
-_PR VALUE cmd_find_next_char(VALUE ch, VALUE pos, VALUE tx);
-DEFUN("find-next-char", cmd_find_next_char, subr_find_next_char, (VALUE ch, VALUE pos, VALUE tx), V_Subr3, DOC_find_next_char) /*
-::doc:find_next_char::
-find-next-char CHAR [POS] [BUFFER]
+_PR VALUE cmd_char_search_forward(VALUE ch, VALUE pos, VALUE tx);
+DEFUN("char-search-forward", cmd_char_search_forward, subr_char_search_forward, (VALUE ch, VALUE pos, VALUE tx), V_Subr3, DOC_char_search_forward) /*
+::doc:char_search_forward::
+char-search-forward CHAR [POS] [BUFFER]
 
 Scans forwards from POS (or the cursor), in BUFFER, looking for a match
 with CHAR. Returns the position of the next match or nil.
 ::end:: */
 {
-    POS res;
     DECLARE1(ch, CHARP);
-    if(POSP(pos))
-	res = VPOS(pos);
-    else
-	res = curr_vw->vw_CursorPos;
+    if(!POSP(pos))
+	pos = curr_vw->vw_CursorPos;
     if(!BUFFERP(tx))
 	tx = VAL(curr_vw->vw_Tx);
-    if(check_line(VTX(tx), &res))
+    if(check_line(VTX(tx), pos))
     {
-	if(buffer_strchr(VTX(tx), &res, VCHAR(ch)))
-	    return(make_lpos(&res));
+	Pos tem = *VPOS(pos);
+	if(buffer_strchr(VTX(tx), &tem, VCHAR(ch)))
+	    return make_pos(PCOL(&tem), PROW(&tem));
 	return(sym_nil);
     }
     return NULL;
 }
 
-_PR VALUE cmd_find_prev_char(VALUE ch, VALUE pos, VALUE tx);
-DEFUN("find-prev-char", cmd_find_prev_char, subr_find_prev_char, (VALUE ch, VALUE pos, VALUE tx), V_Subr3, DOC_find_prev_char) /*
-::doc:find_prev_char::
-find-prev-char CHAR [POS] [BUFFER]
+_PR VALUE cmd_char_search_backward(VALUE ch, VALUE pos, VALUE tx);
+DEFUN("char-search-backward", cmd_char_search_backward, subr_char_search_backward, (VALUE ch, VALUE pos, VALUE tx), V_Subr3, DOC_char_search_backward) /*
+::doc:char_search_backward::
+char-search-backward CHAR [POS] [BUFFER]
 
 Scans backwards from POS (or the cursor), in BUFFER, looking for a match
 with CHAR. Returns the position of the next match or nil.
 ::end:: */
 {
-    POS res;
     DECLARE1(ch, CHARP);
-    if(POSP(pos))
-	res = VPOS(pos);
-    else
-	res = curr_vw->vw_CursorPos;
+    if(!POSP(pos))
+	pos = curr_vw->vw_CursorPos;
     if(!BUFFERP(tx))
 	tx = VAL(curr_vw->vw_Tx);
-    if(check_line(VTX(tx), &res))
+    if(check_line(VTX(tx), pos))
     {
-	if(buffer_reverse_strchr(VTX(tx), &res, VCHAR(ch)))
-	    return(make_lpos(&res));
+	Pos tem = *VPOS(pos);
+	if(buffer_reverse_strchr(VTX(tx), &tem, VCHAR(ch)))
+	    return make_pos(PCOL(&tem), PROW(&tem));
 	return(sym_nil);
     }
     return NULL;
 }
 
-_PR VALUE cmd_replace_regexp(VALUE re, VALUE tplt, VALUE pos, VALUE tx, VALUE nocase_p);
-DEFUN("replace-regexp", cmd_replace_regexp, subr_replace_regexp, (VALUE re, VALUE tplt, VALUE pos, VALUE tx, VALUE nocase_p), V_Subr5, DOC_replace_regexp) /*
-::doc:replace_regexp::
-replace-regexp REGEXP TEMPLATE [POS] [BUFFER] [IGNORE-CASE-P]
-
-If the text at POS or the cursor, matches REGEXP replace it with TEMPLATE,
-this is a string that can have the following escape characters,
-  \0, \&   whole string matched by REGEXP
-  \N	   N'th parenthensized expression (1 <= N <= 9)
-
-When IGNORE-CASE-P is non-nil the case of matched strings are ignored. Note
-that character classes are still case-significant.
-::end:: */
-{
-    POS res;
-    DECLARE1(re, STRINGP);
-    DECLARE2(tplt, STRINGP);
-    if(POSP(pos))
-	res = VPOS(pos);
-    else
-	res = curr_vw->vw_CursorPos;
-    if(!BUFFERP(tx))
-	tx = VAL(curr_vw->vw_Tx);
-    if(check_pos(VTX(tx), &res))
-    {
-	if(!read_only(VTX(tx)))
-	{
-	    regexp *prog = regcomp(VSTR(re));
-	    if(prog != NULL && pad_pos(VTX(tx), &res))
-	    {
-		if(regmatch_tx(prog, VTX(tx), &res,
-			       !NILP(nocase_p) ? REG_NOCASE : 0)
-		   && (POS_EQUAL_P(&res, &prog->matches.tx.startp[0])))
-		{
-		    /* replen includes terminating zero */
-		    long replen = regsublen(prog, VSTR(tplt), tx);
-		    u_char *repstr;
-		    if(replen && (repstr = str_alloc(replen)))
-		    {
-			VALUE rc = sym_nil;
-			regsub(prog, VSTR(tplt), repstr, tx);
-			delete_section(VTX(tx), &res,
-				       &prog->matches.tx.endp[0]);
-			if(insert_string(VTX(tx), repstr, replen - 1, &res))
-			    rc = make_lpos(&res);
-			str_free(repstr);
-			return rc;
-		    }
-		    else if(replen)
-			mem_error();
-		}
-		else
-		    cmd_signal(sym_error, LIST_1(MKSTR("Regexp doesn't match replace position")));
-		free(prog);
-	    }
-	}
-    }
-    return NULL;
-}
-
-_PR VALUE cmd_replace_string(VALUE orig, VALUE new, VALUE pos, VALUE tx);
-DEFUN("replace-string", cmd_replace_string, subr_replace_string, (VALUE orig, VALUE new, VALUE pos, VALUE tx), V_Subr4, DOC_replace_string) /*
-::doc:replace_string::
-replace-string ORIGINAL NEW [POS] [BUFFER]
-
-If the text at POS, or the cursor, matches ORIGINAL, replace it with the
-string NEW.
-::end:: */
-{
-    POS res;
-    DECLARE1(orig, STRINGP);
-    DECLARE2(new, STRINGP);
-    if(POSP(pos))
-	res = VPOS(pos);
-    else
-	res = curr_vw->vw_CursorPos;
-    if(!BUFFERP(tx))
-	tx = VAL(curr_vw->vw_Tx);
-    if(check_pos(VTX(tx), &res))
-    {
-	if(!read_only(VTX(tx)))
-	{
-	    long len = STRING_LEN(orig);
-	    POS tem = res;
-	    if(buffer_compare_n(VTX(tx), &tem, VSTR(orig), len, strcmp))
-	    {
-		delete_section(VTX(tx), &res, &tem);
-		if(insert_string(VTX(tx), VSTR(new), STRING_LEN(new), &res))
-		    return make_lpos(&res);
-	    }
-	    else
-		cmd_signal(sym_error, LIST_1(MKSTR("String doesn't match replace position")));
-	}
-    }
-    return NULL;
-}
-
-_PR VALUE cmd_regexp_expand(VALUE re, VALUE match, VALUE tplt, VALUE nocase_p);
-DEFUN("regexp-expand", cmd_regexp_expand, subr_regexp_expand, (VALUE re, VALUE match, VALUE tplt, VALUE nocase_p), V_Subr4, DOC_regexp_expand) /*
-::doc:regexp_expand::
-regexp-expand REGEXP MATCHSTR TEMPLATE [IGNORE-CASE-P]
-
-If REGEXP matches MATCHSTR then return the string made by expanding the
-string TEMPLATE in a similar way to in the function `replace-regexp'.
-
-When IGNORE-CASE-P is non-nil the case of matched strings are ignored. Note
-that character classes are still case-significant.
-::end:: */
-{
-    regexp *prog;
-    DECLARE1(re, STRINGP);
-    DECLARE2(match, STRINGP);
-    DECLARE3(tplt, STRINGP);
-    prog = regcomp(VSTR(re));
-    if(prog)
-    {
-	VALUE res = sym_nil;
-	if(regexec2(prog, VSTR(match), NILP(nocase_p) ? 0 : REG_NOCASE))
-	{
-	    long replen = regsublen(prog, VSTR(tplt), NULL);
-	    if(replen && (res = make_string(replen)))
-		regsub(prog, VSTR(tplt), VSTR(res), NULL);
-	    else if(!replen)
-		res = string_dup("");
-	    update_last_match(VSTR(match), prog);
-	}
-	free(prog);
-	return(res);
-    }
-    return(NULL);
-}
-
-_PR VALUE cmd_regexp_match(VALUE re, VALUE str, VALUE nocase_p);
-DEFUN("regexp-match", cmd_regexp_match, subr_regexp_match, (VALUE re, VALUE str, VALUE nocase_p), V_Subr3, DOC_regexp_match) /*
-::doc:regexp_match::
-regexp-match REGEXP STRING [IGNORE-CASE-P]
+_PR VALUE cmd_string_match(VALUE re, VALUE str, VALUE nocase_p);
+DEFUN("string-match", cmd_string_match, subr_string_match, (VALUE re, VALUE str, VALUE nocase_p), V_Subr3, DOC_string_match) /*
+::doc:string_match::
+string-match REGEXP STRING [IGNORE-CASE-P]
 
 Return t if REGEXP matches STRING.
 
@@ -730,136 +624,76 @@ that character classes are still case-significant.
     regexp *prog;
     DECLARE1(re, STRINGP);
     DECLARE2(str, STRINGP);
-    prog = regcomp(VSTR(re));
+    prog = compile_regexp(re);
     if(prog)
     {
 	VALUE res;
 	if(regexec2(prog, VSTR(str), NILP(nocase_p) ? 0 : REG_NOCASE))
 	{
-	    update_last_match(VSTR(str), prog);
+	    update_last_match(str, prog);
 	    res = sym_t;
 	}
 	else
 	    res = sym_nil;
-	free(prog);
 	return(res);
     }
-    return(NULL);
+    return NULL;
 }
 
-_PR VALUE cmd_regexp_expand_line(VALUE re, VALUE tplt, VALUE pos, VALUE tx, VALUE nocase_p);
-DEFUN("regexp-expand-line", cmd_regexp_expand_line, subr_regexp_expand_line, (VALUE re, VALUE tplt, VALUE pos, VALUE tx, VALUE nocase_p), V_Subr5, DOC_regexp_expand_line) /*
-::doc:regexp_expand_line::
-regexp-expand-line REGEXP TEMPLATE [POS] [BUFFER] [IGNORE-CASE-P]
-
-If REGEXP matches the line at POS in BUFFER then return the string made
-by expanding the string TEMPLATE in a similar way to in the function
-`replace-regexp' and the variables `find-last-start-pos' and
-`find-last-end-pos' are set to the start and end of the match.
-
-When IGNORE-CASE-P is non-nil the case of matched strings are ignored. Note
-that character classes are still case-significant.
-::end:: */
-{
-    POS linepos;
-    regexp *prog;
-    DECLARE1(re, STRINGP);
-    DECLARE2(tplt, STRINGP);
-    if(!BUFFERP(tx))
-	tx = VAL(curr_vw->vw_Tx);
-    if(POSP(pos))
-	linepos = VPOS(pos);
-    else
-	linepos = *get_tx_cursor(VTX(tx));
-    if(check_line(VTX(tx), &linepos) && (prog = regcomp(VSTR(re))))
-    {
-	VALUE res = sym_nil;
-	u_char *line = VTX(tx)->tx_Lines[linepos.pos_Line].ln_Line;
-	if(regexec2(prog, line, NILP(nocase_p) ? 0 : REG_NOCASE))
-	{
-	    long replen;
-	    translate_last_match(VTX(tx), linepos.pos_Line, line, prog);
-	    replen = regsublen(prog, VSTR(tplt), NULL);
-	    if(replen && (res = make_string(replen)))
-		regsub(prog, VSTR(tplt), VSTR(res), NULL);
-	    else if(!replen)
-		res = string_dup("");
-	}
-	free(prog);
-	return(res);
-    }
-    return(NULL);
-}
-
-_PR VALUE cmd_regexp_match_line(VALUE re, VALUE pos, VALUE tx, VALUE nocase_p);
-DEFUN("regexp-match-line", cmd_regexp_match_line, subr_regexp_match_line, (VALUE re, VALUE pos, VALUE tx, VALUE nocase_p), V_Subr4, DOC_regexp_match_line) /*
-::doc:regexp_match_line::
-regexp-match-line REGEXP [LINE-POS] [BUFFER] [IGNORE-CASE-P]
-
-Attempts to match the regular-expression REGEXP to the line pointed to by
-LINE-POS and BUFFER. If the match succeeds t is returned and the variables
-`find-last-start-pos' and `find-last-end-pos' are set to the start and end
-of the match.
-
-When IGNORE-CASE-P is non-nil the case of matched strings are ignored. Note
-that character classes are still case-significant.
-::end:: */
-{
-    POS linepos;
-    regexp *prog;
-    DECLARE1(re, STRINGP);
-    if(!BUFFERP(tx))
-	tx = VAL(curr_vw->vw_Tx);
-    if(POSP(pos))
-	linepos = VPOS(pos);
-    else
-	linepos = *get_tx_cursor(VTX(tx));
-    if(check_line(VTX(tx), &linepos) && (prog = regcomp(VSTR(re))))
-    {
-	VALUE res;
-	u_char *line = VTX(tx)->tx_Lines[linepos.pos_Line].ln_Line;
-	if(regexec2(prog, line, NILP(nocase_p) ? 0 : REG_NOCASE))
-	{
-	    translate_last_match(VTX(tx), linepos.pos_Line, line, prog);
-	    res = sym_t;
-	}
-	else
-	    res = sym_nil;
-	free(prog);
-	return(res);
-    }
-    return(NULL);
-}
-
-_PR VALUE cmd_looking_at(VALUE re, VALUE vpos, VALUE tx, VALUE nocase_p);
-DEFUN("looking-at", cmd_looking_at, subr_looking_at, (VALUE re, VALUE vpos, VALUE tx, VALUE nocase_p), V_Subr4, DOC_looking_at) /*
+_PR VALUE cmd_looking_at(VALUE re, VALUE pos, VALUE tx, VALUE nocase_p);
+DEFUN("looking-at", cmd_looking_at, subr_looking_at, (VALUE re, VALUE pos, VALUE tx, VALUE nocase_p), V_Subr4, DOC_looking_at) /*
 ::doc:looking_at::
 looking-at REGEXP [POS] [BUFFER] [IGNORE-CASE-P]
 
 Returns t if REGEXP matches the text at POS.
 ::end:: */
 {
-    POS pos;
-    regexp *prog;
     DECLARE1(re, STRINGP);
     if(!BUFFERP(tx))
 	tx = VAL(curr_vw->vw_Tx);
-    if(POSP(vpos))
-	pos = VPOS(vpos);
-    else
-	pos = *get_tx_cursor(VTX(tx));
-    if(check_line(VTX(tx), &pos) && (prog = regcomp(VSTR(re))))
+    if(!POSP(pos))
+	pos = get_tx_cursor(VTX(tx));
+    if(check_line(VTX(tx), pos))
     {
-	VALUE res = sym_nil;
-	if(regmatch_tx(prog, VTX(tx), &pos, NILP(nocase_p) ? 0 : REG_NOCASE))
+	regexp *prog = compile_regexp(re);
+	if(prog != NULL)
 	{
-	    update_last_match(NULL, prog);
-	    res = sym_t;
+	    VALUE res;
+	    if(regmatch_tx(prog, VTX(tx), pos, NILP(nocase_p) ? 0 : REG_NOCASE))
+	    {
+		update_last_match(tx, prog);
+		res = prog->matches.tx.startp[0];
+	    }
+	    else
+		res = sym_nil;
+	    return res;
 	}
-	free(prog);
-	return res;
     }
-    return(NULL);
+    return NULL;
+}
+
+_PR VALUE cmd_expand_last_match(VALUE template);
+DEFUN("expand-last-match", cmd_expand_last_match, subr_expand_last_match, (VALUE template), V_Subr1, DOC_expand_last_match) /*
+::doc:expand_last_match::
+expand-last-match TEMPLATE-STRING
+
+Expand the saved expressions from the most recent successfully matched
+regexp according to TEMPLATE-STRING, a string that may contain any of
+the following escape sequences,
+
+  \0, \&   whole string matched by REGEXP
+  \N	   N'th parenthensized expression (1 <= N <= 9)
+::end:: */
+{
+    long len;
+    VALUE string;
+    DECLARE1(template, STRINGP);
+    len = regsublen(last_match_type, &last_matches,
+		    VSTR(template), last_match_data);
+    string = make_string(len);
+    regsub(last_match_type, &last_matches,
+	   VSTR(template), VSTR(string), last_match_data);
+    return string;
 }
 
 _PR VALUE cmd_match_start(VALUE exp);
@@ -883,18 +717,18 @@ buffer, or an integer if the last match was in a string (i.e. regexp-match).
     }
     else
 	i = 0;
-    if(last_match_type == reg_string)
+    if(last_match_type == reg_tx)
     {
-	if(last_matches.string.startp[i] == NULL)
-	    return(sym_nil);
-	i = last_matches.string.startp[i] - last_string;
-	return(make_number(i));
+	if(last_matches.tx.startp[i] != NULL)
+	    return last_matches.tx.startp[i];
+	return sym_nil;
     }
     else
     {
-	if(last_matches.tx.startp[i].pos_Line != -1)
-	    return make_lpos(&last_matches.tx.startp[i]);
-	return sym_nil;
+	if(last_matches.string.startp[i] == NULL)
+	    return(sym_nil);
+	i = last_matches.string.startp[i] - (char *)VSTR(last_match_data);
+	return(make_number(i));
     }
 }
 	
@@ -915,29 +749,29 @@ buffer, or an integer if the last match was in a string (i.e. regexp-match).
     {
 	i = VNUM(exp);
 	if((i >= NSUBEXP) || (i < 0))
-	    return(signal_arg_error(exp, 1));
+	    return signal_arg_error(exp, 1);
     }
     else
 	i = 0;
-    if(last_match_type == reg_string)
+    if(last_match_type == reg_tx)
     {
-	if(last_matches.string.endp[i] == NULL)
-	    return(sym_nil);
-	i = last_matches.string.endp[i] - last_string;
-	return(make_number(i));
+	if(last_matches.tx.endp[i] != NULL)
+	    return last_matches.tx.endp[i];
+	return sym_nil;
     }
     else
     {
-	if(last_matches.tx.endp[i].pos_Line != -1)
-	    return make_lpos(&last_matches.tx.endp[i]);
-	return sym_nil;
+	if(last_matches.string.endp[i] == NULL)
+	    return(sym_nil);
+	i = last_matches.string.endp[i] - (char *)VSTR(last_match_data);
+	return(make_number(i));
     }
 }
 
-_PR VALUE cmd_regexp_quote(VALUE str);
-DEFUN("regexp-quote", cmd_regexp_quote, subr_regexp_quote, (VALUE str), V_Subr1, DOC_regexp_quote) /*
-::doc:regexp_quote::
-regexp-quote STRING
+_PR VALUE cmd_quote_regexp(VALUE str);
+DEFUN("quote-regexp", cmd_quote_regexp, subr_quote_regexp, (VALUE str), V_Subr1, DOC_quote_regexp) /*
+::doc:quote_regexp::
+quote-regexp STRING
 
 Returns a new version of STRING, any characters which the regexp routines
 treat specially (asterisks, square brackets, etc...) is quoted by the escape
@@ -1070,20 +904,22 @@ find_init(void)
 {
     INTERN(sym_regexp_error, "regexp-error");
     cmd_put(sym_regexp_error, sym_error_message, MKSTR("Regexp error"));
-    ADD_SUBR(subr_find_next_regexp);
-    ADD_SUBR(subr_find_prev_regexp);
-    ADD_SUBR(subr_find_next_string);
-    ADD_SUBR(subr_find_prev_string);
-    ADD_SUBR(subr_find_next_char);
-    ADD_SUBR(subr_find_prev_char);
-    ADD_SUBR(subr_replace_string);
-    ADD_SUBR(subr_replace_regexp);
-    ADD_SUBR(subr_regexp_expand);
-    ADD_SUBR(subr_regexp_match);
-    ADD_SUBR(subr_regexp_expand_line);
-    ADD_SUBR(subr_regexp_match_line);
+    ADD_SUBR(subr_re_search_forward);
+    ADD_SUBR(subr_re_search_backward);
+    ADD_SUBR(subr_search_forward);
+    ADD_SUBR(subr_search_backward);
+    ADD_SUBR(subr_char_search_forward);
+    ADD_SUBR(subr_char_search_backward);
+    ADD_SUBR(subr_string_match);
     ADD_SUBR(subr_looking_at);
+    ADD_SUBR(subr_expand_last_match);
     ADD_SUBR(subr_match_start);
     ADD_SUBR(subr_match_end);
-    ADD_SUBR(subr_regexp_quote);
+    ADD_SUBR(subr_quote_regexp);
+}
+
+void
+find_kill(void)
+{
+    release_cached_regexp();
 }
