@@ -225,7 +225,7 @@ typedef struct rep_cons_block_struct {
 /* If using GCC, make inline_Fcons be Fcons that only takes a procedure
    call when the heap needs to grow. */
 
-#ifdef __GNUC__
+#if defined __GNUC__ && defined __OPTIMIZE__
 extern __inline__ repv inline_Fcons (repv x, repv y);
 extern __inline__ repv
 inline_Fcons (repv x, repv y)
