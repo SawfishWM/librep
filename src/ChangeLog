@@ -1,3 +1,14 @@
+1999-10-28  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep_lisp.h: comment out use of #warning, doesn't work on
+	solaris cc
+
+	* dlmalloc.c: change the sbrk () thing again for FreeBSD
+
+	* timers.c (insert_timer): fix problem when inserting new timer
+	before existing timer (with same seconds, but less
+	milliseconds)
+
 1999-10-27  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_main.c: make the rep_alloc tracking work once more
