@@ -48,6 +48,7 @@ extern repv Fthread_queue_length (repv depth);
 extern repv Fthread_forbid (void);
 extern repv Fthread_permit (void);
 extern repv Fthread_name (repv th);
+extern u_long rep_max_sleep_for (void);
 
 /* from debug-buffer.c */
 extern void *rep_db_alloc(char *name, int size);

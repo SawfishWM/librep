@@ -1,5 +1,13 @@
 2000-02-08  John Harper  <john@dcs.warwick.ac.uk>
 
+	* continuations.c (rep_max_sleep_for): new function, returns
+	the maximum number of milliseconds that the current thread may
+	sleep for
+	* unix_main.c (wait_for_input): use rep_max_sleep_for
+
+	* continuations.c (make_thread): protect the thunk against gc
+	until it's actually called
+
 	* lisp.c (rep_funcall): remember to switch environment before
 	loading autoload cells
 
