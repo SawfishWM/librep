@@ -125,7 +125,7 @@
       (when (boundp symbol)
 	(setq doc (symbol-value symbol))
 	(when (eq 'macro (car doc))
-	  (setq doc (car doc)))
+	  (setq doc (cdr doc)))
 	(when (and (closurep doc) (eq (car (closure-function doc)) 'lambda))
 	  (setq doc (nth 2 (closure-function doc)))
 	  (when (stringp doc)
