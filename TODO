@@ -81,11 +81,16 @@ Outstanding bugs
 
  + document in manual: current-utime, new read syntaxes
 
+ + make rep_call_lispn () public?
+
 
 General programming tasks:
 ==========================
 
  + do something with the define-value ugliness?
+
+ - move the gtk-independent parts of the rep-gtk glue generator and
+   support code to librep
 
  - decide whether to have hierarchical modules
 

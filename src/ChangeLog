@@ -1,3 +1,13 @@
+2000-07-03  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep-config.sh: source `../libtool --config' then use the
+	libtool method of extracting the flags to hardcode library dirs
+	when linking (-R, etc..). With help from Mark Hewitt and Dan
+	Winship
+
+	* lisp.c (rep_call_lispn): new function, used by
+	rep_call_lisp[0-4] to call bytecode functions without consing
+
 2000-06-27  John Harper  <john@dcs.warwick.ac.uk>
 
 	* record-profile.c: mechanism for a basic profiler
