@@ -29,6 +29,10 @@
 #include <stdlib.h>
 #include <time.h>
 
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
+
 void (*rep_beep_fun)(void);
 
 DEFSTRING(build_id_string,
@@ -611,6 +615,33 @@ supplied an error is signalled.
 	return Qnil;
 }
 
+DEFUN ("crypt", Fcrypt, Scrypt, (repv key, repv salt), rep_Subr2) /*
+::doc:rep.system#crypt::
+crypt KEY SALT
+
+The `crypt' function takes a password, KEY, as a string, and a SALT
+character array, and returns a printable ASCII string which starts with
+another salt.  It is believed that, given the output of the function,
+the best way to find a KEY that will produce that output is to guess
+values of KEY until the original value of KEY is found.
+
+See crypt(3) for more information.
+::end:: */
+{
+    const char *output;
+
+    rep_DECLARE1 (key, rep_STRINGP);
+    rep_DECLARE2 (salt, rep_STRINGP);
+
+#ifdef HAVE_CRYPT
+    output = crypt (rep_STR (key), rep_STR (salt));
+    return rep_string_dup (output);
+#else
+    { DEFSTRING (err, "crypt () isn't supported on this system");
+      return Fsignal (Qerror, rep_LIST_1 (rep_VAL (&err))); }
+#endif    
+}
+
 void
 rep_misc_init(void)
 {
@@ -647,6 +678,7 @@ rep_misc_init(void)
     rep_ADD_SUBR(Ssleep_for);
     rep_ADD_SUBR(Ssit_for);
     rep_ADD_SUBR(Sget_command_line_option);
+    rep_ADD_SUBR(Scrypt);
     rep_ADD_SUBR_INT(Ssystem);
     rep_ADD_SUBR(Suser_login_name);
     rep_ADD_SUBR(Suser_full_name);

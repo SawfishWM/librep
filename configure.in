@@ -271,6 +271,11 @@ AC_FUNC_VPRINTF
 AC_CHECK_FUNCS(getcwd gethostname select socket strcspn strerror strstr stpcpy strtol psignal strsignal snprintf grantpt lrand48 getpagesize setitimer dladdr dlerror munmap putenv setenv setlocale strchr strcasecmp strncasecmp strdup __argz_count __argz_stringify __argz_next siginterrupt gettimeofday strtoll strtoq)
 AC_REPLACE_FUNCS(realpath)
 
+dnl check for crypt () function
+AC_CHECK_FUNC(crypt, [AC_DEFINE(HAVE_CRYPT)],
+    AC_CHECK_LIB(crypt, crypt, [AC_DEFINE(HAVE_CRYPT)
+			        LIBS="$LIBS -lcrypt"]))
+
 dnl Custom tests
 
 dnl How do we get dependency lines in the Makefile?

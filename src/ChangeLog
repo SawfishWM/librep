@@ -1,3 +1,8 @@
+2001-06-14  John Harper  <jsh@pixelslut.com>
+
+	* misc.c (Fcrypt): new function, wrapper for crypt(3) if it's
+	available
+
 2001-06-12  John Harper  <jsh@pixelslut.com>
 
 	* repint_subrs.h, lisp.c: don't declare Qrep_lang_interpreter
