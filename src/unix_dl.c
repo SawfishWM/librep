@@ -21,12 +21,13 @@
 #include "jade.h"
 #include <lib/jade_protos.h>
 
+_PR bool find_c_symbol(void *, char **, void **);
+
 #ifdef HAVE_DYNAMIC_LOADING
 
 _PR void *open_dl_library(VALUE file_name);
 _PR void mark_dl_data(void);
 _PR void kill_dl_libraries(void);
-_PR bool find_c_symbol(void *, char **, void **);
 
 #ifdef HAVE_DLFCN_H
 # include <dlfcn.h>
@@ -155,4 +156,12 @@ find_c_symbol(void *ptr, char **symbol_name_p, void **symbol_addr_p)
 	return FALSE;
 }
 	
-#endif /* HAVE_DYNAMIC_LOADING */
+#else /* HAVE_DYNAMIC_LOADING */
+
+bool
+find_c_symbol(void *ptr, char **name_p, void **addr_p)
+{
+    return FALSE;
+}
+
+#endif /* !HAVE_DYNAMIC_LOADING */
