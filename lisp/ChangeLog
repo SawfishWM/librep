@@ -1,3 +1,10 @@
+1998-09-02  John Harper  <john@dcs.warwick.ac.uk>
+
+	* remote-ftp.jl: fixes to password handling while logging in:
+	only caches passwords that are actually valid, has a sane
+	method of retrying failed attempts, and allows the retrying
+	process to be aborted properly
+
 1998-09-01  John Harper  <john@dcs.warwick.ac.uk>
 
 	* remote-ftp.jl (remote-ftp-command): now transparently
