@@ -1,5 +1,11 @@
 2001-06-26  John Harper  <jsh@pixelslut.com>
 
+	* sockets.c (Fsocket_peer_address, Fsocket_peer_port): new
+	functions
+	(Fsocket_address, Fsocket_port): only ever return the details
+	of the local connection point (not the peer in the case of
+	accepted connections)
+
 	* sockets.c (make_inet_socket): if binding to INADDR_ANY, try
 	to find out the actual address of the server and the actual
 	port number.

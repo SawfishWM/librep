@@ -61,6 +61,7 @@ struct rep_socket_struct {
     int sock;
     int namespace, style;
     repv addr, port;
+    repv p_addr, p_port;
     repv stream, sentinel;
 };
 
@@ -86,7 +87,8 @@ make_socket_ (int sock_fd, int namespace, int style)
     s->sock = sock_fd;
     s->namespace = namespace;
     s->style = style;
-    s->addr = s->port = Qnil;
+    s->addr = rep_NULL;
+    s->p_addr = rep_NULL;
     s->sentinel = s->stream = Qnil;
 
     s->next = socket_list;
@@ -346,29 +348,6 @@ make_inet_socket (repv hostname, int port,
 
     if (s != 0)
     {
-	socklen_t length = sizeof (name);
-	getsockname (s->sock, (struct sockaddr *) &name, &length);
-
-	s->port = rep_MAKE_INT (ntohs (name.sin_port));
-
-	if (name.sin_addr.s_addr == INADDR_ANY)
-	{
-	    /* Try to guess the ip address we're listening on */
-	    char hname[128];
-	    struct hostent *ent;
-	    gethostname (hname, sizeof (hname) - 1);
-	    ent = gethostbyname (hname);
-	    if (ent != 0)
-	    {
-		struct in_addr *addr = (struct in_addr *) ent->h_addr_list[0];
-		s->addr = rep_string_dup (inet_ntoa (*addr));
-	    }
-	    else
-		s->addr = rep_string_dup (inet_ntoa (name.sin_addr));
-	}
-	else
-	    s->addr = rep_string_dup (inet_ntoa (name.sin_addr));
-	    
 	s->sentinel = sentinel;
 	s->stream = stream;
 	return rep_VAL (s);
@@ -485,7 +464,6 @@ subsequently call `close-socket' on the created client.
 	rep_register_input_fd (new, client_socket_output);
 	client->stream = stream;
 	client->sentinel = sentinel;
-	client->addr = rep_NULL;
 	return rep_VAL (client);
     }
     else
@@ -501,20 +479,61 @@ fill_in_address (rep_socket *s)
 	{
 	    struct sockaddr_in name;
 	    size_t length = sizeof (name);
-	    if (getpeername (s->sock, (struct sockaddr *) &name, &length) == 0)
+	    if (getsockname (s->sock, (struct sockaddr *) &name, &length) == 0)
 	    {
-		char *addr = inet_ntoa (name.sin_addr);
-		if (addr != 0)
+		if (name.sin_addr.s_addr == INADDR_ANY)
 		{
-		    s->addr = rep_string_dup (addr);
-		    s->port = rep_MAKE_INT (ntohs (name.sin_port));
+		    /* Try to guess the ip address we're listening on */
+		    char hname[128];
+		    struct hostent *ent;
+		    gethostname (hname, sizeof (hname) - 1);
+		    ent = gethostbyname (hname);
+		    if (ent != 0)
+		    {
+			struct in_addr *addr = ((struct in_addr *)
+						ent->h_addr_list[0]);
+			s->addr = rep_string_dup (inet_ntoa (*addr));
+		    }
+		    else
+			s->addr = rep_string_dup (inet_ntoa (name.sin_addr));
 		}
+		else
+		    s->addr = rep_string_dup (inet_ntoa (name.sin_addr));
+
+		s->port = rep_MAKE_INT (ntohs (name.sin_port));
 	    }
 	}
 	if (s->addr == rep_NULL)
 	{
 	    s->addr = Qnil;
 	    s->port = Qnil;
+	}
+    }
+}
+
+static void
+fill_in_peer_address (rep_socket *s)
+{
+    if (s->p_addr == rep_NULL)
+    {
+	if (s->namespace == PF_INET)
+	{
+	    struct sockaddr_in name;
+	    size_t length = sizeof (name);
+	    if (getpeername (s->sock, (struct sockaddr *) &name, &length) == 0)
+	    {
+		char *addr = inet_ntoa (name.sin_addr);
+		if (addr != 0)
+		{
+		    s->p_addr = rep_string_dup (addr);
+		    s->p_port = rep_MAKE_INT (ntohs (name.sin_port));
+		}
+	    }
+	}
+	if (s->p_addr == rep_NULL)
+	{
+	    s->p_addr = Qnil;
+	    s->p_port = Qnil;
 	}
     }
 }
@@ -542,6 +561,34 @@ Return the port associated with SOCKET, or false if this is unknown.
     rep_DECLARE (1, sock, SOCKETP (sock));
     fill_in_address (SOCKET (sock));
     return SOCKET (sock)->port;
+}
+
+DEFUN ("socket-peer-address", Fsocket_peer_address,
+       Ssocket_peer_address, (repv sock), rep_Subr1) /*
+::doc:rep.io.sockets#socket-peer-address::
+socket-peer-address SOCKET
+
+Return the address of the peer connected to SOCKET, or false if this
+is unknown.
+::end:: */
+{
+    rep_DECLARE (1, sock, SOCKETP (sock));
+    fill_in_peer_address (SOCKET (sock));
+    return SOCKET (sock)->p_addr;
+}
+
+DEFUN ("socket-peer-port", Fsocket_peer_port, Ssocket_peer_port,
+       (repv sock), rep_Subr1) /*
+::doc:rep.io.sockets#socket-peer-port::
+socket-peer-port SOCKET
+
+Return the port of the peer connected to SOCKET, or false if this is
+unknown.
+::end:: */
+{
+    rep_DECLARE (1, sock, SOCKETP (sock));
+    fill_in_peer_address (SOCKET (sock));
+    return SOCKET (sock)->p_port;
 }
 
 DEFUN ("accept-socket-output-1", Faccept_socket_output_1,
@@ -692,6 +739,8 @@ rep_dl_init (void)
     rep_ADD_SUBR (Ssocket_accept);
     rep_ADD_SUBR (Ssocket_address);
     rep_ADD_SUBR (Ssocket_port);
+    rep_ADD_SUBR (Ssocket_peer_address);
+    rep_ADD_SUBR (Ssocket_peer_port);
     rep_ADD_SUBR (Saccept_socket_output_1);
     rep_ADD_SUBR (Ssocketp);
 
