@@ -703,6 +703,46 @@ Applies FUNCTION to each element in LIST, discards the results.
     return(res);
 }
 
+_PR VALUE cmd_filter(VALUE pred, VALUE list);
+DEFUN("filter", cmd_filter, subr_filter, (VALUE pred, VALUE list), V_Subr2, DOC_filter) /*
+::doc:filter::
+filter PREDICATE LIST
+
+Return a new list, consisting of the elements in LIST which the function
+PREDICATE returns t when applied to; i.e. something like
+
+(mapcar 'nconc (mapcar #'(lambda (x)
+			   (when (PREDICATE x)
+			     (list x)))
+		       LIST))
+::end:: */
+{
+    VALUE output = sym_nil, *ptr = &output;
+    GC_root gc_pred, gc_list, gc_output;
+    DECLARE2(list, LISTP);
+    PUSHGC(gc_pred, pred);
+    PUSHGC(gc_list, list);
+    PUSHGC(gc_output, output);
+    while(CONSP(list))
+    {
+	VALUE tem = call_lisp1(pred, VCAR(list));
+	TEST_INT;
+	if(tem == LISP_NULL || INT_P)
+	{
+	    output = LISP_NULL;
+	    break;
+	}
+	if(!NILP(tem))
+	{
+	    *ptr = cmd_cons(VCAR(list), sym_nil);
+	    ptr = &VCDR(*ptr);
+	}
+	list = VCDR(list);
+    }
+    POPGC; POPGC; POPGC;
+    return output;
+}
+
 _PR VALUE cmd_member(VALUE, VALUE);
 DEFUN("member", cmd_member, subr_member, (VALUE elt, VALUE list), V_Subr2, DOC_member) /*
 ::doc:member::
@@ -2447,6 +2487,7 @@ lispcmds_init(void)
     ADD_SUBR(subr_last);
     ADD_SUBR(subr_mapcar);
     ADD_SUBR(subr_mapc);
+    ADD_SUBR(subr_filter);
     ADD_SUBR(subr_member);
     ADD_SUBR(subr_memq);
     ADD_SUBR(subr_delete);
