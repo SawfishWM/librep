@@ -142,6 +142,9 @@ sys_expand_file_name(VALUE file)
 	    }
 	    else if(iptr[1] == 0)
 	    {
+		if(optr == buf)
+		    /* Only character in string. Must preserve the dot. */
+		    *optr++ = '.';
 		iptr++;
 		continue;
 	    }
@@ -154,7 +157,7 @@ sys_expand_file_name(VALUE file)
 			back--;
 		    while(back > buf && back[-1] != '/')
 			back--;
-		    if(back != buf || *back != '/')
+		    if(back != buf && *back != '/')
 			optr = back;
 		    else
 		    {
