@@ -28,6 +28,8 @@
 /* Maximum/minimum macros. Don't use when X or Y have side-effects! */
 #define MAX(x,y) (((x) > (y)) ? (x) : (y))
 #define MIN(x,y) (((x) < (y)) ? (x) : (y))
+#define POS(x)   MAX(x, 0)
+#define ABS(x)   MAX(x, -(x))
 
 #include "rep.h"
 
