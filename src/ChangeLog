@@ -1,3 +1,19 @@
+2000-01-19  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.c (rep_handle_error): for errors with >3 data values,
+	print as a list
+
+	* values.c (run_guardians): fixed bug where cons GC mark bits
+	could be mangled when moving list items
+
+	* lisp.c (rep_lisp_prin): when printing closures, don't
+	truncate long names
+
+2000-01-18  John Harper  <john@dcs.warwick.ac.uk>
+
+	* values.c (rep_register_type): if no comparison function is
+	given, just compare repv's
+
 2000-01-15  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_files.c (rep_expand_file_name): merge contiguous slashes
