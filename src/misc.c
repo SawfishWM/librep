@@ -309,8 +309,9 @@ sleep-for SECONDS [MILLISECONDS]
 Pause for SECONDS (plus the optional MILLISECOND component) length of time.
 ::end:: */
 {
-    rep_DECLARE1(secs, rep_INTP);
-    rep_sleep_for(rep_INT(secs), rep_INTP(msecs) ? rep_INT(msecs) : 0);
+    rep_DECLARE1(secs, rep_NUMERICP);
+    rep_DECLARE1_OPT(msecs, rep_NUMERICP);
+    rep_sleep_for(rep_get_long_int (secs), rep_get_long_int (msecs));
     return Qt;
 }
 
@@ -327,8 +328,10 @@ If neither SECONDS nor MILLISECONDS is defined the command will return
 immediately, using a null timeout.
 ::end:: */
 {
-    return rep_sit_for(((rep_INTP(secs) ? rep_INT(secs) : 0) * 1000)
-		       + (rep_INTP(msecs) ? rep_INT(msecs) : 0));
+    rep_DECLARE1_OPT(secs, rep_NUMERICP);
+    rep_DECLARE1_OPT(msecs, rep_NUMERICP);
+    return rep_sit_for(((rep_get_long_int (secs)) * 1000)
+		       + rep_get_long_int (msecs));
 }
 
 DEFUN("user-login-name", Fuser_login_name, Suser_login_name, (void), rep_Subr0) /*
@@ -350,7 +353,8 @@ the name to return in subsequent calls.
 ::end:: */
 {
     static repv saved_name;
-    if(rep_STRINGP(arg))
+    rep_DECLARE1_OPT (arg, rep_STRINGP);
+    if(arg != Qnil)
     {
 	if(!saved_name)
 	    rep_mark_static(&saved_name);
@@ -368,8 +372,7 @@ Return the path to USER's home directory (a string). When USER is undefined
 the directory of the user who executed Jade is found.
 ::end:: */
 {
-    if(!rep_NILP(user))
-	rep_DECLARE1(user, rep_STRINGP);
+    rep_DECLARE1_OPT(user, rep_STRINGP);
     return rep_user_home_directory(user);
 }
 
@@ -432,6 +435,7 @@ with the current time of day.
 	return Qt;
     }
 
+    rep_DECLARE1_OPT (arg, rep_INTP);
     if(rep_INTP(arg))
     {
 	limit = rep_INT(arg);

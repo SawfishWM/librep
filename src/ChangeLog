@@ -1,3 +1,17 @@
+2001-08-02  John Harper  <jsh@pixelslut.com>
+
+	* rep_lisp.h (rep_DECLARE[1-5]_OPT): new macros, test for arg
+	being false or the given type
+
+	* numbers.c (rep_get_long_int): fixed some unsignedness
+	problems
+
+	* unix_processes.c, timers.c, misc.c, lispcmds.c, find.c,
+	files.c, continuations.c: in various places check that optional
+	integer arguments really are integers or false. Also use
+	rep_get_long_int () etc where it makes sense to truncate
+	non-integer values
+
 2001-08-01  John Harper  <jsh@pixelslut.com>
 
 	* tables.c (Ftable_unset): fixed bug of not decrementing

@@ -827,6 +827,12 @@ typedef struct rep_gc_n_roots {
 #define rep_DECLARE4(x,t) rep_DECLARE(4,x,t(x))
 #define rep_DECLARE5(x,t) rep_DECLARE(5,x,t(x))
 
+#define rep_DECLARE1_OPT(x,t) rep_DECLARE(1, x, (x) == Qnil || t(x))
+#define rep_DECLARE2_OPT(x,t) rep_DECLARE(2, x, (x) == Qnil || t(x))
+#define rep_DECLARE3_OPT(x,t) rep_DECLARE(3, x, (x) == Qnil || t(x))
+#define rep_DECLARE4_OPT(x,t) rep_DECLARE(4, x, (x) == Qnil || t(x))
+#define rep_DECLARE5_OPT(x,t) rep_DECLARE(5, x, (x) == Qnil || t(x))
+
 
 /* Macros for interrupt handling */
 

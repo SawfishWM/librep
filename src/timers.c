@@ -250,8 +250,8 @@ to re-enable it.
     rep_data_after_gc += sizeof (Lisp_Timer);
     t->car = timer_type;
     t->function = fun;
-    t->secs = rep_INTP(secs) ? rep_INT(secs) : 0;
-    t->msecs = rep_INTP(msecs) ? rep_INT(msecs) : 0;
+    t->secs = rep_get_long_int (secs);
+    t->msecs = rep_get_long_int (msecs);
     t->next_alloc = allocated_timers;
     allocated_timers = t;
     insert_timer (t);
@@ -283,11 +283,13 @@ duration. Otherwise, the existing values are preserved.
 ::end:: */
 {
     rep_DECLARE1(timer, TIMERP);
+    rep_DECLARE2_OPT(secs, rep_NUMERICP);
+    rep_DECLARE3_OPT(msecs, rep_NUMERICP);
     delete_timer (TIMER(timer));
-    if (rep_INTP(secs) || rep_INTP(msecs))
+    if (secs != Qnil || msecs != Qnil)
     {
-	TIMER(timer)->secs = rep_INTP(secs) ? rep_INT(secs) : 0;
-	TIMER(timer)->msecs = rep_INTP(msecs) ? rep_INT(msecs) : 0;
+	TIMER(timer)->secs = rep_get_long_int (secs);
+	TIMER(timer)->msecs = rep_get_long_int (msecs);
     }
     insert_timer (TIMER(timer));
     return timer;

@@ -1602,7 +1602,8 @@ runnable threads, then sleep until the next thread becomes runnable.
     if (th == Qnil)
 	th = Fcurrent_thread (Qnil);
     rep_DECLARE1 (th, THREADP);
-    thread_suspend (THREAD (th), rep_INTP (msecs) ? rep_INT (msecs) : 0, 0, 0);
+    rep_DECLARE2_OPT (msecs, rep_NUMERICP);
+    thread_suspend (THREAD (th), rep_get_long_int (msecs), 0, 0);
     return Qnil;
 #else
     return rep_signal_arg_error (th, 1);
@@ -1639,8 +1640,9 @@ current dynamic root.
     {
 	rep_GC_root gc_th;
 	rep_PUSHGC (gc_th, th);
+	rep_DECLARE2_OPT (msecs, rep_NUMERICP);
 	thread_suspend (THREAD (self),
-			rep_INTP (msecs) ? rep_INT (msecs) : 0,
+			rep_get_long_int (msecs),
 			thread_join_poller, THREAD (th));
 	rep_POPGC;
 	if ((THREAD (th)->car & TF_EXITED) && THREAD (th)->exit_val)
@@ -1728,7 +1730,8 @@ Return the currently executing thread.
 #ifdef WITH_CONTINUATIONS
     rep_barrier *root;
 
-    if (!rep_INTP (depth))
+    rep_DECLARE1_OPT (depth, rep_INTP);
+    if (depth == Qnil)
 	depth = rep_MAKE_INT (0);
 
     if (depth == rep_MAKE_INT (0))
@@ -1754,7 +1757,8 @@ Return a list of all threads.
 #ifdef WITH_CONTINUATIONS
     rep_barrier *root;
 
-    if (!rep_INTP (depth))
+    rep_DECLARE1_OPT (depth, rep_INTP);
+    if (depth == Qnil)
 	depth = rep_MAKE_INT (0);
 
     if (depth == rep_MAKE_INT (0))

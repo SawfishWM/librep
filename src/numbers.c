@@ -602,18 +602,18 @@ rep_get_long_int (repv in)
 	{
 	case rep_NUMBER_BIGNUM:
 #ifdef HAVE_GMP
-	    return mpz_get_ui (rep_NUMBER(in,z));
+	    return mpz_get_si (rep_NUMBER(in,z));
 #else
 	    return rep_NUMBER (in,z);
 #endif
 
 #ifdef HAVE_GMP
 	case rep_NUMBER_RATIONAL:
-	    return (u_long) mpq_get_d (rep_NUMBER(in,q));
+	    return (long) mpq_get_d (rep_NUMBER(in,q));
 #endif
 
 	case rep_NUMBER_FLOAT:
-	    return (u_long) rep_NUMBER(in,f);
+	    return (long) rep_NUMBER(in,f);
 	}
     }
     else if (rep_CONSP (in)

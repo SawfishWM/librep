@@ -1905,12 +1905,14 @@ Note that output includes notification of process termination.
 ::end:: */
 {
     repv result = Qt;
+    rep_DECLARE2_OPT(secs, rep_NUMERICP);
+    rep_DECLARE3_OPT(msecs, rep_NUMERICP);
     /* Only wait for output if nothing already waiting. */
     if(!got_sigchld && !notify_chain)
     {
 	result = (rep_accept_input_for_callbacks
-		  ((rep_INTP(secs) ? rep_INT(secs) * 1000 : 0)
-		   + (rep_INTP(msecs) ? rep_INT(msecs) : 0),
+		  ((rep_get_long_int (secs) * 1000)
+		   + (rep_get_long_int (msecs)),
 		   n_input_handlers, input_handlers));
     }
     if(got_sigchld || notify_chain)
@@ -1936,6 +1938,8 @@ Note that output includes notification of process termination.
 {
     repv result = Qt;
     rep_DECLARE1 (process, PROCESSP);
+    rep_DECLARE2_OPT(secs, rep_NUMERICP);
+    rep_DECLARE3_OPT(msecs, rep_NUMERICP);
 
     /* Only wait for output if nothing already waiting. */
     if (got_sigchld)
@@ -1947,8 +1951,8 @@ Note that output includes notification of process termination.
 	fds[0] = VPROC (process)->pr_Stdout;
 	fds[1] = VPROC (process)->pr_Stderr;
 	result = (rep_accept_input_for_fds
-		  ((rep_INTP(secs) ? rep_INT(secs) * 1000 : 0)
-		   + (rep_INTP(msecs) ? rep_INT(msecs) : 0), 2, fds));
+		  ((rep_get_long_int (secs) * 1000)
+		   + rep_get_long_int (msecs), 2, fds));
     }
 
     if (got_sigchld)

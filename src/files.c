@@ -947,12 +947,13 @@ current position will also fail.
 ::end:: */
 {
     rep_DECLARE1(file, rep_FILEP);
+    rep_DECLARE2_OPT(offset, rep_INTP);
     if(!rep_FILE(file)->name)
 	return rep_unbound_file_error(file);
     if(rep_LOCAL_FILE_P(file))
     {
-	if(!rep_INTP(offset))
-	    return rep_MAKE_INT(ftell(rep_FILE(file)->file.fh));
+	if(offset == Qnil)
+	    return rep_make_long_int (ftell(rep_FILE(file)->file.fh));
 	else
 	{
 	    int whence = SEEK_CUR;
@@ -963,8 +964,11 @@ current position will also fail.
 
             rep_FILE (file)->car |= rep_LFF_BOGUS_LINE_NUMBER;
 
-	    if(fseek(rep_FILE(file)->file.fh, rep_INT(offset), whence) != 0)
+	    if(fseek(rep_FILE(file)->file.fh,
+		     rep_get_long_int(offset), whence) != 0)
+	    {
 		return rep_signal_file_error(rep_LIST_1(file));
+	    }
 	    else
 		return Qt;
 	}

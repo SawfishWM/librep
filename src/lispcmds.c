@@ -940,10 +940,10 @@ can be a vector or a string. INDEX starts at zero.
 
 DEFUN("make-string", Fmake_string, Smake_string, (repv len, repv init), rep_Subr2) /*
 ::doc:rep.data#make-string::
-make-string LENGTH [INITIAL-repv]
+make-string LENGTH [INITIAL-VALUE]
 
 Returns a new string of length LENGTH, each character is initialised to
-INITIAL-repv, or to space if INITIAL-repv is not given.
+INITIAL-repv, or to space if INITIAL-VALUE is not given.
 ::end:: */
 {
     repv res;
@@ -971,6 +971,7 @@ All indices start at zero.
     int slen;
     rep_DECLARE1(string, rep_STRINGP);
     rep_DECLARE2(start, rep_INTP);
+    rep_DECLARE3_OPT(end, rep_INTP);
     slen = rep_STRING_LEN(string);
     if(rep_INT(start) > slen || rep_INT(start) < 0)
 	return(rep_signal_arg_error(start, 2));
