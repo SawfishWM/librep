@@ -19,26 +19,22 @@
 ;; along with librep; see the file COPYING.  If not, write to
 ;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-(structure (export memoize-function)
-  (open rep tables)
+(define-structure memoize (export memoize memoize-function)
 
-  (defun memoize-function (fun)
-    "Create a caching version of the function FUN, either a symbol or a
-function. If a symbol, its value is replaced by a caching version of
-the function stored in the symbol.
+    (open rep tables)
 
-FUN may not be, or be defined as, an autoload definition."
-    (let
-	((memoize
-	  (lambda (f)
-	    (let
-		((cache (make-table equal-hash equal)))
-	      (lambda (&rest args)
-		(or (table-ref cache args)
-		    (table-set cache args (apply f args))))))))
-      (cond ((functionp fun)
-	     (memoize fun))
-	    ((symbolp fun)
-	     (set fun (memoize (symbol-value fun))))
-	    (t
-	     (error "Not a function or symbol: %s" fun))))))
+  (defun memoize (f)
+    "Create and return a caching version of the function F. F may not be
+an autoload definition."
+
+    (unless (functionp f)
+      (error "can only memoize functions: %s" f))
+
+    (let ((cache (make-table equal-hash equal)))
+
+      (lambda args
+	(or (table-ref cache args)
+	    (table-set cache args (apply f args))))))
+
+  ;; backwards compatibility
+  (setq memoize-function memoize))
