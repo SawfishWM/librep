@@ -177,6 +177,9 @@
 /* Define if you have the snprintf function. */
 #undef HAVE_SNPRINTF
 
+/* Define if you have the grantpt (and ptsname and unlockpt) function. */
+#undef HAVE_GRANTPT
+
 /* Define if you have the stpcpy function.  */
 #undef HAVE_STPCPY
 
