@@ -29,6 +29,10 @@
 # include <memory.h>
 #endif
 
+#ifndef DEV_SLASH_NULL
+# define DEV_SLASH_NULL "/dev/null"
+#endif
+
 /* List of operations. If there's a file handler defined for the file
    being manipulated it will be called to execute the operation.
 
@@ -777,8 +781,22 @@ Signal that there will be no more I/O through the file object FILE.
     rep_DECLARE1(file, rep_FILEP);
     if(rep_NILP(rep_FILE(file)->name))
 	return rep_unbound_file_error(file);
-    if(rep_LOCAL_FILE_P(file) && !(rep_FILE(file)->car & rep_LFF_DONT_CLOSE))
-	fclose(rep_FILE(file)->file.fh);
+    if(rep_LOCAL_FILE_P(file))
+    {
+	if (!(rep_FILE(file)->car & rep_LFF_DONT_CLOSE))
+	    fclose(rep_FILE(file)->file.fh);
+	else
+	{
+	    /* One of stdin, stdout, stderr. freopen onto /dev/null */
+	    char *mode;
+	    if (rep_FILE(file)->file.fh == stdin)
+		mode = "r";
+	    else
+		mode = "w";
+	    freopen (DEV_SLASH_NULL, mode, rep_FILE(file)->file.fh);
+	    return Qt;
+	}
+    }
     else
 	rep_call_file_handler(rep_FILE(file)->handler, op_close_file,
 			      Qclose_file, 1, file);
