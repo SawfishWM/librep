@@ -1700,7 +1700,14 @@ path_error:
 	{
 	    tem = cmd_assoc(file, tem);
 	    if(tem != LISP_NULL && CONSP(tem))
+	    {
+		/* Delete this entry */
+		cmd_set(sym_after_load_alist,
+			cmd_delq(tem, cmd_symbol_value
+				 (sym_after_load_alist, sym_t)));
+		/* Then evaluate it */
 		cmd_progn(VCDR(tem));
+	    }
 	}
 	POPGC;
 
