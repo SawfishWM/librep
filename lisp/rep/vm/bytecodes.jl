@@ -46,7 +46,7 @@
 
 ;; Instruction set version
 (defconst bytecode-major 4)
-(defconst bytecode-minor 0)
+(defconst bytecode-minor 1)
 
 ;; Opcodes
 (defconst op-call 0x08)			;call (stk[n] stk[n-1] ... stk[0])
@@ -151,6 +151,14 @@
 (defconst op-filter 0x97)
 (defconst op-macrop 0x98)
 (defconst op-bytecodep 0x99)
+
+(defconst op-pushi-0 0x9a)
+(defconst op-pushi-1 0x9b)
+(defconst op-pushi-2 0x9c)
+(defconst op-pushi-minus-1 0x9d)
+(defconst op-pushi-minus-2 0x9e)
+(defconst op-pushi 0x9f)
+(defconst op-pushi-pair 0xa0)
 
 (defconst op-set-current-buffer 0xb0)
 (defconst op-bind-buffer 0xb1)
