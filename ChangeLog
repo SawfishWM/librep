@@ -1,3 +1,11 @@
+2001-03-12  John Harper  <jsh@eazel.com>
+
+	* emulate-gnu-tar, Makefile.in: new script, emulates the
+	options of GNU tar that the tar file-handler uses, but using
+	hopefully generic tar options and separate decompression
+	programs. Used tar option combinations are `tvf -' and `xf -
+	[FILE]'
+
 2001-02-20  John Harper  <jsh@eazel.com>
 
 	* configure.in: on Solaris use /usr/ccs/lib/cpp (patch from

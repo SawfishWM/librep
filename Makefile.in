@@ -44,6 +44,7 @@ install : all installdirs
 	  ( cd $$dir && $(MAKE) $@ ); \
 	done
 	$(INSTALL_DATA) DOC $(DESTDIR)$(repexecdir)
+	$(INSTALL_SCRIPT) emulate-gnu-tar $(DESTDIR)$(repexecdir)
 	$(INSTALL_SCRIPT) libtool $(DESTDIR)$(repcommonexecdir)
 	$(INSTALL_DATA) rules.mk $(DESTDIR)$(repcommonexecdir)
 	$(INSTALL_SCRIPT) install-aliases $(DESTDIR)$(repcommonexecdir)
@@ -63,6 +64,7 @@ uninstall :
 	  ( cd $$dir && $(MAKE) $@ ); \
 	done
 	rm -rf $(DESTDIR)$(repdir)/$(version)
+	rm -rf $(DESTDIR)$(repexecdir)
 	rm -f $(DESTDIR)$(repcommonexecdir)/rules.mk
 	rm -f $(DESTDIR)$(repcommonexecdir)/install-aliases
 	rm -f $(DESTDIR)$(repcommonexecdir)/libtool

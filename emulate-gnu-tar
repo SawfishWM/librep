@@ -1,0 +1,154 @@
+#!/bin/sh
+
+# emulate-gnu-tar -- emulate the options of GNU tar that librep uses
+# in its tar-file handling code.
+
+# $Id$
+
+compression_mode=""
+command=""
+tarfile=""
+to_stdout=""
+
+version="1.0"
+
+original_directory=`pwd`
+
+usage () {
+  cat <<EOF
+usage: emulate-gnu-tar [OPTIONS..] COMMAND
+
+Supported options include:
+
+	--compress
+	--gzip
+	--bzip2
+
+Supported commands include:
+
+	--version
+	--list --file TARFILE --verbose
+	--extract --file TARFILE -C DIR
+	--extract --file TARFILE --to-stdout FILE
+
+EOF
+}
+
+absolutify () {
+  case "$1" in
+    /*)
+      echo $1
+      ;;
+    *)
+      echo "$original_directory/$1"
+      ;;
+  esac
+}
+
+while [ x"$1" != x ]; do
+  case $1 in
+    --version)
+      cat <<EOF
+tar (GNU tar) $version
+This isn't really GNU tar. It's just a wrapper script used by librep to
+make proprietary tars look somewhat like GNU tar. Don't use it.
+EOF
+      exit 0
+      ;;
+    
+    --compress)
+      compression_mode=compress
+      ;;
+
+    --gzip)
+      compression_mode=gzip
+      ;;
+
+    --bzip2)
+      compression_mode=bzip2
+      ;;
+
+    --file)
+      tarfile=`absolutify "$2"`
+      shift
+      ;;
+
+    --verbose)
+      ;;
+
+    -C)
+      cd "$2"
+      shift
+      ;;
+
+    --to-stdout)
+      to_stdout=$2
+      shift
+      ;;
+
+    --extract)
+      command=extract
+      ;;
+
+    --list)
+      command=list
+      ;;
+
+    *)
+      echo "unknown option: $1" >&2
+      exit 1
+      ;;
+  esac
+  shift
+done
+
+if [ "x$command" = x ]; then
+  usage
+  exit 1
+fi
+
+case "$compression_mode" in
+  gzip)
+    input="gzip -d -c \"$tarfile\" |"
+    ;;
+
+  compress)
+    input="compress -d -c \"$tarfile\" |"
+    ;;
+
+  bzip2)
+    input="bzip2 -d -c \"$tarfile\" |"
+    ;;
+
+  *)
+    input="cat \"$tarfile\" |"
+    ;;
+esac
+
+case "$command" in
+  list)
+    eval "$input tar tvf -"
+    ;;
+
+  extract)
+    if [ "x$to_stdout" = "x" ]; then
+      eval "$input tar xf -"
+      exit $?
+    else
+      # Extract the file to a temporary directory, then cat it..
+      tmpdir="/tmp/rep-emulate-gnu-tar.$$.output"
+      mkdir "$tmpdir" || exit $?
+      cd "$tmpdir"
+      eval "$input tar xf - $to_stdout" || ( rm -rf $tmpdir && exit $? )
+      cat "$to_stdout"
+      cd "$original_directory"
+      rm -rf "$tmpdir"
+      exit 0
+    fi
+    ;;
+
+  *)
+    echo "Unimplemented command: $command"
+    exit 1
+    ;;
+esac
