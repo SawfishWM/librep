@@ -1,5 +1,9 @@
 2000-01-07  John Harper  <john@dcs.warwick.ac.uk>
 
+	* debug-buffer.c: don't generate stack backtraces if gcc's
+	__builtin_return_address () is broken (patch from George
+	<jirka@5z.com>)
+
 	* symbols.c (Fdefvar): allow symbols to be re-defvar'd from
 	restricted environments, but only if it was originally defvar'd
 	from a restricted environment. Also, only set the value if it's
