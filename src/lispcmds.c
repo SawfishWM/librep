@@ -985,26 +985,6 @@ All indices start at zero.
 	return(rep_string_dupn(rep_STR(string) + rep_INT(start), slen - rep_INT(start)));
 }
 
-static inline int
-extend_concat(u_char **buf, int *bufLen, int i, int addLen)
-{
-    u_char *newbuf;
-    int newbuflen;
-    if((i + addLen) < *bufLen)
-	return(rep_TRUE);
-    newbuflen = (i + addLen) * 2;
-    newbuf = rep_alloc(newbuflen);
-    if(newbuf)
-    {
-	memcpy(newbuf, *buf, i);
-	rep_free(*buf);
-	*buf = newbuf;
-	*bufLen = newbuflen;
-	return(rep_TRUE);
-    }
-    rep_mem_error();
-    return(rep_FALSE);
-}
 DEFUN("concat", Fconcat, Sconcat, (repv args), rep_SubrN) /*
 ::doc:rep.data#concat::
 concat ARGS...
@@ -1013,82 +993,110 @@ Concatenates all ARGS... into a single string, each argument can be a string,
 a character or a list or vector of characters.
 ::end:: */
 {
-    int buflen = 128;
-    u_char *buf = rep_alloc(buflen);
-    if(buf)
+    u_int length;
+    repv tem, elt;
+    repv string;
+    u_char *ptr;
+
+    /* Pass 1. calculate the length of the new string. */
+
+    length = 0;
+    tem = args;
+    while (rep_CONSP (tem))
     {
-	repv res = rep_NULL;
-	int i = 0;
-	int argnum = 1;
-	while(rep_CONSP(args))
+	elt = rep_CAR (tem);
+
+	if (rep_INTP (elt))
 	{
-	    repv arg = rep_CAR(args);
-	    if (arg != Qnil)
-	    {
-		switch(rep_TYPE(arg))
-		{
-		    int slen, j;
-
-		case rep_String:
-		    slen = rep_STRING_LEN(arg);
-		    if(!extend_concat(&buf, &buflen, i, slen))
-			goto error;
-		    memcpy(buf + i, rep_STR(arg), slen);
-		    i += slen;
-		    break;
-
-		case rep_Int:
-		    if(!extend_concat(&buf, &buflen, i, 1))
-			goto error;
-		    buf[i++] = rep_INT(arg);
-		    break;
-
-		case rep_Symbol:
-		case rep_Cons:
-		    while(rep_CONSP(arg))
-		    {
-			repv ch = rep_CAR(arg);
-			if(rep_INTP(ch))
-			{
-			    if(!extend_concat(&buf, &buflen, i, 1))
-				goto error;
-			    buf[i++] = rep_INT(ch);
-			}
-			arg = rep_CDR(arg);
-			rep_TEST_INT;
-			if(rep_INTERRUPTP)
-			    goto error;
-		    }
-		    break;
-
-		case rep_Vector:
-		    {
-			int len = rep_VECT_LEN(arg);
-			for(j = 0; j < len; j++)
-			{
-			    if(rep_INTP(rep_VECTI(arg, j)))
-			    {
-				if(!extend_concat(&buf, &buflen, i, 1))
-				    goto error;
-				buf[i++] = rep_INT(rep_VECTI(arg, j));
-			    }
-			}
-			break;
-		    }
-		default:
-		    res = rep_signal_arg_error(arg, argnum);
-		    goto error;
-		}
-	    }
-	    args = rep_CDR(args);
-	    argnum++;
+	    length++;
 	}
-	res = rep_string_dupn(buf, i);
-error:
-	rep_free(buf);
-	return(res);
+	else if (rep_CONSP (elt))
+	{
+	    length += rep_list_length (elt);
+	}
+	else
+	{
+	    switch (rep_CELL8_TYPE (elt))
+	    {
+	    case rep_String:
+		length += rep_STRING_LEN (elt);
+		break;
+
+	    case rep_Vector:
+		length += rep_VECT_LEN (elt);
+		break;
+	    }
+	}
+	tem = rep_CDR (tem);
+
+	rep_TEST_INT;
+	if(rep_INTERRUPTP)
+	    return rep_NULL;
     }
-    return(rep_NULL);
+
+    if (length == 0)
+	return rep_null_string ();
+
+    /* Allocate the string. */
+    string = rep_make_string (length + 1);
+    ptr = rep_STR (string);
+
+    /* Pass2: copy in the data */
+    tem = args;
+    while (rep_CONSP (tem))
+    {
+	elt = rep_CAR (tem);
+
+	if (rep_INTP (elt))
+	{
+	    *ptr++ = rep_INT (elt);
+	}
+	else if (rep_CONSP (elt))
+	{
+	    repv tem2 = elt, c;
+
+	    while (rep_CONSP (tem2))
+	    {
+		c = rep_CAR (tem2);
+
+		if (rep_INTP (c))
+		    *ptr++ = rep_INT (c);
+
+		tem2 = rep_CDR (tem2);
+	    }
+	}
+	else
+	{
+	    switch (rep_CELL8_TYPE (elt))
+	    {
+		int i;
+		repv c;
+
+	    case rep_String:
+		memcpy (ptr, rep_STR (elt), rep_STRING_LEN (elt));
+		ptr += rep_STRING_LEN (elt);
+		break;
+
+	    case rep_Vector:
+		for (i = 0; i < rep_VECT_LEN (elt); i++)
+		{
+		    c = rep_VECTI (elt, i);
+		    if (rep_INTP (c))
+			*ptr++ = rep_INT (c);
+		}
+		break;
+	    }
+	}
+
+	tem = rep_CDR (tem);
+    }
+
+    if (rep_STRING_LEN (string) != (ptr - rep_STR (string)))
+	rep_set_string_len (string, ptr - rep_STR (string));
+
+    *ptr++ = '\0';
+
+    return string;
 }
 
 DEFUN("length", Flength, Slength, (repv sequence), rep_Subr1) /*
