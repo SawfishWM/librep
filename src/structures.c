@@ -806,8 +806,6 @@ DEFUN ("%set-interface", F_set_interface,
 %set-interface STRUCTURE INTERFACE
 
 Set the interface of structure object STRUCTURE to INTERFACE.
-
-Note that INTERFACE may subsequently be destructively modified!
 ::end:: */
 {
     rep_struct *s;
@@ -816,7 +814,7 @@ Note that INTERFACE may subsequently be destructively modified!
     rep_DECLARE1 (structure, rep_STRUCTUREP);
     rep_DECLARE2 (sig, rep_INTERFACEP);
     s = rep_STRUCTURE (structure);
-    s->inherited = sig;
+    s->inherited = Fcopy_sequence (sig);
 
     for (i = 0; i < s->total_buckets; i++)
     {
