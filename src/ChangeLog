@@ -1,3 +1,16 @@
+Fri Jun 26 16:54:54 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* find.c (compile_regexp, release_cached_regexp): instead of
+	just caching a single compile regular expression, cache all of
+	them. Then at gc, release as many of the least-recently-used
+	regexps to satisfy a size limit (by default 1k). The hit ratios
+	are immense
+	(regexp-cache-control): function to set the size limit, and to
+	report cache statistics
+
+	* regexp.h, regexp.c (regexp): added regsize field, contains
+	the true size of the compiled regular expression
+
 Tue Jun 23 12:19:54 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_processes.c (check_for_zombies): before closing all
