@@ -2649,6 +2649,7 @@ used to evaluate a list of forms in left to right order.
 * Conditional Structures::      Making decisions based on truth values
 * Looping Structures::          `while' loops
 * Non-Local Exits::             Exiting from several levels of evaluation
+* Continuations::		Capturing the call stack
 @end menu
 
 
@@ -2952,7 +2953,7 @@ The value of every @code{while} structure that terminates is
 @end defspec
 
 
-@node Non-Local Exits, , Looping Structures, Control Structures
+@node Non-Local Exits, Continuations, Looping Structures, Control Structures
 @subsection Non-Local Exits
 @cindex Non-local exits
 @cindex Control structures, non-local exits
@@ -3212,6 +3213,111 @@ The special value, the symbol @code{error}, in the car of one of the
     @result{} (file-error "File not found" "/tmp/foo")
 @end lisp
 @end defspec
+
+
+@node Continuations, , Non-Local Exits, Control Structures
+@section Continuations
+@cindex Continuations
+
+Whenever a function is called, there is a control path waiting to
+receive the result of the function, e.g. often the form following the
+function invocation. This waiting control path is called the
+@dfn{continuation} of the function, since control will continue down
+this path when the called function exits.
+
+These continuations are usually not paid much thought, but in some
+cases it may be useful to be able to directly manipulate the
+continuation of a function. For this purpose rep provides the
+@code{call-with-current-continuation} function (often shortened to
+@code{call/cc}) that is standard in the Scheme dialect of Lisp.
+
+@defun call/cc function
+@var{function} is a function with a single parameter; it will be
+immediately invoked with this parameter bound to an object representing
+the current continuation (i.e. the control path that would be taken
+after @var{function} exits).
+
+The continuation object passed to @var{function} is itself a function
+accepting a single argument, when called it transfers control to the
+continuation of @var{function}, as if @var{function} had returned the
+argument applied to the continuation object.
+@end defun
+
+@defmac call-with-current-continuation function
+This is an alias for @code{call/cc}.
+@end defmac
+
+In its simplest form, @code{call/cc} can mimic the @code{catch} and
+@code{throw} procedures (@pxref{Catch and Throw}), for example:
+
+@lisp
+(defun foo (bar)
+  (call/cc (lambda (esc)
+             (when (null bar)
+               ;; throws out of the call/cc
+               (esc nil))
+             ;; do something with bar
+             @dots{}
+@end lisp
+
+@noindent
+this is roughly equivalent to:
+
+@lisp
+(defun foo (bar)
+  (catch 'tag
+    (when (null bar)
+      (throw 'tag nil))
+    ;; do something with bar
+    @dots{}
+@end lisp
+
+This is only half the story---the most powerful feature of
+@code{call/cc} is that since continuations have dynamic extent (that
+is, no object is freed until no references to it exist) it is possible
+to return control to scopes that have already exited.
+
+For example, consider the following fragment of a lisp interaction:
+
+@lisp
+(prog1 (call/cc (lambda (esc)
+                  (setq cont esc)))
+  (message "foo!"))
+    @print{} foo!
+    @result{} #<closure>
+
+cont
+    @result{} #<closure>
+
+(cont 10)
+    @print{} foo!
+    @result{} 10
+@end lisp
+
+@noindent
+The continuation of the @code{prog1} form is saved into the variable
+@code{cont}. When subsequently called with a single argument, it has
+exactly the same effect as the first time that the second form in the
+@code{prog1} construct was evaluated.
+
+@subsection Implementation Notes
+
+@code{call/cc} works by making a copy of the process' entire call
+stack. For this reason, it is likely to be less efficient than using
+the control structures described in the previous parts of this section.
+Of course, it is much more powerful than the other constructs, so this
+often outweighs the slight inefficiency.
+
+Also note that currently no attempt is made to save or restore the
+dynamic state of the Lisp system---dynamic bindings are not removed, or
+rebound, and @code{unwind-protect} forms are not evaluated.
+
+It is also likely that some uses of @code{call/cc} may crash the
+system; most parts of the lisp interpreter itself should handle being
+reentered (since garbage collection is used), but the same may not be
+true for any external libraries being used (e.g. the GTK+ binding)
+since these will usually use @code{malloc}/@code{free} for their memory
+management.
 
 
 @node Variables, Functions, Control Structures, The language

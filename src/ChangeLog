@@ -1,5 +1,12 @@
 2000-01-28  John Harper  <john@dcs.warwick.ac.uk>
 
+	* main.c (rep_init_from_dump): find the stack base by looking
+	at the passed in address of `argc'. This is a kludge, but it's
+	the best method I can find..
+
+	* continuations.c: fixes for Linux/ix86, let's hope it still
+	works on sparc!
+
 	* continuations.c: support for `call/cc' (also has the alias
 	call-with-current-continuation). Only tested on sparc so far,
 	may need tweaking for other architectures. Doesn't attempt to

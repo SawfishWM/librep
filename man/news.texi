@@ -3,6 +3,68 @@
 @chapter News
 @cindex News
 
+@unnumberedsec 0.11
+
+@itemize @bullet
+
+@item Supports @dfn{guardian} objects through the @code{make-guardian}
+function. These are a clean mechanism for allowing the programmer to
+control when arbitrary lisp objects are finally deallocated. Also
+addded a new hook: @code{after-gc-hook}
+
+@item The default error handler can now be redefined. If the variable
+@code{error-handler-function} contains a function then it will be
+called to handle the error, with arguments @code{(@var{error}
+@var{data})}.
+
+@item New special form @code{case}, switches on a key value and sets of
+constants
+
+@item New function @code{call/cc} (also available through the alias
+@code{call-with-current-continuation}). Provides scheme-like
+continuation functions.
+
+These are full continuations (i.e. can be used to re-enter scope that
+has been left), but currently make no effort to handle rep's dynamic
+state (i.e. special bindings, @code{unwind-protect}, etc@dots{}).
+
+They have only been tested on Linux/ix86 and Solaris/sparc---since they
+use some slightly dubious stack trickery other architectures may need
+some to do some tweaking
+
+@item @code{put} and @code{get} functions now use @code{equal} to
+compare property names
+
+@item Virtual machine / compiler improvements:
+
+@itemize @minus
+@item Variable references and mutations are classified by type: lexical
+bindings use (one-dimensional) lexically addressed instructions, global
+non-special bindings have their own instructions, everything else uses
+the original instructions. Similar classification when creating new
+bindings
+
+@item Eliminate tail-recursive function calls wherever possible in
+compiled code (when the calling function has no dynamic state)
+@end itemize
+
+@noindent
+Compiled lisp code will need to be rebuilt to run on the modified
+virtual machine.
+
+@item New hook @code{before-exit-hook}. Called immediately before
+exiting
+
+@item @code{rep-xgettext} now has an option @samp{--c}. This makes it
+output pseudo C code containing the string constants found
+
+@item Fixed misfeature of interpreting filenames
+@file{@var{foo}//@var{bar}} as @file{/@var{bar}}. Contiguous path
+separators are now merged (i.e. @file{@var{foo}/@var{bar}})
+
+@end itemize
+
+
 @unnumberedsec 0.10
 
 @itemize @bullet

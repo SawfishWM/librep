@@ -4,9 +4,9 @@
 @footnotestyle end
 
 @set EDITION 1.0
-@set VERSION 0.8
-@set UPDATED 27 November 1999
-@set UPDATE-MONTH November 1999
+@set VERSION 0.11
+@set UPDATED 30 January 2000
+@set UPDATE-MONTH January 2000
 
 @ifinfo
 @direntry
@@ -16,7 +16,7 @@
 This is Edition @value{EDITION}, last updated @value{UPDATED},
 of @cite{The librep Manual}, for librep, Version @value{VERSION}.
 
-Copyright 1999 John Harper.
+Copyright 1999--2000 John Harper.
 
 Permission is granted to make and distribute verbatim copies of
 this manual provided the copyright notice and this permission notice
@@ -43,7 +43,7 @@ notice identical to this one.
 @author John Harper
 @page
 @vskip 0pt plus 1filll
-Copyright @copyright{} 1999 John Harper.
+Copyright @copyright{} 1999--2000 John Harper.
 
 Permission is granted to make and distribute verbatim copies of
 this manual provided the copyright notice and this permission notice
@@ -157,6 +157,8 @@ Some of the features of @code{librep} are:
 Common Lisp
 
 @item Fully tail-recursive evaluation of compiled functions
+
+@item Scheme-like continuations
 
 @item Mostly-Perl-like regular expressions, including \s, \S, \w, \W,
 \d, \D, \b, \B, classes and ??, ?*, ?+ (non-greedy) operators (but none
