@@ -720,7 +720,7 @@ variable will be set (if necessary) not the local value.
 	       && !(rep_SYM(sym)->car & rep_SF_WEAK_MOD)
 	       && rep_SPECIAL_ENV == Qt))
 	{
-	    Fstructure_set (rep_specials_structure, sym, val);
+	    Fstructure_define (rep_specials_structure, sym, val);
 	}
 
 	rep_SYM(sym)->car |= rep_SF_SPECIAL | rep_SF_DEFVAR;
@@ -859,15 +859,8 @@ SYMBOL in buffers or windows which do not have their own local value.
 	return val;
 }
 
-DEFUN_INT("set", Fset, Sset, (repv sym, repv val), rep_Subr2,
-	  "vVariable:" rep_DS_NL "xNew value of %s:") /*
-::doc:set::
-set SYMBOL repv
-
-Sets the value of SYMBOL to repv. If SYMBOL has a buffer-local binding
-in the current buffer or `make-variable-buffer-local' has been called on
-SYMBOL the buffer-local value in the current buffer is set. Returns repv.
-::end:: */
+static repv
+do_set (repv sym, repv val, repv (*setter)(repv st, repv var, repv val))
 {
     /* Some of this function is hardcoded into the OP_SETQ
        instruction in lispmach.c */
@@ -896,7 +889,7 @@ SYMBOL the buffer-local value in the current buffer is set. Returns repv.
 	    if (tem != Qnil)
 		rep_CDR (tem) = val;
 	    else
-		val = Fstructure_set (rep_specials_structure, sym, val);
+		val = Fstructure_define (rep_specials_structure, sym, val);
 	}
 	else
 	    val = Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
@@ -908,9 +901,25 @@ SYMBOL the buffer-local value in the current buffer is set. Returns repv.
 	if (tem != Qnil)
 	    rep_CDR(tem) = val;
 	else
-	    val = Fstructure_set (rep_structure, sym, val);
+	    val = setter (rep_structure, sym, val);
     }
     return val;
+}
+
+/* backwards compatibility for C callers */
+repv Fset (repv s, repv v) { return do_set (s, v, Fstructure_define); };
+
+DEFUN_INT("set", Freal_set, Sset, (repv s, repv v), rep_Subr2,
+	  "vVariable:" rep_DS_NL "xNew value of %s:") /*
+::doc:set::
+set SYMBOL repv
+
+Sets the value of SYMBOL to repv. If SYMBOL has a buffer-local binding
+in the current buffer or `make-variable-buffer-local' has been called on
+SYMBOL the buffer-local value in the current buffer is set. Returns repv.
+::end:: */
+{
+    return do_set (s, v, Fstructure_set);
 }
 
 DEFUN("set-default", Fset_default, Sset_default,
@@ -936,7 +945,7 @@ Sets the default value of SYMBOL to VALUE, then returns VALUE.
 	    if (tem != Qnil)
 		rep_CDR (tem) = val;
 	    else
-		val = Fstructure_set (rep_specials_structure, sym, val);
+		val = Fstructure_define (rep_specials_structure, sym, val);
 	}
 	else
 	    return Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
@@ -959,7 +968,7 @@ Sets the property list of SYMBOL to PROP-LIST, returns PROP-LIST.
     if (spec == 0)
 	return Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
 
-    Fstructure_set (plist_structure, sym, prop);
+    Fstructure_define (plist_structure, sym, prop);
     return prop;
 }
 
@@ -1075,7 +1084,7 @@ evaluated, returns the value of the last evaluation. ie,
     {
 	if(!(res = Feval(rep_CAR(rep_CDR(args)))))
 	    goto end;
-	if(!Fset(rep_CAR(args), res))
+	if(!Freal_set(rep_CAR(args), res))
 	{
 	    res = rep_NULL;
 	    goto end;
@@ -1087,6 +1096,33 @@ end:
     return(res);
 }
 
+DEFUN ("%define", F_define, S_define, (repv form,  repv tail_posn), rep_SF) /*
+::doc:%define::
+%define VAR VALUE
+
+Set the value of the binding of symbol VAR in the current structure to
+VALUE. If no such binding exists, one will be created. (Bindings of
+opened structures are never changed.)
+::end:: */
+{
+    repv var, value;
+    rep_GC_root gc_var;
+
+    if (!rep_CONSP (form))
+	return rep_signal_missing_arg (1);
+    else if (!rep_CONSP (rep_CDR (form)))
+	return rep_signal_missing_arg (2);
+
+    var = rep_CAR (form);
+    rep_PUSHGC (gc_var, var);
+    value = Feval (rep_CADR (form));
+    rep_POPGC;
+    if (value == rep_NULL)
+	return rep_NULL;
+
+    return Fstructure_define (rep_structure, var, value);
+}
+
 DEFUN("makunbound", Fmakunbound, Smakunbound, (repv sym), rep_Subr1) /*
 ::doc:makunbound::
 makunbound SYMBOL
@@ -1094,7 +1130,7 @@ makunbound SYMBOL
 Make SYMBOL have no value as a variable.
 ::end:: */
 {
-    return Fset (sym, rep_void_value);
+    return Freal_set (sym, rep_void_value);
 }
 
 DEFUN("get", Fget, Sget, (repv sym, repv prop), rep_Subr2) /*
@@ -1158,7 +1194,7 @@ retrieved with the `get' function.
 	}
 	plist = rep_CDR(rep_CDR(plist));
     }
-    Fstructure_set (plist_structure, sym, Fcons (prop, Fcons (val, old)));
+    Fstructure_define (plist_structure, sym, Fcons (prop, Fcons (val, old)));
     return val;
 }
 
@@ -1226,7 +1262,7 @@ DEFUN("make-variable-special", Fmake_variable_special,
     {
 	repv tem = rep_get_initial_special_value (sym);
 	if (tem)
-	    Fstructure_set (rep_specials_structure, sym, tem);
+	    Fstructure_define (rep_specials_structure, sym, tem);
     }
     rep_SYM(sym)->car |= rep_SF_SPECIAL;
     return sym;
@@ -1343,6 +1379,7 @@ rep_symbols_init(void)
     rep_ADD_SUBR(Sgensym);
     rep_ADD_SUBR(Ssymbolp);
     rep_ADD_SUBR(Ssetq);
+    rep_ADD_SUBR(S_define);
     rep_ADD_SUBR(Smakunbound);
     rep_ADD_SUBR(Sget);
     rep_ADD_SUBR(Sput);
