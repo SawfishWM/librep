@@ -170,9 +170,8 @@ DEFSYM(require, "require");
 /* When rep_TRUE Feval() calls the "debug-entry" function */
 rep_bool rep_single_step_flag;
 
-/* Lexical environment. A list of (SYMBOL . VALUE) The environment may
-   be dotted to t instead of nil, in which case the symbol's value slot
-   is taken as the last element of the environment */
+/* Lexical environment. A list of (SYMBOL . VALUE). Any unbound variables
+   are dereferenced in the current structure (global namespace)  */
 repv rep_env;
 
 /* Active special bindings, a list of (SYMBOL . VALUE) */
@@ -1266,19 +1265,6 @@ rep_load_autoload(repv funarg)
 }
 
 DEFSTRING(max_depth, "max-lisp-depth exceeded, possible infinite recursion?");
-
-/* copied from symbols.c
-
-   Returns (SYM . VALUE) if a lexical binding. Returns t if the actual
-   value is in the symbol's function slot */
-static inline repv
-search_environment (repv sym)
-{
-    register repv env = rep_env;
-    while (rep_CONSP(env) && rep_CAR(rep_CAR(env)) != sym)
-	env = rep_CDR(env);
-    return rep_CONSP(env) ? rep_CAR(env) : env;
-}
 
 /* Applies ARGLIST to FUN. If EVAL-ARGS is true, all arguments will be
    evaluated first. Note that both FUN and ARGLIST are gc-protected
