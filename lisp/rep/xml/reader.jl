@@ -126,6 +126,7 @@
     (let ((data (substitute-entities (read-string-item stream '(#\>)))))
       (or (= (current stream) #\>)
 	  (error "Expected '>' character: %s" stream))
+      (next stream)
       (list '! data)))
 
   (define (read-tag-body stream)

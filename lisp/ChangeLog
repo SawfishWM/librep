@@ -1,3 +1,8 @@
+2004-02-21  John Harper  <jsh@unfactored.org>
+
+	* rep/xml/reader.jl (read-exclam-body): swallow the closing '>'
+	character
+
 2003-11-24  John Harper  <jsh@unfactored.org>
 
 	* version 0.17
