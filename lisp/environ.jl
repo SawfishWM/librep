@@ -46,3 +46,12 @@ The `process-environment' variable is destructively modified."
 	(setq cell (cdr cell)))
       (setq process-environment (cons (concat name ?= value)
 				      process-environment)))))
+
+;;;###autoload
+(defun unsetenv (name)
+  "Delete the environment variable called NAME."
+  (let
+      ((re (concat (quote-regexp name) ?=)))
+    (setq process-environment
+	  (delete-if #'(lambda (x)
+			 (string-looking-at re x)) process-environment))))
