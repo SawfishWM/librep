@@ -296,9 +296,9 @@ unconditionally sets its value to VALUE (or false if VALUE isn't
 defined). If DOC is given it will be installed as the documentation
 string associated with VARIABLE."
 
-  `(progn
-     (defvar ,var nil ,doc)
-     (setq ,var ,value)))
+  (list 'progn
+	(list 'defvar var nil doc)
+	(list 'setq var value)))
 
 (export-bindings '(setq-default define-special-variable))
 
