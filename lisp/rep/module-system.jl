@@ -95,6 +95,28 @@ the interface and configuration clause syntaxes respectively."
 	(list* 'lambda nil body)
 	(list 'quote name)))
 
+(defmacro define-structures (structs config . body)
+  "Similar to `define-structure' except that multiple structures are
+created, each exporting a particular view of the underlying bindings.
+
+STRUCTS is a list defining the names and interfaces of the created
+modules, each item has the form `(NAME INTERFACE)'. CONFIG and BODY are
+exactly the same as in the `define-structure' syntax."
+  (unless (listp (car config))
+    (setq config (list config)))
+  (let ((tem (gensym)))
+    `(let ((,tem (list (structure () ((export-all) ,@config) ,@body))))
+       ,@(mapcar (lambda (x)
+		   (let ((name (car x))
+			 (interface (cadr x)))
+		     `(%make-structure
+		       (%parse-interface ',interface)
+		       (lambda ()
+			 (open rep.module-system)
+			 (%open-structures ,tem))
+		       () ',name)))
+		 structs))))
+
 (defmacro define-structure-alias (to from)
   "Create a secondary name TO for the structure called FROM."
   (list '%alias-structure (list 'quote from) (list 'quote to)))
@@ -143,7 +165,7 @@ When read, the syntax `FOO#BAR' expands to `(structure-ref FOO BAR)'."
 ;; exports
 
 (export-bindings '(define-interface structure define-structure
-		   define-structure-alias structure-ref
+		   define-structures define-structure-alias structure-ref
 		   %make-structure %make-interface %parse-interface
 		   %external-structure-ref %alias-structure))
 
