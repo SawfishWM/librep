@@ -5633,6 +5633,28 @@ declaration itself.
 This declaration should occur at the top-level of a program; it tells
 the compiler that the forms in the program will be evaluated within the
 context of the module called @var{module-name} (a symbol).
+
+@item (unsafe-for-call/cc)
+Tell the compiler that it may register-allocate variables, even if it
+can't prove that doing so wouldn't produce incorrect results if
+@code{call/cc} causes a function call to return more than once
+(@pxref{Continuations}). This declaration applies to the entire file
+that it occurs in.
+
+Without this declaration, the compiler will only register-allocate
+bindings if the following conditions are met:
+
+@itemize @bullet
+@item the binding is not accessed from any inner closures, and,
+
+@item the binding is never modified after being initialized (actually,
+the binding may be modified between being intialized and the next
+function call)
+@end itemize
+
+@noindent
+hence, this declaration is often useful where @code{call/cc} isn't
+used, and there is a lot of side effecting of local variables.
 @end table
 
 Declaration forms always evaluate to false.

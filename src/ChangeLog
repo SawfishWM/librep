@@ -1,3 +1,19 @@
+2000-08-13  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispmach.c, bytecodes.h (OP_NOT_ZERO_P): new instruction
+
+	* lispcmds.c (Fload_file): fixed to close the file if aborting
+	due to an error while evaluating
+
+	* lispmach.c (Fvalidate_byte_code): signal a more meaningful
+	error if validation fails (including the current value of
+	`load-filename')
+
+2000-08-12  John Harper  <john@dcs.warwick.ac.uk>
+
+	* continuations.c (Fcontinuation_callable_p): fixed the
+	extraction of the continuation object from the closure
+
 2000-08-11  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lisp.c (read_comment): new function. Also `#| ... #|' and

@@ -92,8 +92,6 @@ Outstanding bugs
 General programming tasks:
 ==========================
 
- + add a facility for dumping a set of structures, for later reloading
-
  + should index doc strings by MODULE.FUNCTION not just FUNCTION
 
  + %make-structure shouldn't map names to structures itself
@@ -102,7 +100,7 @@ General programming tasks:
    itself) but really %make-structure should just create the thing
    (with an optional name for printing)
 
- + fall back to .jl if .jlc fails with byte-code error
+ - add a facility for dumping a set of structures, for later reloading
 
  - move the gtk-independent parts of the rep-gtk glue generator and
    support code to librep

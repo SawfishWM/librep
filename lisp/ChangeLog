@@ -1,3 +1,43 @@
+2000-08-13  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep/vm/compiler/opt.jl: new patterns, `push 0; num-eq ->
+	zerop', `zerop; not -> not-zero-p'
+
+	* rep/vm/bytecodes.jl, disassembler.jl (not-zero-p): new
+	instruction
+
+	* rep/data/sort.jl, rep/io/file-handlers/tar.jl,
+	rep/io/file-handlers/remote/utils.jl,
+	rep/io/file-handlers/remote/rep.jl,
+	rep/io/file-handlers/remote/rcp.jl,
+	rep/io/file-handlers/remote/ftp.jl, rep/lang/doc.jl,
+	rep/lang/define.jl, rep/lang/backquote.jl, rep/util/date.jl,
+	rep/util/base64.jl, rep/vm/disassembler.jl, rep/vm/compiler.jl,
+	rep/vm/compiler/utils.jl, rep/vm/compiler/src.jl,
+	rep/vm/compiler/opt.jl, rep/vm/compiler/modules.jl,
+	rep/vm/compiler/lap.jl, rep/vm/compiler/inline.jl,
+	rep/vm/compiler/basic.jl, rep/www/cgi-get.jl: added `(declare
+	(unsafe-for-call/cc))'
+
+	* rep/system/environ.jl: rewritten to use tail recursion
+	instead of side effects
+
+	* rep/vm/compiler/bindings.jl: don't allocate variables to
+	slots if they're modified after a function has been called.
+	(Due to call/cc the function could return multiple times, but
+	it would get the _same_ values for any slot-allocated bindings,
+	even if they have since been modified). The
+	`(unsafe-for-call/cc)' declaration can be used to prevent this
+	(but it may lead to incrorrect results...)
+
+	* rep/util/repl.jl (repl): install a low-level exception
+	handler to catch interrupt signals
+
+2000-08-12  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep/vm/compiler/modules.jl (compile-structure-def): fixed
+	compilation of non-top-level structure definitions
+
 2000-08-11  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep/lang/doc.jl (doc-file-set): pass 'no-lock flag to
@@ -9,7 +49,7 @@
 	a (test a)))' wouldn't have had the tail call made into a jump
 
 	This has a _huge_ effect on the prime benchmark, iterations per
-	minute increases by 60%! for comparison:
+	minute increases by 60%! For comparison:
 
 		current rep	2580 (1.0)
 		qscheme-0.3.3	1860 (.72)
