@@ -137,7 +137,7 @@
   (export call/cc call-with-current-continuation continuation-callable-p
 	  call-with-object call-with-dynamic-root call-with-barrier
 	  make-thread thread-yield thread-delete thread-suspend
-	  thread-wake threadp thread-suspended-p thread-exited-p
+	  thread-join thread-wake threadp thread-suspended-p thread-exited-p
 	  current-thread all-threads thread-forbid thread-permit
 	  thread-name with-threads-blocked))
 

@@ -5036,6 +5036,14 @@ thread in the same dynamic root. If there are no runnable threads, then
 the interpreter will sleep until the next thread becomes runnable.
 @end defun
 
+@defun thread-join thread &optional timeout default-value
+Suspends the current thread until either @var{thread} has exited, or
+@var{timeout} milliseconds have passed.
+
+If @var{thread} exits normally, then the value of the last form it
+evaluated is returned; otherwise @var{default-value} is returned.
+@end defun
+
 @defun thread-wake thread
 Remove the suspended state from thread @var{thread}. It will then be
 scheduled for execution sometime subsequently, if its dynamic root is

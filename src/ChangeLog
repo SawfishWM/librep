@@ -1,3 +1,14 @@
+2000-06-26  John Harper  <john@dcs.warwick.ac.uk>
+
+	* continuations.c (rep_thread): added fields `exit_val' (value
+	returned from last form in thread), `poll' and `poll_arg'
+	(callback for polling when trying to wake suspended threads)
+	(thread_invoke, thread_yield): poll suspended threads
+	(thread_invoke): set exit_val of exited threads if they exited
+	normally
+	(thread_suspend): two extra args, `poll' and `poll_arg'
+	(Fthread_join): new function
+
 2000-06-24  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lispmach.c, lispcmds.c, lisp.c: when signalling Qbad_arg or
