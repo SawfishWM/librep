@@ -96,7 +96,7 @@ buffer_reverse_strpbrk(TX *tx, Pos *pos, const char *chars)
 
     if(PCOL(pos) >= line->ln_Strlen)
     {
-	PCOL(pos) = line->ln_Strlen - 2;
+	PCOL(pos) = line->ln_Strlen - 1;
 	if(chars_has_newline)
 	    return 1;
     }
@@ -115,7 +115,7 @@ buffer_reverse_strpbrk(TX *tx, Pos *pos, const char *chars)
 	line--;
 	if(--PROW(pos) < tx->tx_LogicalStart)
 	    return 0;
-	PCOL(pos) = line->ln_Strlen - 2;
+	PCOL(pos) = line->ln_Strlen - 1;
 	if(chars_has_newline)
 	    return 1;
     }
