@@ -413,11 +413,6 @@ string INPUT."
 (defun error (&rest args)
   (signal 'error (list (apply format nil args))))
 
-(defun eval-and-print (form)
-  "Eval FORM then print its value in the status line."
-  (interactive "xEval: ")
-  (prin1 (eval form) t))
-
 (defun nop ()
   "A do-nothing command."
   (interactive))
