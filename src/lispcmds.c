@@ -874,7 +874,7 @@ can only contain characters (ie, integers).
     if(STRINGP(array))
     {
 	if(!STRING_WRITABLE_P(array))
-	    return signal_arg_error(array, 1);
+	    return cmd_signal(sym_setting_constant, LIST_1(array));
 	if(VINT(index) < STRING_LEN(array))
 	{
 	    DECLARE3(new, INTP);
@@ -884,6 +884,8 @@ can only contain characters (ie, integers).
     }
     else if(VECTORP(array) || COMPILEDP(array))
     {
+	if(!VECTOR_WRITABLE_P(array))
+	    return cmd_signal(sym_setting_constant, LIST_1(array));
 	if(VINT(index) < VVECT_LEN(array))
 	{
 	    VVECTI(array, VINT(index)) = new;
