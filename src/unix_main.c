@@ -51,6 +51,7 @@ _PR u_char * file_part(u_char *);
 _PR VALUE lookup_errno(void);
 _PR void doconmsg(u_char *);
 _PR VALUE read_file(u_char *);
+_PR long sys_file_length(u_char *);
 _PR u_long sys_time(void);
 _PR int add_file_part(u_char *, const u_char *, int);
 _PR VALUE sys_expand_file_name(VALUE);
@@ -160,6 +161,21 @@ read_file(u_char *fileName)
     return(cmd_signal(sym_file_error,
 		      list_2(lookup_errno(), string_dup(fileName))));
 }
+
+long
+sys_file_length(u_char *file)
+{
+    FILE *fh = fopen(file, "r");
+    long length = -1;
+    if(fh)
+    {
+	struct stat stat;
+	if(!fstat(fileno(fh), &stat) && S_ISREG(stat.st_mode))
+	    length = stat.st_size;
+	fclose(fh);
+    }
+    return length;
+}	
 
 u_long
 sys_time(void)
