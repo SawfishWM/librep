@@ -1,3 +1,8 @@
+2000-06-18  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compiler-rep.jl (compile-declare): push `nil' onto the stack
+	(since all forms are assumed to leave a value on the stack)
+
 2000-06-16  John Harper  <john@dcs.warwick.ac.uk>
 
 	* version 0.12

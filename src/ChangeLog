@@ -1,5 +1,8 @@
 2000-06-18  John Harper  <john@dcs.warwick.ac.uk>
 
+	* rep.c (usage): added \n\ line terminations, from Sam Falkner
+	<Sam.Falkner@central.sun.com>
+
 	* lispmach.c: when CHECK_STACK_USAGE is defined, embed the
 	stack assertions into the SAFE_NEXT macro. This ensures that
 	the stack is checked after _all_ instructions

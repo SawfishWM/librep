@@ -487,6 +487,7 @@ rep_get_long_int (repv in)
 }
 
 #if SIZEOF_LONG_LONG > SIZEOF_LONG
+
 repv
 rep_make_longlong_int (rep_long_long in)
 {

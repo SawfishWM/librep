@@ -4,6 +4,21 @@
 @cindex News
 
 
+@unnumberedsec 0.12.1
+
+@itemize @bullet
+
+@item Some virtual machine performance tweaks
+
+@item Fixed nasty stack smashing bug (when using compiler declarations)
+
+@item Some 64-bit cleanups (George Lebl)
+
+@item Fixed non-ANSI C syntax (Sam Falkner)
+
+@end itemize
+
+
 @unnumberedsec 0.12
 
 @itemize @bullet
