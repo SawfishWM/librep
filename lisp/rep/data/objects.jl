@@ -23,7 +23,8 @@
 
 (define-structure rep.data.objects
 
-    (export object)
+    (export object
+	    objectp)
 
     (open rep)
 
@@ -34,16 +35,29 @@
   ;; form expands to a lambda expression, hence it captures local
   ;; bindings for the method implementations.
 
+  ;; Syntax is:
+
+  ;;	(object BASE-OBJECT METHOD...)
+
+  ;; each METHOD is either ((METHOD-NAME . PARAM-LIST) BODY...), or
+  ;; (METHOD-NAME FUNCTION).
+
+  ;; PARAM-LIST currently isn't the full lambda spec, just a list of
+  ;; symbols. The list can be dotted to a symbol to make a #!rest
+  ;; parameter. All parameters are optional (i.e. default to nil)
+
   ;; Any unknown methods are passed off to BASE-OBJECT, or if that is
   ;; nil, an `unknown-method' error is signalled.
 
-  ;; PARAM-LIST isn't the full lambda spec, just a list of symbols. The
-  ;; list can be dotted to a symbol to make a #!rest parameter. All
-  ;; parameters are optional (i.e. default to nil)
+  ;; Example:
 
-  ;; (object BASE-OBJECT
-  ;;   ((METHOD-NAME . PARAM-LIST) BODY...)
-  ;;   ((METHOD-NAME . PARAM-LIST) BODY...))
+  ;; (define obj (object nil
+  ;;		   ((foo a b) (+ a b))
+  ;;		   (bar -)))
+
+  ;; (obj 'foo 2 1) => 3
+  ;; (obj 'bar 2 1) => 1
+  ;; (obj 'baz 2 1) error--> unknown method: baz
 
   (define (make-let-bindings spec args-var)
     (let loop ((rest spec)
@@ -52,6 +66,8 @@
       (cond ((null rest) (nreverse out))
 	    ((atom rest)
 	     (loop '() (1+ i) (cons `(,rest (nthcdr ,i ,args-var)) out)))
+	    ((memq (car rest) '(#!optional #!rest #!key &optional &rest))
+	     (error "Lambda-list keywords aren't implemented for objects: %s" spec))
 	    (t (loop (cdr rest) (1+ i)
 		     (cons `(,(car rest) (nth ,i ,args-var)) out))))))
 
@@ -61,11 +77,20 @@
       `(lambda (,op . ,args)
 	 (case ,op
 	   ,@(mapcar (lambda (method)
-		       `((,(caar method))
-			 (let ,(make-let-bindings (cdar method) args)
-			   ,@(cdr method)))) methods)
-	   (t ,(if base-object
-		   `(apply ,base-object ,op ,args)
-		 `(signal 'unknown-method (list ,op))))))))
+		       (cond ((consp (car method))
+			      ;; ((METHOD-NAME . PARAM-LIST) BODY...)
+			      `((,(caar method))
+				(let ,(make-let-bindings (cdar method) args)
+				  ,@(cdr method))))
+			     ((symbolp (car method))
+			      ;; (METHOD-NAME FUNCTION)
+			      `((,(car method))
+				(apply ,(cadr method) ,args)))))
+		     methods)
+	   (t (if ,base-object
+		  (apply ,base-object ,op ,args)
+		(signal 'unknown-method (list ,op))))))))
+
+  (define objectp closurep)
 
   (put 'unknown-method 'error-message "Unknown method call"))
