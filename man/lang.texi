@@ -16,8 +16,6 @@ functions.
 * Numbers::                     Numeric representations and functions
 * Sequences::                   Ordered sequences of data values
 * Symbols::                     Symbols are uniquely named objects
-* Hash Tables::                 Efficient table lookups
-* Guardians::			Protecting objects from GC
 
 * Evaluation::                  Evaluating expressions
 * Control Structures::          Special forms. Conditionals, loops, etc@dots{}
@@ -25,12 +23,14 @@ functions.
 * Functions::                   Functions are the building blocks of Lisp
                                  programs
 * Macros::                      User-defined control structures
-* Modules::                     Static namespaces for variable bindings
-* Lexical Environment::		Manipulating closures and bindings
 * Definitions::			Scheme-like block structuring
+* Modules::                     Static namespaces for variable bindings
 * Threads::			Multi-threaded programs
 
+* Hash Tables::                 Efficient table lookups
+* Guardians::			Protecting objects from GC
 * Streams::                     Data sinks and sources; character streams
+
 * Loading::                     Programs are stored in files
 * Compiled Lisp::               Making programs run faster
 
@@ -84,18 +84,11 @@ with-object,
 @cindex Introduction, Lisp
 
 As you have probably gathered by now, @code{librep} provides a dialect
-of the Lisp programming language---a dialect similar in many ways to
-Emacs Lisp, though much more flexible in the area of embedding this
-language into other applications, and for stand-alone use. My text
-editor Jade, uses @code{librep} as its extension language, other uses
-have ranged from writing graphical applications via GTK, to CGI scripts
-for web pages.
-
-I have attempted to make the ``standard'' portion of the language (i.e.
-anything a normal Lisp would have; not related to editing) as compatible
-with GNU Emacs Lisp as possible. In some areas this rule doesn't apply,
-there will usually be a good reason for this. A few functions have been
-inspired by Common Lisp.
+of the Lisp programming language---a dialect originally inspired by
+Emacs Lisp, but later adapted to include many features from various
+Scheme implementations and Common Lisp. The language dialect aims to be
+convenient for both extending applications and writing large
+stand-alone programs.
 
 All programs written using only the information in this manual should
 be compatible with future revisions of @code{librep}.
@@ -2167,7 +2160,7 @@ This function is a combination of the @code{nth} and @code{aref} functions.
 @end defun
 
 
-@node Symbols, Hash Tables, Sequences, The language
+@node Symbols, Evaluation, Sequences, The language
 @section Symbols
 @cindex Symbols
 
@@ -2515,159 +2508,7 @@ This function sets the property list of the symbol @var{symbol} to
 @end defun
 
 
-@node Hash Tables, Guardians, Symbols, The language
-@section Hash Tables
-@cindex Hash tables
-
-The @code{tables} feature provides a flexible hash table
-implementation. Each hash table is represented by a lisp object
-satisfying the @code{tablep} predicate:
-
-@defun tablep arg
-Return @code{t} if @var{arg} is a hash table.
-@end defun
-
-Hash tables may be created by using the @code{make-table} and
-@code{make-weak-table} functions:
-
-@defun make-table hash-fun compare-fun
-Create and return a new hash table. When storing and referencing keys
-it will use the function @var{hash-fun} to map keys to hash codes
-(integers), and the predicate function @var{compare-fun} to compare two
-keys (should return @code{t} if the keys are considered equal).
-@end defun
-
-@defun make-weak-table hash-fun compare-fun
-Similar to @code{make-table}, except that key-value pairs stored in the
-table are said to be ``weakly keyed''. That is, they are only retained
-in the table as long the key has not been garbage collected.
-
-Unlike with tables created by the @code{make-table} function, the fact
-that the key is stored in the table is not considered good enough to
-prevent it being garbage collected.
-@end defun
-
-@defun table-ref table key
-Return the value stored in hash table @var{table} indexed by object
-@var{key}. Returns @code{nil} if no such value exists.
-@end defun
-
-@defun table-set table key value
-Associate the value @var{value} with @var{key} in hash table
-@var{table}. Returns @code{value}.
-@end defun
-
-@defun table-unset table key
-Remove any value stored in @var{table} associated with @var{key}.
-@end defun
-
-@defun table-walk function table
-Call function @var{function} for every key-value pair stored in hash
-table @var{table}. For each pair, the function is called with arguments
-@code{(@var{key} @var{value})}.
-@end defun
-
-Several hash functions are also provided:
-
-@defun string-hash string
-Return an integer representing the string @var{string}.
-@end defun
-
-@defun symbol-hash symbol
-Call @code{(string-hash (symbol-name @var{symbol}))}.
-@end defun
-
-@defun eq-hash arg
-Return a hash value representing object @var{arg}. The hash is
-generated from the @emph{address} of the object.
-@end defun
-
-@defun equal-hash arg
-Return a hash value representing object @var{arg}. The hash is
-generated from the @emph{contents} of the object.
-@end defun
-
-
-@node Guardians, Evaluation, Hash Tables, The language
-@section Guardians
-@cindex Guardians
-@cindex Garbage collection, guardians
-
-A @dfn{guardian} is a lisp object used to control when other data
-objects are recycled by the garbage collector (@pxref{Garbage
-Collection}).@footnote{Guardians were first described in a paper by R.
-Kent Dybvig, Carl Bruggeman, and David Eby: @cite{"Guardians in a
-Generation-Based Garbage Collector", ACM SIGPLAN Conference on
-Programming Language Design and Implementation, June 1993.}} The usual
-behaviour of the collector is to recycle objects as soon as they have
-no remaining references.
-
-Guardians allow the programmer to detect when a specified object would
-be freed by the garbage collector, and to implement their own
-allocation policy. This can be useful, for example, with objects that
-have a high creation-overhead, and thus need to be cached for
-performance reasons.
-
-@defun make-guardian
-This function allocates and returns a new guardian. Each guardian has a
-list of data objects associated with it; some of which may have been
-proved to have no remaining references to them (except from the
-guardian system).
-
-Calling the guardian object with a single argument, adds that value to
-the list of objects associated with that guardian. Calling the guardian
-with no arguments has one of two effects:
-
-@itemize @bullet
-@item
-If objects are associated with the guardian that have been proved to be
-inaccessible, then return one of those objects, and remove it from the
-list of objects associated with the guardian.
-
-@item
-If none of the associated objects have been proved to be inaccessible,
-then return the value @code{nil}.
-@end itemize
-@end defun
-
-Note the use of the word ``prove'' in the above description, objects
-are only moved into a guardian's inaccessible set by the garbage
-collector.
-
-Here is an example use of the guardian system:
-
-@lisp
-;; create a new guardian object
-(setq G (make-guardian))
-
-;; create a lisp object
-(setq x (cons 'a 'b))
-   @result{} (a . b)
-
-;; protect the object using the guardian
-(G x)
-
-;; remove the sole reference to the object
-(setq x nil)
-   @result{} nil
-
-;; invoke the garbage collector, this will
-;; prove that the value added to the
-;; guardian is no longer accessible
-(garbage-collect)
-
-;; call the guardian to retrieve the
-;; inaccessible value
-(G)
-   @result{} (a . b)
-
-;; no more inaccessible values available
-(G)
-   @result{} nil
-@end lisp
-
-
-@node Evaluation, Control Structures, Guardians, The language
+@node Evaluation, Control Structures, Symbols, The language
 @section Evaluation
 @cindex Evaluation
 @cindex Evaluating Lisp forms
@@ -4336,6 +4177,15 @@ object from a lambda expression.
 Return the closure of @var{arg} and the current lexical environment.
 @end defun
 
+@defun closurep arg
+Returns non-@code{nil} if @var{arg} is a closure.
+@end defun
+
+@defun closure-function closure
+Returns the function object associated with the lexical closure
+@var{closure}.
+@end defun
+
 
 @node Predicate Functions, Local Functions, Anonymous Functions, Functions
 @subsection Predicate Functions
@@ -4495,7 +4345,7 @@ function is equivalent to:
 @end defun
 
 
-@node Macros, Modules, Functions, The language
+@node Macros, Definitions, Functions, The language
 @section Macros
 @cindex Macros
 
@@ -4702,7 +4552,78 @@ used before they are defined (two passes are made through the source
 file).
 
 
-@node Modules, Lexical Environment, Macros, The language
+@node Definitions, Modules, Macros, The language
+@section Definitions
+@cindex Definitions
+
+Previous sections of this document have described several special forms
+and macros for defining top-level functions and variables.
+@code{librep} also provides a higher-level method of creating these
+definitions, the @code{define} statement. @code{define} originates in
+the Scheme dialect of Lisp, it allows block-structured programs to be
+defined intuitively.
+
+The most basic use of @code{define} is very similar to @code{defun},
+e.g. the two following forms have exactly the same effect:
+
+@lisp
+(defun foo (x) (1+ x))
+
+(define (foo x) (1+ x))
+@end lisp
+
+@noindent
+But note the changed position of the parentheses. This is because
+@code{define} may also be used to define (lexical) variables. Hence the
+following is also equivalent:
+
+@lisp
+(define foo (lambda (x) (1+ x)))
+@end lisp
+
+However this is the most uninteresting aspect of @code{define}. More
+interesting is that it allows @dfn{internal definitions}.
+
+Within a @code{define} form, any inner calls to @code{define} (that
+occur in a contiguous block at the start of the body of a @code{let},
+@code{let*}, @code{letrec}, @code{lambda}, or @code{define} form) are
+also used to create definitions, but definitions that are local to the
+containing scope. For example:
+
+@lisp
+(define (foo x)
+  (define (bar x)
+    (* x 42))
+  (1+ (bar x)))
+@end lisp
+
+@noindent
+This defines a top-level function called @code{foo}; but this also
+contains an inner function named @code{bar}, that is only accessible
+within @code{foo}. @footnote{In this example, there is no need to pass
+the value of @code{x} into @code{bar}, since the binding of @code{x} is
+already within the scope of @code{bar}.}
+
+@defmac define name form
+@defmacx define (name . args) body-forms@dots{}
+Define a global lexical variable called @var{name}, whose value will be
+set to @var{form}.
+
+If the first argument to the macro is a list, then a function is
+defined whose name is @var{name} and whose formal parameters are
+specified by @var{args}. The body of the function is defined by the
+@var{body-forms}. The body forms have any macros expanded, and are
+scanned for internal definitions (at the start of the body of
+@code{let}, @code{let*}, @code{lambda} special forms)
+@end defmac
+
+@defmac with-internal-definitions body-forms
+Recursively expand macros in @var{body-forms}, while scanning out any
+internal definitions into @code{letrec} statements.
+@end defmac
+
+
+@node Modules, Threads, Definitions, The language
 @section Modules
 @cindex Modules
 
@@ -4904,108 +4825,7 @@ the benefits of both lexical (i.e. encapsulation) and dynamic scoping.
 @xref{Fluid Variables}.
 
 
-@node Lexical Environment, Definitions, Modules, The language
-@section Lexical Environment
-@cindex Lexical environment
-@cindex Environment, lexical
-
-We have already seen how the @code{let} and @code{let*} allow temporary 
-values to be assigned to variables, and local functions to be defined. 
-These are mostly achieved through manipulation of the current lexical 
-environment.
-
-When any function is defined, it is associated with the currently
-active lexical environment (a function and its environment is
-collectively called a @dfn{closure}). This environment defines all
-variable and function bindings that may be accessed, and their current
-values. When the function is called, its associated environment is
-reactivated, allowing these variables and functions to be accessed. The
-@code{function} special form, and the @code{make-closure} function have
-already been described, allowing closures to be created
-(@pxref{Anonymous Functions}).
-
-@defun closurep arg
-Returns non-@code{nil} if @var{arg} is a closure.
-@end defun
-
-@defun closure-function closure
-Returns the function object associated with the lexical closure
-@var{closure}.
-@end defun
-
-
-@node Definitions, Threads, Lexical Environment, The language
-@section Definitions
-@cindex Definitions
-
-Previous sections of this document have described several special forms
-and macros for defining top-level functions and variables.
-@code{librep} also provides a higher-level method of creating these
-definitions, the @code{define} statement. @code{define} originates in
-the Scheme dialect of Lisp, it allows block-structured programs to be
-defined intuitively.
-
-The most basic use of @code{define} is very similar to @code{defun},
-e.g. the two following forms have exactly the same effect:
-
-@lisp
-(defun foo (x) (1+ x))
-
-(define (foo x) (1+ x))
-@end lisp
-
-@noindent
-But note the changed position of the parentheses. This is because
-@code{define} may also be used to define (lexical) variables. Hence the
-following is also equivalent:
-
-@lisp
-(define foo (lambda (x) (1+ x)))
-@end lisp
-
-However this is the most uninteresting aspect of @code{define}. More
-interesting is that it allows @dfn{internal definitions}.
-
-Within a @code{define} form, any inner calls to @code{define} (that
-occur in a contiguous block at the start of the body of a @code{let},
-@code{let*}, @code{letrec}, @code{lambda}, or @code{define} form) are
-also used to create definitions, but definitions that are local to the
-containing scope. For example:
-
-@lisp
-(define (foo x)
-  (define (bar x)
-    (* x 42))
-  (1+ (bar x)))
-@end lisp
-
-@noindent
-This defines a top-level function called @code{foo}; but this also
-contains an inner function named @code{bar}, that is only accessible
-within @code{foo}. @footnote{In this example, there is no need to pass
-the value of @code{x} into @code{bar}, since the binding of @code{x} is
-already within the scope of @code{bar}.}
-
-@defmac define name form
-@defmacx define (name . args) body-forms@dots{}
-Define a global lexical variable called @var{name}, whose value will be
-set to @var{form}.
-
-If the first argument to the macro is a list, then a function is
-defined whose name is @var{name} and whose formal parameters are
-specified by @var{args}. The body of the function is defined by the
-@var{body-forms}. The body forms have any macros expanded, and are
-scanned for internal definitions (at the start of the body of
-@code{let}, @code{let*}, @code{lambda} special forms)
-@end defmac
-
-@defmac with-internal-definitions body-forms
-Recursively expand macros in @var{body-forms}, while scanning out any
-internal definitions into @code{letrec} statements.
-@end defmac
-
-
-@node Threads, Streams, Definitions, The language
+@node Threads, Hash Tables, Modules, The language
 @section Threads
 @cindex Threads
 
@@ -5208,7 +5028,159 @@ The main advantage is the ease of implementation, especially when
 retrofitting threads into the previously single-threaded interpreter.
 
 
-@node Streams, Loading, Threads, The language
+@node Hash Tables, Guardians, Threads, The language
+@section Hash Tables
+@cindex Hash tables
+
+The @code{tables} feature provides a flexible hash table
+implementation. Each hash table is represented by a lisp object
+satisfying the @code{tablep} predicate:
+
+@defun tablep arg
+Return @code{t} if @var{arg} is a hash table.
+@end defun
+
+Hash tables may be created by using the @code{make-table} and
+@code{make-weak-table} functions:
+
+@defun make-table hash-fun compare-fun
+Create and return a new hash table. When storing and referencing keys
+it will use the function @var{hash-fun} to map keys to hash codes
+(integers), and the predicate function @var{compare-fun} to compare two
+keys (should return @code{t} if the keys are considered equal).
+@end defun
+
+@defun make-weak-table hash-fun compare-fun
+Similar to @code{make-table}, except that key-value pairs stored in the
+table are said to be ``weakly keyed''. That is, they are only retained
+in the table as long the key has not been garbage collected.
+
+Unlike with tables created by the @code{make-table} function, the fact
+that the key is stored in the table is not considered good enough to
+prevent it being garbage collected.
+@end defun
+
+@defun table-ref table key
+Return the value stored in hash table @var{table} indexed by object
+@var{key}. Returns @code{nil} if no such value exists.
+@end defun
+
+@defun table-set table key value
+Associate the value @var{value} with @var{key} in hash table
+@var{table}. Returns @code{value}.
+@end defun
+
+@defun table-unset table key
+Remove any value stored in @var{table} associated with @var{key}.
+@end defun
+
+@defun table-walk function table
+Call function @var{function} for every key-value pair stored in hash
+table @var{table}. For each pair, the function is called with arguments
+@code{(@var{key} @var{value})}.
+@end defun
+
+Several hash functions are also provided:
+
+@defun string-hash string
+Return an integer representing the string @var{string}.
+@end defun
+
+@defun symbol-hash symbol
+Call @code{(string-hash (symbol-name @var{symbol}))}.
+@end defun
+
+@defun eq-hash arg
+Return a hash value representing object @var{arg}. The hash is
+generated from the @emph{address} of the object.
+@end defun
+
+@defun equal-hash arg
+Return a hash value representing object @var{arg}. The hash is
+generated from the @emph{contents} of the object.
+@end defun
+
+
+@node Guardians, Streams, Hash Tables, The language
+@section Guardians
+@cindex Guardians
+@cindex Garbage collection, guardians
+
+A @dfn{guardian} is a lisp object used to control when other data
+objects are recycled by the garbage collector (@pxref{Garbage
+Collection}).@footnote{Guardians were first described in a paper by R.
+Kent Dybvig, Carl Bruggeman, and David Eby: @cite{"Guardians in a
+Generation-Based Garbage Collector", ACM SIGPLAN Conference on
+Programming Language Design and Implementation, June 1993.}} The usual
+behaviour of the collector is to recycle objects as soon as they have
+no remaining references.
+
+Guardians allow the programmer to detect when a specified object would
+be freed by the garbage collector, and to implement their own
+allocation policy. This can be useful, for example, with objects that
+have a high creation-overhead, and thus need to be cached for
+performance reasons.
+
+@defun make-guardian
+This function allocates and returns a new guardian. Each guardian has a
+list of data objects associated with it; some of which may have been
+proved to have no remaining references to them (except from the
+guardian system).
+
+Calling the guardian object with a single argument, adds that value to
+the list of objects associated with that guardian. Calling the guardian
+with no arguments has one of two effects:
+
+@itemize @bullet
+@item
+If objects are associated with the guardian that have been proved to be
+inaccessible, then return one of those objects, and remove it from the
+list of objects associated with the guardian.
+
+@item
+If none of the associated objects have been proved to be inaccessible,
+then return the value @code{nil}.
+@end itemize
+@end defun
+
+Note the use of the word ``prove'' in the above description, objects
+are only moved into a guardian's inaccessible set by the garbage
+collector.
+
+Here is an example use of the guardian system:
+
+@lisp
+;; create a new guardian object
+(setq G (make-guardian))
+
+;; create a lisp object
+(setq x (cons 'a 'b))
+   @result{} (a . b)
+
+;; protect the object using the guardian
+(G x)
+
+;; remove the sole reference to the object
+(setq x nil)
+   @result{} nil
+
+;; invoke the garbage collector, this will
+;; prove that the value added to the
+;; guardian is no longer accessible
+(garbage-collect)
+
+;; call the guardian to retrieve the
+;; inaccessible value
+(G)
+   @result{} (a . b)
+
+;; no more inaccessible values available
+(G)
+   @result{} nil
+@end lisp
+
+
+@node Streams, Loading, Guardians, The language
 @section Streams
 @cindex Streams
 @cindex Input and output
@@ -8349,6 +8321,12 @@ Return a new string, a lower case copy of @var{string}.
 @defun capitalize-string string
 Return a new string, a copy of @var{string} with the first character in
 upper case.
+@end defun
+
+@defun mapconcat function sequence separator
+Call @var{function} for each member of @var{sequence}, concatenating
+the results. Between each pair of results, insert @var{separator}.
+Return the resulting string.
 @end defun
 
 
