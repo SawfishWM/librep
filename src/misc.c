@@ -103,6 +103,19 @@ a file name. Add's `/' characters between each PART if necessary.
     return(null_string);
 }
 
+_PR VALUE cmd_file_name_equal(VALUE file1, VALUE file2);
+DEFUN("file-name=", cmd_file_name_equal, subr_file_name_equal, (VALUE file1, VALUE file2), V_Subr2, DOC_file_name_equal) /*
+::doc:file_name_equal::
+file-name= FILE-NAME1 FILE-NAME2
+
+Returns t if FILE-NAME1 and FILE-NAME2 refer to the same file.
+::end:: */
+{
+    DECLARE1(file1, STRINGP);
+    DECLARE2(file2, STRINGP);
+    return same_files(VSTR(file1), VSTR(file2)) ? sym_t : sym_nil;
+}
+
 _PR VALUE cmd_expand_file_name(VALUE name, VALUE full);
 DEFUN("expand-file-name", cmd_expand_file_name, subr_expand_file_name, (VALUE name, VALUE full), V_Subr2, DOC_expand_file_name) /*
 ::doc:expand_file_name::
@@ -448,6 +461,7 @@ void
 misc_init(void)
 {
     ADD_SUBR(subr_file_name_concat);
+    ADD_SUBR(subr_file_name_equal);
     ADD_SUBR(subr_expand_file_name);
     ADD_SUBR(subr_system);
     ADD_SUBR(subr_substring);
