@@ -184,6 +184,15 @@ load_requires (char *ptr)
     return rep_TRUE;
 }
 
+static void
+signal_error (char *msg)
+{
+    if (Qerror != 0)
+	Fsignal (Qerror, rep_LIST_1 (rep_string_dup (msg)));
+    else
+	fprintf (stderr, "error: %s\n", msg);
+}
+
 void *
 rep_open_dl_library(repv file_name)
 {
@@ -259,28 +268,28 @@ rep_open_dl_library(repv file_name)
 	}
 	fclose(fh);
 	if (!dlname)
-	{
-	    Fsignal(Qerror,
-		       rep_LIST_2(rep_string_dup("Can't find dlname in .la object"),
-			      file_name));
-	}
+	    signal_error ("Can't find dlname in .la object");
 	else
 	{
 	    rep_xsubr **functions;
 	    repv (*init_func)(repv);
 	    repv *feature_sym;
 	    void *handle;
+	    rep_bool relocate_now = rep_FALSE;
+	    if (Qdl_load_reloc_now
+		&& rep_SYM(Qdl_load_reloc_now)->value != Qnil)
+	    {
+		relocate_now = rep_TRUE;
+	    }
 
 #if defined (HAVE_DLOPEN)
 	    handle = dlopen(dlname,
-			    (rep_SYM(Qdl_load_reloc_now)->value == Qnil
-			     ? RTLD_LAZY : RTLD_NOW)
+			    (relocate_now ? RTLD_NOW : RTLD_LAZY)
 			    | (open_globally ? RTLD_GLOBAL : RTLD_LOCAL));
 #elif defined (HAVE_SHL_LOAD)
 	    /* XXX how do we open these locally/globally? */
 	    handle = shl_load (dlname,
-			       (rep_SYM(Qdl_load_reloc_now)->value == Qnil
-				? BIND_DEFERRED : BIND_IMMEDIATE)
+			       (relocate_now ? BIND_IMMEDIATE : BIND_DEFERRED)
 			       | BIND_NONFATAL | DYNAMIC_PATH, 0L);
 #endif
 	    if(handle == 0)
@@ -292,7 +301,7 @@ rep_open_dl_library(repv file_name)
 		err = "unknown dl error";
 #endif
 		if(err != 0)
-		    Fsignal(Qerror, rep_LIST_1(rep_string_dup(err)));
+		    signal_error (err);
 		return 0;
 	    }
 	    x = rep_alloc(sizeof(struct dl_lib_info));
@@ -313,7 +322,8 @@ rep_open_dl_library(repv file_name)
 	    if(init_func != 0)
 	    {
 		repv ret = init_func(file_name);
-		if(ret == rep_NULL || ret == Qnil)
+		if(Qnil != rep_NULL			/* initialising */
+		   && (ret == rep_NULL || ret == Qnil))
 		{
 		    /* error. abort abort.. */
 		    struct dl_lib_info **ptr;
@@ -327,7 +337,7 @@ rep_open_dl_library(repv file_name)
 		    dlclose(handle);
 		    return 0;
 		}
-		else if (rep_SYMBOLP(ret) && ret != Qt)
+		else if (ret && rep_SYMBOLP(ret) && ret != Qt)
 		    x->feature_sym = ret;
 	    }
 
@@ -349,11 +359,7 @@ rep_open_dl_library(repv file_name)
 	    }
 
 	    if (x->feature_sym != Qnil)
-	    {
-		/* don't call lisp provide, we want to avoid gc */
-		Fset (Qfeatures, Fcons (x->feature_sym,
-					Fsymbol_value (Qfeatures, Qnil)));
-	    }
+		Fprovide (x->feature_sym);
 	}
     }
 out:
