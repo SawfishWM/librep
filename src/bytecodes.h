@@ -87,7 +87,7 @@
 
 #define OP_REF 0x40			/* push (symbol-value pop) */
 #define OP_SET 0x41			/* call-2 set */
-#define OP_UNUSED1 0x42
+#define OP_FLUID_REF 0x42		/* call-1 fluid-ref */
 #define OP_ENCLOSE 0x43			/* push (make-closure pop[1] nil) */
 #define OP_INIT_BIND 0x44		/* new-binding-set */
 #define OP_UNBIND 0x45			/* rewind-binding-set */
@@ -230,6 +230,9 @@
 #define OP_UNBINDALL_0 0xbd
 #define OP_CLOSUREP 0xbe		/* push (closurep pop[1]) */
 #define OP_POP_ALL 0xbf
+
+#define OP_FLUID_SET 0xc0
+#define OP_FLUID_BIND 0xc1
 
 
 /* Jump opcodes */

@@ -651,6 +651,21 @@ again:
 	case OP_SET:
 	    CALL_2(Fset);
 
+	case OP_FLUID_REF:
+	    tmp = search_special_bindings (TOP);
+	    if (tmp != Qnil)
+	    {
+		TOP = rep_CDR (tmp);
+		goto fetch;
+	    }
+	    else if (rep_CONSP (TOP))
+	    {
+		TOP = rep_CDR (TOP);
+		goto fetch;
+	    }
+	    Fsignal (Qvoid_value, rep_LIST_1 (TOP));
+	    goto error;
+
 	case OP_ENCLOSE:
 	    TOP = Fmake_closure (TOP, Qnil);
 	    break;
@@ -1309,6 +1324,17 @@ again:
 
 	case OP_POP_ALL:
 	    stackp = stackbase - 1;
+	    goto fetch;
+
+	case OP_FLUID_SET:
+	    CALL_2 (Ffluid_set);
+
+	case OP_FLUID_BIND:
+	    tmp = RET_POP;
+	    rep_special_bindings = Fcons (Fcons (RET_POP, tmp),
+					  rep_special_bindings);
+	    BIND_TOP = rep_MARK_SPEC_BINDING (BIND_TOP);
+	    impurity++;
 	    goto fetch;
 
 	/* Jump instructions follow */
