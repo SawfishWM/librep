@@ -3,6 +3,22 @@
 @appendix News
 @cindex News
 
+@heading 0.13.5
+
+@itemize @bullet
+
+@item Tar file handling no longer requires GNU tar
+
+@item The @code{defvar} special form can now take only a single
+argument
+
+@item The reader now treats @code{#\return} characters as white space
+
+@item Other miscellaneous bug fixes@dots{}
+
+@end itemize
+
+
 @heading 0.13.4
 
 @itemize @bullet

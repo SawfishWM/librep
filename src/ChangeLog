@@ -1,5 +1,7 @@
 2001-03-22  John Harper  <jsh@eazel.com>
 
+	* version 0.13.5
+
 	* numbers.c (rep_parse_number, rep_print_number_to_string): use
 	a macro to save and install the locale. The old way was broken
 	since I didn't realize that setlocale returns the current
