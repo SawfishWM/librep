@@ -512,7 +512,7 @@ Returns the lower-case equivalent of CHAR.
 ::end:: */
 {
     rep_DECLARE1(ch, rep_INTP);
-    return rep_MAKE_INT(toupper(rep_INT(ch)));
+    return rep_MAKE_INT(tolower(rep_INT(ch)));
 }
 
 void
