@@ -1547,7 +1547,7 @@ path_error:
 	lc.args = Qnil;
 	lc.args_evalled_p = Qnil;
 	rep_PUSH_CALL(lc);
-	rep_env = Qt;
+	rep_env = Qnil;
 
 	c = rep_stream_getc(stream);
 	while((c != EOF) && (tem = rep_readl(stream, &c)))
