@@ -251,7 +251,10 @@ rep_call_file_handler(repv handler, int op, repv sym, int nargs, ...)
     if (rep_SYMBOLP(handler))
     {
 	if (rep_fh_env == Qt)
+	{
+	    rep_USE_DEFAULT_ENV;
 	    handler = Fsymbol_value (handler, Qt);
+	}
 	else
 	{
 	    repv tem = Fassq (handler, rep_fh_env);
@@ -268,13 +271,18 @@ rep_call_file_handler(repv handler, int op, repv sym, int nargs, ...)
 	}
     }
 
-    rep_push_regexp_data(&matches);
-    op_data.next = rep_blocked_ops[op];
-    rep_blocked_ops[op] = &op_data;
-    /* handler and arg_list are automatically gc-protected by rep_funcall */
-    res = rep_funcall(handler, arg_list, rep_FALSE);
-    rep_blocked_ops[op] = op_data.next;
-    rep_pop_regexp_data();
+    if (handler != rep_NULL && !rep_VOIDP (handler))
+    {
+	rep_push_regexp_data(&matches);
+	op_data.next = rep_blocked_ops[op];
+	rep_blocked_ops[op] = &op_data;
+	/* handler and arg_list are automatically protected by rep_funcall */
+	res = rep_funcall(handler, arg_list, rep_FALSE);
+	rep_blocked_ops[op] = op_data.next;
+	rep_pop_regexp_data();
+    }
+    else
+	res = rep_NULL;
 
     rep_POP_CALL(lc);
     return res;
