@@ -193,7 +193,7 @@ load_requires (char *ptr)
     {
 	char *end = ptr + strcspn (ptr, " \t");
 	repv sym = Fintern (rep_string_dupn (ptr, end - ptr), Qnil);
-	if (Frequire (sym) == rep_NULL)
+	if (F_intern_structure (sym) == rep_NULL)
 	    return rep_FALSE;
 	ptr = end + strspn (end, " \t");
     }
@@ -381,18 +381,22 @@ rep_open_dl_library(repv file_name)
 		    functions++;
 		}
 	    }
-
-	    if (x->feature_sym != Qnil && x->structure == Qnil)
-	    {
-		/* only `provide' the feature if there's no
-		   associated structure (since we haven't actually
-		   imported it) */
-		Fprovide (x->feature_sym);
-	    }
 	}
     }
 out:
-    return (x == 0) ? rep_NULL : x->structure;
+
+    if (x != 0)
+    {
+	if (x->feature_sym != Qnil && x->structure == Qnil)
+	{
+	    /* only `provide' the feature if there's no associated
+	       structure (since we haven't actually imported it) */
+	    Fprovide (x->feature_sym);
+	}
+	return x->structure;
+    }
+    else
+	return rep_NULL;
 }
 
 void
