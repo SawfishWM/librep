@@ -99,8 +99,8 @@ AC_HEADER_TIME
 AC_CHECK_HEADERS(fcntl.h sys/ioctl.h sys/time.h sys/utsname.h unistd.h siginfo.h memory.h stropts.h termios.h string.h limits.h argz.h locale.h nl_types.h malloc.h sys/param.h)
 
 dnl Check for GNU MP library and header files
-AC_ARG_WITH(gmp,
-[  --with-gmp=DIR          path to GMP],[
+AC_ARG_WITH(gmp-prefix,
+[  --with-gmp-prefix=DIR   path to GMP],[
   if test "$withval" != "no"; then
     CPPFLAGS="${CPPFLAGS} -I$withval/include"
     LDFLAGS="${LDFLAGS} -L$withval/lib"
@@ -114,8 +114,8 @@ AC_CHECK_HEADER(gmp.h,
 AC_SUBST(GMP_LIBS)
 
 dnl Check for GNU DBM library and header files
-AC_ARG_WITH(gdbm,
-[  --with-gdbm=DIR         path to GDBM],[
+AC_ARG_WITH(gdbm-prefix,
+[  --with-gdbm-prefix=DIR  path to GDBM],[
   if test "$withval" != "no"; then
     CPPFLAGS="${CPPFLAGS} -I$withval/include"
     LDFLAGS="${LDFLAGS} -L$withval/lib"
@@ -134,7 +134,7 @@ AC_CHECK_FUNC(malloc_set_state, , doug_lea_malloc=no)
 if test "$doug_lea_malloc" = "no"; then
   case ${host} in
     *-dec-osf*)
-      # dlmalloc is broken on Tru64
+      dnl dlmalloc is broken on Tru64
       AC_DEFINE(LIBC_MALLOC)
       ;;
     *)
@@ -239,19 +239,19 @@ dnl Custom tests
 
 dnl How do we get dependency lines in the Makefile?
 if test "x${GCC}" = "xyes"; then
-  MAKEDEP='$(CC) -MM -MG'
+  MAKEDEP='$(CC) -MM'
 else
   case ${host} in
     *-dec-osf*)
-      # works on Tru64
+      dnl works on Tru64
       MAKEDEP='$(CC) -M'
       ;;
     *-sun-solaris*)
-      # works on Solaris
+      dnl works on Solaris
       MAKEDEP='/usr/lib/cpp -M'
       ;;
     *)
-      # disable dependences?
+      dnl disable dependences?
       MAKEDEP='true'
       ;;
   esac
@@ -428,12 +428,14 @@ AC_DEFINE_UNQUOTED(rep_MALLOC_ALIGNMENT, ${with_malloc_alignment})
 
 dnl Check for gcc crashes on alpha (seems to be fixed in new snapshots, but
 dnl just to make it compile on all machines)
-AC_MSG_CHECKING([for broken alpha gcc])
-AC_TRY_COMPILE([],[__builtin_return_address(1);],
-	       [AC_MSG_RESULT(no)],
-	       [AC_DEFINE(BROKEN_ALPHA_GCC,1)
-		AC_MSG_RESULT(yes)
-		AC_MSG_WARN([Backtrace support will not be compiled])])
+if test "x${GCC}" = "xyes"; then
+  AC_MSG_CHECKING([for broken alpha gcc])
+  AC_TRY_COMPILE([],[__builtin_return_address(1);],
+		 [AC_MSG_RESULT(no)],
+		 [AC_DEFINE(BROKEN_ALPHA_GCC,1)
+		  AC_MSG_RESULT(yes)
+		  AC_MSG_WARN([Backtrace support will not be compiled])])
+fi
 
 AC_MSG_CHECKING([for stack growth direction])
 AC_ARG_WITH(stack-direction,
