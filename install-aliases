@@ -1,0 +1,122 @@
+#!/bin/sh
+
+# script to extract and create aliases from source files
+
+# $Id$
+
+verbose=no
+dry_run=no
+
+# copy a .la file, editing the `dlname=' line to the new stem
+copy_la_file () {
+  la_src=$1; shift
+  la_dest=$1; shift
+
+  line=`grep '^dlname=' $la_src`
+  old_stem=`echo $la_src | sed -e 's|^.*\/\([^/]*\)\.[^/]*$|\1|'`
+  new_stem=`echo $la_dest | sed -e 's|^.*\/\([^/]*\)\.[^/]*$|\1|'`
+  new_line=`echo "$line" | sed -e "s/${old_stem}/${new_stem}/"`
+
+  sed -e 's/^'"$line"'$/'"$new_line"'/' < $la_src > $la_dest
+}
+
+# return the outermost directory of the filename
+prefix () {
+  case $1 in
+    */*)
+      echo $1 | sed -e 's|^\([^/]*\)/.*$|\1|'
+      ;;
+    *)
+      echo ""
+      ;;
+  esac
+}
+
+# return the filename without its outermost directory
+postfix () {
+  echo $1 | sed -e 's|^[^/]*/\(.*\)$|\1|'
+}
+
+# strip common leading directories from $2
+strip_common_prefix () {
+  str1=$1; shift
+  str2=$1; shift
+  pfx=`prefix $str1`; str1=`postfix $str1`
+  while [ x"$pfx" != x ]; do
+    case $str2 in
+      $pfx*)
+	str2=`postfix $str2`
+	;;
+      *)
+	break
+	;;
+    esac
+    pfx=`prefix $str1`; str1=`postfix $str1`
+  done
+  echo $str2
+}
+
+doit () {
+  destroot=$1; shift
+  for f in $*; do
+    src=`echo $f | sed -e 's/^\(.*\)#\(.*\)$/\1/'`
+    dest=`echo $f | sed -e 's/^\(.*\)#\(.*\)$/\2/'`
+
+    for g in `echo "${destroot}/${src}.*"`; do
+      if [ -r $g ]; then
+	suf=`echo $g | sed -e 's|^.*'${src}'\(.*\)$|\1|'`
+	if [ $verbose = yes ]; then
+	  echo "${src}${suf} -> ${dest}${suf}"
+	fi
+	if [ $dry_run = no ]; then
+	  rm -f "${destroot}/${dest}${suf}"
+	  case $suf in
+	    .la)
+	      copy_la_file "${destroot}/${src}${suf}" \
+		  "${destroot}/${dest}${suf}"
+	      ;;
+	    *)
+	      # make sure links are relative to their own directory
+	      src=`strip_common_prefix $dest $src`
+	      ln -s "${src}${suf}" "${destroot}/${dest}${suf}"
+	      ;;
+	  esac
+	fi
+      else
+	if [ $verbose = yes ]; then
+	  echo "Skipping non-existent $src"
+	fi
+      fi
+    done
+  done
+}
+
+while [ x"$1" != x ]; do
+  case $1 in
+    -l)
+      files=`find $2 -name '*.jl' -print`
+      aliases=`grep -h '(define-structure-alias' $files |
+        sed -e 's/^.*(define-structure-alias \([^ ]*\) \([^ ]*\)).*$/\2#\1/' |
+	tr . /`
+      doit $3 $aliases
+      shift 3
+      ;;
+
+    -c)
+      files=`find $2 -name '*.c' -print`
+      aliases=`grep -H '::alias:' $files |
+        sed -e 's/^.*::alias:\([^ ]*\) \(.*\)::.*$/\2#\1/' |
+	tr . /`
+      doit $3 $aliases
+      shift 3
+      ;;
+
+    -v) verbose=yes; shift ;;
+    -n) dry_run=yes; verbose=yes; shift ;;
+
+    *)
+      echo "usage [-v] [-n] [-l LISP-SRC-DIR LISP-INST-DIR] [-c C-SRC-DIR LA-INST-DIR]"
+      exit 1
+      ;;
+  esac
+done
