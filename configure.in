@@ -320,7 +320,7 @@ AC_ARG_WITH(aclocaldir,
   aclocaldir=$withval)
 AC_MSG_CHECKING([for aclocal directory])
 if test "$aclocaldir" = none; then
-  aclocaldir="`aclocal --print-ac-dir`"
+  aclocaldir="`aclocal --print-ac-dir 2>/dev/null`"
   if test "x${aclocaldir}" = "x"; then
     aclocaldir='${datadir}/aclocal'
   fi
