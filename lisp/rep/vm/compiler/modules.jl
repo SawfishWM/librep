@@ -76,9 +76,13 @@
 
 ;;; functions
 
+  (define (get-structure name)
+    (or (%intern-structure name)
+	(compiler-error "Unable to open module" name)))
+
   ;; return t if the module called STRUCT exports a variable called VAR
   (defun module-exports-p (struct var)
-    (and (symbolp var) (%structure-exports-p (%intern-structure struct) var)))
+    (and (symbolp var) (%structure-exports-p (get-structure struct) var)))
 
   ;; return t if ARG is a structure reference form
   (defun structure-ref-p (arg)
@@ -119,9 +123,11 @@
 		(%structure-bound-p (fluid current-structure) var))
 	   (%structure-ref (fluid current-structure) var))
 	  (t
-	   (let ((struct (locate-variable var)))
-	     (and struct (%structure-ref (%intern-structure struct)
-					 (variable-stem var)))))))
+	   (let* ((struct (locate-variable var))
+		  (module (and struct (get-structure struct))))
+	     (and module
+		  (%structure-bound-p module (variable-stem var))
+		  (%structure-ref module (variable-stem var)))))))
 
   ;; if possible, return the value of variable VAR, else return nil
   (defun compiler-symbol-value (var)
@@ -148,7 +154,7 @@
 	 (let
 	     ((struct (locate-variable var)))
 	   (and struct (binding-immutable-p (variable-stem var)
-					    (%intern-structure struct))))))
+					    (get-structure struct))))))
 
   (defun get-language-property (prop)
     (and (fluid current-language) (get (fluid current-language) prop)))
@@ -288,7 +294,7 @@
 
   (defun declare-in-module (form)
     (fluid-set current-module (cadr form))
-    (fluid-set current-structure (%get-structure (fluid current-module))))
+    (fluid-set current-structure (%intern-structure (fluid current-module))))
   (put 'in-module 'compiler-decl-fun declare-in-module)
 
 
@@ -367,7 +373,7 @@
 	  ((symbolp sig)
 	   (if (boundp sig)
 	       (symbol-value sig)
-	     (compiler-error "Don't know this interface: %s" sig)))))
+	     (compiler-error "Don't know this interface" sig)))))
 
   (defun compile-structure-ref (form)
     (let
