@@ -1,5 +1,17 @@
 2000-06-01  John Harper  <john@dcs.warwick.ac.uk>
 
+	* compiler-basic.jl (compile-form-1): don't call
+	test-function-call if the form has a special handler
+
+	* compiler-rep.jl: handle non-top-level declarations
+
+	* compiler-bindings.jl: support (declare (bound VARS...)) and
+	(declare (special VARS...)) to flag variable bindings that the
+	compiler would otherwise be unaware of
+
+	* remote-ftp.jl, disassembler.jl, compiler-utils.jl: added
+	declarations to prevent warnings for jade-only functions
+
 	* backquote.jl (backquote-listify): don't call `eval' to
 	unquote constants, use a special purpose backquote-eval to
 	avoid security breaches
