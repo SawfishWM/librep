@@ -652,6 +652,30 @@ rep_readl(repv strm, register int *c_p)
 		    }
 		    break;
 		}
+	    case '!':
+		if (rep_FILEP(strm))
+		{
+		    repv pos = Fseek_file (strm, Qnil, Qnil);
+		    if (pos && rep_INTP(pos) && rep_INT(pos) == 2)
+		    {
+			/* #! at the start of the file. Skip until !# */
+			register int c;
+			while ((c = rep_stream_getc (strm)) != EOF)
+			{
+			    if (c == '!')
+			    {
+				c = rep_stream_getc (strm);
+				if (c == EOF || c == '#')
+				    break;
+			    }
+			}
+			if (c != EOF)
+			    c = rep_stream_getc (strm);
+			*c_p = c;
+			continue;
+		    }
+		}
+		/* FALL THROUGH */
 	    default: error:
 		return Fsignal(Qinvalid_read_syntax, rep_LIST_1(strm));
 	    }
