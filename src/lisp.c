@@ -1110,10 +1110,10 @@ rep_bind_lambda_list_1 (repv lambdaList, repv *args, int nargs,
     state = STATE_REQUIRED;
     while (1)
     {
-	repv argspec;
+	repv argspec, def;
 	struct binding *item;
 
-	if (rep_CONSP (lambdaList) && rep_SYMBOLP(rep_CAR (lambdaList)))
+	if (rep_CONSP (lambdaList))
 	{
 	    argspec = rep_CAR (lambdaList);
 	    lambdaList = rep_CDR (lambdaList);
@@ -1160,7 +1160,21 @@ rep_bind_lambda_list_1 (repv lambdaList, repv *args, int nargs,
 	item = alloca (sizeof (struct binding));
 	item->next = frame;
 	frame = item;
-	item->sym = argspec;
+	if (rep_SYMBOLP (argspec))
+	{
+	    item->sym = argspec;
+	    def = Qnil;
+	}
+	else if (rep_CONSP (argspec) && rep_SYMBOLP (rep_CAR (argspec)))
+	{
+	    item->sym = rep_CAR (argspec);
+	    if (rep_CONSP (rep_CDR (argspec)))
+		def = rep_CADR (argspec);
+	    else
+		def = Qnil;
+	}
+	else
+	    goto invalid;
 
 	switch (state)
 	{
@@ -1175,7 +1189,7 @@ rep_bind_lambda_list_1 (repv lambdaList, repv *args, int nargs,
 		nargs--;
 	    }
 	    else if (state == STATE_OPTIONAL)
-		item->value = Qnil;
+		item->value = def;
 	    else
 	    {
 		repv fun = rep_call_stack != 0 ? rep_call_stack->fun : Qnil;
@@ -1184,8 +1198,8 @@ rep_bind_lambda_list_1 (repv lambdaList, repv *args, int nargs,
 	    break;
 
 	case STATE_KEY:
-	    key = Fmake_keyword (argspec);
-	    item->value = Qnil;
+	    key = Fmake_keyword (item->sym);
+	    item->value = def;
 	    for (i = 0; i < nargs - 1; i += 2)
 	    {
 		if (args[i] == key && args[i+1] != rep_NULL)
@@ -1237,11 +1251,14 @@ out:
 
 /* format of lambda-lists is something like,
 
-   [<required-params>*] [#!optional <optional-params>*]
-   [#!key <keyword-params>*] [#!rest <rest-param>]
+   [<required-params>*] [#!optional <optional-param>*]
+   [#!key <keyword-param>*] [#!rest <rest-param>]
 
    A keyword parameter X is associated with an argument by a keyword
    symbol #:X. If no such symbol exists, it's bound to false
+
+   <optional-param> and <keyword-param> is either <symbol> or (<symbol>
+   <default>) where <default> is a constant
 
    Note that the lambdaList arg isn't protected from gc by this
    function; it's assumed that this is done by the caller.
