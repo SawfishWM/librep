@@ -4685,6 +4685,11 @@ directory in the variable @code{dl-load-path} is searched for a
 @end lisp
 @end defun
 
+@defvar load-filename
+Whilst loading a Lisp library, this variable is bound to the name of
+the file being loaded.
+@end defvar
+
 @defvar load-path
 A list of strings, each element is the name of a directory which is
 prefixed to the name of a program when Lisp program files are being
@@ -7390,39 +7395,46 @@ already been evaluated.
 @end defun
 
 Whenever the Lisp debugger is entered the form waiting to be evaluated
-is printed at the bottom of the buffer, at this point the special
-debugger commands available are,
+is printed, preceded by the current depth of execution in angular
+brackets. At this point the special debugger commands available are,
 
-@table @kbd
-@item Ctrl-c Ctrl-s
-@kindex Ctrl-c Ctrl-s
-Step into the current form; this means that in a list form the debugger is
-used to evaluated each argument in turn.
+@table @samp
+@item step
+@itemx s
+Step into the current form; this means that in a list form the debugger
+is used to evaluated each argument in turn.
 
-@item Ctrl-c Ctrl-i
-@kindex Ctrl-c Ctrl-i
-Ignore the current form; makes the current form immediately return @code{nil}.
+@item next
+@itemx n
+Continue evaluating forms normally until the next form at the current
+level is entered, then re-enter the debugger.
 
-@item Ctrl-c Ctrl-n
-@kindex Ctrl-c Ctrl-n
-Continue evaluating forms normally until the next form at the current level
-is entered, then re-enter the debugger.
+@item continue
+@itemx c
+Continue execution normally. Note that this command is the one to use
+when an error has been trapped.
 
-@item Ctrl-c Ctrl-r
-@kindex Ctrl-c Ctrl-r
-Continue execution normally. Note that this command is the one to use when
-an error has been trapped.
+@item return @var{form}
+@itemx r @var{form}
+Evaluate @var{form} then return this value as the result of the current
+form.
 
-@item Ctrl-c Ctrl-b
-@kindex Ctrl-c Ctrl-b
+@item print @var{form}
+@itemx p @var{form}
+Evaluate @var{form}, then print its value.
+
+@item form
+@itemx f
+Print the form being debugged.
+
+@item backtrace
+@itemx b
 Print a backtrace of the current Lisp call stack, note that calls of
 primitive functions aren't currently recorded in this stack.
-
-@item Ctrl-c Ctrl-x
-@kindex Ctrl-c Ctrl-x
-Prompt for a Lisp form, evaluate it and return this value as the result of
-the current form.
 @end table
+
+Entering a null string repeats the previous @samp{next}, @samp{step},
+or @samp{continue} command.
 
 After the form has been evaluated (i.e. after you've typed one of the
 commands above) the value of the form is printed in the buffer,
