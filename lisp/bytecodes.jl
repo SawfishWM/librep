@@ -146,6 +146,8 @@
 (defconst op-subrp 0x92)
 (defconst op-eql 0x93)
 (defconst op-lxor 0x94)			;new 23-8-94
+(defconst op-max 0x95)			;new 12-1-98
+(defconst op-min 0x96)
 
 (defconst op-set-current-buffer 0xb0)
 (defconst op-bind-buffer 0xb1)

@@ -1009,6 +1009,10 @@ that files which shouldn't be compiled aren't."
   (put 'subrp 'compile-opcode op-subrp)
   (put 'eql 'compile-fun 'comp-compile-2-args)
   (put 'eql 'compile-opcode op-eql)
+  (put 'max 'compile-fun 'comp-compile-binary-op)
+  (put 'max 'compile-opcode op-max)
+  (put 'min 'compile-fun 'comp-compile-binary-op)
+  (put 'min 'compile-opcode op-min)
 
   (put 'set-current-buffer 'compile-fun 'comp-compile-2-args)
   (put 'set-current-buffer 'compile-opcode op-set-current-buffer)

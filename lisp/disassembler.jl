@@ -42,7 +42,7 @@
    "boundp" "symbolp" "get" "put" "error-pro" "signal" "return" "reverse"
    "nreverse" "assoc" "assq" "rassoc" "rassq" "last" "mapcar" "mapc" ; 0x80
    "member" "memq" "delete" "delq" "delete-if" "delete-if-not" "copy-sequence" "sequencep"
-   "functionp" "special-form-p" "subrp" "eql" "lxor" nil nil nil ; 0x90
+   "functionp" "special-form-p" "subrp" "eql" "lxor" "max" "min" nil ; 0x90
    nil nil nil nil nil nil nil nil
    nil nil nil nil nil nil nil nil	 ; 0xa0
    nil nil nil nil nil nil nil nil
