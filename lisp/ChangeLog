@@ -1,5 +1,19 @@
 Mon Jun  1 11:26:39 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* read-mail.jl (rm-open-mailbox, rm-close-mailbox,
+	rm-subtract-mailbox, rm-subtract-all-mailboxes): new functions.
+	Also lots of other fixes, it seems to work quite well now
+
+	* rm-mail-dir.jl: don't bind to `+' anymore (used to add a
+	mailbox), instead use `Ctrl-k'
+
+	* rm-restrict.jl (subject): new rule. Also some fixes
+
+	* rm-summary.jl (rm-summary-view): fixed to _always_ return a
+	view or a buffer
+
+	* rm-thread.jl: fix the `date' sort key
+
 	* read-mail.jl (rm-open-mailboxes): list of buffers, this stops
 	buffers being gc'd while they're still in use (references to
 	buffers are by marks, which are `weak' references)
