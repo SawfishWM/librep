@@ -201,33 +201,6 @@ int rep_test_int_period = 1000;
 static void default_test_int (void) { }
 void (*rep_test_int_fun)(void) = default_test_int;
 
-/* support for scheme boolean type */
-repv rep_scm_t, rep_scm_f;
-
-
-/* support for scheme boolean values */
-
-DEFUN ("%scheme-bool-printer", F_scheme_bool_printer,
-       S_scheme_bool_printer, (repv obj, repv stream), rep_Subr2)
-{
-    rep_stream_puts (stream, obj == rep_scm_t ? "#t" : "#f", 2, rep_FALSE);
-    return Qnil;
-}
-
-static void
-init_scm_booleans (void)
-{
-    if (rep_scm_t == 0)
-    {
-	rep_scm_t = Fmake_datum (Qnil, rep_VAL (&S_scheme_bool_printer));
-	rep_scm_f = Fmake_datum (Qnil, rep_VAL (&S_scheme_bool_printer));
-	Fdefine_datum_printer (rep_VAL (&S_scheme_bool_printer),
-			       rep_VAL (&S_scheme_bool_printer));
-	rep_mark_static (&rep_scm_t);
-	rep_mark_static (&rep_scm_f);
-    }
-}
-
 
 /* Reading */
 
@@ -934,7 +907,6 @@ rep_readl(repv strm, register int *c_p)
 
 	    case 't': case 'T':
 	    case 'f': case 'F':
-		init_scm_booleans ();
 		form = (tolower (*c_p) == 't') ? rep_scm_t : rep_scm_f;
 		*c_p = rep_stream_getc (strm);
 		return form;
@@ -2408,7 +2380,6 @@ rep_lisp_init(void)
     rep_INTERN_SPECIAL(debug_error_entry);
     rep_INTERN(amp_optional); rep_INTERN(amp_rest);
     rep_mark_static((repv *)&rep_throw_value);
-    rep_ADD_INTERNAL_SUBR (S_scheme_bool_printer);
     rep_ADD_SUBR(S_load_autoload);
     rep_ADD_SUBR(Sfuncall);
     rep_ADD_SUBR(Sprogn);

@@ -39,6 +39,9 @@ static repv printer_alist;
 #define DATUM_ID(x) (rep_TUPLE(x)->a)
 #define DATUM_VALUE(x) (rep_TUPLE(x)->b)
 
+/* support for scheme boolean type */
+repv rep_scm_t, rep_scm_f;
+
 
 /* type hooks */
 
@@ -130,6 +133,16 @@ created using the `make-datum' function).
 }
 
 
+/* support for scheme boolean values */
+
+DEFUN ("%scheme-bool-printer", F_scheme_bool_printer,
+       S_scheme_bool_printer, (repv obj, repv stream), rep_Subr2)
+{
+    rep_stream_puts (stream, obj == rep_scm_t ? "#t" : "#f", 2, rep_FALSE);
+    return Qnil;
+}
+
+
 /* dl hooks */
 
 void
@@ -146,4 +159,12 @@ rep_datums_init (void)
     rep_ADD_SUBR (Shas_type_p);
     printer_alist = Qnil;
     rep_mark_static (&printer_alist);
+
+    rep_ADD_INTERNAL_SUBR (S_scheme_bool_printer);
+    rep_scm_t = Fmake_datum (Qnil, rep_VAL (&S_scheme_bool_printer));
+    rep_scm_f = Fmake_datum (Qnil, rep_VAL (&S_scheme_bool_printer));
+    Fdefine_datum_printer (rep_VAL (&S_scheme_bool_printer),
+			   rep_VAL (&S_scheme_bool_printer));
+    rep_mark_static (&rep_scm_t);
+    rep_mark_static (&rep_scm_f);
 }
