@@ -104,7 +104,12 @@ gdbm-fetch DBM KEY
     if (dvalue.dptr == 0)
 	return Qnil;
     else
-	return rep_box_string (dvalue.dptr, dvalue.dsize);
+    {
+	/* The string isn't always zero-terminated, so need to copy it.. */
+	repv out = rep_string_dupn (dvalue.dptr, dvalue.dsize);
+	free (dvalue.dptr);
+	return out;
+    }
 }
 
 DEFUN("gdbm-store", Fgdbm_store, Sgdbm_store, (repv dbm, repv key, repv val, repv flags), rep_Subr4) /*
