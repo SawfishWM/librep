@@ -3,6 +3,15 @@
 @chapter News
 @cindex News
 
+@unnumberedsec 0.11.3
+
+@itemize @bullet
+@item Fixed bug of throwing uninitialized errors when autoloading
+
+@item Fixed bug of interpreting @code{(let () @dots{})} as a named let
+@end itemize
+
+
 @unnumberedsec 0.11.2
 
 @itemize @bullet
