@@ -1,3 +1,9 @@
+2000-02-28  John Harper  <john@dcs.warwick.ac.uk>
+
+	* timers.c, repsdbm.c, readline.c, gettext.c: don't use
+	rep_dl_subrs or rep_dl_feature (some BSD systems have (had?)
+	problems with data segment relocations)
+
 2000-02-27  John Harper  <john@dcs.warwick.ac.uk>
 
 	* values.c: represents strings as a two-word header and a
