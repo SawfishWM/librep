@@ -205,7 +205,7 @@
 #define OP_TRUNCATE 0xae
 #define OP_ROUND 0xaf
 
-#define OP_BINDOBJ 0xb0			/* bind stk[0] */
+#define OP_UNUSED1 0xb0
 #define OP_FORBID 0xb1
 #define OP_PERMIT 0xb2
 
