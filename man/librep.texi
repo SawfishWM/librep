@@ -1,0 +1,164 @@
+\input texinfo  @c -*-Texinfo-*-
+@setfilename librep.info
+@settitle librep Manual
+@footnotestyle end
+
+@set EDITION 1.0
+@set VERSION 0.0
+@set UPDATED 1 March 1999
+@set UPDATE-MONTH March 1999
+
+@ifinfo
+@noindent
+START-INFO-DIR-ENTRY@*
+* librep: (librep).		A LISP extension language
+END-INFO-DIR-ENTRY
+
+This is Edition @value{EDITION}, last updated @value{UPDATED},
+of @cite{The librep Manual}, for librep, Version @value{VERSION}.
+
+Copyright 1999 John Harper.
+
+Permission is granted to make and distribute verbatim copies of
+this manual provided the copyright notice and this permission notice
+are preserved on all copies.
+
+@ignore
+Permission is granted to process this file through TeX and print the
+results, provided the printed document carries copying permission
+notice identical to this one except for the removal of this paragraph
+(this paragraph not being relevant to the printed manual).
+@end ignore
+
+Permission is granted to copy and distribute modified versions of this
+manual under the conditions for verbatim copying, provided that the entire
+resulting derived work is distributed under the terms of a permission
+notice identical to this one.
+@end ifinfo
+
+@titlepage
+@title librep
+@subtitle A LISP extension language
+@subtitle Edition @value{EDITION}
+@subtitle @value{UPDATE-MONTH}
+@author John Harper
+@page
+@vskip 0pt plus 1filll
+Copyright @copyright{} 1999 John Harper.
+
+Permission is granted to make and distribute verbatim copies of
+this manual provided the copyright notice and this permission notice
+are preserved on all copies.
+
+Permission is granted to copy and distribute modified versions of this
+manual under the conditions for verbatim copying, provided that the entire
+resulting derived work is distributed under the terms of a permission
+notice identical to this one.
+@end titlepage
+
+@ifinfo
+@node Top, Copying, (dir), (dir)
+@top librep
+
+rep is a simple LISP extension language.
+
+This is Edition @value{EDITION} of its documentation,
+last updated @value{UPDATED} for librep version @value{VERSION}.
+
+@menu
+* Copying::                     Distribution conditions
+* Introduction::                Brief introduction to librep
+* News::                        New features in this release
+
+* Invocation::                  How to start the interpreter
+* Using rep::                   Using the standalone interpreter
+* The language::                The LISP dialect used
+* C interface::			Embedding librep in other programs
+
+* Reporting bugs::              How to contact me
+
+* Function index::              Menu of all documented functions
+* Variable index::              All variables which have been mentioned
+* Concept index::               Main index, references to all sections
+@end menu
+@end ifinfo
+
+
+@node Copying, Introduction, Top, Top
+@chapter Copying
+@cindex Copying
+@cindex Distribution conditions
+@cindex Licence
+
+librep is distributed under the terms of the GNU General Public
+License, this basically means that you can give it to anyone for any
+price as long as full source code is included. For the actual legalese
+see the file @file{COPYING} in the distribution. I reserve the right to
+use a different licence in future releases.
+
+The only parts of librep which are not my own work are the regexp code,
+this is by Henry Spencer (though I have made some small modifications)
+and is distributed under his conditions, and the public domain sdbm
+library, written by Ozan Yigit.
+
+Be aware that there is absolutely NO WARRANTY for this program, you use
+it at your own risk. Obviously I hope there are no bugs, but I make no
+promises regarding the reliability of this software.
+
+
+@node Introduction, News, Copying, Top
+@chapter Introduction
+@cindex Introduction
+
+
+@node News, Invocation, Introduction, Top
+@chapter News
+@cindex News
+
+@include news.texi
+
+
+@node Invocation, Using rep, News, Top
+@chapter Invocation
+@cindex Invocation
+
+
+@node Using rep, The language, Invocation, Top
+@chapter Using rep
+
+
+@node The language, C interface, Using rep, Top
+@include lang.texi
+
+
+@node C interface, Reporting bugs, The language, Top
+@chapter C interface
+
+@include interface.texi
+
+
+@node Reporting bugs, Function index, C interface, Top
+@chapter Reporting bugs
+@cindex Reporting bugs
+@cindex Bugs, reporting
+
+
+@node Function index, Variable index, Reporting bugs, Top
+@unnumbered Function index
+
+@printindex fn
+
+
+@node Variable index, Concept index, Function index, Top
+@unnumbered Variable index
+
+@printindex vr
+
+
+@node Concept index, , Variable index, Top
+@unnumbered Concept index
+
+@printindex cp
+
+@contents
+@bye

@@ -1,0 +1,56 @@
+# Makefile.in for Jade's Texinfo manual
+# Copyright (C) 1998 John Harper <john@dcs.warwick.ac.uk>
+# $Id$
+#
+# This file is part of Jade.
+#
+# Jade is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+#
+# Jade is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Jade; see the file COPYING.  If not, write to
+# the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
+
+top_srcdir=@top_srcdir@
+srcdir=@srcdir@
+VPATH=@srcdir@
+
+SRCS = librep.texi lang.texi news.texi interface.texi
+
+all : librep.info ../NEWS
+
+../NEWS : news.texi
+	$(MAKEINFO) $(MAKEINFOFLAGS) --no-headers $< -o ../NEWS
+
+librep.info : $(SRCS)
+	$(MAKEINFO) $(MAKEINFOFLAGS) $< -o librep.info
+
+librep.dvi : $(SRCS)
+	$(TEXI2DVI) $<
+
+librep.ps : librep.dvi
+	$(DVIPS) librep.dvi
+
+man : librep.info librep.dvi librep.ps
+
+install : librep.info installdirs
+	$(INSTALL_DATA) librep.info* $(infodir)
+
+installdirs : $(top_srcdir)/mkinstalldirs
+	$(SHELL) $(top_srcdir)/mkinstalldirs $(infodir)
+
+uninstall :
+	rm -f $(infodir)/librep.info*
+
+clean :
+	rm -f *~ librep.info* librep.dvi librep.ps
+
+realclean : clean
+	rm -f Makefile
