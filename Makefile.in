@@ -21,6 +21,7 @@
 ETAGS:= etags
 
 top_builddir=.
+VPATH=@srcdir@
 
 ALL_SUBDIRS = intl src lisp man
 INSTALL_SUBDIRS = src lisp man
@@ -31,13 +32,12 @@ all : build.h rules.mk DOC
 	done
 
 build.h : build-info config.status
-	$(top_srcdir)/build-info $(host_type) $(version) \
+	$(SHELL) $< $(host_type) $(version) \
 	  '$(repdir)' '$(replispdir)' '$(repexecdir)' \
 	  '$(repdocfile)' '$(repcommonexecdir)' >$@
 
 rules.mk : rules.mk.sh config.status
-	$(SHELL) $(top_srcdir)/rules.mk.sh '$(repdir)' \
-	  '$(repcommonexecdir)' '$(repdocfile)' >$@
+	$(SHELL) $< '$(repdir)' '$(repcommonexecdir)' '$(repdocfile)' >$@
 
 install : all installdirs
 	set -e; for dir in $(INSTALL_SUBDIRS); do \
@@ -50,10 +50,10 @@ install : all installdirs
 	@echo "Trying to install rep.m4 in $(DESTDIR)$(aclocaldir);"
 	@echo "if this fails, install it manually in a suitable location"
 	@echo "---------------------------------------------------------"
-	-$(INSTALL_DATA) rep.m4 $(DESTDIR)$(aclocaldir)
+	-$(INSTALL_DATA) $(top_srcdir)/rep.m4 $(DESTDIR)$(aclocaldir)
 
-installdirs : $(top_srcdir)/mkinstalldirs
-	$(SHELL) $(top_srcdir)/mkinstalldirs $(DESTDIR)$(repdir)/$(version) \
+installdirs : mkinstalldirs
+	$(SHELL) $< $(DESTDIR)$(repdir)/$(version) \
 	  $(DESTDIR)$(bindir) $(DESTDIR)$(aclocaldir) \
 	  $(DESTDIR)$(repcommonexecdir) $(DESTDIR)$(repexecdir)
 
@@ -67,7 +67,7 @@ uninstall :
 	rm -f $(DESTDIR)$(aclocaldir)/rep.m4
 
 DOC : repdoc
-	src/repdoc DOC `find . -name '*.c' -print`
+	src/repdoc DOC `find $(top_srcdir) -name '*.c' -print`
 
 repdoc :
 	( cd src && $(MAKE) repdoc )
@@ -77,9 +77,6 @@ NEWS : man/news.texi
 
 tar :
 	tar -zcT FILES -f librep.tar.gz
-
-nobak :
-	rm -f `find . -name '*~' -print`
 
 clean :
 	-set -e; for dir in $(ALL_SUBDIRS); do \
@@ -106,8 +103,8 @@ tags: TAGS
 TAGS :
 	-rm -f $@
 	set -e;								      \
-	c_files=`find . -name '*.[hc]' -print`;				      \
-	rep_files=`find . -name '*.jl' -print`;				      \
+	c_files=`find $(top_srcdir) -name '*.[hc]' -print`;		      \
+	rep_files=`find $(top_srcdir) -name '*.jl' -print`;		      \
 	${ETAGS} --language=c $$c_files					      \
 	  --language=none						      \
 	   --regex='/[ \t]*DEFSTRING[ \t]*([ \t]*\([^ \t,]+\)/\1/'	      \

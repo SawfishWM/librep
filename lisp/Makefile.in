@@ -19,6 +19,7 @@
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 top_builddir=..
+VPATH=@srcdir@:@top_srcdir@
 
 INSTALL_FILES = *.jl *.jlc
 
@@ -35,8 +36,8 @@ install : all installdirs
 	  $(INSTALL_DATA) $$f $(DESTDIR)$(replispdir); \
 	done
 
-installdirs : $(top_srcdir)/mkinstalldirs
-	$(SHELL) $(top_srcdir)/mkinstalldirs $(DESTDIR)$(replispdir)
+installdirs : mkinstalldirs
+	$(SHELL) $< $(DESTDIR)$(replispdir)
 
 uninstall :
 	for f in $(INSTALL_FILES); do \

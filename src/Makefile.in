@@ -19,7 +19,7 @@
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 top_builddir=..
-VPATH=@top_srcdir@/src:.
+VPATH=@srcdir@:@top_srcdir@
 
 COMMON_SRCS =	continuations.c datums.c debug-buffer.c files.c find.c \
 		fluids.c lisp.c lispcmds.c lispmach.c macros.c main.c \
@@ -81,11 +81,11 @@ install : all installdirs
 	done
 	printf "\nrep_open_globally=yes\n" >>$(DESTDIR)${repexecdir}/gettext.la
 	for i in $(INSTALL_HDRS); do \
-	  $(INSTALL_DATA) $$i $(DESTDIR)$(includedir); \
+	  $(INSTALL_DATA) $(srcdir)/$$i $(DESTDIR)$(includedir); \
 	done
 
-installdirs : $(top_srcdir)/mkinstalldirs
-	$(SHELL) $(top_srcdir)/mkinstalldirs $(DESTDIR)$(libdir) $(DESTDIR)$(bindir) \
+installdirs : mkinstalldirs
+	$(SHELL) $< $(DESTDIR)$(libdir) $(DESTDIR)$(bindir) \
 	  $(DESTDIR)$(repexecdir) $(DESTDIR)$(includedir)
 
 uninstall :

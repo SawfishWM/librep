@@ -20,7 +20,7 @@
 
 top_srcdir=@top_srcdir@
 srcdir=@srcdir@
-VPATH=@srcdir@
+VPATH=@srcdir@:@top_srcdir@
 
 SRCS = librep.texi lang.texi news.texi interface.texi
 
@@ -30,10 +30,10 @@ all : librep.info ../NEWS
 	$(MAKEINFO) $(MAKEINFOFLAGS) --no-headers $< -o ../NEWS
 
 librep.info : $(SRCS)
-	$(MAKEINFO) $(MAKEINFOFLAGS) $< -o librep.info
+	$(MAKEINFO) $(MAKEINFOFLAGS) -I $(srcdir) $< -o librep.info
 
 librep.dvi : $(SRCS)
-	$(TEXI2DVI) $<
+	$(TEXI2DVI) -I $(srcdir) $<
 
 librep.ps : librep.dvi
 	$(DVIPS) -f <librep.dvi >librep.ps
@@ -46,8 +46,8 @@ install : librep.info installdirs
 	done
 	-install-info librep.info $(DESTDIR)$(infodir)/dir
 
-installdirs : $(top_srcdir)/mkinstalldirs
-	$(SHELL) $(top_srcdir)/mkinstalldirs $(DESTDIR)$(infodir)
+installdirs : mkinstalldirs
+	$(SHELL) $< $(DESTDIR)$(infodir)
 
 uninstall :
 	rm -f $(DESTDIR)$(infodir)/librep.info*
