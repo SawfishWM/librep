@@ -286,6 +286,18 @@ See also `setq'. Returns the value of the last FORM."
 ;; XXX it would be nice to do the same for setq.. might stress the
 ;; XXX interpreter somewhat..? :-(
 
+(defmacro define-special-variable (var #!optional value doc)
+  "define-special-variable VARIABLE [VALUE [DOC]]
+
+Declares the symbol VARIABLE as a special variable, then
+unconditionally sets its value to VALUE (or false if VALUE isn't
+defined). If DOC is given it will be installed as the documentation
+string associated with VARIABLE."
+
+  `(progn
+     (defvar ,var nil ,doc)
+     (setq ,var ,value)))
+
 ;; XXX backwards compatibility crap
 (defmacro define-value (var-form value)
   (if (eq (car var-form) 'quote)
@@ -293,7 +305,7 @@ See also `setq'. Returns the value of the last FORM."
       (list '%define (nth 1 var-form) value)
     (error "define-value must take a constant variable")))
 
-(export-bindings '(setq-default define-value))
+(export-bindings '(setq-default define-special-variable define-value))
 
 
 ;; Misc syntax

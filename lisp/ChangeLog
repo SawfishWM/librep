@@ -1,3 +1,9 @@
+2001-04-30  John Harper  <jsh@eazel.com>
+
+	* rep/lang/interpreter.jl (define-special-variable): new macro,
+	a combination of defvar and setq. It always declares the
+	variable special and it always sets the value
+
 2001-03-26  John Harper  <jsh@eazel.com>
 
 	Work to make rep self-testing. The framework and some tests
