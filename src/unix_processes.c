@@ -42,6 +42,17 @@
 static struct sigaction chld_sigact;
 static sigset_t chld_sigset;
 
+static void *proc_db;
+
+/* Debugging */
+#define __waitpid__(x, y, z)						\
+    ({ pid_t p;								\
+       db_printf(proc_db, "%s:%d: calling waitpid(%d, %p, %d)..",	\
+		 __FUNCTION__, __LINE__, (int)(x), y, z);		\
+       p = waitpid(x, y, z);						\
+       db_printf(proc_db, " pid=%d.\n", (int)p);			\
+       p; })
+
 struct Proc
 {
     u_char	pr_Type;
@@ -92,15 +103,10 @@ static struct Proc *process_chain;
 static struct Proc *notify_chain;
 static int process_run_count;
 
-/* This semaphorey thing protects all operations done on process structures
-   from SIGCHLD and the process reaping it causes.  */
-static int process_mutex = -1;
-static bool got_sigchld;
+/* Set to TRUE by the SIGCHLD handler */
+static volatile bool got_sigchld;
 
-_PR void protect_procs(void);
-_PR void unprotect_procs(void);
-_PR bool proc_notification(void);
-static void check_for_zombies(bool called_from_sighandler);
+_PR bool proc_periodically(void);
 static void read_from_one_fd(struct Proc *pr, int fd, bool cursor_on);
 static void read_from_process(int);
 _PR int	 write_to_process(VALUE, u_char *, int);
@@ -113,32 +119,10 @@ _PR void proc_kill(void);
 
 
 
-INLINE void
-protect_procs(void)
-{
-    process_mutex++;
-}
-
-void
-unprotect_procs(void)
-{
-    if((process_mutex == 0) && got_sigchld)
-    {
-	/* Have to leave (process_mutex == 0) while looking for zombies.  */
-	got_sigchld = FALSE;
-	check_for_zombies(FALSE);
-    }
-    process_mutex--;
-}
-
-/* What would happen if this was called in the middle of GC? */
 static void
 sigchld_handler(int sig)
 {
-    if(process_mutex < 0)
-	check_for_zombies(TRUE);
-    else
-	got_sigchld = TRUE;
+    got_sigchld = TRUE;
 }
 
 static INLINE void
@@ -190,12 +174,11 @@ queue_notify(struct Proc *pr)
 }
 
 /* Dispatch all queued notification.  */
-bool
+static bool
 proc_notification(void)
 {
     if(!notify_chain)
 	return(FALSE);
-    protect_procs();
     cursor(curr_vw, CURS_OFF);
     while(notify_chain != NULL)
     {
@@ -206,26 +189,26 @@ proc_notification(void)
 	    funcall(pr->pr_NotifyFun, sym_nil);
     }
     cursor(curr_vw, CURS_ON);
-    unprotect_procs();
     return(TRUE);
 }
 
-/* Checks if any of my children are zombies, takes appropriate action.
-   When CALLED-FROM-SIGHANDLER is true, nothing dangerous will be done. */
-static void
-check_for_zombies(bool called_from_sighandler)
+/* Checks if any of my children are zombies, takes appropriate action. */
+static bool
+check_for_zombies(void)
 {
     int status;
     pid_t pid;
-    if(!process_run_count)
-	return;
-    while((pid = waitpid(-1, &status, WNOHANG | WUNTRACED)) > 0
+
+    if(!got_sigchld)
+	return FALSE;
+
+    got_sigchld = FALSE;
+    while((pid = __waitpid__(-1, &status, WNOHANG | WUNTRACED)) > 0
 	  || errno == EINTR)
     {
 	struct Proc *pr = process_chain;
-#ifdef DEBUG
-	messagef("SIGCHLD: pid %d -- status 0x%x", pid, status);
-#endif
+	db_printf(proc_db, "check_for_zombies: pid=%d, status=0x%x",
+		  pid, status);
 	while(pr)
 	{
 	    if((pr->pr_Status > 0) && (pr->pr_Pid == pid))
@@ -250,6 +233,18 @@ check_for_zombies(bool called_from_sighandler)
 	    }
 	}
     }
+    return TRUE;
+}
+
+/* Called by the event loop after each event or timeout. Returns true
+   if the display should be updated. */
+bool
+proc_periodically(void)
+{
+    bool rc = check_for_zombies();
+    if(proc_notification())
+	rc = TRUE;
+    return rc;
 }
 
 /* Read data from FD out of PROC. If necessary it will handle
@@ -299,7 +294,6 @@ static void
 read_from_process(int fd)
 {
     struct Proc *pr;
-    protect_procs();
     pr = process_chain;
     while(pr)
     {
@@ -310,7 +304,6 @@ read_from_process(int fd)
 	}
 	pr = pr->pr_Next;
     }
-    unprotect_procs();
 }
 
 int
@@ -319,7 +312,6 @@ write_to_process(VALUE pr, u_char *buf, int bufLen)
     int act = 0;
     if(!PROCESSP(pr))
 	return(0);
-    protect_procs();
     if(VPROC(pr)->pr_Status > 0)
     {
 	if(VPROC(pr)->pr_Stdin == 0)
@@ -337,7 +329,6 @@ write_to_process(VALUE pr, u_char *buf, int bufLen)
     }
     else
 	cmd_signal(sym_process_error, list_2(pr, MKSTR("Not running")));
-    unprotect_procs();
     return(act);
 }
 
@@ -345,7 +336,6 @@ static bool
 signal_process(struct Proc *pr, int sig, bool do_grp)
 {
     bool rc = TRUE;
-    protect_procs();
     if(do_grp)
     {
 	if(pr->pr_Stdin && PR_CONN_PTY_P(pr))
@@ -373,7 +363,6 @@ signal_process(struct Proc *pr, int sig, bool do_grp)
 	else
 	    rc = FALSE;
     }
-    unprotect_procs();
     return(rc);
 }
 
@@ -382,7 +371,6 @@ signal_process(struct Proc *pr, int sig, bool do_grp)
 static void
 kill_process(struct Proc *pr)
 {
-    protect_procs();
     if(pr->pr_Status != PR_DEAD)
     {
 	if(pr->pr_Status == PR_RUNNING)
@@ -390,13 +378,12 @@ kill_process(struct Proc *pr)
 	    /* is this too heavy-handed?? */
 	    if(!signal_process(pr, SIGKILL, TRUE))
 		kill(-pr->pr_Pid, SIGKILL);
-	    waitpid(pr->pr_Pid, &pr->pr_ExitStatus, 0);
+	    __waitpid__(pr->pr_Pid, &pr->pr_ExitStatus, 0);
 	    process_run_count--;
 	}
 	close_proc_files(pr);
     }
     str_free(pr);
-    unprotect_procs();
 }
 
 static int
@@ -434,7 +421,6 @@ static bool
 run_process(struct Proc *pr, char **argv, u_char *sync_input)
 {
     bool rc = FALSE;
-    protect_procs();
     if(pr->pr_Status == PR_DEAD)
     {
 	bool usepty = PR_CONN_PTY_P(pr);
@@ -683,7 +669,7 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 			    }
 			}
 		    }
-		    waitpid(pr->pr_Pid, &pr->pr_ExitStatus, 0);
+		    __waitpid__(pr->pr_Pid, &pr->pr_ExitStatus, 0);
 		    close(pr->pr_Stdout);
 		    close(pr->pr_Stderr);
 		    pr->pr_Stdout = 0;
@@ -701,7 +687,6 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 	cmd_signal(sym_process_error,
 		   list_2(VAL(pr), MKSTR("Already running")));
     }
-    unprotect_procs();
     return(rc);
 }
 
@@ -759,7 +744,6 @@ proc_prin(VALUE strm, VALUE obj)
     struct Proc *pr = VPROC(obj);
     u_char buf[40];
     stream_puts(strm, "#<process", -1, FALSE);
-    protect_procs();
     switch(pr->pr_Status)
     {
     case PR_RUNNING:
@@ -778,7 +762,6 @@ proc_prin(VALUE strm, VALUE obj)
 	}
 	break;
     }
-    unprotect_procs();
     stream_putc(strm, '>');
 }
 
@@ -840,7 +823,6 @@ set in the PROCESS prior to calling this function.
 {
     struct Proc *pr = NULL;
     VALUE res = sym_nil;
-    protect_procs();
     if(CONSP(arg_list))
     {
 	if(PROCESSP(VCAR(arg_list)))
@@ -852,10 +834,7 @@ set in the PROCESS prior to calling this function.
 	pr = VPROC(cmd_make_process(sym_nil, sym_nil, sym_nil,
 				    sym_nil, sym_nil));
 	if(pr == NULL)
-	{
-	    unprotect_procs();
 	    return(NULL);
-	}
     }
     if(CONSP(arg_list))
     {
@@ -896,7 +875,6 @@ set in the PROCESS prior to calling this function.
 	    str_free(argv);
 	}
     }
-    unprotect_procs();
     return(res);
 }
 
@@ -921,7 +899,6 @@ set in the PROCESS prior to calling this function.
 {
     struct Proc *pr = NULL;
     VALUE res = sym_nil, infile = MKSTR("/dev/null");
-    protect_procs();
     if(CONSP(arg_list))
     {
 	if(PROCESSP(VCAR(arg_list)))
@@ -933,10 +910,7 @@ set in the PROCESS prior to calling this function.
 	pr = VPROC(cmd_make_process(sym_nil, sym_nil, sym_nil,
 				    sym_nil, sym_nil));
 	if(pr == NULL)
-	{
-	    unprotect_procs();
 	    return(NULL);
-	}
     }
     if(CONSP(arg_list))
     {
@@ -985,7 +959,6 @@ set in the PROCESS prior to calling this function.
 	    str_free(argv);
 	}
     }
-    unprotect_procs();
     return(res);
 }
 
@@ -1079,7 +1052,6 @@ process group of PROCESS.
     VALUE res = sym_nil;
     DECLARE1(proc, PROCESSP);
     DECLARE2(sig, NUMBERP);
-    protect_procs();
     if(VPROC(proc)->pr_Status > 0)
     {
 	if(signal_process(VPROC(proc), VNUM(sig), !NILP(grp)))
@@ -1087,7 +1059,6 @@ process group of PROCESS.
     }
     else
 	res = cmd_signal(sym_process_error, list_2(proc, MKSTR("Not running")));
-    unprotect_procs();
     return(res);
 }
 
@@ -1137,7 +1108,6 @@ PROCESS.
 {
     VALUE res = sym_t;
     DECLARE1(proc, PROCESSP);
-    protect_procs();
     if(VPROC(proc)->pr_Status == PR_STOPPED)
     {
 	if(signal_process(VPROC(proc), SIGCONT, !NILP(grp)))
@@ -1149,7 +1119,6 @@ PROCESS.
     }
     else
 	res = cmd_signal(sym_process_error, list_2(proc, MKSTR("Not stopped")));
-    unprotect_procs();
     return(res);
 }
 
@@ -1164,13 +1133,11 @@ process-object PROCESS. If PROCESS is currently running, return nil.
 {
     VALUE res = sym_nil;
     DECLARE1(proc, PROCESSP);
-    protect_procs();
     if(VPROC(proc)->pr_Status <= 0)
     {
 	if(VPROC(proc)->pr_ExitStatus != -1)
 	    res = make_number(VPROC(proc)->pr_ExitStatus);
     }
-    unprotect_procs();
     return(res);
 }
 
@@ -1187,10 +1154,8 @@ Returns the return-value of the last process to be run on PROCESS, or nil if:
 {
     VALUE res = sym_nil;
     DECLARE1(proc, PROCESSP);
-    protect_procs();
     if((VPROC(proc)->pr_Status <= 0) && (VPROC(proc)->pr_ExitStatus != -1))
 	res = make_number(WEXITSTATUS(VPROC(proc)->pr_ExitStatus));
-    unprotect_procs();
     return(res);
 }
 
@@ -1205,10 +1170,8 @@ If PROCESS is running, return the process-identifier associated with it
 {
     VALUE res = sym_nil;
     DECLARE1(proc, PROCESSP);
-    protect_procs();
     if(VPROC(proc)->pr_Status > 0)
 	res = make_number(VPROC(proc)->pr_Pid);
-    unprotect_procs();
     return(res);
 }
 
@@ -1222,12 +1185,10 @@ Return t if PROCESS is running.
 {
     VALUE res;
     DECLARE1(proc, PROCESSP);
-    protect_procs();
     if(VPROC(proc)->pr_Status == PR_RUNNING)
 	res = sym_t;
     else
 	res = sym_nil;
-    unprotect_procs();
     return(res);
 }
 
@@ -1241,12 +1202,10 @@ Return t if PROCESS has been stopped.
 {
     VALUE res;
     DECLARE1(proc, PROCESSP);
-    protect_procs();
     if(VPROC(proc)->pr_Status == PR_STOPPED)
 	res = sym_t;
     else
 	res = sym_nil;
-    unprotect_procs();
     return(res);
 }
 
@@ -1262,12 +1221,10 @@ in use.
 {
     VALUE res;
     DECLARE1(proc, PROCESSP);
-    protect_procs();
     if(VPROC(proc)->pr_Status != PR_DEAD)
 	res = sym_t;
     else
 	res = sym_nil;
-    unprotect_procs();
     return(res);
 }
 
@@ -1294,9 +1251,7 @@ Return the name of the program in PROCESS.
 {
     VALUE res;
     DECLARE1(proc, PROCESSP);
-    protect_procs();
     res = VPROC(proc)->pr_Prog;
-    unprotect_procs();
     return(res);
 }
 
@@ -1310,9 +1265,7 @@ Sets the name of the program to run on PROCESS to FILE.
 {
     DECLARE1(proc, PROCESSP);
     DECLARE2(prog, STRINGP);
-    protect_procs();
     VPROC(proc)->pr_Prog = prog;
-    unprotect_procs();
     return(prog);
 }
 
@@ -1326,9 +1279,7 @@ Return the list of arguments to PROCESS.
 {
     VALUE res;
     DECLARE1(proc, PROCESSP);
-    protect_procs();
     res = VPROC(proc)->pr_Args;
-    unprotect_procs();
     return(res);
 }
 
@@ -1343,9 +1294,7 @@ Set the arguments to PROCESS.
     DECLARE1(proc, PROCESSP);
     if(!NILP(args) && !CONSP(args))
 	return(signal_arg_error(args, 2));
-    protect_procs();
     VPROC(proc)->pr_Args = args;
-    unprotect_procs();
     return(args);
 }
 
@@ -1359,9 +1308,7 @@ Return the stream to which all output from PROCESS is sent.
 {
     VALUE res;
     DECLARE1(proc, PROCESSP);
-    protect_procs();
     res = VPROC(proc)->pr_OutputStream;
-    unprotect_procs();
     return(res);
 }
 
@@ -1374,9 +1321,7 @@ Set the output-stream of PROCESS to STREAM. nil means discard all output.
 ::end:: */
 {
     DECLARE1(proc, PROCESSP);
-    protect_procs();
     VPROC(proc)->pr_OutputStream = stream;
-    unprotect_procs();
     return(stream);
 }
 
@@ -1390,9 +1335,7 @@ Return the stream to which all standard-error output from PROCESS is sent.
 {
     VALUE res;
     DECLARE1(proc, PROCESSP);
-    protect_procs();
     res = VPROC(proc)->pr_ErrorStream;
-    unprotect_procs();
     return(res);
 }
 
@@ -1405,9 +1348,7 @@ Set the error-stream of PROCESS to STREAM. nil means discard all output.
 ::end:: */
 {
     DECLARE1(proc, PROCESSP);
-    protect_procs();
     VPROC(proc)->pr_ErrorStream = stream;
-    unprotect_procs();
     return(stream);
 }
 
@@ -1422,9 +1363,7 @@ exits or is stopped).
 {
     VALUE res;
     DECLARE1(proc, PROCESSP);
-    protect_procs();
     res = VPROC(proc)->pr_NotifyFun;
-    unprotect_procs();
     return(res);
 }
 
@@ -1437,9 +1376,7 @@ Set the function which is called when PROCESS changes state to FUNCTION.
 ::end:: */
 {
     DECLARE1(proc, PROCESSP);
-    protect_procs();
     VPROC(proc)->pr_NotifyFun = fn;
-    unprotect_procs();
     return(fn);
 }
 
@@ -1454,9 +1391,7 @@ PROCESS when it is started.
 {
     VALUE res;
     DECLARE1(proc, PROCESSP);
-    protect_procs();
     res = VPROC(proc)->pr_Dir;
-    unprotect_procs();
     return(res);
 }
 
@@ -1469,9 +1404,7 @@ Set the directory of PROCESS to DIR.
 ::end:: */
 {
     DECLARE1(proc, PROCESSP);
-    protect_procs();
     VPROC(proc)->pr_Dir = dir;
-    unprotect_procs();
     return(dir);
 }
 
@@ -1486,9 +1419,7 @@ connect PROCESS with its physical process.
 {
     VALUE res;
     DECLARE1(proc, PROCESSP);
-    protect_procs();
     res = VPROC(proc)->pr_ConnType;
-    unprotect_procs();
     return(res);
 }
 
@@ -1507,13 +1438,11 @@ This function can only be used when PROCESS is not in use.
 ::end:: */
 {
     DECLARE1(proc, PROCESSP);
-    protect_procs();
     if(VPROC(proc)->pr_Status != PR_DEAD)
 	type = cmd_signal(sym_process_error, list_2(MKSTR("Process in use"),
 						    proc));
     else
 	VPROC(proc)->pr_ConnType = type;
-    unprotect_procs();
     return(type);
 }
 
@@ -1597,13 +1526,14 @@ proc_init(void)
     ADD_SUBR(subr_set_process_dir);
     ADD_SUBR(subr_process_connection_type);
     ADD_SUBR(subr_set_process_connection_type);
+
+    proc_db = db_alloc(__FILE__, 4096);
 }
 
 void
 proc_kill(void)
 {
     struct Proc *pr;
-    protect_procs();
     pr = process_chain;
     while(pr)
     {
@@ -1612,9 +1542,5 @@ proc_kill(void)
 	pr = nxt;
     }
     process_chain = NULL;
-#if 0
-    /* Don't do this since we're technically dead. */
-    unprotect_procs();
-#endif
     signal(SIGCHLD, SIG_IGN);
 }
