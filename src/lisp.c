@@ -43,6 +43,7 @@ char *alloca ();
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <assert.h>
 
 #ifdef NEED_MEMORY_H
 # include <memory.h>
@@ -251,23 +252,45 @@ read_list(repv strm, register int *c_p)
 		continue;
 	    }
 
-	case '.':
-	    *c_p = rep_stream_getc(strm);
-	    if(last)
-	    {
-		if(!(rep_CDR(last) = rep_readl(strm, c_p)))
-		    result = rep_NULL;
-	    }
-	    else
-		result = Fsignal(Qinvalid_read_syntax,
-				    rep_LIST_1(rep_VAL(&nodot)));
-	    break;
-
 	case ')':
 	case ']':
 	    *c_p = rep_stream_getc(strm);
 	    goto end;
 	    
+	case '.':
+	    *c_p = rep_stream_getc(strm);
+	    switch (*c_p)
+	    {
+	    case EOF:
+		result = Fsignal(Qend_of_stream, rep_LIST_1(strm));
+		goto end;
+
+	    case ' ': case '\t': case '\n': case '\f':
+		if(last)
+		{
+		    repv this = rep_readl(strm, c_p);
+		    if (this != rep_NULL)
+			rep_CDR (last) = this;
+		    else
+		    {
+			result = rep_NULL;
+			goto end;
+		    }
+		}
+		else
+		{
+		    result = Fsignal(Qinvalid_read_syntax,
+				     rep_LIST_1(rep_VAL(&nodot)));
+		    goto end;
+		}
+		continue;
+
+	    default:
+		rep_stream_ungetc (strm, *c_p);
+		*c_p = '.';
+	    }
+	    /* fall through */
+
 	default:
 	    {
 		register repv this = Fcons(Qnil, Qnil);
@@ -286,15 +309,12 @@ end:
     return result;
 }
 
-DEFSTRING(buf_overflow, "Internal buffer overflow");
-DEFSTRING(int_overflow, "Integer limit exceeded");
-
 /* Could be a symbol or a number */
 static repv
 read_symbol(repv strm, int *c_p)
 {
-#define SYM_BUF_LEN 240
     static repv buffer = rep_NULL;
+    static size_t buflen = 240;
 
     repv result;
     u_char *buf;
@@ -303,19 +323,27 @@ read_symbol(repv strm, int *c_p)
 
     /* For parsing numbers, while radix != zero, it might still be
        an integer that we're reading. */
-    int radix = -1, sign = 1;
-    long value = 0;
+    int radix = -1, sign = 1, nfirst = 0;
+    rep_bool exact = rep_TRUE, rational = rep_FALSE, exponent = rep_FALSE;
 
-    if(buffer == rep_NULL)
+    if (buffer == rep_NULL)
     {
-	buffer = rep_make_string(SYM_BUF_LEN + 1);
-	rep_mark_static(&buffer);
+	buffer = rep_make_string (buflen + 2);
+	rep_mark_static (&buffer);
     }
 
     buf = rep_STR(buffer);
 
-    while((c != EOF) && (i < SYM_BUF_LEN))
+    while (c != EOF)
     {
+	if (i == buflen)
+	{
+	    repv new;
+	    buflen = buflen * 2;
+	    new = rep_make_string (buflen + 2);
+	    memcpy (rep_STR (new), buf, buflen / 2);
+	    buf = rep_STR (new);
+	}
 	switch(c)
 	{
 	case ' ':  case '\t': case '\n': case '\f':
@@ -335,7 +363,7 @@ read_symbol(repv strm, int *c_p)
 	case '|':
 	    radix = 0;
 	    c = rep_stream_getc(strm);
-	    while((c != EOF) && (c != '|') && (i < SYM_BUF_LEN))
+	    while((c != EOF) && (c != '|') && (i < buflen))	/* XXX */
 	    {
 		buf[i++] = c;
 		c = rep_stream_getc(strm);
@@ -349,8 +377,11 @@ read_symbol(repv strm, int *c_p)
 	    {
 		/* It still may be a number that we're parsing */
 		if(i == 0 && (c == '-' || c == '+'))
+		{
 		    /* A leading sign */
 		    sign = (c == '-') ? -1 : 1;
+		    nfirst = i + 1;
+		}
 		else
 		{
 		    switch(radix)
@@ -358,26 +389,36 @@ read_symbol(repv strm, int *c_p)
 		    case -1:
 			/* Deduce the base next (or that we're not
 			   looking at a number) */
-			if(!isdigit(c))
+			if (c == '.')
+			{
+			    radix = 10;
+			    exact = rep_FALSE;
+			}
+			else if(!isdigit(c))
 			    radix = 0;
 			else if(c == '0')
 			    radix = 1;	/* octal or hex */
 			else
-			{
 			    radix = 10;
-			    value = c - '0';
-			}
 			break;
 
 		    case 1:
 			/* We had a leading zero last character. If
 			   this char's an 'x' it's hexadecimal. */
 			if(toupper(c) == 'X')
+			{
 			    radix = 16;
+			    nfirst = i + 1;
+			}
 			else if(isdigit(c))
 			{
 			    radix = 8;
-			    value = (value * radix) + (c - '0');
+			    nfirst = i;
+			}
+			else if (c == '.' || c == 'e' || c == 'E')
+			{
+			    radix = 10;
+			    exact = rep_FALSE;
 			}
 			else
 			    radix = 0;
@@ -386,24 +427,48 @@ read_symbol(repv strm, int *c_p)
 		    default:
 			/* Now we're speculatively reading a number
 			   of base radix. */
-			if(radix <= 10)
+			switch (c)
 			{
-			    if(c >= '0' && c <= ('0' + radix - 1))
-				value = value * radix + (c - '0');
+			case '.':
+			    if (exact && !rational)
+				exact = rep_FALSE;
 			    else
 				radix = 0;
-			}
-			else
-			{
-			    /* hex */
-			    if(isxdigit(c))
-			    {
-				value = (value * 16
-					 + ((c >= '0' && c <= '9')
-					    ? c - '0'
-					    : 10 + toupper(c) - 'A'));
-			    }
+			    break;
+
+			case '/':
+			    if (exact && !rational)
+				rational = rep_TRUE;
 			    else
+				radix = 0;
+			    break;
+
+			case '-':
+			    if (!exponent)
+				goto do_default;
+			    break;
+
+			case 'e': case 'E':
+			    if (radix != 16)
+			    {
+				if (!rational && !exponent)
+				{
+				    exponent = rep_TRUE;
+				    exact = rep_FALSE;
+				}
+				else
+				    radix = 0;
+				break;
+			    }
+			    /* fall through */
+
+			default: do_default:
+			    if(radix <= 10
+			       && !(c >= '0' && c <= ('0' + radix - 1)))
+			    {
+				radix = 0;
+			    }
+			    else if(!isxdigit(c))
 				radix = 0;
 			}
 		    }
@@ -413,26 +478,23 @@ read_symbol(repv strm, int *c_p)
 	}
 	c = rep_stream_getc(strm);
     }
-    if(i >= SYM_BUF_LEN)
-    {
-	/* Guess I'd better fix this! */
-	return Fsignal(Qerror, rep_LIST_1(rep_VAL(&buf_overflow)));
-    }
 done:
-    if(radix > 0
-       /* Ensure that we don't accept `0x' as hex zero */
-       && ((radix != 16) || (i > 2)))
+    buf[i] = 0;
+    if (radix > 0 && nfirst < i)
     {
-	/* It was a number */
-	value *= sign;
-	if(value < rep_LISP_MIN_INT || value > rep_LISP_MAX_INT)
-	    return Fsignal(Qarith_error, rep_LIST_1(rep_VAL(&int_overflow)));
-	result = rep_MAKE_INT(value);
+	/* It was a number of some sort */
+	if (radix == 1)
+	    result = rep_MAKE_INT (0);
+	else
+	    result = rep_parse_number (buf + nfirst, i - nfirst, radix, sign,
+				       !exact ? rep_NUMBER_FLOAT
+				       : rational ? rep_NUMBER_RATIONAL : 0);
+	if (result == rep_NULL)
+	    goto intern;
     }
     else
     {
-	buf[i] = 0;
-	rep_set_string_len(buffer, i);
+intern:	rep_set_string_len(buffer, i);
 	if(!(result = Ffind_symbol(rep_VAL(buffer), Qnil))
 	   || (rep_NILP(result) && strcmp(buf, "nil")))
 	{
@@ -1545,16 +1607,6 @@ rep_lisp_prin(repv strm, repv obj)
 	int j;
 	int print_length;
 	repv tem;
-
-    case rep_Int:
-#ifdef HAVE_SNPRINTF
-	snprintf(tbuf, sizeof(tbuf),
-		 "%" rep_PTR_SIZED_INT_CONV "d", rep_INT(obj));
-#else
-	sprintf(tbuf, "%" rep_PTR_SIZED_INT_CONV "d", rep_INT(obj));
-#endif
-	rep_stream_puts(strm, tbuf, -1, rep_FALSE);
-	break;
 
     case rep_Cons:
 	tem = Fsymbol_value(Qprint_level, Qt);
