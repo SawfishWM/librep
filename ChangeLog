@@ -1,3 +1,8 @@
+2001-02-20  John Harper  <jsh@eazel.com>
+
+	* configure.in: on Solaris use /usr/ccs/lib/cpp (patch from
+	albert chin <china@thewrittenword.com>)
+
 2001-01-17  John Harper  <jsh@eazel.com>
 
 	* librep.spec.in: unset LC_ALL, LINGUAS and LANG before

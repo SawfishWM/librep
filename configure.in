@@ -283,7 +283,7 @@ else
       ;;
     *-sun-solaris*)
       dnl works on Solaris
-      MAKEDEP='/usr/lib/cpp -M'
+      MAKEDEP='/usr/ccs/lib/cpp -M'
       ;;
     *)
       dnl disable dependences?
