@@ -54,12 +54,12 @@
       call-with-error-handlers cons consp copy-sequence copy-stream
       current-time current-time-string default-boundp default-value
       defconst %define define define-value defmacro defsubst defun defvar
-      delete delete-if delete-if-not delq digit-char-p
+      delete delete-if delete-if-not delq digit-char-p do
       elt eq eql equal error eval eval-when-compile
       expand-last-match featurep filter fix-time
       format funcall function functionp garbage-collect gensym get
       get-output-stream-string getenv identity if integerp interactive
-      lambda last length let let* letrec list list* logand logior
+      intern lambda last length let let* letrec list list* logand logior
       lognot logxor lower-case-p lsh macroexpand macrop
       make-closure make-list make-string make-string-input-stream
       make-string-output-stream make-symbol make-vector
