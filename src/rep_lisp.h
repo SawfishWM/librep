@@ -23,15 +23,6 @@
 
 #include <stdio.h>
 
-/* These numbers weren't just plucked from the air, they make the blocks
-   of objects fit as close as possible into powers of 2 sized blocks. */
-#define rep_CONSBLK_SIZE	510		/* ~4k */
-#define rep_SYMBOLBLK_SIZE	405		/* ~8k */
-#define rep_NUMBERBLK_SIZE	64		/* XXX ?? */
-
-/* The number of hash buckets in each rep_obarray, this is a prime number. */
-#define rep_OBSIZE		509
-
 /* Stringify X. Expands macros in X. */
 #define rep_QUOTE(x) rep_QUOTE__(x)
 #define rep_QUOTE__(x) #x
@@ -213,17 +204,6 @@ typedef struct {
     repv cdr;				/* low bit is GC mark */
 } rep_cons;
 
-/* Structure of cons allocation blocks */
-typedef struct rep_cons_block_struct {
-    union {
-	struct rep_cons_block_struct *p;
-	/* ensure that the following cons cell is aligned to at
-	   least sizeof (rep_cons) (for the dcache) */
-	rep_cons dummy;
-    } next;
-    rep_cons cons[rep_CONSBLK_SIZE];
-} rep_cons_block;
-
 #define rep_CONSP(v)	(rep_CELLP(v) && rep_CELL_CONS_P(v))
 
 /* Build a repv out of a pointer to a rep_cons object */
@@ -368,30 +348,17 @@ typedef rep_cell rep_number;
 
 typedef struct rep_string_struct {
     /* Bits 0->7 are standard cell8 defines. Bits 8->31 store the length
-       of the string.
-
-       This means that strings can't contain more than 2^24-1 bytes
-       (thats about 16.7MB) */
+       of the string. This means that strings can't contain more than
+       2^24-1 bytes (thats about 16.7MB) */
     repv car;
-    struct rep_string_struct *next;
 
-    /* This is inefficient since the data for dynamically allocated
-       strings always follows immediately. But there's no way to do the
-       same for statically allocated strings. [I used to use some
-       assembler magic for this purpose, but it's less than portable] */
-
+    /* Pointer to the (zero-terminated) characters */
     u_char *data;
-
-    /* in a dynamically allocated string, data follows */
 } rep_string;
 
 #define rep_STRING_LEN_SHIFT	8
 #define rep_MAX_STRING \
     ((rep_VALUE_CONST(1) << (rep_VALUE_BITS - rep_STRING_LEN_SHIFT)) - 1)
-
-/* The number of bytes that need to be allocated for a string cell
-   containg X string bytes (including terminating zero). */
-#define rep_DSTRING_SIZE(x) 	(sizeof(rep_string) + (x))
 
 #define rep_STRINGP(v)		rep_CELL8_TYPEP(v, rep_String)
 #define rep_STRING(v)		((rep_string *) rep_PTR(v))
@@ -406,11 +373,12 @@ typedef struct rep_string_struct {
 
 /* Define a variable V, containing a static string S. This must be cast
    to a repv via the rep_VAL() macro when using. */
-#define DEFSTRING(v, s) 				\
-    rep_ALIGN_CELL(static rep_string v)			\
-	= { ((sizeof(s) - 1) << rep_STRING_LEN_SHIFT)	\
-	    | rep_CELL_STATIC_BIT | rep_String, 0,	\
-	    (u_char *)s }
+#define DEFSTRING(v, s)					\
+    rep_ALIGN_CELL(const static rep_string v) = {	\
+	((sizeof(s) - 1) << rep_STRING_LEN_SHIFT)	\
+	| rep_CELL_STATIC_BIT | rep_String,		\
+	(u_char *)s					\
+    }
 
 #define rep_STR(v)	(rep_STRING(v)->data)
 
@@ -462,12 +430,6 @@ typedef struct {
 
 /* Set when the variable has been defvar'd */
 #define rep_SF_DEFVAR	(1 << (rep_CELL8_TYPE_BITS + 7))
-
-/* Symbol allocation blocks */
-typedef struct rep_symbol_block_struct {
-    struct rep_symbol_block_struct *next;
-    rep_ALIGN_CELL(rep_symbol symbols[rep_SYMBOLBLK_SIZE]);
-} rep_symbol_block;
 
 #define rep_SYM(v)		((rep_symbol *)rep_PTR(v))
 #define rep_SYMBOLP(v)		rep_CELL8_TYPEP(v, rep_Symbol)
