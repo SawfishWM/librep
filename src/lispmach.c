@@ -384,7 +384,7 @@ list_ref (repv list, int elt)
  &&TAG(OP_FLUID_SET), &&TAG(OP_FLUID_BIND), &&TAG(OP_MEMQL), &&TAG(OP_NUM_EQ), /*C0*/		\
  &&TAG(OP_TEST_SCM), &&TAG(OP_TEST_SCM_F), &&TAG(OP__DEFINE), &&TAG(OP_SPEC_BIND),		\
  &&TAG(OP_SET), &&TAG(OP_REQUIRED_ARG), &&TAG(OP_OPTIONAL_ARG), &&TAG(OP_REST_ARG), /*C8*/	\
- &&TAG(OP_NOT_ZERO_P), &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT,				\
+ &&TAG(OP_NOT_ZERO_P), &&TAG(OP_KEYWORD_ARG), &&TAG_DEFAULT, &&TAG_DEFAULT,				\
 												\
  &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, /*D0*/	\
  &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT,		\
@@ -1991,9 +1991,29 @@ again: {
 	    int i;
 	    tmp = Qnil;
 	    for (i = argc - 1; i >= argptr; i--)
-		tmp = Fcons (argv[i], tmp);
+	    {
+		if (argv[i] != rep_NULL)
+		    tmp = Fcons (argv[i], tmp);
+	    }
 	    argptr = argc;
 	    PUSH (tmp);
+	    SAFE_NEXT;
+	END_INSN
+
+	BEGIN_INSN (OP_KEYWORD_ARG)
+	    int i;
+	    POP1 (tmp);
+	    tmp2 = Qnil;
+	    for (i = argptr; i < argc - 1; i += 2)
+	    {
+		if (argv[i] == tmp && argv[i+1] != rep_NULL)
+		{
+		    tmp2 = argv[i+1];
+		    argv[i] = argv[i+1] = rep_NULL;
+		    break;
+		}
+	    }
+	    PUSH (tmp2);
 	    SAFE_NEXT;
 	END_INSN
 
