@@ -1021,6 +1021,8 @@ last garbage-collection is greater than `garbage-threshold'.
     }
 #endif
 
+    rep_macros_before_gc ();
+
     /* mark static objects */
     for(i = 0; i < next_static_root; i++)
 	rep_MARKVAL(*static_roots[i]);
