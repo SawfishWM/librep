@@ -514,14 +514,14 @@ Returns the INDEXth element of LIST. The first element has an INDEX of zero.
     DECLARE1(index, INTP);
     DECLARE2(list, LISTP);
     i = VINT(index);
-    while(i && CONSP(list))
+    while((i-- > 0) && CONSP(list))
     {
 	list = VCDR(list);
-	i--;
+	TEST_INT;
+	if(INT_P)
+	    return LISP_NULL;
     }
-    if((!i) && CONSP(list))
-	return(VCAR(list));
-    return(sym_nil);
+    return (i <= 0 && CONSP(list)) ? VCAR(list) : sym_nil;
 }
 
 _PR VALUE cmd_nthcdr(VALUE index, VALUE list);
@@ -536,14 +536,14 @@ Returns the INDEXth cdr of LIST. The first is INDEX zero.
     DECLARE1(index, INTP);
     DECLARE2(list, LISTP);
     i = VINT(index);
-    while(i && CONSP(list))
+    while((i-- > 0) && CONSP(list))
     {
 	list = VCDR(list);
-	i--;
+	TEST_INT;
+	if(INT_P)
+	    return LISP_NULL;
     }
-    if(!i)
-	return(list);
-    return(sym_nil);
+    return list;
 }
 
 _PR VALUE cmd_last(VALUE);
