@@ -23,8 +23,10 @@
 ;;	matching files against regexp(s)
 ;;    - Fix all the kludges marked by XXX
 
-(define-structure remote-ftp (export remote-ftp-add-passwd)
-
+(define-structure remote-ftp (export remote-ftp-close-host
+				     remote-ftp-close-all
+				     remote-ftp-empty-cache
+				     remote-ftp-add-passwd)
   (open rep remote-utils)
   (require 'mailaddr)			;for user-mail-address
 
