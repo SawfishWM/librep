@@ -290,77 +290,78 @@ is one of these that form is compiled.")
        (comp-output-stream nil)
        (temp-file (make-temp-name))
        src-file dst-file form)
-    (message (concat "Compiling " file-name "...") t)
-    (when (setq src-file (open-file file-name 'read))
-      (unwind-protect
-	  ;; Pass 1. Scan for top-level definitions in the file.
-	  (condition-case nil
-	      (while t
-		(setq form (read src-file))
-		(cond
-		 ((eq (car form) 'defun)
-		  (comp-remember-fun (nth 1 form) (nth 2 form)))
-		 ((eq (car form) 'defmacro)
-		  (comp-remember-fun (nth 1 form) (nth 2 form))
-		  (setq comp-macro-env (cons (cons (nth 1 form)
-						   (cons 'lambda
-							 (nthcdr 2 form)))
-					     comp-macro-env)))
-		 ((eq (car form) 'defsubst)
-		  (comp-remember-fun (nth 1 form) (nth 2 form))
-		  (setq comp-inline-env (cons (cons (nth 1 form)
-						    (cons 'lambda
-							  (nthcdr 2 form)))
-					      comp-inline-env)))
-		 ((eq (car form) 'defvar)
-		  (comp-remember-var (nth 1 form)))
-		 ((eq (car form) 'defconst)
-		  (comp-remember-var (nth 1 form))
-		  (setq comp-const-env (cons (cons (nth 1 form)
-						   (nth 2 form))
-					     comp-const-env)))))
-	    (end-of-stream))
-	(close-file src-file))
-      (when (and (setq src-file (open-file file-name 'read))
-		 (setq dst-file (open-file temp-file 'write)))
-	(condition-case error-info
+    (unwind-protect
+	(progn
+	  (message (concat "Compiling " file-name "...") t)
+	  (when (setq src-file (open-file file-name 'read))
 	    (unwind-protect
-		(progn
-		  ;; Pass 2. The actual compile
-		  (format dst-file
-			  ";; Source file: %s\n(validate-byte-code %d %d)\n"
-			  file-name bytecode-major bytecode-minor)
-		  (condition-case nil
-		      (while t
-			(when (setq form (read src-file))
-			  (setq form (macroexpand form comp-macro-env))
-			  (cond
-			   ((memq (car form) '(defun defmacro defvar
-						defconst defsubst require))
-			    (setq form (comp-compile-top-form form)))
-			   ((memq (car form) comp-top-level-compiled)
-			    ;; Compile this form
-			    (setq form (compile-form form))))
-			  (when form
-			    (print form dst-file))))
-		    (end-of-stream)))
-	      (close-file dst-file)
+		;; Pass 1. Scan for top-level definitions in the file.
+		(condition-case nil
+		    (while t
+		      (setq form (read src-file))
+		      (cond
+		       ((eq (car form) 'defun)
+			(comp-remember-fun (nth 1 form) (nth 2 form)))
+		       ((eq (car form) 'defmacro)
+			(comp-remember-fun (nth 1 form) (nth 2 form))
+			(setq comp-macro-env
+			      (cons (cons (nth 1 form)
+					  (cons 'lambda (nthcdr 2 form)))
+				    comp-macro-env)))
+		       ((eq (car form) 'defsubst)
+			(comp-remember-fun (nth 1 form) (nth 2 form))
+			(setq comp-inline-env
+			      (cons (cons (nth 1 form)
+					  (cons 'lambda (nthcdr 2 form)))
+				    comp-inline-env)))
+		       ((eq (car form) 'defvar)
+			(comp-remember-var (nth 1 form)))
+		       ((eq (car form) 'defconst)
+			(comp-remember-var (nth 1 form))
+			(setq comp-const-env (cons (cons (nth 1 form)
+							 (nth 2 form))
+						   comp-const-env)))))
+		  (end-of-stream))
 	      (close-file src-file))
-	  (error
-	   ;; Be sure to remove any partially written dst-file. Also, signal
-	   ;; the error again so that the user sees it.
-	   (let
-	       ((fname (concat file-name ?c)))
-	     (when (file-exists-p fname)
-	       (delete-file fname)))
-	   ;; Hack to signal error without entering the debugger (again)
-	   (throw 'error error-info)))
-	;; Copy the file to its correct location
-	(copy-file temp-file (concat file-name (if (string-match
-						    "\\.jl$" file-name)
-						   ?c ".jlc")))
-	t))))
-
+	    (when (and (setq src-file (open-file file-name 'read))
+		       (setq dst-file (open-file temp-file 'write)))
+	      (condition-case error-info
+		  (unwind-protect
+		      (progn
+			;; Pass 2. The actual compile
+			(format dst-file
+				";; Source file: %s\n(validate-byte-code %d %d)\n"
+				file-name bytecode-major bytecode-minor)
+			(condition-case nil
+			    (while t
+			      (when (setq form (read src-file))
+				(setq form (macroexpand form comp-macro-env))
+				(cond
+				 ((memq (car form)
+					'(defun defmacro defvar
+					  defconst defsubst require))
+				  (setq form (comp-compile-top-form form)))
+				 ((memq (car form) comp-top-level-compiled)
+				  ;; Compile this form
+				  (setq form (compile-form form))))
+				(when form
+				  (print form dst-file))))
+			  (end-of-stream)))
+		    (close-file dst-file)
+		    (close-file src-file))
+		(error
+		 ;; Be sure to remove any partially written dst-file.
+		 ;; Also, signal the error again so that the user sees it.
+		 (delete-file temp-name)
+		 ;; Hack to signal error without entering the debugger (again)
+		 (throw 'error error-info)))
+	      ;; Copy the file to its correct location
+	      (copy-file temp-file (concat file-name (if (string-match
+							  "\\.jl$" file-name)
+							 ?c ".jlc")))
+	      t)))
+      (when (file-exists-p temp-file)
+	(delete-file temp-file)))))
 ;;;###autoload
 (defun compile-directory (dir-name &optional force-p exclude-list)
   "Compiles all jade-lisp files in the directory DIRECTORY-NAME whose object
