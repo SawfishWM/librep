@@ -84,7 +84,7 @@
 /* Convert a cons cell with two integers into a signed long int. */
 #define VLONG_INT(v) (VINT(VCAR(v)) | (VINT(VCDR(v)) << 24))
 
-/* Vice versa. */
+/* True when V is a long integer. */
 #define LONG_INTP(v) (CONSP(v) && INTP(VCAR(v)) && INTP(VCDR(v)))
 
 #if NORMAL_ALIGNMENT <= STRMEM_ALIGNMENT
@@ -150,7 +150,7 @@ typedef struct {
 #define VAL(x)		((VALUE)(x))
 
 /* Build a `Lisp_Normal *' pointer out of a VALUE of a normal type */
-#define VPTR(v) 	((Lisp_Normal *)(v))						\
+#define VPTR(v) 	((Lisp_Normal *)(v))
 
 
 /* Type data */
@@ -186,7 +186,9 @@ enum Lisp_Type
     V_Mark,
     V_File,
     V_Process,
-    V_GlyphTable
+    V_GlyphTable,
+
+    V_MAX				/* not a type */
 };
 
 /* Assuming that V is of normal type, return the type code */
@@ -207,23 +209,27 @@ enum Lisp_Type
 
 /* Information about each type */
 typedef struct {
-    /* compares two values, rc is similar to strcmp() */
+    /* Compares two values, rc is similar to strcmp() */
     int (*compare)(VALUE val1, VALUE val2);
 
-    /* prints a textual representation of the object, not necessarily in 
+    /* Prints a textual representation of the object, not necessarily in 
        a read'able format */
     void (*princ)(VALUE stream, VALUE obj);
 
-    /* prints a textual representation of the object, if possible in
+    /* Prints a textual representation of the object, if possible in
        a read'able format */
     void (*print)(VALUE stream, VALUE obj);
+
+    /* When non-null, a function that should be called during the
+       sweep phase of garbage collection. */
+    void (*sweep)(void);
 
     /* this is the name of the type */
     char *name;
 } Lisp_Type_Data;
 
 /* An array of these things, indexed by type code */
-extern Lisp_Type_Data data_types[];
+extern Lisp_Type_Data data_types[V_MAX];
 
 /* These are also defined as functions (lower-case'd names)...  */
 #define VALUE_CMP(v1,v2) data_types[VTYPE(v1)].compare(v1,v2)
