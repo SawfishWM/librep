@@ -1,3 +1,10 @@
+1999-12-21  John Harper  <john@dcs.warwick.ac.uk>
+
+	* regexp.c (regmatch): fix typo in non-greedy operator match
+	(from Matt Kraai <kraai@ghs.com>
+
+	* lispcmds.c (Fif): make (if t) => nil, not nil
+
 1999-12-19  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_dl.c (rep_open_dl_library): protect `file_name' against
