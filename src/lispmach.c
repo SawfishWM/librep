@@ -86,7 +86,7 @@ list_tail (repv list, int n)
 
    returns the number of dynamic bindings removed */
 static inline int
-inline_unbind_object (repv item)
+inline_unbind (repv item)
 {
     if (rep_INTP (item))
     {
@@ -97,49 +97,23 @@ inline_unbind_object (repv item)
 	rep_special_bindings = list_tail (rep_special_bindings, specials);
 	return specials;
     }
-    else if (rep_CONSP (item))
-    {
-	if (rep_CAR (item) == Qerror)
-	    return 0;
-	else
-	{
-	    rep_type *t = rep_get_data_type (rep_TYPE (rep_CAR (item)));
-	    if (t->unbind != 0)
-		t->unbind (item);
-	    return 1;
-	}
-    }
+    else if (item == Qnil || (rep_CONSP (item) && rep_CAR (item) == Qerror))
+	return 0;
     else
-    {
-	rep_type *t = rep_get_data_type (rep_TYPE (item));
-	if (t->unbind != 0)
-	    t->unbind (item);
-	return 1;
-    }
+	abort ();
 }
 
-int
-rep_unbind_object (repv item)
+static int
+unbind (repv item)
 {
-    return inline_unbind_object (item);
-}
-
-/* Bind one object, returning the handle to later unbind by. */
-repv
-rep_bind_object(repv obj)
-{
-    rep_type *t = rep_get_data_type(rep_TYPE(obj));
-    if (t->bind != 0)
-	return t->bind(obj);
-    else
-	return Qnil;
+    return inline_unbind (item);
 }
 
 static inline void
 unbind_n (repv *ptr, int n)
 {
     while (n-- > 0)
-	rep_unbind_object (ptr[n]);
+	unbind (ptr[n]);
 }
 
 /* Walk COUNT entries down the environment */
@@ -343,7 +317,7 @@ list_ref (repv list, int elt)
  &&TAG(OP_CADDDDR), &&TAG(OP_CADDDDDR), &&TAG(OP_CADDDDDDR), &&TAG(OP_CADDDDDDDR), /*A8*/	\
  &&TAG(OP_FLOOR), &&TAG(OP_CEILING), &&TAG(OP_TRUNCATE), &&TAG(OP_ROUND),			\
 												\
- &&TAG(OP_BINDOBJ), &&TAG(OP_FORBID), &&TAG(OP_PERMIT), &&TAG(OP_EXP), /*B0*/			\
+ &&TAG_DEFAULT, &&TAG(OP_FORBID), &&TAG(OP_PERMIT), &&TAG(OP_EXP), /*B0*/			\
  &&TAG(OP_LOG), &&TAG(OP_SIN), &&TAG(OP_COS), &&TAG(OP_TAN),					\
  &&TAG(OP_SQRT), &&TAG(OP_EXPT), &&TAG(OP_SWAP2), &&TAG(OP_MOD), /*B8*/				\
  &&TAG(OP_MAKE_CLOSURE), &&TAG(OP_UNBINDALL_0), &&TAG(OP_CLOSUREP), &&TAG(OP_POP_ALL),		\
@@ -953,7 +927,7 @@ again:
 
 	BEGIN_INSN (OP_UNBIND)
 	    SYNC_GC;
-	    impurity -= rep_unbind_object(BIND_RET_POP);
+	    impurity -= inline_unbind(BIND_RET_POP);
 	    NEXT;
 	END_INSN
 
@@ -1626,13 +1600,6 @@ again:
 	    CALL_1(Fround);
 	END_INSN
 
-	BEGIN_INSN (OP_BINDOBJ)
-	    tmp = RET_POP;
-	    BIND_PUSH (rep_bind_object(tmp));
-	    impurity++;
-	    NEXT;
-	END_INSN
-
 	BEGIN_INSN (OP_FORBID)
 	    rep_FORBID;
 	    PUSH (rep_PREEMPTABLE_P ? Qnil : Qt);
@@ -1870,7 +1837,7 @@ again:
 		    rep_throw_value = rep_NULL;
 		    rep_PUSHGC(gc_throwval, throwval);
 		    SYNC_GC;
-		    impurity -= rep_unbind_object(item);
+		    impurity -= unbind(item);
 		    rep_POPGC;
 		    rep_throw_value = throwval;
 		}
