@@ -1,3 +1,30 @@
+1998-08-26  John Harper  <john@dcs.warwick.ac.uk>
+
+	* buffers.jl (buffer-read-only-p, set-buffer-read-only):
+	implemented in lisp now
+
+	* info.jl: highlights menus and links in underline-face
+
+	* isearch.jl: highlights the selection in highlight-face
+
+	* maildefs.jl (mail-highlighted-headers): changed
+	documentation, made more general
+
+	* print.jl (print-mode-alist): added more entries
+
+	* prompt.jl (prompt): setq the glyph-table, don't use
+	set-buffer-glyph-table
+
+	* read-mail.jl: add extents for all mail-highlighted-headers
+
+	* send-mail.jl: add a read-only extent covering the
+	mail-header-separator string
+
+	* summary.jl (summary-highlight-index): use an extent
+
+	* windows.jl (underline-face, bold-face, italic-face): more
+	default faces, bold and italic aren't supported yet
+
 1998-08-19  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rm-mail-dir.jl (rm-mail-dir-scanner): rewritten. added

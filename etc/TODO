@@ -35,6 +35,9 @@ Outstanding bugs
    close-file on them (this could be construed a ``feature'' rather
    than a bug?)
 
+ ! changing glyph-tables via extents doesn't work; it should (though it
+   will be difficult)
+
 
 General programming tasks:
 ==========================
@@ -70,6 +73,10 @@ General programming tasks:
 
  + Make swap-del-bs a runtime option, not compile time
 
+ - Syntax highlighting
+
+   I don't like this myself, but it seems to be popular
+
  - Demand load buffer contents
 
    If a buffer is unmodified, and hasn't been used for <some arbitrary
@@ -87,12 +94,6 @@ General programming tasks:
    work in more circumstances, e.g. in prompts
 
    Allow `links' between help messages
-
- - Some method of associating ``attributes'' with regions of buffers,
-   these attributes would be things like colour, style (bold,
-   underline..), and general properties (e.g. read-only, keymaps,
-   glyph-tables, etc...). Probably not font-size/family since it's
-   nice to keep the idea of a window as a regular grid of glyphs.
 
  - Allow jadeclient to communicate inter-host.
 

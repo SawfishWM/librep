@@ -1,3 +1,48 @@
+1998-08-26  John Harper  <john@dcs.warwick.ac.uk>
+
+	* extent.c: new file, extents allow property lists to be
+	maintained for buffer regions (also local variables). In fact
+	the old style buffer-local values are now a special case of
+	this, stored in the root extent covering the entire buffer
+
+	* faces.c: new file. Faces associate rendering attributes
+	(colour, underline, bold, etc) with the attribute codes
+	understood by the redisplay algorithm. This file also
+	implements the colour type
+
+	* glyphs.c: traverses the extent tree, modifying the output
+	attribute as the `face' property changes
+
+	* edit.c (read_only_pos, read_only_section): these functions
+	replace the read_only function. In case an extent has a local
+	value of the read-only variable
+
+	* housekeeping.c: the adjust_marks_X functions now call a
+	related adjust_extents_Y function, and also update the
+	positions in the extent caches
+
+	* symbols.c (cmd_symbol_value): look for buffer-local values in
+	the current stack of extents (use the buffer-symbol-value
+	function)
+	(cmd_set): if setting a buffer-local value, only ever set the
+	buffer-wide value (use the buffer-set function to set a value
+	in a specified extent)
+	(cmd_kill_all_local_variables, cmd_kill_local_variable): these
+	only kill the buffer-wide values, not in inner extents
+
+	* x11_main.c: support for colour allocation and management.
+	Also added some more resources for the various colours that are
+	always allocated on startup
+
+	* x11_windowsys.h, views.c, values.c, streams.c, redisplay.c,
+	main.c, lisp.h, keys.c, jade.h, files.c, editcommands.c,
+	edit.h, commands.c, buffers.c, Makefile.in: misc changes
+
+	* x11_windows.c (sys_draw_glyphs): support rendering from faces
+
+	* regexp.c, regjade.c (regmatch): fix bug of not being
+	case-insensitive (if necessary) after matching a star or plus
+
 1998-08-19  John Harper  <john@dcs.warwick.ac.uk>
 
 	* keys.c (lookup_event_name): minor change to limit the number
