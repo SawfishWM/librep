@@ -1211,8 +1211,6 @@ Calls FUNCTION with arguments ARGS... and returns the result.
 	return rep_funcall(rep_CAR(args), rep_CDR(args), rep_FALSE);
 }
 
-DEFSTRING(void_obj, "Void object to `eval'");
-
 static repv
 eval(repv obj)
 {

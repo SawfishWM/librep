@@ -1524,9 +1524,6 @@ ie,
     return rep_signal_missing_arg(1);
 }
 
-DEFSTRING(r_str, "r");
-DEFSTRING(no_load_file, "Can't open lisp-file");
-
 DEFUN_INT("load", Fload, Sload, (repv file, repv noerr_p, repv nopath_p, repv nosuf_p), rep_Subr4, "fLisp file to load:") /*
 ::doc:Sload::
 load FILE [NO-rep_ERROR-P] [NO-PATH-P] [NO-SUFFIX-P]
