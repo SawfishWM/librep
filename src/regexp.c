@@ -934,12 +934,16 @@ regmatch(prog)
 		nextch = '\0';
 		if (OP(next) == EXACTLY)
 		    nextch = *OPERAND(next);
+		if(regnocase)
+		    nextch = toupper(nextch);
 		min = (OP(scan) == STAR) ? 0 : 1;
 		save = reginput;
 		no = regrepeat(OPERAND(scan));
 		while (no >= min) {
 		    /* If it could work, try it. */
-		    if (nextch == '\0' || *reginput == nextch)
+		    if (nextch == '\0'
+			|| (regnocase ? toupper(*reginput)
+			    : *reginput) == nextch)
 			if (regmatch(next))
 			    return (1);
 		    /* Couldn't or didn't -- back up. */
