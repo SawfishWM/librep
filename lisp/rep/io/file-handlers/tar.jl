@@ -78,9 +78,9 @@
 		(when (zerop (call-process process nil prog "--version"))
 		  (setq output (get-output-stream-string output))
 		  (when (string-looking-at
-			 "^tar \\(GNU tar\\)\\s*(.*?)\\s*\n" output)
+			 "(tar )?[(]?GNU tar[)]?\\s*(.*?)\\s*\n" output)
 		    (setq tarfh-gnu-tar-program prog)
-		    (setq tarfh-gnu-tar-version (expand-last-match "\\1"))
+		    (setq tarfh-gnu-tar-version (expand-last-match "\\2"))
 		    (throw 'out t)))))
 	  (cons tarfh-gnu-tar-program tarfh-alternative-gnu-tar-programs))
     (error "Can't find/execute GNU tar")))
