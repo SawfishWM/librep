@@ -147,7 +147,7 @@ their position in that file.")
 (defvar comp-constant-functions
   '(+ - * / % mod max min 1+ 1- car cdr assoc assq rassoc rassq nth nthcdr
     last member memq arrayp aref substring concat length elt lognot not
-    logior logxor logand equal = /= > < >= <= lsh ash zerop null atom consp
+    logior logxor logand equal = /= > < >= <= ash zerop null atom consp
     listp numberp integerp stringp vectorp bytecodep functionp macrop
     special-form-p subrp sequencep quotient floor ceiling truncate round
     exp log sin cos tan asin acos atan sqrt expt)
@@ -638,7 +638,8 @@ that files which shouldn't be compiled aren't."
 	    (comp-remember-lexical-var (comp-constant-value sym))))
 	(when (and (listp value) (not (comp-constant-p value)))
 	  ;; Compile the definition. A good idea?
-	  (rplaca (nthcdr 2 form) (compile-form (nth 2 form))))))
+	  (rplaca (nthcdr 2 form) (compile-form (nth 2 form))))
+	form))
      ((eq fun 'require)
       (eval form)
       form)
@@ -1022,7 +1023,7 @@ that files which shouldn't be compiled aren't."
      ((eq opcode 'label)
       ;; backpatch already output instructions referrring to this label
       (mapc (lambda (addr)
-	      (setq comp-output (cons (cons (lsh comp-output-pc -8) addr)
+	      (setq comp-output (cons (cons (ash comp-output-pc -8) addr)
 				      comp-output))
 	      (setq comp-output (cons (cons (logand comp-output-pc 255)
 					    (1+ addr)) comp-output)))
@@ -1051,7 +1052,7 @@ that files which shouldn't be compiled aren't."
 	      ((memq opcode comp-three-byte-insns)
 	       (if (< arg 65536)
 		   (progn
-		     (comp-byte-out (lsh arg -8))
+		     (comp-byte-out (ash arg -8))
 		     (comp-byte-out (logand arg 255)))
 		 (error "Argument overflow in three-byte insn: %d" opcode)))
 	      (t
@@ -1065,7 +1066,7 @@ that files which shouldn't be compiled aren't."
 	     (comp-byte-out arg))
 	    ((<= arg comp-max-3-byte-arg)
 	     (comp-byte-out (+ opcode 7))
-	     (comp-byte-out (lsh arg -8))
+	     (comp-byte-out (ash arg -8))
 	     (comp-byte-out (logand arg 255)))
 	    (t
 	     (error "Argument overflow in insn: %d" opcode)))))))
@@ -1209,6 +1210,10 @@ that files which shouldn't be compiled aren't."
     ;; prevent infinite regress
     `(funcall require ,feature)))
 (put 'require 'compile-transform comp-trans-require)
+
+(defun comp-trans-/= (form)
+  `(not (= ,@(cdr form))))
+(put '/= 'compile-transform comp-trans-/=)
 
 
 ;; Functions which compile non-standard functions (ie special-forms)
@@ -1940,22 +1945,23 @@ that files which shouldn't be compiled aren't."
 
 ;; Used for >, >=, < and <=
 (defun comp-compile-transitive-relation (form)
-  (let
-      ((opcode (get (car form) 'compile-opcode)))
-    (setq form (cdr form))
-    (cond
-     ((<= (length form) 1)
-      (comp-error "Too few args to relation" form))
-     ((= (length form) 2)
+  (cond
+   ((<= (length form) 2)
+    (comp-error "Too few args to relation" form))
+   ((= (length form) 3)
+    (let
+	((opcode (get (car form) 'compile-opcode)))
       ;; Simple case, only two arguments, i.e. `(OP ARG1 ARG2)' into:
       ;;  PUSH ARG1; PUSH ARG2; OP;
-      (comp-compile-form (car form))
       (comp-compile-form (nth 1 form))
+      (comp-compile-form (nth 2 form))
       (comp-write-op opcode)
-      (comp-dec-stack))
+      (comp-dec-stack)))
      (t
       ;; Tricky case, >2 args,
-      ;; Eg. `(OP ARG1 ARG2 ARG3... ARGN)' into something like,
+
+      ;; Originally I did `(OP ARG1 ARG2 ARG3... ARGN)' as:
+
       ;;  PUSH ARG1; PUSH ARG2; DUP; SWAP2; OP; JNP Fail;
       ;;  PUSH ARG3; DUP; SWAP2; OP; JNP Fail;
       ;;  ...
@@ -1963,31 +1969,9 @@ that files which shouldn't be compiled aren't."
       ;; Fail:
       ;;  SWAP; POP;
       ;; End:
-      (let
-	  ((fail-label (comp-make-label))
-	   (end-label (comp-make-label)))
-	(comp-compile-form (car form))
-	(setq form (cdr form))
-	(while (>= (length form) 2)
-	  (comp-compile-form (car form))
-	  (comp-write-op op-dup)
-	  (comp-inc-stack)
-	  (comp-write-op op-swap2)
-	  (comp-write-op opcode)
-	  (comp-dec-stack)
-	  (comp-compile-jmp op-jnp fail-label)
-	  (comp-dec-stack)
-	  (setq form (cdr form)))
-	;; Last arg coming up.
-	(comp-compile-form (car form))
-	(comp-write-op opcode)
-	(comp-dec-stack)
-	(comp-compile-jmp op-jmp end-label)
-	(comp-set-label fail-label)
-	(comp-write-op op-swap)
-	(comp-write-op op-pop)
-	(comp-dec-stack)
-	(comp-set-label end-label))))))
+
+      ;; But that doesn't always evaluate all arguments..
+      (comp-compile-funcall (cons 'funcall form)))))
 
 
 ;; Opcode properties for the generic instructions, in a progn for compiled
@@ -2018,14 +2002,10 @@ that files which shouldn't be compiled aren't."
   (put '* 'compile-opcode op-mul)
   (put '/ 'compile-fun comp-compile-binary-op)
   (put '/ 'compile-opcode op-div)
-  (put '% 'compile-fun comp-compile-2-args)
-  (put '% 'compile-opcode op-rem)
   (put 'remainder 'compile-fun comp-compile-2-args)
   (put 'remainder 'compile-opcode op-rem)
   (put 'mod 'compile-fun comp-compile-2-args)
   (put 'mod 'compile-opcode op-mod)
-  (put 'modulo 'compile-fun comp-compile-2-args)
-  (put 'modulo 'compile-opcode op-mod)
   (put 'lognot 'compile-fun comp-compile-1-args)
   (put 'lognot 'compile-opcode op-lnot)
   (put 'not 'compile-fun comp-compile-1-args)
@@ -2036,14 +2016,14 @@ that files which shouldn't be compiled aren't."
   (put 'logxor 'compile-opcode op-lxor)
   (put 'logand 'compile-fun comp-compile-binary-op)
   (put 'logand 'compile-opcode op-land)
+  (put 'ash 'compile-fun comp-compile-2-args)
+  (put 'ash 'compile-opcode op-ash)
   (put 'equal 'compile-fun comp-compile-2-args)
   (put 'equal 'compile-opcode op-equal)
   (put 'eq 'compile-fun comp-compile-2-args)
   (put 'eq 'compile-opcode op-eq)
-  (put '= 'compile-fun comp-compile-2-args)
-  (put '= 'compile-opcode op-num-eq)
-  (put '/= 'compile-fun comp-compile-2-args)
-  (put '/= 'compile-opcode op-num-noteq)
+  (put '= 'compile-fun comp-compile-transitive-relation)
+  (put '= 'compile-opcode op-equal)
   (put '> 'compile-fun comp-compile-transitive-relation)
   (put '> 'compile-opcode op-gt)
   (put '< 'compile-fun comp-compile-transitive-relation)
@@ -2056,8 +2036,6 @@ that files which shouldn't be compiled aren't."
   (put '1+ 'compile-opcode op-inc)
   (put '1- 'compile-fun comp-compile-1-args)
   (put '1- 'compile-opcode op-dec)
-  (put 'lsh 'compile-fun comp-compile-2-args)
-  (put 'lsh 'compile-opcode op-lsh)
   (put 'zerop 'compile-fun comp-compile-1-args)
   (put 'zerop 'compile-opcode op-zerop)
   (put 'null 'compile-fun comp-compile-1-args)
@@ -2189,4 +2167,10 @@ that files which shouldn't be compiled aren't."
   (put 'string= 'compile-fun comp-compile-2-args)
   (put 'string= 'compile-opcode op-equal)
   (put 'string< 'compile-fun comp-compile-transitive-relation)
-  (put 'string< 'compile-opcode op-lt))
+  (put 'string< 'compile-opcode op-lt)
+  (put '% 'compile-fun comp-compile-2-args)
+  (put '% 'compile-opcode op-rem)
+  (put 'modulo 'compile-fun comp-compile-2-args)
+  (put 'modulo 'compile-opcode op-mod)
+  (put 'lsh 'compile-fun comp-compile-2-args)
+  (put 'lsh 'compile-opcode op-ash))
