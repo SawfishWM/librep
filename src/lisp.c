@@ -1089,29 +1089,32 @@ copy_to_vector (repv argList, int nargs, repv *args,
     return Qt;
 }
 
-repv
-rep_bind_lambda_list_1 (repv lambdaList, repv *args, int nargs,
-			repv (*binder) (repv, repv, repv))
+static repv
+bind_lambda_list_1 (repv lambdaList, repv *args, int nargs)
 {
+#define VAR_SYM 0
+#define VAR_VALUE 1
+#define VAR_EVALP 2
+#define VAR_SIZE 3
+#define VAR(i,j) vars[(i) * VAR_SIZE + (j)]
+
+    repv *vars = alloca ((rep_list_length (lambdaList) + 1)
+			 * VAR_SIZE * sizeof (repv));
+    int nvars = 0;
+
     enum arg_state {
 	STATE_REQUIRED = 1, STATE_OPTIONAL, STATE_KEY, STATE_REST
     };
 
-    struct binding {
-	struct binding *next;
-	repv sym;
-	repv value;
-    };
-
-    repv boundlist;
     enum arg_state state;
-    struct binding *frame = 0;
+
+    /* Pass 1: traverse the lambda list, recording var-value pairs
+       and whether each value needs to be evaluated or not.. */
 
     state = STATE_REQUIRED;
     while (1)
     {
 	repv argspec, def;
-	struct binding *item;
 
 	if (rep_CONSP (lambdaList))
 	{
@@ -1157,17 +1160,14 @@ rep_bind_lambda_list_1 (repv lambdaList, repv *args, int nargs,
 	else
 	    break;
 
-	item = alloca (sizeof (struct binding));
-	item->next = frame;
-	frame = item;
 	if (rep_SYMBOLP (argspec))
 	{
-	    item->sym = argspec;
+	    VAR (nvars, VAR_SYM) = argspec;
 	    def = Qnil;
 	}
 	else if (rep_CONSP (argspec) && rep_SYMBOLP (rep_CAR (argspec)))
 	{
-	    item->sym = rep_CAR (argspec);
+	    VAR (nvars, VAR_SYM) = rep_CAR (argspec);
 	    if (rep_CONSP (rep_CDR (argspec)))
 		def = rep_CADR (argspec);
 	    else
@@ -1176,6 +1176,7 @@ rep_bind_lambda_list_1 (repv lambdaList, repv *args, int nargs,
 	else
 	    goto invalid;
 
+	VAR (nvars, VAR_EVALP) = Qnil;
 	switch (state)
 	{
 	    repv key;
@@ -1185,11 +1186,14 @@ rep_bind_lambda_list_1 (repv lambdaList, repv *args, int nargs,
 	case STATE_OPTIONAL:
 	    if (nargs > 0)
 	    {
-		item->value = *args++;
+		VAR (nvars, VAR_VALUE) = *args++;
 		nargs--;
 	    }
 	    else if (state == STATE_OPTIONAL)
-		item->value = def;
+	    {
+		VAR (nvars, VAR_VALUE) = def;
+		VAR (nvars, VAR_EVALP) = Qt;
+	    }
 	    else
 	    {
 		repv fun = rep_call_stack != 0 ? rep_call_stack->fun : Qnil;
@@ -1198,13 +1202,15 @@ rep_bind_lambda_list_1 (repv lambdaList, repv *args, int nargs,
 	    break;
 
 	case STATE_KEY:
-	    key = Fmake_keyword (item->sym);
-	    item->value = def;
+	    key = Fmake_keyword (VAR (nvars, VAR_SYM));
+	    VAR (nvars, VAR_VALUE) = def;
+	    VAR (nvars, VAR_EVALP) = Qt;
 	    for (i = 0; i < nargs - 1; i += 2)
 	    {
 		if (args[i] == key && args[i+1] != rep_NULL)
 		{
-		    item->value = args[i+1];
+		    VAR (nvars, VAR_VALUE) = args[i+1];
+		    VAR (nvars, VAR_EVALP) = Qnil;
 		    args[i] = args[i+1] = rep_NULL;
 		    break;
 		}
@@ -1224,29 +1230,53 @@ rep_bind_lambda_list_1 (repv lambdaList, repv *args, int nargs,
 		    }
 		    args++; nargs--;
 		}
-		item->value = list;
+		VAR (nvars, VAR_VALUE) = list;
 	    }
+	    nvars++;
 	    goto out;
 	    break;
 	}
+
+	nvars++;
 
 	rep_TEST_INT;
 	if (rep_INTERRUPTP)
 	    return rep_NULL;
     }
-out:
 
-    /* Instantiate the bindings in reverse order, so that they
-       end up in the same order that the compiler compiles
-       inline lambdas and tail-recursive function applications */
-    boundlist = rep_NEW_FRAME;
-    while (frame != 0)
+out:
+    /* Pass 2: evaluate any values that need it.. */
     {
-	boundlist = binder (boundlist, frame->sym, frame->value);
-	frame = frame->next;
+	int i;
+	rep_GC_n_roots gc_vars;
+	rep_PUSHGCN (gc_vars, vars, nvars * VAR_SIZE);
+	for (i = 0; i < nvars; i++)
+	{
+	    if (VAR (i, VAR_EVALP) != Qnil)
+	    {
+		repv tem = Feval (VAR (i, VAR_VALUE));
+		if (tem == rep_NULL)
+		{
+		    rep_POPGCN;
+		    return rep_NULL;
+		}
+		VAR (i, VAR_VALUE) = tem;
+	    }
+	}
+	rep_POPGCN;
     }
 
-    return boundlist;
+    /* Pass 3: instantiate the bindings */
+    {
+	int i;
+	repv boundlist = rep_NEW_FRAME;
+	for (i = 0; i < nvars; i++)
+	{
+	    boundlist = rep_bind_symbol (boundlist, VAR (i, VAR_SYM),
+					 VAR (i, VAR_VALUE));
+	}
+	return boundlist;
+    }
 }
 
 /* format of lambda-lists is something like,
@@ -1265,9 +1295,9 @@ out:
 
    IMPORTANT: this expects the top of the call stack to have the
    saved environments in which arguments need to be evaluated */
-repv
-rep_bind_lambda_list(repv lambdaList, repv argList,
-		     rep_bool eval_args, rep_bool eval_in_env)
+static repv
+bind_lambda_list(repv lambdaList, repv argList,
+		 rep_bool eval_args, rep_bool eval_in_env)
 {
     repv *evalled_args;
     int evalled_nargs;
@@ -1282,8 +1312,7 @@ rep_bind_lambda_list(repv lambdaList, repv argList,
 	return rep_NULL;
     }
    
-    return rep_bind_lambda_list_1 (lambdaList, evalled_args,
-				   evalled_nargs, rep_bind_symbol);
+    return bind_lambda_list_1 (lambdaList, evalled_args, evalled_nargs);
 }
 
 static repv
@@ -1301,8 +1330,8 @@ again:
 
 	rep_PUSHGC(gc_lambdaExp, lambdaExp);
 	rep_PUSHGC(gc_argList, argList);
-	boundlist = rep_bind_lambda_list(rep_CAR(lambdaExp), argList,
-					 eval_args, eval_in_env);
+	boundlist = bind_lambda_list(rep_CAR(lambdaExp), argList,
+				     eval_args, eval_in_env);
 	rep_POPGC; rep_POPGC;
 
 	if(boundlist)
