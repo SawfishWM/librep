@@ -37,8 +37,8 @@
 thread until the mutex is available."
   (with-threads-blocked
    (if (null (cdr mtx))
-       (rplacd mtx (list current-thread))
-     (rplacd mtx (nconc (rplacd mtx) (list current-thread)))
+       (rplacd mtx (list (current-thread)))
+     (rplacd mtx (nconc (cdr mtx) (list (current-thread))))
      (thread-suspend (current-thread)))))
 
 (defun maybe-obtain-mutex (mtx)
@@ -53,7 +53,7 @@ Returns `t' if able to obtain the mutex, `nil' otherwise."
 (defun release-mutex (mtx)
   "Release the mutex object MTX (which should have previously been obtained
 by the current thread). Returns `t' if the mutex has no new owner."
-  (or (eq (cdr mtx) (current-thread))
+  (or (eq (cadr mtx) (current-thread))
       (error "Not owner of mutex: %S" mtx))
   (with-threads-blocked
    (rplacd mtx (cddr mtx))
