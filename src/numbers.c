@@ -598,6 +598,8 @@ number_cmp(repv v1, repv v2)
     promote (&v1, &v2);
     switch (rep_NUMERIC_TYPE (v1))
     {
+	double d;
+
     case rep_NUMBER_INT:
 	return rep_INT(v1) - rep_INT(v2);
 
@@ -608,7 +610,8 @@ number_cmp(repv v1, repv v2)
 	return mpq_cmp (rep_NUMBER(v1,q), rep_NUMBER(v2,q));
 
     case rep_NUMBER_FLOAT:
-	return rep_NUMBER(v1,f) - rep_NUMBER(v2,f);
+	d = rep_NUMBER(v1,f) - rep_NUMBER(v2,f);
+	return (d < 0) ? -1 : (d > 0) ? +1 : 0;
     }
     return 1;
 }
