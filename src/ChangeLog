@@ -1,3 +1,7 @@
+1999-10-14  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_dl.c: support underscore-prefixed symbol names
+
 1999-10-13  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_processes.c (Fprocess_id): return pid of interpreter if
