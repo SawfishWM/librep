@@ -79,6 +79,14 @@ assembler's various pseudo-operations.")
 (defvar dump-inline-strings t
   "Must mirror the INLINE_STATIC_STRINGS definition in lisp.h")
 
+;; Special vars
+(defvar dump-non-constant-forms nil)
+(defvar dump-string-constants nil)
+(defvar dump-cons-constants nil)
+(defvar dump-symbol-constants nil)
+(defvar dump-vector-constants nil)
+(defvar dump-bytecode-constants nil)
+
 
 ;; Top level entrypoints
 
@@ -147,7 +155,7 @@ the lisp-lib-dir with .jlc as its suffix."
 		(error "Dump: can't open %s" file-full-name))
 	      (unwind-protect
 		  (let
-		      (dump-non-constant-forms)
+		      (dump-non-constant-forms func)
 		    (condition-case nil
 			(while (setq form (read input-stream))
 			  (if (setq func (get (car form) 'dump-function))
@@ -375,6 +383,15 @@ the lisp-lib-dir with .jlc as its suffix."
       (setq func (cons 'lambda (nthcdr 2 form))))
     (dump-add-state sym 'function (dump-get-label (dump-add-constant func)))))
 
+(defun dump-defsubst (form)
+  (let
+      ((sym (dump-add-constant (nth 1 form)))
+       (func (nth 2 form)))
+    (when (consp func)
+      (setq func (cons 'lambda (nthcdr 2 form))))
+    (dump-add-state sym 'function (dump-get-label (dump-add-constant func)))
+    (dump-state-put sym 'compile-fun 'comp-compile-inline-function)))  
+
 (defun dump-defmacro (form)
   (let
       ((sym (dump-add-constant (nth 1 form)))
@@ -428,6 +445,7 @@ the lisp-lib-dir with .jlc as its suffix."
 		      (dump-get-constant value)))))
 
 (put 'defun 'dump-function 'dump-defun)
+(put 'defsubst 'dump-function 'dump-defsubst)
 (put 'defmacro 'dump-function 'dump-defmacro)
 (put 'defvar 'dump-function 'dump-defvar)
 (put 'defconst 'dump-function 'dump-defconst)
