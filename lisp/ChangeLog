@@ -1,5 +1,17 @@
 Fri May 22 10:15:28 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* cvs.jl, dired.jl, gdb.jl, help.jl, isearch.jl, keymap.jl,
+	loadkeys.jl, rcs.jl, send-mail.jl, tex-mode.jl,
+	texinfo-mode.jl: altered uses of next-keymap-path to take
+	account that it's now a function not a variable
+
+	* keymap.jl (map-keymap): new function, allows a function to be
+	mapped (recursively) over all existing key bindings
+	(print-keymap): defined in terms of map-keymap
+	(where-is): new command, searches the key binding hierarchy for
+	a specified command (using map-keymap)
+	* help.jl: bind where-is to `Ctrl-h w'
+
 	* c-mode.jl: lots of minor fixes, hopefully correcting a lot of
 	mis-indentation; some problems still exist
 

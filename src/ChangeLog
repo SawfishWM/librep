@@ -1,5 +1,9 @@
 Fri May 22 10:13:26 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* keys.c (next_keymap_path): changed semantics slightly, now
+	it's LISP_NULL if unset, not nil. Also changed the Lisp
+	variable next-keymap-path into a function
+
 	* buffers.c (cmd_set_buffer_name): if the buffer-status-id
 	looks as though it still just names the buffer, reset it to
 	use the new name

@@ -55,6 +55,7 @@
 (autoload 'print-keymap "keymap")
 (autoload 'read-event "keymap")
 (autoload 'describe-key "keymap" t)
+(autoload 'where-is "keymap" t)
 (autoload 'latin-1-mode "latin-1" t)
 (autoload 'lisp-mode "lisp-mode" t)
 (autoload 'eval-sexp "lisp-mode" t)
@@ -104,7 +105,7 @@
 (autoload 'rcs-register-buffer "rcs" t)
 (autoload 'rcs-display-log "rcs" t)
 (autoload-variable 'rcs-keymap "rcs")
-(bind-keys ctrl-x-keymap "v" '(setq next-keymap-path '(rcs-keymap)))
+(bind-keys ctrl-x-keymap "v" '(next-keymap-path '(rcs-keymap)))
 (load "rcs-hooks")
 (autoload 'tex-mode "tex-mode" t)
 (autoload 'print-buffer "print" t)
@@ -163,5 +164,5 @@
 (autoload 'cvs-update-parent "cvs" t)
 (autoload 'cvs-update-pwd "cvs" t)
 (autoload-variable 'cvs-keymap "cvs")
-(bind-keys ctrl-x-keymap "c" '(setq next-keymap-path '(cvs-keymap)))
+(bind-keys ctrl-x-keymap "c" '(next-keymap-path '(cvs-keymap)))
 ;;; ::autoload-end::
