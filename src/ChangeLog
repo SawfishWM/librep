@@ -1,3 +1,15 @@
+2000-11-24  John Harper  <jsh@eazel.com>
+
+	* lisp.c (Qpremature_end_of_stream): new error type. This is
+	used to mark eof being received while in the middle of parsing
+	something. Qend_of_stream is now only raised when an eof is
+	read before anything but whitespace has been read.
+
+	This fixes the bug that Fload_file () would swallow
+	end-of-stream errors (assuming that they just represent reading
+	upto the end of the file), hiding real errors where eof occurs
+	in the middle of a construct being parsed
+
 2000-11-15  John Harper  <jsh@eazel.com>
 
 	* repint_subrs.h, rep_subrs.h: moved the low-level unix file

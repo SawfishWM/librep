@@ -72,9 +72,8 @@ DEFSYM(amp_rest, "&rest");
 static repv ex_optional, ex_rest, ex_key;
 
 /* When a `throw' happens a function stuffs a cons-cell in here with,
-   (TAG . repv).
-   An error is the above with TAG=Qerror and repv a list of relevant
-   data. */
+   (TAG . VALUE). An error is the above with TAG Qerror and VALUE a
+   list of relevant data. */
 volatile repv rep_throw_value;
 
 /* This cons cell is used for interrupts. We don't know if it's safe to
@@ -97,7 +96,9 @@ DEFSTRING(err_bad_arg, "Bad argument");
 DEFSYM(invalid_read_syntax, "invalid-read-syntax");
 DEFSTRING(err_invalid_read_syntax, "Invalid read syntax");
 DEFSYM(end_of_stream, "end-of-stream");
-DEFSTRING(err_end_of_stream, "Premature end of stream");
+DEFSTRING(err_end_of_stream, "End of stream");
+DEFSYM(premature_end_of_stream, "premature-end-of-stream");
+DEFSTRING(err_premature_end_of_stream, "Premature end of stream");
 DEFSYM(invalid_lambda_list, "invalid-lambda-list");
 DEFSTRING(err_invalid_lambda_list, "Invalid lambda list");
 DEFSYM(missing_arg, "missing-arg");
@@ -208,7 +209,7 @@ void (*rep_test_int_fun)(void) = default_test_int;
    to see if it's what it wants. If not, the lookahead is given to
    someone else or unread before exiting... */
 
-static repv readl (repv, register int *);
+static repv readl (repv, register int *, repv);
 
 static rep_bool read_local_file;
 
@@ -271,7 +272,7 @@ read_list(repv strm, register int *c_p)
 	switch(*c_p)
 	{
 	case EOF:
-	    result = Fsignal(Qend_of_stream, rep_LIST_1(strm));
+	    result = Fsignal(Qpremature_end_of_stream, rep_LIST_1(strm));
 	    break;
 
 	case ' ':
@@ -300,13 +301,13 @@ read_list(repv strm, register int *c_p)
 	    switch (*c_p)
 	    {
 	    case EOF:
-		result = Fsignal(Qend_of_stream, rep_LIST_1(strm));
+		result = Fsignal(Qpremature_end_of_stream, rep_LIST_1(strm));
 		goto end;
 
 	    case ' ': case '\t': case '\n': case '\f':
 		if(last)
 		{
-		    repv this = readl(strm, c_p);
+		    repv this = readl(strm, c_p, Qpremature_end_of_stream);
 		    if (this != rep_NULL)
 			rep_CDR (last) = this;
 		    else
@@ -350,7 +351,8 @@ read_list(repv strm, register int *c_p)
 		    rep_CDR(last) = this;
 		else
 		    result = this;
-		if(!(rep_CAR(this) = readl(strm, c_p)))
+		rep_CAR(this) = readl(strm, c_p, Qpremature_end_of_stream);
+		if(rep_CAR (this) == rep_NULL)
 		    result = rep_NULL;
 		last = this;
 	    }
@@ -417,7 +419,7 @@ read_symbol(repv strm, int *c_p, repv obarray)
 	    radix = 0;
 	    c = rep_stream_getc(strm);
 	    if(c == EOF)
-		return Fsignal(Qend_of_stream, rep_LIST_1(strm));
+		return Fsignal(Qpremature_end_of_stream, rep_LIST_1(strm));
 	    buf[i++] = c;
 	    break;
 
@@ -430,7 +432,7 @@ read_symbol(repv strm, int *c_p, repv obarray)
 		c = rep_stream_getc(strm);
 	    }
 	    if(c == EOF)
-		return Fsignal(Qend_of_stream, rep_LIST_1(strm));
+		return Fsignal(Qpremature_end_of_stream, rep_LIST_1(strm));
 	    break;
 
 	default:
@@ -714,7 +716,7 @@ read_str(repv strm, int *c_p)
 	    }
 	}
 	if(c == EOF)
-	    result = Fsignal(Qend_of_stream, rep_LIST_1(strm));
+	    result = Fsignal(Qpremature_end_of_stream, rep_LIST_1(strm));
 	else
 	{
 	    *c_p = rep_stream_getc(strm);
@@ -743,7 +745,7 @@ skip_chars (repv stream, const char *str, repv ret, int *ptr)
    of expression and translates it into a lisp object (repv).
    Returns NULL in case of error. */
 static repv
-readl(repv strm, register int *c_p)
+readl(repv strm, register int *c_p, repv end_of_stream_error)
 {
     while(1)
     {
@@ -785,9 +787,9 @@ readl(repv strm, register int *c_p)
 		rep_POPGC;
 		goto eof;
 	    }
-	    rep_CAR(rep_CDR(form)) = readl(strm, c_p);
+	    rep_CADR(form) = readl(strm, c_p, Qpremature_end_of_stream);
 	    rep_POPGC;
-	    if(rep_CAR(rep_CDR(form)) != rep_NULL)
+	    if(rep_CADR(form) != rep_NULL)
 		return form;
 	    else
 		return rep_NULL;
@@ -811,9 +813,9 @@ readl(repv strm, register int *c_p)
 		    goto eof;
 		}
 	    }
-	    rep_CAR(rep_CDR(form)) = readl(strm, c_p);
+	    rep_CADR(form) = readl(strm, c_p, Qpremature_end_of_stream);
 	    rep_POPGC;
-	    if(rep_CAR(rep_CDR(form)) != rep_NULL)
+	    if(rep_CADR(form) != rep_NULL)
 		return form;
 	    else
 		return rep_NULL;
@@ -859,9 +861,9 @@ readl(repv strm, register int *c_p)
 		    rep_POPGC;
 		    goto eof;
 		}
-		rep_CAR(rep_CDR(form)) = readl(strm, c_p);
+		rep_CADR(form) = readl(strm, c_p, Qpremature_end_of_stream);
 		rep_POPGC;
-		if(rep_CAR(rep_CDR(form)) == rep_NULL)
+		if(rep_CADR(form) == rep_NULL)
 		    return rep_NULL;
 		else
 		    return form;
@@ -1018,7 +1020,7 @@ readl(repv strm, register int *c_p)
     /* not reached */
 
 eof:
-    return Fsignal(Qend_of_stream, rep_LIST_1(strm));
+    return Fsignal(end_of_stream_error, rep_LIST_1(strm));
 }
 
 repv
@@ -1027,7 +1029,7 @@ rep_readl (repv stream, int *c_p)
     repv form;
     rep_bool old = read_local_file;
     read_local_file = rep_FILEP (stream) && rep_LOCAL_FILE_P (stream);
-    form = readl (stream, c_p);
+    form = readl (stream, c_p, Qend_of_stream);
     read_local_file = old;
     return form;
 }
@@ -2640,6 +2642,7 @@ rep_lisp_init(void)
     rep_INTERN(bad_arg); rep_ERROR(bad_arg);
     rep_INTERN(invalid_read_syntax); rep_ERROR(invalid_read_syntax);
     rep_INTERN(end_of_stream); rep_ERROR(end_of_stream);
+    rep_INTERN(premature_end_of_stream); rep_ERROR(premature_end_of_stream);
     rep_INTERN(invalid_lambda_list); rep_ERROR(invalid_lambda_list);
     rep_INTERN(missing_arg); rep_ERROR(missing_arg);
     rep_INTERN(invalid_macro); rep_ERROR(invalid_macro);
