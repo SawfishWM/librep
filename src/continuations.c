@@ -129,6 +129,20 @@ char *alloca ();
 # include <sys/time.h>
 #endif
 
+#if defined (DEBUG)
+# define DB(x) printf x
+#else
+# define DB(x)
+#endif
+
+/* Threads only preempted when this is zero. */
+int rep_thread_lock = 0;
+
+/* True when the current thread should be preempted soon */
+rep_bool rep_pending_thread_yield;
+
+#ifdef WITH_CONTINUATIONS
+
 #if STACK_DIRECTION == 0
 # error "stack growth direction unknown"
 #elif STACK_DIRECTION > 0
@@ -152,12 +166,6 @@ char *alloca ();
 # else
 #  define FLUSH_REGISTER_WINDOWS
 # endif
-#endif
-
-#if defined (DEBUG)
-# define DB(x) printf x
-#else
-# define DB(x)
 #endif
 
 typedef struct rep_barrier_struct rep_barrier;
@@ -255,12 +263,6 @@ struct rep_thread_struct {
 
 static int rep_thread_type;
 static rep_thread *threads;
-
-/* Threads only preempted when this is zero. */
-int rep_thread_lock = 0;
-
-/* True when the current thread should be preempted soon */
-rep_bool rep_pending_thread_yield;
 
 #define TV_LATER_P(t1, t2)			\
     (((t1)->tv_sec > (t2)->tv_sec)		\
@@ -1310,6 +1312,44 @@ print_thread (repv stream, repv obj)
     rep_stream_putc (stream, '>');
 }
 
+#else /* WITH_CONTINUATIONS */
+
+repv
+rep_call_with_barrier (repv (*callback)(repv), repv arg,
+		       rep_bool closed, void (*in)(void *),
+		       void (*out)(void *), void *data)
+{
+    return callback (arg);
+}
+
+DEFSTRING (ccc_missing, "call/cc was not included in this system");
+
+static repv
+call_cc_missing (void)
+{
+    return Fsignal (Qerror, rep_LIST_1 (rep_VAL (&ccc_missing)));
+}
+
+
+DEFUN ("call/cc", Fcall_cc, Scall_cc, (repv fun), rep_Subr1)
+{
+    return call_cc_missing ();
+}
+
+DEFUN("continuation-callable-p", Fcontinuation_callable_p,
+      Scontinuation_callable_p, (repv cont), rep_Subr1)
+{
+    return rep_signal_arg_error (cont, 1);
+}
+
+u_long
+rep_max_sleep_for (void)
+{
+    return UINT_MAX;
+}
+
+#endif /* !WITH_CONTINUATIONS */
+
 
 /* misc lisp functions */
 
@@ -1462,7 +1502,11 @@ new thread will begin by calling THUNK, a function with zero
 parameters.
 ::end:: */
 {
+#ifdef WITH_CONTINUATIONS
     return rep_VAL (make_thread (thunk, name));
+#else
+    return call_cc_missing ();
+#endif
 }
 
 DEFUN("thread-yield", Fthread_yield, Sthread_yield, (void), rep_Subr0) /*
@@ -1473,7 +1517,11 @@ Pass control away from the current thread if other threads are waiting
 to run.
 ::end:: */
 {
+#ifdef WITH_CONTINUATIONS
     return thread_yield () ? Qt : Qnil;
+#else
+    return Qnil;
+#endif
 }
 
 DEFUN("thread-delete", Fthread_delete, Sthread_delete, (repv th), rep_Subr1) /*
@@ -1486,11 +1534,15 @@ will be passed to the next runnable thread. Deleting the last runnable
 thread results forces the containing dynamic root to be closed.
 ::end:: */
 {
+#ifdef WITH_CONTINUATIONS
     if (th == Qnil)
 	th = Fcurrent_thread (Qnil);
     rep_DECLARE1 (th, THREADP);
     thread_delete (THREAD (th));
     return Qnil;
+#else
+    return rep_signal_arg_error (th, 1);
+#endif
 }
 
 DEFUN("thread-suspend", Fthread_suspend,
@@ -1504,19 +1556,25 @@ thread will pass control to the next runnable thread. If there are no
 runnable threads, then sleep until the next thread becomes runnable.
 ::end:: */
 {
+#ifdef WITH_CONTINUATIONS
     if (th == Qnil)
 	th = Fcurrent_thread (Qnil);
     rep_DECLARE1 (th, THREADP);
     thread_suspend (THREAD (th), rep_INTP (msecs) ? rep_INT (msecs) : 0,
 		    0, Qnil);
     return Qnil;
+#else
+    return rep_signal_arg_error (th, 1);
+#endif
 }
 
+#ifdef WITH_CONTINUATIONS
 static rep_bool
 thread_join_poller (rep_thread *t, repv arg)
 {
     return (THREAD (arg)->car & TF_EXITED) ? rep_TRUE : rep_FALSE;
 }
+#endif
 
 DEFUN("thread-join", Fthread_join,
       Sthread_join, (repv th, repv msecs, repv def), rep_Subr3) /*
@@ -1528,6 +1586,7 @@ milliseconds have passed. If THREAD exits normally, return the value of
 the last form it evaluated, else return DEFAULT-VALUE.
 ::end:: */
 {
+#ifdef WITH_CONTINUATIONS
     repv self = Fcurrent_thread (Qnil);
     rep_DECLARE (1, th, XTHREADP (th) && th != self);
     if (THREADP (self))
@@ -1542,6 +1601,9 @@ the last form it evaluated, else return DEFAULT-VALUE.
 	    return THREAD (th)->exit_val;
     }
     return def;
+#else
+    return rep_signal_arg_error (th, 1);
+#endif
 }
 
 DEFUN("thread-wake", Fthread_wake, Sthread_wake, (repv th), rep_Subr1) /*
@@ -1552,11 +1614,15 @@ If THREAD (or the current thread) is currently suspended, mark it as
 being runnable once more.
 ::end:: */
 {
+#ifdef WITH_CONTINUATIONS
     if (th == Qnil)
 	th = Fcurrent_thread (Qnil);
     rep_DECLARE1 (th, THREADP);
     thread_wake (THREAD (th));
     return Qnil;
+#else
+    return rep_signal_arg_error (th, 1);
+#endif
 }
 
 DEFUN("threadp", Fthreadp, Sthreadp, (repv arg), rep_Subr1) /*
@@ -1566,7 +1632,11 @@ threadp ARG
 Return `t' if ARG is a thread object.
 ::end:: */
 {
+#ifdef WITH_CONTINUATIONS
     return XTHREADP (arg) ? Qt : Qnil;
+#else
+    return Qnil;
+#endif
 }
 
 DEFUN("thread-suspended-p", Fthread_suspended_p,
@@ -1577,8 +1647,12 @@ thread-suspended-p THREAD
 Return `t' if THREAD is currently suspended from running.
 ::end:: */
 {
+#ifdef WITH_CONTINUATIONS
     rep_DECLARE1 (th, THREADP);
     return (THREAD (th)->car & TF_SUSPENDED) ? Qt : Qnil;
+#else
+    return rep_signal_arg_error (th, 1);
+#endif
 }
 
 DEFUN("thread-exited-p", Fthread_exited_p,
@@ -1589,8 +1663,12 @@ thread-exited-p THREAD
 Return `t' if THREAD has exited.
 ::end:: */
 {
+#ifdef WITH_CONTINUATIONS
     rep_DECLARE1 (th, XTHREADP);
     return (THREAD (th)->car & TF_EXITED) ? Qt : Qnil;
+#else
+    return rep_signal_arg_error (th, 1);
+#endif
 }
 
 DEFUN("current-thread", Fcurrent_thread,
@@ -1602,12 +1680,16 @@ Return the currently executing thread, or `nil' if threaded execution
 is not currently taking place.
 ::end:: */
 {
+#ifdef WITH_CONTINUATIONS
     rep_barrier *root = get_dynamic_root (rep_INTP (depth_)
 					  ? rep_INT (depth_) : 0);
     if (root == 0)
 	return Qnil;
     else
 	return (root->active) ? rep_VAL (root->active) : Qnil;
+#else
+    return Qnil;
+#endif
 }
 
 DEFUN("all-threads", Fall_threads, Sall_threads, (repv depth_), rep_Subr1) /*
@@ -1617,6 +1699,7 @@ all-threads [DEPTH]
 Return a list of all threads.
 ::end:: */
 {
+#ifdef WITH_CONTINUATIONS
     rep_barrier *root = get_dynamic_root (rep_INTP (depth_)
 					  ? rep_INT (depth_) : 0);
     if (root == 0)
@@ -1631,6 +1714,9 @@ Return a list of all threads.
 	    out = Fcons (rep_VAL (ptr), out);
 	return out;
     }
+#else
+    return Qnil;
+#endif
 }
 
 DEFUN("thread-forbid", Fthread_forbid, Sthread_forbid, (void), rep_Subr0) /*
@@ -1666,8 +1752,12 @@ thread-name THREAD
 Return the name of the thread THREAD.
 ::end:: */
 {
+#ifdef WITH_CONTINUATIONS
     rep_DECLARE1 (th, XTHREADP);
     return THREAD (th)->name;
+#else
+    return rep_signal_arg_error (th, 1);
+#endif
 }
 
 
@@ -1676,6 +1766,7 @@ Return the name of the thread THREAD.
 void
 rep_continuations_init (void)
 {
+#ifdef WITH_CONTINUATIONS
     rep_continuation_type = rep_register_new_type ("continuation",
 						   rep_ptr_cmp,
 						   print_cont, print_cont, 
@@ -1685,9 +1776,13 @@ rep_continuations_init (void)
 					     print_thread, print_thread, 
 					     sweep_thread, mark_thread,
 					     0, 0, 0, 0, 0, 0, 0);
+    exit_barrier_cell = Fcons (Qnil, Qnil);
+    rep_mark_static (&exit_barrier_cell);
     rep_INTERN(continuation);
-    rep_ADD_SUBR(Scall_cc);
     rep_ADD_SUBR(Sprimitive_invoke_continuation);
+#endif
+
+    rep_ADD_SUBR(Scall_cc);
     rep_ADD_SUBR(Scontinuation_callable_p);
     rep_ADD_SUBR(Scall_with_object);
     rep_ADD_SUBR(Scall_with_dynamic_root);
@@ -1706,6 +1801,4 @@ rep_continuations_init (void)
     rep_ADD_SUBR(Sthread_forbid);
     rep_ADD_SUBR(Sthread_permit);
     rep_ADD_SUBR(Sthread_name);
-    exit_barrier_cell = Fcons (Qnil, Qnil);
-    rep_mark_static (&exit_barrier_cell);
 }
