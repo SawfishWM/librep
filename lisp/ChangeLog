@@ -1,3 +1,28 @@
+1998-08-18  John Harper  <john@dcs.warwick.ac.uk>
+
+	* pwd-prompt.jl (pwd-prompt): no need for dubious hacks
+	anymore, use the prompt-glyph-table variable instead
+
+	* prompt.jl (prompt-complete-function, prompt-list-completions-
+	function): new variables. When non-nil these completely
+	override the prompt-complete and prompt-list-completions
+	functions
+	(prompt-word-regexps): deleted this variable, a waste of space
+	(prompt-glyph-table): new variable, the glyph table to use in
+	prompt buffers
+	(get-prompt-buffer, return-prompt-buffer): deleted
+
+	* lisp-mode.jl (lisp-complete-sexp): new optional parameter
+	ONLY-DISPLAY
+	(lisp-show-sexp-completions): new function, bound to M-?
+
+1998-08-17  John Harper  <john@dcs.warwick.ac.uk>
+
+	* read-mail.jl (rm-open-mailbox): bind enable-local-variables
+	to nil while calling find-file. Otherwise a mail message
+	containing a trailing local variables section could cause
+	problems..
+
 1998-08-14  John Harper  <john@dcs.warwick.ac.uk>
 
 	* completion.jl (completion-setup-view): if reusing an existing
