@@ -225,6 +225,9 @@
 /* Define if you have the siginterrupt function.  */
 #undef HAVE_SIGINTERRUPT
 
+/* Define if you have the gettimeofday function.  */
+#undef HAVE_GETTIMEOFDAY
+
 /* Define if you have the <dirent.h> header file.  */
 #undef HAVE_DIRENT_H
 

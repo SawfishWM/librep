@@ -232,7 +232,7 @@ AC_FUNC_ALLOCA
 AC_FUNC_MMAP
 AC_FUNC_MEMCMP
 AC_FUNC_VPRINTF
-AC_CHECK_FUNCS(getcwd gethostname select socket strcspn strerror strstr stpcpy strtol psignal strsignal snprintf grantpt lrand48 getpagesize setitimer dladdr dlerror munmap putenv setenv setlocale strchr strcasecmp strdup __argz_count __argz_stringify __argz_next siginterrupt)
+AC_CHECK_FUNCS(getcwd gethostname select socket strcspn strerror strstr stpcpy strtol psignal strsignal snprintf grantpt lrand48 getpagesize setitimer dladdr dlerror munmap putenv setenv setlocale strchr strcasecmp strdup __argz_count __argz_stringify __argz_next siginterrupt gettimeofday)
 AC_REPLACE_FUNCS(realpath)
 
 dnl Custom tests
