@@ -70,8 +70,7 @@ NAME is true, then it should be the symbol that is associated with VALUE."
 		 "Built-in Function")
 		((closurep value)
 		 "Function")
-		(t
-		 "Variable"))))
+		(t "Variable"))))
       (when (closurep value)
 	(unless structure
 	  (let ((tem (closure-structure value)))
@@ -81,6 +80,12 @@ NAME is true, then it should be the symbol that is associated with VALUE."
       ;; Check if it's been compiled.
       (when (bytecodep value)
 	(setq type (concat "Compiled " type)))
+      (when (and name structure (not (special-variable-p name))
+		 (binding-immutable-p name (get-structure structure)))
+	(setq type (concat "Constant " type)))
+      (when (and name (special-variable-p name))
+	(setq type (concat "Special " type)))
+		       
       (format standard-output "%s: " type)
       (let ((arg-doc (cond ((eq (car value) 'lambda)
 			    (describe-lambda-list (cadr value)))
@@ -89,8 +94,9 @@ NAME is true, then it should be the symbol that is associated with VALUE."
 				     (doc-file-ref (doc-file-param-key
 						    name structure)))
 				(doc-file-ref (doc-file-param-key name)))))))
-	(format standard-output
-		"\(%s%s\)\n" (or name value) (or arg-doc "")))))
+	(if arg-doc
+	    (format standard-output "\(%s%s\)\n" (or name value) arg-doc)
+	  (format standard-output "%s\n" (or name value))))))
 
 
 ;;; GDBM doc-file access
@@ -147,8 +153,8 @@ NAME is true, then it should be the symbol that is associated with VALUE."
 	    (setq structure (structure-name tem)))))
 
       ;; First check for in-core documentation
-      (when (boundp symbol)
-	(let ((tem (or value (and (boundp symbol) (symbol-value symbol)))))
+      (when value
+	(let ((tem value))
 	  (when (eq 'macro (car tem))
 	    (setq tem (cdr tem)))
 	  (when (and (closurep tem)
