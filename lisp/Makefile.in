@@ -22,7 +22,7 @@ jade_prog = ../src/rep
 
 COMPILE_ENV = REPLISPDIR=. REPDOCFILE=../DOC
 
-INSTALL_FILES = $(wildcard *.jl) $(wildcard *.jlc) $(wildcard *.jld)
+INSTALL_FILES = *.jl *.jlc
 
 all : lisp
 

@@ -1,3 +1,11 @@
+1999-09-12  John Harper  <john@dcs.warwick.ac.uk>
+
+	* version 0.5
+
+1999-09-11  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep_lisp.h: updated and expanded some comments
+
 1999-09-10  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep.c (main): by default, always load a script named `rep',
