@@ -1,5 +1,14 @@
 2000-05-15  John Harper  <john@dcs.warwick.ac.uk>
 
+	* gaol.jl: added some more safe functions
+
+	* date.jl, remote-ftp.jl, remote-rep.jl, tar-file-handler.jl:
+	use string->number to parse numbers, not read-from-string
+	(otherwise e.g. 08 causes a read error)
+
+	* scheme-data.jl (string->number, number->string): deleted, use
+	built-in versions of these functions
+
 	* debug.jl: adapted for new return from debug-frame-environment
 	(but this doesn't work 100%?)
 

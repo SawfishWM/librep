@@ -1,5 +1,8 @@
 2000-05-15  John Harper  <john@dcs.warwick.ac.uk>
 
+	* numbers.c (string->number, number->string): implemented these
+	functions
+
 	* lisp.c (Fdebug_frame_environment): only need to return two
 	values now, the saved environment and the saved structure, do
 	this in a cons cell not a list

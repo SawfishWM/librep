@@ -123,7 +123,7 @@
 	  log sin cos tan asin acos atan sqrt expt gcd numberp integerp
 	  fixnump rationalp realp exactp inexactp exact->inexact
 	  inexact->exact numerator denominator positivep negativep
-	  oddp evenp abs lcm % modulo lsh))
+	  oddp evenp abs lcm % modulo lsh string->number number->string))
 
 (define-interface rep-streams
   (export write read-char peek-char read-chars read-line copy-stream
