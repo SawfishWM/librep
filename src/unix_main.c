@@ -872,9 +872,12 @@ rep_sys_os_init(void)
 
     /* Initialise process-environment variable */
     env = Qnil;
-    ptr = environ;
-    while(*ptr != 0)
-	env = Fcons(rep_string_dup(*ptr++), env);
+    if (environ != 0)
+    {
+	ptr = environ;
+	while(*ptr != 0)
+	    env = Fcons(rep_string_dup(*ptr++), env);
+    }
     Fset (Qprocess_environment, env);
 
 #ifdef DEBUG_SYS_ALLOC
