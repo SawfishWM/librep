@@ -45,8 +45,8 @@
     read-char read-chars read-from-string read-line reverse rplaca
     rplacd sequencep set set-default set-timer setcar setcdr setplist
     setq setq-default signal sit-for sleep-for sort space-char-p
-    special-form-p special-variable-p streamp string-equal-p
-    string-head-eq string-less-p string-looking-at string-match string<
+    special-form-p special-variable-p streamp string-equal
+    string-head-eq string-lessp string-looking-at string-match string<
     string= stringp subr-name subrp substring symbol-function
     symbol-name symbol-plist symbol-value symbolp system-name throw
     time-later-p translate-string unless unwind-protect upper-case-p
