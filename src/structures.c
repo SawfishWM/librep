@@ -952,8 +952,8 @@ Return `t' if ARG is a structure object.
     return rep_STRUCTUREP (arg) ? Qt : Qnil;
 }
 
-DEFUN ("%eval-in-structure", F_eval_in_structure,
-       S_eval_in_structure, (repv form, repv structure), rep_Subr2) /*
+DEFUN ("%eval-in-structure", F_eval_in_structure, S_eval_in_structure,
+       (repv form, repv structure, repv env), rep_Subr3) /*
 ::doc:%eval-in-structure::
 %eval-in-structure FORM STRUCTURE
 
@@ -970,7 +970,7 @@ Return the result of evaluating FORM inside structure object STRUCTURE
     rep_PUSHGC (gc_old, old);
     rep_PUSHGC (gc_old_env, old_env);
     rep_structure = structure;
-    rep_env = Qnil;
+    rep_env = env;
     result = Feval (form);
     rep_structure = old;
     rep_env = old_env;
