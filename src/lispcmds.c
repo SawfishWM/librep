@@ -318,6 +318,8 @@ INITIAL-VALUE, or nil.
     int i;
     VALUE list = sym_nil;
     DECLARE1(len, INTP);
+    if(VINT(len) < 0)
+	return signal_arg_error(len, 1);
     for(i = 0; list != LISP_NULL && i < VINT(len); i++)
 	list = cmd_cons(init, list);
     return(list);
@@ -593,6 +595,8 @@ Returns the INDEXth element of LIST. The first element has an INDEX of zero.
     DECLARE1(index, INTP);
     DECLARE2(list, LISTP);
     i = VINT(index);
+    if(i < 0)
+	return signal_arg_error(index, 1);
     while((i-- > 0) && CONSP(list))
     {
 	list = VCDR(list);
@@ -615,6 +619,8 @@ Returns the INDEXth cdr of LIST. The first is INDEX zero.
     DECLARE1(index, INTP);
     DECLARE2(list, LISTP);
     i = VINT(index);
+    if(i < 0)
+	return signal_arg_error(index, 1);
     while((i-- > 0) && CONSP(list))
     {
 	list = VCDR(list);
@@ -953,6 +959,8 @@ will be set to that value, else they will all be nil.
     int len;
     VALUE res;
     DECLARE1(size, INTP);
+    if(VINT(size) < 0)
+	return signal_arg_error(size, 1);
     len = VINT(size);
     res = make_vector(len);
     if(res)
@@ -986,6 +994,8 @@ can only contain characters (ie, integers).
 ::end:: */
 {
     DECLARE2(index, INTP);
+    if(VINT(index) < 0)
+	return signal_arg_error(index, 2);
     if(STRINGP(array))
     {
 	if(!STRING_WRITABLE_P(array))
@@ -1022,6 +1032,8 @@ can be a vector or a string. INDEX starts at zero.
 ::end:: */
 {
     DECLARE2(index, INTP);
+    if(VINT(index) < 0)
+	return signal_arg_error(index, 2);
     if(STRINGP(array))
     {
 	if(VINT(index) < STRING_LEN(array))
@@ -1048,6 +1060,8 @@ INITIAL-VALUE, or to space if INITIAL-VALUE is not given.
 {
     VALUE res;
     DECLARE1(len, INTP);
+    if(VINT(len) < 0)
+	return signal_arg_error(len, 1);
     res = make_string(VINT(len) + 1);
     if(res)
     {
@@ -1071,7 +1085,7 @@ All indices start at zero.
     DECLARE1(string, STRINGP);
     DECLARE2(start, INTP);
     slen = STRING_LEN(string);
-    if(VINT(start) > slen)
+    if(VINT(start) > slen || VINT(start) < 0)
 	return(signal_arg_error(start, 2));
     if(INTP(end))
     {
