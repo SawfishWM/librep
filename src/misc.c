@@ -101,6 +101,13 @@ rep_str_dupn(const u_char *old, int len)
     return new;
 }
 
+static void
+default_beep (void)
+{
+    fputc (7, stdout);
+    fflush (stdout);
+}
+
 DEFUN_INT("beep", Fbeep, Sbeep, (void), rep_Subr0, "") /*
 ::doc:Sbeep::
 beep
@@ -523,6 +530,9 @@ void
 rep_misc_init(void)
 {
     int i;
+
+    if (rep_beep_fun == 0)
+	rep_beep_fun = default_beep;
 
     rep_INTERN(operating_system);
 #ifdef rep_HAVE_UNIX
