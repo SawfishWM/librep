@@ -161,11 +161,23 @@
 
 ;;; symbols
 
-  ;; XXX this fails the spec clause "(symbol? '()) => #f"
-  (define symbol? (make-predicate symbolp))
+  ;; XXX The test for () is because rep represents that as the symbol
+  ;; XXX `nil'. This will cause problems since (symbol? 'nil) => #f
+  ;; XXX But I think that's better than (symbol? '()) => #t  :-(
 
+  (define (symbol? arg)
+    (cond ((eq arg '()) #f)
+	  ((symbolp arg) #t)
+	  (t #f)))
+    
   (define symbol->string symbol-name)
-  (define string->symbol intern)
+
+  (define (string->symbol name)
+    (if (string= name "nil")
+	'nil
+      (or (find-symbol name)
+	  ;; The copying is needed to pass test.scm..
+	  (intern (copy-sequence name)))))
 
 ;;; numbers
 
