@@ -1,3 +1,14 @@
+1999-01-10  John Harper  <john@dcs.warwick.ac.uk>
+
+	* edit.jl (save-excursion, save-restriction): use un-interned
+	symbols to store temproary values
+
+	* edit.jl (map-extents-at): macro mapping a function over all
+	extents containing an arbitrary position
+
+	* lisp-mode.jl (lisp-mode): fix mode-defun-header to match
+	macros and defsubsts as well as functions
+
 1999-01-07  John Harper  <john@dcs.warwick.ac.uk>
 
 	* mime-decode.jl (mime-display-part): new function, decodes a
