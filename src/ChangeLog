@@ -1,3 +1,8 @@
+2000-03-02  John Harper  <john@dcs.warwick.ac.uk>
+
+	* numbers.c: in most functions possibly returning floats,
+	return integers where possible
+
 2000-03-01  John Harper  <john@dcs.warwick.ac.uk>
 
 	* numbers.c (rep_print_number_to_string): avoid trying to print

@@ -13,7 +13,7 @@ functions.
 * Intro::                       Introduction and Lisp conventions
 
 * Data Types::                  Data types and values in Lisp
-* Numbers::                     Integers and arithmetic functions
+* Numbers::                     Numeric representations and functions
 * Sequences::                   Ordered sequences of data values
 * Symbols::                     Symbols are uniquely named objects
 * Hash Tables::                 Efficient table lookups
@@ -273,7 +273,7 @@ has no more extant references, it is automatically deallocated
 
 Most Lisp objects are a member of one of the primitive types; these are
 types built into the Lisp system and can represent things like strings,
-integers, cons cells, vectors, etc@dots{} Other primitive types may be
+numbers, cons cells, vectors, etc@dots{} Other primitive types may be
 provided by extensions loaded dynamically at run-time.
 
 More complex objects may be constructed from these primitive types, for
@@ -306,8 +306,8 @@ Each separate data type is documented in its own section, this is a just a
 summary of the more common types.
 
 @table @dfn
-@item Integer
-Signed integers. @xref{Numbers}.
+@item Numbers
+Numbers: fixnums, bignums, rationals and floats. @xref{Numbers}.
 
 @item Cons cell
 An object referring to two other Lisp objects. @xref{Cons Cells}.
@@ -361,7 +361,7 @@ or false truth value.
 As previously noted the Lisp reader translates textual descriptions of
 Lisp objects into the object they describe (source files are simply
 descriptions of objects). However, not all data types can be created
-in this way: in fact the only types which can are integers, strings,
+in this way: in fact the only types which can are numbers, strings,
 symbols, cons cells (or lists) and vectors, all others have to be
 created by calling functions.
 
@@ -377,11 +377,12 @@ of object is documented in that type's main section of this manual but
 here is a small summary of how to write each type.
 
 @table @asis
-@item Integers
-An integer is the number written in either decimal, octal (when the
-number is preceded by @samp{0}) or hexadecimal (when the number is preceded
-by @samp{0x}). An optional minus sign may be the first character in a
-number. Some examples are,
+@item Numbers
+A number is number written as an integer---decimal, octal (when the
+number is preceded by @samp{0}) or hexadecimal (when the number is
+preceded by @samp{0x})---or a decimal rational or floating point value.
+An optional minus sign may be the first character in a number. Some
+examples are,
 
 @lisp
 42
@@ -390,11 +391,14 @@ number. Some examples are,
 0177
     @result{} 127
 
-0xff
-    @result{} 255
+-0xff
+    @result{} -255
 
--0x10
-    @result{} -16
+3/2
+    @result{} 3/2
+
+1.23
+    @result{} 1.23
 @end lisp
 
 @item Strings
@@ -546,6 +550,14 @@ numbers, strings (ASCII values of each byte compared until a
 non-matching pair is found then those two values are compared as
 numbers) and cons cells (cars compared before cdrs).
 
+@defun = arg1 arg2 arg3 @dots{} argn
+Returns @code{t} if all arguments represent the same value.
+@end defun
+
+@defun /= arg1 arg2 arg3 @dots{} argn
+Returns @code{t} if no two arguments represent the same value.
+@end defun
+
 @defun > arg1 arg2 arg3 @dots{} argn
 Returns @code{t} when @var{arg1} is `greater than' @var{arg2}, and
 @var{arg2} is greater than @var{arg3}, and so on, upto @var{argn}.
@@ -642,10 +654,23 @@ of the garbage collector.
 @cindex Numbers
 @cindex Integers
 
-Currently @code{librep} is only capable of representing integers, for
-this it uses signed 30-bit integers giving a range from -1073741824
-through 0 to 1073741823. The missing two bits are due to the need for
-storing type information along with the value.
+@code{Librep} distinguishes between numbers that are represented
+exactly and numbers that may not be. This is similar to the Scheme
+dialect of Lisp. Quoting from the Scheme standard:
+
+@quotation
+@dots{} numbers are either @emph{exact} or @emph{inexact}. A number is
+exact if it was written as an exact constant or was derived from exact
+numbers using only exact operations. A number is inexact if it was
+written as an inexact constant, if it was derived using inexact
+ingredients, or if it was derived using inexact operations. Thus
+inexactness is a contagious property of a number.
+@end quotation
+
+Exact numbers include both integers and rational numbers, there is no
+theoretical limit to the range of the values that may be represented.
+Inexact numbers are currently implemented using double precision
+floating point values.
 
 The read syntax of an integer is simply the number written in decimal,
 octal or hexadecimal. If the integer starts with the string @samp{0x} it
@@ -655,36 +680,49 @@ should come before any base-specifier). Examples of valid integer read
 syntaxes for the number 42 could be @samp{42}, @samp{0x2a}, @samp{052},
 @samp{+052}, @dots{}
 
+The read syntax of a rational number is two integers separated by a
+@samp{/} character. The second integer may not have a @samp{+} or
+@samp{-} prefix. For example, @samp{3/2} represents the rational number
+three divided by two. 
+
+Inexact numbers are parsed from one of two forms, decimal point form,
+which is simply a decimal number containing a decimal point, and
+exponential form which is a decimal number followed by a letter
+@samp{e} and a decimal exponent multiplying the first part of the
+number by that power of ten. For example, @samp{10.0}, @samp{10.} and
+@samp{1e1} both read as the inexact number ten.
+
 An integer's printed representation is simply the number printed in
-decimal with a preceding minus sign if it is negative.
+decimal with a preceding minus sign if it is negative. Rational numbers
+are printed as two integers separated by a @samp{/} character. Inexact
+numbers are printed in their decimal form.
 
 @defun numberp object
-This function returns @code{t} if @var{object} is a number.
-@end defun
-
-@defun integerp object
-This function returns @code{t} when @var{object} is an integer.
+Returns @code{t} if @var{object} is a number.
 @end defun
 
 @menu
-* Arithmetic Functions::        Adding and substracting@dots{}
-* Bitwise Functions::           Using integers as bit-sequences
-* Numeric Predicates::          Comparing numbers
-* Random Numbers::              Creating pseudo-random integers
-* Characters::                  Integers are used to represent characters
+* Arithmetic Functions::
+* Integer Functions::
+* Rational Functions:: 
+* Real Number Functions::
+* Mathematical Functions::
+* Bitwise Functions::
+* Numeric Predicates::
+* Random Numbers::
+* Characters::
 @end menu
 
 
-@node Arithmetic Functions, Bitwise Functions, , Numbers
+@node Arithmetic Functions, Integer Functions, , Numbers
 @section Arithmetic Functions
 @cindex Arithmetic Functions
 @cindex Numbers, arithmetic functions
 
 There are a number of functions which perform arithmetic operations on
-numbers, they take a varying number of integer objects as their arguments
-then return a new integer object as their result.
-
-Note that none of these functions check for overflow.
+numbers, they take a varying number of values as their arguments
+returning a new number as their result. When given only exact
+arguments, an exact result will be returned.
 
 @defun + number1 &rest numbers
 This functions adds its arguments then returns their sum. 
@@ -719,43 +757,12 @@ the result is returned.
 
 (/ 200 2 5)
     @result{} 20
-@end lisp
-@end defun
 
-@defun % dividend divisor
-Returns the remainder from dividing @var{dividend} by @var{divisor}.
+(/ 3 2)
+    @result{} 3/2
 
-@lisp
-(% 5 3)
-    @result{} 2
-@end lisp
-@end defun
-
-The @code{%} function is implemented using the C @code{%} operator
-(hence its name). The problem with this is that negative arguments are
-treated (mathematically) strangely. Thus there is also the following
-function:
-
-@defun mod dividend divisor
-Return the value of @var{dividend} modulo @var{divisor}; unlike the %
-(remainder) function the behaviour of @code{mod} is well-defined for
-negative arguments, in that,
-
-@example
-(mod @var{X} @var{Y}) @equiv{} @var{X} - (* @var{Y} (floor (/ @var{X} @var{Y}))),
-
-                (for Y not equal to zero)
-@end example
-
-@noindent
-assuming that @samp{(floor @var{Z})} gives the least integer greater
-than or equal to @var{Z}, and that floating point division is used.
-
-@lisp
-(mod 10 -3)
-    @result{} -2
-(% 10 -3)
-    @result{} 1
+(/ 3.0 2)
+    @result{} 1.5
 @end lisp
 @end defun
 
@@ -773,16 +780,158 @@ Returns @var{number} minus one.
 @end defun
 
 
-@node Bitwise Functions, Numeric Predicates, Arithmetic Functions, Numbers
+@node Integer Functions, Rational Functions, Arithmetic Functions, Numbers
+@section Integer Functions
+@cindex Integer functions
+@cindex Numbers, integer functions
+
+The functions described in this section all operate on, and return,
+integer values.
+
+@defun quotient dividend divisor
+Return the integer part of dividing @var{dividend} by @var{divisor}.
+@end defun
+
+@defun remainder dividend divisor
+Returns the integer remainder from dividing the @var{dividend} by
+@var{divisor}. The remainder is either zero or has the same sign as
+@var{dividend}.
+@end defun
+
+@defun modulo dividend divisor
+@defunx mod dividend divisor
+Return the value of @var{dividend} modulo @var{divisor}. Unlike the
+@code{remainder} function the @code{modulo} function always has the
+sign of the @var{divisor}, not of the @var{dividend}
+@end defun
+
+@defun gcd x y
+Returns the greatest common divisor of the integers @var{x} and
+@var{y}.
+@end defun
+
+@defun lcm x y
+Return the lowest common multiple of integers @var{x} and @var{y}.
+@end defun
+
+
+@node Rational Functions, Real Number Functions, Integer Functions, Numbers
+@section Rational Functions
+@cindex Rational functions
+@cindex Numbers, rational functions
+
+These functions operate on rational numbers.
+
+@defun numerator x
+Returns the exact numerator of @var{x}.
+@end defun
+
+@defun denominator x
+Returns the exact denominator of @var{x}.
+@end defun
+
+@defun exact->inexact x
+Returns an inexact version of rational number @var{x}.
+@end defun
+
+
+@node Real Number Functions, Mathematical Functions, Rational Functions, Numbers
+@section Real Number Functions
+@cindex Real number functions
+@cindex Numbers, real number functions
+
+@defun abs x
+Returns the magnitude of @var{x}.
+@end defun
+
+@defun floor x
+Round @var{x} downwards to the nearest integer less than or equal to
+@var{x}.
+@end defun
+
+@defun ceiling x
+Round @var{x} upwards to the nearest integer less than or equal to
+@var{x}.
+@end defun
+
+@defun truncate x
+Round @var{x} to the nearest integer between @var{x} and zero.
+@end defun
+
+@defun round x
+Round @var{x} to the nearest integer. Halfway cases are rounded to the
+nearest even integer.
+@end defun
+
+@defun inexact->exact x
+Returns an exact representation of @var{x}. This may involve a loss of
+accuracy.
+@end defun
+
+
+@node Mathematical Functions, Bitwise Functions, Real Number Functions, Numbers
+@section Mathematical Functions
+@cindex Mathematical functions
+@cindex Numbers, mathematical functions
+
+@defun exp x
+Return `e' (the base of natural logarithms) raised to the power
+@var{x}.
+@end defun
+
+@defun log x
+Return the natural logarithm of @var{x}. An arithmetic error is
+signalled if @var{x} is less than zero.
+@end defun
+
+@defun sin x
+Return the sine of angle @var{x}; x is in terms of radians.
+@end defun
+
+@defun cos x
+Return the cosine of angle @var{x}.
+@end defun
+
+@defun tan x
+Return the tangent of angle @var{x}.
+@end defun
+
+@defun asin x
+Return the arc sine of @var{x} (the value whose sine is @var{x}), in
+radians.
+@end defun
+
+@defun acos x
+Return the arc cosine of @var{x}.
+@end defun
+
+@defun atan x
+Return the arc tangent of @var{x}.
+@end defun
+
+@defun sqrt x
+Return the non-negative square root of @var{x}. Currently, if @var{x}
+is negative, an arithmetic error is signalled.
+@end defun
+
+@defun expt x y
+Returns @var{x} raised to the power @var{y}.
+
+If @var{x} is negative and @var{y} is a non-integer, then an arithmetic
+error is signalled (mathematically should return a complex number).
+@end defun
+
+
+@node Bitwise Functions, Numeric Predicates, Mathematical Functions, Numbers
 @section Bitwise Functions
 @cindex Bitwise functions
 @cindex Numbers, bitwise functions
 
-These functions operate on the bit string which an integer is made of,
-assuming the usual two's complement representation.
+These functions operate on the bit string which an integer represents,
+assuming a two's complement representation.
 
 @defun lsh number count
-This function bit-shifts the integer @var{number} @var{count} bits to the
+This function shifts the integer @var{number} @var{count} bits to the
 left, if @var{count} is negative @var{number} is shifted to the right
 instead.
 
@@ -792,19 +941,6 @@ instead.
 
 (lsh 256 -8)
     @result{} 1
-@end lisp
-@end defun
-
-@defun ash number count
-Similar to @code{lsh} except that an arithmetical shift is done, this means
-that the sign of @var{number} is always preserved.
-
-@lisp
-(ash 1 8)
-    @result{} 256
-
-(ash -1 2)
-    @result{} -4
 @end lisp
 @end defun
 
@@ -863,37 +999,49 @@ This function inverts all the bits in @var{number}.
 @cindex Numbers, predicates on
 @cindex Predicates on numbers
 
-For the documentation of the functions @code{>}, @code{<}, @code{>=},
-@code{<=}, @code{max} and @code{min}, see @ref{Comparison Predicates}.
+For the documentation of the functions @code{=}, @code{/=}, @code{>},
+@code{<}, @code{>=}, @code{<=}, @code{max} and @code{min}, see
+@ref{Comparison Predicates}.
 
-@defun = number1 number2
-This function returns @code{t} if the two integers @var{number1} and
-@var{number2} have the same value.
-
-@lisp
-(= 1 1)
-    @result{} t
-
-(= 1 0)
-    @result{} nil
-@end lisp
+@defun exactp object
+Returns @code{t} when @var{object} is an exact number.
 @end defun
 
-@defun /= number1 number2
-This function will return @code{t} if @var{number1} and @var{number2}
-and not equal to each other.
-
-@lisp
-(/= 1 1)
-    @result{} nil
-
-(/= 1 0)
-    @result{} t
-@end lisp
+@defun inexactp object
+Returns @code{t} when @var{object} is an inexact number.
 @end defun
 
-@defun zerop number
-Returns @code{t} if @var{number} is equal to zero.
+@defun integerp object
+Returns @code{t} when @var{object} is an integer.
+@end defun
+
+@defun rationalp object
+Returns @code{t} when @var{object} is a rational number (including
+integers).
+@end defun
+
+@defun realp object
+Returns @code{t} when @var{object} is a real number.
+@end defun
+
+@defun oddp x
+Return @code{t} if @var{x} is an odd number.
+@end defun
+
+@defun evenp x
+Return @code{t} if @var{x} is an even number.
+@end defun
+
+@defun positivep x
+Return @code{t} if @var{x} is a number greater than zero.
+@end defun
+
+@defun negativep x
+Return @code{t} if @var{x} is a number less than zero.
+@end defun
+
+@defun zerop x
+Returns @code{t} if @var{x} is equal to zero.
 @end defun
 
 
@@ -908,8 +1056,8 @@ generated.
 
 @defun random &optional limit
 Return a pseudo-random number between zero and @var{limit}-1 inclusive.
-If @var{limit} is undefined, it is taken as being the largest
-representable positive integer.
+If @var{limit} is undefined, it is taken as being the largest positive
+integer representable in a fixnum.
 
 Calling @code{random} with @var{limit} equal to the symbol @code{t}
 seeds the generator with the current time of day.
@@ -4039,6 +4187,14 @@ after the @code{&rest} keyword. For example, in
 the first argument, @code{x}, is required. Any other arguments applied
 to this function are made into a list and this list is bound to the
 @code{y} variable.
+
+Variable argument functions may also be defined through the
+@code{scheme} method of using an improper lambda-list. The previous
+example is exactly equivalent to:
+
+@lisp
+(lambda (x . y) @dots{})
+@end lisp
 @end table
 
 When a function represented by a lambda-list is called the first action
@@ -4451,6 +4607,11 @@ forms."
 (macroexpand '(when x (setq foo bar)))
     @result{} (if x (progn (setq foo bar)))
 @end lisp
+
+While a macro is being expanded, the special variable
+@code{macro-environment} is bound to value of the @var{environment}
+parameter in the containing call to @code{macroexpand}. This allows
+macros to expand inner macros correctly.
 @end defun
 
 
