@@ -1,5 +1,8 @@
 Tue Jun  2 09:06:58 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* lispcmds.c (cmd_load): execute multiple matching items from
+	the after-load-alist, not just the first
+
 	* lispcmds.c (cmd_load): after using an entry in
 	after-load-alist, delete it
 
