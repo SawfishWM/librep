@@ -153,7 +153,7 @@ symbol_print(repv strm, repv obj)
     register u_char *s;
     rep_bool seen_digit = rep_FALSE;
 
-    if (obj == Qhash_f || obj == Qhash_t)
+    if (rep_SYMBOL_LITERAL_P (obj))
     {
 	symbol_princ (strm, obj);
 	return;
@@ -196,8 +196,13 @@ symbol_print(repv strm, repv obj)
 	case ' ': case '\t': case '\n': case '\f':
 	case '(': case ')': case '[': case ']':
 	case '\'': case '"': case ';': case '\\':
-	case '|': case '#': case ',': case '`':
+	case '|': case ',': case '`':
 	    *out++ = '\\';
+	    break;
+
+	case '#':
+	    if (!(rep_KEYWORDP (obj) && s-1 == rep_STR (rep_SYM (obj)->name)))
+		*out++ = '\\';
 	    break;
 
 	default:
@@ -1312,6 +1317,44 @@ obarray [NEW-VALUE]
     return rep_obarray;
 }
 
+DEFUN("make-keyword", Fmake_keyword, Smake_keyword, (repv in), rep_Subr1) /*
+::doc:make-keyword::
+make-keyword SYMBOL
+
+Return the keyword symbol that should be used in argument lists to
+provide the mark the value of the argument called SYMBOL.
+::end:: */
+{
+    repv str, name, key;
+    int name_len;
+
+    rep_DECLARE1 (in, rep_SYMBOLP);
+    if (rep_KEYWORDP (in))
+	return in;
+
+    name = rep_SYM (in)->name;
+    name_len = rep_STRING_LEN (name);
+    str = rep_make_string (name_len + 3);
+    rep_STR (str)[0] = '#';
+    rep_STR (str)[1] = ':';
+    memcpy (rep_STR (str) + 2, rep_STR (name), name_len);
+    rep_STR (str)[name_len+2] = 0;
+
+    key = Fintern (str, Qnil);
+    rep_SYM (key)->car |= rep_SF_KEYWORD;
+    return key;
+}
+
+DEFUN ("keywordp", Fkeywordp, Skeywordp, (repv arg), rep_Subr1) /*
+::doc:keywordp::
+keywordp ARG
+
+Return true if ARG is a keyword symbol.
+::end:: */
+{
+    return rep_KEYWORDP (arg) ? Qt : Qnil;
+}
+
 int
 rep_pre_symbols_init(void)
 {
@@ -1351,6 +1394,8 @@ rep_symbols_init(void)
     rep_INTERN(permanent_local);
 
     rep_INTERN(hash_t); rep_INTERN (hash_f);
+    rep_SYM(Qhash_t)->car |= rep_SF_LITERAL;
+    rep_SYM(Qhash_f)->car |= rep_SF_LITERAL;
     rep_scm_t = Qhash_t; rep_scm_f = Qhash_f;
 
     tem = rep_push_structure ("rep.lang.symbols");
@@ -1392,6 +1437,8 @@ rep_symbols_init(void)
     rep_ADD_SUBR(Sclosure_name);
     rep_ADD_SUBR(Sclosurep);
     rep_ADD_SUBR(Sset_special_environment);
+    rep_ADD_SUBR(Smake_keyword);
+    rep_ADD_SUBR(Skeywordp);
     rep_pop_structure (tem);
 
     tem = rep_push_structure ("rep.lang.debug");
