@@ -30,6 +30,7 @@
 
 DEFSYM(readline, "readline");
 DEFSYM(rl_completion_generator, "rl-completion-generator");
+DEFSYM(boundp, "boundp");
 
 static repv completions;
 
@@ -47,7 +48,9 @@ completion_generator (char *word, int state)
 	else
 	{
 	    repv re = Fquote_regexp (rep_string_dup (word));
-	    completions = Fapropos (rep_concat2("^", rep_STR(re)), Qnil, Qnil);
+	    repv boundp = Fsymbol_value (Qboundp, Qt);
+	    completions = Fapropos (rep_concat2("^", rep_STR(re)),
+				    boundp, Qnil);
 	}
 	if (completions == rep_NULL)
 	    completions = Qnil;
@@ -109,6 +112,7 @@ rep_dl_init(void)
 {
     rep_INTERN(readline);
     rep_INTERN_SPECIAL(rl_completion_generator);
+    rep_INTERN(boundp);
     completions = Qnil;
     rep_mark_static (&completions);
     rep_dl_feature = Qreadline;
