@@ -177,7 +177,7 @@ proc_notification(void)
 	notify_chain = pr->pr_NotifyNext;
 	pr->pr_NotifyNext = NULL;
 	if(pr->pr_NotifyFun && !NILP(pr->pr_NotifyFun))
-	    funcall(pr->pr_NotifyFun, sym_nil);
+	    funcall(pr->pr_NotifyFun, sym_nil, FALSE);
     }
     cursor(curr_vw, CURS_ON);
     return(TRUE);

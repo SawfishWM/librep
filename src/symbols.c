@@ -1048,7 +1048,7 @@ is non-nil it is considered a match.
 		    if(pred && !NILP(pred))
 		    {
 			VALUE tmp;
-			if(!(tmp = funcall(pred, LIST_1(chain)))
+			if(!(tmp = funcall(pred, LIST_1(chain), FALSE))
 			   || NILP(tmp))
 			{
 			    goto next;
