@@ -49,20 +49,30 @@ then the sublist starting with ELT is returned."
 	((fun (car lst)) lst)
 	(t (member-if fun (cdr lst)))))
 
-(defun remove (elt lst #!optional (samep equal))
-  "Returns a new copy of LST with all elements `equal' to ELT discarded."
+(defun remove-if (pred lst)
+  "Returns a new copy of LST with any elements removed for which (PRED ELT)
+returns true."
   (let loop ((rest lst)
 	     (out '()))
     (cond ((null rest) (nreverse out))
-	  ((samep (car rest) elt) (loop (cdr rest) out))
+	  ((pred (car rest)) (loop (cdr rest) out))
 	  (t (loop (cdr rest) (cons (car rest) out))))))
+
+(defun remove-if-not (fun lst)
+  "Returns a new copy of LST with any elements removed for which (PRED ELT)
+returns false."
+  (remove-if (lambda (x) (not (fun x))) lst))
+
+(defun remove (elt lst)
+  "Returns a new copy of LST with all elements `equal' to ELT discarded."
+  (remove-if (lambda (x) (equal x elt)) lst))
 
 (defun remq (elt lst)
   "Returns a new copy of LST with all elements `eq' to ELT discarded."
-  (remove elt lst eq))
+  (remove-if (lambda (x) (eq x elt)) lst))
 
 (export-bindings '(assoc-regexp setcar setcdr string= string<
-		   member-if remove remq))
+		   member-if remove-if remove-if-not remove remq))
 
 
 ;; cons accessors
