@@ -65,7 +65,7 @@ static u_long byte_code_usage[256];
 		install BUFFER as current in VIEW
 	((SYM . OLD-VAL) ...)
 		list of symbol bindings to undo with unbind_symbols()
-	VIEW
+	(VIEW . WINDOW)
 		set VIEW as current in its window
 	WINDOW
 		set WINDOW as current.
@@ -95,16 +95,17 @@ unbind_one_level(VALUE bind_stack)
 		/* A set of symbol bindings (let or let*). */
 		unbind_symbols(item);
 	    }
-	}
-	else if(VIEWP(item))
-	{
-	    /* Reinstall VIEW */
-	    if(VVIEW(item)->vw_Win
-	       && VVIEW(item)->vw_Win->w_Window != WINDOW_NIL)
+	    else if(VIEWP(VCAR(item)) && WINDOWP(VCDR(item)))
 	    {
-		curr_vw = VVIEW(item);
-		curr_win = curr_vw->vw_Win;
-		curr_win->w_CurrVW = curr_vw;
+		/* (VIEW . WINDOW) */
+		VW *vw = VVIEW(VCAR(item));
+		WIN *win = VWIN(VCDR(item));
+		if(vw->vw_Win && vw->vw_Win->w_Window != WINDOW_NIL)
+		{
+		    vw->vw_Win->w_CurrVW = vw;
+		    curr_win = win;
+		    curr_vw = curr_win->w_CurrVW;
+		}
 	    }
 	}
 	else if(WINDOWP(item))
@@ -1020,7 +1021,8 @@ fetch:
 		signal_arg_error(tmp, 1);
 		goto error;
 	    }
-	    bindstack = cmd_cons(VAL(curr_vw), bindstack);
+	    bindstack = cmd_cons(cmd_cons(VAL(VVIEW(tmp)->vw_Win->w_CurrVW),
+					  VAL(curr_win)), bindstack);
 	    curr_vw = VVIEW(tmp);
 	    curr_win = VVIEW(tmp)->vw_Win;
 	    curr_win->w_CurrVW = curr_vw;
