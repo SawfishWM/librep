@@ -1,4 +1,13 @@
+Sat Jun 27 18:21:30 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* find.c (compile_regexp): when searching the cache, before
+	comparing strings, test if they're eq to one another
+
 Fri Jun 26 16:54:54 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* find.c (release_cached_regexp): renamed mark_cached_regexps,
+	now marks the `regexp' field as it should
+	(release_cached_regexps): new function, flushes the cache
 
 	* find.c (compile_regexp, release_cached_regexp): instead of
 	just caching a single compile regular expression, cache all of
