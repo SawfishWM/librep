@@ -63,6 +63,14 @@ concurrently.")
 (defvar remote-ftp-passwd-alist nil
   "Alist of (USER@HOST . PASSWD) defining all known FTP passwords.")
 
+(defvar remote-ftp-host-user-alist nil
+  "Alist of (HOST-REGEXP . USER-NAME) matching FTP session host names to
+usernames. Only used when no username is given in a filename.")
+
+(defvar remote-ftp-default-user (user-login-name)
+  "Default username to use for FTP sessions when none is specified, either
+explicitly, or by the remote-ftp-host-user-alist variable.")
+
 (defvar remote-ftp-sessions nil
   "List of FTP structures defining all running FTP sessions.")
 
@@ -117,8 +125,7 @@ file types.")
 (defconst remote-ftp-cached-dir 5)
 (defconst remote-ftp-dircache 6)
 (defconst remote-ftp-pending-output 7)
-(defconst remote-ftp-progress 8)
-(defconst remote-ftp-struct-size 9)
+(defconst remote-ftp-struct-size 8)
 
 (defmacro remote-ftp-status-p (session stat)
   `(eq (aref ,session remote-ftp-status) ,stat))
@@ -126,7 +133,7 @@ file types.")
 ;; Return an ftp structure for HOST and USER, with a running ftp session
 (defun remote-ftp-open-host (host &optional user)
   (unless user
-    (setq user (user-login-name)))
+    (setq user (remote-ftp-get-user host)))
   (catch 'foo
     (mapc #'(lambda (s)
 	      (when (and (string= (aref s remote-ftp-host) host)
@@ -167,7 +174,7 @@ file types.")
 
 (defun remote-ftp-close-host (host &optional user)
   (unless user
-    (setq user (user-login-name)))
+    (setq user (remote-ftp-get-user host)))
   (catch 'foo
     (mapc #'(lambda (s)
 	      (when (and (string= (aref s remote-ftp-host) host)
@@ -182,6 +189,10 @@ file types.")
 	      (and (eq (aref s remote-ftp-process) process)
 		   (throw 'return s)))
 	  remote-ftp-sessions)))
+
+(defun remote-ftp-get-user (host)
+  (or (cdr (assoc-regexp host remote-ftp-host-user-alist))
+      remote-ftp-default-user))
 
 
 ;; Communicating with ftp sessions
@@ -202,10 +213,13 @@ file types.")
 	 (error "FTP process timed out (%s)" (or type "unknown")))))
 
 (defun remote-ftp-command (session type format &rest args)
-  (aset session remote-ftp-progress nil)
+  (when remote-ftp-display-progress
+    (message (format nil "FTP %s: " type) t))
   (remote-ftp-while session 'busy type)
   (remote-ftp-write session format args)
   (remote-ftp-while session 'busy type)
+  (when remote-ftp-display-progress
+    (format t " %s" (aref session remote-ftp-status)))
   (eq (aref session remote-ftp-status) 'success))
 
 (defun remote-ftp-output-filter (session output)
@@ -226,12 +240,8 @@ file types.")
       ;; Look for `#' progress characters
       (when (string-looking-at "#+" output point)
 	(setq point (match-end))
-	(aset session remote-ftp-progress
-	      (+ (or (aref session remote-ftp-progress) 0)
-		 (- (match-end) (match-start))))
-	(message (format nil "FTP transfer: %dk"
-			 ;; XXX Assumes each # is one kilobyte
-			 (aref session remote-ftp-progress)) t))
+	(write t (substring output (match-start) (match-end)))
+	(redisplay))
       (if (string-looking-at remote-ftp-passwd-msgs output point)
 	  ;; Send password
 	  (progn
@@ -336,6 +346,9 @@ file types.")
   (remote-ftp-command session 'mkdir "mkdir %s" remote-dir))
 
 (defun remote-ftp-chmod (session mode file)
+  ;; XXX Some FTP clients (i.e. Solaris 2.6) don't have the
+  ;; XXX chmod command. Perhaps we could use "quote site chmod .."
+  ;; XXX but the Solaris ftpd doesn't support this either..
   (remote-ftp-command session 'chmod "chmod %o %s" mode file))
 
 
@@ -364,7 +377,6 @@ file types.")
 					    (match-start 5) (match-end 5))))
 	 (modtime (substring string (match-start 6) (match-end 6)))
 	 (name (substring string (match-start 7) (match-end 7))))
-      ;; Try to smash date strings into a single number
       (vector name size modtime (cdr (assq (aref mode-string 0)
 					   remote-ftp-ls-l-type-alist))
 	      nil mode-string nlinks user group))))
@@ -419,7 +431,7 @@ file types.")
       (aset session remote-ftp-cached-dir 'busy)
       (aset session remote-ftp-dircache nil)
       (aset session remote-ftp-callback 'remote-ftp-dircache-callback)
-      (remote-ftp-command session 'dircache "dir %s" dir)
+      (remote-ftp-command session 'dircache "ls -la %s" dir)
       (aset session remote-ftp-cached-dir dir)
       (aset session remote-ftp-callback nil))
     (catch 'return
