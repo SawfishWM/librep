@@ -22,7 +22,7 @@ AC_DEFUN(AM_PATH_REP,
 	-o '(' $rep_major -eq $min_rep_major \
 	       -a $rep_minor -ge $min_rep_minor ')';
     then
-      REP_VERSION="${REP_VERSION}"
+      REP_VERSION="${rep_version}"
       REP_CFLAGS="`rep-config --cflags`"
       REP_LIBS="`rep-config --libs`"
       REP_EXECDIR="`rep-config --execdir`"
