@@ -392,7 +392,7 @@ wait_for_input(fd_set *inputs, u_long timeout_msecs)
 	u_long this_timeout_msecs = MIN (timeout_msecs,
 					 rep_input_timeout_secs * 1000);
 	rep_bool threaded = rep_INT (Fthread_queue_length (Qnil)) > 0;
-	if (threaded)
+	if (!threaded)
 	{
 	    timeout.tv_sec = this_timeout_msecs / 1000;
 	    timeout.tv_usec = (this_timeout_msecs % 1000) * 1000;
