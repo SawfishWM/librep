@@ -1,3 +1,34 @@
+2000-06-04  John Harper  <john@dcs.warwick.ac.uk>
+
+	* define.jl (define-scan-form): don't expand `structure-ref'
+	forms
+
+	* compiler-rep.jl: merge `normal' top-level forms into progn
+	statements in pass-1, which then get compiled in pass-2
+
+	* compiler-modules.jl (compile-structure-def): leave `open' and
+	`access' config statements as-is
+
+	* compiler-basic.jl (macroexpand-pred): used to stop expanding
+	macros when a form with a special compiler is found
+
+	* compiler-modules.jl (parse-interface): fix typo
+
+	* scheme.jl: no need to export %while anymore
+
+	* compiler-utils.jl (compiler-constant-p,
+	compiler-constant-value): anything that isn't a cons or a
+	symbol is now treated as a (self-evaluating) constant, mainly
+	to allow #f and #t to be constant-folded
+
+	* compiler-scheme.jl: enabled constant folding support
+
+	* compiler-modules.jl: pass-1 and pass-2 functions now take and
+	return the complete list of forms, not just one at a time
+
+	* compiler-scheme.jl, compiler-rep.jl (pass-1, pass-2): operate
+	on the entire body in one go
+
 2000-06-02  John Harper  <john@dcs.warwick.ac.uk>
 
 	* init.jl (fluid-let): renamed as `let-fluids'. Updated all

@@ -255,10 +255,11 @@ arguments are allowed.
 @cindex Data types
 
 The way that data is represented in Lisp is fundamentally different to
-fully imperative languages such as C or Fortran. In Lisp each piece of
-data (or @dfn{value}) has two basic attributes: the data and the
-@emph{type} of the data. This means that type checking is performed on
-the actual data itself, not on the ``variable'' holding the data.
+languages such as C or Fortran. In Lisp each piece of data (or
+@dfn{value}) has two basic attributes: the data and the @emph{type} of
+the data. This means that type checking is performed at run-time on the
+actual data itself, not at compile-time on the ``variable'' holding the
+data.
 
 Also, there are no ``pointers'' in Lisp. As in the Java programming
 language, all values are references to data structures, with each
@@ -271,7 +272,7 @@ has no more extant references, it is automatically deallocated
 Most Lisp objects are a member of one of the primitive types; these are
 types built into the Lisp system and can represent things like strings,
 numbers, cons cells, vectors, etc@dots{} Other primitive types may be
-provided by extensions loaded dynamically at run-time.
+defined at run-time.
 
 More complex objects may be constructed from these primitive types, for
 example a vector of three elements could be regarded as a type
@@ -363,10 +364,12 @@ symbols, cons cells (or lists) and vectors, all others have to be
 created by calling functions.
 
 @cindex Comments
-Comments in a Lisp program are introduced by a semi-colon character
+Single line comments are introduced by a semi-colon character
 (@samp{;}). Whenever the Lisp reader encounters a semi-colon where it's
 looking for the read syntax of a new Lisp object it will discard the
-rest of the line of input. @xref{Comment Styles}.
+rest of the line of input. Block comments are also supported,
+introduced by the string @samp{#|} and terminated by @samp{|#}.
+@xref{Comment Styles}.
 
 The @dfn{read syntax} of an object is the string which when given to the
 reader as input will produce the object. The read syntax of each type
@@ -546,6 +549,9 @@ arguments may be of any type but the results are only meaningful for
 numbers, strings (ASCII values of each byte compared until a
 non-matching pair is found then those two values are compared as
 numbers) and cons cells (cars compared before cdrs).
+
+Unlike the @code{eql} function, inexact and exact numbers will be
+compared by first coercing the exact number to be inexact.
 
 @defun = arg1 arg2 arg3 @dots{} argn
 Returns @code{t} if all arguments represent the same value.
@@ -804,13 +810,14 @@ Return the value of @var{dividend} modulo @var{divisor}. Unlike the
 sign of the @var{divisor}, not of the @var{dividend}
 @end defun
 
-@defun gcd x y
-Returns the greatest common divisor of the integers @var{x} and
-@var{y}.
+@defun gcd args@dots{}
+Returns the greatest common divisor of the integers @var{args}@dots{}
+If no arguments are given, returns zero.
 @end defun
 
-@defun lcm x y
-Return the lowest common multiple of integers @var{x} and @var{y}.
+@defun lcm args@dots{}
+Return the lowest common multiple of the integers @var{args}@dots{} If
+no arguments are given, returns one.
 @end defun
 
 
@@ -2539,18 +2546,17 @@ lists (subroutine applications), anything else is returned as-is (and
 is called a @dfn{self-evaluating form}).
 
 @defun eval form
-This function computes the value of the form which is its argument,
-within the current environment. The computed value is then returned.
-@code{eval} is the basic function for interpreting Lisp objects.
+This function computes and returns the value of @var{form} within the
+current module and dynamic environment, and a null lexical environment.
 @end defun
 
 However, @code{eval} is rarely explicitly invoked, except in the
 read-eval-print loop. Lisp provides many other methods of evaluation
-that are usually more suitable to use from within a program.
+that are usually much more suitable within a program.
 
 @defvar max-lisp-depth
-This variable limits the number of nested calls to @code{eval}. If
-more than this many nested calls to @code{eval} exist, an error is
+This variable limits the number of nested calls to @code{eval}. If more
+than this many nested calls to @code{eval} exist, an error is
 signalled. The intention is to detect infinite recursion before hitting
 the stack size limit (causing a segmentation fault).
 @end defvar
@@ -2585,9 +2591,10 @@ get the value of the variable @code{rep-version} and the result when
 this form is evaluated.
 
 Since forms are evaluated within the current environment the value of a
-variable is its most-recent extant binding. @xref{Variables}.
+variable is its most-recent extant binding (with slight differences for
+lexical and special variables). @xref{Variables}.
 
-If the value of an evaluated symbol is void an error is signalled.
+If an evaluated symbol has no current binding, an error is signalled.
 
 
 @node List Forms, Self-Evaluating Forms, Symbol Forms, Evaluation
@@ -2624,9 +2631,9 @@ the list.
 
 When the first element of a list form evaluates to a function object
 (either a primitive subroutine or a closure), all other elements in the
-list are evaluated sequentially, then these values are applied to the
-function definition. The result returned by the function is then taken
-as the value of the whole list form.
+list are evaluated sequentially from left-to-right, then these values
+are applied to the function definition. The result returned by the
+function is then taken as the value of the whole list form.
 
 For example, consider the form @code{(/ 100 (1+ 4))}. This is a
 function call to the function stored in the variable @code{/}. First
@@ -2658,7 +2665,8 @@ Or another example,
 @end lisp
 
 The system is also capable of eliminating tail calls where possible,
-allowing tail-recursive function definitions to run in constant space.
+allowing tail-recursive function definitions to run with bounded space
+requirements.
 
 A @dfn{tail-call} is a function call that occurs immediately before
 exiting the containing function. Since the containing function need not
@@ -2717,24 +2725,20 @@ arguments itself. This will be noted in the documentation of the
 special form.
 
 Special forms are generally used to provide control structures, for
-example, all of the conditional constructs are special forms (if all of
-their arguments, including the forms to be conditionally evaluated,
+example, the primitive conditional constructs are special forms (if all
+of their arguments, including the forms to be conditionally evaluated,
 were evaluated automatically this would defeat the object of being
 conditional!).
 
-The special forms supported by librep are: @code{and}, @code{case},
-@code{catch}, @code{cond}, @code{condition-case}, @code{defconst},
-@code{defmacro}, @code{defun}, @code{defvar}, @code{function},
-@code{if}, @code{let}, @code{let*}, @code{or}, @code{prog1},
-@code{prog2}, @code{progn}, @code{quote}, @code{setq},
-@code{setq-default}, @code{unwind-protect}, @code{while},
-@code{with-object}.
+The special forms supported by @code{librep} are: @code{case},
+@code{catch}, @code{cond}, @code{condition-case}, @code{defvar},
+@code{progn}, @code{quote}, @code{setq}, @code{unwind-protect}.
 
 @defun special-form-p arg
 Returns @code{t} if @var{arg} is a special form.
 
 @lisp
-(special-form-p setq)
+(special-form-p quote)
     @result{} t
 @end lisp
 @end defun
@@ -2878,7 +2882,7 @@ special form. If no arguments are given to @code{progn} it returns
 @end lisp
 @end defspec
 
-@defspec prog1 first forms@dots{}
+@defmac prog1 first forms@dots{}
 This special form evaluates its @var{first} form then performs an
 implicit progn on the rest of its arguments. The result of this
 structure is the computed value of the @var{first} form.
@@ -2887,7 +2891,7 @@ structure is the computed value of the @var{first} form.
 (prog1 'one (+ 1 1) "three")
     @result{} one
 @end lisp
-@end defspec
+@end defmac
 
 @defmac prog2 first second forms@dots{}
 This is similar to @code{prog1} except that the evaluation of its
@@ -2928,10 +2932,10 @@ Note that one of the @var{true-form} or the @var{else-forms} is completely
 ignored---it is not evaluated.
 
 @lisp
-(if (special-form-p 'if)
+(if (special-form-p if)
     "`if' is a special form"
   "`if' is not a special form")
-    @result{} "`if' is a special form"
+    @result{} "`if' is not a special form"
 @end lisp
 @end defmac
 
@@ -3001,20 +3005,7 @@ is to add a clause with a @var{condition} of @code{t} and
   (error "`buffer-list' is corrupted!")))
     @result{} t
 @end lisp
-
-All of the other conditionals can be written in terms of @code{cond},
-
-@lisp
-(if @var{c} @var{t} @var{e}@dots{}) @equiv{} (cond (@var{c} @var{t}) (t @var{e}@dots{}))
-
-(when @var{c} @var{t}@dots{}) @equiv{} (cond (@var{c} @var{t}@dots{}))
-
-(unless @var{c} @var{e}@dots{}) @equiv{} (cond ((not @var{c}) @var{e}@dots{}))
-@end lisp
 @end defspec
-
-There are also a number of special forms which combine conditions together
-by the normal logical rules.
 
 @defspec case key clauses@dots{}
 This special form is similar to @code{cond}, but switches on the result
@@ -3056,7 +3047,8 @@ Here is an example use of @code{case}:
 @end lisp
 @end defspec
 
-
+There are also a number of special forms which combine conditions together
+by the normal logical rules.
 
 @defmac or forms@dots{}
 The first of the @var{forms} is evaluated, if it is non-@code{nil} its
@@ -3115,33 +3107,79 @@ returned.
 @cindex Looping structures
 @cindex Control structures, looping
 
-The @code{librep} Lisp dialect has only one structure for looping---a
-@dfn{while} loop similar to those found in most programming languages.
+The @code{librep} Lisp dialect only has one method of creating looping
+control structures---recursion. Any looping construct found in an
+imperative language can be represented as a recursive function. For
+example the common @code{while} statement:
 
-@defspec while condition body-forms@dots{}
+@lisp
+(while @var{condition} @var{body}@dots{})
+@equiv{}
+(letrec ((loop (lambda ()
+                 (when @var{condition}
+                   @var{body}
+                   (loop)))))
+  (loop))
+@end lisp
+
+@noindent
+Each successive iteration of the loop is simply another call to the
+function. Also note that the recursive call to the @code{(loop)}
+function occurs in the tail-position of the function. When combined
+with the system's ability to eliminate tail-calls (@pxref{Function Call
+Forms}) the above example loop has bounded space requirements. This is
+important when loops make a large number of iterations.
+
+Although tail-recursion is the only primitive method of looping, the
+language offers a number of looping forms for convenience.
+
+@defmac do vars (test expr@dots{}) body@dots{}
+@code{do} is an iteration construct; @var{vars} specifies a set of
+variable bindings to be created, how they are initialized and how they
+are updated on each iteration. @var{test} specifies the termination
+condition of the loop, any @var{expr}@dots{} forms are evaluated
+immediately prior to exiting the `do' construct. The @var{body}@dots{}
+forms specify the side effecting body of the loop.
+
+@var{vars} is a list of variable clauses, each of which has the
+structure @code{(@var{variable} @var{init} @var{step})} where
+@var{variable} is the name of a variable, @var{init} defines the
+initial value of its binding, and @var{step} defines how the next value
+of the binding is computed. An alternative form is
+@code{(@var{variable} @var{init})}, in this case the value of the
+binding does not change across loop iterations.
+
+Each iteration begins by evaluating @var{test}, if the result is
+@code{nil}, then the @var{body}@dots{} expressions are evaluated, and
+the variables bound to new locations initialized to the results of
+evaluating the associated @var{step} forms.
+
+If the result of evaluating @var{test} is non-@code{nil} then the
+@var{expr}@dots{} forms are evaluated, and the @code{do} construct
+returns the value of the last @var{expr} form evaluated.
+
+@lisp
+(do ((vec (make-vector 5))
+     (i 0 (1+ i)))
+    ((= i 5) vec)
+  (aset vec i i))
+
+    @result{} [0 1 2 3 4]
+@end lisp
+@end defmac
+
+@defmac while condition body@dots{}
 The @var{condition} form is evaluated. If it is non-@code{nil} an
-implicit progn is performed on the @var{body-forms} and the whole
+implicit progn is performed on the @var{body} forms and the whole
 procedure is repeated.
 
 This continues until the @var{condition} form evaluates to @code{nil}.
 The value of every @code{while} structure that terminates is
 @code{nil}.
+@end defmac
 
-@code{while} can be recursively defined in terms of @code{if}:
-
-@lisp
-(while @var{c} @var{b} @dots{})
-@equiv{}
-(if @var{c} (progn @var{b} @dots{} (while @var{c} @var{b} @dots{})))
-@end lisp
-
-@lisp
-;; Step through a list @var{x}
-(while @var{x}
-  ;; Do something with the current element, @code{(car @var{x})}
-  (setq @var{x} (cdr @var{x})))
-@end lisp
-@end defspec
+The ``named-let'' variant of the @code{let} form also provides a
+convenient looping construct (@pxref{Local Variables}).
 
 
 @node Non-Local Exits, Continuations, Looping Structures, Control Structures
@@ -3861,7 +3899,7 @@ special form.")
 @end lisp
 @end defspec
 
-@defspec defconst constant form [doc-string]
+@defmac defconst constant form [doc-string]
 @code{defconst} defines a global constant, the symbol @var{constant}.
 Its value is set to the result of evaluating @var{form}. Note that
 unlike @code{defvar} the value of the symbol is @emph{always} set, even
@@ -3875,7 +3913,7 @@ for the constant.
   "An example constant.")
     @result{} the-answer
 @end lisp
-@end defspec
+@end defmac
 
 Another way of defining global variables is to use the @code{define}
 macro (@pxref{Definitions}). The following example defines a global
@@ -4145,7 +4183,7 @@ passes back to the caller.
 Globally accessible functions are usually defined by the @code{defun}
 special form.
 
-@defspec defun name lambda-list body-forms@dots{}
+@defmac defun name lambda-list body-forms@dots{}
 @code{defun} initialises the function definition of the symbol
 @var{name} to the lambda expression resulting from the concatenation of
 the symbol @code{lambda}, @var{lambda-list} and the @var{body-forms}.
@@ -4154,7 +4192,7 @@ The @var{body-forms} may contain a documentation string for the
 function as its first form and an interactive calling specification as
 its first (if there is no doc-string) or second form if the function
 may be called interactively by the user (@pxref{Lambda Expressions}).
-@end defspec
+@end defmac
 
 An example function definition taken from the @code{librep} source code is:
 
@@ -4427,13 +4465,13 @@ A macro object is a list whose car is the symbol @code{macro}, its
 cdr is the function which creates the expansion of the macro when
 applied to the macro calls unevaluated arguments.
 
-@defspec defmacro name lambda-list body-forms@dots{}
+@defmac defmacro name lambda-list body-forms@dots{}
 Defines the macro stored in the function cell of the symbol @var{name}.
 @var{lambda-list} is the lambda-list specifying the arguments to the
 macro (@pxref{Lambda Expressions}) and @var{body-forms} are the forms
 evaluated when the macro is expanded. The first of @var{body-forms}
 may be a documentation string describing the macro's use.
-@end defspec
+@end defmac
 
 Here is a simple macro definition, it is the definition of the
 @code{when} macro shown in the previous section.
@@ -5012,8 +5050,8 @@ temporarily disabled.
 @cindex Threads, mutexes
 
 @dfn{Mutexes} are lisp objects used to coordinate access to data shared
-across multiple threads (where interleaved access would be bad).
-Require the @code{mutex} feature to load these functions.
+across multiple threads (where interleaved access would be bad). These
+functions are exported by the @code{mutex} module (@pxref{Modules}).
 
 @defun make-mutex
 Create and return a mutex object. No thread will own the new mutex.
@@ -5074,8 +5112,8 @@ distinct from the built-in data types (i.e. they match none of the
 standard type predicates).
 
 They also provide encapsulation, in that the data objects they provide
-are completely opaque, unless a pre-defined value is known (and which
-was quoted when the object was created, and is typically known only by
+are completely opaque, unless a pre-defined value is known (which was
+specified when the object was created, and is typically known only by
 the object's creator).
 
 @defun make-datum value key
@@ -5182,9 +5220,10 @@ It then defines a function @var{constructor} with arguments as
 specified by the @var{fields@dots{}}, a predicate function called
 @var{predicate} if @var{predicate} is given.
 
-The fields of the record are defined by the sequence of @var{(field
-accessor [modifier])} forms, each form describes a single field (named
-@var{field}, which may match one of the constructor arguments).
+The fields of the record are defined by the sequence of
+@code{(@var{field} @var{accessor} [@var{modifier}])} forms, each form
+describes a single field (named @var{field}, which may match one of the
+constructor arguments).
 
 For each field a function @var{accessor} will be defined that when
 applied to an argument of the record type, returns the value stored in
@@ -5252,8 +5291,8 @@ y
 @cindex Hash tables
 @cindex Data types, hash tables
 
-The @code{tables} feature provides a flexible hash table
-implementation. Each hash table is represented by a lisp object
+The @code{tables} module provides a flexible hash table implementation
+(@pxref{Modules}). Each hash table is represented by a lisp object
 satisfying the @code{tablep} predicate:
 
 @defun tablep arg
@@ -6064,9 +6103,9 @@ now@dots{}
 @subsection Features
 @cindex Features
 
-@dfn{Features} correspond to modules of the lisp system. Each feature
-is loaded separately. Each feature has a name, when a certain feature
-is required its user asks for it to be present (with the @code{require}
+@dfn{Features} correspond to libraries of Lisp code. Each feature is
+loaded separately. Each feature has a name, when a certain feature is
+required its user asks for it to be present (with the @code{require}
 function), the feature may then be used as normal.
 
 When a feature is loaded one of the top-level forms evaluated is a call to
@@ -6087,15 +6126,16 @@ features
 @end defvar
 
 @defun featurep feature
-Returns non-@code{nil} if the feature @var{feature} has been loaded.
+Returns non-@code{nil} if the feature @var{feature} has been loaded
+into the current module.
 @end defun
 
 @defun provide feature
 Adds @var{feature} (a symbol) to the list of loaded features. A call
-to this function is normally one of the top-level forms in a module.
+to this function is normally one of the top-level forms in a file.
 
 @lisp
-;;;; maths.jl -- the @code{maths} module
+;;;; maths.jl -- the @code{maths} library
 
 (provide 'maths)
 @dots{}
@@ -6112,9 +6152,9 @@ non-@code{nil} it specifies the first argument to the @code{load} function,
 else the print name of the symbol @var{feature} is used.
 
 @lisp
-;;;; physics.jl -- the @code{physics} module
+;;;; physics.jl -- the @code{physics} library
 
-(require 'maths)                ;Need the @code{maths} module
+(require 'maths)                ;Need the @code{maths} library
 (provide 'physics)
 @dots{}
 @end lisp
@@ -6130,7 +6170,7 @@ Loading}.
 @section Compiled Lisp
 @cindex Compiled Lisp
 
-@code{librep} contains a Lisp compiler as well as interpreter; this
+@code{librep} contains a Lisp compiler as well as an interpreter; this
 takes a Lisp form or program and compiles it into a @dfn{byte-code}
 object. This byte-code object is a string of characters representing
 virtual machine instructions, a vector of constants and some other
@@ -6140,20 +6180,33 @@ virtual machine. This simulation will have exactly the same effect as
 interpreting the original form or program.
 
 One of the main reasons for compiling programs is to increase their
-speed, it is difficult to quantify the speed increase gained---some
-programs (especially those using a lot of macros) will execute many
-times quicker than their uncompiled version whereas others may only
-execute a bit quicker.
+efficiency. Compiled functions are likely to be more efficient than
+interpreted counterparts in all areas (space and time). For example:
+
+@example
+user> (define (fib n) (if (<= n 2) 1 (+ (fib (- n 1)) (fib (- n 2)))))
+user> ,time (fib 30)
+832040
+Elapsed: 48.472671 seconds
+user> ,compile
+user> ,time (fib 30)
+832040
+Elapsed: 5.322098 seconds
+@end example
+
+@noindent
+---the compiled version executes over nine times faster than the
+interpreted version.
 
 @menu
 * Compilation Functions::       How to compile Lisp programs
-* Evaluating at Compile Time::	Evaluating forms ahead of time
+* Compiler Declarations::	Hinting to the compiler
 * Compilation Tips::            Getting the most out of the compiler
 * Disassembly::                 Examining compiled functions
 @end menu
 
 
-@node Compilation Functions, Evaluating at Compile Time, , Compiled Lisp
+@node Compilation Functions, Compiler Declarations, , Compiled Lisp
 @subsection Compilation Functions
 @cindex Compilation functions
 @cindex Functions, compilation
@@ -6164,7 +6217,7 @@ which is returned.
 
 @lisp
 (compile-form '(setq foo bar))
-    @result{} (jade-byte-code "F!" [bar foo] 2)
+    @result{} (run-byte-code "F!" [bar foo] 2)
 @end lisp
 @end defun
 
@@ -6207,65 +6260,86 @@ Compiles all uncompiled function definitions in the module named
 When called interactively the module name will be prompted for.
 @end deffn
 
-@defun jade-byte-code byte-codes constants max-stack
+@defun run-byte-code byte-codes constants stack
 Interprets the string of byte instructions @var{byte-codes} with
-the vector of constants @var{constants}. @var{max-stack} defines the
-maximum number of stack cells required to interpret the code.
+the vector of constants @var{constants}.
 
-This function is @emph{never} called by hand. The compiler will produce
-calls to this function when it compiles a form or a function.
-
-@lisp
-(setq x 1
-      y 3)
-    @result{} 3
-(setq comp (compile-form '(cons x y)))
-    @result{} (jade-byte-code "^X^YK" [x y] 2)
-(eval comp)
-    @result{} (1 . 3)
-@end lisp
+This function should @emph{never} be called by hand. The compiler will
+produce calls to this function when it compiles a form or a function.
 @end defun
 
 There is a second form that byte-code objects can take: a vector whose
 read syntax includes a preceding @samp{#} character is a @dfn{byte-code
-subr}. These objects represent compiled Lisp functions and macros. For
-example:
-
-@lisp
-(defun test (x)
-  (1+ x))
-    @result{} test
-
-(compile-function 'test)
-    @result{} test
-@end lisp
-
-@defun make-byte-code-subr args code constants stack &optional doc interactive macrop
-This function is used by the compiler to create byte-code subroutines.
-@end defun
+subr}. These objects represent compiled Lisp functions and macros.
 
 @defun bytecodep arg
 Returns @code{t} if @var{arg} is a byte-code subroutine.
 @end defun
 
 
-@node Evaluating at Compile Time, Compilation Tips, Compilation Functions, Compiled Lisp
-@subsection Evaluating at Compile Time
-@cindex Evaluating at compile time
-@cindex Compile time evaluation
+@node Compiler Declarations, Compilation Tips, Compilation Functions, Compiled Lisp
+@subsection Compiler Declarations
+@cindex Compiler declarations
+@cindex Declarations, compiler
 
-It is often useful to be able to cause certain forms in your programs
-to be evaluated only when the program is being compiled.
+It is often useful to be able to give the compiler extra knowledge
+about the program forms that it is compiling. The language includes
+special declaration forms that have no effect when interpreted, but are
+meaningful to the compiler as it traverses the program.
+
+@defmac declare clause@dots{}
+Offer the information contained in the @var{clause}@dots{} forms to the
+compiler, which it may or may not use when compiling the program.
+
+Each @var{clause} is a list, the first element of each clause is a
+symbol defining the type of declaration, the interpretation of any
+other elements in the clause depends upon the declaration type.
+
+The following table lists the syntax of all currently supported
+declaration types:
+
+@table @code
+@item (bound @var{variables}@dots{})
+This declaration tells the compiler that all symbols @var{variables}
+have lexical bindings for the extent of the current lexical scope. This
+is often useful to prevent spurious compiler warnings.
+
+@item (special @var{variables}@dots{})
+This tells the compiler that all symbols @var{variables} have special
+(dynamic) bindings for the extent of the current lexical scope.
+
+(It is important that the compiler is able to distinguish special
+bindings from lexical bindings, since different instruction sequences
+must be generated to access the different types of binding.)
+
+@item (in-module @var{module-name})
+This declaration should occur at the top-level of a program; it tells
+the compiler that the forms in the program will be evaluated within the
+context of the module called @var{module-name} (a symbol).
+@end table
+
+Declaration forms always evaluate to @code{nil}.
+@end defmac
+
+A second type of declaration is the @code{eval-when-compile} form, it
+allows Lisp forms to be evaluated only at compile-time.
 
 @defmac eval-when-compile form
 This form tells the system that @var{form} should only be evaluated
-when the containing code is being compiled. When interpreted it always
-returns @code{nil}, when compiled it returns the value of evaluating
-@var{form}.
+when the containing code is being compiled.
+
+The compiler knows to recognize @var{form}s of the pattern
+@code{(eval-when-compile (require '@var{feature}))} as marking that
+@var{feature} should be imported at compile-time. Any other @var{form}s
+are simply evaluated in an unspecified environment.
+
+When interpreted @code{eval-when-compile} forms alway evaluate to
+@code{nil}, when compiled they evaluate to the result of evaluating
+the @var{form} at compile-time.
 @end defmac
 
 
-@node Compilation Tips, Disassembly, Evaluating at Compile Time, Compiled Lisp
+@node Compilation Tips, Disassembly, Compiler Declarations, Compiled Lisp
 @subsection Compilation Tips
 @cindex Compilation tips
 @cindex Tips, compilation
@@ -8305,7 +8379,7 @@ managing the mapping between text strings in the programmer's native
 language and in the language of the end user.
 
 Three functions are provided to access the message catalogues
-maintained by GNU @code{gettext}. Require the feature @code{gettext} to
+maintained by GNU @code{gettext}. Import the @code{gettext} module to
 load them.
 
 @defun _ string
@@ -8313,7 +8387,7 @@ Attempt to find a native language equivalent of @var{string}. If no
 equivalent is found the original string is returned.
 
 Note that this function is always defined, even if the @code{gettext}
-feature hasn't been required. In this case it always returns the
+module hasn't been required. In this case it always returns the
 original string.
 @end defun
 
@@ -8661,7 +8735,7 @@ signals to the child each interrupt, until it is eventually terminated.
 @cindex Asynchronous timers
 @cindex Timers, asynchronous
 
-The @code{timers} feature (@pxref{Features}) allows a Lisp program to
+The @code{timers} module (@pxref{Modules}) allows a Lisp program to
 create multiple asynchronous timers, each of which is primed to call a
 specified function after a specified period of time. These functions
 only work when the Lisp event loop is being used (i.e. at least one
@@ -8803,8 +8877,7 @@ Print the form being debugged.
 
 @item backtrace
 @itemx b
-Print a backtrace of the current Lisp call stack, note that calls of
-primitive functions aren't currently recorded in this stack.
+Print a backtrace of the current Lisp call stack.
 @end table
 
 Entering a null string repeats the previous @samp{next}, @samp{step},
@@ -8815,7 +8888,8 @@ commands above) the value of the form is printed in the buffer,
 prefixed by the string @samp{=> }.
 
 Note that it is also possible to make certain types of errors invoke
-the debugger immediately they are signalled, see @ref{Errors}.
+the debugger immediately they are signalled, see @ref{Errors}. Also
+note that the debugger is unable to step through compiled Lisp code.
 
 
 @node Tips, , Debugging, The language
@@ -8825,20 +8899,14 @@ the debugger immediately they are signalled, see @ref{Errors}.
 This section of the manual gives advice about programming in
 @code{librep}.
 
-Obviously there is no @emph{need} to religiously follow every single
-one, but following these tips might make your programs easier to read
-and possibly more efficient overall.
-
 For advice on getting the most out of the compiler, see
 @ref{Compilation Tips}.
 
 @menu
-* Comment Styles::              Differrent types of comments
-* Program Layout::              How I lay out the programs I write
-* General Tips::                Do's and Don't's of rep programming
+* Comment Styles::              Different types of comments
 @end menu
 
-@node Comment Styles, Program Layout, , Tips
+@node Comment Styles, , , Tips
 @subsection Comment Styles
 @cindex Comment styles
 @cindex Tips, comment styles
@@ -8926,105 +8994,4 @@ For example,
 
 If you adhere to these standards the indentation functions provide by
 the Lisp mode will indent your comments to the correct depth.
-
-
-@node Program Layout, General Tips, Comment Styles, Tips
-@subsection Program Layout
-@cindex Program layout
-@cindex Tips, program layout
-@cindex Layout of programs
-
-The layout that I have used for all the Lisp programs included with
-@code{librep} and Jade is as follows, obviously this isn't ideal but it
-seems ok.
-
-@enumerate
-@item
-The first line of the file is the header comment, including the
-name of the file and its general function.
-
-@item
-Copyright banner, including RCS/CVS revision string.
-
-@item
-Any @code{require} forms needed followed by a @code{provide} form for
-this module. The @code{require} forms should be before the
-@code{provide} in case the required modules aren't available.
-
-@item
-Variable and constant definitions. As a variable is defined any
-initialisation it needs is done immediately afterwards. For example
-a keymap is defined with @code{defvar} then initialised with
-the @code{bind-keys} function.
-
-For example,
-
-@lisp
-(defvar debug-buffer (make-buffer "*debugger*")
-  "Buffer to use for the Lisp debugger.")
-(set-buffer-special debug-buffer t)
-(add-buffer debug-buffer)
-
-(defvar debug-ctrl-c-keymap (make-keylist)
-  "Keymap for debugger's ctrl-c prefix.")
-(bind-keys debug-ctrl-c-keymap
-  "Ctrl-s" 'debug-step
-  @dots{}
-@end lisp
-
-@item
-Finally the functions which make up the program, it often improves
-readability if the entry points to the program are defined first.
-@end enumerate
-
-
-@node General Tips, , Program Layout, Tips
-@subsection General Tips
-@cindex General tips
-@cindex Tips, general
-
-The following are some general items of advice; you don't have to follow
-them but they are the result of experience!
-
-@itemize @bullet
-@item
-@code{librep} only has one name-space for all the symbols ever created,
-this could lead to naming clashes if care isn't taken.
-
-When you write a program all the symbols it creates should be prefixed
-by a name derived from the name of the program in some way. For
-example, in the program @file{isearch.jl} all functions and variable
-names are prefixed by the string @samp{isearch-}, giving
-@code{isearch-cancel} and so on. Note that the prefix doesn't have to
-be the exact name of the file, the program @file{buffer-menu.jl} uses
-the prefix @samp{bm-}.
-
-The public entry points to a module (i.e. the names of the commands it
-provides) should @emph{not} have a prefix, simply give them a
-descriptive name (but try not to make it too long!).
-
-Don't bother giving local variables these prefixes unless they are used
-by several functions in the program.
-
-@item
-Use the Lisp mode to indent your programs; not only does it save a lot
-of time it also makes it easier for other people to read them.
-
-@item
-Errors should always be reported by either @code{error} or
-@code{signal}, don't just print a message or call @code{beep}.
-
-@item
-Don't redefine existing functions unless absolutely possible: try to
-use hooks. If there is no hook where you want one, mail me about it and
-I may put one in the next release.
-
-@item
-Don't compile your program until you're sure it works! The debugger
-only works properly with uncompiled code.
-
-@item
-Use constants sparingly: personally, I only use them where the
-constants are numeric.
-@end itemize
 

@@ -12,13 +12,13 @@ Before release
 
  ! scheme define/lambda doesn't splice begin forms
 
+ + do something with the define-value ugliness?
+
  + decide whether to have hierarchical modules
 
    (recent acm toplas paper by Matthias Blume about this in ML)
 
- + document in manual: (declare ..)
-
-   also, document `do' and update `while'
+ + document in manual: named-let, current-utime, new read syntaxes
 
 
 Outstanding bugs
@@ -92,6 +92,10 @@ Outstanding bugs
 
 General programming tasks:
 ==========================
+
+ - Compiler could annotate output files with their dependences
+
+ - I/O shouldn't block all threads
 
  - add regression tests
 

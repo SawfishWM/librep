@@ -3,10 +3,10 @@
 @settitle librep Manual
 @footnotestyle end
 
-@set EDITION 1.0
-@set VERSION 0.11
-@set UPDATED 30 January 2000
-@set UPDATE-MONTH January 2000
+@set EDITION 1.1
+@set VERSION 0.12
+@set UPDATED 3 June 2000
+@set UPDATE-MONTH June 2000
 
 @ifinfo
 @direntry
@@ -69,13 +69,13 @@ last updated @value{UPDATED} for librep version @value{VERSION}.
 @menu
 * Copying::                     Distribution conditions
 * Introduction::                Brief introduction to librep
-* News::                        New features in this release
+* News::                        History of user-visible changes
 
 * Invocation::                  How to start the interpreter
 * The language::                The Lisp dialect implemented
 * librep Internals::		Embedding librep in other programs
 
-* Reporting bugs::              How to contact me
+* Reporting bugs::              How to contact the maintainers
 
 * Function index::              Menu of all documented functions
 * Variable index::              All variables which have been mentioned
@@ -98,15 +98,16 @@ see the file @file{COPYING} in the distribution (or
 
 In case it isn't obvious, scripts written to use librep are not
 considered derived works, and therefore may be licensed however the
-author wishes.
+author wishes. However, the ability of scripts to dynamically load
+external libraries may complicate this situation.
 
-The only parts of librep which are not my own work are as follows:
+The distribution includes the following code from other packages:
 
 @itemize @bullet
 @item
-Henry Spencer's @code{regexp} implementation, though I have made many
-modifications. This is distributed under the terms of his copyright,
-see the file @file{src/README.regexp} in the distribution.
+Henry Spencer's @code{regexp} implementation, with many modifications.
+This is distributed under the terms of his copyright, see the file
+@file{src/README.regexp} in the distribution.
 
 @item
 The public domain @code{sdbm} database library by Ozan Yigit.
@@ -128,69 +129,46 @@ promises regarding the reliability of this software.
 @chapter Introduction
 @cindex Introduction
 
-@code{librep} is a dialect of Lisp, originally developed for embedding
-in other applications, but also suitable for general use. It was
-originally written to be mostly-compatible with Emacs Lisp, although
-there is no intention of having the two languages fully compatible. The
-main difference between the two dialects is that rep is lexically
-scoped and only has a single namespace.
+@code{librep} is a dialect of Lisp, designed to be used both as an
+extension language for applications, and for use as a general
+programming language. It was originally written to be mostly-compatible
+with Emacs Lisp, but has subsequently diverged markedly. Its aim is to
+combine the best features of Scheme and Common Lisp and provide an
+environment that is comfortable for implementing both small and large
+scale systems. It tries to be a ``pragmatic'' programming language.
 
-@code{librep} started out as part of a text editor I wrote, which
-gradually warped into being an Emacs-clone as more features were added.
-I got so used to writing code in Lisp, it seemed a good idea to spin
-the Lisp core of the editor into it's own package. Maybe I should just
-have learned Common Lisp or Scheme, but there's something about
-re-inventing wheels@dots{}
+The author has used @code{librep} in its various forms in many projects
+since 1993. This includes two large programs which use it as an
+extension language, and many stand-alone programs.
 
-@code{rep} stands for ``Read-Eval-Print'', the three main components of
+@code{rep} stands for ``Read, Eval, Print'', the three main components of
 any Lisp system.
 
 Some of the features of @code{librep} are:
 
 @itemize @bullet
-@item Contains its own byte-compiler and virtual machine
+@item Lexically scoped (with special variables from CL)
 
-@item Lexically scoped (with dynamically scoped special variables)
+@item Clean module system
 
-@item Most ``standard'' Emacs Lisp functions, with some others from
-Common Lisp
+@item Tail-call elimination
 
-@item Fully tail-recursive evaluation of compiled functions
+@item Compiles to byte-code
 
 @item Scheme-like continuations
 
-@item Mostly-Perl-like regular expressions, including \s, \S, \w, \W,
-\d, \D, \b, \B, classes and ??, ?*, ?+ (non-greedy) operators (but none
-of the curly-brace quantifiers, and no matching of already-remembered
-expressions)
+@item Uses GNU MP for fast bignums/rationals
 
-@item ``Virtual'' file handling, with FTP and @code{rcp} backends. Also
-supports tilde-expansion and read-only access to tar archives
+@item Most Emacs Lisp functions, with others inspired by
+Common Lisp and various Scheme implementations
 
-@item Self-documenting
+@item Mostly-Perl-like regular expressions
 
-@item Support for executing untrusted code in a controlled environment
+@item Spawn and control subprocesses
 
-@item Spawn UNIX subprocesses (synchronously and asynchronously) with
-full control over all standard I/O (separate @code{stdout} and
-@code{stderr})
+@item Dynamically loads shared libraries (a.k.a. ``plugins'')
 
-@item Supports dynamically loaded shared libraries (a.k.a. ``plugins'')
-
-@item Extensible type system (i.e. dynamically loaded libraries can
-define new types)
-
-@item Extensible ``stream''-based input/output system, with many different
-stream types
-
-@item Guardian objects allowing programmer-controlled garbage
-collection of data objects
-
-@item Designed for embedding within other applications, or as a
-stand-alone interpreter
-
-@item Separately available are GTK+ and MySQL bindings, included are
-SDBM and @code{gettext} bindings
+@item Extensible type, I/O, and file handling
 @end itemize
 
 
@@ -203,7 +181,7 @@ SDBM and @code{gettext} bindings
 @chapter Invocation
 @cindex Invocation
 
-The @code{rep} program may be used to launch the stand-along
+The @code{rep} program may be used to launch the stand-alone
 @code{librep} environment:
 
 @example
@@ -319,7 +297,9 @@ information as possible. This will hopefully include stack backtraces
 what you did immediately before triggering the bug, a description of
 your the system, etc@dots{}
 
-Please send any bug reports to @code{john@@dcs.warwick.ac.uk}.
+Please send any bug reports to the mailing list:
+@email{librep-list@@lists.sourceforge.net}. Alternatively, the author
+may be contacted at: @email{jsh@@users.sourceforge.net}.
 
 
 @node Function index, Variable index, Reporting bugs, Top
