@@ -57,4 +57,5 @@
 (autoload 'gaol-add-special "gaol")
 (autoload 'gaol-add-file-handler "gaol")
 (autoload 'gaol-replace-file-handler "gaol")
+(autoload-macro 'define "define")
 ;;; ::autoload-end::

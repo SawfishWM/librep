@@ -1,3 +1,7 @@
+2000-02-09  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.jl (autoload-macro): new function
+
 2000-02-08  John Harper  <john@dcs.warwick.ac.uk>
 
 	* compiler.jl (comp-compile-case): fixed this, wasn't dup'ing
