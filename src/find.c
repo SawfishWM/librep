@@ -20,7 +20,6 @@
 
 #include "jade.h"
 #include "jade_protos.h"
-#include "regexp.h"
 
 #include <string.h>
 #include <ctype.h>
@@ -35,6 +34,8 @@ _PR int forward_char(long count, TX *tx, Pos *pos);
 _PR int backward_char(long count, TX *tx, Pos *pos);
 
 _PR void mark_regexp_data(void);
+_PR void push_regexp_data(struct saved_regexp_data *sd);
+_PR void pop_regexp_data(void);
 
 _PR bool mystrcmp(u_char *, u_char *);
 _PR u_char *mystrrstrn(u_char *, u_char *, int);
@@ -329,6 +330,8 @@ static regtype last_match_type;
 static VALUE last_match_data;
 static regsubs last_matches;
 
+static struct saved_regexp_data *saved_matches;
+
 _PR VALUE sym_regexp_error;
 DEFSYM(regexp_error, "regexp-error");
 DEFSTRING(err_regexp_error, "Regexp error");
@@ -379,6 +382,8 @@ update_last_match(VALUE data, regexp *prog)
 void
 mark_regexp_data(void)
 {
+    struct saved_regexp_data *sd;
+
     if(last_regexp != 0)
     {
 	/* Don't keep cached REs through GC. */
@@ -396,6 +401,19 @@ mark_regexp_data(void)
     }
     MARKVAL(last_match_data);
 
+    for(sd = saved_matches; sd != 0; sd = sd->next)
+    {
+	if(sd->type == reg_tx)
+	{
+	    int i;
+	    for(i = 0; i < NSUBEXP; i++)
+	    {
+		MARKVAL(sd->matches.tx.startp[i]);
+		MARKVAL(sd->matches.tx.endp[i]);
+	    }
+	}
+	MARKVAL(sd->data);
+    }
 }
 
 /* Fix the match buffers to reflect matching a string from START to END. */
@@ -412,6 +430,26 @@ set_string_match(TX *tx, VALUE start, VALUE end)
 	last_matches.tx.startp[i] = LISP_NULL;
 	last_matches.tx.endp[i] = LISP_NULL;
     }
+}
+
+void
+push_regexp_data(struct saved_regexp_data *sd)
+{
+    sd->type = last_match_type;
+    sd->data = last_match_data;
+    memcpy(&sd->matches, &last_matches, sizeof(regsubs));
+    sd->next = saved_matches;
+    saved_matches = sd;
+}
+
+void
+pop_regexp_data(void)
+{
+    struct saved_regexp_data *sd = saved_matches;
+    saved_matches = sd->next;
+    last_match_type = sd->type;
+    last_match_data = sd->data;
+    memcpy(&last_matches, &sd->matches, sizeof(regsubs));
 }
 
 _PR VALUE cmd_re_search_forward(VALUE re, VALUE pos, VALUE tx, VALUE nocase_p);
