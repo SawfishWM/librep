@@ -84,7 +84,11 @@
 
   ;; return t if the module called STRUCT exports a variable called VAR
   (defun module-exports-p (struct var)
-    (and (symbolp var) (structure-exports-p (find-structure struct) var)))
+    (and (symbolp var)
+	 (cond ((symbolp struct)
+		(structure-exports-p (find-structure struct) var))
+	       ((structurep struct)
+		(structure-exports-p struct var)))))
 
   ;; return t if ARG is a structure reference form
   (defun structure-ref-p (arg)
