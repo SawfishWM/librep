@@ -1,5 +1,8 @@
 2000-04-10  John Harper  <john@dcs.warwick.ac.uk>
 
+	* symbols.c (Fdefvar): fixes for working with predefined
+	specials
+
 	* lispcmds.c (Fload): ignore the NO-SUFFIX parameter while
 	searching for dl libraries
 

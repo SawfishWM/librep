@@ -1,3 +1,11 @@
+2000-04-10  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep-packages.jl (rep-files-interface): added jade-only file
+	operations (since they need to be in the `rep' structure)
+
+	* init.jl (eval-and-print): deleted, probably evals in the
+	wrong structure for most uses
+
 2000-04-09  John Harper  <john@dcs.warwick.ac.uk>
 
 	Changes to make sawmill work with the module system, and to
