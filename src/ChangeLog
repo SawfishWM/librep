@@ -1,3 +1,8 @@
+2001-06-18  John Harper  <jsh@pixelslut.com>
+
+	* repgdbm.c, repsdbm.c (rep_dl_kill): new functions, close all
+	databases before exiting
+
 2001-06-15  John Harper  <jsh@pixelslut.com>
 
 	* rep-md5.c: added some comments and doc strings
@@ -64,6 +69,10 @@
 
 	* misc.c: include <strings.h> (needed for strncasecmp () on
 	UnixWare)
+
+2001-04-09  John Harper  <jsh@eazel.com>
+
+	* version 0.13.6 (from branch-0-13)
 
 2001-04-05  John Harper  <jsh@eazel.com>
 

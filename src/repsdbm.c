@@ -271,3 +271,14 @@ rep_dl_init (void)
     rep_ADD_SUBR(Ssdbmp);
     return rep_pop_structure (tem);
 }
+
+void
+rep_dl_kill (void)
+{
+    rep_dbm *db;
+    for (db = dbm_chain; db != 0; db = db->next)
+    {
+	if (db->dbm != 0)
+	    Fsdbm_close (rep_VAL (db));
+    }
+}
