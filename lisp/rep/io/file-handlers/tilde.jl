@@ -52,7 +52,8 @@
     (apply op args))
    ((memq op '(local-file-name canonical-file-name open-file
 	       write-buffer-contents read-file-contents insert-file-contents
-	       delete-file file-exists-p file-regular-p file-readable-p
+	       delete-file delete-directory make-directory file-exists-p
+	       file-regular-p file-readable-p
 	       file-writable-p file-directory-p file-symlink-p file-owner-p
 	       file-nlinks file-size file-modes file-modes-as-string
 	       set-file-modes file-modtime directory-files))
