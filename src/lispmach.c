@@ -615,7 +615,7 @@ again:
 
 	case OP_UNBIND:
 	    gc_stackbase.count = STK_USE;
-	    impurity -= inline_unbind_object(rep_CAR(bindstack));
+	    impurity -= rep_unbind_object(rep_CAR(bindstack));
 	    bindstack = rep_CDR(bindstack);
 	    break;
 

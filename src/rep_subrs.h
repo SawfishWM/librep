@@ -146,7 +146,8 @@ extern repv Qterm_interrupt;
 extern repv Qstack_error;
 extern repv Qprint_escape, Qprint_length, Qprint_level, Qnewlines;
 extern repv rep_env, rep_fenv, rep_special_env;
-extern repv (*rep_bytecode_interpreter)(repv code, repv consts, repv stack);
+extern repv (*rep_bytecode_interpreter)(repv code, repv consts,
+					repv stack, repv frame);
 extern struct rep_Call *rep_call_stack;
 extern int rep_test_int_counter;
 extern int rep_test_int_period;
@@ -273,10 +274,10 @@ extern repv Fprovide(repv);
 extern repv Frequire(repv, repv);
 
 /* from lispmach.c */
-extern void rep_unbind_object(repv item);
+extern int rep_unbind_object(repv item);
 extern repv rep_bind_object(repv obj);
 extern repv Qbytecode_error, Qjade_byte_code;
-extern repv Fjade_byte_code(repv code, repv consts, repv stkreq);
+extern repv Fjade_byte_code(repv code, repv consts, repv stkreq, repv frame);
 extern repv Fvalidate_byte_code(repv bc_major, repv bc_minor);
 extern repv Fmake_byte_code_subr(repv args);
 
@@ -378,7 +379,7 @@ extern repv rep_add_subr(rep_xsubr *);
 extern repv rep_add_const_num(repv, long);
 extern void rep_intern_static(repv *, repv);
 extern repv rep_bind_symbol(repv, repv, repv);
-extern void rep_unbind_symbols(repv);
+extern int rep_unbind_symbols(repv);
 extern repv rep_obarray;
 extern repv Qnil, Qt;
 extern repv Qvariable_documentation, Qpermanent_local;

@@ -798,7 +798,7 @@ struct rep_Call {
     repv saved_env;
     repv saved_special_env;
     repv saved_fh_env;
-    repv (*saved_bytecode)(repv, repv, repv);
+    repv (*saved_bytecode)(repv, repv, repv, repv);
 };
 
 #define rep_PUSH_CALL(lc)		\

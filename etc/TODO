@@ -6,8 +6,6 @@ TODO list for librep
 Bugs are marked !, things that should be done soon are marked +,
 and more long-term ideas are marked -
 
-Last modified: August 15, 1999
-
 
 Outstanding bugs
 ================
@@ -24,15 +22,38 @@ Outstanding bugs
  ! If a compiled file FOO.jlc is made from source file FOO, but FOO is
    newer, load doesn't notice, and loads the invalid FOO.jlc
 
+ ! it's impossible for scripts to present their own --help option
+
 
 General programming tasks:
 ==========================
 
+ - Eliminate lexically-bound symbols from compiled code?
+
+   currently the symbols are only used when the binding is created; all
+   access is done through lexical addressing. But this would break
+   symbol-value, set and eval..?
+
+ - Sandboxed bytecode interpreter
+
+   the default vm assumes that the compiler makes no errors (i.e. it
+   ignores some range/type checks)
+
+   a `safe' vm would check for things like:
+
+     * stack overflow
+     * range of indices to the vector of constants
+     * validity of refg/setg instructions
+     * invalid lexical addresses to refn/setn
+     * etc..
+
+   implement this as a plugin?
+
  - Implement weak-pairs or equivalent
 
- - In the Lisp VM replace the `bindstack' list with a vector. Means
-   that the compiler will need to track the binding depth as well as
-   the stack depth.
+   could use normal cons types for this, but allocate from a `weak'
+   freelist, then only gc has to differentiate between weak and
+   non-weak pairs
 
  - Use two passes for `concat'; the first pass calculates the new
    string's length, the second builds it

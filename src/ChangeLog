@@ -1,3 +1,45 @@
+2000-01-23  John Harper  <john@dcs.warwick.ac.uk>
+
+	* bytecodes.h (OP_RETURN, OP_UNBINDALL): new instructions
+
+	* lispmach.c: implement OP_RETURN and OP_UNBINDALL (which
+	actually unbinds to the argument values, not all the way).
+	Keep track of dynamic `impurity', the number of dynamic
+	bindings (of any type) currently in place. When this value is
+	zero, and there's a call to bytecode followed by a return
+	instruction, just goto the top of the function, snapping all
+	arguments
+
+	* symbols.c (rep_unbind_symbols): now returns an int, the
+	number of _special_ bindings it removed
+
+	* lisp.c (rep_funcall): explicitly protect fun and args, now.
+	Tail-calling may remove them from the call stack
+	(rep_bind_lambda_list): try to optimize lexical binding
+	(rep_funcall): call bytecode interpreter with new fourth
+	argument, and don't unbind its frame on return
+
+2000-01-22  John Harper  <john@dcs.warwick.ac.uk>
+
+	* bytecodes.h: new bytecode version 9.0
+	(OP_REFN, OP_SETN): lexical address instructions
+	(OP_REFG, OP_SETG): global lexical instructions
+	(OP_BINDSPEC): create a special binding
+
+	* lispmach.c: support the new instructions
+	(OP_SETQ, OP_REFQ): remove optimisations for lexical scope
+	(OP_BIND): always creates lexical bindings
+
+	* rep_lisp.h (rep_cons_block): ensure that the cons cells are
+	aligned to sizeof (rep_cons) -- prevents any cell straddling a
+	cache line boundary
+
+	* rep_lisp.h, lispmach.c, lisp.c, symbols.c: closures now have
+	a flag in their car marking whether or not they're allowed to
+	call the bytecode interpreter. The variable rep_bytecode_interpreter
+	contains either the interpreter to call, or a null pointer.
+	Fset_environment scans for Qjade_byte_code
+
 2000-01-19  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lisp.c (rep_handle_error): if error-handler-function is
