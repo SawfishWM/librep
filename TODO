@@ -119,6 +119,12 @@ General programming tasks:
 
    could sweeping be sped up by prefetching cache lines?
 
+   do lazy sweeping of block-allocated objects? (problem with cons mark bit?)
+
+   do mostly non-recursive marking? (mark stack)
+
+   [ tried this -- marginally slower than current method ]
+
  - remove special forms (replacing them with macros) where both
    possible and desirable
 
