@@ -80,11 +80,14 @@ OBJS = $(SRCS:.c=.o)
 
 all : jade jadeclient
 
-jade : jade_protos.h $(OBJS) $(RE_LIB)
+jade : jade_protos.h $(OBJS) re
 	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LIBS) $(EXTRA_LIBS)
 
 jade_protos.h : stripproto $(SRCS)
 	./stripproto -o $@ $(SRCS)
+
+re :
+	(cd regexp && $(MAKE))
 
 /* I guess that properly this should depend on $(SRCS) but that would mean
    that whenever *any* source file is modified everything has to be re-built!
@@ -99,10 +102,6 @@ stripproto : stripproto.o
 
 makedoc : makedoc.o
 	$(CC) $(LDFLAGS) -o $@ makedoc.o $(EXTRA_LIBS)
-
-/* Doesn't check if libregexp.a is up to date -- just that it exists  */
-$(RE_LIB) :
-	(cd regexp && $(MAKE))
 
 #ifdef HAVE_UNIX
 jadeclient : unix_client.o
