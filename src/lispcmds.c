@@ -30,8 +30,12 @@
 _PR void lispcmds_init(void);
 
 _PR VALUE sym_load_path;
-VALUE sym_load_path, sym_lisp_lib_dir;
-/*
+static DEFSTRING(lisp_lib_dir, LISP_LIB_DIR);
+static DEFSTRING(site_lisp_dir, SITE_LISP_DIR);
+static DEFSTRING(div_zero, "Divide by zero");
+
+DEFSYM(load_path, "load-path");
+DEFSYM(lisp_lib_dir, "lisp-lib-dir"); /*
 ::doc:load_path::
 A list of directory names. When `load' opens a lisp-file it searches each
 directory named in this list in turn until the file is found or the list
@@ -39,8 +43,7 @@ is exhausted.
 ::end::
 ::doc:lisp_lib_dir::
 The name of the directory in which the standard lisp files live.
-::end::
-*/
+::end:: */
 
 _PR VALUE cmd_quote(VALUE);
 DEFUN("quote", cmd_quote, subr_quote, (VALUE args), V_SF, DOC_quote) /*
@@ -136,25 +139,25 @@ variable will be set (if necessary) not the local value.
 {
     if(CONSP(args) && CONSP(VCDR(args)))
     {
-	GCVAL gcv_args;
+	GC_root gc_args;
 	VALUE sym = VCAR(args), val;
 	VALUE tmp = cmd_default_boundp(sym);
 	if(!tmp)
-	    return(NULL);
-	PUSHGC(gcv_args, args);
+	    return LISP_NULL;
+	PUSHGC(gc_args, args);
 	val = cmd_eval(VCAR(VCDR(args)));
 	POPGC;
 	if(!val)
-	    return(NULL);
+	    return LISP_NULL;
 	if(NILP(tmp))
 	{
 	    if(!cmd_set_default(sym, val))
-		return(NULL);
+		return LISP_NULL;
 	}
 	if(CONSP(VCDR(VCDR(args))))
 	{
 	    if(!cmd_put(sym, sym_variable_documentation, VCAR(VCDR(VCDR(args)))))
-		return(NULL);
+		return LISP_NULL;
 	}
 	return(sym);
     }
@@ -180,7 +183,8 @@ the compiler source (`lisp/compiler.jl').
 	VALUE tmp = cmd_default_boundp(VCAR(args));
 	if(tmp && !NILP(tmp))
 	{
-	    return(cmd_signal(sym_error, list_2(MKSTR("Constant already bound"),
+	    static DEFSTRING(const_bound, "Constant already bound");
+	    return(cmd_signal(sym_error, list_2(VAL(const_bound),
 						VCAR(args))));
 	}
 	tmp = cmd_defvar(args);
@@ -231,7 +235,7 @@ Returns a new list with elements ARGS...
     while(CONSP(args))
     {
 	if(!(*ptr = cmd_cons(VCAR(args), sym_nil)))
-	    return(NULL);
+	    return LISP_NULL;
 	ptr = &VCDR(*ptr);
 	args = VCDR(args);
     }
@@ -250,12 +254,12 @@ INITIAL-VALUE, or nil.
     int i;
     VALUE res = sym_nil;
     VALUE *last;
-    DECLARE1(len, NUMBERP);
+    DECLARE1(len, INTP);
     last = &res;
-    for(i = 0; i < VNUM(len); i++)
+    for(i = 0; i < VINT(len); i++)
     {
 	if(!(*last = cmd_cons(init, sym_nil)))
-	    return(NULL);
+	    return LISP_NULL;
 	last = &VCDR(*last);
     }
     return(res);
@@ -289,7 +293,7 @@ new list which is returned.
 	{
 	    TEST_INT;
 	    if(INT_P)
-		return(NULL);
+		return LISP_NULL;
 	    resend = &(VCDR(*resend));
 	}
 	args = VCDR(args);
@@ -323,7 +327,7 @@ to the beginning of the next list. Returns the new list.
 	    {
 		TEST_INT;
 		if(INT_P)
-		    return(NULL);
+		    return LISP_NULL;
 		tmp = VCDR(tmp);
 	    }
 	    resend = &VCDR(tmp);
@@ -375,12 +379,12 @@ reverse order.
     while(CONSP(head))
     {
 	res = cmd_cons(VCAR(head), res);
-	if(res == NULL)
-	    return(NULL);
+	if(res == LISP_NULL)
+	    return(LISP_NULL);
 	head = VCDR(head);
 	TEST_INT;
 	if(INT_P)
-	    return(NULL);
+	    return(LISP_NULL);
     }
     return(res);
 }
@@ -403,12 +407,12 @@ were. This function is destructive towards it's argument.
 	if(CONSP(VCDR(head)))
 	    nxt = VCDR(head);
 	else
-	    nxt = NULL;
+	    nxt = LISP_NULL;
 	VCDR(head) = res;
 	res = head;
 	TEST_INT;
 	if(INT_P)
-	    return(NULL);
+	    return(LISP_NULL);
     } while((head = nxt));
     return(res);
 }
@@ -435,7 +439,7 @@ For example,
 	list = VCDR(list);
 	TEST_INT;
 	if(INT_P)
-	    return(NULL);
+	    return(LISP_NULL);
     }
     return(sym_nil);
 }
@@ -459,7 +463,7 @@ association.
 	list = VCDR(list);
 	TEST_INT;
 	if(INT_P)
-	    return(NULL);
+	    return(LISP_NULL);
     }
     return(sym_nil);
 }
@@ -485,7 +489,7 @@ For example,
 	list = VCDR(list);
 	TEST_INT;
 	if(INT_P)
-	    return(NULL);
+	    return(LISP_NULL);
     }
     return(sym_nil);
 }
@@ -508,7 +512,7 @@ Returns the first matching cons-cell, else nil.
 	list = VCDR(list);
 	TEST_INT;
 	if(INT_P)
-	    return(NULL);
+	    return(LISP_NULL);
     }
     return(sym_nil);
 }
@@ -522,9 +526,9 @@ Returns the INDEXth element of LIST. The first element has an INDEX of zero.
 ::end:: */
 {
     int i;
-    DECLARE1(index, NUMBERP);
+    DECLARE1(index, INTP);
     DECLARE2(list, LISTP);
-    i = VNUM(index);
+    i = VINT(index);
     while(i && CONSP(list))
     {
 	list = VCDR(list);
@@ -544,9 +548,9 @@ Returns the INDEXth cdr of LIST. The first is INDEX zero.
 ::end:: */
 {
     int i;
-    DECLARE1(index, NUMBERP);
+    DECLARE1(index, INTP);
     DECLARE2(list, LISTP);
-    i = VNUM(index);
+    i = VINT(index);
     while(i && CONSP(list))
     {
 	list = VCDR(list);
@@ -573,7 +577,7 @@ Returns the last element of LIST.
 	    list = VCDR(list);
 	    TEST_INT;
 	    if(INT_P)
-		return(NULL);
+		return(LISP_NULL);
 	}
 	return(VCAR(list));
     }
@@ -593,22 +597,22 @@ returns a new list constructed from the results, ie,
 {
     VALUE res = sym_nil;
     VALUE *last = &res;
-    GCVAL gcv_list, gcv_argv, gcv_res;
+    GC_root gc_list, gc_argv, gc_res;
     VALUE argv;
     DECLARE2(list, LISTP);
     argv = cmd_cons(fun, cmd_cons(sym_nil, sym_nil));
     if(argv)
     {
-	PUSHGC(gcv_res, res);
-	PUSHGC(gcv_argv, argv);
-	PUSHGC(gcv_list, list);
+	PUSHGC(gc_res, res);
+	PUSHGC(gc_argv, argv);
+	PUSHGC(gc_list, list);
 	while(res && CONSP(list))
 	{
 	    if(!(*last = cmd_cons(sym_nil, sym_nil)))
-		return(NULL);
+		return(LISP_NULL);
 	    VCAR(VCDR(argv)) = VCAR(list);
 	    if(!(VCAR(*last) = cmd_funcall(argv)))
-		res = NULL;
+		res = LISP_NULL;
 	    else
 	    {
 		last = &VCDR(*last);
@@ -617,7 +621,7 @@ returns a new list constructed from the results, ie,
 	    TEST_INT;
 	    if(INT_P)
 	    {
-		res = NULL;
+		res = LISP_NULL;
 		break;
 	    }
 	}
@@ -635,21 +639,21 @@ Applies FUNCTION to each element in LIST, discards the results.
 ::end:: */
 {
     VALUE argv, res = list;
-    GCVAL gcv_argv, gcv_list;
+    GC_root gc_argv, gc_list;
     DECLARE2(list, LISTP);
     if(!(argv = cmd_cons(fun, cmd_cons(sym_nil, sym_nil))))
-	return(NULL);
-    PUSHGC(gcv_argv, argv);
-    PUSHGC(gcv_list, list);
+	return(LISP_NULL);
+    PUSHGC(gc_argv, argv);
+    PUSHGC(gc_list, list);
     while(res && CONSP(list))
     {
 	VCAR(VCDR(argv)) = VCAR(list);
 	if(!cmd_funcall(argv))
-	    res = NULL;
+	    res = LISP_NULL;
 	list = VCDR(list);
 	TEST_INT;
 	if(INT_P)
-	    res = NULL;
+	    res = LISP_NULL;
     }
     POPGC; POPGC;
     return(res);
@@ -675,7 +679,7 @@ from the matched ELT, ie,
 	list = VCDR(list);
 	TEST_INT;
 	if(INT_P)
-	    return(NULL);
+	    return(LISP_NULL);
     }
     return(sym_nil);
 }
@@ -700,7 +704,7 @@ from the matched ELT, ie,
 	list = VCDR(list);
 	TEST_INT;
 	if(INT_P)
-	    return(NULL);
+	    return(LISP_NULL);
     }
     return(sym_nil);
 }
@@ -723,7 +727,7 @@ Returns LIST with any members `equal' to ELT destructively removed.
 	    head = &VCDR(*head);
 	TEST_INT;
 	if(INT_P)
-	    return(NULL);
+	    return(LISP_NULL);
     }
     return(list);
 }
@@ -746,7 +750,7 @@ Returns LIST with any members `eq' to ELT destructively removed.
 	    head = &VCDR(*head);
 	TEST_INT;
 	if(INT_P)
-	    return(NULL);
+	    return(LISP_NULL);
     }
     return(list);
 }
@@ -770,14 +774,14 @@ applied to that element, ie,
     while(CONSP(*head))
     {
 	if(!(tmp = call_lisp1(pred, VCAR(*head))))
-	    return(NULL);
+	    return(LISP_NULL);
 	if(!NILP(tmp))
 	    *head = VCDR(*head);
 	else
 	    head = &VCDR(*head);
 	TEST_INT;
 	if(INT_P)
-	    return(NULL);
+	    return(LISP_NULL);
     }
     return(list);
 }
@@ -801,14 +805,14 @@ applied to that element, ie,
     while(CONSP(*head))
     {
 	if(!(tmp = call_lisp1(pred, VCAR(*head))))
-	    return(NULL);
+	    return(LISP_NULL);
 	if(NILP(tmp))
 	    *head = VCDR(*head);
 	else
 	    head = &VCDR(*head);
 	TEST_INT;
 	if(INT_P)
-	    return(NULL);
+	    return(LISP_NULL);
     }
     return(list);
 }
@@ -827,12 +831,12 @@ Returns a new vector with ARGS... as its elements.
 	int i = 0;
 	while(CONSP(args))
 	{
-	    VVECT(res)->vc_Array[i] = VCAR(args);
+	    VVECT(res)->array[i] = VCAR(args);
 	    args = VCDR(args);
 	    i++;
 	    TEST_INT;
 	    if(INT_P)
-		return(NULL);
+		return(LISP_NULL);
 	}
     }
     return(res);
@@ -849,14 +853,14 @@ will be set to that value, else they will all be nil.
 {
     int len;
     VALUE res;
-    DECLARE1(size, NUMBERP);
-    len = VNUM(size);
+    DECLARE1(size, INTP);
+    len = VINT(size);
     res = make_vector(len);
     if(res)
     {
 	int i;
 	for(i = 0; i < len; i++)
-	    VVECT(res)->vc_Array[i] = init;
+	    VVECT(res)->array[i] = init;
     }
     return(res);
 }
@@ -882,21 +886,21 @@ or a string) to NEW-VALUE, returning NEW-VALUE. Note that strings
 can only contain characters (ie, integers).
 ::end:: */
 {
-    DECLARE2(index, NUMBERP);
+    DECLARE2(index, INTP);
     switch(VTYPE(array))
     {
     case V_DynamicString:
-	if(VNUM(index) < STRING_LEN(array))
+	if(VINT(index) < STRING_LEN(array))
 	{
-	    DECLARE3(new, NUMBERP);
-	    VSTR(array)[VNUM(index)] = (u_char)VCHAR(new);
+	    DECLARE3(new, INTP);
+	    VSTR(array)[VINT(index)] = (u_char)VINT(new);
 	    return(new);
 	}
 	break;
     case V_Vector:
-	if(VNUM(index) < VVECT(array)->vc_Size)
+	if(VINT(index) < VVECT(array)->size)
 	{
-	    VVECT(array)->vc_Array[VNUM(index)] = new;
+	    VVECT(array)->array[VINT(index)] = new;
 	    return(new);
 	}
 	break;
@@ -915,20 +919,20 @@ Returns the INDEXth (a non-negative integer) element of ARRAY, which
 can be a vector or a string. INDEX starts at zero.
 ::end:: */
 {
-    DECLARE2(index, NUMBERP);
+    DECLARE2(index, INTP);
     switch(VTYPE(array))
     {
     case V_StaticString:
     case V_DynamicString:
-	if(VNUM(index) < STRING_LEN(array))
-	    return(make_number(VSTR(array)[VNUM(index)]));
+	if(VINT(index) < STRING_LEN(array))
+	    return(MAKE_INT(VSTR(array)[VINT(index)]));
 	break;
     case V_Vector:
-	if(VNUM(index) < VVECT(array)->vc_Size)
-	    return(VVECT(array)->vc_Array[VNUM(index)]);
+	if(VINT(index) < VVECT(array)->size)
+	    return(VVECT(array)->array[VINT(index)]);
 	break;
     default:
-	return(cmd_signal(sym_bad_arg, list_2(array, make_number(1))));
+	return(cmd_signal(sym_bad_arg, list_2(array, MAKE_INT(1))));
     }
     return(sym_nil);
 }
@@ -943,12 +947,12 @@ INITIAL-VALUE, or to space if INITIAL-VALUE is not given.
 ::end:: */
 {
     VALUE res;
-    DECLARE1(len, NUMBERP);
-    res = make_string(VNUM(len) + 1);
+    DECLARE1(len, INTP);
+    res = make_string(VINT(len) + 1);
     if(res)
     {
-	memset(VSTR(res), NUMBERP(init) ? (u_char)VCHAR(init) : ' ', VNUM(len));
-	VSTR(res)[VNUM(len)] = 0;
+	memset(VSTR(res), INTP(init) ? (u_char)VINT(init) : ' ', VINT(len));
+	VSTR(res)[VINT(len)] = 0;
     }
     return(res);
 }
@@ -986,7 +990,7 @@ a character or a list or vector of characters.
     u_char *buf = str_alloc(buflen);
     if(buf)
     {
-	VALUE res = NULL;
+	VALUE res = LISP_NULL;
 	int i = 0;
 	int argnum = 1;
 	while(CONSP(args))
@@ -1003,10 +1007,10 @@ a character or a list or vector of characters.
 		memcpy(buf + i, VSTR(arg), slen);
 		i += slen;
 		break;
-	    case V_Char:
+	    case V_Int:
 		if(!extend_concat(&buf, &buflen, i, 1))
 		    goto error;
-		buf[i++] = VCHAR(arg);
+		buf[i++] = VINT(arg);
 		break;
 	    case V_Symbol:
 		if(arg != sym_nil)
@@ -1016,11 +1020,11 @@ a character or a list or vector of characters.
 		while(CONSP(arg))
 		{
 		    VALUE ch = VCAR(arg);
-		    if(VTYPEP(ch, V_Char))
+		    if(INTP(ch))
 		    {
 			if(!extend_concat(&buf, &buflen, i, 1))
 			    goto error;
-			buf[i++] = VCHAR(ch);
+			buf[i++] = VINT(ch);
 		    }
 		    arg = VCDR(arg);
 		    TEST_INT;
@@ -1029,13 +1033,13 @@ a character or a list or vector of characters.
 		}
 		break;
 	    case V_Vector:
-		for(j = 0; j < VVECT(arg)->vc_Size; j++)
+		for(j = 0; j < VVECT(arg)->size; j++)
 		{
-		    if(VTYPEP(VVECT(arg)->vc_Array[j], V_Char))
+		    if(INTP(VVECT(arg)->array[j]))
 		    {
 			if(!extend_concat(&buf, &buflen, i, 1))
 			    goto error;
-			buf[i++] = VCHAR(VVECT(arg)->vc_Array[j]);
+			buf[i++] = VINT(VVECT(arg)->array[j]);
 		    }
 		}
 		break;
@@ -1051,7 +1055,7 @@ error:
 	str_free(buf);
 	return(res);
     }
-    return(NULL);
+    return(LISP_NULL);
 }
 
 _PR VALUE cmd_length(VALUE);
@@ -1067,10 +1071,10 @@ Returns the number of elements in SEQUENCE (a string, list or vector).
 	int i;
     case V_StaticString:
     case V_DynamicString:
-	return(make_number(STRING_LEN(sequence)));
+	return(MAKE_INT(STRING_LEN(sequence)));
 	break;
     case V_Vector:
-	return(make_number(VVECT(sequence)->vc_Size));
+	return(MAKE_INT(VVECT(sequence)->size));
 	break;
     case V_Cons:
 	i = 0;
@@ -1080,17 +1084,17 @@ Returns the number of elements in SEQUENCE (a string, list or vector).
 	    i++;
 	    TEST_INT;
 	    if(INT_P)
-		return(NULL);
+		return(LISP_NULL);
 	}
-	return(make_number(i));
+	return(MAKE_INT(i));
 	break;
     case V_Symbol:
 	if(sequence == sym_nil)
-	    return(make_number(0));
+	    return(MAKE_INT(0));
 	/* FALL THROUGH */
     default:
-	cmd_signal(sym_bad_arg, list_2(sequence, make_number(1)));
-	return(NULL);
+	cmd_signal(sym_bad_arg, list_2(sequence, MAKE_INT(1)));
+	return(LISP_NULL);
     }
 }
 
@@ -1116,20 +1120,20 @@ Returns a new sequence whose elements are eq to those in SEQUENCE.
 	    {
 		TEST_INT;
 		if(INT_P)
-		    return(NULL);
+		    return(LISP_NULL);
 		if(!(*last = cmd_cons(VCAR(seq), sym_nil)))
-		    return(NULL);
+		    return(LISP_NULL);
 		last = &VCDR(*last);
 		seq = VCDR(seq);
 	    }
 	}
 	break;
     case V_Vector:
-	res = make_vector(VVECT(seq)->vc_Size);
+	res = make_vector(VVECT(seq)->size);
 	if(res)
 	{
 	    int i;
-	    for(i = 0; i < VVECT(seq)->vc_Size; i++)
+	    for(i = 0; i < VVECT(seq)->size; i++)
 		VVECTI(res, i) = VVECTI(seq, i);
 	}
 	break;
@@ -1168,14 +1172,14 @@ First evals FORM1 then FORMS, returns the value that FORM1 gave.
     if(CONSP(args))
     {
 	VALUE res;
-	GCVAL gcv_args, gcv_res;
-	PUSHGC(gcv_args, args);
+	GC_root gc_args, gc_res;
+	PUSHGC(gc_args, args);
 	res = cmd_eval(VCAR(args));
 	if(res)
 	{
-	    PUSHGC(gcv_res, res);
+	    PUSHGC(gc_res, res);
 	    if(!cmd_progn(VCDR(args)))
-		res = NULL;
+		res = LISP_NULL;
 	    POPGC;
 	}
 	POPGC;
@@ -1195,21 +1199,21 @@ Evals FORM1 then FORM2 then the rest. Returns whatever FORM2 gave.
     if(CONSP(args) && CONSP(VCDR(args)))
     {
 	VALUE res;
-	GCVAL gcv_args, gcv_res;
-	PUSHGC(gcv_args, args);
+	GC_root gc_args, gc_res;
+	PUSHGC(gc_args, args);
 	if(cmd_eval(VCAR(args)))
 	{
 	    res = cmd_eval(VCAR(VCDR(args)));
 	    if(res)
 	    {
-		PUSHGC(gcv_res, res);
+		PUSHGC(gc_res, res);
 		if(!cmd_progn(VCDR(VCDR(args))))
-		    res = NULL;
+		    res = LISP_NULL;
 		POPGC;
 	    }
 	}
 	else
-	    res = NULL;
+	    res = LISP_NULL;
 	POPGC;
 	return(res);
     }
@@ -1227,21 +1231,21 @@ procedure, else return nil.
 {
     if(CONSP(args))
     {
-	GCVAL gcv_args;
+	GC_root gc_args;
 	VALUE cond = VCAR(args), wval, body = VCDR(args);
-	PUSHGC(gcv_args, args);
+	PUSHGC(gc_args, args);
 	while((wval = cmd_eval(cond)) && !NILP(wval))
 	{
 	    TEST_INT;
 	    if(INT_P || !cmd_progn(body))
 	    {
-		wval = NULL;
+		wval = LISP_NULL;
 		break;
 	    }
 	}
 	POPGC;
 	if(!wval)
-	    return(NULL);
+	    return(LISP_NULL);
 	return(sym_nil);
     }
     return signal_missing_arg(1);
@@ -1270,8 +1274,8 @@ like the last else in an else-if statement in C.
 ::end:: */
 {
     VALUE res = sym_nil;
-    GCVAL gcv_args;
-    PUSHGC(gcv_args, args);
+    GC_root gc_args;
+    PUSHGC(gc_args, args);
     while(CONSP(args) && CONSP(VCAR(args)))
     {
 	VALUE cndlist = VCAR(args);
@@ -1310,12 +1314,12 @@ ie,
 	while(CONSP(VCDR(args)))
 	{
 	    if(!(*last = cmd_cons(VCAR(args), sym_nil)))
-		return(NULL);
+		return(LISP_NULL);
 	    last = &VCDR(*last);
 	    args = VCDR(args);
 	    TEST_INT;
 	    if(INT_P)
-		return(NULL);
+		return(LISP_NULL);
 	}
 	if(!NILP(cmd_listp(VCAR(args))))
 	    *last = VCAR(args);
@@ -1346,16 +1350,17 @@ If the compiled version is older than it's source code, the source code is
 loaded and a warning is displayed.
 ::end:: */
 {
-    VALUE name = NULL, stream, path;
+    VALUE name = LISP_NULL, stream, path;
+    static DEFSTRING(r_str, "r");
     DECLARE1(file, STRINGP);
     if(NILP(nopath_p))
     {
 	path = cmd_symbol_value(sym_load_path, sym_nil);
 	if(!path)
-	    return(NULL);
+	    return(LISP_NULL);
     }
     else
-	path = cmd_cons(MKSTR(""), sym_nil);
+	path = cmd_cons(VAL(null_string), sym_nil);
     while(!name && CONSP(path))
     {
 	u_char *dir = STRINGP(VCAR(path)) ? VSTR(VCAR(path)) : (u_char *)"";
@@ -1384,22 +1389,24 @@ loaded and a warning is displayed.
 	path = VCDR(path);
 	TEST_INT;
 	if(INT_P)
-	    return(NULL);
+	    return(LISP_NULL);
     }
     if(!name)
     {
 	if(NILP(noerr_p))
-	    return(cmd_signal(sym_file_error,
-			      list_2(MKSTR("Can't open lisp-file"), file)));
+	{
+	    static DEFSTRING(no_file, "Can't open lisp-file");
+	    return(cmd_signal(sym_file_error, list_2(VAL(no_file), file)));
+	}
 	else
 	    return(sym_nil);
     }
-    if((stream = cmd_open(name, MKSTR("r"), sym_nil)) && FILEP(stream))
+    if((stream = cmd_open(name, VAL(r_str), sym_nil)) && FILEP(stream))
     {
 	VALUE obj;
 	int c;
-	GCVAL gcv_stream;
-	PUSHGC(gcv_stream, stream);
+	GC_root gc_stream;
+	PUSHGC(gc_stream, stream);
 	c = stream_getc(stream);
 	while((c != EOF) && (obj = readl(stream, &c)))
 	{
@@ -1407,13 +1414,13 @@ loaded and a warning is displayed.
 	    if(INT_P || !cmd_eval(obj))
 	    {
 		POPGC;
-		return(NULL);
+		return(LISP_NULL);
 	    }
 	}
 	POPGC;
 	return(sym_t);
     }
-    return(NULL);
+    return(LISP_NULL);
 }
 
 /*
@@ -1421,23 +1428,23 @@ loaded and a warning is displayed.
  */
 
 #define APPLY_OP(op)					\
-    if(CONSP(args) && NUMBERP(VCAR(args)))		\
+    if(CONSP(args) && INTP(VCAR(args)))			\
     {							\
-	long sum = VNUM(VCAR(args));			\
+	long sum = VINT(VCAR(args));			\
 	int i = 2;					\
 	args = VCDR(args);				\
 	while(CONSP(args))				\
 	{						\
-	    if(!NUMBERP(VCAR(args)))			\
+	    if(!INTP(VCAR(args)))			\
 		return signal_arg_error(VCAR(args), i);	\
-	    sum = sum op VNUM(VCAR(args));		\
+	    sum = sum op VINT(VCAR(args));		\
 	    args = VCDR(args);				\
 	    i++;					\
 	    TEST_INT;					\
 	    if(INT_P)					\
-		return(NULL);				\
+		return(LISP_NULL);			\
 	}						\
-	return(make_number(sum));			\
+	return(MAKE_INT(sum));				\
     }							\
     return (CONSP(args)					\
 	    ? signal_arg_error(VCAR(args), 1)		\
@@ -1452,7 +1459,7 @@ Adds all NUMBERS together. If no arguments are given returns 0.
 ::end:: */
 {
     if(NILP(args))
-	return make_number(0);
+	return MAKE_INT(0);
     APPLY_OP( + )
 }
 
@@ -1468,7 +1475,7 @@ NUMBERS
     if(CONSP(args))
     {
 	if(!CONSP(VCDR(args)))
-	    return(make_number(-VNUM(VCAR(args))));
+	    return(MAKE_INT(-VINT(VCAR(args))));
 	else
 	    APPLY_OP( - )
     }
@@ -1484,7 +1491,7 @@ Multiplies all NUMBERS together. If no numbers are given returns 1.
 ::end:: */
 {
     if(NILP(args))
-	return make_number(1);
+	return MAKE_INT(1);
     APPLY_OP( * )
 }
 
@@ -1498,26 +1505,25 @@ Divides NUMBERS (in left-to-right order), ie,
    => 10
 ::end:: */
 {
-    if(CONSP(args) && NUMBERP(VCAR(args)))
+    if(CONSP(args) && INTP(VCAR(args)))
     {
-	long sum = VNUM(VCAR(args));
+	long sum = VINT(VCAR(args));
 	int i = 1;
 	args = VCDR(args);
 	while(CONSP(args))
 	{
-	    if(!NUMBERP(VCAR(args)))
+	    if(!INTP(VCAR(args)))
 	       return signal_arg_error(VCAR(args), i);
-	    if(VNUM(VCAR(args)) == 0)
-		return cmd_signal(sym_arith_error,
-				  LIST_1(MKSTR("Divide by zero")));
-	    sum = sum / VNUM(VCAR(args));
+	    if(VINT(VCAR(args)) == 0)
+		return cmd_signal(sym_arith_error, LIST_1(VAL(div_zero)));
+	    sum = sum / VINT(VCAR(args));
 	    args = VCDR(args);
 	    i++;
 	    TEST_INT;
 	    if(INT_P)
-		return(NULL);
+		return(LISP_NULL);
 	}
-	return(make_number(sum));
+	return(MAKE_INT(sum));
     }
     return (CONSP(args)
 	    ? signal_arg_error(VCAR(args), 1) : signal_missing_arg(1));
@@ -1531,11 +1537,11 @@ DEFUN("%", cmd_remainder, subr_remainder, (VALUE n1, VALUE n2), V_Subr2, DOC_rem
 Returns the integer remainder after dividing DIVIDEND by DIVISOR.
 ::end:: */
 {
-    DECLARE1(n1, NUMBERP);
-    DECLARE2(n2, NUMBERP);
-    if(VNUM(n2) == 0)
-	return cmd_signal(sym_arith_error, LIST_1(MKSTR("Divide by zero")));
-    return make_number(VNUM(n1) % VNUM(n2));
+    DECLARE1(n1, INTP);
+    DECLARE2(n2, INTP);
+    if(VINT(n2) == 0)
+	return cmd_signal(sym_arith_error, LIST_1(VAL(div_zero)));
+    return MAKE_INT(VINT(n1) % VINT(n2));
 }
 
 _PR VALUE cmd_mod(VALUE n1, VALUE n2);
@@ -1554,18 +1560,18 @@ and that floating point division is used.
 ::end:: */
 {
     long tem;
-    DECLARE1(n1, NUMBERP);
-    DECLARE2(n2, NUMBERP);
-    if(VNUM(n2) == 0)
-	return cmd_signal(sym_arith_error, LIST_1(MKSTR("Divide by zero")));
+    DECLARE1(n1, INTP);
+    DECLARE2(n2, INTP);
+    if(VINT(n2) == 0)
+	return cmd_signal(sym_arith_error, LIST_1(VAL(div_zero)));
 
     /* This code from GNU Emacs */
-    tem = VNUM(n1) % VNUM(n2);
+    tem = VINT(n1) % VINT(n2);
     /* If the "remainder" comes out with the wrong sign, fix it.  */
-    if (VNUM(n2) < 0 ? tem > 0 : tem < 0)
-	tem += VNUM(n2);
+    if (VINT(n2) < 0 ? tem > 0 : tem < 0)
+	tem += VINT(n2);
 
-    return make_number(tem);
+    return MAKE_INT(tem);
 }
 
 _PR VALUE cmd_lognot(VALUE);
@@ -1576,8 +1582,8 @@ lognot NUMBER
 Returns the bitwise logical `not' of NUMBER.
 ::end:: */
 {
-    DECLARE1(num, NUMBERP);
-    return(make_number(~VNUM(num)));
+    DECLARE1(num, INTP);
+    return(MAKE_INT(~VINT(num)));
 }
 
 _PR VALUE cmd_not(VALUE);
@@ -1661,8 +1667,8 @@ value will always be considered `eql' (this may or may not be the case
 with `eq'.
 ::end:: */
 {
-    if(NUMBERP(arg1) && NUMBERP(arg2))
-	return(VNUM(arg1) == VNUM(arg2) ? sym_t : sym_nil);
+    if(INTP(arg1) && INTP(arg2))
+	return(VINT(arg1) == VINT(arg2) ? sym_t : sym_nil);
     else
 	return(arg1 == arg2 ? sym_t : sym_nil);
 }
@@ -1702,9 +1708,9 @@ DEFUN("=", cmd_num_eq, subr_num_eq, (VALUE num1, VALUE num2), V_Subr2, DOC_num_e
 Returns t if NUMBER1 and NUMBER2 are equal.
 ::end:: */
 {
-    DECLARE1(num1, NUMBERP);
-    DECLARE2(num2, NUMBERP);
-    if(VNUM(num1) == VNUM(num2))
+    DECLARE1(num1, INTP);
+    DECLARE2(num2, INTP);
+    if(VINT(num1) == VINT(num2))
 	return(sym_t);
     return(sym_nil);
 }
@@ -1717,9 +1723,9 @@ DEFUN("/=", cmd_num_noteq, subr_num_noteq, (VALUE num1, VALUE num2), V_Subr2, DO
 Returns t if NUMBER1 and NUMBER2 are unequal.
 ::end:: */
 {
-    DECLARE1(num1, NUMBERP);
-    DECLARE2(num2, NUMBERP);
-    if(VNUM(num1) != VNUM(num2))
+    DECLARE1(num1, INTP);
+    DECLARE2(num2, INTP);
+    if(VINT(num1) != VINT(num2))
 	return(sym_t);
     return(sym_nil);
 }
@@ -1739,7 +1745,7 @@ Returns t if NUMBER1 and NUMBER2 are unequal.
 	    i++;					\
 	    TEST_INT;					\
 	    if(INT_P)					\
-		return(NULL);				\
+		return(LISP_NULL);			\
 	}						\
 	return sym_t;					\
     }							\
@@ -1802,8 +1808,8 @@ DEFUN("1+", cmd_plus1, subr_plus1, (VALUE num), V_Subr1, DOC_plus1) /*
 Return NUMBER plus 1.
 ::end:: */
 {
-    DECLARE1(num, NUMBERP);
-    return(make_number(VNUM(num) + 1));
+    DECLARE1(num, INTP);
+    return(MAKE_INT(VINT(num) + 1));
 }
 
 _PR VALUE cmd_sub1(VALUE);
@@ -1814,8 +1820,8 @@ DEFUN("1-", cmd_sub1, subr_sub1, (VALUE num), V_Subr1, DOC_sub1) /*
 Return NUMBER minus 1.
 ::end:: */
 {
-    DECLARE1(num, NUMBERP);
-    return(make_number(VNUM(num) - 1));
+    DECLARE1(num, INTP);
+    return(MAKE_INT(VINT(num) - 1));
 }
 
 _PR VALUE cmd_lsh(VALUE, VALUE);
@@ -1827,12 +1833,12 @@ Shift the bits in NUMBER by COUNT bits to the left, a negative COUNT means
 shift right.
 ::end:: */
 {
-    DECLARE1(num, NUMBERP);
-    DECLARE2(shift, NUMBERP);
-    if(VNUM(shift) > 0)
-	return(make_number(VNUM(num) << VNUM(shift)));
+    DECLARE1(num, INTP);
+    DECLARE2(shift, INTP);
+    if(VINT(shift) > 0)
+	return(MAKE_INT(VINT(num) << VINT(shift)));
     /* ensure that a zero is in the top bit. */
-    return(make_number((VNUM(num) >> -VNUM(shift)) & 0x7fffffff));
+    return(MAKE_INT((VINT(num) >> -VINT(shift)) & 0x7fffffff));
 }
 
 _PR VALUE cmd_ash(VALUE, VALUE);
@@ -1844,11 +1850,11 @@ Use an arithmetic shift to shift the bits in NUMBER by COUNT bits to the left,
 a negative COUNT means shift right.
 ::end:: */
 {
-    DECLARE1(num, NUMBERP);
-    DECLARE2(shift, NUMBERP);
-    if(VNUM(shift) > 0)
-	return(make_number(VNUM(num) << VNUM(shift)));
-    return(make_number(VNUM(num) >> -VNUM(shift)));
+    DECLARE1(num, INTP);
+    DECLARE2(shift, INTP);
+    if(VINT(shift) > 0)
+	return(MAKE_INT(VINT(num) << VINT(shift)));
+    return(MAKE_INT(VINT(num) >> -VINT(shift)));
 }
 
 _PR VALUE cmd_zerop(VALUE);
@@ -1859,7 +1865,7 @@ zerop NUMBER
 t if NUMBER is zero.
 ::end:: */
 {
-    if(NUMBERP(num) && (VNUM(num) == 0))
+    if(INTP(num) && (VINT(num) == 0))
 	return(sym_t);
     return(sym_nil);
 }
@@ -1916,7 +1922,7 @@ numberp ARG
 Return t if ARG is a number.
 ::end:: */
 {
-    return NUMBERP(arg) ? sym_t : sym_nil;
+    return INTP(arg) ? sym_t : sym_nil;
 }
 
 _PR VALUE cmd_integerp(VALUE);
@@ -1927,7 +1933,7 @@ integerp ARG
 Return t if ARG is a integer.
 ::end:: */
 {
-    return NUMBERP(arg) ? sym_t : sym_nil;
+    return INTP(arg) ? sym_t : sym_nil;
 }
 
 _PR VALUE cmd_stringp(VALUE);
@@ -1963,7 +1969,7 @@ symbol `lambda'
 {
     if(SYMBOLP(arg))
     {
-	if(!(arg = VSYM(arg)->sym_Function))
+	if(!(arg = VSYM(arg)->function))
 	    return(sym_nil);
     }
     switch(VTYPE(arg))
@@ -1996,7 +2002,7 @@ Returns t if ARG is a special-form.
 {
     if(SYMBOLP(arg))
     {
-	if(!(arg = VSYM(arg)->sym_Function))
+	if(!(arg = VSYM(arg)->function))
 	     return(sym_nil);
     }
     if(VTYPEP(arg, V_SF))
@@ -2052,13 +2058,13 @@ Returns the doc-string associated with SUBR.
     {
 	if(NILP(useVar))
 	{
-	    if(VSYM(subr)->sym_Function)
-		subr = VSYM(subr)->sym_Function;
+	    if(VSYM(subr)->function)
+		subr = VSYM(subr)->function;
 	}
 	else
 	{
-	    if(VSYM(subr)->sym_Value)
-		subr = VSYM(subr)->sym_Value;
+	    if(VSYM(subr)->value)
+		subr = VSYM(subr)->value;
 	}
     }
     switch(VTYPE(subr))
@@ -2072,9 +2078,9 @@ Returns the doc-string associated with SUBR.
     case V_SubrN:
     case V_SF:
     case V_Var:
-	return(cmd_read_file_from_to(MKSTR(DOC_FILE),
-				     make_number(VSUBR(subr)->subr_DocIndex),
-				     make_number((int)'\f')));
+	return(cmd_read_file_from_to(VAL(doc_file),
+				     MAKE_INT(VSUBR(subr)->doc_index),
+				     MAKE_INT((int)'\f')));
     default:
 	return(sym_nil);
     }
@@ -2092,13 +2098,13 @@ Returns the name (a string) associated with SUBR.
     {
 	if(NILP(useVar))
 	{
-	    if(VSYM(subr)->sym_Function)
-		subr = VSYM(subr)->sym_Function;
+	    if(VSYM(subr)->function)
+		subr = VSYM(subr)->function;
 	}
 	else
 	{
-	    if(VSYM(subr)->sym_Value)
-		subr = VSYM(subr)->sym_Value;
+	    if(VSYM(subr)->value)
+		subr = VSYM(subr)->value;
 	}
     }
     switch(VTYPE(subr))
@@ -2112,7 +2118,7 @@ Returns the name (a string) associated with SUBR.
     case V_SubrN:
     case V_SF:
     case V_Var:
-	return(VSUBR(subr)->subr_Name);
+	return(VSUBR(subr)->name);
     default:
 	return(sym_nil);
     }
@@ -2136,8 +2142,8 @@ nil then `eval-hook' returns nil.
 	VALUE hook = VCAR(args);
 	VALUE alist = VCDR(args);
 	VALUE res = sym_nil;
-	GCVAL gcv_alist, gcv_hook;
-	PUSHGC(gcv_alist, alist);
+	GC_root gc_alist, gc_hook;
+	PUSHGC(gc_alist, alist);
 	switch(VTYPE(hook))
 	{
 	case V_StaticString:
@@ -2151,14 +2157,14 @@ nil then `eval-hook' returns nil.
 		goto end;
 	    break;
 	}
-	PUSHGC(gcv_hook, hook);
+	PUSHGC(gc_hook, hook);
 	while(res && NILP(res) && CONSP(hook))
 	{
 	    res = funcall(VCAR(hook), alist);
 	    hook = VCDR(hook);
 	    TEST_INT;
 	    if(INT_P)
-		res = NULL;
+		res = LISP_NULL;
 	}
 	POPGC;
 end:
@@ -2178,11 +2184,11 @@ is easier to call a 2-argument function from C than an N-argument function.
 ::end:: */
 {
     VALUE res = sym_nil, alist;
-    /* Not possible to use GCVAL's since this is often called from C code
+    /* Not possible to use GC_root's since this is often called from C code
        which may not be protected.  */
     int oldgci = gc_inhibit;
     if(!(alist = cmd_cons(arg, sym_nil)))
-	return(NULL);
+	return(LISP_NULL);
     gc_inhibit = TRUE;
     switch(VTYPE(hook))
     {
@@ -2203,7 +2209,7 @@ is easier to call a 2-argument function from C than an N-argument function.
 	hook = VCDR(hook);
 	TEST_INT;
 	if(INT_P)
-	    res = NULL;
+	    res = LISP_NULL;
     }
 end:
     gc_inhibit = oldgci;
@@ -2233,24 +2239,24 @@ There are several pre-defined `catch'es which are,
      Kills the editor.
 ::end:: */
     /* Non-local exits don't bother with jmp_buf's and the like, they just
-       unwind normally through all levels of recursion with a NULL result.
+       unwind normally through all levels of recursion with a LISP_NULL result.
        This is slow but it's easy to work with.  */
 {
     if(CONSP(args))
     {
-	VALUE tag, res = NULL;
-	GCVAL gcv_args, gcv_tag;
-	PUSHGC(gcv_args, args);
+	VALUE tag, res = LISP_NULL;
+	GC_root gc_args, gc_tag;
+	PUSHGC(gc_args, args);
 	tag = cmd_eval(VCAR(args));
 	if(tag)
 	{
-	    PUSHGC(gcv_tag, tag);
+	    PUSHGC(gc_tag, tag);
 	    if(!(res = cmd_progn(VCDR(args))))
 	    {
 		if(throw_value && (VCAR(throw_value) == tag))
 		{
 		    res = VCDR(throw_value);
-		    throw_value = NULL;
+		    throw_value = LISP_NULL;
 		}
 	    }
 	    POPGC;
@@ -2273,7 +2279,7 @@ VALUE from it. TAG and VALUE are both evaluated fully.
     /* Only one thing can use `throw_value' at once.  */
     if(!throw_value)
 	throw_value = cmd_cons(tag, val);
-    return(NULL);
+    return(LISP_NULL);
 }
 
 _PR VALUE cmd_return(VALUE);
@@ -2286,7 +2292,7 @@ Arranges it so that the innermost defun returns VALUE (or nil) as its result.
 {
     if(!throw_value)
 	throw_value = cmd_cons(sym_defun, arg);
-    return(NULL);
+    return(LISP_NULL);
 }
 
 _PR VALUE cmd_unwind_protect(VALUE);
@@ -2302,15 +2308,15 @@ BODY is being evaluated.
     if(CONSP(args))
     {
 	VALUE res, throwval;
-	GCVAL gcv_args, gcv_res, gcv_throwval;
-	PUSHGC(gcv_args, args);
+	GC_root gc_args, gc_res, gc_throwval;
+	PUSHGC(gc_args, args);
 	res = cmd_eval(VCAR(args));
-	PUSHGC(gcv_res, res);
+	PUSHGC(gc_res, res);
 	throwval = throw_value;
-	throw_value = NULL;
-	PUSHGC(gcv_throwval, throwval);
+	throw_value = LISP_NULL;
+	PUSHGC(gc_throwval, throwval);
 	if(!cmd_progn(VCDR(args)))
-	    res = NULL;
+	    res = LISP_NULL;
 	/* Only reinstall the old throw if it's actually an error.
 	   Otherwise it could overwrite an error in the CLEANUP-FORMS.
 	   This way the oldest error takes precedence. */
@@ -2371,7 +2377,7 @@ lispcmds_init(void)
     ADD_SUBR(subr_while);
     ADD_SUBR(subr_cond);
     ADD_SUBR(subr_apply);
-    ADD_SUBR(subr_load);
+    ADD_SUBR_INT(subr_load);
     ADD_SUBR(subr_plus);
     ADD_SUBR(subr_minus);
     ADD_SUBR(subr_product);
@@ -2418,12 +2424,10 @@ lispcmds_init(void)
     ADD_SUBR(subr_throw);
     ADD_SUBR(subr_return);
     ADD_SUBR(subr_unwind_protect);
-    INTERN(sym_load_path, "load-path");
-    VSYM(sym_load_path)->sym_Value = list_3(null_string,
-					    MKSTR(SITE_LISP_DIR),
-					    MKSTR(LISP_LIB_DIR));
-    DOC_VAR(sym_load_path, DOC_load_path);
-    INTERN(sym_lisp_lib_dir, "lisp-lib-dir");
-    VSYM(sym_lisp_lib_dir)->sym_Value = MKSTR(LISP_LIB_DIR);
-    DOC_VAR(sym_lisp_lib_dir, DOC_lisp_lib_dir);
+    INTERN(load_path); DOC(load_path);
+    VSYM(sym_load_path)->value = list_3(VAL(null_string),
+					VAL(site_lisp_dir),
+					VAL(lisp_lib_dir));
+    INTERN(lisp_lib_dir); DOC(lisp_lib_dir);
+    VSYM(sym_lisp_lib_dir)->value = VAL(lisp_lib_dir);
 }

@@ -40,7 +40,8 @@ _PR int recurse_depth;
 int recurse_depth = -1;
 
 _PR VALUE sym_exit, sym_quit, sym_top_level, sym_command_line_args;
-VALUE sym_exit, sym_quit, sym_top_level, sym_command_line_args;
+DEFSYM(exit, "exit"); DEFSYM(quit, "quit");
+DEFSYM(top_level, "top-level"); DEFSYM(command_line_args, "command-line-args");
 
 static u_char *init_script = INIT_SCR;
 
@@ -102,7 +103,7 @@ get_main_options(int *argc_p, char ***argv_p)
 	argc--;
 	argv++;
     }
-    VSYM(sym_command_line_args)->sym_Value = head;
+    VSYM(sym_command_line_args)->value = head;
     *argc_p = argc;
     *argv_p = argv;
     return(TRUE);
@@ -112,6 +113,13 @@ int
 main(int argc, char **argv)
 {
     int rc;
+
+    if(sizeof(PTR_SIZED_INT) != sizeof(void *))
+    {
+	doconmsg("jade: sizeof(PTR_SIZED_INT) != sizeof(void *); aborting\n");
+	return 100;
+    }
+
     if(!initmem())
 	return(10);
 #if 0
@@ -177,8 +185,8 @@ inner_main(int argc, char **argv)
 	}
 	else if(throw_value && VCAR(throw_value) == sym_quit)
 	{
-	    if(NUMBERP(VCDR(throw_value)))
-		rc = VNUM(VCDR(throw_value));
+	    if(INTP(VCDR(throw_value)))
+		rc = VINT(VCDR(throw_value));
 	    else
 		rc = 0;
 	}
@@ -224,7 +232,7 @@ Returns the number of recursive-edit's deep we are, zero signifies the
 original level.
 ::end:: */
 {
-    return(make_number(recurse_depth));
+    return(MAKE_INT(recurse_depth));
 }
 
 _PR VALUE cmd_input_lock(VALUE status);
@@ -252,11 +260,11 @@ no user input is accepted, only messages from ARexx can get through.
 void
 main_init(void)
 {
-    ADD_SUBR(subr_recursive_edit);
+    ADD_SUBR_INT(subr_recursive_edit);
     ADD_SUBR(subr_recursion_depth);
     ADD_SUBR(subr_input_lock);
-    INTERN(sym_quit, "quit");
-    INTERN(sym_exit, "exit");
-    INTERN(sym_top_level, "top-level");
-    INTERN(sym_command_line_args, "command-line-args");
+    INTERN(quit);
+    INTERN(exit);
+    INTERN(top_level);
+    INTERN(command_line_args);
 }

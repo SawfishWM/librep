@@ -28,7 +28,8 @@
 
 _PR void lispmach_init(void);
 
-static VALUE sym_bytecode_error;
+static DEFSYM(bytecode_error, "bytecode-error");
+static DEFSTRING(err_bytecode_error, "Invalid byte code version");
 
 /* Unbind one level of the BIND-STACK and return the new head of the stack.
    Each item in the BIND-STACK may be one of:
@@ -135,6 +136,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 `compile-lisp-lib' for more details.
 ::end:: */
 {
+    static DEFSTRING(unknown_op, "Unknown lisp opcode");
     VALUE *stackbase;
     register VALUE *stackp;
     /* This holds a list of sets of bindings, it can also hold the form of
@@ -142,27 +144,27 @@ of byte code. See the functions `compile-file', `compile-directory' and
     VALUE bindstack = sym_nil;
     register u_char *pc;
     u_char c;
-    GCVAL gcv_code, gcv_consts, gcv_bindstack;
+    GC_root gc_code, gc_consts, gc_bindstack;
     /* The `gcv_N' field is only filled in with the stack-size when there's
        a chance of gc.	*/
-    GCVALN gcv_stackbase;
+    GC_n_roots gc_stackbase;
 
     DECLARE1(code, STRINGP);
     DECLARE2(consts, VECTORP);
-    DECLARE3(stkreq, NUMBERP);
+    DECLARE3(stkreq, INTP);
 
 #ifdef HAVE_ALLOCA
-    stackbase = alloca(sizeof(VALUE) * VNUM(stkreq));
+    stackbase = alloca(sizeof(VALUE) * VINT(stkreq));
 #else
-    if(!(stackbase = str_alloc(sizeof(VALUE) * VNUM(stkreq))))
+    if(!(stackbase = str_alloc(sizeof(VALUE) * VINT(stkreq))))
 	return(NULL);
 #endif
 
     stackp = stackbase - 1;
-    PUSHGC(gcv_code, code);
-    PUSHGC(gcv_consts, consts);
-    PUSHGC(gcv_bindstack, bindstack);
-    PUSHGCN(gcv_stackbase, stackbase, 0);
+    PUSHGC(gc_code, code);
+    PUSHGC(gc_consts, consts);
+    PUSHGC(gc_bindstack, bindstack);
+    PUSHGCN(gc_stackbase, stackbase, 0);
 
     pc = VSTR(code);
     while((c = *pc++) != 0)
@@ -202,12 +204,12 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		tmp = TOP;
 		if(SYMBOLP(tmp))
 		{
-		    if(VSYM(tmp)->sym_Flags & SF_DEBUG)
+		    if(VSYM(tmp)->flags & SF_DEBUG)
 			single_step_flag = TRUE;
 		    if(!(tmp = cmd_symbol_function(tmp, sym_nil)))
 			goto error;
 		}
-		gcv_stackbase.gcv_N = STK_USE;
+		gc_stackbase.count = STK_USE;
 		switch(VTYPE(tmp))
 		{
 		case V_Subr0:
@@ -314,20 +316,20 @@ of byte code. See the functions `compile-file', `compile-directory' and
 			tmp2 = cmd_cons(RET_POP, tmp2);
 		    if(VCAR(tmp) == sym_lambda)
 		    {
-			struct LispCall lc;
-			lc.lc_Next = lisp_call_stack;
-			lc.lc_Fun = TOP;
-			lc.lc_Args = tmp2;
-			lc.lc_ArgsEvalledP = sym_t;
+			struct Lisp_Call lc;
+			lc.next = lisp_call_stack;
+			lc.fun = TOP;
+			lc.args = tmp2;
+			lc.args_evalled_p = sym_t;
 			lisp_call_stack = &lc;
 			if(!(TOP = eval_lambda(tmp, tmp2, FALSE))
 			   && throw_value
 			   && (VCAR(throw_value) == sym_defun))
 			{
 			    TOP = VCDR(throw_value);
-			    throw_value = NULL;
+			    throw_value = LISP_NULL;
 			}
-			lisp_call_stack = lc.lc_Next;
+			lisp_call_stack = lc.next;
 		    }
 		    else if(VCAR(tmp) == sym_autoload)
 			/* I can't be bothered to go to all the hassle
@@ -349,11 +351,11 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		break;
 
 	    case OP_PUSH:
-		PUSH(VVECT(consts)->vc_Array[arg]);
+		PUSH(VVECT(consts)->array[arg]);
 		break;
 
 	    case OP_REFQ:
-		if(PUSH(cmd_symbol_value(VVECT(consts)->vc_Array[arg],
+		if(PUSH(cmd_symbol_value(VVECT(consts)->array[arg],
 					 sym_nil)))
 		{
 		    break;
@@ -361,7 +363,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		goto error;
 
 	    case OP_SETQ:
-		if((TOP = cmd_set(VVECT(consts)->vc_Array[arg], TOP)))
+		if((TOP = cmd_set(VVECT(consts)->array[arg], TOP)))
 		    break;
 		goto error;
 
@@ -373,7 +375,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		break;
 
 	    case OP_BIND:
-		tmp = VVECT(consts)->vc_Array[arg];
+		tmp = VVECT(consts)->array[arg];
 		if(SYMBOLP(tmp))
 		{
 		    VCAR(bindstack) = bind_symbol(VCAR(bindstack), tmp,
@@ -423,7 +425,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		break;
 
 	    case OP_UNBIND:
-		gcv_stackbase.gcv_N = STK_USE;
+		gc_stackbase.count = STK_USE;
 		bindstack = unbind_one_level(bindstack);
 		break;
 
@@ -487,26 +489,26 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		CALL_1(cmd_length);
 
 	    case OP_EVAL:
-		gcv_stackbase.gcv_N = STK_USE;
+		gc_stackbase.count = STK_USE;
 		CALL_1(cmd_eval);
 
 	    case OP_ADD:
 		tmp = RET_POP;
-		if(NUMBERP(tmp) && NUMBERP(TOP))
+		if(INTP(tmp) && INTP(TOP))
 		{
-		    TOP = make_number(VNUM(TOP) + VNUM(tmp));
+		    TOP = MAKE_INT(VINT(TOP) + VINT(tmp));
 		    break;
 		}
-		if(NUMBERP(tmp))
+		if(INTP(tmp))
 		    signal_arg_error(TOP, 2);
 		else
 		    signal_arg_error(tmp, 1);
 		goto error;
 
 	    case OP_NEG:
-		if(NUMBERP(TOP))
+		if(INTP(TOP))
 		{
-		    TOP = make_number(-VNUM(TOP));
+		    TOP = MAKE_INT(-VINT(TOP));
 		    break;
 		}
 		signal_arg_error(TOP, 1);
@@ -514,12 +516,12 @@ of byte code. See the functions `compile-file', `compile-directory' and
 
 	    case OP_SUB:
 		tmp = RET_POP;
-		if(NUMBERP(tmp) && NUMBERP(TOP))
+		if(INTP(tmp) && INTP(TOP))
 		{
-		    TOP = make_number(VNUM(TOP) - VNUM(tmp));
+		    TOP = MAKE_INT(VINT(TOP) - VINT(tmp));
 		    break;
 		}
-		if(NUMBERP(tmp))
+		if(INTP(tmp))
 		    signal_arg_error(TOP, 2);
 		else
 		    signal_arg_error(tmp, 1);
@@ -527,12 +529,12 @@ of byte code. See the functions `compile-file', `compile-directory' and
 
 	    case OP_MUL:
 		tmp = RET_POP;
-		if(NUMBERP(tmp) && NUMBERP(TOP))
+		if(INTP(tmp) && INTP(TOP))
 		{
-		    TOP = make_number(VNUM(TOP) * VNUM(tmp));
+		    TOP = MAKE_INT(VINT(TOP) * VINT(tmp));
 		    break;
 		}
-		if(NUMBERP(tmp))
+		if(INTP(tmp))
 		    signal_arg_error(TOP, 2);
 		else
 		    signal_arg_error(tmp, 1);
@@ -540,12 +542,12 @@ of byte code. See the functions `compile-file', `compile-directory' and
 
 	    case OP_DIV:
 		tmp = RET_POP;
-		if(NUMBERP(tmp) && NUMBERP(TOP))
+		if(INTP(tmp) && INTP(TOP))
 		{
-		    TOP = make_number(VNUM(TOP) / VNUM(tmp));
+		    TOP = MAKE_INT(VINT(TOP) / VINT(tmp));
 		    break;
 		}
-		if(NUMBERP(tmp))
+		if(INTP(tmp))
 		    signal_arg_error(TOP, 2);
 		else
 		    signal_arg_error(tmp, 1);
@@ -555,9 +557,9 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		CALL_2(cmd_remainder);
 
 	    case OP_LNOT:
-		if(NUMBERP(TOP))
+		if(INTP(TOP))
 		{
-		    TOP = make_number(~VNUM(TOP));
+		    TOP = MAKE_INT(~VINT(TOP));
 		    break;
 		}
 		signal_arg_error(TOP, 1);
@@ -572,12 +574,12 @@ of byte code. See the functions `compile-file', `compile-directory' and
 
 	    case OP_LOR:
 		tmp = RET_POP;
-		if(NUMBERP(tmp) && NUMBERP(TOP))
+		if(INTP(tmp) && INTP(TOP))
 		{
-		    TOP = make_number(VNUM(TOP) | VNUM(tmp));
+		    TOP = MAKE_INT(VINT(TOP) | VINT(tmp));
 		    break;
 		}
-		if(NUMBERP(tmp))
+		if(INTP(tmp))
 		    signal_arg_error(TOP, 2);
 		else
 		    signal_arg_error(tmp, 1);
@@ -585,12 +587,12 @@ of byte code. See the functions `compile-file', `compile-directory' and
 
 	    case OP_LXOR:
 		tmp = RET_POP;
-		if(NUMBERP(tmp) && NUMBERP(TOP))
+		if(INTP(tmp) && INTP(TOP))
 		{
-		    TOP = make_number(VNUM(TOP) ^ VNUM(tmp));
+		    TOP = MAKE_INT(VINT(TOP) ^ VINT(tmp));
 		    break;
 		}
-		if(NUMBERP(tmp))
+		if(INTP(tmp))
 		    signal_arg_error(TOP, 2);
 		else
 		    signal_arg_error(tmp, 1);
@@ -598,12 +600,12 @@ of byte code. See the functions `compile-file', `compile-directory' and
 
 	    case OP_LAND:
 		tmp = RET_POP;
-		if(NUMBERP(tmp) && NUMBERP(TOP))
+		if(INTP(tmp) && INTP(TOP))
 		{
-		    TOP = make_number(VNUM(TOP) & VNUM(tmp));
+		    TOP = MAKE_INT(VINT(TOP) & VINT(tmp));
 		    break;
 		}
-		if(NUMBERP(tmp))
+		if(INTP(tmp))
 		    signal_arg_error(TOP, 2);
 		else
 		    signal_arg_error(tmp, 1);
@@ -664,18 +666,18 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		break;
 
 	    case OP_INC:
-		if(NUMBERP(TOP))
+		if(INTP(TOP))
 		{
-		    TOP = make_number(VNUM(TOP) + 1);
+		    TOP = MAKE_INT(VINT(TOP) + 1);
 		    break;
 		}
 		signal_arg_error(TOP, 1);
 		goto error;
 
 	    case OP_DEC:
-		if(NUMBERP(TOP))
+		if(INTP(TOP))
 		{
-		    TOP = make_number(VNUM(TOP) - 1);
+		    TOP = MAKE_INT(VINT(TOP) - 1);
 		    break;
 		}
 		signal_arg_error(TOP, 1);
@@ -685,7 +687,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		CALL_2(cmd_lsh);
 
 	    case OP_ZEROP:
-		if(NUMBERP(TOP) && (VNUM(TOP) == 0))
+		if(INTP(TOP) && (VINT(TOP) == 0))
 		    TOP = sym_t;
 		else
 		    TOP = sym_nil;
@@ -720,7 +722,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		break;
 
 	    case OP_NUMBERP:
-		if(NUMBERP(TOP))
+		if(INTP(TOP))
 		    TOP = sym_t;
 		else
 		    TOP = sym_nil;
@@ -744,7 +746,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		/* This is very crude.	*/
 		tmp = RET_POP;
 		tmp = cmd_cons(tmp, cmd_cons(TOP, sym_nil));
-		gcv_stackbase.gcv_N = STK_USE;
+		gc_stackbase.count = STK_USE;
 		if((TOP = cmd_catch(tmp)))
 		    break;
 		goto error;
@@ -763,7 +765,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 
 #if 0
 	    case OP_UN_UNWIND_PRO:
-		gcv_stackbase.gcv_N = STK_USE;
+		gc_stackbase.count = STK_USE;
 		/* there will only be one form (a lisp-code) */
 		cmd_eval(VCDR(VCAR(bindstack)));
 		bindstack = VCDR(bindstack);
@@ -793,11 +795,11 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		/* bit of a kludge, this just calls the special-form, it
 		   takes an extra argument on top of the stack - the number
 		   of arguments that it has been given.	 */
-		i = VNUM(RET_POP);
+		i = VINT(RET_POP);
 		tmp = sym_nil;
 		while(i--)
 		    tmp = cmd_cons(RET_POP, tmp);
-		gcv_stackbase.gcv_N = STK_USE;
+		gc_stackbase.count = STK_USE;
 		tmp = cmd_error_protect(tmp);
 		if(tmp)
 		{
@@ -876,8 +878,8 @@ of byte code. See the functions `compile-file', `compile-directory' and
 
 	    case OP_EQL:
 		tmp = RET_POP;
-		if(NUMBERP(tmp) && NUMBERP(TOP))
-		    TOP = (VNUM(TOP) == VNUM(tmp) ? sym_t : sym_nil);
+		if(INTP(tmp) && INTP(TOP))
+		    TOP = (VINT(TOP) == VINT(tmp) ? sym_t : sym_nil);
 		else
 		    TOP = (TOP == tmp ? sym_t : sym_nil);
 		break;
@@ -1025,28 +1027,27 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		/* Test for gc time */
 		if((data_after_gc >= gc_threshold) && !gc_inhibit)
 		{
-		    gcv_stackbase.gcv_N = STK_USE;
+		    gc_stackbase.count = STK_USE;
 		    cmd_garbage_collect(sym_t);
 		}
 		break;
 
 	    default:
-		cmd_signal(sym_error,
-			   LIST_1(MKSTR("Unknown lisp opcode")));
+		cmd_signal(sym_error, LIST_1(VAL(unknown_op)));
 	    error:
 		while(CONSP(bindstack))
 		{
-		    GCVAL gcv_throwval;
+		    GC_root gc_throwval;
 		    VALUE throwval = throw_value;
-		    throw_value = NULL;
-		    PUSHGC(gcv_throwval, throwval);
+		    throw_value = LISP_NULL;
+		    PUSHGC(gc_throwval, throwval);
 
 		    bindstack = unbind_one_level(bindstack);
 
 		    POPGC;
 		    throw_value = throwval;
 		}
-		TOP = NULL;
+		TOP = LISP_NULL;
 		goto quit;
 	    }
 	}
@@ -1056,7 +1057,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 	    fprintf(stderr, "jade: stack underflow in lisp-code: aborting...\n");
 	    abort();
 	}
-	if(stackp > (stackbase + VNUM(stkreq)))
+	if(stackp > (stackbase + VINT(stkreq)))
 	{
 	    fprintf(stderr, "jade: stack overflow in lisp-code: aborting...\n");
 	    abort();
@@ -1088,12 +1089,12 @@ by Jade version JADE-MAJOR.JADE-MINOR, may be executed. If not, an error
 will be signalled.
 ::end:: */
 {
-    if(!NUMBERP(bc_major) || !NUMBERP(bc_minor)
-       || !NUMBERP(e_major) || !NUMBERP(e_minor)
-       || VNUM(bc_major) != BYTECODE_MAJOR_VERSION
-       || VNUM(bc_minor) < BYTECODE_MINOR_VERSION
-       || VNUM(e_major) != MAJOR
-       || VNUM(e_minor) < MINOR)
+    if(!INTP(bc_major) || !INTP(bc_minor)
+       || !INTP(e_major) || !INTP(e_minor)
+       || VINT(bc_major) != BYTECODE_MAJOR_VERSION
+       || VINT(bc_minor) < BYTECODE_MINOR_VERSION
+       || VINT(e_major) != MAJOR
+       || VINT(e_minor) < MINOR)
 	return cmd_signal(sym_bytecode_error, sym_nil);
     else
 	return sym_t;
@@ -1104,6 +1105,5 @@ lispmach_init(void)
 {
     ADD_SUBR(subr_jade_byte_code);
     ADD_SUBR(subr_validate_byte_code);
-    INTERN(sym_bytecode_error, "bytecode-error");
-    cmd_put(sym_bytecode_error, sym_error_message, MKSTR("Invalid byte code version"));
+    INTERN(bytecode_error); ERROR(bytecode_error);
 }

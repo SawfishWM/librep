@@ -101,7 +101,7 @@ pos_putc(TX *tx, VALUE *pos, int c)
 	tmps[0] = (u_char)c;
 	tmps[1] = 0;
 	end = insert_string(tx, tmps, 1, *pos);
-	if(end != NULL)
+	if(end != LISP_NULL)
 	{
 	    *pos = end;
 	    rc = 1;
@@ -116,7 +116,7 @@ pos_puts(TX *tx, VALUE *pos, u_char *buf, int bufLen)
     if(!read_only(tx) && pad_pos(tx, *pos))
     {
 	VALUE end = insert_string(tx, buf, bufLen, *pos);
-	if(end != NULL)
+	if(end != LISP_NULL)
 	{
 	    *pos = end;
 	    return bufLen;
@@ -138,28 +138,31 @@ stream_getc(VALUE stream)
 	int oldgci;
 
     case V_File:
-	if(VFILE(stream)->lf_Name)
-	    c = getc(VFILE(stream)->lf_File);
+	if(VFILE(stream)->name)
+	    c = getc(VFILE(stream)->file);
 	break;
 
     case V_Mark:
 	if(!VMARK(stream)->mk_Resident)
-	    cmd_signal(sym_invalid_stream, list_2(stream, MKSTR("Marks used as streams must be resident")));
+	{
+	    static DEFSTRING(non_res, "Marks used as streams must be resident");
+	    cmd_signal(sym_invalid_stream, list_2(stream, VAL(non_res)));
+	}
 	else
 	    c = pos_getc(VMARK(stream)->mk_File.tx, &VMARK(stream)->mk_Pos);
 	break;
 
-    case V_TX:
+    case V_Buffer:
 	c = pos_getc(VTX(stream), get_tx_cursor_ptr(VTX(stream)));
 	break;
 
     case V_Cons:
 	res = VCAR(stream);
-	if(NUMBERP(res) && STRINGP(VCDR(stream)))
+	if(INTP(res) && STRINGP(VCDR(stream)))
 	{
-	    c = (int)VSTR(VCDR(stream))[VNUM(res)];
+	    c = (int)VSTR(VCDR(stream))[VINT(res)];
 	    if(c)
-		VCAR(stream) = make_number(VNUM(res) + 1);
+		VCAR(stream) = MAKE_INT(VINT(res) + 1);
 	    else
 		c = EOF;
 	    break;
@@ -179,15 +182,18 @@ stream_getc(VALUE stream)
     case V_Symbol:
 	oldgci = gc_inhibit;
 	gc_inhibit = TRUE;
-	if((res = call_lisp0(stream)) && NUMBERP(res))
-	    c = VNUM(res);
+	if((res = call_lisp0(stream)) && INTP(res))
+	    c = VINT(res);
 	gc_inhibit = oldgci;
 	break;
 
 #ifdef HAVE_SUBPROCESSES
     case V_Process:
-	cmd_signal(sym_invalid_stream, list_2(stream, MKSTR("Processes are not input streams")));
+    {
+	static DEFSTRING(proc_not_input, "Processes are not input streams");
+	cmd_signal(sym_invalid_stream, list_2(stream, VAL(proc_not_input)));
 	break;
+    }
 #endif
 
     default:
@@ -229,7 +235,7 @@ stream_ungetc(VALUE stream, int c)
 	int oldgci;
 
     case V_File:
-	if(ungetc(c, VFILE(stream)->lf_File) != EOF)
+	if(ungetc(c, VFILE(stream)->file) != EOF)
 	    rc = TRUE;
 	break;
 
@@ -238,7 +244,7 @@ stream_ungetc(VALUE stream, int c)
 	rc = TRUE;
 	break;
 
-    case V_TX:
+    case V_Buffer:
 	ptr = get_tx_cursor_ptr(VTX(stream));
 	POS_UNGETC(*ptr, VTX(stream));
 	rc = TRUE;
@@ -246,9 +252,9 @@ stream_ungetc(VALUE stream, int c)
 
     case V_Cons:
 	tmp = VCAR(stream);
-	if(NUMBERP(tmp) && STRINGP(VCDR(stream)))
+	if(INTP(tmp) && STRINGP(VCDR(stream)))
 	{
-	    VCAR(stream) = make_number(VNUM(tmp) - 1);
+	    VCAR(stream) = MAKE_INT(VINT(tmp) - 1);
 	    rc = TRUE;
 	    break;
 	}
@@ -262,7 +268,7 @@ stream_ungetc(VALUE stream, int c)
 	/* FALL THROUGH */
 
     case V_Symbol:
-	tmp = make_number(c);
+	tmp = MAKE_INT(c);
 	oldgci = gc_inhibit;
 	gc_inhibit = TRUE;
 	if((tmp = call_lisp1(stream, tmp)) && !NILP(tmp))
@@ -287,29 +293,32 @@ stream_putc(VALUE stream, int c)
 	u_char tmps[2];
 
     case V_File:
-	if(VFILE(stream)->lf_Name)
+	if(VFILE(stream)->name)
 	{
-	    if(putc(c, VFILE(stream)->lf_File) != EOF)
+	    if(putc(c, VFILE(stream)->file) != EOF)
 		rc = 1;
 	}
 	break;
 
     case V_Mark:
 	if(!VMARK(stream)->mk_Resident)
-	    cmd_signal(sym_invalid_stream, list_2(stream, MKSTR("Marks used as streams must be resident")));
+	{
+	    static DEFSTRING(non_res, "Marks used as streams must be resident");
+	    cmd_signal(sym_invalid_stream, list_2(stream, VAL(non_res)));
+	}
 	else
 	    rc = pos_putc(VMARK(stream)->mk_File.tx, &VMARK(stream)->mk_Pos, c);
 	break;
 
-    case V_TX:
+    case V_Buffer:
 	rc = pos_putc(VTX(stream), get_tx_cursor_ptr(VTX(stream)), c);
 	break;
 
     case V_Cons:
 	args = VCAR(stream);
-	if(VTYPEP(args, V_DynamicString) && NUMBERP(VCDR(stream)))
+	if(VNORMAL_TYPEP(args, V_DynamicString) && INTP(VCDR(stream)))
 	{
-	    int actuallen = VNUM(VCDR(stream));
+	    int actuallen = VINT(VCDR(stream));
 	    len = STRING_LEN(args);
 	    if(len + 1 >= actuallen)
 	    {
@@ -319,7 +328,7 @@ stream_putc(VALUE stream, int c)
 		    break;
 		memcpy(VSTR(new), VSTR(args), len);
 		VCAR(stream) = new;
-		VCDR(stream) = make_number(newlen);
+		VCDR(stream) = MAKE_INT(newlen);
 		args = new;
 	    }
 	    VSTR(args)[len] = (u_char)c;
@@ -376,7 +385,7 @@ stream_putc(VALUE stream, int c)
 	{
 	    int oldgci = gc_inhibit;
 	    gc_inhibit = TRUE;
-	    if((res = call_lisp1(stream, make_number(c))) && !NILP(res))
+	    if((res = call_lisp1(stream, MAKE_INT(c))) && !NILP(res))
 		rc = 1;
 	    gc_inhibit = oldgci;
 	}
@@ -411,30 +420,33 @@ stream_puts(VALUE stream, u_char *buf, int bufLen, bool isValString)
 	int len, newlen;
 
     case V_File:
-	if(VFILE(stream)->lf_Name)
+	if(VFILE(stream)->name)
 	{
-	    if((rc = fwrite(buf, 1, bufLen, VFILE(stream)->lf_File)) == bufLen)
+	    if((rc = fwrite(buf, 1, bufLen, VFILE(stream)->file)) == bufLen)
 		rc = bufLen;
 	}
 	break;
 
     case V_Mark:
 	if(!VMARK(stream)->mk_Resident)
-	    cmd_signal(sym_invalid_stream, list_2(stream, MKSTR("Marks used as streams must be resident")));
+	{
+	    static DEFSTRING(non_res, "Marks used as streams must be resident");
+	    cmd_signal(sym_invalid_stream, list_2(stream, VAL(non_res)));
+	}
 	else
 	    rc = pos_puts(VMARK(stream)->mk_File.tx, &VMARK(stream)->mk_Pos,
 			  buf, bufLen);
 	break;
 
-    case V_TX:
+    case V_Buffer:
 	rc = pos_puts(VTX(stream), get_tx_cursor_ptr(VTX(stream)), buf, bufLen);
 	break;
 
     case V_Cons:
 	args = VCAR(stream);
-	if(VTYPEP(args, V_DynamicString) && NUMBERP(VCDR(stream)))
+	if(VNORMAL_TYPEP(args, V_DynamicString) && INTP(VCDR(stream)))
 	{
-	    int actuallen = VNUM(VCDR(stream));
+	    int actuallen = VINT(VCDR(stream));
 	    len = STRING_LEN(args);
 	    newlen = len + bufLen + 1;
 	    if(actuallen <= newlen)
@@ -447,7 +459,7 @@ stream_puts(VALUE stream, u_char *buf, int bufLen, bool isValString)
 		    break;
 		memcpy(VSTR(new), VSTR(args), len);
 		VCAR(stream) = new;
-		VCDR(stream) = make_number(newlen);
+		VCDR(stream) = MAKE_INT(newlen);
 		args = new;
 	    }
 #if 1
@@ -512,8 +524,8 @@ stream_puts(VALUE stream, u_char *buf, int bufLen, bool isValString)
 	    gc_inhibit = TRUE;
 	    if((res = call_lisp1(stream, args)) && !NILP(res))
 	    {
-		if(NUMBERP(res))
-		    rc = VNUM(res);
+		if(INTP(res))
+		    rc = VINT(res);
 		else
 		    rc = bufLen;
 	    }
@@ -664,14 +676,14 @@ a string LENGTH can define how many characters to write.
     switch(VTYPE(data))
     {
 	bool vstring;
-    case V_Number:
-	actual = stream_putc(stream, VNUM(data));
+    case V_Int:
+	actual = stream_putc(stream, VINT(data));
 	break;
     case V_StaticString:
     case V_DynamicString:
-	if(NUMBERP(len))
+	if(INTP(len))
 	{
-	    actual = VNUM(len);
+	    actual = VINT(len);
 	    if(actual > STRING_LEN(data))
 		return(signal_arg_error(len, 3));
 	    if(actual == STRING_LEN(data))
@@ -689,7 +701,7 @@ a string LENGTH can define how many characters to write.
     default:
 	return(signal_arg_error(data, 2));
     }
-    return(make_number(actual));
+    return(MAKE_INT(actual));
 }
 
 _PR VALUE cmd_read_char(VALUE stream);
@@ -703,7 +715,7 @@ are available returns nil.
 {
     int rc;
     if((rc = stream_getc(stream)) != EOF)
-	return(make_number(rc));
+	return(MAKE_INT(rc));
     return(sym_nil);
 }
 
@@ -719,7 +731,7 @@ Read one line of text from STREAM.
     if(FILEP(stream))
     {
 	/* Special case for file streams. We can read a line in one go.	 */
-	if(VFILE(stream)->lf_Name && fgets(buf, 400, VFILE(stream)->lf_File))
+	if(VFILE(stream)->name && fgets(buf, 400, VFILE(stream)->file))
 	    return(string_dup(buf));
 	return(sym_nil);
     }
@@ -765,7 +777,7 @@ Copy all characters from SOURCE-STREAM to DEST-STREAM until an EOF is read.
 	len++;
 	TEST_INT;
 	if(INT_P)
-	    return(NULL);
+	    return LISP_NULL;
     }
     if(i > 0)
     {
@@ -773,7 +785,7 @@ Copy all characters from SOURCE-STREAM to DEST-STREAM until an EOF is read.
 	stream_puts(dest, buf, i, TRUE);
     }
     if(len)
-	return(make_number(len));
+	return(MAKE_INT(len));
     return(sym_nil);
 }
 
@@ -792,7 +804,7 @@ variable `standard-input' if STREAM is unspecified) and return it.
        && !(stream = cmd_symbol_value(sym_standard_input, sym_nil)))
     {
 	signal_arg_error(stream, 1);
-	return(NULL);
+	return LISP_NULL;
     }
     c = stream_getc(stream);
     if(c == EOF)
@@ -819,7 +831,7 @@ for `read'.
        && !(stream = cmd_symbol_value(sym_standard_output, sym_nil)))
     {
 	signal_arg_error(stream, 1);
-	return(NULL);
+	return LISP_NULL;
     }
     stream_putc(stream, '\n');
     print_val(stream, obj);
@@ -839,7 +851,7 @@ variable `standard-output') in a form suitable for `read'.
        && !(stream = cmd_symbol_value(sym_standard_output, sym_nil)))
     {
 	signal_arg_error(stream, 1);
-	return(NULL);
+	return LISP_NULL;
     }
     print_val(stream, obj);
     return(obj);
@@ -859,7 +871,7 @@ are printed around strings.
        && !(stream = cmd_symbol_value(sym_standard_output, sym_nil)))
     {
 	signal_arg_error(stream, 1);
-	return(NULL);
+	return LISP_NULL;
     }
     princ_val(stream, obj);
     return(obj);
@@ -895,7 +907,7 @@ implemented:
     stream = ARG1;
     if(NILP(stream))
     {
-	stream = cmd_cons(string_dupn("", 0), make_number(0));
+	stream = cmd_cons(string_dupn("", 0), MAKE_INT(0));
 	mk_str = TRUE;
     }
     else
@@ -920,7 +932,7 @@ implemented:
 		nfmt[1] = 'l';
 		nfmt[2] = c;
 		nfmt[3] = 0;
-		sprintf(tbuf, nfmt, NUMBERP(val) ? VNUM(val) : (long)val);
+		sprintf(tbuf, nfmt, INTP(val) ? VINT(val) : (long)val);
 		stream_puts(stream, tbuf, -1, FALSE);
 		break;
 	    case 's':
@@ -942,7 +954,7 @@ implemented:
 	stream_puts(stream, last_fmt, fmt - last_fmt - 1, FALSE);
     if(mk_str)
     {
-	if(STRING_LEN(VCAR(stream)) != VNUM(VCDR(stream)))
+	if(STRING_LEN(VCAR(stream)) != VINT(VCDR(stream)))
 	{
 	    /* Truncate the stream to it's actual length. */
 	    stream = cmd_copy_sequence(VCAR(stream));
@@ -963,7 +975,7 @@ starting from START (or the beginning of the string).
 ::end:: */
 {
     DECLARE1(string, STRINGP);
-    return(cmd_cons(NUMBERP(start) ? start : make_number(0), string));
+    return(cmd_cons(INTP(start) ? start : MAKE_INT(0), string));
 }
 
 _PR VALUE cmd_make_string_output_stream(void);
@@ -975,7 +987,7 @@ Returns an output stream which will accumulate the characters written to
 it for the use of the `get-output-stream-string' function.
 ::end:: */
 {
-    return(cmd_cons(string_dupn("", 0), make_number(0)));
+    return(cmd_cons(string_dupn("", 0), MAKE_INT(0)));
 }
 
 _PR VALUE cmd_get_output_stream_string(VALUE strm);
@@ -990,9 +1002,9 @@ return the new characters.
 ::end:: */
 {
     VALUE string;
-    if(!CONSP(strm) || !STRINGP(VCAR(strm)) || !NUMBERP(VCDR(strm)))
+    if(!CONSP(strm) || !STRINGP(VCAR(strm)) || !INTP(VCDR(strm)))
 	return(signal_arg_error(strm, 1));
-    if(STRING_LEN(VCAR(strm)) != VNUM(VCDR(strm)))
+    if(STRING_LEN(VCAR(strm)) != VINT(VCDR(strm)))
     {
 	/* Truncate the string to it's actual length. */
 	string = cmd_copy_sequence(VCAR(strm));
@@ -1001,7 +1013,7 @@ return the new characters.
 	string = VCAR(strm);
     /* Reset the stream. */
     VCAR(strm) = string_dupn("", 0);
-    VCDR(strm) = make_number(0);
+    VCDR(strm) = MAKE_INT(0);
     return(string);
 }
 
@@ -1029,34 +1041,34 @@ Returns t if ARG is a stream.
 	cdr = VCDR(arg);
 	if((car == sym_lambda)
 	   || (BUFFERP(car) && (POSP(cdr) || (cdr == sym_t)))
-	   || (NUMBERP(car) && STRINGP(cdr))
-	   || (STRINGP(car) && NUMBERP(cdr)))
+	   || (INTP(car) && STRINGP(cdr))
+	   || (STRINGP(car) && INTP(cdr)))
 	    res = sym_t;
 	break;
     }
     return(res);
 }
 
-static LFile *lfile_chain;
+static Lisp_File *lfile_chain;
 
 void
 file_sweep(void)
 {
-    LFile *lf = lfile_chain;
+    Lisp_File *lf = lfile_chain;
     lfile_chain = NULL;
     while(lf)
     {
-	LFile *nxt = lf->lf_Next;
-	if(!GC_MARKEDP(VAL(lf)))
+	Lisp_File *nxt = lf->next;
+	if(!GC_NORMAL_MARKEDP(VAL(lf)))
 	{
-	    if(lf->lf_Name && !(lf->lf_Flags & LFF_DONT_CLOSE))
-		fclose(lf->lf_File);
-	    str_free(lf);
+	    if(lf->name && !(lf->flags & LFF_DONT_CLOSE))
+		fclose(lf->file);
+	    FREE_OBJECT(lf);
 	}
 	else
 	{
-	    GC_CLR(VAL(lf));
-	    lf->lf_Next = lfile_chain;
+	    GC_CLR_NORMAL(VAL(lf));
+	    lf->next = lfile_chain;
 	    lfile_chain = lf;
 	}
 	lf = nxt;
@@ -1068,8 +1080,8 @@ file_cmp(VALUE v1, VALUE v2)
 {
     if(VTYPE(v1) == VTYPE(v2))
     {
-	if(VFILE(v1)->lf_Name && VFILE(v2)->lf_Name)
-	    return(!same_files(VSTR(VFILE(v1)->lf_Name), VSTR(VFILE(v2)->lf_Name)));
+	if(VFILE(v1)->name && VFILE(v2)->name)
+	    return(!same_files(VSTR(VFILE(v1)->name), VSTR(VFILE(v2)->name)));
     }
     return(1);
 }
@@ -1078,9 +1090,9 @@ void
 file_prin(VALUE strm, VALUE obj)
 {
     stream_puts(strm, "#<file ", -1, FALSE);
-    if(VFILE(obj)->lf_Name)
+    if(VFILE(obj)->name)
     {
-	stream_puts(strm, VSTR(VFILE(obj)->lf_Name), -1, FALSE);
+	stream_puts(strm, VSTR(VFILE(obj)->name), -1, FALSE);
 	stream_putc(strm, '>');
     }
     else
@@ -1097,39 +1109,39 @@ modes, ie `r' == read, `w' == write, etc). If FILE is given it is an
 existing file object which is to be closed before opening the new file on it.
 ::end:: */
 {
-    LFile *lf;
+    Lisp_File *lf;
     if(!FILEP(file))
     {
-	lf = str_alloc(sizeof(LFile));
+	lf = ALLOC_OBJECT(sizeof(Lisp_File));
 	if(lf)
 	{
-	    lf->lf_Next = lfile_chain;
+	    lf->next = lfile_chain;
 	    lfile_chain = lf;
-	    lf->lf_Type = V_File;
+	    lf->type = V_File;
 	}
     }
     else
     {
 	lf = VFILE(file);
-	if(lf->lf_Name && !(lf->lf_Flags & LFF_DONT_CLOSE))
-	    fclose(lf->lf_File);
+	if(lf->name && !(lf->flags & LFF_DONT_CLOSE))
+	    fclose(lf->file);
     }
     if(lf)
     {
-	lf->lf_File = NULL;
-	lf->lf_Name = NULL;
-	lf->lf_Flags = 0;
+	lf->file = NULL;
+	lf->name = LISP_NULL;
+	lf->flags = 0;
 	if(STRINGP(name) && STRINGP(modes))
 	{
-	    lf->lf_File = fopen(VSTR(name), VSTR(modes));
-	    if(lf->lf_File)
+	    lf->file = fopen(VSTR(name), VSTR(modes));
+	    if(lf->file)
 	    {
-		lf->lf_Name = name;
+		lf->name = name;
 #ifdef HAVE_UNIX
 		/*
 		 * set close-on-exec for easy process fork()ing
 		 */
-		fcntl(fileno(lf->lf_File), F_SETFD, 1);
+		fcntl(fileno(lf->file), F_SETFD, 1);
 #endif
 	    }
 	    else
@@ -1137,7 +1149,7 @@ existing file object which is to be closed before opening the new file on it.
 	}
 	return(VAL(lf));
     }
-    return(NULL);
+    return LISP_NULL;
 }
 
 _PR VALUE cmd_close(VALUE file);
@@ -1150,10 +1162,10 @@ it has open.
 ::end:: */
 {
     DECLARE1(file, FILEP);
-    if(VFILE(file)->lf_Name && !(VFILE(file)->lf_Flags & LFF_DONT_CLOSE))
-	fclose(VFILE(file)->lf_File);
-    VFILE(file)->lf_File = NULL;
-    VFILE(file)->lf_Name = NULL;
+    if(VFILE(file)->name && !(VFILE(file)->flags & LFF_DONT_CLOSE))
+	fclose(VFILE(file)->file);
+    VFILE(file)->file = NULL;
+    VFILE(file)->name = LISP_NULL;
     return(file);
 }
 
@@ -1166,8 +1178,8 @@ Flushes any buffered output on FILE.
 ::end:: */
 {
     DECLARE1(file, FILEP);
-    if(VFILE(file)->lf_Name)
-	fflush(VFILE(file)->lf_File);
+    if(VFILE(file)->name)
+	fflush(VFILE(file)->file);
     return(file);
 }
 
@@ -1193,7 +1205,7 @@ Returns t if FILE is currently bound to a physical file.
 ::end:: */
 {
     DECLARE1(file, FILEP);
-    if(VFILE(file)->lf_Name)
+    if(VFILE(file)->name)
 	return(sym_t);
     return(sym_nil);
 }
@@ -1207,8 +1219,8 @@ Returns the name of the physical file FILE is bound to, or nil.
 ::end:: */
 {
     DECLARE1(file, FILEP);
-    if(VFILE(file)->lf_Name)
-	return(VFILE(file)->lf_Name);
+    if(VFILE(file)->name)
+	return(VFILE(file)->name);
     return(sym_nil);
 }
 
@@ -1221,7 +1233,7 @@ Returns t when the end of FILE is reached.
 ::end:: */
 {
     DECLARE1(file, FILEP);
-    if(VFILE(file)->lf_Name && feof(VFILE(file)->lf_File))
+    if(VFILE(file)->name && feof(VFILE(file)->file))
 	return(sym_t);
     return(sym_nil);
 }
@@ -1241,13 +1253,16 @@ If IGNORE-CASE-P is non-nil the regexp matching is not case-sensitive.
     u_char buf[400];		/* Fix this later. */
     DECLARE1(file, FILEP);
     DECLARE2(re, STRINGP);
-    if(!VFILE(file)->lf_Name)
-	return(cmd_signal(sym_bad_arg, list_2(MKSTR("File object is unbound"), file)));
+    if(!VFILE(file)->name)
+    {
+	static DEFSTRING(unbound, "File object is unbound");
+	return(cmd_signal(sym_bad_arg, list_2(VAL(unbound), file)));
+    }
     prog = regcomp(VSTR(re));
     if(prog)
     {
 	int eflags = NILP(nocase_p) ? 0 : REG_NOCASE;
-	FILE *fh = VFILE(file)->lf_File;
+	FILE *fh = VFILE(file)->file;
 	VALUE res = sym_nil;
 	while(fgets(buf, 400, fh))
 	{
@@ -1260,7 +1275,7 @@ If IGNORE-CASE-P is non-nil the regexp matching is not case-sensitive.
 	free(prog);
 	return(res);
     }
-    return(NULL);
+    return LISP_NULL;
 }
 
 _PR VALUE cmd_stdin_file(void);
@@ -1272,12 +1287,13 @@ Returns the file object representing the editor's standard input.
 ::end:: */
 {
     static VALUE stdin_file;
+    static DEFSTRING(stdin_name, "<stdin>");
     if(stdin_file)
 	return(stdin_file);
     stdin_file = cmd_open(sym_nil, sym_nil, sym_nil);
-    VFILE(stdin_file)->lf_Name = MKSTR("<stdin>");
-    VFILE(stdin_file)->lf_File = stdin;
-    VFILE(stdin_file)->lf_Flags |= LFF_DONT_CLOSE;
+    VFILE(stdin_file)->name = VAL(stdin_name);
+    VFILE(stdin_file)->file = stdin;
+    VFILE(stdin_file)->flags |= LFF_DONT_CLOSE;
     mark_static(&stdin_file);
     return(stdin_file);
 }
@@ -1291,12 +1307,13 @@ Returns the file object representing the editor's standard output.
 ::end:: */
 {
     static VALUE stdout_file;
+    static DEFSTRING(stdout_name, "<stdout>");
     if(stdout_file)
 	return(stdout_file);
     stdout_file = cmd_open(sym_nil, sym_nil, sym_nil);
-    VFILE(stdout_file)->lf_Name = MKSTR("<stdout>");
-    VFILE(stdout_file)->lf_File = stdout;
-    VFILE(stdout_file)->lf_Flags |= LFF_DONT_CLOSE;
+    VFILE(stdout_file)->name = VAL(stdout_name);
+    VFILE(stdout_file)->file = stdout;
+    VFILE(stdout_file)->flags |= LFF_DONT_CLOSE;
     mark_static(&stdout_file);
     return(stdout_file);
 }
@@ -1310,12 +1327,13 @@ Returns the file object representing the editor's standard output.
 ::end:: */
 {
     static VALUE stderr_file;
+    static DEFSTRING(stderr_name, "<stderr>");
     if(stderr_file)
 	return(stderr_file);
     stderr_file = cmd_open(sym_nil, sym_nil, sym_nil);
-    VFILE(stderr_file)->lf_Name = MKSTR("<stderr>");
-    VFILE(stderr_file)->lf_File = stderr;
-    VFILE(stderr_file)->lf_Flags |= LFF_DONT_CLOSE;
+    VFILE(stderr_file)->name = VAL(stderr_name);
+    VFILE(stderr_file)->file = stderr;
+    VFILE(stderr_file)->flags |= LFF_DONT_CLOSE;
     mark_static(&stderr_file);
     return(stderr_file);
 }
@@ -1352,13 +1370,13 @@ streams_init(void)
 void
 streams_kill(void)
 {
-    LFile *lf = lfile_chain;
+    Lisp_File *lf = lfile_chain;
     while(lf)
     {
-	LFile *nxt = lf->lf_Next;
-	if(lf->lf_Name && !(lf->lf_Flags & LFF_DONT_CLOSE))
-	    fclose(lf->lf_File);
-	str_free(lf);
+	Lisp_File *nxt = lf->next;
+	if(lf->name && !(lf->flags & LFF_DONT_CLOSE))
+	    fclose(lf->file);
+	FREE_OBJECT(lf);
 	lf = nxt;
     }
     lfile_chain = NULL;

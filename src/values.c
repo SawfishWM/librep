@@ -31,8 +31,6 @@
 
 /* #define GC_MONITOR_STK */
 
-#define STATIC_SMALL_NUMBERS 256
-
 _PR int value_cmp(VALUE, VALUE);
 _PR void princ_val(VALUE, VALUE);
 _PR void print_val(VALUE, VALUE);
@@ -42,7 +40,6 @@ _PR VALUE string_dupn(const u_char *, int);
 _PR VALUE string_dup(const u_char *);
 _PR int string_cmp(VALUE, VALUE);
 _PR bool set_string_len(VALUE, long);
-_PR VALUE make_number(long);
 _PR int number_cmp(VALUE, VALUE);
 _PR int ptr_cmp(VALUE, VALUE);
 _PR void cons_free(VALUE);
@@ -65,36 +62,39 @@ _PR void values_init (void);
 _PR void values_init2(void);
 _PR void values_kill (void);
 
-ValClass ValueClasses[] = {
-    { string_cmp, string_princ, string_print, MKSTR("string") },
-    { string_cmp, string_princ, string_print, MKSTR("string") },
-    { number_cmp, lisp_prin, lisp_prin, MKSTR("number") },
-    { cons_cmp, lisp_prin, lisp_prin, MKSTR("cons") },
-    { vector_cmp, lisp_prin, lisp_prin, MKSTR("vector") },
-    { symbol_cmp, symbol_princ, symbol_print, MKSTR("symbol") },
-    { mark_cmp, mark_prin, mark_prin, MKSTR("mark") },
-    { pos_cmp, pos_prin, pos_prin, MKSTR("pos") },
-    { ptr_cmp, lisp_prin, lisp_prin, MKSTR("var") },
-    { ptr_cmp, lisp_prin, lisp_prin, MKSTR("subr-0") },
-    { ptr_cmp, lisp_prin, lisp_prin, MKSTR("subr-1") },
-    { ptr_cmp, lisp_prin, lisp_prin, MKSTR("subr-2") },
-    { ptr_cmp, lisp_prin, lisp_prin, MKSTR("subr-3") },
-    { ptr_cmp, lisp_prin, lisp_prin, MKSTR("subr-4") },
-    { ptr_cmp, lisp_prin, lisp_prin, MKSTR("subr-5") },
-    { ptr_cmp, lisp_prin, lisp_prin, MKSTR("subr-n") },
-    { ptr_cmp, lisp_prin, lisp_prin, MKSTR("special-form") },
-    { ptr_cmp, buffer_prin, buffer_prin, MKSTR("buffer") },
-    { ptr_cmp, window_prin, window_prin, MKSTR("window") },
-    { ptr_cmp, view_prin, view_prin, MKSTR("view") },
-    { file_cmp, file_prin, file_prin, MKSTR("file") },
+Lisp_Type_Data data_types[] = {
+    { cons_cmp, lisp_prin, lisp_prin, "cons" },
+    { string_cmp, string_princ, string_print, "string" },
+    { string_cmp, string_princ, string_print, "string" },
+    { vector_cmp, lisp_prin, lisp_prin, "vector" },
+    { number_cmp, lisp_prin, lisp_prin, "number" },
+    { symbol_cmp, symbol_princ, symbol_print, "symbol" },
+    { nil_cmp, lisp_prin, lisp_prin, "void" },
+    { ptr_cmp, lisp_prin, lisp_prin, "var" },
+    { ptr_cmp, lisp_prin, lisp_prin, "subr-0" },
+    { ptr_cmp, lisp_prin, lisp_prin, "subr-1" },
+    { ptr_cmp, lisp_prin, lisp_prin, "subr-2" },
+    { ptr_cmp, lisp_prin, lisp_prin, "subr-3" },
+    { ptr_cmp, lisp_prin, lisp_prin, "subr-4" },
+    { ptr_cmp, lisp_prin, lisp_prin, "subr-5" },
+    { ptr_cmp, lisp_prin, lisp_prin, "subr-n" },
+    { ptr_cmp, lisp_prin, lisp_prin, "special-form" },
+    { ptr_cmp, buffer_prin, buffer_prin, "buffer" },
+    { ptr_cmp, window_prin, window_prin, "window" },
+    { ptr_cmp, view_prin, view_prin, "view" },
+    { pos_cmp, pos_prin, pos_prin, "pos" },
+    { mark_cmp, mark_prin, mark_prin, "mark" },
+    { file_cmp, file_prin, file_prin, "file" },
 #ifdef HAVE_SUBPROCESSES
-    { ptr_cmp, proc_prin, proc_prin, MKSTR("process") },
+    { ptr_cmp, proc_prin, proc_prin, "process" },
 #else
-    { nil_cmp, lisp_prin, lisp_prin, MKSTR("process") },
+    { nil_cmp, lisp_prin, lisp_prin, "process" },
 #endif
-    { ptr_cmp, glyphtable_prin, glyphtable_prin, MKSTR("glyph-table") },
-    { nil_cmp, lisp_prin, lisp_prin, MKSTR("void") },
+    { ptr_cmp, glyphtable_prin, glyphtable_prin, "glyph-table" },
 };
+
+
+/* General object handling */
 
 int
 value_cmp(VALUE v1, VALUE v2)
@@ -130,36 +130,39 @@ nil_cmp(VALUE val1, VALUE val2)
     return(1);
 }
 
+
+/* Strings */
+
 static StrMem lisp_strmem;
-_PR VALUE null_string;
-VALUE null_string = MKSTR("");
+_PR char null_string[];
+DEFSTRING(null_string, "");
 
 /* Return a string object with room for exactly LEN characters. No extra
    byte is allocated for a zero terminator; do this manually if required. */
 VALUE
 make_string(int len)
 {
-    DynamicString *str;
+    Lisp_DynamicString *str;
     int memlen = DSTR_SIZE(len);
     str = sm_alloc(&lisp_strmem, memlen);
     if(str)
     {
-	str->ds_Length = len - 1;
-	str->ds_Mem[0] = V_DynamicString;
+	str->length = len - 1;
+	str->data[0] = V_DynamicString;
 	data_after_gc += memlen;
-	return(VAL(&str->ds_Mem[0]));
+	return(VAL(&str->data[0]));
     }
-    return(NULL);
+    return LISP_NULL;
 }
 
 VALUE
 string_dupn(const u_char *src, int slen)
 {
-    String *dst = VSTRING(make_string(slen + 1));
+    Lisp_String *dst = VSTRING(make_string(slen + 1));
     if(dst)
     {
-	memcpy(dst->str_Mem + 1, src, slen);
-	dst->str_Mem[slen+1] = 0;
+	memcpy(dst->data + 1, src, slen);
+	dst->data[slen+1] = 0;
     }
     return(VAL(dst));
 }
@@ -199,9 +202,10 @@ string_sweep(void)
 	    {
 		if(mc->mc_BlkType != MBT_FREE)
 		{
-		    register DynamicString *ds = (DynamicString *)mc->mc_Mem.mem;
-		    if(ds->ds_Mem[0] & GC_MARK_BIT)
-			ds->ds_Mem[0] &= ~GC_MARK_BIT;
+		    register Lisp_DynamicString *ds
+		        = (Lisp_DynamicString *)mc->mc_Mem.mem;
+		    if(ds->data[0] & GC_NORMAL_MARK_BIT)
+			ds->data[0] &= ~GC_NORMAL_MARK_BIT;
 		    else
 		    {
 			mc->mc_BlkType = MBT_FREE;
@@ -219,12 +223,13 @@ string_sweep(void)
     while(mlc)
     {
 	MemChunk *nxtmlc = mlc->mc_Header.next;
-	register DynamicString *ds = (DynamicString *)mlc->mc_Mem.mem;
-	if(ds->ds_Mem[0] == V_DynamicString)
+	register Lisp_DynamicString *ds
+	    = (Lisp_DynamicString *)mlc->mc_Mem.mem;
+	if(ds->data[0] == V_DynamicString)
 	    myfree(mlc);
 	else
 	{
-	    ds->ds_Mem[0] = V_DynamicString;
+	    ds->data[0] = V_DynamicString;
 	    mlc->mc_Header.next = lisp_strmem.sm_MallocChain;
 	    lisp_strmem.sm_MallocChain = mlc;
 	}
@@ -236,90 +241,22 @@ string_sweep(void)
 bool
 set_string_len(VALUE str, long len)
 {
-    if(VTYPEP(str, V_DynamicString))
+    if(VNORMAL_TYPEP(str, V_DynamicString))
     {
-	DSTRING_HDR(str)->ds_Length = len;
+	DSTRING_HDR(str)->length = len;
 	return(TRUE);
     }
     return(FALSE);
 }
 
-static NumberBlk *number_block_chain;
-static Number *number_freelist;
-static int allocated_numbers, used_numbers;
-
-#ifdef STATIC_SMALL_NUMBERS
-static Number small_numbers[STATIC_SMALL_NUMBERS];
-#endif
-
-VALUE
-make_number(long n)
-{
-    Number *num;
-#ifdef STATIC_SMALL_NUMBERS
-    if((n < STATIC_SMALL_NUMBERS) && (n >= 0))
-	return(VAL(&small_numbers[n]));
-#endif
-    if(!(num = number_freelist))
-    {
-	NumberBlk *nb = mymalloc(sizeof(NumberBlk));
-	if(nb)
-	{
-	    int i;
-	    allocated_numbers += NUMBERBLK_SIZE;
-	    nb->nb_Next = number_block_chain;
-	    number_block_chain = nb;
-	    for(i = 0; i < (NUMBERBLK_SIZE - 1); i++)
-		nb->nb_Numbers[i].num_Data.next = &nb->nb_Numbers[i + 1];
-	    nb->nb_Numbers[i].num_Data.next = number_freelist;
-	    number_freelist = nb->nb_Numbers;
-	}
-	num = number_freelist;
-    }
-    number_freelist = num->num_Data.next;
-    num->num_Type = V_Number;
-    num->num_Data.number = n;
-    used_numbers++;
-    data_after_gc += sizeof(Number);
-    return(VAL(num));
-}
-
-static void
-number_sweep(void)
-{
-    NumberBlk *nb = number_block_chain;
-    int i;
-    number_freelist = NULL;
-    used_numbers = 0;
-    while(nb)
-    {
-	NumberBlk *nxt = nb->nb_Next;
-	for(i = 0; i < NUMBERBLK_SIZE; i++)
-	{
-	    if(!GC_MARKEDP(VAL(&nb->nb_Numbers[i])))
-	    {
-		nb->nb_Numbers[i].num_Data.next = number_freelist;
-		number_freelist = &nb->nb_Numbers[i];
-	    }
-	    else
-	    {
-		GC_CLR(VAL(&nb->nb_Numbers[i]));
-		used_numbers++;
-	    }
-	}
-	nb = nxt;
-    }
-#ifdef STATIC_SMALL_NUMBERS
-    for(i = 0; i < STATIC_SMALL_NUMBERS; i++)
-	GC_CLR(VAL(&small_numbers[i]));
-#endif
-}
+
+/* Misc */
 
 int
 number_cmp(VALUE v1, VALUE v2)
 {
     if(VTYPE(v1) == VTYPE(v2))
-	return(VNUM(v1) - VNUM(v2));
+	return(VINT(v1) - VINT(v2));
     return(1);
 }
 
@@ -331,8 +268,11 @@ ptr_cmp(VALUE v1, VALUE v2)
     return(1);
 }
 
-static ConsBlk *cons_block_chain;
-static Cons *cons_freelist;
+
+/* Cons */
+
+static Lisp_Cons_Block *cons_block_chain;
+static Lisp_Cons *cons_freelist;
 static int allocated_cons, used_cons;
 
 _PR VALUE cmd_cons(VALUE, VALUE);
@@ -343,37 +283,49 @@ cons CAR-VALUE CDR-VALUE
 Returns a new cons-cell with car CAR-VALUE and cdr CDR-VALUE.
 ::end:: */
 {
-    Cons *cn;
+    Lisp_Cons *cn;
     cn = cons_freelist;
     if(!cn)
     {
-	ConsBlk *cb = mycalloc(sizeof(ConsBlk));
+	Lisp_Cons_Block *cb;
+#if MALLOC_ALIGNMENT >= CONS_ALIGNMENT
+	cb = mymalloc(sizeof(Lisp_Cons_Block));
+#else
+	cb = mymalloc(sizeof(Lisp_Cons_Block) + CONS_ALIGNMENT - 1);
+#endif
 	if(cb)
 	{
 	    int i;
+#if MALLOC_ALIGNMENT >= CONS_ALIGNMENT
+	    cb->alloc_address = cb;
+#else
+	    void *tem = cb;
+	    cb = (Lisp_Cons_Block *)(((PTR_SIZED_INT)cb)
+				     & ~(CONS_ALIGNMENT - 1));
+	    cb->alloc_address = tem;
+#endif
 	    allocated_cons += CONSBLK_SIZE;
-	    cb->cb_Next = cons_block_chain;
+	    cb->next = cons_block_chain;
 	    cons_block_chain = cb;
 	    for(i = 0; i < (CONSBLK_SIZE - 1); i++)
-		cb->cb_Cons[i].cn_Cdr = VAL(&cb->cb_Cons[i + 1]);
-	    cb->cb_Cons[i].cn_Cdr = NULL;
-	    cons_freelist = cb->cb_Cons;
+		cb->cons[i].cdr = CONS_VAL(&cb->cons[i + 1]);
+	    cb->cons[i].cdr = 0;
+	    cons_freelist = cb->cons;
 	}
 	cn = cons_freelist;
     }
-    cons_freelist = VCONS(cn->cn_Cdr);
-    cn->cn_Type = V_Cons;
-    cn->cn_Car = car;
-    cn->cn_Cdr = cdr;
+    cons_freelist = VCONS(cn->cdr);
+    cn->car = car;
+    cn->cdr = cdr;
     used_cons++;
-    data_after_gc += sizeof(Cons);
-    return(VAL(cn));
+    data_after_gc += sizeof(Lisp_Cons);
+    return CONS_VAL(cn);
 }
 
 void
 cons_free(VALUE cn)
 {
-    VCDR(cn) = VAL(cons_freelist);
+    VCDR(cn) = CONS_VAL(cons_freelist);
     cons_freelist = VCONS(cn);
     used_cons--;
 }
@@ -381,34 +333,34 @@ cons_free(VALUE cn)
 static void
 cons_sweep(void)
 {
-    ConsBlk *cb = cons_block_chain;
+    Lisp_Cons_Block *cb = cons_block_chain;
     cons_block_chain = NULL;
     cons_freelist = NULL;
     used_cons = 0;
     while(cb)
     {
-	ConsBlk *nxt = cb->cb_Next;
-	Cons *newfree = NULL, *newfreetail = NULL, *this;
+	Lisp_Cons_Block *nxt = cb->next;
+	Lisp_Cons *newfree = NULL, *newfreetail = NULL, *this;
 	int i, newused = 0;
-	for(i = 0, this = cb->cb_Cons; i < CONSBLK_SIZE; i++, this++)
+	for(i = 0, this = cb->cons; i < CONSBLK_SIZE; i++, this++)
 	{
-	    if(!GC_MARKEDP(VAL(this)))
+	    if(!GC_CONS_MARKEDP(CONS_VAL(this)))
 	    {
 		if(!newfreetail)
 		    newfreetail = this;
-		this->cn_Cdr = VAL(newfree);
+		this->cdr = CONS_VAL(newfree);
 		newfree = this;
 	    }
 	    else
 	    {
-		GC_CLR(VAL(this));
+		GC_CLR_CONS(CONS_VAL(this));
 		newused++;
 	    }
 	}
 	if(newused == 0)
 	{
 	    /* Whole ConsBlk unused, lets get rid of it.  */
-	    myfree(cb);
+	    myfree(cb->alloc_address);
 	    allocated_cons -= CONSBLK_SIZE;
 	}
 	else
@@ -416,12 +368,12 @@ cons_sweep(void)
 	    if(newfreetail)
 	    {
 		/* Link this mini-freelist onto the main one.  */
-		newfreetail->cn_Cdr = VAL(cons_freelist);
+		newfreetail->cdr = CONS_VAL(cons_freelist);
 		cons_freelist = newfree;
 		used_cons += newused;
 	    }
 	    /* Have to rebuild the ConsBlk chain as well.  */
-	    cb->cb_Next = cons_block_chain;
+	    cb->next = cons_block_chain;
 	    cons_block_chain = cb;
 	}
 	cb = nxt;
@@ -471,20 +423,23 @@ list_5(VALUE v1, VALUE v2, VALUE v3, VALUE v4, VALUE v5)
     return(LIST_5(v1, v2, v3, v4, v5));
 }
 
-static Vector *vector_chain;
+
+/* Vectors */
+
+static Lisp_Vector *vector_chain;
 static int used_vector_slots;
 
 VALUE
 make_vector(int size)
 {
     int len = VECT_SIZE(size);
-    Vector *v = mycalloc(len);
+    Lisp_Vector *v = ALLOC_OBJECT(len);
     if(v)
     {
-	v->vc_Type = V_Vector;
-	v->vc_Next = vector_chain;
+	v->type = V_Vector;
+	v->next = vector_chain;
 	vector_chain = v;
-	v->vc_Size = size;
+	v->size = size;
 	used_vector_slots += size;
 	data_after_gc += len;
     }
@@ -494,20 +449,20 @@ make_vector(int size)
 static void
 vector_sweep(void)
 {
-    Vector *this = vector_chain;
+    Lisp_Vector *this = vector_chain;
     vector_chain = NULL;
     used_vector_slots = 0;
     while(this)
     {
-	Vector *nxt = this->vc_Next;
-	if(!GC_MARKEDP(VAL(this)))
-	    myfree(this);
+	Lisp_Vector *nxt = this->next;
+	if(!GC_NORMAL_MARKEDP(VAL(this)))
+	    FREE_OBJECT(this);
 	else
 	{
-	    this->vc_Next = vector_chain;
+	    this->next = vector_chain;
 	    vector_chain = this;
-	    used_vector_slots += this->vc_Size;
-	    GC_CLR(VAL(this));
+	    used_vector_slots += this->size;
+	    GC_CLR_NORMAL(VAL(this));
 	}
 	this = nxt;
     }
@@ -517,16 +472,19 @@ int
 vector_cmp(VALUE v1, VALUE v2)
 {
     int rc = 1;
-    if((VTYPE(v1) == VTYPE(v2)) && (VVECT(v1)->vc_Size == VVECT(v2)->vc_Size))
+    if((VTYPE(v1) == VTYPE(v2)) && (VVECT(v1)->size == VVECT(v2)->size))
     {
 	int i;
-	for(i = rc = 0; (i < VVECT(v1)->vc_Size) && (!rc); i++)
-	    rc = value_cmp(VVECT(v1)->vc_Array[i], VVECT(v2)->vc_Array[i]);
+	for(i = rc = 0; (i < VVECT(v1)->size) && (!rc); i++)
+	    rc = value_cmp(VVECT(v1)->array[i], VVECT(v2)->array[i]);
     }
     return(rc);
 }
 
-static PosBlk *pos_block_chain;
+
+/* Positions */
+
+static Pos_Block *pos_block_chain;
 static Pos *pos_free_list;
 static int used_pos, allocated_pos;
 
@@ -536,22 +494,22 @@ make_pos(long col, long row)
     Pos *p = pos_free_list;
     if(!p)
     {
-	PosBlk *pb = mycalloc(sizeof(PosBlk));
+	Pos_Block *pb = ALLOC_OBJECT(sizeof(Pos_Block));
 	if(pb)
 	{
 	    int i;
 	    allocated_pos += POSBLK_SIZE;
-	    pb->pb_Next = pos_block_chain;
+	    pb->next = pos_block_chain;
 	    pos_block_chain = pb;
 	    for(i = 0; i < (POSBLK_SIZE - 1); i++)
-		pb->pb_Pos[i].p_Next = &pb->pb_Pos[i + 1];
-	    pb->pb_Pos[i].p_Next = pos_free_list;
-	    pos_free_list = pb->pb_Pos;
+		pb->pos[i].next = &pb->pos[i + 1];
+	    pb->pos[i].next = pos_free_list;
+	    pos_free_list = pb->pos;
 	}
 	p = pos_free_list;
     }
-    pos_free_list = p->p_Next;
-    p->p_Data.type = V_Pos;
+    pos_free_list = p->next;
+    VNORMAL_TYPE(p) = V_Pos;
     VCOL(p) = col;
     VROW(p) = row;
     used_pos++;
@@ -567,8 +525,8 @@ pos COLUMN ROW
 Returns a new position object with coordinates (COLUMN , ROW).
 ::end:: */
 {
-    long col = NUMBERP(x) ? VNUM(x) : VCOL(curr_vw->vw_CursorPos);
-    long row = NUMBERP(y) ? VNUM(y) : VROW(curr_vw->vw_CursorPos);
+    long col = INTP(x) ? VINT(x) : VCOL(curr_vw->vw_CursorPos);
+    long row = INTP(y) ? VINT(y) : VROW(curr_vw->vw_CursorPos);
     return make_pos(col ,row);
 }
 
@@ -595,23 +553,23 @@ pos_prin(VALUE strm, VALUE obj)
 static void
 pos_sweep(void)
 {
-    PosBlk *pb = pos_block_chain;
+    Pos_Block *pb = pos_block_chain;
     pos_free_list = NULL;
     used_pos = 0;
     while(pb)
     {
 	int i;
-	PosBlk *nxt = pb->pb_Next;
+	Pos_Block *nxt = pb->next;
 	for(i = 0; i < POSBLK_SIZE; i++)
 	{
-	    if(!GC_MARKEDP(VAL(&pb->pb_Pos[i])))
+	    if(!GC_NORMAL_MARKEDP(VAL(&pb->pos[i])))
 	    {
-		pb->pb_Pos[i].p_Next = pos_free_list;
-		pos_free_list = &pb->pb_Pos[i];
+		pb->pos[i].next = pos_free_list;
+		pos_free_list = &pb->pos[i];
 	    }
 	    else
 	    {
-		GC_CLR(VAL(&pb->pb_Pos[i]));
+		GC_CLR_NORMAL(VAL(&pb->pos[i]));
 		used_pos++;
 	    }
 	}
@@ -632,17 +590,17 @@ pos_cmp(VALUE v1, VALUE v2)
     return(rc);
 }
 
-/*
- * Garbage Collection is here
- */
-#define NUM_STATIC_OBJS 128
-static VALUE *static_marks[NUM_STATIC_OBJS];
-static int next_static;
+
+/* Garbage collection */
 
-_PR GCVAL *gcv_stack;
-_PR GCVALN *gcvn_stack;
-GCVAL *gcv_stack;
-GCVALN *gcvn_stack;
+#define STATIC_ROOTS 128
+static VALUE *static_roots[STATIC_ROOTS];
+static int next_static_root;
+
+_PR GC_root *gc_root_stack;
+_PR GC_n_roots *gc_n_roots_stack;
+GC_root *gc_root_stack;
+GC_n_roots *gc_n_roots_stack;
 
 /* data_after_gc = bytes of storage used since last gc
    gc_threshold = value that data_after_gc should be before gc'ing
@@ -658,13 +616,16 @@ static int *gc_stack_high_tide;
 void
 mark_static(VALUE *obj)
 {
-    assert(next_static < NUM_STATIC_OBJS);
-    static_marks[next_static++] = obj;
+    assert(next_static_root < STATIC_ROOTS);
+    static_roots[next_static_root++] = obj;
 }
 
 /* Mark a single Lisp object.
    This attempts to eliminate as much tail-recursion as possible (by
-   changing the VAL and jumping back to the `again' label).  */
+   changing the VAL and jumping back to the `again' label).
+
+   Note that VAL must not be NULL, and must not already have been
+   marked, (see the MARKVAL macro in lisp.h) */
 void
 mark_value(register VALUE val)
 {
@@ -674,12 +635,7 @@ mark_value(register VALUE val)
     if(&dummy < gc_stack_high_tide)
 	gc_stack_high_tide = &dummy;
 #endif
-#if 0
-    /* This is done in the macro MARKVAL(), it saves an unnecessary function
-       call.  */
-    if((val == NULL) || GC_MARKEDP(val))
-	return;
-#endif
+
 #ifdef GC_MINSTACK
     /* This is a real problem. I can't safely stop marking since this means
        that some lisp data won't have been marked and therefore the sweep
@@ -695,48 +651,53 @@ mark_value(register VALUE val)
 #endif
 
 again:
-    switch(VTYPE(val))
+    if(!NORMALP(val))
     {
-    case V_Cons:
-	/* Attempts to walk though whole lists at a time (since Lisp
-	   lists mainly link from the cdr).  */
-	GC_SET(val);
+	/* Either a cons cell or a number. We can ignore numbers, so */
+	if(INTP(val))
+	    return;
+
+	/* Must be a cons. Attempts to walk though whole lists at a time
+	   (since Lisp lists mainly link from the cdr).  */
+	GC_SET_CONS(val);
 	if(NILP(VCDR(val)))
-	{
 	    /* End of a list. We can safely mark the car non-recursively.  */
-	    val = VCAR(val);
-	}
+	    val = GCREF(VCAR(val));
 	else
 	{
-	    MARKVAL(VCAR(val));
+	    MARKVAL(GCREF(VCAR(val)));
 	    val = VCDR(val);
 	}
 	if(val && !GC_MARKEDP(val))
 	    goto again;
-	break;
+	return;
+    }
 
+    /* So we know that it's a normal object */
+    switch(VNORMAL_TYPE(val))
+    {
     case V_Vector:
 	{
 	    register int i;
-	    GC_SET(val);
-	    for(i = 0; i < VVECT(val)->vc_Size; i++)
-		MARKVAL(VVECT(val)->vc_Array[i]);
+	    GC_SET_NORMAL(val);
+	    for(i = 0; i < VVECT(val)->size; i++)
+		MARKVAL(VVECT(val)->array[i]);
 	}
 	break;
 
     case V_Symbol:
-	GC_SET(val);
-	MARKVAL(VSYM(val)->sym_Name);
-	MARKVAL(VSYM(val)->sym_Value);
-	MARKVAL(VSYM(val)->sym_Function);
-	MARKVAL(VSYM(val)->sym_PropList);
-	val = VSYM(val)->sym_Next;
+	GC_SET_NORMAL(val);
+	MARKVAL(VSYM(val)->name);
+	MARKVAL(VSYM(val)->value);
+	MARKVAL(VSYM(val)->function);
+	MARKVAL(VSYM(val)->prop_list);
+	val = VSYM(val)->next;
 	if(val && !GC_MARKEDP(val))
 	    goto again;
 	break;
 
     case V_Buffer:
-	GC_SET(val);
+	GC_SET_NORMAL(val);
 	MARKVAL(VTX(val)->tx_FileName);
 	MARKVAL(VTX(val)->tx_BufferName);
 	MARKVAL(VTX(val)->tx_ModeName);
@@ -758,7 +719,7 @@ again:
 	break;
 
     case V_Window:
-	GC_SET(val);
+	GC_SET_NORMAL(val);
 	MARKVAL(VWIN(val)->w_FontName);
 #ifdef HAVE_AMIGA
 	MARKVAL(VWIN(val)->w_WindowSys.ws_ScreenName);
@@ -769,7 +730,7 @@ again:
 	break;
 
     case V_View:
-	GC_SET(val);
+	GC_SET_NORMAL(val);
 	MARKVAL(VAL(VVIEW(val)->vw_Tx));
 	MARKVAL(VVIEW(val)->vw_BufferList);
 	MARKVAL(VVIEW(val)->vw_CursorPos);
@@ -786,19 +747,19 @@ again:
 	break;
 
     case V_File:
-	GC_SET(val);
-	MARKVAL(VFILE(val)->lf_Name);
+	GC_SET_NORMAL(val);
+	MARKVAL(VFILE(val)->name);
 	break;
 
     case V_Process:
-	GC_SET(val);
+	GC_SET_NORMAL(val);
 #ifdef HAVE_SUBPROCESSES
 	proc_mark(val);
 #endif
 	break;
 
     case V_Mark:
-	GC_SET(val);
+	GC_SET_NORMAL(val);
 	if(!VMARK(val)->mk_Resident)
 	{
 	    /* TXs don't get marked here. They should still be able to
@@ -810,10 +771,9 @@ again:
 	break;
 
     case V_DynamicString:
-    case V_Number:
     case V_Pos:
     case V_GlyphTable:
-	GC_SET(val);
+	GC_SET_NORMAL(val);
 	break;
 
     case V_StaticString:
@@ -836,13 +796,7 @@ The number of bytes of storage which must be used before a garbage-
 collection is triggered.
 ::end:: */
 {
-    if(val)
-    {
-	if(NUMBERP(val))
-	    gc_threshold = VNUM(val);
-	return(NULL);
-    }
-    return(make_number(gc_threshold));
+    return handle_var_int(val, &gc_threshold);
 }
 
 _PR VALUE var_idle_garbage_threshold(VALUE val);
@@ -852,13 +806,7 @@ The number of bytes of storage which must be used before a garbage-
 collection is triggered when the editor is idle.
 ::end:: */
 {
-    if(val)
-    {
-	if(NUMBERP(val))
-	    idle_gc_threshold = VNUM(val);
-	return(NULL);
-    }
-    return(make_number(idle_gc_threshold));
+    return handle_var_int(val, &idle_gc_threshold);
 }
 
 _PR VALUE cmd_garbage_collect(VALUE noStats);
@@ -871,11 +819,15 @@ list. This is done automatically when the amount of storage used since the
 last garbage-collection is greater than `garbage-threshold'.
 ::end:: */
 {
+#ifndef NO_GC_MSG
+    static DEFSTRING(gc_start, "Garbage collecting...");
+    static DEFSTRING(gc_done, "Garbage collecting...done.");
+#endif
     int i;
-    GCVAL *gcv;
-    GCVALN *gcvn;
+    GC_root *gc_root;
+    GC_n_roots *gc_n_roots;
     WIN *win;
-    struct LispCall *lc;
+    struct Lisp_Call *lc;
 #ifndef NO_GC_MSG
     u_char *old_msg;
     u_long old_msg_len;
@@ -893,22 +845,23 @@ last garbage-collection is greater than `garbage-threshold'.
     old_log_msgs = log_messages;
     log_messages = FALSE;
     save_message(curr_win, &old_msg, &old_msg_len);
-    cmd_message(MKSTR("Garbage collecting..."), sym_t);
+    cmd_message(VAL(gc_start), sym_t);
 #endif
 
     /* gc the undo lists */
     undo_trim();
 
     /* mark static objects */
-    for(i = 0; i < next_static; i++)
-	MARKVAL(*static_marks[i]);
+    for(i = 0; i < next_static_root; i++)
+	MARKVAL(*static_roots[i]);
     /* mark stack based objects protected from GC */
-    for(gcv = gcv_stack; gcv; gcv = gcv->gcv_Next)
-	MARKVAL(*gcv->gcv_Value);
-    for(gcvn = gcvn_stack; gcvn; gcvn = gcvn->gcv_Next)
+    for(gc_root = gc_root_stack; gc_root != 0; gc_root = gc_root->next)
+	MARKVAL(*gc_root->ptr);
+    for(gc_n_roots = gc_n_roots_stack; gc_n_roots != 0;
+	gc_n_roots = gc_n_roots->next)
     {
-	for(i = 0; i < gcvn->gcv_N; i++)
-	    MARKVAL(gcvn->gcv_First[i]);
+	for(i = 0; i < gc_n_roots->count; i++)
+	    MARKVAL(gc_n_roots->first[i]);
     }
 
     /* Don't want any open windows mysteriously vanishing so,  */
@@ -929,16 +882,15 @@ last garbage-collection is greater than `garbage-threshold'.
     lc = lisp_call_stack;
     while(lc)
     {
-	MARKVAL(lc->lc_Fun);
-	MARKVAL(lc->lc_Args);
-	/* don't bother marking `lc_ArgsEvalledP' it's always `nil' or `t'  */
-	lc = lc->lc_Next;
+	MARKVAL(lc->fun);
+	MARKVAL(lc->args);
+	/* don't bother marking `args_evalled_p' it's always `nil' or `t'  */
+	lc = lc->next;
     }
 
     mark_regexp_data();
 
     string_sweep();
-    number_sweep();
     cons_sweep();
     vector_sweep();
     pos_sweep();
@@ -957,7 +909,7 @@ last garbage-collection is greater than `garbage-threshold'.
     sm_flush(&main_strmem);
 
 #ifndef NO_GC_MSG
-    cmd_message(MKSTR("Garbage collecting...done."), sym_t);
+    cmd_message(VAL(gc_done), sym_t);
     restore_message(curr_win, old_msg, old_msg_len);
     log_messages = old_log_msgs;
 #endif
@@ -971,30 +923,21 @@ last garbage-collection is greater than `garbage-threshold'.
 
     if(NILP(noStats))
     {
-	return(list_5(cmd_cons(make_number(used_cons),
-			       make_number(allocated_cons - used_cons)),
-		      cmd_cons(make_number(used_numbers),
-			       make_number(allocated_numbers-used_numbers-1)),
-		      cmd_cons(make_number(used_symbols),
-			       make_number(allocated_symbols - used_symbols)),
-		      cmd_cons(make_number(used_pos),
-			       make_number(allocated_pos - used_pos)),
-		      make_number(used_vector_slots)));
+	return(list_4(cmd_cons(MAKE_INT(used_cons),
+			       MAKE_INT(allocated_cons - used_cons)),
+		      cmd_cons(MAKE_INT(used_symbols),
+			       MAKE_INT(allocated_symbols - used_symbols)),
+		      cmd_cons(MAKE_INT(used_pos),
+			       MAKE_INT(allocated_pos - used_pos)),
+		      MAKE_INT(used_vector_slots)));
     }
     return(sym_t);
 }
 
+
 void
 values_init(void)
 {
-#ifdef STATIC_SMALL_NUMBERS
-    register int i;
-    for(i = 0; i < STATIC_SMALL_NUMBERS; i++)
-    {
-	small_numbers[i].num_Type = V_Number;
-	small_numbers[i].num_Data.number = i;
-    }
-#endif
     lisp_strmem.sm_UseMallocChain = TRUE;
     sm_init(&lisp_strmem);
 }
@@ -1007,42 +950,34 @@ values_init2(void)
     ADD_SUBR(subr_copy_pos);
     ADD_SUBR(subr_garbage_threshold);
     ADD_SUBR(subr_idle_garbage_threshold);
-    ADD_SUBR(subr_garbage_collect);
+    ADD_SUBR_INT(subr_garbage_collect);
 }
 
 void
 values_kill(void)
 {
-    ConsBlk *cb = cons_block_chain;
-    NumberBlk *nb = number_block_chain;
-    Vector *v = vector_chain;
-    PosBlk *pb = pos_block_chain;
+    Lisp_Cons_Block *cb = cons_block_chain;
+    Lisp_Vector *v = vector_chain;
+    Pos_Block *pb = pos_block_chain;
     while(cb)
     {
-	ConsBlk *nxt = cb->cb_Next;
-	myfree(cb);
+	Lisp_Cons_Block *nxt = cb->next;
+	myfree(cb->alloc_address);
 	cb = nxt;
-    }
-    while(nb)
-    {
-	NumberBlk *nxt = nb->nb_Next;
-	myfree(nb);
-	nb = nxt;
     }
     while(v)
     {
-	Vector *nxt = v->vc_Next;
-	myfree(v);
+	Lisp_Vector *nxt = v->next;
+	FREE_OBJECT(v);
 	v = nxt;
     }
     while(pb)
     {
-	PosBlk *nxt = pb->pb_Next;
-	myfree(pb);
+	Pos_Block *nxt = pb->next;
+	FREE_OBJECT(pb);
 	pb = nxt;
     }
     cons_block_chain = NULL;
-    number_block_chain = NULL;
     vector_chain = NULL;
     pos_block_chain = NULL;
     sm_kill(&lisp_strmem);

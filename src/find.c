@@ -330,7 +330,8 @@ static regtype last_match_type;
 static VALUE last_match_data;
 static regsubs last_matches;
 
-static VALUE sym_regexp_error;
+static DEFSYM(regexp_error, "regexp-error");
+static DEFSTRING(err_regexp_error, "Regexp error");
 
 static regexp *
 compile_regexp(VALUE re)
@@ -407,8 +408,8 @@ set_string_match(TX *tx, VALUE start, VALUE end)
     last_matches.tx.endp[0] = end;
     for(i = 1; i < NSUBEXP; i++)
     {
-	last_matches.tx.startp[i] = NULL;
-	last_matches.tx.endp[i] = NULL;
+	last_matches.tx.startp[i] = LISP_NULL;
+	last_matches.tx.endp[i] = LISP_NULL;
     }
 }
 
@@ -446,7 +447,7 @@ that character classes are still case-significant.
 	}
 	return(ret);
     }
-    return NULL;
+    return LISP_NULL;
 }
 
 _PR VALUE cmd_re_search_backward(VALUE re, VALUE pos, VALUE tx, VALUE nocase_p);
@@ -483,7 +484,7 @@ that character classes are still case-significant.
 	}
 	return(ret);
     }
-    return NULL;
+    return LISP_NULL;
 }
 
 _PR VALUE cmd_search_forward(VALUE str, VALUE pos, VALUE tx, VALUE nocasep);
@@ -521,7 +522,7 @@ with STRING. Returns the position of the next match or nil.
 	}
 	return(sym_nil);
     }
-    return NULL;
+    return LISP_NULL;
 }
 
 _PR VALUE cmd_search_backward(VALUE str, VALUE pos, VALUE tx, VALUE nocasep);
@@ -559,7 +560,7 @@ with STRING. Returns the position of the next match or nil.
 	}
 	return(sym_nil);
     }
-    return NULL;
+    return LISP_NULL;
 }
 
 _PR VALUE cmd_char_search_forward(VALUE ch, VALUE pos, VALUE tx);
@@ -571,7 +572,7 @@ Scans forwards from POS (or the cursor), in BUFFER, looking for a match
 with CHAR. Returns the position of the next match or nil.
 ::end:: */
 {
-    DECLARE1(ch, CHARP);
+    DECLARE1(ch, INTP);
     if(!POSP(pos))
 	pos = curr_vw->vw_CursorPos;
     if(!BUFFERP(tx))
@@ -579,11 +580,11 @@ with CHAR. Returns the position of the next match or nil.
     if(check_line(VTX(tx), pos))
     {
 	Pos tem = *VPOS(pos);
-	if(buffer_strchr(VTX(tx), &tem, VCHAR(ch)))
+	if(buffer_strchr(VTX(tx), &tem, VINT(ch)))
 	    return make_pos(PCOL(&tem), PROW(&tem));
 	return(sym_nil);
     }
-    return NULL;
+    return LISP_NULL;
 }
 
 _PR VALUE cmd_char_search_backward(VALUE ch, VALUE pos, VALUE tx);
@@ -595,7 +596,7 @@ Scans backwards from POS (or the cursor), in BUFFER, looking for a match
 with CHAR. Returns the position of the next match or nil.
 ::end:: */
 {
-    DECLARE1(ch, CHARP);
+    DECLARE1(ch, INTP);
     if(!POSP(pos))
 	pos = curr_vw->vw_CursorPos;
     if(!BUFFERP(tx))
@@ -603,11 +604,11 @@ with CHAR. Returns the position of the next match or nil.
     if(check_line(VTX(tx), pos))
     {
 	Pos tem = *VPOS(pos);
-	if(buffer_reverse_strchr(VTX(tx), &tem, VCHAR(ch)))
+	if(buffer_reverse_strchr(VTX(tx), &tem, VINT(ch)))
 	    return make_pos(PCOL(&tem), PROW(&tem));
 	return(sym_nil);
     }
-    return NULL;
+    return LISP_NULL;
 }
 
 _PR VALUE cmd_string_match(VALUE re, VALUE str, VALUE nocase_p, VALUE start);
@@ -625,7 +626,7 @@ at (counting from zero).
 ::end:: */
 {
     regexp *prog;
-    long xstart = NUMBERP(start) ? VNUM(start) : 0;
+    long xstart = INTP(start) ? VINT(start) : 0;
     DECLARE1(re, STRINGP);
     DECLARE2(str, STRINGP);
     prog = compile_regexp(re);
@@ -643,7 +644,7 @@ at (counting from zero).
 	    res = sym_nil;
 	return(res);
     }
-    return NULL;
+    return LISP_NULL;
 }
 
 _PR VALUE cmd_looking_at(VALUE re, VALUE pos, VALUE tx, VALUE nocase_p);
@@ -675,7 +676,7 @@ Returns t if REGEXP matches the text at POS.
 	    return res;
 	}
     }
-    return NULL;
+    return LISP_NULL;
 }
 
 _PR VALUE cmd_expand_last_match(VALUE template);
@@ -695,10 +696,10 @@ the following escape sequences,
     VALUE string;
     DECLARE1(template, STRINGP);
     len = regsublen(last_match_type, &last_matches,
-		    VSTR(template), last_match_data);
+		    VSTR(template), VPTR(last_match_data));
     string = make_string(len);
     regsub(last_match_type, &last_matches,
-	   VSTR(template), VSTR(string), last_match_data);
+	   VSTR(template), VSTR(string), VPTR(last_match_data));
     return string;
 }
 
@@ -715,9 +716,9 @@ buffer, or an integer if the last match was in a string (i.e. regexp-match).
 ::end:: */
 {
     long i;
-    if(NUMBERP(exp))
+    if(INTP(exp))
     {
-	i = VNUM(exp);
+	i = VINT(exp);
 	if((i >= NSUBEXP) || (i < 0))
 	    return(signal_arg_error(exp, 1));
     }
@@ -725,7 +726,7 @@ buffer, or an integer if the last match was in a string (i.e. regexp-match).
 	i = 0;
     if(last_match_type == reg_tx)
     {
-	if(last_matches.tx.startp[i] != NULL)
+	if(last_matches.tx.startp[i] != LISP_NULL)
 	    return last_matches.tx.startp[i];
 	return sym_nil;
     }
@@ -734,7 +735,7 @@ buffer, or an integer if the last match was in a string (i.e. regexp-match).
 	if(last_matches.string.startp[i] == NULL)
 	    return(sym_nil);
 	i = last_matches.string.startp[i] - (char *)VSTR(last_match_data);
-	return(make_number(i));
+	return(MAKE_INT(i));
     }
 }
 	
@@ -751,9 +752,9 @@ buffer, or an integer if the last match was in a string (i.e. regexp-match).
 ::end:: */
 {
     long i;
-    if(NUMBERP(exp))
+    if(INTP(exp))
     {
-	i = VNUM(exp);
+	i = VINT(exp);
 	if((i >= NSUBEXP) || (i < 0))
 	    return signal_arg_error(exp, 1);
     }
@@ -761,7 +762,7 @@ buffer, or an integer if the last match was in a string (i.e. regexp-match).
 	i = 0;
     if(last_match_type == reg_tx)
     {
-	if(last_matches.tx.endp[i] != NULL)
+	if(last_matches.tx.endp[i] != LISP_NULL)
 	    return last_matches.tx.endp[i];
 	return sym_nil;
     }
@@ -770,7 +771,7 @@ buffer, or an integer if the last match was in a string (i.e. regexp-match).
 	if(last_matches.string.endp[i] == NULL)
 	    return(sym_nil);
 	i = last_matches.string.endp[i] - (char *)VSTR(last_match_data);
-	return(make_number(i));
+	return(MAKE_INT(i));
     }
 }
 
@@ -788,7 +789,7 @@ it is returned as-is (un-copied).
     u_char *buf, *s;
     int buflen = 128, slen, i = 0;
     bool quoted = FALSE;
-    VALUE res = NULL;
+    VALUE res = LISP_NULL;
     DECLARE1(str, STRINGP);
     s = VSTR(str);
     slen = STRING_LEN(str);
@@ -847,11 +848,11 @@ error:
 void
 regerror(char *err)
 {
+    static DEFSTRING(regexp_str, "Regular expression");
 #if 0
     message(err);
 #else
-    cmd_signal(sym_regexp_error,
-	       list_2(MKSTR("Regular-expression"), string_dup(err)));
+    cmd_signal(sym_regexp_error, list_2(VAL(regexp_str), string_dup(err)));
 #endif
 }
 
@@ -908,8 +909,7 @@ mystrrchrn(u_char *str, u_char c, int strLen)
 void
 find_init(void)
 {
-    INTERN(sym_regexp_error, "regexp-error");
-    cmd_put(sym_regexp_error, sym_error_message, MKSTR("Regexp error"));
+    INTERN(regexp_error); ERROR(regexp_error);
     ADD_SUBR(subr_re_search_forward);
     ADD_SUBR(subr_re_search_backward);
     ADD_SUBR(subr_search_forward);

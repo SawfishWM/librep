@@ -420,7 +420,7 @@ one if FILE has only one name. Doesn't count symbolic links.
     struct stat statb;
     DECLARE1(file, STRINGP);
     if(!stat(VSTR(file), &statb))
-	return(make_number(statb.st_nlink));
+	return(MAKE_INT(statb.st_nlink));
     return(sym_nil);
 }
 
@@ -435,7 +435,7 @@ Returns the size of the file named by the string FILE in bytes.
     struct stat statb;
     DECLARE1(file, STRINGP);
     if(!stat(VSTR(file), &statb))
-	return(make_number(statb.st_size));
+	return(MAKE_INT(statb.st_size));
     return(sym_nil);
 }
 
@@ -451,7 +451,7 @@ the format of this integer is not defined, it differs from system to system.
     struct stat statb;
     DECLARE1(file, STRINGP);
     if(!stat(VSTR(file), &statb))
-	return(make_number(statb.st_mode));
+	return(MAKE_INT(statb.st_mode));
     return(sym_nil);
 }
 
@@ -466,8 +466,8 @@ to system.
 ::end:: */
 {
     DECLARE1(file, STRINGP);
-    DECLARE2(modes, NUMBERP);
-    if(chmod(VSTR(file), VNUM(modes)) == 0)
+    DECLARE2(modes, INTP);
+    if(chmod(VSTR(file), VINT(modes)) == 0)
 	return(modes);
     return(signal_file_error(file));
 }
@@ -485,11 +485,12 @@ DEFUN("file-modtime", cmd_file_modtime, subr_file_modtime, (VALUE file), V_Subr1
 ::doc:file_modtime::
 file-modtime FILE
 
-Return the time (an integer) that FILE was last modified.
+Return the time (a cons cell storing two integers, the low 24 bits, and the
+high bits) that FILE was last modified.
 ::end:: */
 {
     DECLARE1(file, STRINGP);
-    return(make_number(file_mod_time(VSTR(file))));
+    return(MAKE_LONG_INT(file_mod_time(VSTR(file))));
 }
 
 _PR VALUE cmd_file_name_absolute_p(VALUE file);
@@ -533,7 +534,7 @@ in DIRECTORY have a `/' character appended to their name.
 	    {
 		mem_error();
 		closedir(dir);
-		return(NULL);
+		return LISP_NULL;
 	    }
 	}
 	closedir(dir);
@@ -560,7 +561,7 @@ On the Amiga this is taken from the environment variable `USERNAME'.
     {
 	struct passwd *pwd;
 	if(!(pwd = getpwuid(geteuid())))
-	    return(NULL);
+	    return LISP_NULL;
 	tmp = pwd->pw_name;
     }
     user_login_name = string_dup(tmp);
@@ -582,7 +583,7 @@ On the Amiga this is taken from the environment variable `REALNAME'.
     if(user_full_name)
 	return(user_full_name);
     if(!(pwd = getpwuid(geteuid())))
-	return(NULL);
+	return LISP_NULL;
 #ifndef FULL_NAME_TERMINATOR
     user_full_name = string_dup(pwd->pw_gecos);
 #else
@@ -626,7 +627,8 @@ on AmigaDOS or look in the /etc/passwd file if on Unix.
 	    pwd = getpwuid(geteuid());
 	    if(!pwd || !pwd->pw_dir)
 	    {
-		return(cmd_signal(sym_error, LIST_1(MKSTR("Can't find your home directory"))));
+		static DEFSTRING(no_home, "Can't find your home directory");
+		return(cmd_signal(sym_error, LIST_1(VAL(no_home))));
 	    }
 	    src = pwd->pw_dir;
 	}
@@ -659,7 +661,7 @@ On the Amiga this is taken from the environment variable `HOSTNAME'.
     if(system_name)
 	return(system_name);
     if(gethostname(buf, 128))
-	return(NULL);
+	return LISP_NULL;
     h = gethostbyname(buf);
     if(h)
     {
@@ -767,9 +769,10 @@ sys_expand_file_name(VALUE namev)
     {
 	VALUE home = cmd_user_home_directory();
 	if(!home || !STRINGP(home))
-	    return(NULL);
+	    return LISP_NULL;
 	switch(name[1])
 	{
+	    static DEFSTRING(no_expand, "Can't expand");
 	case 0:
 	    return(home);
 	case '/':
@@ -777,12 +780,11 @@ sys_expand_file_name(VALUE namev)
 		u_char buf[512];
 		strcpy(buf, VSTR(home));
 		if(!add_file_part(buf, name + 2, 512))
-		    return(NULL);
+		    return LISP_NULL;
 		return(string_dup(buf));
 	    }
 	default:
-	    return(cmd_signal(sym_file_error,
-			      list_2(MKSTR("Can't expand"), namev)));
+	    return(cmd_signal(sym_file_error, list_2(VAL(no_expand), namev)));
 	}
     }
     return(namev);
@@ -800,7 +802,7 @@ sys_fully_qualify_file_name(VALUE name)
 	if(add_file_part(buf, VSTR(name), 512))
 	    return(string_dup(buf));
     }
-    return(NULL);
+    return LISP_NULL;
 }
 
 
@@ -863,9 +865,9 @@ termination_signal_handler(int sig)
 void
 sys_misc_init(void)
 {
-    ADD_SUBR(subr_delete_file);
-    ADD_SUBR(subr_rename_file);
-    ADD_SUBR(subr_copy_file);
+    ADD_SUBR_INT(subr_delete_file);
+    ADD_SUBR_INT(subr_rename_file);
+    ADD_SUBR_INT(subr_copy_file);
     ADD_SUBR(subr_file_readable_p);
     ADD_SUBR(subr_file_writable_p);
     ADD_SUBR(subr_file_exists_p);
