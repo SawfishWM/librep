@@ -27,16 +27,22 @@
 		   rep.io.files
 		   rep.io.streams))
 
-(setq nil '())
-(setq t 't)
+(%define nil '())
+(%define t 't)
 (make-binding-immutable 'nil)
 (make-binding-immutable 't)
-(export-bindings '(nil t))
+
+(%define #F nil)
+(%define #T t)
+(make-binding-immutable '#F)
+(make-binding-immutable '#T)
+
+(export-bindings '(nil t #F #T))
 
 
 ;; function syntax
 
-(setq defmacro
+(%define defmacro
       (cons 'macro
 	    (lambda (symbol . body)
 "defmacro NAME LAMBDA-LIST [DOC-STRING] BODY...
@@ -54,7 +60,7 @@ expanded an arbitrary number of times."
 		     (setq body (car body)))
 		    (t
 		     (setq body (list 'quote (cons 'lambda body)))))
-	      (list 'setq symbol
+	      (list '%define symbol
 		    (list 'cons
 			  (list 'quote 'macro)
 			  (list 'make-closure body
@@ -71,7 +77,7 @@ documentation DOC-STRING (optional) and body BODY."
 	 (setq body (car body)))
 	(t
 	 (setq body (list 'quote (cons 'lambda body)))))
-  (list 'setq symbol (list 'make-closure body (symbol-name symbol))))
+  (list '%define symbol (list 'make-closure body (symbol-name symbol))))
 
 (defmacro defconst (symbol value . rest)
   "defconst NAME VALUE [DOC-STRING]
@@ -83,7 +89,7 @@ Constants are treated specially by the Lisp compiler, basically they
 are hard-coded into the byte-code."
 
   (list 'progn
-	(list* 'define-value (list 'quote symbol) (list 'quote value) rest)
+	(list* '%define symbol (list 'quote value) rest)
 	(list '%make-binding-immutable (list 'quote symbol))))
 
 (defmacro defsubst (symbol . body)
@@ -101,7 +107,7 @@ When applied to a symbol, the symbol's value is returned."
       arg
     (list 'make-closure (list 'quote arg))))
 
-(setq %make-binding-immutable make-binding-immutable)
+(%define %make-binding-immutable make-binding-immutable)
 
 (export-bindings '(defmacro defun defconst defsubst function
 		   %make-binding-immutable))
@@ -281,13 +287,12 @@ See also `setq'. Returns the value of the last FORM."
 ;; XXX it would be nice to do the same for setq.. might stress the
 ;; XXX interpreter somewhat..? :-(
 
+;; XXX backwards compatibility crap
 (defmacro define-value (var-form value)
   (if (eq (car var-form) 'quote)
       ;; constant symbol
-      (list 'setq (nth 1 var-form) value)
-    ;; non-constant symbol
-    ;; XXX highly dubious, and may need changing (only allow specials?)
-    (list 'set var-form value)))
+      (list '%define (nth 1 var-form) value)
+    (error "define-value must take a constant variable")))
 
 (export-bindings '(setq-default define-value))
 
@@ -495,13 +500,13 @@ DATA)' while the handler is evaluated (these are the arguments given to
 (defmacro autoload (symbol-form file &rest extra)
   "Tell the evaluator that the value of SYMBOL will be initialised
 by loading FILE."
-  (list 'setq (nth 1 symbol-form)
+  (list '%define (nth 1 symbol-form)
 	(list* 'make-autoload symbol-form file extra)))
 
 (defmacro autoload-macro (symbol-form file &rest extra)
   "Tell the evaluator that the value of the macro SYMBOL will be initialised
 by loading FILE."
-  (list 'setq (nth 1 symbol-form)
+  (list '%define (nth 1 symbol-form)
 	(list 'cons ''macro
 	      (list* 'make-autoload symbol-form file extra))))
 
@@ -510,7 +515,7 @@ by loading FILE."
 
 ;; some scheme compatibility functions
 
-(define-value 'call-with-current-continuation call/cc)
+(%define call-with-current-continuation call/cc)
 
 (defun dynamic-wind (before thunk after)
   "Call THUNK without arguments, returning the result of this call.
