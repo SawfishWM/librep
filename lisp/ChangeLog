@@ -1,3 +1,31 @@
+Sun Jun  7 14:57:12 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compiler.jl: added source transform to handle setq-default
+	special form
+
+	* modes.jl (mode-symbol-regexp, mode-defun-header,
+	mode-defun-footer): new buffer-local variables
+	(forward-exp, backward-exp): don't call goto explicitly, use
+	the `@' interactive flag
+	(symbol-at-point, defun-at-point): new functions, give the
+	current symbol or function-name respectively
+	(start-of-defun, end-of-defun, mark-defun): new functions
+	* loadkeys.jl: C-M-a to start-of-defun, C-M-e to end-of-defun,
+	C-M-h to mark-defun
+	* c-mode.jl, lisp-mode.jl: define the new variables
+
+	* windows.jl (expand-view): fixed
+
+	* help.jl (describe-function, describe-variable): use the value
+	from symbol-at-point as the starting value of the prompt
+
+	* prompt.jl (prompt-for-symbol, prompt-for-lisp,
+	prompt-for-function, prompt-for-variable, prompt-for-command):
+	all now take an extra optional argument, the initial contents
+	of the prompt
+
+	* tilde.jl: use setq-default when fixing default-directory
+
 Sat Jun  6 16:11:57 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* windows.jl (goto-next-view): next-view now returns inactive
