@@ -514,6 +514,7 @@ extern void rep_mark_input_pending(int fd);
 extern void rep_unix_set_fd_nonblocking(int fd);
 extern void rep_unix_set_fd_blocking(int fd);
 extern void rep_unix_set_fd_cloexec(int fd);
+extern void rep_sig_restart(int sig, rep_bool flag);
 extern repv rep_event_loop(void);
 extern repv rep_sit_for(u_long timeout_msecs);
 extern repv rep_accept_input(u_long timeout_msecs, void *callback);

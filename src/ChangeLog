@@ -1,3 +1,20 @@
+1999-07-29  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_main.c (rep_sig_restart): make syscalls restart or not
+	restart for any signal
+	(wait_for_input): make both SIGCHLD and SIGALRM non-restartable
+	during select ()
+
+	* unix_processes.c (rep_sigchld_restart): replaced by the more
+	general rep_sig_restart
+
+	* timers.c: new file, a dynamically loadable module providing
+	multiple one-shot timers
+
+1999-07-27  John Harper  <john@dcs.warwick.ac.uk>
+
+	* misc.c (Frandom): return zero if LIMIT <= 0
+
 1999-07-22  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lispcmds.c (Fload): while evaluating the forms from a file,
