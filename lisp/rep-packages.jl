@@ -101,9 +101,9 @@
 	  complete-string
 
 	  ;; init.jl
-	  setcar setcdr string= string< eval-and-print nop identity
-	  interactive caar cdar cadr cddr caaar cdaar cadar cddar
-	  caadr cdadr caddr cdddr _
+	  setcar setcdr string= string< nop identity interactive
+	  caar cdar cadr cddr caaar cdaar cadar cddar caadr cdadr caddr
+	  cdddr _
 
 	  ;; string-util.jl
 	  string-upper-case-p string-lower-case-p string-capitalized-p
@@ -147,7 +147,8 @@
 	  file-modes-as-string file-modtime directory-files read-symlink
 	  make-symlink stdin-file stdout-file stderr-file make-temp-name
 	  set-file-handler-environment file-newer-than-file-p file-name=
-	  autoload-file-handler define-file-handler file-handler-ref))
+	  autoload-file-handler define-file-handler file-handler-ref
+	  write-buffer-contents read-file-contents insert-file-contents))
 
 (define-interface rep-regexp
   (export string-match string-looking-at expand-last-match
