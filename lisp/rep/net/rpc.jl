@@ -79,12 +79,15 @@
 	    deregister-rpc-server
 	    make-rpc-servant
 	    destroy-rpc-servant
-	    make-rpc-proxy)
+	    make-rpc-proxy
+	    servant-id->global-id
+	    global-id->rpc-proxy)
 
     (open rep
 	  rep.io.sockets
 	  rep.io.processes
 	  rep.system
+	  rep.regexp
 	  rep.data.tables
 	  rep.data.records)
 
@@ -94,6 +97,8 @@
     (pending-data socket-pending-data socket-pending-data-set!)
     (result-pending socket-result-pending socket-result-pending-set!)
     (closable socket-closable-p))
+
+  (define listener-socket nil)
 
 ;;; connection cache
 
@@ -109,14 +114,14 @@
 	(error ("No connection with server %s:%d" server port))))
 
   (define (register-rpc-server socket #!key closable)
-    (let ((server (socket-address socket))
-	  (port (socket-port socket)))
+    (let ((server (socket-peer-address socket))
+	  (port (socket-peer-port socket)))
       (table-set socket-cache (cons server port) socket)
       (table-set socket-data-table socket (make-socket-data closable))))
 
   (define (deregister-rpc-server socket)
-    (let ((server (socket-address socket))
-	  (port (socket-port socket)))
+    (let ((server (socket-peer-address socket))
+	  (port (socket-peer-port socket)))
       (when (eq (server-socket server port) socket)
 	(let ((data (socket-data socket)))
 	  (when (socket-closable-p data)
@@ -205,10 +210,14 @@
 	;; exception raised
 	(raise-exception (cdr result)))))
 
-  (define (rpc-create-server port)
-    (socket-server nil port rpc-socket-listener))
+  (define (rpc-create-server)
+    (unless listener-socket
+      (setq listener-socket (socket-server nil nil rpc-socket-listener))))
 
-  (define rpc-destroy-server close-socket)
+  (define (rpc-destroy-server)
+    (when listener-socket
+      (close-socket listener-socket)
+      (setq listener-socket nil)))
 
 ;;; servants
 
@@ -237,6 +246,22 @@
 	;;(format standard-error "Wrote: %S\n" (cons servant-id args))
 	(write socket (prin1-to-string (cons servant-id args)))
 	(wait-for-reponse socket))))
+
+;;; globally referenceable ids
+
+  ;; returns a string
+  (define (servant-id->global-id id)
+    (or listener-socket (error "Need an opened RPC server"))
+    (format nil "%s:%s:%s"
+	    (socket-address listener-socket)
+	    (socket-port listener-socket) id))
+
+  (define (global-id->rpc-proxy id)
+    (let ((bits (string-split ":" id)))
+      (let ((server (nth 0 bits))
+	    (port (string->number (nth 1 bits)))
+	    (servant-id (intern (nth 2 bits))))
+	(make-rpc-proxy server port servant-id))))
 
 ;;; initialization
 
