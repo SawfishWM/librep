@@ -721,6 +721,7 @@ again:
     case V_Window:
 	GC_SET_CELL(val);
 	MARKVAL(VWIN(val)->w_FontName);
+	MARKVAL(VWIN(val)->w_DisplayedName);
 #ifdef HAVE_AMIGA
 	MARKVAL(VWIN(val)->w_WindowSys.ws_ScreenName);
 #endif
