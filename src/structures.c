@@ -1332,30 +1332,47 @@ constant.
     return (n != 0 && n->is_constant) ? Qt : Qnil;
 }
 
+repv
+Fexport_binding (repv var)
+{
+    rep_struct *s;
+    rep_struct_node *n;
+
+    rep_DECLARE1 (var, rep_SYMBOLP);
+
+    s = rep_STRUCTURE (rep_structure);
+    n = lookup (s, var);
+
+    if (n != 0)
+    {
+	if (!n->is_exported)
+	{
+	    n->is_exported = 1;
+	    cache_invalidate_symbol (var);
+	}
+    }
+    else if (!structure_exports_inherited_p (s, var))
+    {
+	s->inherited = Fcons (var, s->inherited);
+	cache_invalidate_symbol (var);
+    }
+
+    return Qnil;
+}
+
 DEFUN ("export-bindings", Fexport_bindings,
        Sexport_bindings, (repv vars), rep_Subr1)
 {
-    rep_struct *s = rep_STRUCTURE (rep_structure);
     rep_DECLARE1 (vars, rep_LISTP);
-    while (rep_CONSP (vars) && rep_SYMBOLP (rep_CAR (vars)))
+
+    while (rep_CONSP (vars))
     {
-	repv var = rep_CAR (vars);
-	rep_struct_node *n = lookup (s, var);
-	if (n != 0)
-	{
-	    if (!n->is_exported)
-	    {
-		n->is_exported = 1;
-		cache_invalidate_symbol (var);
-	    }
-	}
-	else if (!structure_exports_inherited_p (s, var))
-	{
-	    s->inherited = Fcons (var, s->inherited);
-	    cache_invalidate_symbol (var);
-	}
+	if (Fexport_binding (rep_CAR (vars)) == rep_NULL)
+	    return rep_NULL;
+
 	vars = rep_CDR (vars);
     }
+
     return Qnil;
 }
 

@@ -139,6 +139,7 @@ extern repv Fstructure_bound_p (repv, repv);
 extern repv Fexternal_structure_ref (repv, repv);
 extern repv Fintern_structure (repv);
 extern repv Fget_structure (repv);
+extern repv Fexport_binding (repv var);
 extern repv rep_get_initial_special_value (repv sym);
 extern repv rep_documentation_property (repv structure);
 extern void rep_pre_structures_init (void);
@@ -183,6 +184,8 @@ extern void rep_weak_refs_init (void);
 extern repv rep_open_dl_library(repv file_name);
 extern void rep_mark_dl_data(void);
 extern void rep_kill_dl_libraries(void);
+extern int rep_intern_dl_library (repv file_name);
+extern void *rep_lookup_dl_symbol (int idx, const char *name);
 
 /* from unix_files.c */
 extern repv rep_file_name_absolute_p(repv file);

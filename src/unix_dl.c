@@ -114,14 +114,15 @@ char *alloca ();
 #endif
 
 struct dl_lib_info {
-    struct dl_lib_info *next;
     repv file_name;
     repv feature_sym;
     repv structure;
     void *handle;
+    rep_bool is_rep_module;
 };
 
-static struct dl_lib_info *dl_list;
+static int n_dl_libs, n_alloc_dl_libs;
+static struct dl_lib_info *dl_libs;
 
 #if !defined (HAVE_DLOPEN) && defined (HAVE_SHL_LOAD)
 static inline void *
@@ -156,37 +157,41 @@ x_dlsym (void *handle, char *sym)
 }
 #endif
 
-static struct dl_lib_info *
-find_dl(repv file)
+static int
+find_dl (repv file)
 {
-    struct dl_lib_info *x = dl_list;
-    assert(rep_STRINGP(file));
-    while(x != 0)
+    int i;
+
+    assert (rep_STRINGP (file));
+
+    for (i = 0; i < n_dl_libs; i++)
     {
-	assert(rep_STRINGP(x->file_name));
-	if(!strcmp(rep_STR(file), rep_STR(x->file_name)))
-	    return x;
-	x = x->next;
+	assert (rep_STRINGP (dl_libs[i].file_name));
+	if (!strcmp (rep_STR (file), rep_STR (dl_libs[i].file_name)))
+	    return i;
     }
-    return 0;
+
+    return -1;
 }
 
-static struct dl_lib_info *
+static int
 find_dl_by_feature(repv feature)
 {
-    struct dl_lib_info *x = dl_list;
+    int i;
+
     assert (rep_STRINGP(feature));
-    while(x != 0)
+
+    for (i = 0; i < n_dl_libs; i++)
     {
-	if(rep_SYMBOLP(x->feature_sym)
-	   && strcmp (rep_STR(rep_SYM(x->feature_sym)->name),
-		      rep_STR(feature)) == 0)
+	if (rep_SYMBOLP (dl_libs[i].feature_sym)
+	    && strcmp (rep_STR (rep_SYM (dl_libs[i].feature_sym)->name),
+		       rep_STR (feature)) == 0)
 	{
-	    return x;
+	    return i;
 	}
-	x = x->next;
     }
-    return 0;
+
+    return -1;
 }
 
 static rep_bool
@@ -213,25 +218,39 @@ signal_error (char *msg)
 	fprintf (stderr, "error: %s\n", msg);
 }
 
-repv
-rep_open_dl_library(repv file_name)
+int
+rep_intern_dl_library (repv file_name)
 {
-    struct dl_lib_info *x = find_dl(file_name);
-    if(x == 0)
+    const char *dlname = 0;
+    rep_bool open_globally = rep_FALSE;
+    rep_bool is_rep_module = rep_TRUE;
+    int idx;
+    const char *tem;
+    int len;
+
+    idx = find_dl (file_name);
+    if(idx >= 0)
+	return idx;
+
+    tem = rep_STR (file_name);
+    len = strlen (tem);
+
+    if (len >= 3 && strcmp (tem + len - 3, ".la") == 0)
     {
 	/* We're trying to open a _libtool_ dl object. i.e it's a
 	   file ending in .la that contains a dlname=FOO line
 	   pointing to the actual DL object (in the same directory). */
 
 	char buf[256];
-	char *dlname = 0;
-	rep_bool open_globally = rep_FALSE;
-	FILE *fh = fopen(rep_STR(file_name), "r");
+	FILE *fh;
+
+	fh = fopen(rep_STR(file_name), "r");
 	if (fh == 0)
 	{
 	    rep_signal_file_error(file_name);
-	    return 0;
+	    return -1;
 	}
+
 	while (fgets(buf, sizeof(buf), fh))
 	{
 	    if (strncmp("dlname='", buf, sizeof("dlname='") - 1) == 0)
@@ -241,22 +260,27 @@ rep_open_dl_library(repv file_name)
 		char *end = strchr(ptr, '\'');
 		if (end != 0 && end > ptr)
 		{
+		    char *name;
+
 		    *end = 0;
 		    base = strrchr(rep_STR(file_name), '/');
+
 		    if (base == 0)
 		    {
-			dlname = alloca (strlen (ptr) + 1);
-			strcpy (dlname, ptr);
+			name = alloca (strlen (ptr) + 1);
+			strcpy (name, ptr);
 		    }
 		    else
 		    {
 			base++;
-			dlname = alloca (strlen(ptr) +
-					 base - rep_STR(file_name) + 1);
-			memcpy(dlname, rep_STR(file_name),
+			name = alloca (strlen(ptr) +
+				       base - rep_STR(file_name) + 1);
+			memcpy(name, rep_STR(file_name),
 			       base - rep_STR(file_name));
-			strcpy(dlname + (base - rep_STR(file_name)), ptr);
+			strcpy(name + (base - rep_STR(file_name)), ptr);
 		    }
+
+		    dlname = name;
 		}
 	    }
 	    else if (strncmp("rep_open_globally=", buf,
@@ -282,90 +306,110 @@ rep_open_dl_library(repv file_name)
 		    success = load_requires (string);
 		    rep_POPGC;
 		    if (!success)
-			goto out;
+			return -1;
 		}
 	    }
 	}
 	fclose(fh);
-	if (!dlname)
-	{
-	    char err[256];
+    }
+    else
+    {
+	/* not .la, assume a native library name */
+
+	dlname = rep_STR (file_name);
+	is_rep_module = rep_FALSE;
+    }
+
+    if (dlname == NULL)
+    {
+	char err[256];
 #ifdef HAVE_SNPRINTF
-	    snprintf (err, sizeof (err), "Can't find dlname in %s",
-		      rep_STR (file_name));
+	snprintf (err, sizeof (err), "Can't find dlname in %s", rep_STR (file_name));
 #else
-	    sprintf (err, "Can't find dlname in %s", rep_STR (file_name));
+	sprintf (err, "Can't find dlname in %s", rep_STR (file_name));
 #endif
-	    signal_error (err);
-	}
-	else
+	signal_error (err);
+	return -1;
+    }
+    else
+    {
+	void *handle;
+	rep_bool relocate_now = rep_FALSE;
+	struct dl_lib_info *x;
+
+	if (Qdl_load_reloc_now && Fsymbol_value (Qdl_load_reloc_now, Qt) != Qnil)
 	{
-	    rep_xsubr **functions;
-	    repv (*init_func)(repv);
-	    repv *feature_sym;
-	    void *handle;
-	    rep_bool relocate_now = rep_FALSE;
-	    if (Qdl_load_reloc_now
-		&& Fsymbol_value (Qdl_load_reloc_now, Qt) != Qnil)
-	    {
-		relocate_now = rep_TRUE;
-	    }
+	    relocate_now = rep_TRUE;
+	}
 
 #if defined (HAVE_DLOPEN)
-	    handle = dlopen(dlname,
-			    (relocate_now ? RTLD_NOW : RTLD_LAZY)
-			    | (open_globally ? RTLD_GLOBAL : RTLD_LOCAL));
+	handle = dlopen(dlname, (relocate_now ? RTLD_NOW : RTLD_LAZY)
+			| (open_globally ? RTLD_GLOBAL : RTLD_LOCAL));
 #elif defined (HAVE_SHL_LOAD)
-	    /* XXX how do we open these locally/globally? */
-	    handle = shl_load (dlname,
-			       (relocate_now ? BIND_IMMEDIATE : BIND_DEFERRED)
-			       | BIND_NONFATAL | DYNAMIC_PATH, 0L);
+	/* XXX how do we open these locally/globally? */
+	handle = shl_load (dlname,
+			   (relocate_now ? BIND_IMMEDIATE : BIND_DEFERRED)
+			   | BIND_NONFATAL | DYNAMIC_PATH, 0L);
 #endif
-	    if(handle == 0)
-	    {
-		char *err;
+
+	if(handle == NULL)
+	{
+	    char *err;
 #ifdef HAVE_DLERROR
-		err = dlerror();
+	    err = dlerror();
 #else
-		err = "unknown dl error";
+	    err = "unknown dl error";
 #endif
-		if(err != 0)
-		    signal_error (err);
-		return 0;
-	    }
-	    x = rep_alloc(sizeof(struct dl_lib_info));
-	    if(x == 0)
+	    if(err != 0)
+		signal_error (err);
+	    return -1;
+	}
+
+	if (n_alloc_dl_libs == n_dl_libs)
+	{
+	    int new_n = MAX (n_alloc_dl_libs * 2, 32);
+	    void *ptr;
+
+	    ptr = rep_realloc (dl_libs, new_n * sizeof (struct dl_lib_info));
+	    if (ptr == NULL)
 	    {
 		rep_mem_error();
 		dlclose(handle);
-		return 0;
+		return -1;
 	    }
-	    x->file_name = file_name;
-	    x->handle = handle;
-	    x->feature_sym = Qnil;
-	    x->structure = Qnil;
 
-	    x->next = dl_list;
-	    dl_list = x;
+	    dl_libs = ptr;
+	    n_alloc_dl_libs = new_n;
+	}
+
+	idx = n_dl_libs++;
+	x = &dl_libs[idx];
+
+	x->file_name = file_name;
+	x->handle = handle;
+	x->feature_sym = Qnil;
+	x->structure = Qnil;
+	x->is_rep_module = is_rep_module;
+
+	if (is_rep_module)
+	{
+	    repv (*init_func)(repv);
 
 	    init_func = x_dlsym(handle, "rep_dl_init");
 	    if(init_func != 0)
 	    {
-		repv ret = init_func(file_name);
+		repv ret;
+
+		ret = init_func(file_name);
+
 		if(Qnil != rep_NULL			/* initialising */
 		   && (ret == rep_NULL || ret == Qnil))
 		{
 		    /* error. abort abort.. */
-		    struct dl_lib_info **ptr;
-		    for (ptr = &dl_list; *ptr != 0; ptr = &((*ptr)->next))
-		    {
-			if (*ptr == x)
-			    *ptr = x->next;
-			break;
-		    }		    
-		    rep_free(x);
+
+		    --n_dl_libs;
 		    dlclose(handle);
-		    return 0;
+		    return -1;
 		}
 		else if (ret && rep_SYMBOLP(ret) && ret != Qt)
 		    x->feature_sym = ret;
@@ -377,84 +421,101 @@ rep_open_dl_library(repv file_name)
 			x->feature_sym = ret;
 		}
 	    }
-
-	    feature_sym = x_dlsym (handle, "rep_dl_feature");
-	    if (feature_sym != 0)
-	    {
-		fprintf (stderr, "warning: %s uses obsolete `rep_dl_feature'\n",
-			 rep_STR (file_name));
-	    }
-
-	    functions = x_dlsym(handle, "rep_dl_subrs");
-	    if(functions != 0)
-	    {
-		fprintf (stderr, "warning: %s uses obsolete `rep_dl_subrs'\n",
-			 rep_STR (file_name));
-	    }
 	}
     }
-out:
 
-    if (x != 0)
+    return idx;
+}
+
+repv
+rep_open_dl_library(repv file_name)
+{
+    int idx;
+
+    idx = rep_intern_dl_library (file_name);
+    if (idx < 0)
+	return rep_NULL;
+
+    if (dl_libs[idx].is_rep_module)
     {
-	if (x->feature_sym != Qnil && x->structure == Qnil)
+	if (dl_libs[idx].feature_sym != Qnil && dl_libs[idx].structure == Qnil)
 	{
 	    /* only `provide' the feature if there's no associated
 	       structure (since we haven't actually imported it) */
-	    Fprovide (x->feature_sym);
+	    Fprovide (dl_libs[idx].feature_sym);
 	}
-	return x->structure;
+	return dl_libs[idx].structure;
     }
     else
-	return rep_NULL;
+	return Qt;
+}
+
+void *
+rep_lookup_dl_symbol (int idx, const char *name)
+{
+    if (idx < 0 || idx > n_dl_libs)
+	return NULL;
+
+    return x_dlsym (dl_libs[idx].handle, name);
 }
 
 void
 rep_mark_dl_data(void)
 {
-    struct dl_lib_info *x = dl_list;
-    while(x != 0)
+    int i;
+
+    for (i = 0; i < n_dl_libs; i++)
     {
-	rep_MARKVAL(x->file_name);
-	rep_MARKVAL(x->feature_sym);
-	rep_MARKVAL(x->structure);
-	x = x->next;
+	rep_MARKVAL(dl_libs[i].file_name);
+	rep_MARKVAL(dl_libs[i].feature_sym);
+	rep_MARKVAL(dl_libs[i].structure);
     }
 }
 
 void
 rep_kill_dl_libraries(void)
 {
-    struct dl_lib_info *x = dl_list;
-    dl_list = 0;
-    while(x != 0)
+    int i;
+
+    for (i = 0; i < n_dl_libs; i++)
     {
-	struct dl_lib_info *next = x->next;
-	void (*exit_func)(void) = x_dlsym(x->handle, "rep_dl_kill");
-	if(exit_func != 0)
-	    exit_func();
+	if (dl_libs[i].is_rep_module)
+	{
+	    void (*exit_func) (void);
+
+	    exit_func = x_dlsym (dl_libs[i].handle, "rep_dl_kill");
+	    if(exit_func != 0)
+		(*exit_func) ();
+	}
+
 #if 0
 	/* Closing libraries is a _bad_ idea. There's no way
 	   of knowing if any pointers to their contents exist.
 	   For example, it's impossible to completely expunge
 	   libgtk/libgdk, since they install an atexit () handler.. */
+
 	dlclose(x->handle);
 #endif
-	rep_free(x);
-	x = next;
     }
+
+    n_dl_libs = n_alloc_dl_libs = 0;
+    rep_free (dl_libs);
+    dl_libs = NULL;
 }
 
 void *
 rep_find_dl_symbol (repv feature, char *symbol)
 {
-    struct dl_lib_info *x;
-    assert(rep_SYMBOLP(feature));
-    x = find_dl_by_feature (rep_SYM(feature)->name);
-    if (x != 0)
-	return x_dlsym (x->handle, symbol);
-    else
-	return 0;
+    int idx;
+
+    assert (rep_SYMBOLP (feature));
+
+    idx = find_dl_by_feature (rep_SYM(feature)->name);
+
+    if (idx <= 0)
+	return NULL;
+
+    return x_dlsym (dl_libs[idx].handle, symbol);
 }
 
 /* Attempt to find the name and address of the nearest symbol before or

@@ -7,7 +7,7 @@ libexecdir="./.libexec"
 
 libs="rep.io.db.gdbm rep.io.db.sdbm rep.i18n.gettext rep.io.readline \
       rep.lang.record-profile rep.data.tables rep.io.timers \
-      rep.vm.safe-interpreter rep.io.sockets rep.util.md5"
+      rep.vm.safe-interpreter rep.io.sockets rep.util.md5 rep.ffi"
 
 rm -rf $libexecdir
 

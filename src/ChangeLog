@@ -1,3 +1,9 @@
+2003-07-26  John Harper  <jsh@unfactored.org>
+
+	* unix_dl.c, structures.c, repint_subrs.h, ffi.c, fake-libexec,
+	Makefile.in: added rep.ffi module for calling native functions
+	from lisp. Barely tested, incomplete, requires libffi from gcc
+
 2003-05-04  John Harper  <jsh@unfactored.org>
 
 	* rep_gh.h, gh.c, Makefile.in: partial implementation of
