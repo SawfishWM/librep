@@ -268,34 +268,26 @@
 ;; Return t if FORM is a constant
 (defun compiler-constant-p (form)
   (cond
-   ((or (numberp form) (stringp form)
-	(vectorp form) (bytecodep form)
-	(eq form t) (eq form nil)))
    ((consp form)
     ;; XXX this is wrong, but easy..!
     (eq (car form) 'quote))
    ((symbolp form)
     (or (assq form (fluid const-env))
 	(compiler-binding-immutable-p form)))
-   ;; What other constant forms have I missed..?
-   (t
-    nil)))
+   ;; Assume self-evaluating
+   (t t)))
 
 ;; If FORM is a constant, return its value
 (defun compiler-constant-value (form)
   (cond
-   ((or (numberp form) (stringp form)
-	(vectorp form) (bytecodep form)
-	(eq form t) (eq form nil))
-    ;; Self-evaluating types
-    form)
    ((consp form)
     ;; only quote
     (nth 1 form))
    ((symbolp form)
     (if (compiler-binding-immutable-p form)
 	(compiler-symbol-value form)
-      (cdr (assq form (fluid const-env)))))))
+      (cdr (assq form (fluid const-env)))))
+   (t form)))
 
 (defun constant-function-p (form)
   (setq form (compiler-macroexpand form))
