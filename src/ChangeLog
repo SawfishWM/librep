@@ -1,3 +1,11 @@
+2000-01-12  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep_lisp.h (rep_guardian): new data type (cell16)
+	* values.c (Fmake_primitive_guardian, Sprimitive_guardian_push,
+	Sprimitive_guardian_pop): new functions, they provide the
+	underlying mechanism for the make-guardian function (see
+    ftp://ftp.cs.indiana.edu/pub/scheme-repository/doc/pubs/guardians.ps.gz)
+
 2000-01-09  John Harper  <john@dcs.warwick.ac.uk>
 
 	* version 0.10
