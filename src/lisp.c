@@ -1744,7 +1744,7 @@ signal_arg_error(VALUE obj, int argNum)
 VALUE
 signal_missing_arg(int argnum)
 {
-    return cmd_signal(sym_missing_arg, make_number(argnum));
+    return cmd_signal(sym_missing_arg, LIST_1(make_number(argnum)));
 }
 
 VALUE
