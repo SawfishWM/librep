@@ -94,8 +94,7 @@
 	      comp-current-module
 	    nil)))))
 
-  ;; if possible, return the value of variable VAR, else return nil
-  (defun compiler-symbol-value (var)
+  (defun symbol-value-1 (var)
     (cond ((and (symbolp var) (special-variable-p var))
 	   (symbol-value var))
 	  ((and (symbolp var) comp-current-structure
@@ -107,6 +106,15 @@
 					 (if (consp var)
 					     (nth 2 var)	;structure-ref
 					   var)))))))
+
+  ;; if possible, return the value of variable VAR, else return nil
+  (defun compiler-symbol-value (var)
+    (let ((value (symbol-value-1 var)))
+      ;; if the value is an autoload, try to load it
+      (if (and (closurep value)
+	       (eq (car (closure-function value)) 'autoload))
+	  (%load-autoload value)
+	value)))
 
   ;; return t if the binding of VAR comes from the rep (built-ins) module
   (defun compiler-binding-from-rep-p (var)
