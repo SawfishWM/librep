@@ -222,6 +222,14 @@
 	  (del-0)
 	  (setq keep-going t))
 
+	 ;; test-scm; scm-test --> deleted
+	 ;; test-scm-f; scm-test --> deleted
+	 ((and (or (eq (car insn0) (bytecode test-scm))
+		   (eq (car insn0) (bytecode test-scm-f)))
+	       (eq (car insn1) (bytecode scm-test)))
+	  (del-0-1)
+	  (setq keep-going t))
+
 	 ;; jmp X; X: --> X:
 	 ((and (eq (car insn0) (bytecode jmp))
 	       (eq (cdr insn0) insn1))
