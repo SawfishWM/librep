@@ -64,7 +64,8 @@
 				    (structure-interface rep.module-system)
 				    (export backquote))))
 
-(setq *root-structure* 'rep)
+;; later changed to 'user
+(setq *user-structure* 'rep)
 
 (require 'rep.lang.backquote)
 (require 'rep.io.file-handlers.tilde)

@@ -31,7 +31,6 @@
      (set-binds))
 
   (setq *user-structure* 'user)
-  (setq *root-structure* 'user)
 
   ;; Install all autoload hooks.
   (load-all "autoload" (lambda (f) (load f nil t)))

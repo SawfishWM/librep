@@ -70,7 +70,7 @@ match the FILE argument to `load'."
 LIBRARY has been read by the `load' function. Note that LIBRARY must exactly
 match the FILE argument to `load'."
   (call-after-load library (lambda ()
-			     (eval form (intern-structure *root-structure*)))))
+			     (eval form (get-structure *user-structure*)))))
 
 (export-bindings '(file-name= file-newer-than-file-p
 		   load-all call-after-load eval-after-load))

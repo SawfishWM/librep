@@ -264,14 +264,14 @@
 	       (fluid-set open-modules
 			  (cons feature (fluid open-modules))))))))
 
-  ;; XXX enclose macro defs in the *root-structure*, this is different
+  ;; XXX enclose macro defs in the *user-structure*, this is different
   ;; to with interpreted code
   (defun note-macro-def (name body)
     (fluid-set macro-env
 	       (cons (cons name
 			   (let ((closure (make-closure body)))
 			     (set-closure-structure
-			      closure (get-structure *root-structure*))
+			      closure (get-structure *user-structure*))
 			     closure))
 		     (fluid macro-env))))
 
