@@ -39,6 +39,7 @@
 	    binding-referenced-p
 	    binding-tail-call-only-p
 	    note-closure-made
+	    note-call/cc
 	    allocate-bindings)
 
     (open rep
@@ -148,6 +149,19 @@
   (define (note-closure-made)
     (mapc (lambda (cell)
 	    (tag-cell 'enclosed cell)) (fluid lex-bindings)))
+
+  ;; note that a continuation has been created
+  (define (note-call/cc)
+    ;; all variables in scope must be allocated on heap, otherwise
+    ;; their original values will be reloaded each time the continuation
+    ;; is invoked, even if they were since updated. E.g.
+
+    ;; (let ((x 0))
+    ;;   (call/cc (lambda (c) (setq cont c)))
+    ;;   (setq x (1+ x)))
+
+    (mapc (lambda (cell)
+	    (tag-cell 'heap-allocated cell)) (fluid lex-bindings)))
 
   (define (emit-binding var)
     (if (spec-bound-p var)
