@@ -66,7 +66,10 @@
 	  (if (symbolp cell)
 	      (put cell 'unscheme-compile-fun (get cell 'rep-compile-fun))
 	    (put (car cell) 'unscheme-compile-fun
-		 (get (cdr cell) 'rep-compile-fun))))
+		 (get (cdr cell) 'rep-compile-fun))
+	    (let ((op (get (cdr cell) 'rep-compile-opcode)))
+	      (when op
+		(put (car cell) 'rep-compile-opcode op)))))
 	'(list list* cons car cdr apply
 	  caar cadr cdar cddr caddr
 	  (set-car! . rplaca)

@@ -233,7 +233,10 @@
 	  (if (symbolp cell)
 	      (put cell 'scheme-compile-fun (get cell 'rep-compile-fun))
 	    (put (car cell) 'scheme-compile-fun
-		 (get (cdr cell) 'rep-compile-fun))))
+		 (get (cdr cell) 'rep-compile-fun))
+	    (let ((op (get (cdr cell) 'rep-compile-opcode)))
+	      (when op
+		(put (car cell) 'rep-compile-opcode op)))))
 	'(list list* cons apply
 	  (set-car! . rplaca)
 	  (set-cdr! . rplacd)
