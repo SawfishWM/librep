@@ -1,3 +1,19 @@
+2000-03-29  John Harper  <john@dcs.warwick.ac.uk>
+
+	* symbols.c (Fmark_symbol_defined): new function, sets
+	rep_SF_DEFVAR flag if allowed to
+	(Fdefine_value): deleted, now a macro
+
+	* lispmach.c (Fjade_byte_code): implement the OP_DSET
+	instruction inline (with comment that it's deprecated)
+
+	* lispcmds.c (Fdefmacro, Fdefun, Fdefconst): deleted, now
+	macros
+
+2000-03-28  John Harper  <john@dcs.warwick.ac.uk>
+
+	* numbers.c (rep_number_mul): fix small typo
+
 2000-03-22  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lisp.c (rep_readl): handle EOF terminated `#\X' formatted

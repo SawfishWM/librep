@@ -44,7 +44,9 @@ Outstanding bugs
    has been changed; e.g. (let loop ((foo t)) (setq loop print) (loop foo))
 
    need to check for setq's on lexical variables... also need to only
-   allow set/define-value to modify special variables
+   allow set to modify special variables
+
+ + remove op-dset instruction (a bad mistake, unused by current compiler)
 
 
 General programming tasks:
@@ -53,10 +55,10 @@ General programming tasks:
  - remove special forms (replacing them with macros) where both
    possible and desirable
 
-   The current (14-3-99) list of special forms is:
+   The current (29-3-99) list of special forms is:
 
-   case catch cond condition-case defconst defmacro defun defvar lambda
-   prog1 progn quote setq unwind-protect while with-object
+   case catch cond condition-case defvar lambda prog1 progn quote setq
+   unwind-protect while with-object
 
  - eliminate tail calls in interpreted code
 

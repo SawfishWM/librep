@@ -1,5 +1,12 @@
 2000-03-29  John Harper  <john@dcs.warwick.ac.uk>
 
+	* compiler.jl (compile-file): prevent top-level macro
+	expansions being expanded again if we want to see them in their
+	original form
+
+	* lisp.jl (define-value): support non-constant variable forms..
+	but for how long..?
+
 	* lisp.jl (defmacro, defun, defconst, define-value): now macros
 	* compiler.jl (comp-compile-defun, comp-compile-defmacro): deleted
 
