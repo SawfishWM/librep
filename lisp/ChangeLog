@@ -1,3 +1,8 @@
+2000-07-20  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep-repl.jl (repl): fixed bug of not prompting for
+	continuation lines when a whole form isn't read
+
 2000-07-19  John Harper  <john@dcs.warwick.ac.uk>
 
 	* compiler-rep.jl (trans-defvar): call make-variable-special on

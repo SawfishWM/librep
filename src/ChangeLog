@@ -1,5 +1,8 @@
 2000-07-20  John Harper  <john@dcs.warwick.ac.uk>
 
+	* Makefile.in: include $(LIBS) and $(GMP_LIBS) when linking
+	librep.la
+
 	* Makefile.in: libtool needs to be told what mode to use,
 	because sometimes $(CC) is a wrapper script with a funny name
 	(from David Kaelbling <drk@sgi.com>)
