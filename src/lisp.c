@@ -180,9 +180,6 @@ repv rep_env;
 /* Active special bindings, a list of (SYMBOL . VALUE) */
 repv rep_special_bindings;
 
-/* The bytecode interpreter to use. A subr or a null pointer */
-repv (*rep_bytecode_interpreter)(repv subr, int nargs, repv *args);
-
 /* The lisp-call backtrace; also used for saving and restoring
    the current environment */
 struct rep_Call *rep_call_stack;
@@ -1550,7 +1547,7 @@ again:
 	    
 	    rep_USE_FUNARG(closure);
 
-	    if (rep_bytecode_interpreter == 0)
+	    if (rep_STRUCTURE (rep_structure)->apply_bytecode == 0)
 		goto invalid;
 
 	    nargs = rep_list_length (arglist);
@@ -1558,7 +1555,7 @@ again:
 	    if (!copy_to_vector (arglist, nargs, args, eval_args, rep_FALSE))
 		result = rep_NULL;
 	    else
-		result = rep_bytecode_interpreter (fun, nargs, args);
+		result = rep_STRUCTURE (rep_structure)->apply_bytecode (fun, nargs, args);
 	    break;
 	}
 	/* FALL THROUGH */
@@ -1831,8 +1828,8 @@ rep_call_lispn (repv fun, int argc, repv *argv)
 	lc.args_evalled_p = Qt;
 	rep_PUSH_CALL (lc);
 	rep_USE_FUNARG (fun);
-	if (rep_bytecode_interpreter != 0)
-	    ret = rep_bytecode_interpreter (rep_FUNARG (fun)->fun, argc, argv);
+	if (rep_STRUCTURE (rep_structure)->apply_bytecode != 0)
+	    ret = rep_STRUCTURE (rep_structure)->apply_bytecode (rep_FUNARG (fun)->fun, argc, argv);
 	else
 	    ret = Fsignal (Qinvalid_function, rep_LIST_1 (fun));
 	rep_POP_CALL (lc);
