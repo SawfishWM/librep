@@ -68,6 +68,7 @@ _PR VALUE sys_system_name(void);
 
 _PR void sys_register_input_fd(int fd, void (*callback)(int fd));
 _PR void sys_deregister_input_fd(int fd);
+_PR void sys_mark_input_pending(int fd);
 _PR void unix_set_fd_nonblocking(int fd);
 _PR void unix_set_fd_blocking(int fd);
 _PR void unix_set_fd_cloexec(int fd);
@@ -263,6 +264,11 @@ static fd_set input_fdset;
    -- Is this really such a good idea, it's a lot of wasted space.. */
 static void (*input_actions[FD_SETSIZE])(int);
 
+/* A bit set in this array means that the corresponding fd has input read
+   but not yet handled. */
+static fd_set input_pending;
+static int input_pending_count;
+
 void
 sys_register_input_fd(int fd, void (*callback)(int fd))
 {
@@ -277,6 +283,16 @@ sys_deregister_input_fd(int fd)
 {
     FD_CLR(fd, &input_fdset);
     input_actions[fd] = NULL;
+}
+
+void
+sys_mark_input_pending(int fd)
+{
+    if(!FD_ISSET(fd, &input_pending))
+    {
+	FD_SET(fd, &input_pending);
+	input_pending_count++;
+    }    
 }
 
 void
@@ -317,6 +333,32 @@ wait_for_input(fd_set *inputs, u_long timeout_msecs)
     if(curr_win == 0)
 	return 0;
 
+    if(input_pending_count > 0)
+    {
+	/* Check the pending inputs first.. */
+	fd_set out;
+	int i, count = 0, seen = 0;
+	for(i = 0; seen < input_pending_count && i < FD_SETSIZE; i++)
+	{
+	    if(FD_ISSET(i, &input_pending))
+	    {
+		seen++;
+		if(FD_ISSET(i, inputs))
+		{
+		    if(count == 0)
+			FD_ZERO(&out);
+		    FD_SET(i, &out);
+		    count++;
+		}
+	    }
+	}
+	if(count > 0)
+	{
+	    memcpy(inputs, &out, sizeof(out));
+	    return count;
+	}
+    }
+
     timeout.tv_sec = timeout_msecs / 1000;
     timeout.tv_usec = (timeout_msecs % 1000) * 1000;
 
@@ -336,11 +378,12 @@ wait_for_input(fd_set *inputs, u_long timeout_msecs)
 }
 
 /* Handle the READY fds with pending input (defined by fdset INPUTS).
-   If CALLBACK-TYPE is non-null, only invoke this function for input
-   arriving. Return true if the display might require updating. Returns
-   immediately if a Lisp error has occurred. */
+   If CALLBACK is non-null, only invoke this function for inputs
+   whose callback function == CALLBACK. Return true if the display
+   might require updating. Returns immediately if a Lisp error has
+   occurred. */
 static bool
-handle_input(fd_set *inputs, int ready)
+handle_input(fd_set *inputs, int ready, void *callback)
 {
     static long idle_period;
     bool refreshp = FALSE;
@@ -354,11 +397,14 @@ handle_input(fd_set *inputs, int ready)
 	/* no need to test first 3 descriptors */
 	for(i = 3; i < FD_SETSIZE && ready > 0 && !INT_P; i++)
 	{
-	    if(FD_ISSET(i, inputs))
+	    if((FD_ISSET(i, inputs) || FD_ISSET(i, &input_pending))
+	       && (!callback || input_actions[i] == callback))
 	    {
-		ready--;
+		if(FD_ISSET(i, inputs))
+		    ready--;
 		if(input_actions[i] != NULL)
 		{
+		    FD_CLR(i, &input_pending);
 		    input_actions[i](i);
 		    refreshp = TRUE;
 		}
@@ -398,7 +444,7 @@ sys_event_loop(void)
 
 	memcpy(&copy, &input_fdset, sizeof(copy));
 	ready = wait_for_input(&copy, EVENT_TIMEOUT_LENGTH * 1000);
-	refreshp = handle_input(&copy, ready);
+	refreshp = handle_input(&copy, ready, 0);
 
 	/* Check for exceptional conditions. */
 	if(throw_value != LISP_NULL)
@@ -458,7 +504,7 @@ sys_accept_input(u_long timeout_msecs, void *callback)
     }
     ready = wait_for_input(&copy, timeout_msecs);
     if(ready > 0 && !INT_P)
-	handle_input(&copy, ready);
+	handle_input(&copy, ready, callback);
     if(INT_P)
 	return LISP_NULL;
     else
@@ -668,6 +714,7 @@ void
 pre_sys_init(void)
 {
     FD_ZERO(&input_fdset);
+    FD_ZERO(&input_pending);
 
     /* First the error signals */
 #ifdef SIGFPE
