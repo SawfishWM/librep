@@ -231,6 +231,13 @@
 	  (comp-peep-del-0)
 	  (setq keep-going t))
 
+	 ;; jt X; nil --> jpt X
+	 ((and (eq (car insn0) op-jt)
+	       (eq (car insn1) op-nil))
+	  (rplaca insn0 op-jtp)
+	  (comp-peep-del-1)
+	  (setq keep-going t))
+
 	 ;; {jn,jt} X; jmp Y; X: --> {jt,jn} Y; X:
 	 ((and (or (eq (car insn1) op-jn)
 		   (eq (car insn1) op-jt))
