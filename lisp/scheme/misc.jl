@@ -161,4 +161,7 @@
 
 ;;; system interface
 
+  ;; load-file doesn't search path or add suffixes. So it fits r5rs
+  (define load load-file)
+
   (define %load-suffixes '(".scm" . ".scmc")))
