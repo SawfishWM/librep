@@ -18,6 +18,8 @@
    along with Jade; see the file COPYING.  If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
+/* library-private definitions are in repint.h */
+
 #ifndef REP_LISP_H
 #define REP_LISP_H
 
@@ -580,32 +582,8 @@ typedef struct rep_funarg_struct {
 
 #define rep_FUNARG_WRITABLE_P(v) (!rep_CELL_STATIC_P(v))
 
-#define rep_USE_FUNARG(f)				\
-    do {						\
-	rep_env = rep_FUNARG(f)->env;			\
-	if (!(rep_FUNARG(f)->car & rep_FF_NO_BYTE_CODE)) \
-	    rep_bytecode_interpreter = rep_apply_bytecode; \
-	else						\
-	    rep_bytecode_interpreter = 0;		\
-	rep_structure = rep_FUNARG(f)->structure;	\
-    } while (0)
-
-#define rep_USE_DEFAULT_ENV			\
-    do {					\
-	rep_env = Qnil;				\
-	rep_structure = rep_default_structure;	\
-	rep_bytecode_interpreter = rep_apply_bytecode; \
-    } while (0)
-
 
 /* Guardians */
-
-typedef struct rep_guardian_struct {
-    repv car;
-    struct rep_guardian_struct *next;
-    repv accessible;
-    repv inaccessible;
-} rep_guardian;
 
 #define rep_GUARDIAN(v)		((rep_guardian *) rep_PTR(v))
 #define rep_GUARDIANP(v)	rep_CELL16_TYPEP(v, rep_guardian_type)
@@ -760,38 +738,6 @@ typedef struct rep_gc_n_roots {
     } while (0)
 
 #endif
-
-
-/* More other stuff */
-
-/* Keeps a backtrace of all lisp functions called. */
-struct rep_Call {
-    struct rep_Call *next;
-    repv fun;
-    repv args;
-    /* t if `args' is list of *evalled* arguments.  */
-    repv args_evalled_p;
-    repv saved_env;
-    repv saved_structure;
-    repv (*saved_bytecode)(repv, int, repv *);
-};
-
-#define rep_PUSH_CALL(lc)		\
-    do {				\
-	(lc).saved_env = rep_env;	\
-	(lc).saved_structure = rep_structure; \
-	(lc).saved_bytecode = rep_bytecode_interpreter; \
-	(lc).next = rep_call_stack;	\
-	rep_call_stack = &(lc);		\
-    } while (0)
-
-#define rep_POP_CALL(lc)		\
-    do {				\
-	rep_env = (lc).saved_env;	\
-	rep_structure = (lc).saved_structure; \
-	rep_bytecode_interpreter = (lc).saved_bytecode; \
-	rep_call_stack = (lc).next;	\
-    } while (0)
 
 
 /* Macros for declaring functions */

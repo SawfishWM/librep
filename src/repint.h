@@ -142,6 +142,65 @@ extern int rep_structure_type;
 #define rep_SPEC_BINDINGS(x)		(rep_INT(x) >> 16)
 #define rep_NEW_FRAME			rep_MAKE_INT(0)
 
+#define rep_USE_FUNARG(f)				\
+    do {						\
+	rep_env = rep_FUNARG(f)->env;			\
+	if (!(rep_FUNARG(f)->car & rep_FF_NO_BYTE_CODE)) \
+	    rep_bytecode_interpreter = rep_apply_bytecode; \
+	else						\
+	    rep_bytecode_interpreter = 0;		\
+	rep_structure = rep_FUNARG(f)->structure;	\
+    } while (0)
+
+#define rep_USE_DEFAULT_ENV			\
+    do {					\
+	rep_env = Qnil;				\
+	rep_structure = rep_default_structure;	\
+	rep_bytecode_interpreter = rep_apply_bytecode; \
+    } while (0)
+
+
+/* call history */
+
+/* Keeps a backtrace of all lisp functions called. */
+struct rep_Call {
+    struct rep_Call *next;
+    repv fun;
+    repv args;
+    /* t if `args' is list of *evalled* arguments.  */
+    repv args_evalled_p;
+    repv saved_env;
+    repv saved_structure;
+    repv (*saved_bytecode)(repv, int, repv *);
+};
+
+#define rep_PUSH_CALL(lc)		\
+    do {				\
+	(lc).saved_env = rep_env;	\
+	(lc).saved_structure = rep_structure; \
+	(lc).saved_bytecode = rep_bytecode_interpreter; \
+	(lc).next = rep_call_stack;	\
+	rep_call_stack = &(lc);		\
+    } while (0)
+
+#define rep_POP_CALL(lc)		\
+    do {				\
+	rep_env = (lc).saved_env;	\
+	rep_structure = (lc).saved_structure; \
+	rep_bytecode_interpreter = (lc).saved_bytecode; \
+	rep_call_stack = (lc).next;	\
+    } while (0)
+
+
+/* guardians */
+
+typedef struct rep_guardian_struct {
+    repv car;
+    struct rep_guardian_struct *next;
+    repv accessible;
+    repv inaccessible;
+} rep_guardian;
+
 
 /* prototypes */
 
