@@ -418,7 +418,7 @@ kill_process(struct Proc *pr)
     FREE_OBJECT(pr);
 }
 
-/* Return the file descriptor (or -1 if an error) of the first available
+/* Return the file descriptor (or 0 if an error) of the first available
    pty master. SLAVENAM will contain the name of the associated slave. */
 static int
 get_pty(char *slavenam)
@@ -466,7 +466,7 @@ none:
 #endif
     /* Couldn't find a pty. Signal an error. */
     cmd_signal(sym_process_error, LIST_1(VAL(&no_pty)));
-    return -1;
+    return 0;
 }
 
 /* does the dirty stuff of getting the process running. if SYNC_INPUT
@@ -746,11 +746,11 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 		break;
 	    }
 	}
+	else
+	    cmd_signal(sym_process_error, LIST_1(lookup_errno()));
     }
     else
-    {
 	cmd_signal(sym_process_error, list_2(VAL(pr), VAL(&already_running)));
-    }
     return(rc);
 }
 
