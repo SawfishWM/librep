@@ -22,6 +22,7 @@
 			       gaol-add-special
 			       gaol-add-file-handler
 			       gaol-replace-file-handler
+			       make-gaol
 			       gaol-eval
 			       gaol-load)
 
@@ -89,66 +90,100 @@
   ;; alist of (HANDLER . SYMBOL)
   (define gaol-redefined-file-handlers nil)
 
+  (define file-handler-env nil)
+
 
 ;;; building the actual environments
 
+  ;; this structure exports all its bindings, these are the bindings
+  ;; that are visible to gaolled code (since the gaolled code will
+  ;; be evaluated in a structure that imports this structure)
   (define gaol-structure nil)
   (define gaol-needs-rebuilding t)
 
-  ;; XXX should create a named gaol environment, then let all
-  ;; gaolled code open it in their own structure..
   (defun gaol-rebuild-environment ()
     (when gaol-needs-rebuilding
-      (let
-	  ((fh-env (nconc (mapcar (lambda (sym)
-				    (cons sym t)) gaol-safe-file-handlers)
-			  (mapcar (lambda (cell)
-				    (cons (car cell)
-					  (symbol-value (cdr cell))))
-				  gaol-redefined-file-handlers))))
-	(unless gaol-structure
-	  (setq gaol-structure (%make-structure))
-	  (set-special-environment gaol-safe-specials gaol-structure))
-	(mapc (lambda (sym)
-		(%structure-set
-		 gaol-structure sym (%structure-ref (%current-structure) sym)))
-	      gaol-safe-functions)
-	(mapc (lambda (cell)
-		(%structure-set gaol-structure (car cell) (cdr cell)))
-	      gaol-redefined-functions)
-	(set-file-handler-environment fh-env gaol-structure)
-;	(%set-interface gaol-structure
-;			(nconc (mapcar car gaol-redefined-functions)
-;			       gaol-safe-functions))
-	(setq gaol-needs-rebuilding nil))))
+      (setq file-handler-env
+	    (nconc (mapcar (lambda (sym)
+			     (cons sym t)) gaol-safe-file-handlers)
+		   (mapcar (lambda (cell)
+			     (cons (car cell)
+				   (symbol-value (cdr cell))))
+			   gaol-redefined-file-handlers)))
+      (unless gaol-structure
+	(setq gaol-structure (%make-structure))
+	(%name-structure gaol-structure '%gaol-structure)
+	(%structure-exports-all gaol-structure t))
+      (mapc (lambda (sym)
+	      (%structure-set
+	       gaol-structure sym (%structure-ref (%current-structure) sym)))
+	    gaol-safe-functions)
+      (mapc (lambda (cell)
+	      (%structure-set gaol-structure (car cell) (cdr cell)))
+	    gaol-redefined-functions)
+      (setq gaol-needs-rebuilding nil)))
+
+  (defun make-gaol ()
+    (gaol-rebuild-environment)
+    (let ((gaol (%make-structure
+		 '() (lambda () (%open-structures '(%gaol-structure))))))
+      (set-file-handler-environment file-handler-env gaol)
+      (set-special-environment gaol-safe-specials gaol)
+      gaol))
+
+  (define default-gaol (let (gaol)
+			 (lambda ()
+			   (unless gaol
+			     (setq gaol (make-gaol)))
+			   gaol)))
 
 
 ;;; public environment mutators
 
   (defun gaol-replace-function (fun def)
-    (setq gaol-needs-rebuilding t)
-    (setq gaol-redefined-functions (nconc gaol-redefined-functions
-					  (list (cons fun def)))))
+    (let ((cell (assq fun gaol-redefined-functions)))
+      (unless (and cell (eq (cdr cell) def))
+	(setq gaol-needs-rebuilding t))
+      (if cell
+	  (rplacd cell def)
+	(setq gaol-redefined-functions (nconc gaol-redefined-functions
+					      (list (cons fun def)))))))
 
   (defun gaol-add-special (var)
-    ;; use nconc to affect existing environments
-    (setq gaol-safe-specials (nconc gaol-safe-specials (list var))))
+    (unless (memq var gaol-safe-specials)
+      ;; use nconc to affect existing environments
+      (setq gaol-safe-specials (nconc gaol-safe-specials (list var)))))
 
   (defun gaol-add-file-handler (fun)
-    (setq gaol-needs-rebuilding t)
-    (setq gaol-safe-file-handlers (nconc gaol-safe-file-handlers (list fun))))
+    (unless (memq fun gaol-safe-file-handlers)
+      (setq gaol-needs-rebuilding t)
+      (setq gaol-safe-file-handlers
+	    (nconc gaol-safe-file-handlers (list fun)))))
 
   (defun gaol-replace-file-handler (fun def)
-    (setq gaol-needs-rebuilding t)
-    (setq gaol-redefined-file-handlers (nconc gaol-redefined-file-handlers
-					      (list (cons fun def)))))
+    (let ((cell (assq fun gaol-redefined-file-handlers)))
+      (unless (and cell (eq (cdr cell) def))
+	(setq gaol-needs-rebuilding t))
+      (if cell
+	  (rplacd cell def)
+	(setq gaol-redefined-file-handlers (nconc gaol-redefined-file-handlers
+						  (list (cons fun def)))))))
 
 
 ;;; evaluating in the restricted environment
 
-  (defun gaol-eval (form)
-    (gaol-rebuild-environment)
-    (eval form gaol-structure))
+  (defun load-in (filename struct)
+    (let ((file (open-file filename 'read)))
+      (unwind-protect
+	  (condition-case nil
+	      (let ((load-filename (canonical-file-name filename)))
+		(while t
+		  (eval (read file) struct)))
+	    (end-of-stream))
+	(close-file file))))
 
-  (defun gaol-load (file &optional no-error no-path-is-ignored no-suffix)
-    (gaol-eval `(,load ',file ',no-error t ',no-suffix t))))
+  (defun gaol-eval (form &optional gaol)
+    (eval form (or gaol (default-gaol))))
+
+  (defun gaol-load (file &optional gaol)
+    (load-in file (or gaol (default-gaol)))))
