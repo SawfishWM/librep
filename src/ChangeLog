@@ -1,5 +1,7 @@
 2003-12-06  John Harper  <jsh@apple.com>
 
+	* librep.sym: added Fexport_binding to the list
+
 	* Makefile.in: refer to librep.sym relative to $(srcdir), patch
 	from Mike Castle <dalgoda@ix.netcom.com>
 
