@@ -535,6 +535,27 @@ file types.")
    ((eq op 'canonical-file-name)
     ;; No feasible way to do this?
     (car args))
+   ((filep (car args))
+    ;; Operations on file handles
+    (cond
+     ((memq op '(seek-file flush-file write-buffer-contents
+		 read-file-contents insert-file-contents))
+      ;; Just pass these through to the underlying file
+      (apply op (file-bound-stream (car args)) (cdr args)))
+     ((eq op 'close-file)
+      ;; Close the file, synchronise with the remote file if required
+      (let*
+	  ((file (car args))
+	   (data (file-handler-data file))
+	   (session (remote-ftp-open-host (nth 1 split-name)
+					  (car split-name))))
+	(close-file (file-bound-stream file))
+	(when (memq (aref data 1) '(write append))
+	  ;; Copy the local version back to the remote fs
+	  (remote-ftp-put session (aref data 3) (aref data 2)))
+	(delete-file (aref data 3))))
+     (t
+      (error "Unsupported FTP op on file-handler: %s %s" op args))))
    ((memq op '(read-file-contents insert-file-contents copy-file-to-local-fs))
     ;; Need to get the file to the local fs
     (let
@@ -602,6 +623,24 @@ file types.")
 	(remote-ftp-rm session file-name))
        ((eq op 'set-file-modes)
 	(remote-ftp-chmod session (nth 1 args) file-name))
+       ((eq op 'open-file)
+	(let
+	    ((type (nth 1 args))
+	     (local-file (make-temp-name))
+	     local-fh)
+	  (when (memq type '(read append))
+	    ;; Need to transfer the file initially
+	    (remote-ftp-get session file-name local-file))
+	  ;; Open the local file
+	  (setq local-fh (make-file-from-stream (car args)
+						(open-file local-file type)
+						'remote-file-handler))
+	  (set-file-handler-data local-fh
+				 (vector 'remote-ftp-handler
+					 type		;access type
+					 file-name	;remote name
+					 local-file))	;local copy
+	  local-fh))
        (t
 	(let
 	    ((file (remote-ftp-get-file-details session file-name)))
