@@ -46,7 +46,7 @@
 
 ;; Instruction set version
 (defconst bytecode-major 2)
-(defconst bytecode-minor 2)
+(defconst bytecode-minor 3)
 
 ;; Opcodes
 (defconst op-call 0x08)			;call (stk[n] stk[n-1] ... stk[0])
@@ -162,7 +162,7 @@
 
 (defconst op-mod 0xbb)			;new 21-11-97
 
-(defconst op-last-before-jmps 0xfa)
+(defconst op-last-before-jmps 0xf8)
 
 ;; All jmps take two-byte arguments
 (defconst op-jmp 0xfb)			;jmp to x
@@ -170,6 +170,8 @@
 (defconst op-jt 0xfd)			;pop the stack, if t, jmp x
 (defconst op-jnp 0xfe)			;if stk[0] nil, jmp x, else pop
 (defconst op-jtp 0xff)			;if stk[0] t, jmp x, else pop
+(defconst op-jpn 0xf9)			;if stk[0] nil, pop and jmp x
+(defconst op-jpt 0xfa)			;if stk[0] t, pop and jmp x
 
 (defconst comp-max-1-byte-arg 5)	;max arg held in 1-byte instruction
 (defconst comp-max-2-byte-arg 0xff)	;max arg held in 2-byte instruction
