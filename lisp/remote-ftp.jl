@@ -95,7 +95,7 @@ directory substituted for the single %s format specifier.")
   "220 |230 |226 |25. |221 |200 |[Hh]ash mark"
   "Regular expression matching ftp \"success\" messages.")
 
-(defvar remote-ftp-bad-msgs "55. |500 |\\?Invalid command"
+(defvar remote-ftp-bad-msgs "55. |500 |530 |\\?Invalid command"
   "Regular expression matching ftp \"failure\" messages.")
 
 (defvar remote-ftp-skip-msgs
@@ -106,7 +106,7 @@ directory substituted for the single %s format specifier.")
   "Regular expression matching ftp messages that can be ignored.")
 
 (defvar remote-ftp-reconnect-msgs
-  (concat "ftp: |Not connected|530 |4[25]1 |rcmd: |"
+  (concat "ftp: |Not connected|4[25]1 |rcmd: |"
 	  "No control connection|([a-zA-Z0-9.-]+: )?unknown host|"
 	  "lost connection")
   "Regular expression matching ftp messages that indicate that the current
