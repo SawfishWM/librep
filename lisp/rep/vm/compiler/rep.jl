@@ -70,6 +70,8 @@
   (put 'rep 'compiler-handler-property 'rep-compile-fun)
   (put 'rep 'compiler-transform-property 'rep-compile-transform)
 
+  (put 'rep 'compiler-sequencer 'progn)
+
 
 ;;; pass 1 support
 
@@ -122,7 +124,10 @@
        (if (and (eq (car (nth 1 form)) 'require)
 		(compiler-constant-p (cadr (nth 1 form))))
 	   (note-require (compiler-constant-value (cadr (nth 1 form))))
-	 (eval (nth 1 form)))))
+	 (eval (nth 1 form))))
+
+      ((progn)
+       (setq form (cons 'progn (mapcar pass-1 (cdr form))))))
 
     form)
 
@@ -132,7 +137,9 @@
 ;;; pass 2 support
 
   (defun pass-2 (form)
-    (cond ((memq (car form) top-level-unexpanded)
+    (cond ((eq (car form) 'progn)
+	   (setq form (cons 'progn (mapcar pass-2 (cdr form)))))
+	  ((memq (car form) top-level-unexpanded)
 	   (setq form (compile-top-level-form form)))
 	  ((memq (car form) top-level-compiled)
 	   (setq form (compile-form form))))

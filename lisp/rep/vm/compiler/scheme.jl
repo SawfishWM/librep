@@ -67,6 +67,8 @@
   (put 'scheme 'compiler-handler-property 'scheme-compile-fun)
   (put 'scheme 'compiler-transform-property 'scheme-compile-transform)
 
+  (put 'scheme 'compiler-sequencer 'begin)
+
 
 ;;; pass 1 support
 
@@ -74,15 +76,19 @@
     (unless (or (eq (car form) 'define) (memq (car form) top-level-compiled))
       (setq form (compiler-macroexpand
 		  form (lambda (in out)
-			 (or (eq in out) (eq (car out) 'define)
+			 (or (eq in out) (memq (car out) '(define begin))
 			     (memq (car out) top-level-compiled))))))
-    (when (eq (car form) 'define)
-      (let ((name (cadr form)))
-	(cond ((symbolp name)
-	       (remember-lexical-variable (compiler-constant-value name)))
-	      ((and (consp name) (symbolp (car name)))
-	       (remember-function (car name) (cdr name)))
-	      (t (compiler-error "Invalid define statement" form)))))
+    (case (car form)
+      ((define)
+       (let ((name (cadr form)))
+	 (cond ((symbolp name)
+		(remember-lexical-variable (compiler-constant-value name)))
+	       ((and (consp name) (symbolp (car name)))
+		(remember-function (car name) (cdr name)))
+	       (t (compiler-error "Invalid define statement" form)))))
+
+      ((begin)
+       (setq form (cons 'begin (mapcar pass-1 (cdr form)))))
 
     form)
 
@@ -94,6 +100,8 @@
   (defun pass-2 (form)
     (cond ((eq (car form) 'define)
 	   (setq form (compile-define form)))
+	  ((eq (car form) 'begin)
+	   (cons 'begin (mapcar pass-2 (cdr form))))
 	  ((memq (car form) top-level-compiled)
 	   (setq form (compile-form form))))
     form)
@@ -110,8 +118,7 @@
 		(nth 2 form)))
 	`(define ,(car name)
 	   (make-closure
-	    ,(compile-lambda `(lambda ,(cdr name) ,@(cddr form))
-			     (car name) 'begin)
+	    ,(compile-lambda `(lambda ,(cdr name) ,@(cddr form)) (car name))
 	    ',(car name))))))
 
 
