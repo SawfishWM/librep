@@ -58,6 +58,8 @@ repexecdir='${libexecdir}/rep/${version}/${host_type}'
 repcommonexecdir='${libexecdir}/rep/${host_type}'
 repdocfile='${repexecdir}/DOC'
 
+emacssitelispdir='${datadir}/emacs/site-lisp'
+
 EXTRA_LIBOBJS=""
 AC_SUBST(EXTRA_LIBOBJS)
 
@@ -539,6 +541,7 @@ AC_SUBST(repexecdir)
 AC_SUBST(repcommonexecdir)
 AC_SUBST(replispdir)
 AC_SUBST(repdocfile)
+AC_SUBST(emacssitelispdir)
 AC_SUBST(HAVE_UNIX)
 AC_SUBST(HAVE_X11)
 AC_SUBST(LIBOBJS)

@@ -35,8 +35,7 @@
 (defvar gud-rep-history nil)
 
 (defun gud-rep-massage-args (file args)
-  (cons "--rep-debug"
-	(cons (car args) (cons "--rep-emacs-debugger" (cdr args)))))
+  (cons "--debug" (cons (car args) (cons "--emacs-debug" (cdr args)))))
 
 ;; There's no guarantee that Emacs will hand the filter the entire
 ;; marker at once; it could be broken up across several strings.  We

@@ -53,6 +53,8 @@ install : all installdirs
 	$(INSTALL_SCRIPT) libtool $(DESTDIR)$(repcommonexecdir)
 	$(INSTALL_DATA) rules.mk $(DESTDIR)$(repcommonexecdir)
 	$(INSTALL_SCRIPT) install-aliases $(DESTDIR)$(repcommonexecdir)
+	$(INSTALL_DATA) rep-debugger.el $(DESTDIR)$(emacssitelispdir)
+
 	@echo "---------------------------------------------------------"
 	@echo "Trying to install rep.m4 in $(DESTDIR)$(aclocaldir);"
 	@echo "if this fails, install it manually in a suitable location"
@@ -62,7 +64,8 @@ install : all installdirs
 installdirs : mkinstalldirs
 	$(SHELL) $< $(DESTDIR)$(repdir)/$(version) \
 	  $(DESTDIR)$(bindir) $(DESTDIR)$(aclocaldir) \
-	  $(DESTDIR)$(repcommonexecdir) $(DESTDIR)$(repexecdir)
+	  $(DESTDIR)$(repcommonexecdir) $(DESTDIR)$(repexecdir) \
+	  $(DESTDIR)$(emacssitelispdir)
 
 uninstall :
 	-for dir in $(INSTALL_SUBDIRS); do \
@@ -73,6 +76,7 @@ uninstall :
 	rm -f $(DESTDIR)$(repcommonexecdir)/rules.mk
 	rm -f $(DESTDIR)$(repcommonexecdir)/install-aliases
 	rm -f $(DESTDIR)$(repcommonexecdir)/libtool
+	rm -f $(DESTDIR)$(emacssitelispdir)/rep-debugger.el
 	rm -f $(DESTDIR)$(aclocaldir)/rep.m4
 
 DOC : src/repdoc

@@ -76,6 +76,7 @@ fi
 %{_datadir}/rep/%{version}
 %{_libexecdir}/rep/%{version}/%{_target_platform}
 %{_infodir}/librep*
+%{_datadir}/emacs/site-lisp/rep-*
 
 %files devel
 %defattr(-,root,root)

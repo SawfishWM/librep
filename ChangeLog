@@ -1,4 +1,13 @@
+2001-08-09  John Harper  <jsh@pixelslut.com>
+
+	* rep-debugger.el: fixed for new debugger command line option
+	names
+
 2001-08-07  John Harper  <jsh@pixelslut.com>
+
+	* configure.in, Makedefs.in, Makefile.in, librep.spec.in:
+	install rep-debugger.el into the emacs site-lisp directory (in
+	our $prefix)
 
 	* rep-debugger.el: emacs code to make GUD mode work with rep's
 	new source debugging support
