@@ -17,7 +17,7 @@ static int dbm_type;
 typedef struct rep_dbm_struct {
     repv car;
     struct rep_dbm_struct *next;
-    DBM *dbm;
+    SDBM *dbm;
     repv path;
     repv access;
     repv mode;
@@ -29,10 +29,10 @@ DEFSYM(sdbm, "sdbm");
 DEFSYM(insert, "insert");
 DEFSYM(replace, "replace");
 
-DEFUN("dbm-open", Fdbm_open, Sdbm_open, (repv file, repv flags, repv mode),
+DEFUN("sdbm-open", Fsdbm_open, Ssdbm_open, (repv file, repv flags, repv mode),
       rep_Subr3) /*
-::doc:Sdbm-open::
-dbm-open PATH ACCESS-TYPE [MODE]
+::doc:Ssdbm-open::
+sdbm-open PATH ACCESS-TYPE [MODE]
 ::end:: */
 {
     int uflags, umode;
@@ -49,7 +49,7 @@ dbm-open PATH ACCESS-TYPE [MODE]
     dbm->path = file;
     dbm->access = flags;
     dbm->mode = rep_MAKE_INT(umode);
-    dbm->dbm = dbm_open (rep_STR(file), uflags, umode);
+    dbm->dbm = sdbm_open (rep_STR(file), uflags, umode);
     if (dbm->dbm != 0)
     {
 	dbm->next = dbm_chain;
@@ -63,13 +63,13 @@ dbm-open PATH ACCESS-TYPE [MODE]
     }
 }
 
-DEFUN("dbm-close", Fdbm_close, Sdbm_close, (repv dbm), rep_Subr1) /*
-::doc:Sdbm-close::
-dbm-close DBM
+DEFUN("sdbm-close", Fsdbm_close, Ssdbm_close, (repv dbm), rep_Subr1) /*
+::doc:Ssdbm-close::
+sdbm-close DBM
 ::end:: */
 {
     rep_DECLARE1 (dbm, rep_DBMP);
-    dbm_close (rep_DBM(dbm)->dbm);
+    sdbm_close (rep_DBM(dbm)->dbm);
     rep_DBM(dbm)->dbm = 0;
     rep_DBM(dbm)->path = Qnil;
     rep_DBM(dbm)->access = Qnil;
@@ -77,9 +77,9 @@ dbm-close DBM
     return Qt;
 }
 
-DEFUN("dbm-fetch", Fdbm_fetch, Sdbm_fetch, (repv dbm, repv key), rep_Subr2) /*
-::doc:Sdbm-fetch::
-dbm-fetch DBM KEY
+DEFUN("sdbm-fetch", Fsdbm_fetch, Ssdbm_fetch, (repv dbm, repv key), rep_Subr2) /*
+::doc:Ssdbm-fetch::
+sdbm-fetch DBM KEY
 ::end:: */
 {
     datum dkey, dvalue;
@@ -87,16 +87,16 @@ dbm-fetch DBM KEY
     rep_DECLARE2 (key, rep_STRINGP);
     dkey.dptr = rep_STR (key);
     dkey.dsize = rep_STRING_LEN (key);
-    dvalue = dbm_fetch (rep_DBM(dbm)->dbm, dkey);
+    dvalue = sdbm_fetch (rep_DBM(dbm)->dbm, dkey);
     if (dvalue.dptr == 0)
 	return Qnil;
     else
 	return rep_string_dupn (dvalue.dptr, dvalue.dsize);
 }
 
-DEFUN("dbm-store", Fdbm_store, Sdbm_store, (repv dbm, repv key, repv val, repv flags), rep_Subr4) /*
-::doc:Sdbm-store::
-dbm-store DBM KEY VALUE [FLAGS]
+DEFUN("sdbm-store", Fsdbm_store, Ssdbm_store, (repv dbm, repv key, repv val, repv flags), rep_Subr4) /*
+::doc:Ssdbm-store::
+sdbm-store DBM KEY VALUE [FLAGS]
 ::end:: */
 {
     int dflags;
@@ -108,75 +108,75 @@ dbm-store DBM KEY VALUE [FLAGS]
     dkey.dsize = rep_STRING_LEN (key);
     dvalue.dptr = rep_STR (val);
     dvalue.dsize = rep_STRING_LEN (val);
-    dflags = (flags == Qinsert ? DBM_INSERT : DBM_REPLACE);
-    return (dbm_store (rep_DBM(dbm)->dbm, dkey, dvalue, dflags) == 0
+    dflags = (flags == Qinsert ? SDBM_INSERT : SDBM_REPLACE);
+    return (sdbm_store (rep_DBM(dbm)->dbm, dkey, dvalue, dflags) == 0
 	    ? Qt : Qnil);
 }
 
-DEFUN("dbm-delete", Fdbm_delete, Sdbm_delete, (repv dbm, repv key), rep_Subr2) /*
-::doc:Sdbm-delete::
-dbm-delete DBM KEY
+DEFUN("sdbm-delete", Fsdbm_delete, Ssdbm_delete, (repv dbm, repv key), rep_Subr2) /*
+::doc:Ssdbm-delete::
+sdbm-delete DBM KEY
 ::end:: */
 {
     datum dkey;
     rep_DECLARE1 (dbm, rep_DBMP);
     rep_DECLARE2 (key, rep_STRINGP);
     dkey.dptr = rep_STR (key);
-    dkey.dsize = rep_STRING_LEN (key);
-    return dbm_delete (rep_DBM(dbm)->dbm, dkey) == 0 ? Qt : Qnil;
+    dkey.dsize = rep_STRING_LEN (key) + 1;
+    return sdbm_delete (rep_DBM(dbm)->dbm, dkey) == 0 ? Qt : Qnil;
 }
 
-DEFUN("dbm-firstkey", Fdbm_firstkey, Sdbm_firstkey, (repv dbm), rep_Subr1) /*
-::doc:Sdbm-firstkey::
-dbm-firstkey DBM
+DEFUN("sdbm-firstkey", Fsdbm_firstkey, Ssdbm_firstkey, (repv dbm), rep_Subr1) /*
+::doc:Ssdbm-firstkey::
+sdbm-firstkey DBM
 ::end:: */
 {
     datum dkey;
     rep_DECLARE1 (dbm, rep_DBMP);
-    dkey = dbm_firstkey (rep_DBM(dbm)->dbm);
+    dkey = sdbm_firstkey (rep_DBM(dbm)->dbm);
     if (dkey.dptr == 0)
 	return Qnil;
     else
 	return rep_string_dupn (dkey.dptr, dkey.dsize);
 }
 
-DEFUN("dbm-nextkey", Fdbm_nextkey, Sdbm_nextkey, (repv dbm), rep_Subr1) /*
-::doc:Sdbm-nextkey::
-dbm-nextkey DBM
+DEFUN("sdbm-nextkey", Fsdbm_nextkey, Ssdbm_nextkey, (repv dbm), rep_Subr1) /*
+::doc:Ssdbm-nextkey::
+sdbm-nextkey DBM
 ::end:: */
 {
     datum dkey;
     rep_DECLARE1 (dbm, rep_DBMP);
-    dkey = dbm_nextkey (rep_DBM(dbm)->dbm);
+    dkey = sdbm_nextkey (rep_DBM(dbm)->dbm);
     if (dkey.dptr == 0)
 	return Qnil;
     else
 	return rep_string_dupn (dkey.dptr, dkey.dsize);
 }
 
-DEFUN("dbm-rdonly", Fdbm_rdonly, Sdbm_rdonly, (repv dbm), rep_Subr1) /*
-::doc:Sdbm-rdonly::
-dbm-rdonly DBM
+DEFUN("sdbm-rdonly", Fsdbm_rdonly, Ssdbm_rdonly, (repv dbm), rep_Subr1) /*
+::doc:Ssdbm-rdonly::
+sdbm-rdonly DBM
 ::end:: */
 {
     rep_DECLARE1 (dbm, rep_DBMP);
-    return dbm_rdonly (rep_DBM(dbm)->dbm) ? Qt : Qnil;
+    return sdbm_rdonly (rep_DBM(dbm)->dbm) ? Qt : Qnil;
 }
 
-DEFUN("dbm-error", Fdbm_error, Sdbm_error, (repv dbm), rep_Subr1) /*
-::doc:Sdbm-error::
-dbm-error DBM
+DEFUN("sdbm-error", Fsdbm_error, Ssdbm_error, (repv dbm), rep_Subr1) /*
+::doc:Ssdbm-error::
+sdbm-error DBM
 ::end:: */
 {
     rep_DECLARE1 (dbm, rep_DBMP);
-    return dbm_error (rep_DBM(dbm)->dbm) ? Qt : Qnil;
+    return sdbm_error (rep_DBM(dbm)->dbm) ? Qt : Qnil;
 }
 
-DEFUN("dbmp", Fdbmp, Sdbmp, (repv arg), rep_Subr1) /*
-::doc:Sdbmp::
-dbmp ARG
+DEFUN("sdbmp", Fsdbmp, Ssdbmp, (repv arg), rep_Subr1) /*
+::doc:Ssdbmp::
+sdbmp ARG
 
-Returns t if ARG is a dbm object (created by `dbm-open').
+Returns t if ARG is an sdbm object (created by `sdbm-open').
 ::end:: */
 {
     return rep_DBMP(arg) ? Qt : Qnil;
@@ -203,7 +203,7 @@ dbm_sweep (void)
 	if (!rep_GC_CELL_MARKEDP (rep_VAL(x)))
 	{
 	    if (x->dbm != 0)
-		dbm_close (x->dbm);
+		sdbm_close (x->dbm);
 	    rep_FREE_CELL (x);
 	}
 	else
@@ -233,15 +233,15 @@ dbm_compare (repv v1, repv v2)
     return (v1 == v2) ? 0 : 1;
 }
 
-rep_xsubr *rep_dl_subrs[] = { &Sdbm_open, &Sdbm_close, &Sdbm_fetch,
-			      &Sdbm_store, &Sdbm_delete, &Sdbm_firstkey,
-			      &Sdbm_nextkey, &Sdbm_rdonly, &Sdbm_error,
-			      &Sdbmp, 0 };
+rep_xsubr *rep_dl_subrs[] = { &Ssdbm_open, &Ssdbm_close, &Ssdbm_fetch,
+			      &Ssdbm_store, &Ssdbm_delete, &Ssdbm_firstkey,
+			      &Ssdbm_nextkey, &Ssdbm_rdonly, &Ssdbm_error,
+			      &Ssdbmp, 0 };
 
 void
 rep_dl_init (void)
 {
-    dbm_type = rep_register_new_type ("dbm", dbm_compare,
+    dbm_type = rep_register_new_type ("sdbm", dbm_compare,
 				      dbm_print, dbm_print,
 				      dbm_sweep, dbm_mark,
 				      0, 0, 0, 0, 0, 0, 0);
