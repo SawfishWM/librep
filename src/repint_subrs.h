@@ -34,6 +34,7 @@ extern void rep_files_kill(void);
 
 /* from find.c */
 extern struct rep_saved_regexp_data *rep_saved_matches;
+extern void rep_string_modified (repv string);
 extern void rep_mark_regexp_data(void);
 extern void rep_find_init(void);
 extern void rep_find_kill(void);

@@ -5,7 +5,7 @@
 @cindex Read-eval-print loop
 
 When you invoke the stand-alone librep interpreter without giving it a
-script to interpret it starts the system in interactive mode. This
+script to execute the system is started in interactive mode. This
 means that the @dfn{REPL} is entered---the read-eval-print loop.
 
 The REPL works as its name suggests. It reads Lisp forms from the
@@ -39,9 +39,10 @@ configure and inspect the state of the system, as well as providing
 convenient shortcuts for common operations.
 
 A meta-command is differentiated from a normal Lisp form by preceding
-it a comma (@samp{,}) character. The name of the command should follow
-the comma, with any argument forms after that. Note that unlike normal
-Lisp forms, no parentheses are used to mark the command application.
+it with a comma (@samp{,}) character. The name of the command should
+follow the comma, with any argument forms after that. Note that unlike
+normal Lisp forms, no parentheses are used to mark the command
+application.
 
 For example the @code{whereis} meta-command searches all loaded modules
 for those exporting a particular symbol. It might be used as follows:

@@ -3431,7 +3431,7 @@ The @var{lambda-list} is a list, it defines how the values applied to
 the function are bound to local variables which represent the
 parameters of the function. At its simplest it is simply a list of
 symbols, each symbol will have the corresponding argument value bound
-to it. For example, the lambda list @code{(x y)} defines two format
+to it. For example, the lambda list @code{(x y)} defines two
 parameters, @code{x} and @code{y}. When called with two arguments the
 first will be bound to the variable @code{x}, the second to @code{y}.
 When used in a full lambda expression this looks like:
@@ -3484,7 +3484,7 @@ variables before the first keyword are @dfn{required}: an error will be
 signalled if a required argument is undefined in a function call).
 
 @var{optional-parameters} may either be of the form @code{@var{symbol}}
-or of the form @code{(@var{symbol} @value{default})}. If no argument is
+or of the form @code{(@var{symbol} @var{default})}. If no argument is
 supplied for this parameter the @var{default} form is evaluated to give
 the bound value@footnote{The @var{default} form is evaluated in the
 environment of the closure being called, but without any of the
@@ -3969,9 +3969,8 @@ If this expansion is another macro call the process is repeated until
 an expansion is obtained which is not a macro call, this form is
 then returned.
 
-The optional @var{environment} argument is an alist of macro
-definitions to use as well as the existing macros; this is mainly used
-for compilation purposes.
+The optional @var{environment} argument is a function to call to do the
+actual expansion.
 
 @lisp
 (defmacro when (condition #!rest body)
@@ -3981,13 +3980,24 @@ forms."
     @result{} when
 
 (macroexpand '(when x (setq foo bar)))
-    @result{} (if x (progn (setq foo bar)))
+    @result{} (cond (x (progn (setq foo bar))))
 @end lisp
 
 While a macro is being expanded, the special variable
 @code{macro-environment} is bound to value of the @var{environment}
 parameter in the containing call to @code{macroexpand}. This allows
 macros to expand inner macros correctly.
+@end defun
+
+@defun macroexpand-1 form #!optional environment
+Similar to @code{macroexpand}, but only a single macro expansion is
+ever performed, i.e. if @var{form} is a macro call the result of
+expanding that call will be returned, otherwise @var{form} is returned.
+
+@lisp
+(macroexpand-1 '(when x (setq foo bar)))
+    @result{} (if x (progn (setq foo bar)))
+@end lisp
 @end defun
 
 

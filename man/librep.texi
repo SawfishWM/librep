@@ -69,7 +69,6 @@ last updated @value{UPDATED} for librep version @value{VERSION}.
 @menu
 * Copying::                     Distribution conditions
 * Introduction::                Brief introduction to librep
-* News::                        History of user-visible changes
 
 * Invocation::                  How to start the interpreter
 * The language::                The Lisp dialect implemented
@@ -77,6 +76,8 @@ last updated @value{UPDATED} for librep version @value{VERSION}.
 * librep Internals::		Embedding librep in other programs
 
 * Reporting bugs::              How to contact the maintainers
+
+* News::                        History of user-visible changes
 
 * Function index::              Menu of all documented functions
 * Variable index::              All variables which have been mentioned
@@ -126,7 +127,7 @@ it at your own risk. Obviously I hope there are no bugs, but I make no
 promises regarding the reliability of this software.
 
 
-@node Introduction, News, Copying, Top
+@node Introduction, Invocation, Copying, Top
 @chapter Introduction
 @cindex Introduction
 
@@ -173,12 +174,7 @@ Common Lisp and various Scheme implementations
 @end itemize
 
 
-@node News, Invocation, Introduction, Top
-
-@include news.texi
-
-
-@node Invocation, The language, News, Top
+@node Invocation, The language, Introduction, Top
 @chapter Invocation
 @cindex Invocation
 
@@ -284,7 +280,7 @@ exec rep "$0" "$@@"
 @include interface.texi
 
 
-@node Reporting bugs, Function index, librep Internals, Top
+@node Reporting bugs, News, librep Internals, Top
 @chapter Reporting bugs
 @cindex Reporting bugs
 @cindex Bugs, reporting
@@ -306,7 +302,12 @@ Please send any bug reports to the mailing list:
 may be contacted at: @email{jsh@@users.sourceforge.net}.
 
 
-@node Function index, Variable index, Reporting bugs, Top
+@node News, Function index, Reporting bugs, Top
+
+@include news.texi
+
+
+@node Function index, Variable index, News, Top
 @unnumbered Function index
 
 @printindex fn
