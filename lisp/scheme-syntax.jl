@@ -86,7 +86,7 @@
   (defmacro let args
     ((rep#lambda (fun vars values)
        (rep#cond
-	((cond ((car args) (symbolp (car args))))	;and expanded
+	((rep#cond ((car args) (symbolp (car args))))	;and expanded
 	 ;; named let
 	 (setq fun (car args))
 	 (setq args (cdr args))))
