@@ -1,3 +1,17 @@
+2000-02-20  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compiler.jl: remember that define-value defines lexical
+	variables. When compiling files, don't read-and-macroexpand in
+	both passes, just the first, storing the results for input to
+	the second pass
+
+2000-02-19  John Harper  <john@dcs.warwick.ac.uk>
+
+	* threads.jl (with-threads-blocked): now autoloaded
+
+	* gaol.jl (gaol-safe-functions): added define and
+	with-internal-definitions
+
 2000-02-17  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lisp.jl (load-all): remove the (broken) restiction on not

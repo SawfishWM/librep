@@ -16,6 +16,8 @@ functions.
 * Numbers::                     Integers and arithmetic functions
 * Sequences::                   Ordered sequences of data values
 * Symbols::                     Symbols are uniquely named objects
+* Hash Tables::                 Efficient table lookups
+* Guardians::			Protecting objects from GC
 
 * Evaluation::                  Evaluating expressions
 * Control Structures::          Special forms. Conditionals, loops, etc@dots{}
@@ -24,6 +26,8 @@ functions.
                                  programs
 * Macros::                      User-defined control structures
 * Lexical Environment::		Manipulating closures and bindings
+* Definitions::			Scheme-like block structuring
+* Threads::			Multi-threaded programs
 
 * Streams::                     Data sinks and sources; character streams
 * Loading::                     Programs are stored in files
@@ -39,8 +43,16 @@ functions.
 * Time and Date::		Manipulating time and date
 * i18n::			Internationalisation
 
-* Miscellaneous Functions::     Functions which don't fit elsewhere in
-                                 this manual
+* System Information::          Getting details about the host
+* User Information::            The name of the user
+* Environment Variables::       Reading and writing the environment
+* String Functions::            Misc string manipulation
+* Sleeping::                    Waiting for a period of time
+* Beeping::			Making a ding! sound
+* Messages::                    Writing to the console
+* Command Line Options::	Retrieving command line arguments
+* Shell Commands::		Executing shell commands
+* Timers::			Asynchronous timers
 
 * Debugging::                   How to debug Lisp programs
 * Tips::                        General ideas for @code{librep} programming
@@ -2004,7 +2016,7 @@ This function is a combination of the @code{nth} and @code{aref} functions.
 @end defun
 
 
-@node Symbols, Evaluation, Sequences, The language
+@node Symbols, Hash Tables, Sequences, The language
 @section Symbols
 @cindex Symbols
 
@@ -2351,7 +2363,155 @@ This function sets the property list of the symbol @var{symbol} to
 @end defun
 
 
-@node Evaluation, Control Structures, Symbols, The language
+@node Hash Tables, Guardians, Symbols, The language
+@section Hash Tables
+@cindex Hash tables
+
+The @code{tables} feature provides a flexible hash table
+implementation. Each hash table is represented by a lisp object
+satisfying the @code{tablep} predicate:
+
+@defun tablep arg
+Return @code{t} if @var{arg} is a hash table.
+@end defun
+
+Hash tables may be created by using the @code{make-table} and
+@code{make-weak-table} functions:
+
+@defun make-table hash-fun compare-fun
+Create and return a new hash table. When storing and referencing keys
+it will use the function @var{hash-fun} to map keys to hash codes
+(integers), and the predicate function @var{compare-fun} to compare two
+keys (should return @code{t} if the keys are considered equal).
+@end defun
+
+@defun make-weak-table hash-fun compare-fun
+Similar to @code{make-table}, except that key-value pairs stored in the
+table are said to be ``weakly keyed''. That is, they are only retained
+in the table as long the key has not been garbage collected.
+
+Unlike with tables created by the @code{make-table} function, the fact
+that the key is stored in the table is not considered good enough to
+prevent it being garbage collected.
+@end defun
+
+@defun table-ref table key
+Return the value stored in hash table @var{table} indexed by object
+@var{key}. Returns @code{nil} if no such value exists.
+@end defun
+
+@defun table-set table key value
+Associate the value @var{value} with @var{key} in hash table
+@var{table}. Returns @code{value}.
+@end defun
+
+@defun table-unset table key
+Remove any value stored in @var{table} associated with @var{key}.
+@end defun
+
+@defun table-walk function table
+Call function @var{function} for every key-value pair stored in hash
+table @var{table}. For each pair, the function is called with arguments
+@code{(@var{key} @var{value})}.
+@end defun
+
+Several hash functions are also provided:
+
+@defun string-hash string
+Return an integer representing the string @var{string}.
+@end defun
+
+@defun symbol-hash symbol
+Call @code{(string-hash (symbol-name @var{symbol}))}.
+@end defun
+
+@defun eq-hash arg
+Return a hash value representing object @var{arg}. The hash is
+generated from the @emph{address} of the object.
+@end defun
+
+@defun equal-hash arg
+Return a hash value representing object @var{arg}. The hash is
+generated from the @emph{contents} of the object.
+@end defun
+
+
+@node Guardians, Evaluation, Hash Tables, The language
+@section Guardians
+@cindex Guardians
+@cindex Garbage collection, guardians
+
+A @dfn{guardian} is a lisp object used to control when other data
+objects are recycled by the garbage collector (@pxref{Garbage
+Collection}). The usual behaviour of the gc is to recycle objects as
+soon as they have no remaining references.
+
+Guardians allow the programmer to detect when a specified object would
+be freed by the garbage collector, and to implement their own
+allocation policy. This can be useful, for example, with objects that
+have a high creation-overhead, and thus need to be cached for
+performance reasons.
+
+@defun make-guardian
+This function allocates and returns a new guardian. Each guardian has a
+list of data objects associated with it; some of which may have been
+proved to have no remaining references to them (except from the
+guardian system).
+
+Calling the guardian object with a single argument, adds that value to
+the list of objects associated with that guardian. Calling the guardian
+with no arguments has one of two effects:
+
+@itemize @bullet
+@item
+If objects are associated with the guardian that have been proved to be
+inaccessible, then return one of those objects, and remove it from the
+list of objects associated with the guardian.
+
+@item
+If none of the associated objects have been proved to be inaccessible,
+then return the value @code{nil}.
+@end itemize
+@end defun
+
+Note the use of the word ``prove'' in the above description, objects
+are only moved into a guardian's inaccessible set by the garbage
+collector.
+
+Here is an example use of the guardian system:
+
+@lisp
+;; create a new guardian object
+(setq G (make-guardian))
+
+;; create a lisp object
+(setq x (cons 'a 'b))
+   @result{} (a . b)
+
+;; protect the object using the guardian
+(G x)
+
+;; remove the sole reference to the object
+(setq x nil)
+   @result{} nil
+
+;; invoke the garbage collector, this will
+;; prove that the value added to the
+;; guardian is no longer accessible
+(garbage-collect)
+
+;; call the guardian to retrieve the
+;; inaccessible value
+(G)
+   @result{} (a . b)
+
+;; no more inaccessible values available
+(G)
+   @result{} nil
+@end lisp
+
+
+@node Evaluation, Control Structures, Guardians, The language
 @section Evaluation
 @cindex Evaluation
 @cindex Evaluating Lisp forms
@@ -3314,12 +3474,8 @@ lexical and special). This means that any @code{unwind-protect},
 @code{condition-case}, @code{catch}, or @code{with-object} forms that
 are active when invoking a continuation are all ignored.
 
-It is also likely that some uses of @code{call/cc} may crash the
-system; most parts of the lisp interpreter itself should handle being
-reentered (since garbage collection is used), but the same may not be
-true for any external libraries being used (e.g. the GTK+ binding)
-since these will usually use @code{malloc}/@code{free} for their memory
-management.
+Another restriction is that invoking a continuation may not cause
+control to pass across a dynamic root (@pxref{Threads}).
 
 
 @node Variables, Functions, Control Structures, The language
@@ -3449,6 +3605,42 @@ last example in the @code{let} documentation (above),
 By the time the new value of @code{bar} is computed the new binding of
 @code{foo} is already active.
 @end defspec
+
+@defmac letrec bindings body-forms@dots{}
+@code{letrec} is similar to @code{let} and @code{let*}, with the
+differerence being that the values of bindings are evaluated with all
+other bindings in scope. This means that recursive functions may be
+defined with @code{letrec}. For example, a local factorial function
+(from SICP):
+
+@lisp
+(letrec ((fact
+	  (lambda (n)
+	    (if (= n 1)
+		1
+	      (* n (fact (1- n)))))))
+  (fact 10))
+@end lisp
+
+@noindent
+Note also that letrec allows groups of mutually recursive functions to
+be defined, as in the following example (also from SICP):
+
+@lisp
+(defun f (x)
+  (letrec ((evenp
+            (lambda (n)
+              (if (= n 0)
+                  t
+                (oddp (1- n)))))
+           (oddp
+            (lambda (n)
+              (if (= n 0)
+                  nil
+                (evenp (1- n))))))
+    @dots{}
+@end lisp
+@end defmac
 
 
 @node Setting Variables, Scope and Extent, Local Variables, Variables
@@ -4298,7 +4490,7 @@ used before they are defined (two passes are made through the source
 file).
 
 
-@node Lexical Environment, Streams, Macros, The language
+@node Lexical Environment, Definitions, Macros, The language
 @section Lexical Environment
 @cindex Lexical environment
 @cindex Environment, lexical
@@ -4382,7 +4574,281 @@ function is called in an unrestricted lexical environment.
 @end defun
 
 
-@node Streams, Loading, Lexical Environment, The language
+@node Definitions, Threads, Lexical Environment, The language
+@section Definitions
+@cindex Definitions
+
+Previous sections of this document have described several special forms
+and macros for defining top-level functions and variables.
+@code{librep} also provides a higher-level method of creating these
+definitions, the @code{define} statement. @code{define} originates in
+the Scheme dialect of Lisp, it allows block-structured programs to be
+defined intuitively.
+
+The most basic use of @code{define} is very similar to @code{defun},
+e.g. the two following forms have exactly the same effect:
+
+@lisp
+(defun foo (x) (1+ x))
+
+(define (foo x) (1+ x))
+@end lisp
+
+@noindent
+But note the changed position of the parentheses. This is because
+@code{define} may also be used to define (lexical) variables. Hence the
+following is also equivalent:
+
+@lisp
+(define foo (lambda (x) (1+ x)))
+@end lisp
+
+However this is the most uninteresting aspect of @code{define}. More
+interesting is that it allows @dfn{internal definitions}.
+
+Within a @code{define} form, any inner calls to @code{define} (that
+occur in a contiguous block at the start of the body of a @code{let},
+@code{let*}, @code{letrec}, @code{lambda}, or @code{define} form) are
+also used to create definitions, but definitions that are local to the
+containing scope. For example:
+
+@lisp
+(define (foo x)
+  (define (bar x)
+    (* x 42))
+  (1+ (bar x)))
+@end lisp
+
+@noindent
+This defines a top-level function called @code{foo}; but this also
+contains an inner function named @code{bar}, that is only accessible
+within @code{foo}. @footnote{In this example, there is no need to pass
+the value of @code{x} into @code{bar}, since the binding of @code{x} is
+already within the scope of @code{bar}.}
+
+@defmac define name form
+@defmacx define (name . args) body-forms@dots{}
+Define a global lexical variable called @var{name}, whose value will be
+set to @var{form}.
+
+If the first argument to the macro is a list, then a function is
+defined whose name is @var{name} and whose formal parameters are
+specified by @var{args}. The body of the function is defined by the
+@var{body-forms}. The body forms have any macros expanded, and are
+scanned for internal definitions (at the start of the body of
+@code{let}, @code{let*}, @code{lambda} special forms)
+@end defmac
+
+@defmac with-internal-definitions body-forms
+Recursively expand macros in @var{body-forms}, while scanning out any
+internal definitions into @code{letrec} statements.
+@end defmac
+
+
+@node Threads, Streams, Definitions, The language
+@section Threads
+@cindex Threads
+
+@code{librep} supports a simple model of multi-threaded programming.
+Multiple threads of execution may be created, with control preemptively
+being switched between them.
+
+@menu
+* Thread Contexts::
+* Creating Threads::
+* Deleting Threads::
+* Manipulating Threads::
+* Mutexes::
+* Thread Implementation Notes::
+@end menu
+
+
+@node Thread Contexts, Creating Threads, , Threads
+@subsection Thread Contexts
+@cindex Thread contexts
+
+Every thread created by rep is a member of a @dfn{thread context}, this
+context is defined by the current position in the lisp call stack. At
+any point in time, only threads which are members of the current
+context may be executing.
+
+@defun call-with-dynamic-root thunk
+Call the function of zero-parameters @var{thunk} in a new thread
+context. The new context will contain a single thread, that executing
+@var{thunk}.
+
+The call to @code{call-with-dynamic-root} will only return once all
+threads in the newly created context have been deleted, or a non-local
+exit causes control to leave forcibly.
+@end defun
+
+
+@node Creating Threads, Deleting Threads, Thread Contexts, Threads
+@subsection Creating Threads
+@cindex Creating threads
+@cindex Threads, creating
+
+The @code{make-thread} function may be used to create threads that
+execute within the current thread context (dynamic root). Each thread
+is represented by a lisp object.
+
+@defun threadp arg
+Return @code{t} if lisp object @var{arg} represents a thread of
+execution in the lisp environment.
+@end defun
+
+@defun make-thread thunk &optional name
+Create and return a new thread of execution; it will initially invoke
+the zero-parameter function @var{thunk}. If the call to @var{thunk}
+returns the thread is automatically deleted.
+
+If @var{name} is defined, it is a string naming the current thread.
+@end defun
+
+@defun current-thread
+Returns the currently executing thread. If no threads have been created
+yet in the current dynamic root (i.e. there is a single ``implicit''
+thread) then the symbol @code{nil} is returned.
+@end defun
+
+@defun all-threads
+Returns a newly-created list containing all threads in the current
+dynamic root. If no threads have been created yet, returns a null list.
+@end defun
+
+
+@node Deleting Threads, Manipulating Threads, Creating Threads, Threads
+@subsection Deleting Threads
+@cindex Deleting threads
+@cindex Threads, deleting
+
+A thread may be deleted by either returning from the function specified
+when it was created, or by explicit deletion. Also, the implicit thread
+created by the @code{call-with-dynamic-root} function may be deleted by
+exiting from the function called in the new context.
+
+@defun thread-delete &optional thread
+Mark @var{thread} (or the current thread), as being deleted. It will
+not be switched to in the future. If the current thread is deleted,
+control will be passed to the next runnable thread. Deleting the last
+runnable thread results forces the containing dynamic root to be
+closed.
+@end defun
+
+@defun thread-deleted-p thread
+Returns @code{t} if @var{thread} has been deleted.
+@end defun
+
+
+@node Manipulating Threads, Mutexes, Deleting Threads, Threads
+@subsection Manipulating Threads
+@cindex Manipulating threads
+@cindex Threads, manipulating
+
+@defun thread-yield
+This function may be used to pass control away from the current thread
+if other threads are waiting to run. There is usually no need to call
+this function since running threads will be preempted after a period of
+time.
+@end defun
+
+@defun thread-suspend &optional thread milliseconds
+Mark @var{thread} (or the current thread) as being suspended. It will
+not be selected until either it has had this status removed, or
+@var{milliseconds} milliseconds time has passed.
+
+Suspending the current thread will pass control to the next runnable
+thread in the same dynamic root. If there are no runnable threads, then
+the interpreter will sleep until the next thread becomes runnable.
+@end defun
+
+@defun thread-wake thread
+Remove the suspended state from thread @var{thread}. It will then be
+scheduled for execution sometime subsequently, if its dynamic root is
+active.
+@end defun
+
+@defun thread-suspended-p thread
+Returns @code{t} if @var{thread} is currently suspended.
+@end defun
+
+Thread preemption may be forbidden at times, to allow atomic operations
+to take place. Each dynamic root has its own ``forbid counter''. Only
+when this counter is zero may the current thread be preempted.
+
+@defun thread-forbid
+Increment the forbid count.
+@end defun
+
+@defun thread-permit
+Decrement the forbid count.
+@end defun
+
+@defmac with-threads-blocked thunk
+Call the  zero-parameter function @var{thunk} with thread preemption
+blocked for the duration of the call.
+@end defmac
+
+
+@node Mutexes, Thread Implementation Notes, Manipulating Threads, Threads
+@subsection Mutual Exclusion Devices
+@cindex Mutual exclusion devices
+@cindex Mutexes
+@cindex Threads, mutexes
+
+@dfn{Mutexes} are lisp objects used to coordinate access to data shared
+across multiple threads (where interleaved access would be bad).
+Require the @code{mutex} feature to load these functions.
+
+@defun make-mutex
+Create and return a mutex object. No thread will own the new mutex.
+@end defun
+
+@defun mutexp arg
+Return @code{t} if @var{arg} is a mutex object.
+@end defun
+
+@defun obtain-mutex mutex
+Obtain the mutex @var{mutex} for the current thread. Will suspend the
+current thread until the mutex is exclusively available.
+@end defun
+
+@defun maybe-obtain-mutex mutex
+Attempt to obtain mutex @var{mutex} for the current thread without
+blocking. Returns @code{t} if able to obtain the mutex, @code{nil}
+otherwise.
+@end defun
+
+@defun release-mutex mutex
+Release the mutex object @var{mutex} (which must have previously been
+obtained by the current thread). Returns @code{t} if the mutex has no
+new owner.
+@end defun
+
+
+@node Thread Implementation Notes, , Mutexes, Threads
+@subsection Thread Implementation Notes
+@cindex Thread implementation notes
+
+The threads used by @code{librep} are @emph{software threads}. This
+means that they are currently implemented by manually switching in and
+out thread context (i.e. the call stack) as required. There are a
+number of disadvantages to this method:
+
+@itemize @bullet
+@item blocking I/O blocks @emph{all} threads, not just the thread doing
+the I/O,
+
+@item only a single processor is used, thereby avoiding any true
+parallelism on multi-processor systems.
+@end itemize
+
+@noindent
+The main advantage is the ease of implementation, especially when
+retrofitting threads into the previously single-threaded interpreter.
+
+
+@node Streams, Loading, Threads, The language
 @section Streams
 @cindex Streams
 @cindex Input and output
@@ -7270,7 +7736,7 @@ XXX provide more information on accepted formats, outputs for
 incomplete descriptions, etc@dots{}
 
 
-@node i18n, Miscellaneous Functions, Time and Date, The language
+@node i18n, System Information, Time and Date, The language
 @section Internationalisation
 @cindex Internationalisation
 
@@ -7312,30 +7778,8 @@ the program (that have been annotated for i18n). librep provides the
 code.
 
 
-@node Miscellaneous Functions, Debugging, i18n, The language
-@section Miscellaneous Functions
-@cindex Miscellaneous functions
-
-This section of the manual documents functions and features which don't
-comfortably fit elsewhere in this manual.
-
-@menu
-* System Information::          Getting details about the host
-* User Information::            The name of the user
-* Environment Variables::       Reading and writing the environment
-* String Functions::            Misc string manipulation
-* Sleeping::                    Waiting for a period of time
-* Beeping::			Making a ding! sound
-* Messages::                    Writing to the console
-* Command Line Options::	Retrieving command line arguments
-* Shell Commands::		Executing shell commands
-* Timers::			Asynchronous timers
-* Guardians::			Protecting objects from GC
-@end menu
-
-
-@node System Information, User Information, , Miscellaneous Functions
-@subsection System Information
+@node System Information, User Information, i18n, The language
+@section System Information
 @cindex System information
 
 @defvar operating-system
@@ -7370,8 +7814,8 @@ rep-version
 @end defvar
 
 
-@node User Information, Environment Variables, System Information, Miscellaneous Functions
-@subsection User Information
+@node User Information, Environment Variables, System Information, The language
+@section User Information
 @cindex User information
 
 @defun user-login-name
@@ -7409,8 +7853,8 @@ returned string will be as returned by @code{file-name-as-directory}
 @end defun
 
 
-@node Environment Variables, String Functions, User Information, Miscellaneous Functions
-@subsection Environment Variables
+@node Environment Variables, String Functions, User Information, The language
+@section Environment Variables
 @cindex Environment variables
 
 @defun getenv variable-name
@@ -7440,8 +7884,8 @@ See also @ref{Process Objects} for the description of the
 @code{process-environment} variable.
 
 
-@node String Functions, Sleeping, Environment Variables, Miscellaneous Functions
-@subsection String Functions
+@node String Functions, Sleeping, Environment Variables, The language
+@section String Functions
 @cindex String functions
 
 @defun translate-string string map
@@ -7504,8 +7948,8 @@ Returns t if @var{string-2} matches the beginning of @var{string-1}.
 @end defun
 
 
-@node Sleeping, Beeping, String Functions, Miscellaneous Functions
-@subsection Sleeping
+@node Sleeping, Beeping, String Functions, The language
+@section Sleeping
 @cindex Sleeping
 
 @defun sleep-for seconds &optional milliseconds
@@ -7515,8 +7959,8 @@ component) long period of time. Input becoming available will
 @end defun
 
 
-@node Beeping, Messages, Sleeping, Miscellaneous Functions
-@subsection Beeping
+@node Beeping, Messages, Sleeping, The language
+@section Beeping
 @cindex Beeping
 
 Use this function to attract the user's attention.
@@ -7526,8 +7970,8 @@ Ring a bell somewhere.
 @end defun
 
 
-@node Messages, Command Line Options, Beeping, Miscellaneous Functions
-@subsection Messages
+@node Messages, Command Line Options, Beeping, The language
+@section Messages
 @cindex Messages
 
 The @code{message} function will show the user a small message
@@ -7545,8 +7989,8 @@ applicable).
 @end defun
 
 
-@node Command Line Options, Shell Commands, Messages, Miscellaneous Functions
-@subsection Command Line Options
+@node Command Line Options, Shell Commands, Messages, The language
+@section Command Line Options
 @cindex Command line options
 @cindex Options, command line
 @cindex Arguments, command line
@@ -7588,8 +8032,8 @@ command-line-args
 @end lisp
 
 
-@node Shell Commands, Timers, Command Line Options, Miscellaneous Functions
-@subsection Executing Shell Commands
+@node Shell Commands, Timers, Command Line Options, The language
+@section Executing Shell Commands
 @cindex Executing shell commands
 @cindex Shell commands, executing
 
@@ -7623,8 +8067,8 @@ Interrupt the interpreter, it will send progressively harder-to-ignore
 signals to the child each interrupt, until it is eventually terminated.
 
 
-@node Timers, Guardians, Shell Commands, Miscellaneous Functions
-@subsection Asynchronous Timers
+@node Timers, Debugging, Shell Commands, The language
+@section Asynchronous Timers
 @cindex Asynchronous timers
 @cindex Timers, asynchronous
 
@@ -7661,82 +8105,7 @@ interval of the timer is preserved.
 @end defun
 
 
-@node Guardians, , Timers, Miscellaneous Functions
-@subsection Guardians
-@cindex Guardians
-@cindex Garbage collection, guardians
-
-A @dfn{guardian} is a lisp object used to control when other data
-objects are recycled by the garbage collector (@pxref{Garbage
-Collection}). The usual behaviour of the gc is to recycle objects as
-soon as they have no remaining references.
-
-Guardians allow the programmer to detect when a specified object would
-be freed by the garbage collector, and to implement their own
-allocation policy. This can be useful, for example, with objects that
-have a high creation-overhead, and thus need to be cached for
-performance reasons.
-
-@defun make-guardian
-This function allocates and returns a new guardian. Each guardian has a
-list of data objects associated with it; some of which may have been
-proved to have no remaining references to them (except from the
-guardian system).
-
-Calling the guardian object with a single argument, adds that value to
-the list of objects associated with that guardian. Calling the guardian
-with no arguments has one of two effects:
-
-@itemize @bullet
-@item
-If objects are associated with the guardian that have been proved to be
-inaccessible, then return one of those objects, and remove it from the
-list of objects associated with the guardian.
-
-@item
-If none of the associated objects have been proved to be inaccessible,
-then return the value @code{nil}.
-@end itemize
-@end defun
-
-Note the use of the word ``prove'' in the above description, objects
-are only moved into a guardian's inaccessible set by the garbage
-collector.
-
-Here is an example use of the guardian system:
-
-@lisp
-;; create a new guardian object
-(setq G (make-guardian))
-
-;; create a lisp object
-(setq x (cons 'a 'b))
-   @result{} (a . b)
-
-;; protect the object using the guardian
-(G x)
-
-;; remove the sole reference to the object
-(setq x nil)
-   @result{} nil
-
-;; invoke the garbage collector, this will
-;; prove that the value added to the
-;; guardian is no longer accessible
-(garbage-collect)
-
-;; call the guardian to retrieve the
-;; inaccessible value
-(G)
-   @result{} (a . b)
-
-;; no more inaccessible values available
-(G)
-   @result{} nil
-@end lisp
-
-
-@node Debugging, Tips, Miscellaneous Functions, The language
+@node Debugging, Tips, Timers, The language
 @section Debugging
 @cindex Debugging
 
