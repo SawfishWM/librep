@@ -304,6 +304,15 @@ DEFUN("table-ref", Ftable_ref, Stable_ref, (repv tab, repv key), rep_Subr2)
     return n ? n->value : Qnil;
 }
 
+DEFUN("table-bound-p", Ftable_bound_p,
+      Stable_bound_p, (repv tab, repv key), rep_Subr2)
+{
+    node *n;
+    rep_DECLARE1(tab, TABLEP);
+    n = lookup (tab, key);
+    return n ? Qt : Qnil;
+}
+
 DEFUN("table-set", Ftable_set, Stable_set,
       (repv tab, repv key, repv value), rep_Subr3)
 {
@@ -460,6 +469,7 @@ rep_dl_init (void)
     rep_ADD_SUBR(Sequal_hash);
     rep_ADD_SUBR(Stablep);
     rep_ADD_SUBR(Stable_ref);
+    rep_ADD_SUBR(Stable_bound_p);
     rep_ADD_SUBR(Stable_set);
     rep_ADD_SUBR(Stable_unset);
     rep_ADD_SUBR(Stable_walk);
