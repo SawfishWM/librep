@@ -39,7 +39,7 @@ AC_ARG_ENABLE(swap-del-bs,
 			  event specifiers.],
 [AC_DEFINE(SWAP_DELETE_KEYS)])
 AC_ARG_ENABLE(dumped, [  --enable-dumped	  Dump LISP files into the jaded binary],
-[if `test "$enableval" != "no"`; then opt_enable_dumped=1; fi])
+[if test "$enableval" != "no"; then opt_enable_dumped=1; fi])
 
 dnl Find the system type; this isn't crucial
 AC_CANONICAL_HOST
@@ -83,7 +83,7 @@ dnl Custom tests
 dnl If using GCC and it doesn't look as though the cflags have been
 dnl set explicitly, add some warning options. Turn off implicit-int
 dnl warnings since the X11 includes on Solaris generate a lot of these
-if `test "x${GCC}" = "xyes" -a "x$CFLAGS" = "x-g -O2"`; then
+if test "x${GCC}" = "xyes" -a "x$CFLAGS" = "x-g -O2"; then
   CFLAGS="${CFLAGS} -Wall -Wmissing-prototypes -Wno-implicit-int"
 fi
 
@@ -95,7 +95,7 @@ AC_TRY_COMPILE([#include <unistd.h>], [char **foo = environ;],
 
 dnl Are ptys available, and if so, how?
 AC_MSG_CHECKING([whether /dev/ptmx exists])
-if `test -r /dev/ptmx`; then
+if test -r /dev/ptmx; then
   dnl ok to assume existence of grantpt and friends?
   AC_MSG_RESULT([yes])
   AC_DEFINE(HAVE_PTYS)
@@ -105,13 +105,13 @@ else
   dnl Look for old-style /dev/ptyXN devices
   have_ptys=0
   AC_MSG_CHECKING([whether /dev/ptyXN devices exist])
-  for c in a b c d e f g h i j k l m n o p q r s t u v w x y z; do
-    if `test -r "/dev/pty${c}0"`; then
+  for c in p q r s t u v w x y z a b c d e f g h i j k l m n o; do
+    if test -r "/dev/pty${c}0"; then
       have_ptys=${c}
       break
     fi
   done
-  if `test ${have_ptys} != 0`; then
+  if test ${have_ptys} != 0; then
     AC_MSG_RESULT([yes, first is "/dev/pty${have_ptys}0"])
     AC_DEFINE(HAVE_PTYS)
     AC_DEFINE_UNQUOTED(FIRST_PTY_LETTER, '${have_ptys}')
@@ -121,7 +121,7 @@ else
 fi
 
 dnl Was X found or not (if not we're pretty much screwed)
-if `test "x${no_x}" != "xyes"`; then
+if test "x${no_x}" != "xyes"; then
   HAVE_X11=1
   AC_DEFINE(HAVE_X11)
 else
@@ -131,7 +131,7 @@ fi
 
 dnl If GCC was found we can probably use __asm__ statements to inline
 dnl LISP string constants
-if `test "x${GCC}" = "xyes"`; then 
+if test "x${GCC}" = "xyes"; then 
   AC_DEFINE(INLINE_STATIC_STRINGS)
   dump_flags="--enable-inline-strings"
 else
@@ -139,7 +139,7 @@ else
 fi
 
 dnl If making a jaded binary, add its Makefile to the list of outputs
-if `test "${opt_enable_dumped}" = "1"`; then
+if test "${opt_enable_dumped}" = "1"; then
   output_files="${output_files} jaded/Makefile:src/Makefile.in"
 fi
 
@@ -162,6 +162,6 @@ AC_OUTPUT(${output_files})
 
 dnl If it doesn't look like GNU Make is being used, give a friendly warning
 tem=`make --version -f /dev/null 2>&1 | grep GNU`
-if `test "x$tem" = "x"`; then
+if test "x$tem" = "x"; then
   AC_MSG_WARN([You need to use GNU Make when compiling Jade])
 fi
