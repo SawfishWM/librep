@@ -52,7 +52,7 @@ all : librep.la $(DL_OBJS) rep rep-config rep-remote rep-xgettext
 
 librep.la : $(OBJS) $(LIBOBJS) $(ALLOCA)
 	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -version-info $(libversion) \
-	  -o $@ $^ -rpath $(libdir)
+	  -o $@ $^ -rpath $(libdir) $(LIBS) $(GMP_LIBS)
 
 rep : $(REP_OBJS) $(EXTRA_LIBOBJS) librep.la
 	$(LIBTOOL) --mode=link $(CC) -export-dynamic $(CPPFLAGS) $(CFLAGS) -o $@ \
