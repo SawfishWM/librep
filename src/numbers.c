@@ -89,6 +89,9 @@ typedef struct rep_number_block_struct {
 
 #define rep_NUMBER_INEXACT_P(v) (rep_NUMBERP(v) && rep_NUMBER_FLOAT_P(v))
 
+#define ZEROP(x) \
+    (rep_INTP (x) ? (x) == rep_MAKE_INT (0) : Fzerop (x) != Qnil)
+
 
 /* number object handling */
 
@@ -214,7 +217,7 @@ number_sweep(void)
 /* Promotion */
 
 static repv
-dup (repv in)
+dup__ (repv in)
 {
     switch (rep_NUMERIC_TYPE (in))
     {
@@ -242,6 +245,15 @@ dup (repv in)
 	return rep_VAL (f);
     }
     abort ();
+}
+
+static inline repv
+dup (repv in)
+{
+    if (rep_INTP (in))
+	return in;
+    else
+	return dup__ (in);
 }
 
 static repv
@@ -314,7 +326,7 @@ promote_to (repv in, int type)
 }
 
 static repv
-maybe_demote (repv in)
+maybe_demote__ (repv in)
 {
     assert (rep_NUMBERP(in));
     switch (rep_NUMERIC_TYPE(in))
@@ -338,6 +350,15 @@ maybe_demote (repv in)
 	}
     }
     return in;
+}
+
+static inline repv
+maybe_demote (repv in)
+{
+    if (rep_INTP (in))
+	return in;
+    else
+	return maybe_demote__ (in);
 }
 
 static repv
@@ -367,7 +388,7 @@ coerce (repv in, int type)
     }
 }
 
-static void
+static inline void
 promote (repv *n1p, repv *n2p)
 {
     repv n1 = *n1p;
@@ -382,7 +403,7 @@ promote (repv *n1p, repv *n2p)
 }
 
 static repv
-promote_dup (repv *n1p, repv *n2p)
+promote_dup__ (repv *n1p, repv *n2p)
 {
     repv n1 = *n1p;
     repv n2 = *n2p;
@@ -404,6 +425,17 @@ promote_dup (repv *n1p, repv *n2p)
 	out = dup (*n1p);
 
     return out;
+}
+
+static inline repv
+promote_dup (repv *n1p, repv *n2p)
+{
+    repv n1 = *n1p;
+    repv n2 = *n2p;
+    if (rep_INTP (n1) && rep_INTP (n2))
+	return n1;
+    else
+	return promote_dup__ (n1p, n2p);
 }
 
 repv
@@ -1062,7 +1094,7 @@ rep_number_div (repv x, repv y)
     rep_DECLARE1 (x, rep_NUMERICP);
     rep_DECLARE2 (y, rep_NUMERICP);
 
-    if (Fzerop (y) != Qnil)
+    if (ZEROP (y))
 	return Fsignal (Qarith_error, rep_LIST_1 (rep_VAL (&div_zero)));
 
     out = promote_dup (&x, &y);
@@ -1342,7 +1374,7 @@ Returns the integer remainder after dividing DIVIDEND by DIVISOR.
     repv out;
     rep_DECLARE1(n1, rep_NUMERICP);
     rep_DECLARE2(n2, rep_NUMERICP);
-    if(Fzerop (n2) != Qnil)
+    if(ZEROP (n2))
 	return Fsignal (Qarith_error, rep_LIST_1 (rep_VAL (&div_zero)));
 
     out = promote_dup (&n1, &n2);
@@ -1380,7 +1412,7 @@ and that floating point division is used.
     repv out;
     rep_DECLARE1(n1, rep_NUMERICP);
     rep_DECLARE2(n2, rep_NUMERICP);
-    if(Fzerop (n2) != Qnil)
+    if(ZEROP (n2))
 	return Fsignal (Qarith_error, rep_LIST_1 (rep_VAL (&div_zero)));
 
     out = promote_dup (&n1, &n2);
@@ -1424,7 +1456,7 @@ DIVISOR.
     repv out;
     rep_DECLARE1 (x, rep_INTEGERP);
     rep_DECLARE2 (y, rep_INTEGERP);
-    if(Fzerop (y) != Qnil)
+    if(ZEROP (y))
 	return Fsignal (Qarith_error, rep_LIST_1 (rep_VAL (&div_zero)));
     out = promote_dup (&x, &y);
     if (rep_INTP (x))
@@ -1526,7 +1558,7 @@ Return t if NUMBER is zero.
 	switch (rep_NUMERIC_TYPE (num))
 	{
 	case rep_NUMBER_INT:
-	    return rep_INT (num) == 0 ? Qt : Qnil;
+	    return num == rep_MAKE_INT (0) ? Qt : Qnil;
 
 	case rep_NUMBER_BIGNUM:
 	    return mpz_sgn (rep_NUMBER(num,z)) == 0 ? Qt : Qnil;
