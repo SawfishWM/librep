@@ -162,6 +162,17 @@ DEFSYM(autoload_verbose, "autoload-verbose");
 /* When rep_TRUE Feval() calls the "debug-entry" function */
 rep_bool rep_single_step_flag;
 
+/* Variable and function environments. A list of (SYMBOL . VALUE)
+   The function environment may be dotted to t instead of nil, in
+   which case the symbol's function slot is taken as the last
+   element of the environment */
+repv rep_env, rep_fenv;
+
+/* A list of the special variables that may be accessed in this
+   environment, or Qt to denote all specials. This always contains
+   at least one cons cell, which is skipped. */
+repv rep_special_env;
+
 struct rep_Call *rep_call_stack;
 
 static int lisp_depth, max_lisp_depth = 500;
@@ -741,7 +752,10 @@ eval_list(repv list)
 
    NB: auxiliary symbols are set to nil. Also note that the lambdaList
    arg isn't protected from gc by this function; it's assumed that
-   this is done by the caller. */
+   this is done by the caller.
+
+   IMPORTANT: this expects the top of the call stack to have the
+   saved environments in which arguments need to be evaluated */
 repv
 rep_bind_lambda_list(repv lambdaList, repv argList, rep_bool eval_args)
 {
@@ -763,10 +777,16 @@ rep_bind_lambda_list(repv lambdaList, repv argList, rep_bool eval_args)
     /* Evaluate arguments, and stick them in the evalled_args array */
     if(eval_args)
     {
+	repv old_env = rep_env, old_fenv = rep_fenv;
+	rep_GC_root gc_old_env, gc_old_fenv;
 	int i;
 	evalled_nargs = rep_list_length(argList);
 	evalled_args = alloca(sizeof(repv) * evalled_nargs);
 	rep_PUSHGCN(gc_evalled_args, evalled_args, 0);
+	rep_env = rep_call_stack->saved_env;
+	rep_fenv = rep_call_stack->saved_fenv;
+	rep_PUSHGC(gc_old_env, old_env);
+	rep_PUSHGC(gc_old_fenv, old_fenv);
 	for(i = 0; i < evalled_nargs; i++)
 	{
 	    if((evalled_args[i] = Feval(rep_CAR(argList))) == rep_NULL)
@@ -774,6 +794,9 @@ rep_bind_lambda_list(repv lambdaList, repv argList, rep_bool eval_args)
 	    argList = rep_CDR(argList);
 	    gc_evalled_args.count++;
 	}
+	rep_env = old_env;
+	rep_fenv = old_fenv;
+	rep_POPGC; rep_POPGC;
     }
 
     if(rep_CONSP(lambdaList))
@@ -953,7 +976,7 @@ rep_load_autoload(repv fun, repv aload_def, rep_bool is_variable)
 	    /* trash the autoload defn, so we don't keep trying to
 	       autoload indefinitely.  */
 	    rep_CAR(autoload) = Qnil;
-	    tmp = Fload(file, Qt, Qnil, Qnil);
+	    tmp = Fload(file, Qt, Qnil, Qnil, Qnil);
 	    rep_POPGC; rep_POPGC;
 
 	    if (rep_SYM (Qbatch_mode)->value == Qnil
@@ -987,6 +1010,7 @@ rep_funcall(repv fun, repv arglist, rep_bool eval_args)
     int type;
     repv result = rep_NULL;
     struct rep_Call lc;
+    rep_bool was_closed = rep_FALSE;
 
     rep_TEST_INT;
     if(rep_INTERRUPTP)
@@ -1011,20 +1035,26 @@ rep_funcall(repv fun, repv arglist, rep_bool eval_args)
     lc.fun = fun;
     lc.args = arglist;
     lc.args_evalled_p = eval_args ? Qnil : Qt;
-    lc.next = rep_call_stack;
-    rep_call_stack = &lc;
+    rep_PUSH_CALL (lc);
 
     if(rep_data_after_gc >= rep_gc_threshold)
 	Fgarbage_collect(Qt);
 
 again:
-    if(rep_SYMBOLP(fun))
+    while(rep_SYMBOLP(fun))
     {
 	if(rep_SYM(fun)->car & rep_SF_DEBUG)
 	    rep_single_step_flag = rep_TRUE;
 	fun = Fsymbol_function(fun, Qnil);
 	if(!fun)
 	    goto end;
+    }
+    if (rep_FUNARGP(fun))
+    {
+	rep_USE_FUNARG(fun);
+	fun = rep_FUNARG(fun)->fun;
+	was_closed = rep_TRUE;
+	goto again;
     }
     switch(type = rep_TYPE(fun))
     {
@@ -1119,14 +1149,16 @@ again:
 
     case rep_Cons:
 	car = rep_CAR(fun);
-	if(car == Qlambda)
+	/* don't allow unclosed lambdas for security reasons */
+	if(was_closed && car == Qlambda)
 	{
 	    /* rep_eval_lambda() expanded inline. */
 	    if(rep_CONSP(rep_CDR(fun)))
 	    {
 		repv boundlist;
 		fun = rep_CDR(fun);
-		boundlist = rep_bind_lambda_list(rep_CAR(fun), arglist, eval_args);
+		boundlist = rep_bind_lambda_list(rep_CAR(fun),
+						 arglist, eval_args);
 		if(boundlist != rep_NULL)
 		{
 		    rep_GC_root gc_boundlist;
@@ -1141,7 +1173,6 @@ again:
 	}
 	else if(car == Qmacro)
 	{
-	macro_hack:
 	    /* A macro. This could occur if autoloading from
 	       a macro definition. Try to accommodate.. */
 	    if(!eval_args)
@@ -1163,18 +1194,16 @@ again:
 	    }
 	}
 	else
-	    Fsignal(Qinvalid_function, rep_LIST_1(fun));
+	    goto invalid;
 	break;
 
     case rep_Compiled:
+	/* don't allow unclosed bytecode for security reasons */
+	if (was_closed)
 	{
 	    repv boundlist;
-
-	    if(rep_COMPILED_MACRO_P(fun))
-		goto macro_hack;
-
 	    boundlist = rep_bind_lambda_list(rep_COMPILED_LAMBDA(fun),
-				       arglist, eval_args);
+					     arglist, eval_args);
 	    if(boundlist != rep_NULL)
 	    {
 		rep_GC_root gc_boundlist;
@@ -1189,6 +1218,7 @@ again:
 		result = rep_NULL;
 	    break;
 	}
+	/* FALL THROUGH */
 
     default: invalid:
 	Fsignal(Qinvalid_function, rep_LIST_1(fun));
@@ -1199,7 +1229,7 @@ again:
 	result = rep_NULL;
 
 end:
-    rep_call_stack = lc.next;
+    rep_POP_CALL(lc);
     lisp_depth--;
     return result;
 }
@@ -1240,7 +1270,7 @@ eval(repv obj)
 
     case rep_Cons:
 	funcobj = rep_CAR(obj);
-	if(rep_SYMBOLP(funcobj))
+	while (rep_SYMBOLP(funcobj))
 	{
 	    if(rep_SYM(funcobj)->car & rep_SF_DEBUG)
 		rep_single_step_flag = rep_TRUE;
@@ -1252,8 +1282,7 @@ eval(repv obj)
 	{
 	    result = rep_SFFUN(funcobj)(rep_CDR(obj));
 	}
-	else if((rep_CONSP(funcobj) && rep_CAR(funcobj) == Qmacro)
-		|| (rep_COMPILEDP(funcobj) && rep_COMPILED_MACRO_P(funcobj)))
+	else if(rep_CONSP(funcobj) && rep_CAR(funcobj) == Qmacro)
 	{
 	    /* A macro */
 	    repv form;
@@ -1562,6 +1591,10 @@ rep_lisp_prin(repv strm, repv obj)
 	rep_stream_puts(strm, tbuf, -1, rep_FALSE);
 	break;
 
+    case rep_Funarg:
+	rep_stream_puts(strm, "#<closure>", -1, rep_FALSE);
+	break;
+
     case rep_Void:
 	rep_stream_puts(strm, "#<void>", -1, rep_FALSE);
 	break;
@@ -1744,57 +1777,20 @@ top:
 	if(rep_SYMBOLP(car))
 	{
 	    repv tmp;
-	    if(!rep_NILP(env) && (tmp = Fassq(car, env)) && rep_CONSP(tmp))
-	    {
+	    if(env != Qnil && (tmp = Fassq(car, env)) && rep_CONSP(tmp))
 		car = rep_CDR(tmp);
-	    }
 	    else
 	    {
-		car = Fsymbol_function(car, Qt);
-		if(rep_CONSP(car))
-		{
-		    if(rep_CAR(car) != Qmacro)
-			goto end;
-		    car = rep_CDR(car);
-		}
+		car = Fsymbol_function (car, Qt);
+		if (!rep_CONSP(car) || rep_CAR(car) != Qmacro)
+		    goto end;
+		car = rep_CDR(car);
 	    }
-	    if(rep_VOIDP(car) || rep_NILP(car))
-		goto end;
-	    if(rep_CONSP(car) && rep_CAR(car) == Qlambda)
-	    {
-		form = rep_eval_lambda(car, rep_CDR(form), rep_FALSE);
-		if(form != rep_NULL)
-		    goto top;
-	    }
-	    else if(rep_COMPILEDP(car) && rep_COMPILED_MACRO_P(car))
-	    {
-		repv boundlist;
-		struct rep_Call lc;
-
-		lc.next = rep_call_stack;
-		lc.fun = rep_CAR(form);
-		lc.args = rep_CDR(form);
-		lc.args_evalled_p = rep_TRUE;
-		rep_call_stack = &lc;
-		boundlist = rep_bind_lambda_list(rep_COMPILED_LAMBDA(car),
-					   rep_CDR(form), rep_FALSE);
-		if(boundlist != rep_NULL)
-		{
-		    rep_GC_root gc_boundlist;
-		    rep_PUSHGC(gc_boundlist, boundlist);
-		    form = Fjade_byte_code(rep_COMPILED_CODE(car),
-					      rep_COMPILED_CONSTANTS(car),
-					      rep_MAKE_INT(rep_COMPILED_STACK(car)));
-		    rep_POPGC;
-		    rep_unbind_symbols(boundlist);
-		}
-		else
-		    form = rep_NULL;
-		rep_call_stack = lc.next;
-
-		if(form != rep_NULL)
-		    goto top;
-	    }
+	    if (Ffunctionp(car) == Qnil)
+		return Fsignal (Qinvalid_function, rep_list_2 (rep_CAR(form), car));
+	    form = rep_funcall (car, rep_CDR(form), rep_FALSE);
+	    if (form != rep_NULL)
+		goto top;
 	}
     }
 end:
@@ -2038,7 +2034,7 @@ rep_lisp_init(void)
     rep_INTERN(quote); rep_INTERN(lambda); rep_INTERN(macro);
     rep_INTERN(backquote); rep_INTERN(backquote_unquote); rep_INTERN(backquote_splice);
     rep_INTERN(autoload); rep_INTERN(function);
-    rep_INTERN(standard_input); rep_INTERN(standard_output);
+    rep_INTERN_SPECIAL(standard_input); rep_INTERN_SPECIAL(standard_output);
     rep_INTERN(debug_entry); rep_INTERN(debug_exit); rep_INTERN(debug_error_entry);
     rep_INTERN(amp_optional); rep_INTERN(amp_rest); rep_INTERN(amp_aux);
     rep_mark_static((repv *)&rep_throw_value);
@@ -2079,9 +2075,9 @@ rep_lisp_init(void)
     rep_INTERN(arith_error); rep_ERROR(arith_error);
     rep_INTERN(term_interrupt);
 
-    rep_INTERN(debug_on_error);
+    rep_INTERN_SPECIAL(debug_on_error);
     rep_SYM(Qdebug_on_error)->value = Qnil;
-    rep_INTERN(debug_macros);
+    rep_INTERN_SPECIAL(debug_macros);
     rep_SYM(Qdebug_macros)->value = Qnil;
 
     rep_int_cell = Fcons(Quser_interrupt, Qnil);
@@ -2089,13 +2085,20 @@ rep_lisp_init(void)
     rep_term_cell = Fcons(Qterm_interrupt, Qnil);
     rep_mark_static(&rep_term_cell);
 
-    rep_INTERN(print_escape); 
-    rep_INTERN(print_length);
-    rep_INTERN(print_level);
+    rep_env = Qnil;
+    rep_fenv = Qt;
+    rep_special_env = Fcons (Qnil, Qt);
+    rep_mark_static (&rep_env);
+    rep_mark_static (&rep_fenv);
+    rep_mark_static (&rep_special_env);
+
+    rep_INTERN_SPECIAL(print_escape); 
+    rep_INTERN_SPECIAL(print_length);
+    rep_INTERN_SPECIAL(print_level);
     rep_SYM(Qprint_escape)->value = Qnil;
     rep_SYM(Qprint_length)->value = Qnil;
     rep_SYM(Qprint_level)->value = Qnil;
     rep_INTERN(newlines);
 
-    rep_INTERN(autoload_verbose);
+    rep_INTERN_SPECIAL(autoload_verbose);
 }
