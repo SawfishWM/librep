@@ -1,3 +1,67 @@
+1999-11-10  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep_lisp.h (rep_Funarg): new cell8 type, replaces rep_File,
+	describes an enclosed function
+	(rep_SF_SPECIAL, rep_SF_WEAK, rep_SF_WEAK_MOD): new symbol
+	flags, for special variables
+	(rep_COMPILED_MACRO_P): deleted, there's now no difference
+	between bytecode objects representing functions or macros
+	(rep_PUSH_CALL, rep_POP_CALL): new macros for handling the Lisp
+	call stack
+	(rep_INTERN_SPECIAL): new macro, similar to rep_INTERN, but
+	marks the variable as being special
+
+	* lisp.c (rep_env, rep_fenv, rep_special_env): the environments
+	for lexical variables, functions and special variables (need
+	special environment for access-control purposes)
+	(rep_funcall): lambda expressions and bytecode objects are no
+	longer considered functions -- only closures, subrs and
+	autoloads are functions (it may not be secure to call an
+	unclosed function)
+
+	* symbols.c (Fmake_closure, Fclosure_function,
+	Fset_closure_function, Fclosurep, Fset_variable_environment,
+	Fset_function_environment, Fset_special_environment): new
+	functions
+	(Fsave_environment): new special form
+	(rep_bind_symbol, rep_unbind_symbols): handle both lexical and
+	special variables
+	(rep_bind_function, rep_unbind_functions): new functions
+	(Fsymbol_value, Fset, Fdefault_value, Fset_default): handle
+	lexical scoping and dynamic scoping, and the new access rules
+	for special variables (the WEAK and WEAK_MOD flags to protect
+	exploits from restricted special environments)
+	(Fflet, Fmacrolet): new special forms
+	(Fspecial_variable_p): new function
+
+	* values.c: support Funarg type (closures)
+
+	* lispcmds.c (Ffunction): special form to create closures from
+	constant lambda expressions
+	(Fdefvar): access control/protection when a restricted special
+	environment has already defined the special variable (and
+	therefore it's already in the restricted environment)
+	(Fload): new optional fifth arg: IN-CURRENT-ENVIRONMENT, unless
+	non-nil evaluate forms in a new lexical environment
+	(Ffeaturep, Fprovide, Frequire): deleted, now in lisp.jl
+
+	* lispmach.c (Fjade_byte_code): handle the new instructions,
+	special-case lexical binding in OP_SETQ and OP_REFQ instead of
+	dynamic bindings
+
+	* bytecodes.h: create a new major bytecode version
+	(OP_MAKE_CLOSURE, OP_FBIND, OP_CLOSUREP, OP_BINDENV): new
+	virtual machine instructions
+
+	* streams.c, rep.c, misc.c, main.c: misc changes for lexical
+	scoping
+
+	* files.c: allocate the file type dynamically, since we stole
+	its cell8 slot for closures
+
+	* unix_dl.c (rep_open_dl_library): provide is now defined by
+	Lisp code
+
 1999-11-01  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_dl.c: define RTLD_LAZY to 1 if it's not already defined

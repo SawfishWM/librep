@@ -12,6 +12,8 @@ Last modified: August 15, 1999
 Outstanding bugs
 ================
 
+ ! macrolet forms don't compile
+
  ! Putting a breakpoint in a .jaderc file doesn't work correctly; the
    debugger is entered, but the commands don't work
 
@@ -49,8 +51,6 @@ General programming tasks:
    Make remote-rcp work properly, and add others (ssh, http, ..?)
 
  - Make the compiler optimise its output
-
- - Make the LISP lexically scoped
 
 
 Manual tasks:
