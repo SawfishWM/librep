@@ -1,5 +1,11 @@
 2000-05-25  John Harper  <john@dcs.warwick.ac.uk>
 
+	* lisp.c (rep_bind_lambda_list_1): now takes a BINDER arg, a
+	function to call to bind each variable
+
+	* lispmach.c: support old-style parameter specs as well as
+	encoded ones
+
 	* symbols.c (rep_call_with_closure): new function
 
 	* repint.h, rep_lisp.h: moved closure macros and all backtrace

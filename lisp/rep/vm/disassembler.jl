@@ -109,15 +109,17 @@
 	(setq code-string (aref arg 1)
 	      consts (aref arg 2))
 	(when (zerop depth)
-	  (format stream "Arguments: %s required, %s optional"
-		  (logand (aref arg 0) 0xfff)
-		  (logand (ash (aref arg 0) -12) 0xfff))
-	  (unless (zerop (ash (aref arg 0) -24))
-	    (write stream ", 1 rest arg"))
-	  (write stream #\newline)
-	  (let
-	      ((spec (and (> (length arg) 5) (aref arg 5)))
-	       (doc (and (> (length arg) 4) (aref arg 4))))
+	  (let ((spec (aref arg 0)))
+	    (if (listp spec)
+		(format stream "Arguments: %s\n" spec)
+	      (format stream "Arguments: %s required, %s optional"
+		      (logand spec 0xfff)
+		      (logand (ash spec -12) 0xfff))
+	      (unless (zerop (ash spec -24))
+		(write stream ", 1 rest arg"))
+	      (write stream #\newline)))
+	  (let ((spec (and (> (length arg) 5) (aref arg 5)))
+		(doc (and (> (length arg) 4) (aref arg 4))))
 	    (when spec
 	      (format stream "Interactive spec: %S\n" spec))
 	    (when doc

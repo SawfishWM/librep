@@ -601,7 +601,6 @@ rep_bind_symbol(repv oldList, repv symbol, repv newVal)
     }
     else
     {
-	/* lexical binding (also in lispmach.c:OP_BIND) */
 	rep_env = Fcons (Fcons (LEXTAG, Fcons (symbol, newVal)), rep_env);
 	oldList = rep_MARK_LEX_BINDING (oldList);
     }

@@ -1,5 +1,9 @@
 2000-05-25  John Harper  <john@dcs.warwick.ac.uk>
 
+	* compiler-basic.jl (compile-lambda-spec): if the spec contains
+	special variables, don't encode it
+	(compile-lambda): don't error out if special variables in spec
+
 	* compiler-rep.jl: added special handlers for `defun' and
 	`defmacro', otherwise non-top-level calls to these macros don't
 	get compiled properly

@@ -44,7 +44,8 @@ extern void rep_fluids_init (void);
 /* from lisp.c */
 extern repv rep_scm_t, rep_scm_f;
 extern repv rep_readl(repv, int *);
-extern repv rep_bind_lambda_list_1 (repv lambdaList, repv *args, int nargs);
+extern repv rep_bind_lambda_list_1 (repv lambdaList, repv *args, int nargs,
+				    repv (*binder)(repv, repv, repv));
 extern repv rep_bind_lambda_list(repv lambdaList, repv argList,
 				 rep_bool eval_args, rep_bool eval_in_env);
 extern repv rep_eval_lambda(repv, repv, rep_bool, rep_bool);
