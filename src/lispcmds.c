@@ -1615,32 +1615,6 @@ Returns the bitwise logical `exclusive-or' of its arguments.
     APPLY_OP( ^ )
 }
 
-_PR VALUE cmd_or(VALUE);
-DEFUN("or", cmd_or, subr_or, (VALUE args), V_SF, DOC_or) /*
-::doc:or::
-or FORMS...
-
-Evals each FORM while they return nil, returns the first non-nil result or
-nil if all FORMS return nil.
-::end:: */
-{
-    VALUE res = sym_nil;
-    GCVAL gcv_args, gcv_res;
-    PUSHGC(gcv_args, args);
-    PUSHGC(gcv_res, res);
-    while(res && CONSP(args) && NILP(res))
-    {
-	res = cmd_eval(VCAR(args));
-	args = VCDR(args);
-	TEST_INT;
-	if(INT_P)
-	    res = NULL;
-    }
-    POPGC;
-    POPGC;
-    return(res);
-}
-
 _PR VALUE cmd_logand(VALUE);
 DEFUN("logand", cmd_logand, subr_logand, (VALUE args), V_SubrN, DOC_logand) /*
 ::doc:logand::
@@ -1650,32 +1624,6 @@ Returns the bitwise logical `and' of its arguments.
 ::end:: */
 {
     APPLY_OP( & )
-}
-
-_PR VALUE cmd_and(VALUE);
-DEFUN("and", cmd_and, subr_and, (VALUE args), V_SF, DOC_and) /*
-::doc:and::
-and FORMS...
-
-Evals each FORM until one returns nil, it returns that value, or t if all
-FORMS return t.
-::end:: */
-{
-    VALUE res = sym_t;
-    GCVAL gcv_args, gcv_res;
-    PUSHGC(gcv_args, args);
-    PUSHGC(gcv_res, res);
-    while(res && CONSP(args) && !NILP(res))
-    {
-	res = cmd_eval(VCAR(args));
-	args = VCDR(args);
-	TEST_INT;
-	if(INT_P)
-	    res = NULL;
-    }
-    POPGC;
-    POPGC;
-    return(res);
 }
 
 _PR VALUE cmd_equal(VALUE, VALUE);
@@ -2434,9 +2382,7 @@ lispcmds_init(void)
     ADD_SUBR(subr_not);
     ADD_SUBR(subr_logior);
     ADD_SUBR(subr_logxor);
-    ADD_SUBR(subr_or);
     ADD_SUBR(subr_logand);
-    ADD_SUBR(subr_and);
     ADD_SUBR(subr_equal);
     ADD_SUBR(subr_eq);
     ADD_SUBR(subr_eql);
