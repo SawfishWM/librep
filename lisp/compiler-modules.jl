@@ -36,6 +36,8 @@
 					   note-macro-def
 					   compile-structure
 					   compile-define-structure
+					   compile-top-level-structure
+					   compile-top-level-define-structure
 					   compile-structure-ref
 					   call-with-module-declared
 					   compile-module)
@@ -300,7 +302,13 @@
   (defun compile-define-structure (form)
     (compile-structure-def (cadr form) (caddr form) (cdddr form)))
 
-  (defun compile-structure-def (name sig body)
+  (defun compile-top-level-structure (form)
+    (compile-structure-def nil (cadr form) (cddr form) t))
+
+  (defun compile-top-level-define-structure (form)
+    (compile-structure-def (cadr form) (caddr form) (cdddr form) t))
+
+  (defun compile-structure-def (name sig body &optional top-level)
     (let
 	((opened '(module-system))
 	 (accessed '())
@@ -323,24 +331,29 @@
       (setq header (cons '(open module-system) (nreverse header)))
 
       (setq body (compile-module-body body name opened accessed))
-      (compile-form-1 '%make-structure)
-      (compile-form-1 `(%parse-interface ',sig))
-      (if header
-	  (progn
-	    (compile-constant `(lambda () ,@header))
-	    (emit-insn (bytecode enclose))
-	    (note-closure-made))
-	(compile-constant nil))
-      (if body
-	  (progn
-	    (compile-constant `(lambda () ,@body))
-	    (emit-insn (bytecode enclose))
-	    (note-closure-made))
-	(compile-constant nil))
-      (when name
-	(compile-constant name))
-      (emit-insn (bytecode call) (if name 4 3))
-      (decrement-stack (if name 4 3))))
+
+      (if top-level
+	  (if name
+	      `(define-structure ,name ,sig ,config ,@body)
+	    `(structure ,sig ,config ,@body))
+	(compile-form-1 '%make-structure)
+	(compile-form-1 `(%parse-interface ',sig))
+	(if header
+	    (progn
+	      (compile-constant `(lambda () ,@header))
+	      (emit-insn (bytecode enclose))
+	      (note-closure-made))
+	  (compile-constant nil))
+	(if body
+	    (progn
+	      (compile-constant `(lambda () ,@body))
+	      (emit-insn (bytecode enclose))
+	      (note-closure-made))
+	  (compile-constant nil))
+	(when name
+	  (compile-constant name))
+	(emit-insn (bytecode call) (if name 4 3))
+	(decrement-stack (if name 4 3)))))
 
   (defun parse-interface (sig)
     (cond ((null sig) '())
