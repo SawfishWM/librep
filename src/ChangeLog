@@ -1,3 +1,12 @@
+1999-11-01  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_dl.c: define RTLD_LAZY to 1 if it's not already defined
+	anywhere (from remark in the Perl sources, via glib)
+
+1999-10-31  John Harper  <john@dcs.warwick.ac.uk>
+
+	* version 0.7.1
+
 1999-10-29  John Harper  <john@dcs.warwick.ac.uk>
 
 	* regexp.c: ANSII-fy function definitions

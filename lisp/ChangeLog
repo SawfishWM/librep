@@ -1,3 +1,9 @@
+1999-11-01  John Harper  <john@dcs.warwick.ac.uk>
+
+	* tar-file-handler.jl (tarfh-alternative-gnu-tar-programs): new
+	variable, a list of alternative programs to check when looking
+	for GNU tar
+
 1999-10-24  John Harper  <john@dcs.warwick.ac.uk>
 
 	* version 0.7
