@@ -38,9 +38,9 @@ make CFLAGS="$RPM_OPT_FLAGS"
 %install
 rm -rf $RPM_BUILD_ROOT
 make install \
-    prefix=$RPM_BUILD_ROOT/%{_prefix} \
-    aclocaldir=$RPM_BUILD_ROOT/%{_prefix}/share/aclocal
-gzip -9nf $RPM_BUILD_ROOT/%{_prefix}/info/librep*
+    prefix=$RPM_BUILD_ROOT%{_prefix} \
+    aclocaldir=$RPM_BUILD_ROOT%{_prefix}/share/aclocal
+gzip -9nf $RPM_BUILD_ROOT%{_prefix}/info/librep*
 
 %clean
 rm -rf $RPM_BUILD_ROOT
