@@ -1,3 +1,14 @@
+1999-10-21  John Harper  <john@dcs.warwick.ac.uk>
+
+	* streams.c (Fformat): revert the long-int printing, since it
+	truncates the values and generally doesn't work. But added some
+	fixes for printing on sizeof(int) != sizeof(repv) systems
+
+	* lispmach.c: some optimisations; disable stack usage checking
+	unless CHECK_STACK_USAGE is defined
+
+	* misc.c (Frandom): if LIMIT is <= 0, set LIMIT = MAXINT
+
 1999-10-20  John Harper  <john@dcs.warwick.ac.uk>
 
 	* streams.c (Fformat): handle long-integers in the integer
