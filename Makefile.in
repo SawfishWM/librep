@@ -40,22 +40,24 @@ install : all installdirs
 	set -e; for dir in $(SUBDIRS); do \
 	  ( cd $$dir && $(MAKE) $@ ); \
 	done
-	$(INSTALL_DATA) DOC.* $(repdir)/$(version)
-	$(INSTALL_SCRIPT) libtool $(repcommonexecdir)
-	$(INSTALL_DATA) rules.mk $(repcommonexecdir)
-	$(INSTALL_DATA) rep.m4 $(aclocaldir)
+	$(INSTALL_DATA) DOC.* $(DESTDIR)$(repdir)/$(version)
+	$(INSTALL_SCRIPT) libtool $(DESTDIR)$(repcommonexecdir)
+	$(INSTALL_DATA) rules.mk $(DESTDIR)$(repcommonexecdir)
+	$(INSTALL_DATA) rep.m4 $(DESTDIR)$(aclocaldir)
 
 installdirs : $(top_srcdir)/mkinstalldirs
-	$(SHELL) $(top_srcdir)/mkinstalldirs $(repdir)/$(version) \
-	  $(bindir) $(aclocaldir) $(repcommonexecdir)
+	$(SHELL) $(top_srcdir)/mkinstalldirs $(DESTDIR)$(repdir)/$(version) \
+	  $(DESTDIR)$(bindir) $(DESTDIR)$(aclocaldir) \
+	  $(DESTDIR)$(repcommonexecdir)
 
 uninstall :
 	-set -e; for dir in $(SUBDIRS); do \
 	  ( cd $$dir && $(MAKE) $@ ); \
 	done
-	rm -rf $(repdir)/$(version)
-	rm -f $(repcommonexecdir)/rules.mk $(repcommonexecdir)/libtool
-	rm -f $(aclocaldir)/rep.m4
+	rm -rf $(DESTDIR)$(repdir)/$(version)
+	rm -f $(DESTDIR)$(repcommonexecdir)/rules.mk
+	rm -f $(DESTDIR)$(repcommonexecdir)/libtool
+	rm -f $(DESTDIR)$(aclocaldir)/rep.m4
 
 DOC.dir : repdoc
 	src/repdoc DOC `find . -name '*.c' -print`

@@ -56,34 +56,34 @@ rep : $(REP_OBJS) $(EXTRA_LIBOBJS) librep.la
 rep-remote : rep-remote.c
 
 install : all installdirs
-	$(LIBTOOL) $(INSTALL_PROGRAM) librep.la ${libdir}
-	$(LIBTOOL) -n --finish ${libdir}
-	$(LIBTOOL) $(INSTALL_PROGRAM) -m 755 rep ${bindir}
-	$(LIBTOOL) $(INSTALL_PROGRAM) -m 755 repdoc ${bindir}
-	$(INSTALL_SCRIPT) -m 755 rep-config ${bindir}
-	$(INSTALL_PROGRAM) -m 755 rep-remote ${bindir}
+	$(LIBTOOL) $(INSTALL_PROGRAM) librep.la $(DESTDIR)${libdir}
+	$(LIBTOOL) -n --finish $(DESTDIR)${libdir}
+	$(LIBTOOL) $(INSTALL_PROGRAM) -m 755 rep $(DESTDIR)${bindir}
+	$(LIBTOOL) $(INSTALL_PROGRAM) -m 755 repdoc $(DESTDIR)${bindir}
+	$(INSTALL_SCRIPT) -m 755 rep-config $(DESTDIR)${bindir}
+	$(INSTALL_PROGRAM) -m 755 rep-remote $(DESTDIR)${bindir}
 	for dl in $(DL_OBJS); do \
-	  $(LIBTOOL) $(INSTALL_PROGRAM) $$dl ${repexecdir}; \
+	  $(LIBTOOL) $(INSTALL_PROGRAM) $$dl $(DESTDIR)${repexecdir}; \
 	done
 	for i in $(INSTALL_HDRS); do \
-	  $(INSTALL_DATA) $$i $(includedir); \
+	  $(INSTALL_DATA) $$i $(DESTDIR)$(includedir); \
 	done
 
 installdirs : $(top_srcdir)/mkinstalldirs
-	$(SHELL) $(top_srcdir)/mkinstalldirs $(libdir) $(bindir) \
-	  $(repexecdir) $(includedir)
+	$(SHELL) $(top_srcdir)/mkinstalldirs $(DESTDIR)$(libdir) $(DESTDIR)$(bindir) \
+	  $(DESTDIR)$(repexecdir) $(DESTDIR)$(includedir)
 
 uninstall :
-	$(LIBTOOL) rm ${libdir}/librep.la
-	$(LIBTOOL) rm ${bindir}/rep
-	$(LIBTOOL) rm ${bindir}/repdoc
-	rm ${bindir}/rep-config
-	rm ${bindir}/rep-remote
+	$(LIBTOOL) rm $(DESTDIR)${libdir}/librep.la
+	$(LIBTOOL) rm $(DESTDIR)${bindir}/rep
+	$(LIBTOOL) rm $(DESTDIR)${bindir}/repdoc
+	rm -f $(DESTDIR)${bindir}/rep-config
+	rm -f $(DESTDIR)${bindir}/rep-remote
 	for dl in $(DL_OBJS); do \
-	  $(LIBTOOL) rm ${repexecdir}/$$dl; \
+	  $(LIBTOOL) rm $(DESTDIR)${repexecdir}/$$dl; \
 	done
 	for i in $(INSTALL_HDRS); do \
-	  rm $(includedir)/$$i; \
+	  rm $(DESTDIR)$(includedir)/$$i; \
 	done
 
 rep-config : rep-config.sh
