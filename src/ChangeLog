@@ -1,3 +1,8 @@
+1999-10-20  John Harper  <john@dcs.warwick.ac.uk>
+
+	* streams.c (Fformat): handle long-integers in the integer
+	conversions
+
 1999-10-14  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_dl.c: support underscore-prefixed symbol names
