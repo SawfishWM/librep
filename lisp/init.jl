@@ -457,7 +457,7 @@ When read, the syntax `FOO#BAR' expands to `(structure-ref FOO BAR)'."
 ;; exception handling and syntax
 
 ;; rethrow exception DATA (a list)
-(defun ignore-exception (data)
+(defun raise-exception (data)
   ;; should do something about this..
   (throw (car data) (cdr data)))
 
@@ -468,7 +468,7 @@ When read, the syntax `FOO#BAR' expands to `(structure-ref FOO BAR)'."
    (lambda (data)
      (if (eq (car data) tag)
 	 (cdr data)
-       (ignore-exception data)))))
+       (raise-exception data)))))
 
 ;; Call and return value of THUNK. PROT-THUNK will always be called
 ;; after THUNK terminates, exception or no exception
@@ -479,7 +479,7 @@ When read, the syntax `FOO#BAR' expands to `(structure-ref FOO BAR)'."
 		(lambda (data) (setq saved-data data)))))
       (prot-thunk)
       (if saved-data
-	  (ignore-exception saved-data)
+	  (raise-exception saved-data)
 	ret))))
 
 ;; HANDLERS is list of (ERROR-SPEC . HANDLER-FUN) HANDLER-FUN will be
@@ -489,11 +489,11 @@ When read, the syntax `FOO#BAR' expands to `(structure-ref FOO BAR)'."
    thunk
    (lambda (data)
      (if (not (eq (car data) 'error))
-	 (ignore-exception data)
+	 (raise-exception data)
        (let ((type (cadr data)))
 	 (let loop ((rest handlers))
 	   (if (null rest)
-	       (ignore-exception data)
+	       (raise-exception data)
 	     (let ((h-type (caar rest)))
 	       (if (or (and (listp h-type) (memq type h-type))
 		       (eq h-type 'error) (eq h-type type))
