@@ -40,12 +40,8 @@ char *alloca ();
 #undef BYTE_CODE_HISTOGRAM
 
 #include "repint.h"
-
 #include "bytecodes.h"
-
 #include <assert.h>
-
-
 
 DEFSYM(bytecode_error, "bytecode-error");
 DEFSTRING(err_bytecode_error, "Invalid byte code version");
@@ -62,14 +58,8 @@ static u_long byte_code_usage[256];
    Each item in the BIND-STACK may be one of:
 	(t . FORM)
 		unwind-protect FORM to always evaluate
-	(BUFFER . VIEW)
-		install BUFFER as current in VIEW
 	((SYM . OLD-VAL) ...)
 		list of symbol bindings to undo with rep_unbind_symbols()
-	(VIEW . WINDOW)
-		set VIEW as current in its window
-	WINDOW
-		set WINDOW as current.
 	(PC . STACK-DEPTH)
 		not unbound here; install exception handler at PC */
 inline void
@@ -129,23 +119,20 @@ rep_bind_object(repv obj)
 /* These macros pop as many args as required then call the specified
    function properly. */
 
-#define CALL_1(cmd)				\
-    if((TOP = cmd (TOP)))			\
-	break;					\
-    goto error
+#define CALL_1(cmd)	\
+    TOP = cmd (TOP);	\
+    break;
     
-#define CALL_2(cmd)				\
-    tmp = RET_POP;				\
-    if((TOP = cmd (TOP, tmp)))			\
-	break;					\
-    goto error
+#define CALL_2(cmd)		\
+    tmp = RET_POP;		\
+    TOP = cmd (TOP, tmp);	\
+    break;
 
-#define CALL_3(cmd)				\
-    tmp = RET_POP;				\
-    tmp2 = RET_POP;				\
-    if((TOP = cmd (TOP, tmp2, tmp)))		\
-	break;					\
-    goto error
+#define CALL_3(cmd)			\
+    tmp = RET_POP;			\
+    tmp2 = RET_POP;			\
+    TOP = cmd (TOP, tmp2, tmp);		\
+    break;
 
 /* Output the case statement for an instruction OP, with an embedded
    argument. The code for the instruction should start at the following
@@ -189,7 +176,11 @@ of byte code. See the functions `compile-file', `compile-directory' and
     rep_DECLARE2(consts, rep_VECTORP);
     rep_DECLARE3(stkreq, rep_INTP);
 
-    stackbase = alloca(sizeof(repv) * rep_INT(stkreq));
+    stackbase = alloca(sizeof(repv) * (rep_INT(stkreq) + 1));
+
+    /* Make sure that even when the stack has no entries, the TOP
+       element still != 0 (for the error-detection at label quit:) */
+    *stackbase++ = Qt;
 
     stackp = stackbase - 1;
     rep_PUSHGC(gc_code, code);
@@ -394,8 +385,6 @@ fetch:
 		Fsignal(Qinvalid_function, rep_LIST_1(TOP));
 		goto error;
 	    }
-	    if(!TOP)
-		goto error;
 	    break;
 
 	CASE_OP_ARG(OP_PUSH)
@@ -403,17 +392,12 @@ fetch:
 	    break;
 
 	CASE_OP_ARG(OP_REFQ)
-	    if(PUSH(Fsymbol_value(rep_VECT(consts)->array[arg],
-				     Qnil)))
-	    {
-		break;
-	    }
-	    goto error;
+	    PUSH(Fsymbol_value(rep_VECT(consts)->array[arg], Qnil));
+	    break;
 
 	CASE_OP_ARG(OP_SETQ)
-	    if((TOP = Fset(rep_VECT(consts)->array[arg], TOP)))
-		break;
-	    goto error;
+	    TOP = Fset(rep_VECT(consts)->array[arg], TOP);
+	    break;
 
 	CASE_OP_ARG(OP_LIST)
 	    tmp = Qnil;
@@ -425,25 +409,22 @@ fetch:
 	CASE_OP_ARG(OP_BIND)
 	    tmp = rep_VECT(consts)->array[arg];
 	    if(rep_SYMBOLP(tmp))
-	    {
-		rep_CAR(bindstack) = rep_bind_symbol(rep_CAR(bindstack), tmp, RET_POP);
-		break;
-	    }
-	    rep_signal_arg_error(tmp, 1);
-	    goto error;
+		rep_CAR(bindstack) = rep_bind_symbol(rep_CAR(bindstack),
+						     tmp, RET_POP);
+	    else
+		rep_signal_arg_error(tmp, 1);
+	    break;
 
 	case OP_REF:
-	    if((TOP = Fsymbol_value(TOP, Qnil)))
-		break;
-	    goto error;
+	    TOP = Fsymbol_value(TOP, Qnil);
+	    break;
 
 	case OP_SET:
 	    CALL_2(Fset);
 
 	case OP_FREF:
-	    if((TOP = Fsymbol_function(TOP, Qnil)))
-		break;
-	    goto error;
+	    TOP = Fsymbol_function(TOP, Qnil);
+	    break;
 
 	case OP_FSET:
 	    CALL_2(Ffset);
@@ -528,75 +509,71 @@ fetch:
 	case OP_ADD:
 	    tmp = RET_POP;
 	    if(rep_INTP(tmp) && rep_INTP(TOP))
-	    {
 		TOP = rep_MAKE_INT(rep_INT(TOP) + rep_INT(tmp));
-		break;
-	    }
-	    if(rep_INTP(tmp))
-		rep_signal_arg_error(TOP, 2);
 	    else
-		rep_signal_arg_error(tmp, 1);
-	    goto error;
+	    {
+		if(rep_INTP(tmp))
+		    rep_signal_arg_error(TOP, 2);
+		else
+		    rep_signal_arg_error(tmp, 1);
+	    }
+	    break;
 
 	case OP_NEG:
 	    if(rep_INTP(TOP))
-	    {
 		TOP = rep_MAKE_INT(-rep_INT(TOP));
-		break;
-	    }
-	    rep_signal_arg_error(TOP, 1);
-	    goto error;
+	    else
+		rep_signal_arg_error(TOP, 1);
+	    break;
 
 	case OP_SUB:
 	    tmp = RET_POP;
 	    if(rep_INTP(tmp) && rep_INTP(TOP))
-	    {
 		TOP = rep_MAKE_INT(rep_INT(TOP) - rep_INT(tmp));
-		break;
-	    }
-	    if(rep_INTP(tmp))
-		rep_signal_arg_error(TOP, 2);
 	    else
-		rep_signal_arg_error(tmp, 1);
-	    goto error;
+	    {
+		if(rep_INTP(tmp))
+		    rep_signal_arg_error(TOP, 2);
+		else
+		    rep_signal_arg_error(tmp, 1);
+	    }
+	    break;
 
 	case OP_MUL:
 	    tmp = RET_POP;
 	    if(rep_INTP(tmp) && rep_INTP(TOP))
-	    {
 		TOP = rep_MAKE_INT(rep_INT(TOP) * rep_INT(tmp));
-		break;
-	    }
-	    if(rep_INTP(tmp))
-		rep_signal_arg_error(TOP, 2);
 	    else
-		rep_signal_arg_error(tmp, 1);
-	    goto error;
+	    {
+		if(rep_INTP(tmp))
+		    rep_signal_arg_error(TOP, 2);
+		else
+		    rep_signal_arg_error(tmp, 1);
+	    }
+	    break;
 
 	case OP_DIV:
 	    tmp = RET_POP;
 	    if(rep_INTP(tmp) && rep_INTP(TOP))
-	    {
 		TOP = rep_MAKE_INT(rep_INT(TOP) / rep_INT(tmp));
-		break;
-	    }
-	    if(rep_INTP(tmp))
-		rep_signal_arg_error(TOP, 2);
 	    else
-		rep_signal_arg_error(tmp, 1);
-	    goto error;
+	    {
+		if(rep_INTP(tmp))
+		    rep_signal_arg_error(TOP, 2);
+		else
+		    rep_signal_arg_error(tmp, 1);
+	    }
+	    break;
 
 	case OP_REM:
 	    CALL_2(Fremainder);
 
 	case OP_LNOT:
 	    if(rep_INTP(TOP))
-	    {
 		TOP = rep_MAKE_INT(~rep_INT(TOP));
-		break;
-	    }
-	    rep_signal_arg_error(TOP, 1);
-	    goto error;
+	    else
+		rep_signal_arg_error(TOP, 1);
+	    break;
 
 	case OP_NOT:
 	    if(TOP == Qnil)
@@ -608,41 +585,41 @@ fetch:
 	case OP_LOR:
 	    tmp = RET_POP;
 	    if(rep_INTP(tmp) && rep_INTP(TOP))
-	    {
 		TOP = rep_MAKE_INT(rep_INT(TOP) | rep_INT(tmp));
-		break;
-	    }
-	    if(rep_INTP(tmp))
-		rep_signal_arg_error(TOP, 2);
 	    else
-		rep_signal_arg_error(tmp, 1);
-	    goto error;
+	    {
+		if(rep_INTP(tmp))
+		    rep_signal_arg_error(TOP, 2);
+		else
+		    rep_signal_arg_error(tmp, 1);
+	    }
+	    break;
 
 	case OP_LXOR:
 	    tmp = RET_POP;
 	    if(rep_INTP(tmp) && rep_INTP(TOP))
-	    {
 		TOP = rep_MAKE_INT(rep_INT(TOP) ^ rep_INT(tmp));
-		break;
-	    }
-	    if(rep_INTP(tmp))
-		rep_signal_arg_error(TOP, 2);
 	    else
-		rep_signal_arg_error(tmp, 1);
-	    goto error;
+	    {
+		if(rep_INTP(tmp))
+		    rep_signal_arg_error(TOP, 2);
+		else
+		    rep_signal_arg_error(tmp, 1);
+	    }
+	    break;
 
 	case OP_LAND:
 	    tmp = RET_POP;
 	    if(rep_INTP(tmp) && rep_INTP(TOP))
-	    {
 		TOP = rep_MAKE_INT(rep_INT(TOP) & rep_INT(tmp));
-		break;
-	    }
-	    if(rep_INTP(tmp))
-		rep_signal_arg_error(TOP, 2);
 	    else
-		rep_signal_arg_error(tmp, 1);
-	    goto error;
+	    {
+		if(rep_INTP(tmp))
+		    rep_signal_arg_error(TOP, 2);
+		else
+		    rep_signal_arg_error(tmp, 1);
+	    }
+	    break;
 
 	case OP_EQUAL:
 	    tmp = RET_POP;
@@ -700,21 +677,17 @@ fetch:
 
 	case OP_INC:
 	    if(rep_INTP(TOP))
-	    {
 		TOP = rep_MAKE_INT(rep_INT(TOP) + 1);
-		break;
-	    }
-	    rep_signal_arg_error(TOP, 1);
-	    goto error;
+	    else
+		rep_signal_arg_error(TOP, 1);
+	    break;
 
 	case OP_DEC:
 	    if(rep_INTP(TOP))
-	    {
 		TOP = rep_MAKE_INT(rep_INT(TOP) - 1);
-		break;
-	    }
-	    rep_signal_arg_error(TOP, 1);
-	    goto error;
+	    else
+		rep_signal_arg_error(TOP, 1);
+	    break;
 
 	case OP_LSH:
 	    CALL_2(Flsh);
@@ -794,8 +767,7 @@ fetch:
 	    tmp = RET_POP;
 	    if(!rep_throw_value)
 		rep_throw_value = Fcons(TOP, tmp);
-	    /* This isn't really an error :-)  */
-	    goto error;
+	    break;
 
 	case OP_BINDERR:
 	    /* Pop our single argument and cons it onto the bind-
@@ -1075,6 +1047,11 @@ fetch:
 
 	default:
 	    Fsignal(Qerror, rep_LIST_1(rep_VAL(&unknown_op)));
+	}
+
+	if (rep_throw_value || !TOP)
+	{
+	    /* Some form of error occurred. Unbind the binding stack. */
 	error:
 	    while(rep_CONSP(bindstack))
 	    {
@@ -1120,7 +1097,8 @@ fetch:
 		       set, so there's nothing to handle. Keep unwinding. */
 #if 1
 		    fprintf(stderr, "lispmach: ignoring exception handler (%ld . %ld) pc=%d",
-			    rep_INT(rep_CAR(item)), rep_INT(rep_CDR(item)), pc - rep_STR(code));
+			    rep_INT(rep_CAR(item)),
+			    rep_INT(rep_CDR(item)), pc - rep_STR(code));
 		    Fbacktrace(Fstderr_file());
 		    fputs("\n", stderr);
 #endif
@@ -1130,25 +1108,8 @@ fetch:
 	    TOP = rep_NULL;
 	    goto quit;
 	}
-#ifdef PARANOID
-	if(stackp < (stackbase - 1))
-	{
-	    fprintf(stderr, "jade: stack underflow in lisp-code: aborting...\n");
-	    abort();
-	}
-	if(stackp > (stackbase + rep_INT(stkreq)))
-	{
-	    fprintf(stderr, "jade: stack overflow in lisp-code: aborting...\n");
-	    abort();
-	}
-#endif
     }
 
-#ifdef PARANOID
-    if(stackp != stackbase)
-	fprintf(stderr, "jade: (stackp != stackbase) at end of lisp-code\n");
-#endif
-    
 quit:
     /* only use this var to save declaring another */
     bindstack = TOP;
