@@ -22,6 +22,8 @@ Outstanding bugs
 
    also, the first level lookup of foo#bar isn't cached
 
+ ! interfaces aren't re-parsed when modules are reloaded
+
  ! environment of macro expanders is not consistent
 
    interpreted code closes macros in the usual lexical environment,

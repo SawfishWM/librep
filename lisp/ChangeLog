@@ -1,3 +1,15 @@
+2000-05-11  John Harper  <john@dcs.warwick.ac.uk>
+
+	* init.jl (or, and): implement base cases explicitly, (or) =>
+	nil, (and) => t
+	* scheme-syntax.jl (and): add base case (and) => #t
+
+	* init.jl (structure, define-structure): INTERFACE is now
+	optional
+
+	* init.jl, compiler-modules.jl (%parse-interface,
+	parse-interface): accept `()' as null interface
+
 2000-04-24  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep-repl.jl: new commands `,compile' and `,compile-proc'
