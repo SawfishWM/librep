@@ -159,8 +159,8 @@ int rep_op_insert_file_contents = op_insert_file_contents;
 
 
 
-inline repv
-rep_get_fh_env (void)
+static inline repv
+get_fh_env (void)
 {
     repv ret = F_structure_ref (rep_structure, Qfh_env_key);
     return rep_VOIDP (ret) ? Qt : ret;
@@ -259,7 +259,7 @@ rep_call_file_handler(repv handler, int op, repv sym, int nargs, ...)
 
     if (rep_SYMBOLP(handler))
     {
-	repv fh_env = rep_get_fh_env ();
+	repv fh_env = get_fh_env ();
 	if (fh_env == Qt)
 	{
 	    rep_USE_DEFAULT_ENV;
