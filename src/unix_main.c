@@ -72,6 +72,7 @@
 
 _PR VALUE lookup_errno(void);
 _PR u_long sys_time(void);
+_PR void sys_sleep_for(long secs, long msecs);
 _PR VALUE sys_user_login_name(void);
 _PR VALUE sys_user_full_name(void);
 _PR VALUE sys_user_home_directory(VALUE user);
@@ -115,6 +116,15 @@ u_long
 sys_time(void)
 {
     return time(0);
+}
+
+void
+sys_sleep_for(long secs, long msecs)
+{
+    struct timeval timeout;
+    timeout.tv_sec = secs + msecs / 1000;
+    timeout.tv_usec = (msecs % 1000) * 1000;
+    select(FD_SETSIZE, NULL, NULL, NULL, &timeout);
 }
 
 VALUE
