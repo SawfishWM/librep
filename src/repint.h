@@ -37,7 +37,6 @@
 # error "Need an operating system definition"
 #endif
 
-#include "repint_subrs.h"
 #include <build.h>
 
 enum file_ops {
@@ -94,6 +93,13 @@ extern struct blocked_op *rep_blocked_ops[op_MAX];
 /* module system */
 
 typedef struct rep_struct_node_struct rep_struct_node;
+struct rep_struct_node_struct {
+    rep_struct_node *next;
+    repv symbol;
+    repv binding;
+    int is_constant : 1;
+    int is_exported : 1;
+};
 
 /* structure encapsulating a single namespace */
 typedef struct rep_struct_struct rep_struct;
@@ -125,6 +131,8 @@ extern int rep_structure_type;
 
 #define rep_SPECIAL_ENV   (rep_STRUCTURE(rep_structure)->special_env)
 
+#define rep_STRUCT_HASH(x,n) (((x) >> 4) % (n))
+
 
 /* binding tracking */
 
@@ -133,5 +141,10 @@ extern int rep_structure_type;
 #define rep_LEX_BINDINGS(x)		(rep_INT(x) & 0xffff)
 #define rep_SPEC_BINDINGS(x)		(rep_INT(x) >> 16)
 #define rep_NEW_FRAME			rep_MAKE_INT(0)
+
+
+/* prototypes */
+
+#include "repint_subrs.h"
 
 #endif /* REPINT_H */
