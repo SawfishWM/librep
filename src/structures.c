@@ -1647,13 +1647,16 @@ rep_structures_init (void)
     rep_ADD_SUBR (Smake_binding_immutable);
     rep_ADD_SUBR (Sbinding_immutable_p);
     rep_ADD_SUBR (Sexport_bindings);
-    rep_ADD_SUBR (Sfeaturep);
-    rep_ADD_SUBR (Sprovide);
-    rep_ADD_SUBR_INT (Srequire);
     rep_ADD_SUBR (Sstructure_exports_all);
     rep_ADD_SUBR (Sstructure_set_binds);
     rep_ADD_SUBR (Sstructure_install_vm);
 
+    rep_pop_structure (tem);
+
+    tem = rep_push_structure ("rep.module-system");
+    rep_ADD_SUBR (Sfeaturep);
+    rep_ADD_SUBR (Sprovide);
+    rep_ADD_SUBR_INT (Srequire);
     rep_pop_structure (tem);
 
     rep_INTERN (features);
