@@ -1,3 +1,8 @@
+1999-06-29  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_processes.c (rep_proc_init): don't create a new process
+	group anymore
+
 1999-06-06  John Harper  <john@dcs.warwick.ac.uk>
 
 	* bytecodes.h: OP_SETQ now pops the value from the stack.
