@@ -137,7 +137,7 @@ rep_bind_object(repv obj)
 	return Qnil;
 }
 
-static inline void
+static void
 unbind_all (repv stack)
 {
     while (rep_CONSP (stack))
@@ -1304,6 +1304,13 @@ again:
 	case OP_MAKE_CLOSURE:
 	    CALL_2(Fmake_closure);
 
+	case OP_UNBINDALL_0:
+	    gc_stackbase.count = STK_USE;
+	    unbind_all (bindstack);
+	    bindstack = Qnil;
+	    impurity = 0;
+	    break;
+
 	case OP_CLOSUREP:
 	    if(rep_FUNARGP(TOP))
 		TOP = Qt;
@@ -1315,6 +1322,10 @@ again:
 	    bindstack = Fcons (Fmake_closure (Qnil, Qnil), bindstack);
 	    impurity++;
 	    break;
+
+	case OP_POP_ALL:
+	    stackp = stackbase - 1;
+	    goto fetch;
 
 	/* Jump instructions follow */
 
