@@ -94,6 +94,12 @@
 	       (scan-list (nthcdr 3 form))
 	     (scan-list (nthcdr 2 form))))
 
+	  ((define-structure)
+	   (scan-list (nthcdr 4 form)))
+
+	  ((structure)
+	   (scan-list (nthcdr 3 form)))
+
 	  (t (if (fluid helper)
 		 ((fluid helper) form)
 	       (scan-list form)))))))
