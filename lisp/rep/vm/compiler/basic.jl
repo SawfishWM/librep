@@ -219,11 +219,9 @@
 	;; See if it might be a good idea to compile the interactive decl
 	(when (consp interactive)
 	  (setq interactive (compile-form interactive))))
-      (when (and name doc)
-	(setq doc (format nil "\(%s%s\)\n\n%s"
-			  name (describe-lambda-list args) doc)))
       (when (and *compiler-write-docs* doc name)
-	(add-documentation name doc))
+	(add-documentation name doc)
+	(add-documentation-params name args))
       (let
 	  ((vars (get-lambda-vars args)))
 	(mapc test-variable-bind vars)
