@@ -30,28 +30,25 @@
 (defun getenv (name)
   "Return the value of the environment variable NAME, a string. The variable
 `process-environment' is used to find the value."
-  (let ((cell process-environment)
-	(regexp (concat (quote-regexp name) ?=)))
-    (catch 'return
-      (while (consp cell)
-	(when (string-looking-at regexp (car cell))
-	  (throw 'return (substring (car cell) (match-end))))
-	(setq cell (cdr cell))))))
+  (let ((regexp (concat (quote-regexp name) ?=)))
+    (let loop ((rest process-environment))
+      (cond ((null rest) nil)
+	    ((string-looking-at regexp (car rest))
+	     (substring (car rest) (match-end)))
+	    (t (loop (cdr rest)))))))
 
 ;;;###autoload
 (defun setenv (name value)
   "Set the current value of the environment variable NAME to the string VALUE.
 The `process-environment' variable is destructively modified."
-  (let ((cell process-environment)
-	(regexp (concat (quote-regexp name) ?=)))
-    (catch 'return
-      (while (consp cell)
-	(when (string-looking-at regexp (car cell))
-	  (rplaca cell (concat name ?= value))
-	  (throw 'return value))
-	(setq cell (cdr cell)))
-      (setq process-environment (cons (concat name ?= value)
-				      process-environment)))))
+  (let ((regexp (concat (quote-regexp name) ?=)))
+    (let loop ((rest process-environment))
+      (cond ((null rest)
+	     (setq process-environment (cons (concat name #\= value)
+					     process-environment)))
+	    ((string-looking-at regexp (car rest))
+	     (rplaca rest (concat name #\= value)))
+	    (t (loop (cdr rest)))))))
 
 ;;;###autoload
 (defun unsetenv (name)
