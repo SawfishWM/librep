@@ -174,7 +174,7 @@ dl_ok=no
 AC_CHECK_FUNC(dlopen, [AC_DEFINE(HAVE_DLOPEN) dl_ok=dl],
     AC_CHECK_LIB(dl, dlopen, [AC_DEFINE(HAVE_DLOPEN) dl_ok=dl]))
 AC_CHECK_FUNC(shl_load, [AC_DEFINE(HAVE_SHL_LOAD) dl_ok=shl],
-    AC_CHECK_LIB(dld, shl_load, [AC_DEFINE(HAVE_DLOPEN) dl_ok=dl]))
+    AC_CHECK_LIB(dld, shl_load, [AC_DEFINE(HAVE_DLOPEN) dl_ok=shl]))
 
 if test $dl_ok = dl; then
   AC_MSG_CHECKING([for preceding underscore in symbols])
