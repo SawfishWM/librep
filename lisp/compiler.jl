@@ -338,6 +338,21 @@ is one of these that form is compiled.")
 		  (unwind-protect
 		      (progn
 			;; Pass 2. The actual compile
+			;; First check for `#! .. !#' at start of file
+			(if (and (= (read-char src-file) ?#)
+				 (= (read-char src-file) ?!))
+			    (let
+				(tem)
+			      (write dst-file "#!")
+			      (catch 'done
+				(while (setq tem (read-char src-file))
+				  (write dst-file tem)
+				  (when (and (= tem ?!)
+					     (setq tem (read-char src-file)))
+				    (write dst-file tem)
+				    (when (= tem ?#)
+				      (throw 'done t))))))
+			  (seek-file src-file 0 'start))
 			(format dst-file
 				";; Source file: %s\n(validate-byte-code %d %d)\n"
 				file-name bytecode-major bytecode-minor)
