@@ -107,10 +107,7 @@ not the function SYMBOL may be called interactively (as a command)."
 
 (defun autoload-variable (symbol file)
   "Tell the evaluator that the value of SYMBOL can be initialised by loading
-the lisp library called FILE.
-
-Note that at present, autoloading of variables is only performed by the
-`lookup-event-binding' function, to allow autoloaded keymaps."
+the lisp library called FILE. Note that this doesn't work yet!"
   (if (and (boundp 'dumped-lisp-libraries)
 	   (member file dumped-lisp-libraries))
       ;; If FILE has been dumped, but not yet loaded, load it
@@ -119,6 +116,18 @@ Note that at present, autoloading of variables is only performed by the
 	(setq dumped-loaded-libraries (cons file dumped-loaded-libraries)))
     ;; Else just add the autoload defn as normal
     (set symbol (list 'autoload file))))
+
+(defun autoload-keymap (keymap-symbol file)
+  "Tell the evaluator that the value of KEYMAP-SYMBOL can be initialised
+by loading the lisp library called FILE."
+  (if (and (boundp 'dumped-lisp-libraries)
+	   (member file dumped-lisp-libraries))
+      ;; If FILE has been dumped, but not yet loaded, load it
+      (unless (member file dumped-loaded-libraries)
+	(load file)
+	(setq dumped-loaded-libraries (cons file dumped-loaded-libraries)))
+    ;; Else just add the autoload defn as normal
+    (fset keymap-symbol (list 'autoload-keymap file))))
 
 
 ;; Hook manipulation

@@ -39,7 +39,7 @@
 The major mode controlling the Lisp debugger. Commands available within
 the debugger are:\n
 \\{debug-ctrl-c-keymap,Ctrl-c}"
-  (setq ctrl-c-keymap debug-ctrl-c-keymap
+  (setq local-ctrl-c-keymap debug-ctrl-c-keymap
 	major-mode 'debug-mode
 	mode-name "Debug"))
 
