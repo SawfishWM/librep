@@ -47,24 +47,34 @@
       (error "Scheme `if' only takes one else form"))
      (alternative
       `(%cond ((%test ,test) ,consequent)
-		  ('t ,(car alternative))))
+	      ('t ,(car alternative))))
      (t `(%cond ((%test ,test) ,consequent)))))
 
   (defmacro set! (variable expression)
     `(%setq ,variable ,expression))
 
-  (defmacro cond clauses
-    (cons '%cond
-	  (mapcar (rep#lambda (x)
-		    (rep#cond
-		     ((eq (car x) 'else) `('t ,@(cdr x)))
-		     (t `((%test ,(car x)) ,@(cdr x))))) clauses)))
+  (defmacro cond args
+    ((rep#lambda (first rest)
+      (rep#cond ((null args) #f)
+		((eq (car first) 'else)
+		 `(begin ,@(cdr first)))
+		((eq (cadr first) '=>)
+		 ((rep#lambda (tem)
+		   `(let ((,tem ,(car first)))
+		      (if ,tem
+			  (,(caddr first) ,tem)
+			,@(rep#cond (rest `((cond ,@rest)))))))
+		  (gensym)))
+		(t `(if ,(car first)
+			(begin ,@(cdr first))
+		      ,@(rep#cond (rest `((cond ,@rest))))))))
+     (car args) (cdr args)))
 
   (defmacro case (key . clauses)
-    (cons '%case
+    (list* '%case key
 	  (mapcar (rep#lambda (x)
 		    (rep#cond
-		     ((eq (car x) 'else) `('t ,@(cdr x)))
+		     ((eq (car x) 'else) `(t ,@(cdr x)))
 		     (t x))) clauses)))
 
   (defmacro or args
@@ -143,12 +153,13 @@
 			     (list (car var) (cadr var))) vars)
 	  (if ,(car test)
 	      (begin ,@(cdr test))
-	    ,@body
-	    (,tem ,@(mapcar (rep#lambda (var)
-			      (rep#cond
-			       ((cddr var) (caddr var))
-			       (t (car var))))
-			    vars)))))
+	    (begin
+	     ,@body
+	     (,tem ,@(mapcar (rep#lambda (var)
+			       (rep#cond
+			        ((cddr var) (caddr var))
+			        (t (car var))))
+			     vars))))))
      (gensym)))
 
   (defmacro delay (expression)
