@@ -870,21 +870,26 @@ applied to that element, ie,
 ::end:: */
 {
     VALUE *head = &list;
-    VALUE tmp;
+    GC_root gc_list, gc_pred;
     DECLARE2(list, LISTP);
+    PUSHGC(gc_list, list);
+    PUSHGC(gc_pred, pred);
     while(CONSP(*head))
     {
-	if(!(tmp = call_lisp1(pred, VCAR(*head))))
-	    return(LISP_NULL);
+	VALUE tmp = call_lisp1(pred, VCAR(*head));
+	TEST_INT;
+	if(INT_P || !tmp)
+	{
+	    list = LISP_NULL;
+	    break;
+	}
 	if(!NILP(tmp))
 	    *head = VCDR(*head);
 	else
 	    head = &VCDR(*head);
-	TEST_INT;
-	if(INT_P)
-	    return(LISP_NULL);
     }
-    return(list);
+    POPGC; POPGC;
+    return list;
 }
 
 _PR VALUE cmd_delete_if_not(VALUE, VALUE);
@@ -901,21 +906,26 @@ applied to that element, ie,
 ::end:: */
 {
     VALUE *head = &list;
-    VALUE tmp;
+    GC_root gc_list, gc_pred;
     DECLARE2(list, LISTP);
+    PUSHGC(gc_list, list);
+    PUSHGC(gc_pred, pred);
     while(CONSP(*head))
     {
-	if(!(tmp = call_lisp1(pred, VCAR(*head))))
-	    return(LISP_NULL);
+	VALUE tmp = call_lisp1(pred, VCAR(*head));
+	TEST_INT;
+	if(INT_P || !tmp)
+	{
+	    list = LISP_NULL;
+	    break;
+	}
 	if(NILP(tmp))
 	    *head = VCDR(*head);
 	else
 	    head = &VCDR(*head);
-	TEST_INT;
-	if(INT_P)
-	    return(LISP_NULL);
     }
-    return(list);
+    POPGC; POPGC;
+    return list;
 }
 
 _PR VALUE cmd_vector(VALUE);
