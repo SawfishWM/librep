@@ -7,10 +7,17 @@
 
 @itemize @bullet
 
+@item Better support for numerical computing. Now supports bignums,
+rational numbers (numerator and denominator are bignums), and floating
+point values as well as the original fixnums. Many new numerical
+functions supporting these types. Promotes and demotes hopefully as
+you'd expect (never demotes an inexact number to an exact number).
+Tries to follow the Scheme numeric system as much as possible
+
 @item Supports @dfn{guardian} objects through the @code{make-guardian}
 function. These are a clean mechanism for allowing the programmer to
 control when arbitrary lisp objects are finally deallocated. Also
-addded a new hook: @code{after-gc-hook}
+added a new hook: @code{after-gc-hook}
 
 @item The default error handler can now be redefined. If the variable
 @code{error-handler-function} contains a function then it will be

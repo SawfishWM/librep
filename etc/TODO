@@ -10,6 +10,8 @@ and more long-term ideas are marked -
 Outstanding bugs
 ================
 
+ ! doesn't handle NaN or Inf in floats properly (at all)
+
  ! doc strings are limited to 1k by SDBM
 
  ! ((call/cc call/cc) (call/cc call/cc)) can't be interrupted, and it
