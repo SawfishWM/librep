@@ -27,30 +27,152 @@
 
 /* These numbers weren't just plucked from the air, they make the blocks
    of objects fit as close as possible into powers of 2 sized blocks. */
-#define CONSBLK_SIZE	682
-#define SYMBOLBLK_SIZE	340
-#define NUMBERBLK_SIZE	127
-#define POSBLK_SIZE	340
+#define CONSBLK_SIZE	510		/* ~4k */
+#define SYMBOLBLK_SIZE	340		/* ~8k */
+#define POSBLK_SIZE	340		/* ~4k */
 
-/* This is a prime number */
+/* The number of hash buckets in each obarray, this is a prime number. */
 #define OBSIZE		509
 
-enum ValueType
+
+/* Structure of Lisp objects and the pointers to them (VALUEs) */
+
+/* Bit definitions for VALUE pointers. The lowest bit is used in the
+   car of cons cells as the cell's mark bit. The next bit defines
+   whether the object is a `normal' object (see below) or a cons cell
+   or an integer. If this bit is set (i.e. cons or number), the next
+   bit defines whether it's a cons cell or a number (set = number).
+   This bit is never touched in pointers to normal objects.
+
+   What this means is that normal objects must be aligned on a four
+   byte boundary (since the bottom two bits will be masked out), while
+   cons cells must start on an eight byte boundary. Also, since the
+   bottom two bits of a VALUE pointing to a normal object will be zero, no
+   masking need be performed to access it's location (providing GC is
+   not underway).
+
+   Finally, integers also lose their bottom three bits, meaning that they
+   must be left-shifted three bits when stored. */
+
+#define VALUE_CONS_MARK_BIT	1
+#define GC_CONS_MARK_BIT	VALUE_CONS_MARK_BIT
+#define VALUE_IS_CONS_OR_INT	2
+#define VALUE_IS_INT		4
+
+#define VALUE_INT_SHIFT		3
+#define CONS_ALIGNMENT		8
+#define NORMAL_ALIGNMENT	4
+
+#define NORMALP(v)	(((v) & VALUE_IS_CONS_OR_INT) == 0)
+#define INTP(v)		(!NORMALP(v) && (((v) & VALUE_IS_INT) != 0))
+#define CONSP(v)	(!NORMALP(v) && (((v) & VALUE_IS_INT) == 0))
+
+/* Used in GC; turn off the cons mark bit */
+#define GCREF(v)	((v) & ~VALUE_CONS_MARK_BIT)
+
+/* Convert a VALUE into a signed integer. */
+#define VINT(v)		(((PTR_SIZED_INT)(v)) >> VALUE_INT_SHIFT)
+
+/* Convert a signed integer into a VALUE. */
+#define MAKE_INT(x)	(((x) << VALUE_INT_SHIFT) \
+			 | VALUE_IS_CONS_OR_INT | VALUE_IS_INT)
+
+/* Store anything needing >24 bits (future expansion and all that),
+   in a cons cell, as one 24 bit, and one eight bit quantity. */
+#define MAKE_LONG_INT(x) \
+    cmd_cons(MAKE_INT((x) & 0x00ffffff), MAKE_INT((x) >> 24))
+
+/* Convert a cons cell with two integers into a signed long int. */
+#define VLONG_INT(v) (VINT(VCAR(v)) | (VINT(VCDR(v)) << 24))
+
+/* Vice versa. */
+#define LONG_INTP(v) (CONSP(v) && INTP(VCAR(v)) && INTP(VCDR(v)))
+
+#if NORMAL_ALIGNMENT <= STRMEM_ALIGNMENT
+  /* Allocate SIZE bytes of memory, aligned to NORMAL_ALIGNMENT */
+# define ALLOC_OBJECT(n) str_alloc(n)
+  /* Free something allocated by ALLOC_OBJECT */
+# define FREE_OBJECT(x)  str_free(x)
+#else
+# error Need an aligned malloc()
+#endif
+
+/* A ``null pointer'', i.e. an invalid object. This has the important
+   property of being a proper null pointer (i.e. (void *)0) when
+   converted to a pointer, i.e. VCONS(LISP_NULL) == NULL, and
+   VPTR(LISP_NULL) == NULL. */
+#define LISP_NULL (0)
+
+
+/* Structure of a cons cell */
+typedef struct {
+    VALUE car;
+    VALUE cdr;
+} Lisp_Cons;
+
+/* Structure of cons allocation blocks */
+typedef struct lisp_cons_block {
+    struct lisp_cons_block *next;
+
+    /* Actual start address of the allocation block. To enforce
+       alignment, this may be slightly before the start of the
+       structure. */
+    void *alloc_address;
+
+    /* The cons cells */
+    Lisp_Cons cons[CONSBLK_SIZE] CONCAT(ALIGN_, CONS_ALIGNMENT);
+} Lisp_Cons_Block;
+
+/* Build a VALUE out of a pointer to a Lisp_Cons object */
+#define CONS_VAL(x)	(((VALUE)(x)) | VALUE_IS_CONS_OR_INT)
+
+/* Get a pointer to a cons cell from a VALUE. */
+#define VCONS(v)	((Lisp_Cons *)((v) & ~(VALUE_CONS_MARK_BIT \
+					       | VALUE_IS_CONS_OR_INT)))
+
+/* Get the car or cdr from a cons VALUE. */
+#define VCAR(v)		(VCONS(v)->car)
+#define VCDR(v)		(VCONS(v)->cdr)
+
+
+/* Structure of a normal object */
+typedef struct {
+    /* Tag defining the type of this object. Bit 7 is reserved for gc,
+       at all other times it will be zero.  */
+    u_char type;
+
+    /* Data follows, in real objects. */
+} Lisp_Normal;
+
+/* Mark bit in normal objects */
+#define GC_NORMAL_MARK_BIT 0x80
+
+/* Build a VALUE out of a pointer to a Lisp_Normal object */
+#define VAL(x)		((VALUE)(x))
+
+/* Build a `Lisp_Normal *' pointer out of a VALUE of a normal type */
+#define VPTR(v) 	((Lisp_Normal *)(v))						\
+
+
+/* Type data */
+
+/* Each type of Lisp object has a type code associated with it. For
+   normal objects, this code is stored in the `type' field.
+   Note that changing the order of this structure at all, must be
+   complemented by changing values.c:data_types. */
+enum Lisp_Type
 {
-    /* Static strings are C string constants, use the macro MKSTR to make
-       them from a normal string constant.  */
-    V_StaticString = 0,
-    V_DynamicString,
-    V_Number,
-#define V_Char V_Number
-    V_Cons,
-    V_Vector,
+    /* Not a normal object. Given code zero since (v & VALUE_IS_INT) is
+       zero for a cons cell */
+    V_Cons = 0,
+
+    V_StaticString = 1,
+    V_DynamicString = 2,
+    V_Vector = 3,
+    V_Int = 4,				/* (v & VALUE_IS_INT) == 4 for int */
     V_Symbol,
-    V_Mark,
-    V_Pos,
-    /* SUBR with one argument, this arg is new value of variable to set the
-       var, or NULL to make it return the variable's value.  */
-    V_Var,
+    V_Void,
+    V_Var,				/* subr with one arg */
     V_Subr0,
     V_Subr1,
     V_Subr2,
@@ -60,227 +182,192 @@ enum ValueType
     V_SubrN,
     V_SF,
     V_Buffer,
-#define V_TX V_Buffer
     V_Window,
     V_View,
+    V_Pos,
+    V_Mark,
     V_File,
     V_Process,
-    V_GlyphTable,
-    V_Void
+    V_GlyphTable
 };
 
-#define VAL(x)		((VALUE)(x))
-#define VPTR(v)		(v)
-#define VSTRING(v)	((String *)(v))
-#define VSTR(v)		(&VSTRING(v)->str_Mem[1])
-#define VNUMBER(v)	((Number *)(v))
-#define VNUM(v)		(VNUMBER(v)->num_Data.number)
-#define VCHAR(v)	VNUM(v)
-#define VCONS(v)	((Cons *)(v))
-#define VCAR(v)		(VCONS(v)->cn_Car)
-#define VCDR(v)		(VCONS(v)->cn_Cdr)
-#define VVECT(v)	((Vector *)(v))
-#define VVECTI(v,i)	(VVECT(v)->vc_Array[(i)])
-#define VSYM(v)		((Symbol *)(v))
-#define VMARK(v)	((Mark *)(v))
-#define VPOS(v)		((Pos *)(v))
-#define VCOL(v)		(PCOL(VPOS(v)))
-#define VROW(v)		(PROW(VPOS(v)))
-#define VXSUBR(v)	((XSubr *)(v))
-#define VSUBR(v)	((Subr *)(v))
-#define VSUBR0FUN(v)	(VSUBR(v)->subr_Fun.fun0)
-#define VSUBR1FUN(v)	(VSUBR(v)->subr_Fun.fun1)
-#define VSUBR2FUN(v)	(VSUBR(v)->subr_Fun.fun2)
-#define VSUBR3FUN(v)	(VSUBR(v)->subr_Fun.fun3)
-#define VSUBR4FUN(v)	(VSUBR(v)->subr_Fun.fun4)
-#define VSUBR5FUN(v)	(VSUBR(v)->subr_Fun.fun5)
-#define VSUBRNFUN(v)	(VSUBR(v)->subr_Fun.fun1)
-#define VSFFUN(v)	(VSUBR(v)->subr_Fun.fun1)
-#define VVARFUN(v)	(VSUBR(v)->subr_Fun.fun1)
-#define VTX(v)		((TX *)(v))
-#define VBUFFER(v)	VTX(v)
-#define VFILE(v)	((LFile *)(v))
-#define VPROC(v)	((struct Proc *)(v))
-#define VWIN(v)		((WIN *)(v))
-#define VVIEW(v)	((VW *)(v))
-#define VGLYPHTAB(v)	((GlyphTable *)(v))
+/* Assuming that V is of normal type, return the type code */
+#define VNORMAL_TYPE(v)	(VPTR(v)->type)
 
-#define VTYPE(v)	((v)->type)
-#define VTYPEP(v,t)	(VTYPE(v) == (t))
-#define NILP(v)		((v) == sym_nil)
-#define STRINGP(v)	(VTYPEP(v, V_StaticString) || VTYPEP(v, V_DynamicString))
-#define NUMBERP(v)	VTYPEP(v, V_Number)
-#define CHARP(v)	NUMBERP(v)
-#define CONSP(v)	VTYPEP(v, V_Cons)
-#define LISTP(v)	(NILP(v) || CONSP(v))
-#define VECTORP(v)	VTYPEP(v, V_Vector)
-#define SYMBOLP(v)	VTYPEP(v, V_Symbol)
-#define BUFFERP(v)	VTYPEP(v, V_Buffer)
-#define POSP(v)		VTYPEP(v, V_Pos)
-#define MARKP(v)	VTYPEP(v, V_Mark)
-#define FILEP(v)	VTYPEP(v, V_File)
-#define PROCESSP(v)	VTYPEP(v, V_Process)
-#define WINDOWP(v)	(VTYPEP(v, V_Window) && VWIN(v)->w_Window)
-#define VIEWP(v)	(VTYPEP(v, V_View) && VVIEW(v)->vw_Win)
-#define GLYPHTABP(v)	VTYPEP(v, V_GlyphTable)
-#define VOIDP(v)	VTYPEP(v, V_Void)
+/* Similar for cons or int */
+#define VUNNORMAL_TYPE(v) ((v) & VALUE_IS_INT)
 
-#define GC_MARK_BIT	0x80
-#define GC_MARK(v)	(VTYPE(v) & GC_MARK_BIT)
-#define GC_MARKEDP(v)	(GC_MARK(v) != 0)
-#define GC_SET(v)	(VTYPE(v) |= GC_MARK_BIT)
-#define GC_CLR(v)	(VTYPE(v) &= ~GC_MARK_BIT)
-#define MARKVAL(v)	do { if((v) && !GC_MARKEDP(v)) mark_value(v); } while(0)
+/* Return a type code given a VALUE */
+#define VTYPE(v)	(NORMALP(v) ? VNORMAL_TYPE(v) : VUNNORMAL_TYPE(v))
+
+/* true if V is of type T (T must be a normal type) */
+#define VNORMAL_TYPEP(v,t) (NORMALP(v) && VNORMAL_TYPE(v) == (t))
+
+/* true if V is of type T. */
+#define VTYPEP(v,t)	(VTYPE(v) == t)
 
 
-typedef struct ValClass {
+/* Information about each type */
+typedef struct {
     /* compares two values, rc is similar to strcmp() */
-    int	  (*vc_Cmp)(VALUE val1, VALUE val2);
+    int (*compare)(VALUE val1, VALUE val2);
+
     /* prints a textual representation of the object, not necessarily in 
        a read'able format */
-    void  (*vc_Princ)(VALUE stream, VALUE obj);
+    void (*princ)(VALUE stream, VALUE obj);
+
     /* prints a textual representation of the object, if possible in
        a read'able format */
-    void  (*vc_Print)(VALUE stream, VALUE obj);
-    /* this is the name of the type */
-    VALUE   vc_Name;
-} ValClass;
+    void (*print)(VALUE stream, VALUE obj);
 
-/* The following is an array of VALCLASS structs, the array index corresponds
-   to the VTF_* numbers  */
-extern ValClass ValueClasses[];
+    /* this is the name of the type */
+    char *name;
+} Lisp_Type_Data;
+
+/* An array of these things, indexed by type code */
+extern Lisp_Type_Data data_types[];
 
 /* These are also defined as functions (lower-case'd names)...  */
-#define VALUE_CMP(v1,v2) ValueClasses[VTYPE(v1)].vc_Cmp(v1,v2)
-#define PRINC_VAL(s,v)	ValueClasses[VTYPE(v)].vc_Princ(s,v)
-#define PRINT_VAL(s,v)	ValueClasses[VTYPE(v)].vc_Print(s,v)
+#define VALUE_CMP(v1,v2) data_types[VTYPE(v1)].compare(v1,v2)
+#define PRINC_VAL(s,v)	data_types[VTYPE(v)].princ(s,v)
+#define PRINT_VAL(s,v)	data_types[VTYPE(v)].print(s,v)
 
-/* ...except these which aren't.  */
-#define VALNAME(v)	(ValueClasses[VTYPE(v)].vc_Name)
-
+
+/* Strings */
 
 /* String data types. the `String' type is what a VALUE points to, if
    the string is dynamic it gets a length field in the word before the
    String struct proper.  */
 typedef struct {
-    /* str_Mem[0] is type, str_Mem[1->N] is data. */
-    u_char	    str_Mem[1];
-} String;
+    /* data[0] is type, data[1->N] is data. */
+    u_char data[1];
+} Lisp_String;
 
 typedef struct {
-    int		    ds_Length;
-    u_char	    ds_Mem[1];
-} DynamicString;
+    int length;
+    u_char data[1];		/* VALUEs point here */
+} Lisp_DynamicString;
 #define DSTR_SIZE(s) (sizeof(int) + 1 + (s))
 
-/* Get the beginning of a DynamicString from a String.  */
-#define DSTRING_HDR(s) ((DynamicString *)(((char *)(s)) - sizeof(int)))
+#define VSTRING(v)	((Lisp_String *)VPTR(v))
+#define VSTR(v)		(&VSTRING(v)->data[1])
 
-/* Make a static string from a normal C string constant, ie,
-   MKSTR("foo") -> "\0foo"  */
-#define MKSTR(s) (VAL(("\0" s)))
+#define STRINGP(v)	(NORMALP(v)					\
+			 && (VNORMAL_TYPE(v) == V_StaticString		\
+			     || VNORMAL_TYPE(v) == V_DynamicString))
+
+/* Get the beginning of a DynamicString from a String.  */
+#define DSTRING_HDR(s) ((Lisp_DynamicString *)(((char *)(s)) - sizeof(int)))
+
+/* Define a variable V, containing a static string S. This must be cast
+   to a VALUE via the VAL() macro when using. */
+#define DEFSTRING(v,s) \
+    char v [] CONCAT(ALIGN_, NORMAL_ALIGNMENT) = "\1" s
+
 
 /* Get the beginning of the String struct from a (char *)  */
-#define STRING_HDR(s) ((String *)(((char *)(s))-1))
+#define STRING_HDR(s) ((Lisp_String *)(((char *)(s))-1))
 
 /* Find the length of this String. */
-#define STRING_LEN(s) \
- (VTYPEP(s, V_DynamicString) ? (DSTRING_HDR(s)->ds_Length) : strlen(VSTR(s)))
+#define STRING_LEN(s)  ((VNORMAL_TYPE(s) == V_DynamicString)		\
+			? (DSTRING_HDR(s)->length) : strlen(VSTR(s)))
 
 /* True if this string may be written to; generally V_StaticString types
    are made from C string-constants and usually in read-only storage. */
-#define STRING_WRITEABLE_P(s) (!VTYPEP(s, V_StaticString))
+#define STRING_WRITEABLE_P(s) (VNORMAL_TYPE(s) != V_StaticString)
 
-	
-/* Number type. Generally a 32-bit signed integer.  */
-typedef struct _Number {
-    u_char	    num_Type;
-    union {
-	long		number;
-	struct _Number *next;
-    }		    num_Data;
-} Number;
+
+/* Vectors */
 
-typedef struct _NumberBlk {
-    struct _NumberBlk *nb_Next;
-    Number	    nb_Numbers[NUMBERBLK_SIZE];
-} NumberBlk;
+typedef struct lisp_vector {
+    u_char type;
+    struct lisp_vector *next ALIGN_4;
+    int size;
+    VALUE array[0];
+} Lisp_Vector;
 
+#define VECT_SIZE(s) ((sizeof(VALUE) * (s)) + sizeof(Lisp_Vector))
 
-/* Cons-cell, a pair of VALUEs, used amongst other things to construct
-   singly-linked lists (chained through the cdr, last pointer is nil).  */
-typedef struct {
-    u_char	    cn_Type;
-    VALUE	    cn_Car;
-    VALUE	    cn_Cdr;
-} Cons;
+#define VVECT(v)	((Lisp_Vector *)VPTR(v))
+#define VVECTI(v,i)	(VVECT(v)->array[(i)])
 
-typedef struct _ConsBlk {
-    struct _ConsBlk *cb_Next;
-    Cons	    cb_Cons[CONSBLK_SIZE];
-} ConsBlk;
+#define VECTORP(v)	VNORMAL_TYPEP(v, V_Vector)
 
-
-/* Vector of VALUEs.  */
-typedef struct _Vector {
-    u_char	    vc_Type;
-    struct _Vector *vc_Next;
-    int		    vc_Size;
-    VALUE	    vc_Array[0];
-} Vector;
-#define VECT_SIZE(s) ((sizeof(VALUE) * (s)) + sizeof(Vector))
-
+
+/* Symbols */
 
 /* Symbol object, each symbol has 4 basic attributes, a name, its value
    as a variable, its value as a function and a property-list.
    Symbols are generally stored in hash tables (obarray) with collisions
    chained from the `sym_Next' field.  */
-typedef struct _Symbol {
-    u_char	sym_Type;
-    u_char	sym_Flags;
-    VALUE	sym_Next;	/* next symbol in obarray bucket */
-    VALUE	sym_Name;
-    VALUE	sym_Value;
-    VALUE	sym_Function;
-    VALUE	sym_PropList;
-} Symbol;
+typedef struct {
+    u_char type;
+    u_char flags;
+    VALUE next ALIGN_4;			/* next symbol in obarray bucket */
+    VALUE name;
+    VALUE value;
+    VALUE function;
+    VALUE prop_list;
+} Lisp_Symbol;
 
+/* This bit set in flags means that the value is a constant, and therefore
+   can't be modified. */
 #define SF_CONSTANT	1
+
 /* Means that the symbol's value may be in the buffer-local storage, if so
    then that occurrence takes precedence. */
 #define SF_BUFFER_LOCAL 2
+
 /* This means that setting the value of the symbol always sets the
    buffer-local value, even if one doesn't already exist.  */
 #define SF_SET_BUFFER_LOCAL 4
-#define SF_DEBUG	8	/* Break on next lisp form. */
 
-typedef struct _SymbolBlk {
-    struct _SymbolBlk *sb_Next;
-    Symbol	   sb_Symbols[SYMBOLBLK_SIZE];
-} SymbolBlk;
+/* When a function is evaluated whose symbol has this bit set, the
+   next evaluated form will invoke the Lisp debugger. */
+#define SF_DEBUG	8
 
+/* Symbol allocation blocks */
+typedef struct lisp_symbol_block {
+    struct lisp_symbol_block *next;
+    Lisp_Symbol symbols[SYMBOLBLK_SIZE] CONCAT(ALIGN_, NORMAL_ALIGNMENT);
+} Lisp_Symbol_Block;
+
+#define VSYM(v)		((Lisp_Symbol *)VPTR(v))
+#define SYMBOLP(v)	VNORMAL_TYPEP(v, V_Symbol)
+
+#define NILP(v)		((v) == sym_nil)
+#define LISTP(v)	(NILP(v) || CONSP(v))
+
+
+/* Positions */
 
 /* A pointer to a buffer position. There's a conventions that positions
    accessed via VALUE pointers (and VCOL, VROW macros) are _read_only_,
    while those accessed through Pos * pointers (and PCOL, PROW macros)
    are _read_write_, probably allocated on the stack. */
-typedef union _Pos {
+typedef union pos {
     struct {
-	u_char		type, pad1, pad2, pad3;
-	long		col, row;
-    }		    p_Data;
-    union _Pos	   *p_Next;
+	u_char type;
+	long col ALIGN_4;
+	long row;
+    }		    data;
+    union pos	   *next;
 } Pos;
 
-typedef struct _PosBlk {
-    struct _PosBlk *pb_Next;
-    Pos		    pb_Pos[POSBLK_SIZE];
-} PosBlk;
+typedef struct pos_block {
+    struct pos_block *next;
+    Pos pos[POSBLK_SIZE] CONCAT(ALIGN_, NORMAL_ALIGNMENT);
+} Pos_Block;
 
-#define PCOL(p) ((p)->p_Data.col)
-#define PROW(p) ((p)->p_Data.row)
+#define PCOL(p) ((p)->data.col)
+#define PROW(p) ((p)->data.row)
 
 /* These all want VALUE pointers */
+#define VPOS(v)		((Pos *)VPTR(v))
+#define VCOL(v)		(PCOL(VPOS(v)))
+#define VROW(v)		(PROW(VPOS(v)))
+#define POSP(v)		VNORMAL_TYPEP(v, V_Pos)
+
 #define POS_EQUAL_P(s,e) \
     ((VROW(s) == VROW(e)) && (VCOL(s) == VCOL(e)))
 #define POS_GREATER_P(s,e) \
@@ -292,126 +379,247 @@ typedef struct _PosBlk {
 #define POS_LESS_EQUAL_P(s,e) \
     ((VROW(s) < VROW(e)) || ((VROW(s) == VROW(e)) && (VCOL(s) <= VCOL(e))))
 
+
+/* Files */
 
 /* A file object.  */
-typedef struct _LFile {
-    u_char	    lf_Type;
-    u_char	    lf_Flags;
-    struct _LFile  *lf_Next;
-    VALUE	    lf_Name;
-    FILE	   *lf_File;
-} LFile;
+typedef struct lisp_file {
+    u_char type;
+    u_char flags;
+    struct lisp_file *next ALIGN_4;
+    VALUE name;
+    FILE *file;
+} Lisp_File;
+
+/* When this bit is set in flags, the file handle is never fclose()'d,
+   i.e. this file points to something like stdin. */
 #define LFF_DONT_CLOSE 1
 
+#define VFILE(v)	((Lisp_File *)VPTR(v))
+#define FILEP(v)	VNORMAL_TYPEP(v, V_File)
+
+
+/* Built-in subroutines */
 
 /* C subroutine, can take from zero to five arguments.  */
 typedef struct {
-    u_char	    subr_Type;
+    u_char type;
     union {
-	VALUE	      (*fun0)(void);
-	VALUE	      (*fun1)(VALUE);
-	VALUE	      (*fun2)(VALUE, VALUE);
-	VALUE	      (*fun3)(VALUE, VALUE, VALUE);
-	VALUE	      (*fun4)(VALUE, VALUE, VALUE, VALUE);
-	VALUE	      (*fun5)(VALUE, VALUE, VALUE, VALUE, VALUE);
-    }		    subr_Fun;
-    VALUE	    subr_Name;
-    int		    subr_DocIndex;
-    VALUE	    subr_IntSpec;
-} Subr;
+	VALUE (*fun0)(void);
+	VALUE (*fun1)(VALUE);
+	VALUE (*fun2)(VALUE, VALUE);
+	VALUE (*fun3)(VALUE, VALUE, VALUE);
+	VALUE (*fun4)(VALUE, VALUE, VALUE, VALUE);
+	VALUE (*fun5)(VALUE, VALUE, VALUE, VALUE, VALUE);
+    } fun ALIGN_4;
+    VALUE name;
+    int doc_index;
+    VALUE int_spec;
+} Lisp_Subr;
 
 typedef struct {
-    u_char	    subr_Type;
-    void	   *subr_Fun;
-    VALUE	    subr_Name;
-    int		    subr_DocIndex;
-    VALUE	    subr_IntSpec;
-} XSubr;
+    u_char type;
+    void *fun ALIGN_4;
+    VALUE name;
+    int doc_index;
+    VALUE int_spec;
+} Lisp_XSubr;
 
+#define VXSUBR(v)	((Lisp_XSubr *)VPTR(v))
+#define VSUBR(v)	((Lisp_Subr *)VPTR(v))
+#define VSUBR0FUN(v)	(VSUBR(v)->fun.fun0)
+#define VSUBR1FUN(v)	(VSUBR(v)->fun.fun1)
+#define VSUBR2FUN(v)	(VSUBR(v)->fun.fun2)
+#define VSUBR3FUN(v)	(VSUBR(v)->fun.fun3)
+#define VSUBR4FUN(v)	(VSUBR(v)->fun.fun4)
+#define VSUBR5FUN(v)	(VSUBR(v)->fun.fun5)
+#define VSUBRNFUN(v)	(VSUBR(v)->fun.fun1)
+#define VSFFUN(v)	(VSUBR(v)->fun.fun1)
+#define VVARFUN(v)	(VSUBR(v)->fun.fun1)
 
+
+/* Other definitions */
+
+/* Macros for other types */
+#define VMARK(v)	((Mark *)VPTR(v))
+#define VTX(v)		((TX *)VPTR(v))
+#define VBUFFER(v)	VTX(v)
+#define VPROC(v)	((struct Proc *)VPTR(v))
+#define VWIN(v)		((WIN *)VPTR(v))
+#define VVIEW(v)	((VW *)VPTR(v))
+#define VGLYPHTAB(v)	((GlyphTable *)VPTR(v))
+	
+#define BUFFERP(v)	VNORMAL_TYPEP(v, V_Buffer)
+#define MARKP(v)	VNORMAL_TYPEP(v, V_Mark)
+#define PROCESSP(v)	VNORMAL_TYPEP(v, V_Process)
+#define WINDOWP(v)	(VNORMAL_TYPEP(v, V_Window) && VWIN(v)->w_Window)
+#define VIEWP(v)	(VNORMAL_TYPEP(v, V_View) && VVIEW(v)->vw_Win)
+#define GLYPHTABP(v)	VNORMAL_TYPEP(v, V_GlyphTable)
+#define VOIDP(v)	VNORMAL_TYPEP(v, V_Void)
+
+/* Building lists */
 #define LIST_1(v1)	       cmd_cons(v1, sym_nil)
 #define LIST_2(v1,v2)	       cmd_cons(v1, LIST_1(v2))
 #define LIST_3(v1,v2,v3)       cmd_cons(v1, LIST_2(v2, v3))
 #define LIST_4(v1,v2,v3,v4)    cmd_cons(v1, LIST_3(v2, v3, v4))
 #define LIST_5(v1,v2,v3,v4,v5) cmd_cons(v1, LIST_4(v2, v3, v4, v5))
 
+
+/* Garbage collection definitions */
+
+#define GC_NORMAL_MARKEDP(v)	(VNORMAL_TYPE(v) & GC_NORMAL_MARK_BIT)
+#define GC_SET_NORMAL(v)	(VNORMAL_TYPE(v) |= GC_NORMAL_MARK_BIT)
+#define GC_CLR_NORMAL(v)	(VNORMAL_TYPE(v) &= ~GC_NORMAL_MARK_BIT)
+
+#define GC_CONS_MARKEDP(v)	(VCAR(v) & GC_CONS_MARK_BIT)
+#define GC_SET_CONS(v)		(VCAR(v) |= GC_CONS_MARK_BIT)
+#define GC_CLR_CONS(v)		(VCAR(v) &= ~GC_CONS_MARK_BIT)
+
+/* True when value V has been marked. */
+#define GC_MARKEDP(v)						\
+    (NORMALP(v)							\
+     ? VNORMAL_TYPE(v) & GC_NORMAL_MARK_BIT			\
+     : (CONSP(v) ? VCAR(v) & GC_CONS_MARK_BIT : TRUE))
+
+/* Set the mark bit of object V. */
+#define GC_SET(v)		\
+    do {			\
+	if(NORMALP(v))		\
+	    GC_SET_NORMAL(v);	\
+	else if CONSP(v)	\
+	    GC_SET_CONS(v);	\
+    } while(0)
+
+/* Clear the mark bit of object V. */
+#define GC_CLR(v)		\
+    do {			\
+	if(NORMALP(v))		\
+	    GC_CLR_NORMAL(v);	\
+	else if(CONSP(v)	\
+	    GC_CLR_CONS(v);	\
+    } while(0)
+
+/* Recursively mark object V. */
+#define MARKVAL(v)					\
+    do {						\
+	register VALUE tem = GCREF(v);			\
+	if(tem != 0 && !GC_MARKEDP(tem) && !INTP(tem))	\
+	    mark_value(tem);				\
+    } while(0)
+
+/* A stack of dynamic GC roots, i.e. objects to start marking from.  */
+typedef struct gc_root {
+    VALUE *ptr;
+    struct gc_root *next;
+} GC_root;
+
+typedef struct gc_n_roots {
+    VALUE *first;
+    int count;
+    struct gc_n_roots *next;
+} GC_n_roots;
+
+#define POPGC (gc_root_stack = gc_root_stack->next)
+#define PUSHGC(root, val)			\
+    do {					\
+	(root).ptr = &(val);			\
+	(root).next = gc_root_stack;		\
+	gc_root_stack = &(root);		\
+    } while(0)
+
+#define POPGCN (gc_n_roots_stack = gc_n_roots_stack->next)
+#define PUSHGCN(root, ptr, n)			\
+    do {					\
+	(root).first = (ptr);			\
+	(root).count = (n);			\
+	(root).next = gc_n_roots_stack;		\
+	gc_n_roots_stack = &(root);		\
+    } while(0)
+
+
+/* More other stuff */
 
 /* Keeps a backtrace of all lisp functions called. NOT primitives. */
-struct LispCall {
-    struct LispCall *lc_Next;
-    VALUE	    lc_Fun;
-    VALUE	    lc_Args;
-    /* t if `lc_Args' is list of *evalled* arguments.  */
-    VALUE           lc_ArgsEvalledP;
+struct Lisp_Call {
+    struct Lisp_Call *next;
+    VALUE fun;
+    VALUE args;
+    /* t if `args' is list of *evalled* arguments.  */
+    VALUE args_evalled_p;
 };
 
+
+/* Macros for declaring functions */
 
-/* A stack of these providing additional entry points for the mark phase of
-   garbage collection.  */
-typedef struct _GCVAL {
-    VALUE	   *gcv_Value;
-    struct _GCVAL  *gcv_Next;
-} GCVAL;
-
-typedef struct _GCVALN {
-    VALUE	   *gcv_First;
-    int		    gcv_N;
-    struct _GCVALN *gcv_Next;
-} GCVALN;
-
-#define POPGC (gcv_stack = gcv_stack->gcv_Next)
-#define PUSHGC(gcv, val)			\
-    do {					\
-	(gcv).gcv_Value = &(val);		\
-	(gcv).gcv_Next = gcv_stack;		\
-	gcv_stack = &(gcv);			\
-    } while(0)
-
-#define POPGCN (gcvn_stack = gcvn_stack->gcv_Next)
-#define PUSHGCN(gcv, valp, n)			\
-    do {					\
-	(gcv).gcv_First = (valp);		\
-	(gcv).gcv_N = (n);			\
-	(gcv).gcv_Next = gcvn_stack;		\
-	gcvn_stack = &(gcv);			\
-    } while(0)
-
-
-/* Macros for defining functions and their SUBR structures. */
+/* Define a function named NAME (a string), whose function body will
+   be called FSYM, whose Lisp_Subr will be called SSYM, with argument
+   list ARGS, of type code TYPE, whose doc-string is at index DOCINDEX
+   in the documentation file. */
 #define DEFUN(name,fsym,ssym,args,type,docindex)		\
-    XSubr ssym = { type, fsym, MKSTR(name), docindex, NULL };	\
+    static DEFSTRING(CONCAT(ssym, __name), name);		\
+    Lisp_XSubr ALIGN_4 ssym = { type, fsym, LISP_NULL,		\
+				docindex, LISP_NULL };		\
     VALUE fsym args
 
 /* Same as above but with an extra arg -- an interactive-spec string. */
-#define DEFUN_INT(name,fsym,ssym,args,type,docindex,interactive)	    \
-    XSubr ssym = { type, fsym, MKSTR(name), docindex, MKSTR(interactive) }; \
+#define DEFUN_INT(name,fsym,ssym,args,type,docindex,interactive)	\
+    static DEFSTRING(CONCAT(ssym, __name), name);			\
+    static DEFSTRING(CONCAT(ssym, __int), interactive);			\
+    Lisp_XSubr ALIGN_4 ssym = { type, fsym, LISP_NULL,			\
+				docindex, LISP_NULL };			\
     VALUE fsym args
-    
-#define ADD_SUBR(subr) add_subr(&subr)
-#define ADD_CONST_NUM(name,num) add_const_num(MKSTR(name), num)
-#define INTERN(sym,name) intern_static(&sym, MKSTR(name))
-#define DOC_VAR(sym,docIndex) \
-    cmd_put(sym, sym_variable_documentation, make_number(docIndex))
 
+/* Add a subroutine */    
+#define ADD_SUBR(subr) 				\
+    do {					\
+	subr.name = VAL(CONCAT(subr, __name));	\
+	add_subr(&subr);			\
+    } while (0)
 
-/* Macros for ensuring an object is of a certain type
-   ie, to ensure first arg `foo' is a string,
-     DECLARE1(foo, STRINGP);  */
+/* Add an interactive subroutine */    
+#define ADD_SUBR_INT(subr)				\
+    do {						\
+	subr.name = VAL(CONCAT(subr, __name));		\
+	subr.int_spec = VAL(CONCAT(subr, __int));	\
+	add_subr(&subr);				\
+    } while (0)
 
-#define DECLARE(n,x,t) \
-    do { \
-	if(! t(x)) \
-	{ \
-	    signal_arg_error(x, n); \
-	    return(NULL); \
-	} \
+/* Declare a symbol stored in variable sym_X. */
+#define DEFSYM(x, name) \
+    VALUE CONCAT(sym_, x); static DEFSTRING(CONCAT(str_, x), name)
+
+/* Intern a symbol stored in sym_X, whose name (a lisp string) is stored
+   in str_X (i.e. declared with DEFSYM) */
+#define INTERN(x) intern_static(&CONCAT(sym_, x), VAL(CONCAT(str_, x)))
+
+/* Add an error string called err_X for symbol stored in sym_X */
+#define ERROR(x) \
+    cmd_put(CONCAT(sym_, x), sym_error_message, VAL(CONCAT(err_, x)))
+
+/* Add a documentation string for the variable stored in sym_X, pointing at
+   index DOC_X */
+#define DOC(x)	 						\
+    cmd_put(CONCAT(sym_, x), sym_variable_documentation,	\
+	    MAKE_INT(CONCAT(DOC_, x)))
+
+
+/* Macros for ensuring an object is of a certain type i.e. to ensure
+   first arg `foo' is a string, DECLARE1(foo, STRINGP);  */
+
+#define DECLARE(n,x,t) 			\
+    do { 				\
+	if(! t(x)) 			\
+	{ 				\
+	    signal_arg_error(x, n); 	\
+	    return LISP_NULL; 		\
+	} 				\
     } while(0)
 
-#define DECLARE1(x,t)	    DECLARE(1,x,t)
-#define DECLARE2(x,t)	    DECLARE(2,x,t)
-#define DECLARE3(x,t)	    DECLARE(3,x,t)
-#define DECLARE4(x,t)	    DECLARE(4,x,t)
-#define DECLARE5(x,t)	    DECLARE(5,x,t)
+#define DECLARE1(x,t) DECLARE(1,x,t)
+#define DECLARE2(x,t) DECLARE(2,x,t)
+#define DECLARE3(x,t) DECLARE(3,x,t)
+#define DECLARE4(x,t) DECLARE(4,x,t)
+#define DECLARE5(x,t) DECLARE(5,x,t)
 
 #define ARG1	(find_member_by_index(args, 1))
 #define ARG2	(find_member_by_index(args, 2))
@@ -419,13 +627,17 @@ typedef struct _GCVALN {
 #define ARG4	(find_member_by_index(args, 4))
 #define ARG(n)	(find_member_by_index(args, n))
 
-
+
 /* Macros for interrupt handling */
 
+/* This macro is called before testing INT_P, if necessary the target
+   operating system header files will define it to be something useful. */
 #ifndef TEST_INT
 # define TEST_INT do { ; } while(0)
 #endif
 
-#define INT_P (throw_value != NULL)
+/* True when an interrupt has occurred; this means that the function
+   should exit as soon as possible, returning LISP_NULL. */
+#define INT_P (throw_value != LISP_NULL)
 
 #endif /* _LISP_H */
