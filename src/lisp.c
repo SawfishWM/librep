@@ -1852,7 +1852,7 @@ rep_call_lisp4(repv function, repv arg1, repv arg2, repv arg3, repv arg4)
     vec[0] = arg1;
     vec[1] = arg2;
     vec[2] = arg3;
-    vec[4] = arg4;
+    vec[3] = arg4;
     return rep_call_lispn (function, 4, vec);
 }
 
