@@ -19,7 +19,7 @@ static char rcsid[] = "$Id$";
 #include <memory.h>
 #endif
 
-#define exhash(item)	dbm_hash((item).dptr, (item).dsize)
+#define exhash(item)	sdbm_hash((item).dptr, (item).dsize)
 
 /* 
  * forward 

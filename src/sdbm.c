@@ -46,18 +46,18 @@ extern int errno;
 /*
  * forward
  */
-static int getdbit (DBM *, long);
-static int setdbit (DBM *, long);
-static int getpage (DBM *, long);
-static datum getnext (DBM *);
-static int makroom (DBM *, long, int);
+static int getdbit (SDBM *, long);
+static int setdbit (SDBM *, long);
+static int getpage (SDBM *, long);
+static datum getnext (SDBM *);
+static int makroom (SDBM *, long, int);
 
 /*
  * useful macros
  */
 #define bad(x)		((x).dptr == NULL || (x).dsize <= 0)
-#define exhash(item)	dbm_hash((item).dptr, (item).dsize)
-#define ioerr(db)	((db)->flags |= DBM_IOERR)
+#define exhash(item)	sdbm_hash((item).dptr, (item).dsize)
+#define ioerr(db)	((db)->flags |= SDBM_IOERR)
 
 #define OFF_PAG(off)	(long) (off) * PBLKSIZ
 #define OFF_DIR(off)	(long) (off) * DBLKSIZ
@@ -75,26 +75,26 @@ static long masks[] = {
 
 datum nullitem = {NULL, 0};
 
-DBM *
-dbm_open(file, flags, mode)
+SDBM *
+sdbm_open(file, flags, mode)
 register char *file;
 register int flags;
 register int mode;
 {
-	register DBM *db;
+	register SDBM *db;
 	register char *dirname;
 	register char *pagname;
 	register int n;
 
 	if (file == NULL || !*file)
-		return errno = EINVAL, (DBM *) NULL;
+		return errno = EINVAL, (SDBM *) NULL;
 /*
  * need space for two seperate filenames
  */
 	n = strlen(file) * 2 + strlen(DIRFEXT) + strlen(PAGFEXT) + 2;
 
 	if ((dirname = malloc((unsigned) n)) == NULL)
-		return errno = ENOMEM, (DBM *) NULL;
+		return errno = ENOMEM, (SDBM *) NULL;
 /*
  * build the file names
  */
@@ -102,23 +102,23 @@ register int mode;
 	pagname = strcpy(dirname + strlen(dirname) + 1, file);
 	pagname = strcat(pagname, PAGFEXT);
 
-	db = dbm_prep(dirname, pagname, flags, mode);
+	db = sdbm_prep(dirname, pagname, flags, mode);
 	free((char *) dirname);
 	return db;
 }
 
-DBM *
-dbm_prep(dirname, pagname, flags, mode)
+SDBM *
+sdbm_prep(dirname, pagname, flags, mode)
 char *dirname;
 char *pagname;
 int flags;
 int mode;
 {
-	register DBM *db;
+	register SDBM *db;
 	struct stat dstat;
 
-	if ((db = (DBM *) malloc(sizeof(DBM))) == NULL)
-		return errno = ENOMEM, (DBM *) NULL;
+	if ((db = (SDBM *) malloc(sizeof(SDBM))) == NULL)
+		return errno = ENOMEM, (SDBM *) NULL;
 
         db->flags = 0;
         db->hmask = 0;
@@ -133,7 +133,7 @@ int mode;
 		flags = (flags & ~O_WRONLY) | O_RDWR;
 
 	else if ((flags & 03) == O_RDONLY)
-		db->flags = DBM_RDONLY;
+		db->flags = SDBM_RDONLY;
 /*
  * open the files in sequence, and stat the dirfile.
  * If we fail anywhere, undo everything, return NULL.
@@ -164,12 +164,12 @@ int mode;
 		(void) close(db->pagf);
 	}
 	free((char *) db);
-	return (DBM *) NULL;
+	return (SDBM *) NULL;
 }
 
 void
-dbm_close(db)
-register DBM *db;
+sdbm_close(db)
+register SDBM *db;
 {
 	if (db == NULL)
 		errno = EINVAL;
@@ -181,8 +181,8 @@ register DBM *db;
 }
 
 datum
-dbm_fetch(db, key)
-register DBM *db;
+sdbm_fetch(db, key)
+register SDBM *db;
 datum key;
 {
 	if (db == NULL || bad(key))
@@ -195,13 +195,13 @@ datum key;
 }
 
 int
-dbm_delete(db, key)
-register DBM *db;
+sdbm_delete(db, key)
+register SDBM *db;
 datum key;
 {
 	if (db == NULL || bad(key))
 		return errno = EINVAL, -1;
-	if (dbm_rdonly(db))
+	if (sdbm_rdonly(db))
 		return errno = EPERM, -1;
 
 	if (getpage(db, exhash(key))) {
@@ -221,8 +221,8 @@ datum key;
 }
 
 int
-dbm_store(db, key, val, flags)
-register DBM *db;
+sdbm_store(db, key, val, flags)
+register SDBM *db;
 datum key;
 datum val;
 int flags;
@@ -232,7 +232,7 @@ int flags;
 
 	if (db == NULL || bad(key))
 		return errno = EINVAL, -1;
-	if (dbm_rdonly(db))
+	if (sdbm_rdonly(db))
 		return errno = EPERM, -1;
 
 	need = key.dsize + val.dsize;
@@ -247,7 +247,7 @@ int flags;
  * if we need to replace, delete the key/data pair
  * first. If it is not there, ignore.
  */
-		if (flags == DBM_REPLACE)
+		if (flags == SDBM_REPLACE)
 			(void) sdbm_delpair(db->pagbuf, key);
 #ifdef SEEDUPS
 		else if (sdbm_duppair(db->pagbuf, key))
@@ -284,7 +284,7 @@ int flags;
  */
 static int
 makroom(db, hash, need)
-register DBM *db;
+register SDBM *db;
 long hash;
 int need;
 {
@@ -361,8 +361,8 @@ int need;
  * deletions aren't taken into account. (ndbm bug)
  */
 datum
-dbm_firstkey(db)
-register DBM *db;
+sdbm_firstkey(db)
+register SDBM *db;
 {
 	if (db == NULL)
 		return errno = EINVAL, nullitem;
@@ -380,8 +380,8 @@ register DBM *db;
 }
 
 datum
-dbm_nextkey(db)
-register DBM *db;
+sdbm_nextkey(db)
+register SDBM *db;
 {
 	if (db == NULL)
 		return errno = EINVAL, nullitem;
@@ -393,7 +393,7 @@ register DBM *db;
  */
 static int
 getpage(db, hash)
-register DBM *db;
+register SDBM *db;
 register long hash;
 {
 	register int hbit;
@@ -434,7 +434,7 @@ register long hash;
 
 static int
 getdbit(db, dbit)
-register DBM *db;
+register SDBM *db;
 register long dbit;
 {
 	register long c;
@@ -457,7 +457,7 @@ register long dbit;
 
 static int
 setdbit(db, dbit)
-register DBM *db;
+register SDBM *db;
 register long dbit;
 {
 	register long c;
@@ -493,7 +493,7 @@ register long dbit;
  */
 static datum
 getnext(db)
-register DBM *db;
+register SDBM *db;
 {
 	datum key;
 

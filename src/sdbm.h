@@ -26,21 +26,21 @@ typedef struct {
 	char pagbuf[PBLKSIZ];	       /* page file block buffer */
 	long dirbno;		       /* current block in dirbuf */
 	char dirbuf[DBLKSIZ];	       /* directory file block buffer */
-} DBM;
+} SDBM;
 
-#define DBM_RDONLY	0x1	       /* data base open read-only */
-#define DBM_IOERR	0x2	       /* data base I/O error */
+#define SDBM_RDONLY	0x1	       /* data base open read-only */
+#define SDBM_IOERR	0x2	       /* data base I/O error */
 
 /*
  * utility macros
  */
-#define dbm_rdonly(db)		((db)->flags & DBM_RDONLY)
-#define dbm_error(db)		((db)->flags & DBM_IOERR)
+#define sdbm_rdonly(db)		((db)->flags & SDBM_RDONLY)
+#define sdbm_error(db)		((db)->flags & SDBM_IOERR)
 
-#define dbm_clearerr(db)	((db)->flags &= ~DBM_IOERR)  /* ouch */
+#define sdbm_clearerr(db)	((db)->flags &= ~SDBM_IOERR)  /* ouch */
 
-#define dbm_dirfno(db)	((db)->dirf)
-#define dbm_pagfno(db)	((db)->pagf)
+#define sdbm_dirfno(db)	((db)->dirf)
+#define sdbm_pagfno(db)	((db)->pagf)
 
 typedef struct {
 	char *dptr;
@@ -50,24 +50,24 @@ typedef struct {
 extern datum nullitem;
 
 /*
- * flags to dbm_store
+ * flags to sdbm_store
  */
-#define DBM_INSERT	0
-#define DBM_REPLACE	1
+#define SDBM_INSERT	0
+#define SDBM_REPLACE	1
 
 /*
  * ndbm interface
  */
-extern DBM *dbm_open (char *, int, int);
-extern void dbm_close (DBM *);
-extern datum dbm_fetch (DBM *, datum);
-extern int dbm_delete (DBM *, datum);
-extern int dbm_store (DBM *, datum, datum, int);
-extern datum dbm_firstkey (DBM *);
-extern datum dbm_nextkey (DBM *);
+extern SDBM *sdbm_open (char *, int, int);
+extern void sdbm_close (SDBM *);
+extern datum sdbm_fetch (SDBM *, datum);
+extern int sdbm_delete (SDBM *, datum);
+extern int sdbm_store (SDBM *, datum, datum, int);
+extern datum sdbm_firstkey (SDBM *);
+extern datum sdbm_nextkey (SDBM *);
 
 /*
  * other
  */
-extern DBM *dbm_prep (char *, char *, int, int);
-extern long dbm_hash (char *, int);
+extern SDBM *sdbm_prep (char *, char *, int, int);
+extern long sdbm_hash (char *, int);
