@@ -10,8 +10,6 @@ and more long-term ideas are marked -
 Outstanding bugs
 ================
 
- ! define expands (function foo) even if function has been rebound
-
  ! uses setlocale("LC_NUMERIC", "C") to make floating point I/O work,
    need to reimplement this locally
 

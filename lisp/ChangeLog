@@ -1,3 +1,8 @@
+2000-09-29  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep/lang/define.jl: track bound variables, then don't expand
+	calls to these special forms or macros
+
 2000-09-28  John Harper  <john@dcs.warwick.ac.uk>
 
 	* version 0.13.1
