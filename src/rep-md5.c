@@ -34,6 +34,11 @@ digest_to_repv (u_char digest[16])
     u_char hex_digest[32];
     int i;
 
+    /* Currently rep has no interface to create bignums directly,
+       so format to a hex-encoded string, then reparse it.
+
+       XXX This loses if rep was compiled without GMP support.. */
+
     for (i = 0; i < 16; i++)
     {
 	hex_digest[i*2] = hex_digits[digest[i] & 15];
@@ -43,7 +48,14 @@ digest_to_repv (u_char digest[16])
     return rep_parse_number (hex_digest, 32, 16, 1, 0);
 }
 
-DEFUN ("md5-string", Fmd5_string, Smd5_string, (repv data), rep_Subr1)
+DEFUN ("md5-string", Fmd5_string, Smd5_string, (repv data), rep_Subr1) /*
+::doc:rep.util.md5#md5-string::
+md5-string STRING
+
+Return the integer representing the MD5 message digest of the bytes
+stored in STRING. This integer will have no more than 128 significant
+bits.
+::end:: */
 {
     u_char digest[16];
 
@@ -55,7 +67,15 @@ DEFUN ("md5-string", Fmd5_string, Smd5_string, (repv data), rep_Subr1)
 }
 
 DEFUN ("md5-local-file", Fmd5_local_file,
-       Smd5_local_file, (repv file), rep_Subr1)
+       Smd5_local_file, (repv file), rep_Subr1) /*
+::doc:rep.util.md5#md5-local-file::
+md5-local-file LOCAL-FILE-NAME
+
+Return the integer representing the MD5 message digest of the bytes
+stored in the file called LOCAL-FILE-NAME (which must name a file in
+the local filing system). The returned integer will have no more than
+128 significant bits.
+::end:: */
 {
     FILE *fh;
     u_char digest[16];

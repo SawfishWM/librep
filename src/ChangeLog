@@ -1,3 +1,7 @@
+2001-06-15  John Harper  <jsh@pixelslut.com>
+
+	* rep-md5.c: added some comments and doc strings
+
 2001-06-14  John Harper  <jsh@pixelslut.com>
 
 	* numbers.c (rep_parse_number): don't call mpz_init_set_str ()
