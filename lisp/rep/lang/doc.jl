@@ -58,6 +58,8 @@
 	      ((special-form-p fval)
 	       "Special Form")
 	      ((macrop fval)
+	       ;; macros are stored as `(macro . FUNCTION)'
+	       (setq fval (cdr fval))
 	       "Macro")
 	      ((subrp fval)
 	       "Built-in Function")
@@ -69,26 +71,26 @@
     (when (or (bytecodep fval)
 	      (and (consp fval) (assq 'jade-byte-code fval)))
       (setq type (concat "Compiled " type)))
-    (format standard-output "\n%s: %s\n\n" type fun)
-    (when (boundp fun)
-      (when (or (consp fval) (bytecodep fval))
-	;; A Lisp function or macro, print its argument spec.
-	(let
-	    ((lambda-list (if (consp fval)
-			      (nth (if (eq (car fval) 'macro) 2 1) fval)
-			    (aref fval 0))))
-	  (prin1 fun)
-	  ;; Print the arg list (one at a time)
-	  (while lambda-list
-	    (let
-		((arg-name (symbol-name (car lambda-list))))
-	      ;; Unless the argument starts with a `&' print it in capitals
-	      (unless (= (aref arg-name 0) ?&)
-		(setq arg-name (translate-string (copy-sequence arg-name)
-						 upcase-table)))
-	      (format standard-output " %s" arg-name))
-	    (setq lambda-list (cdr lambda-list)))
-	  (format standard-output "\n\n"))))))
+    (format standard-output "\n%s: \(%s" type fun)
+    (when (or (consp fval) (bytecodep fval))
+      ;; A Lisp function or macro, print its argument spec.
+      (let
+	  ((lambda-list (if (consp fval)
+			    (nth (if (eq (car fval) 'macro) 2 1) fval)
+			  (aref fval 0))))
+	;; Print the arg list (one at a time)
+	(while (consp lambda-list)
+	  (let
+	      ((arg-name (symbol-name (car lambda-list))))
+	    ;; Unless the argument starts with a `&' print it in capitals
+	    (unless (= (aref arg-name 0) ?&)
+	      (setq arg-name (string-upcase arg-name)))
+	    (format standard-output " %s" arg-name))
+	  (setq lambda-list (cdr lambda-list)))
+	(when (and lambda-list (symbolp lambda-list))
+	  (format standard-output " . %s" (string-upcase
+					   (symbol-name lambda-list))))))
+    (format standard-output "\)\n\n")))
   
 ;;;###autoload
 (defun describe-function (fun)
@@ -158,5 +160,6 @@
   (require 'gdbm)
   (let
       ((dbm (gdbm-open documentation-file 'append)))
-    (gdbm-store dbm (symbol-name symbol) string 'replace)
-    (gdbm-close dbm)))
+    (unwind-protect
+	(gdbm-store dbm (symbol-name symbol) string 'replace)
+      (gdbm-close dbm))))
