@@ -39,10 +39,12 @@ _PR VALUE make_string(int);
 _PR VALUE string_dupn(const u_char *, int);
 _PR VALUE string_dup(const u_char *);
 _PR int string_cmp(VALUE, VALUE);
+static void string_sweep(void);
 _PR bool set_string_len(VALUE, long);
 _PR int number_cmp(VALUE, VALUE);
 _PR int ptr_cmp(VALUE, VALUE);
 _PR void cons_free(VALUE);
+static void cons_sweep(void);
 _PR int cons_cmp(VALUE, VALUE);
 _PR VALUE list_1(VALUE);
 _PR VALUE list_2(VALUE, VALUE);
@@ -50,10 +52,9 @@ _PR VALUE list_3(VALUE, VALUE, VALUE);
 _PR VALUE list_4(VALUE, VALUE, VALUE, VALUE);
 _PR VALUE list_5(VALUE, VALUE, VALUE, VALUE, VALUE);
 _PR VALUE make_vector(int);
-_PR VALUE make_pos(long, long);
-_PR int pos_cmp(VALUE, VALUE);
-_PR void pos_prin(VALUE, VALUE);
+static void vector_sweep(void);
 _PR int vector_cmp(VALUE, VALUE);
+_PR VALUE make_pos(long, long);
 
 _PR void mark_static(VALUE *);
 _PR void mark_value(VALUE);
@@ -62,34 +63,31 @@ _PR void values_init (void);
 _PR void values_init2(void);
 _PR void values_kill (void);
 
-Lisp_Type_Data data_types[] = {
-    { cons_cmp, lisp_prin, lisp_prin, "cons" },
-    { string_cmp, string_princ, string_print, "string" },
-    { string_cmp, string_princ, string_print, "string" },
-    { vector_cmp, lisp_prin, lisp_prin, "vector" },
-    { number_cmp, lisp_prin, lisp_prin, "number" },
-    { symbol_cmp, symbol_princ, symbol_print, "symbol" },
-    { nil_cmp, lisp_prin, lisp_prin, "void" },
-    { ptr_cmp, lisp_prin, lisp_prin, "var" },
-    { ptr_cmp, lisp_prin, lisp_prin, "subr-0" },
-    { ptr_cmp, lisp_prin, lisp_prin, "subr-1" },
-    { ptr_cmp, lisp_prin, lisp_prin, "subr-2" },
-    { ptr_cmp, lisp_prin, lisp_prin, "subr-3" },
-    { ptr_cmp, lisp_prin, lisp_prin, "subr-4" },
-    { ptr_cmp, lisp_prin, lisp_prin, "subr-5" },
-    { ptr_cmp, lisp_prin, lisp_prin, "subr-n" },
-    { ptr_cmp, lisp_prin, lisp_prin, "special-form" },
-    { ptr_cmp, buffer_prin, buffer_prin, "buffer" },
-    { ptr_cmp, window_prin, window_prin, "window" },
-    { ptr_cmp, view_prin, view_prin, "view" },
-    { mark_cmp, mark_prin, mark_prin, "mark" },
-    { file_cmp, file_prin, file_prin, "file" },
-#ifdef HAVE_SUBPROCESSES
-    { ptr_cmp, proc_prin, proc_prin, "process" },
-#else
-    { nil_cmp, lisp_prin, lisp_prin, "process" },
-#endif
-    { ptr_cmp, glyphtable_prin, glyphtable_prin, "glyph-table" },
+Lisp_Type_Data data_types[V_MAX] = {
+    { cons_cmp, lisp_prin, lisp_prin, cons_sweep, "cons" },
+    { string_cmp, string_princ, string_print, NULL, "string" },
+    { string_cmp, string_princ, string_print, string_sweep, "string" },
+    { vector_cmp, lisp_prin, lisp_prin, vector_sweep, "vector" },
+    { number_cmp, lisp_prin, lisp_prin, NULL, "number" },
+    { symbol_cmp, symbol_princ, symbol_print, symbol_sweep, "symbol" },
+    { nil_cmp, lisp_prin, lisp_prin, NULL, "void" },
+    { ptr_cmp, lisp_prin, lisp_prin, NULL, "var" },
+    { ptr_cmp, lisp_prin, lisp_prin, NULL, "subr-0" },
+    { ptr_cmp, lisp_prin, lisp_prin, NULL, "subr-1" },
+    { ptr_cmp, lisp_prin, lisp_prin, NULL, "subr-2" },
+    { ptr_cmp, lisp_prin, lisp_prin, NULL, "subr-3" },
+    { ptr_cmp, lisp_prin, lisp_prin, NULL, "subr-4" },
+    { ptr_cmp, lisp_prin, lisp_prin, NULL, "subr-5" },
+    { ptr_cmp, lisp_prin, lisp_prin, NULL, "subr-n" },
+    { ptr_cmp, lisp_prin, lisp_prin, NULL, "special-form" },
+    { ptr_cmp, buffer_prin, buffer_prin, buffer_sweep, "buffer" },
+    { ptr_cmp, window_prin, window_prin, window_sweep, "window" },
+    { ptr_cmp, view_prin, view_prin, view_sweep, "view" },
+    { mark_cmp, mark_prin, mark_prin, mark_sweep, "mark" },
+    { file_cmp, file_prin, file_prin, file_sweep, "file" },
+    { nil_cmp, lisp_prin, lisp_prin, NULL, "process" },
+    { ptr_cmp, glyphtable_prin, glyphtable_prin,
+      glyphtable_sweep, "glyph-table" },
 };
 
 
@@ -813,19 +811,11 @@ last garbage-collection is greater than `garbage-threshold'.
 
     mark_regexp_data();
 
-    string_sweep();
-    cons_sweep();
-    vector_sweep();
-    symbol_sweep();
-    file_sweep();
-    buffer_sweep();
-    mark_sweep();
-    window_sweep();
-    view_sweep();
-#ifdef HAVE_SUBPROCESSES
-    proc_sweep();
-#endif
-    glyphtable_sweep();
+    /* Finished marking, start sweeping. */
+
+    for(i = 0; i < V_MAX; i++)
+	if(data_types[i].sweep != NULL)
+	    data_types[i].sweep();
 
     /* This seems an ideal time to reclaim any general strings... */
     sm_flush(&main_strmem);
