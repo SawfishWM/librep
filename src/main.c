@@ -24,10 +24,6 @@
 #include <string.h>
 #include <limits.h>
 
-#ifdef HAVE_LOCALE_H
-# include <locale.h>
-#endif
-
 void *rep_common_db;
 
 int rep_recurse_depth = -1;
@@ -214,12 +210,6 @@ rep_init_from_dump(char *prog_name, int *argc, char ***argv,
 
     if(!sys_memory_init())
 	exit(10);
-
-#ifdef HAVE_SETLOCALE
-    /* XXX numbers.c uses scanf/printf to do number I/O. It's pretty
-       XXX disastrous if the decimal point goes missing.. */
-    setlocale (LC_NUMERIC, "C");
-#endif
 
     rep_common_db = rep_db_alloc("common", 4096);
 
