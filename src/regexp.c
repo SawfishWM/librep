@@ -35,6 +35,8 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+#define DEBUG
+
 /*
  * Utility definitions.
  */
@@ -79,6 +81,10 @@ static void	reginsert(char, char *);
 static void	regtail(char *, char *);
 static void	regoptail(char *, char *);
 extern void	rep_regerror(char *);
+#ifdef DEBUG
+void		regdump(rep_regexp *);
+int		regenable_debug = 0;
+#endif
 
 #ifndef HAVE_STRCSPN
 int		strcspn(char *, char *);
@@ -174,6 +180,12 @@ rep_regcomp(exp)
 	    r->regmlen = len;
 	}
     }
+#ifdef DEBUG
+    if (regenable_debug) {
+	printf ("compiled `%s' to:\n", exp);
+	regdump (r);
+    }
+#endif
     return (r);
 }
 
@@ -304,6 +316,7 @@ regpiece(flagp)
     register char   op;
     register char  *next;
     int		    flags;
+    int             greedy;
 
     ret = regatom(&flags);
     if (ret == NULL)
@@ -317,34 +330,71 @@ regpiece(flagp)
     if (!(flags & HASWIDTH) && op != '?')
 	FAIL("*+ operand could be empty");
     *flagp = (op != '+') ? (WORST | SPSTART) : (WORST | HASWIDTH);
+    greedy = (regparse[1] != '?');
 
     if (op == '*' && (flags & SIMPLE))
-	reginsert(STAR, ret);
+	reginsert(greedy ? STAR : NGSTAR, ret);
     else if (op == '*') {
-	/* Emit x* as (x&|), where & means "self". */
-	reginsert(BRANCH, ret); /* Either x */
-	regoptail(ret, regnode(BACK));	/* and loop */
-	regoptail(ret, ret);	/* back */
-	regtail(ret, regnode(BRANCH));	/* or */
-	regtail(ret, regnode(NOTHING)); /* null. */
+	if (greedy) {
+	    /* Emit x* as (x&|), where & means "self". */
+	    reginsert(BRANCH, ret);		/* Either x */
+	    regoptail(ret, regnode(BACK));	/* and loop */
+	    regoptail(ret, ret);		/* back */
+	    regtail(ret, regnode(BRANCH));	/* or */
+	    regtail(ret, regnode(NOTHING));	/* null. */
+	} else {
+	    /* Emit x*? as (|x&), where & means "self". */
+	    reginsert(BRANCH, ret);		/* Either */
+	    reginsert(NOTHING, ret);		/* null. */
+	    reginsert(BRANCH, ret);		/* or x */
+	    regtail(ret+9, regnode(BACK));	/* and loop */
+	    regtail(ret+9, ret);		/* back */
+	    regtail(ret, ret+6);
+	    regtail(ret+3, regcode);
+	}	    
     } else if (op == '+' && (flags & SIMPLE))
-	reginsert(PLUS, ret);
+	reginsert(greedy ? PLUS : NGPLUS, ret);
     else if (op == '+') {
-	/* Emit x+ as x(&|), where & means "self". */
-	next = regnode(BRANCH); /* Either */
-	regtail(ret, next);
-	regtail(regnode(BACK), ret);	/* loop back */
-	regtail(next, regnode(BRANCH)); /* or */
-	regtail(ret, regnode(NOTHING)); /* null. */
+	if (greedy) {
+	    /* Emit x+ as x(&|), where & means "self". */
+	    next = regnode(BRANCH);		/* Either */
+	    regtail(ret, next);
+	    regtail(regnode(BACK), ret);	/* loop back */
+	    regtail(next, regnode(BRANCH)); 	/* or */
+	    regtail(ret, regnode(NOTHING)); 	/* null. */
+	} else {
+	    char *null, *b2;
+	    /* Emit x+? as x(|&), where & means "self". */
+	    next = regnode(BRANCH);		/* Either */
+	    regtail(ret, next);
+	    null = regnode(NOTHING);		/* null */
+	    b2 = regnode(BRANCH);
+	    regtail(regnode(BACK), ret);	/* or loop back */
+	    regtail(next, b2);
+	    regtail(null, regcode);
+	}
     } else if (op == '?') {
-	/* Emit x? as (x|) */
-	reginsert(BRANCH, ret); /* Either x */
-	regtail(ret, regnode(BRANCH));	/* or */
-	next = regnode(NOTHING);/* null. */
-	regtail(ret, next);
-	regoptail(ret, next);
+	if (greedy) {
+	    /* Emit x? as (x|) */
+	    reginsert(BRANCH, ret);		/* Either x */
+	    regtail(ret, regnode(BRANCH));	/* or */
+	    next = regnode(NOTHING);		/* null. */
+	    regtail(ret, next);
+	    regoptail(ret, next);
+	} else {
+	    /* Emit x?? as (|x) */
+	    reginsert(BRANCH, ret);
+	    reginsert(NOTHING, ret);		/* Either null */
+	    reginsert(BRANCH, ret);		/* or x. */
+	    regoptail(ret, regcode);
+	    regtail(ret, ret + 6);
+	    regtail(ret, regcode);
+	}
     }
-    regparse++;
+    if (greedy)
+	regparse++;
+    else
+	regparse += 2;
     if (ISMULT(*regparse))
 	FAIL("nested *?+");
 
@@ -431,12 +481,47 @@ regatom(flagp)
 	FAIL("?+* follows nothing");
 	break;
     case '\\':
-	if (*regparse == '\0')
+	switch (*regparse++)
+	{
+	case '\0':
 	    FAIL("trailing \\");
-	ret = regnode(EXACTLY);
-	regc(*regparse++);
-	regc('\0');
-	*flagp |= HASWIDTH | SIMPLE;
+	    break;
+	case 'w':
+	    ret = regnode (WORD);
+	    *flagp |= HASWIDTH | SIMPLE;
+	    break;
+	case 'W':
+	    ret = regnode (NWORD);
+	    *flagp |= HASWIDTH | SIMPLE;
+	    break;
+	case 's':
+	    ret = regnode (WSPC);
+	    *flagp |= HASWIDTH | SIMPLE;
+	    break;
+	case 'S':
+	    ret = regnode (NWSPC);
+	    *flagp |= HASWIDTH | SIMPLE;
+	    break;
+	case 'd':
+	    ret = regnode (DIGI);
+	    *flagp |= HASWIDTH | SIMPLE;
+	    break;
+	case 'D':
+	    ret = regnode (NDIGI);
+	    *flagp |= HASWIDTH | SIMPLE;
+	    break;
+	case 'b':
+	    ret = regnode (WEDGE);
+	    break;
+	case 'B':
+	    ret = regnode (NWEDGE);
+	    break;
+	default:
+	    ret = regnode(EXACTLY);
+	    regc(regparse[-1]);
+	    regc('\0');
+	    *flagp |= HASWIDTH | SIMPLE;
+	}
 	break;
     default:{
 	    register int    len;
@@ -544,7 +629,7 @@ regtail(p, val)
     register char  *temp;
     register int    offset;
 
-    if (p == &regdummy)
+    if (regcode == &regdummy)
 	return;
 
     /* Find last node. */
@@ -573,7 +658,7 @@ regoptail(p, val)
     char	   *val;
 {
     /* "Operandless" and "op != BRANCH" are synonymous in practice. */
-    if (p == NULL || p == &regdummy || OP(p) != BRANCH)
+    if (p == NULL || regcode == &regdummy || OP(p) != BRANCH)
 	return;
     regtail(OPERAND(p), val);
 }
@@ -600,7 +685,6 @@ static int	regrepeat(char *);
 
 #ifdef DEBUG
 int		regnarrate = 0;
-void		regdump(regexp *);
 static char    *regprop(char *);
 #endif /* DEBUG */
 
@@ -946,6 +1030,85 @@ regmatch(prog)
 		return (0);
 	    }
 	    break;
+	case NGSTAR:
+	case NGPLUS:{
+		register char	nextch;
+		register int	no;
+		register char  *save;
+		register int	max;
+
+		/*
+		 * Lookahead to avoid useless match attempts when we know
+		 * what character comes next.
+		 */
+		nextch = '\0';
+		if (OP(next) == EXACTLY)
+		    nextch = *OPERAND(next);
+		if(regnocase)
+		    nextch = toupper(nextch);
+		no = (OP(scan) == STAR) ? 0 : 1;
+		save = reginput;
+		max = regrepeat(OPERAND(scan));
+		while (no <= max) {
+		    reginput = save + no;
+		    /* If it could work, try it. */
+		    if (nextch == '\0'
+			|| (regnocase ? toupper(*reginput)
+			    : *reginput) == nextch)
+			if (regmatch(next))
+			    return (1);
+		    /* Couldn't or didn't -- move up. */
+		    no++;
+		}
+		return (0);
+	    }
+	    break;
+	case WORD:
+	    if (*reginput != '_' && !isalnum ((int)*reginput))
+		return 0;
+	    reginput++;
+	    break;
+	case NWORD:
+	    if (*reginput == '_' || isalnum ((int)*reginput))
+		return 0;
+	    reginput++;
+	    break;
+	case WSPC:
+	    if (!isspace ((int)*reginput))
+		return 0;
+	    reginput++;
+	    break;
+	case NWSPC:
+	    if (isspace ((int)*reginput))
+		return 0;
+	    reginput++;
+	    break;
+	case DIGI:
+	    if (!isdigit ((int)*reginput))
+		return 0;
+	    reginput++;
+	    break;
+	case NDIGI:
+	    if (isdigit ((int)*reginput))
+		return 0;
+	    reginput++;
+	    break;
+	case WEDGE:
+	    if (reginput == regbol || *reginput == '\0'
+		|| ((reginput[-1] == '_' || isalnum ((int)reginput[-1]))
+		    && (*reginput != '_' && !isalnum ((int)*reginput)))
+		|| ((reginput[-1] != '_' && !isalnum ((int)reginput[-1]))
+		    && (*reginput == '_' || isalnum ((int)*reginput))))
+		break;
+	    return 0;
+	case NWEDGE:
+	    if (!(reginput == regbol || *reginput == '\0'
+		  || ((reginput[-1] == '_' || isalnum ((int)reginput[-1]))
+		      && (*reginput != '_' && !isalnum ((int)*reginput)))
+		  || ((reginput[-1] != '_' && !isalnum ((int)reginput[-1]))
+		      && (*reginput == '_' || isalnum ((int)*reginput)))))
+		break;
+	    return 0;
 	case END:
 	    return (1);		/* Success! */
 	    break;
@@ -1012,6 +1175,42 @@ regrepeat(p)
 	    scan++;
 	}
 	break;
+    case WORD:
+	while (*scan != '\0' && (*scan == '_' || isalnum ((int)*scan))) {
+	    count++;
+	    scan++;
+	}
+	break;
+    case NWORD:
+	while (*scan != '\0' && (*scan != '_' && !isalnum ((int)*scan))) {
+	    count++;
+	    scan++;
+	}
+	break;
+    case WSPC:
+	while (*scan != '\0' && isspace ((int)*scan)) {
+	    count++;
+	    scan++;
+	}
+	break;
+    case NWSPC:
+	while (*scan != '\0' && !isspace ((int)*scan)) {
+	    count++;
+	    scan++;
+	}
+	break;
+    case DIGI:
+	while (*scan != '\0' && isdigit ((int)*scan)) {
+	    count++;
+	    scan++;
+	}
+	break;
+    case NDIGI:
+	while (*scan != '\0' && !isdigit ((int)*scan)) {
+	    count++;
+	    scan++;
+	}
+	break;
     default:			/* Oh dear.  Called inappropriately. */
 	rep_regerror("internal foulup");
 	count = 0;		/* Best compromise. */
@@ -1046,14 +1245,14 @@ regnext(p)
 
 #ifdef DEBUG
 
-STATIC char    *regprop();
+static char    *regprop();
 
 /*
  * - regdump - dump a regexp onto stdout in vaguely comprehensible form
  */
 void
 regdump(r)
-    regexp	   *r;
+    rep_regexp	   *r;
 {
     register char  *s;
     register char   op = EXACTLY;	/* Arbitrary non-END op. */
@@ -1063,7 +1262,7 @@ regdump(r)
     s = r->program + 1;
     while (op != END) {		/* While that wasn't END last time... */
 	op = OP(s);
-	printf("%2d%s", s - r->program, regprop(s));    /* Where, what. */
+	printf("\t%4d%s", s - r->program, regprop(s));    /* Where, what. */
 	next = regnext(s);
 	if (next == NULL)	/* Next ptr. */
 	    printf("(0)");
@@ -1163,6 +1362,36 @@ regprop(op)
 	break;
     case PLUS:
 	p = "PLUS";
+	break;
+    case WORD:
+	p = "WORD";
+	break;
+    case NWORD:
+	p = "NWORD";
+	break;
+    case WSPC:
+	p = "WSPC";
+	break;
+    case NWSPC:
+	p = "NWSPC";
+	break;
+    case DIGI:
+	p = "DIGI";
+	break;
+    case NDIGI:
+	p = "NDIGI";
+	break;
+    case WEDGE:
+	p = "WEDGE";
+	break;
+    case NWEDGE:
+	p = "NWEDGE";
+	break;
+    case NGSTAR:
+	p = "NGSTAR";
+	break;
+    case NGPLUS:
+	p = "NGPLUS";
 	break;
     default:
 	rep_regerror("corrupted opcode");
