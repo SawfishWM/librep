@@ -21,16 +21,12 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure rep.user (export rep)
+(define-structure user ()
 
   (open rep)
 
-  (setq *user-structure* 'rep.user)
-  (setq *root-structure* 'rep.user)
-
-  (defun rep ()
-    (require 'rep.util.repl)
-    (repl))
+  (setq *user-structure* 'user)
+  (setq *root-structure* 'user)
 
   ;; Install all autoload hooks.
   (load-all "autoload" (lambda (f) (load f nil t)))
@@ -78,7 +74,7 @@
 	(setq command-line-args (cdr command-line-args))
 	(setq batch-mode t)
 	(if (file-exists-p arg)
-	    (structure () (open scheme) (load arg 'nil 't 't))
+	    (structure () (open scheme) (load arg '() 1 1))
 	  (structure () (open scheme) (load arg))))
        ((string= arg "--help")
 	(format standard-error "\
@@ -118,4 +114,9 @@ where OPTIONS are any of:
     (format standard-output "rep %s, Copyright (C) 1999-2000 John Harper
 rep comes with ABSOLUTELY NO WARRANTY; for details see the file COPYING
 Built %s\n" rep-version rep-build-id)
-    (rep)))
+
+    (require 'rep.util.repl)
+    (repl)))
+
+;; prevent this being opened as a module
+nil
