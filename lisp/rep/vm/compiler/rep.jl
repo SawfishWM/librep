@@ -1152,10 +1152,6 @@
     (put 'expt 'rep-compile-opcode (bytecode expt))
 
     ;; some pseudonyms
-    (put 'setcar 'rep-compile-fun compile-2-args)
-    (put 'setcar 'rep-compile-opcode (bytecode rplaca))
-    (put 'setcdr 'rep-compile-fun compile-2-args)
-    (put 'setcdr 'rep-compile-opcode (bytecode rplacd))
     (put 'string= 'rep-compile-fun compile-2-args)
     (put 'string= 'rep-compile-opcode (bytecode equal))
     (put 'string< 'rep-compile-fun compile-transitive-relation)
