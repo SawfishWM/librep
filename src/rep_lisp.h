@@ -27,6 +27,7 @@
    of objects fit as close as possible into powers of 2 sized blocks. */
 #define rep_CONSBLK_SIZE	510		/* ~4k */
 #define rep_SYMBOLBLK_SIZE	405		/* ~8k */
+#define rep_NUMBERBLK_SIZE	64		/* XXX ?? */
 
 /* The number of hash buckets in each rep_obarray, this is a prime number. */
 #define rep_OBSIZE		509
@@ -88,40 +89,6 @@ typedef unsigned rep_PTR_SIZED_INT repv;
 #define rep_VALUE_INT_SHIFT	2
 #define rep_CELL_ALIGNMENT	4
 
-/* Is repv V a cell type? */
-#define rep_CELLP(v)		(((v) & rep_VALUE_IS_INT) == 0)
-
-/* Is repv V an integer? */
-#define rep_INTP(v)		(!rep_CELLP(v))
-
-/* Convert a repv into a signed integer. */
-#define rep_INT(v)		(((rep_PTR_SIZED_INT)(v)) \
-				 >> rep_VALUE_INT_SHIFT)
-
-/* Convert a signed integer into a repv. */
-#define rep_MAKE_INT(x)		(((x) << rep_VALUE_INT_SHIFT) \
-				 | rep_VALUE_IS_INT)
-
-/* Bounds of the integer type */
-#define rep_LISP_INT_BITS	(rep_VALUE_BITS - rep_VALUE_INT_SHIFT)
-#define rep_LISP_MAX_INT	((rep_VALUE_CONST(1) \
-				  << (rep_LISP_INT_BITS - 1)) - 1)
-#define rep_LISP_MIN_INT	(-(rep_VALUE_CONST(1) \
-				   << (rep_LISP_INT_BITS - 1)))
-
-/* Store anything needing >24 bits (future expansion and all that),
-   in a cons cell, as one 24 bit, and one eight bit quantity. */
-#define rep_MAKE_LONG_INT(x) \
-    Fcons(rep_MAKE_INT((x) & 0x00ffffff), rep_MAKE_INT((x) >> 24))
-
-/* Convert a cons cell with two integers into a signed long int. */
-#define rep_LONG_INT(v) \
-    (rep_INT(rep_CAR(v)) | (rep_INT(rep_CDR(v)) << 24))
-
-/* True when V is a long integer. */
-#define rep_LONG_INTP(v) \
-    (rep_CONSP(v) && rep_INTP(rep_CAR(v)) && rep_INTP(rep_CDR(v)))
-
 #if rep_CELL_ALIGNMENT <= rep_MALLOC_ALIGNMENT
   /* Allocate SIZE bytes of memory, aligned to NORMAL_ALIGNMENT */
 # define rep_ALLOC_CELL(n) rep_alloc(n)
@@ -151,6 +118,34 @@ typedef unsigned rep_PTR_SIZED_INT repv;
 /* # warning Lets hope your compiler aligns to 4 byte boundaries.. */
 # define rep_ALIGN_CELL(d) d
 #endif
+
+/* Is repv V a cell type? */
+#define rep_CELLP(v)		(((v) & rep_VALUE_IS_INT) == 0)
+
+/* Is repv V a fixnum? */
+#define rep_INTP(v)		(!rep_CELLP(v))
+
+/* Convert a repv into a signed integer. */
+#define rep_INT(v)		(((rep_PTR_SIZED_INT)(v)) \
+				 >> rep_VALUE_INT_SHIFT)
+
+/* Convert a signed integer into a repv. */
+#define rep_MAKE_INT(x)		(((x) << rep_VALUE_INT_SHIFT) \
+				 | rep_VALUE_IS_INT)
+
+/* Bounds of the integer type */
+#define rep_LISP_INT_BITS	(rep_VALUE_BITS - rep_VALUE_INT_SHIFT)
+#define rep_LISP_MAX_INT	((rep_VALUE_CONST(1) \
+				  << (rep_LISP_INT_BITS - 1)) - 1)
+#define rep_LISP_MIN_INT	(-(rep_VALUE_CONST(1) \
+				   << (rep_LISP_INT_BITS - 1)))
+
+/* backwards compatibility */
+#define rep_MAKE_LONG_INT(x) rep_make_long_int(x)
+#define rep_LONG_INT(v) rep_get_long_int(v)
+#define rep_LONG_INTP(v) 						\
+    (rep_INTEGERP(v)							\
+     || (rep_CONSP(v) && rep_INTP(rep_CAR(v)) && rep_INTP(rep_CDR(v))))
 
 
 /* Structure of a cell */
@@ -310,7 +305,7 @@ typedef struct rep_type_struct {
 #define rep_Compiled	0x07
 #define rep_Void	0x09
 #define rep_Process	0x0b
-#define rep_Unused1	0x0d
+#define rep_Number	0x0d
 #define rep_SF		0x0f
 #define rep_Subr0	0x11
 #define rep_Subr1	0x13
@@ -338,6 +333,35 @@ typedef struct rep_type_struct {
 
 /* true if V is of type T. */
 #define rep_TYPEP(v, t)	(rep_TYPE(v) == t)
+
+
+/* Numbers (private defs in numbers.c) */
+
+/* Is V a non-fixnum number? */
+#define rep_NUMBERP(v)		rep_CELL8_TYPEP(v, rep_Number)
+
+/* Is V numeric? */
+#define rep_NUMERICP(v)		(rep_INTP(v) || rep_NUMBERP(v))
+
+/* bits 8-9 of car define number type (except when on freelist) */
+typedef rep_cell rep_number;
+
+/* these are in order of promotion */
+#define rep_NUMBER_INT		0	/* faked */
+#define rep_NUMBER_BIGNUM	0x100
+#define rep_NUMBER_RATIONAL	0x200
+#define rep_NUMBER_FLOAT	0x400
+
+#define rep_NUMBER_TYPE(v)	(((rep_number *)rep_PTR(v))->car & 0x700)
+#define rep_NUMBER_BIGNUM_P(v)	(rep_NUMBER_TYPE(v) & rep_NUMBER_BIGNUM)
+#define rep_NUMBER_RATIONAL_P(v) (rep_NUMBER_TYPE(v) & rep_NUMBER_RATIONAL)
+#define rep_NUMBER_FLOAT_P(v)	(rep_NUMBER_TYPE(v) & rep_NUMBER_FLOAT)
+
+#define rep_NUMERIC_TYPE(v) \
+    (rep_INTP(v) ? rep_NUMBER_INT : rep_NUMBER_TYPE(v))
+
+#define rep_INTEGERP(v) \
+    (rep_INTP(v) || (rep_NUMBERP(v) && rep_NUMBER_BIGNUM_P(v)))
 
 
 /* Strings */
