@@ -1,3 +1,8 @@
+2000-12-20  John Harper  <jsh@eazel.com>
+
+	* rep/util/gaol.jl (gaol-safe-functions): added string-split
+	and string-replace
+
 2000-12-03  John Harper  <jsh@eazel.com>
 
 	* version 0.13.3

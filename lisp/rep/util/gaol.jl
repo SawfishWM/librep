@@ -77,7 +77,8 @@
       set-default setcar setcdr setplist setq setq-default
       signal sit-for sleep-for sort space-char-p special-form-p
       special-variable-p streamp string-equal string-head-eq
-      string-lessp string-looking-at string-match string< string=
+      string-lessp string-looking-at string-match string-split
+      string-replace string< string=
       stringp subr-name subrp substring symbol-name symbol-plist
       symbol-value symbolp system-name throw time-later-p
       translate-string unless unwind-protect call-with-unwind-protect

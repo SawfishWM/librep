@@ -1,3 +1,7 @@
+2000-12-20  John Harper  <jsh@eazel.com>
+
+	* librep.sym: added rep_file_type and rep_guardian_type (doh!)
+
 2000-12-04  John Harper  <jsh@eazel.com>
 
 	* version 0.13.3
