@@ -1,5 +1,11 @@
 #!/bin/sh
 
+# load libtool configuration
+ltconf=/tmp/libtool.conf.$$
+../libtool --config >$ltconf
+. $ltconf
+rm -f $ltconf
+
 prefix=$1
 libdir=$2
 version=$3
@@ -8,22 +14,16 @@ repexecdir=$5
 
 libpath="-L${libdir}"
 
-# Try to figure out which systems will require the -R option, libtool
-# seems to contain a line like the following (from solaris):
-#	hardcode_libdir_flag_spec="-R\$libdir"
-
-hardcode=`grep '^hardcode_libdir_flag_spec' ../libtool`
-
-if test "x${hardcode}" != "x"; then
-  # Eval twice to remove the backslash
-  eval eval $hardcode
-  libpath="$libpath $hardcode_libdir_flag_spec"
+# So that we keep -R options where required
+if test -n "$hardcode_libdir_flag_spec"; then
+  eval flag=\"$hardcode_libdir_flag_spec\"
+  libpath="$libpath $flag"
 fi
 
 cat <<EOF
 #!/bin/sh
 
-usage="usage: rep-config [--version] [--dl-libs] [--libs] [--cflags] [--execdir]"
+usage="usage: rep-config [--version]1 [--libs] [--cflags] [--execdir]"
 
 if test \$# -eq 0; then
       echo "\${usage}" 1>&2
