@@ -342,15 +342,6 @@ rep_set_string_len(repv str, long len)
 
 /* Misc */
 
-static int
-number_cmp(repv v1, repv v2)
-{
-    if(rep_TYPE(v1) == rep_TYPE(v2))
-	return rep_INT(v1) - rep_INT(v2);
-    else
-	return 1;
-}
-
 int
 rep_ptr_cmp(repv v1, repv v2)
 {
@@ -859,6 +850,10 @@ again:
 	rep_GC_SET_CELL(val);
 	break;
 
+    case rep_Number:
+	rep_GC_SET_CELL(val);
+	break;
+
     case rep_Funarg:
 	if (!rep_FUNARG_WRITABLE_P(val))
 	    break;
@@ -1042,8 +1037,6 @@ rep_pre_values_init(void)
 {
     rep_register_type(rep_Cons, "cons", cons_cmp,
 		  rep_lisp_prin, rep_lisp_prin, cons_sweep, 0, 0, 0, 0, 0, 0, 0, 0);
-    rep_register_type(rep_Int, "integer", number_cmp,
-		  rep_lisp_prin, rep_lisp_prin, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     rep_register_type(rep_Vector, "vector", vector_cmp,
 		  rep_lisp_prin, rep_lisp_prin, vector_sweep, 0, 0, 0, 0, 0, 0, 0, 0);
     rep_register_type(rep_String, "string", string_cmp, rep_string_princ,
