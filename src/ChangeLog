@@ -1,3 +1,8 @@
+2000-08-30    <john@dcs.warwick.ac.uk>
+
+	* rep_subrs.h: s/new/new_/ and s/template/template_/ in
+	argument names to allow inclusion by C++ code
+
 2000-08-28    <john@dcs.warwick.ac.uk>
 
 	* tables.c: added doc strings
