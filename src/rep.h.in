@@ -22,6 +22,7 @@
 #define REP_H
 
 #include <sys/types.h>
+#include <limits.h>
 
 typedef int rep_bool;
 #define rep_TRUE 1
@@ -40,20 +41,23 @@ typedef int rep_bool;
 /* Define if you have some flavour of Unix */
 #undef rep_HAVE_UNIX
 
-/* Define this to be the minimum alignment of memory allocated
-   by malloc(). The default of four should be ok for most systems? If
-   not the Lisp data layout is probably screwed anyway... */
-#undef rep_MALLOC_ALIGNMENT
-
-/* If the default given below is no good, define this to an implicitly
-   signed integer type, that a pointer can be cast to and from. The
-   only reason this might have to change is on a 64-bit pointer machine
-   that only has 32-bit longs.. */
+/* An implicitly signed integer type, that a pointer can be cast to and
+   from without dropping bits */
 #undef rep_PTR_SIZED_INT
 
-/* This should be the number of bits in the above type. Only needs
-   changing on 64-bit machines.. */
-#undef rep_PTR_SIZED_INT_BITS
+/* This is either `L' or `LL' the suffix to append to integer constants
+   of the above type */
+#undef rep_PTR_SIZED_INT_SUFFIX
+
+/* A string, the printf integer conversion of the above integer type */
+#undef rep_PTR_SIZED_INT_CONV
+
+/* This should be the number of bits in the above type. */
+#define rep_PTR_SIZED_INT_BITS (sizeof (rep_PTR_SIZED_INT) * CHAR_BIT)
+
+/* The minimum alignment of memory allocated by malloc(). The default of
+   four should be ok for most systems? */
+#undef rep_MALLOC_ALIGNMENT
 
 
 /* Other public includes */
