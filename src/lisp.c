@@ -42,6 +42,7 @@ char *alloca ();
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <ctype.h>
 #include <assert.h>
 
@@ -1682,7 +1683,7 @@ rep_apply (repv fun, repv args)
 }
 
 DEFUN("funcall", Ffuncall, Sfuncall, (repv args), rep_SubrN) /*
-::doc:funcall::
+::doc:rep.lang.interpreter#funcall::
 funcall FUNCTION ARGS...
 
 Calls FUNCTION with arguments ARGS... and returns the result.
@@ -1695,7 +1696,7 @@ Calls FUNCTION with arguments ARGS... and returns the result.
 }
 
 DEFUN("apply", Fapply, Sapply, (repv args), rep_SubrN) /*
-::doc:apply::
+::doc:rep.lang.interpreter#apply::
 apply FUNCTION ARGS... ARG-LIST
 
 Calls FUNCTION passing all of ARGS to it as well as all elements in ARG-LIST.
@@ -1927,7 +1928,7 @@ Feval (repv form)
 }
 
 DEFUN("progn", Fprogn, Sprogn, (repv args, repv tail_posn), rep_SF) /*
-::doc:progn::
+::doc:rep.lang.interpreter#progn::
 progn FORMS...
 
 Eval's each of the FORMS in order returning the value of the last
@@ -2262,6 +2263,35 @@ rep_copy_list(repv list)
     return result;
 }
 
+/* Used to assign a list of argument values into separate variables. */
+rep_bool
+rep_assign_args (repv list, int required, int total, ...)
+{
+    int i;
+    va_list vars;
+    va_start (vars, total);
+    for (i = 0; i < total; i++)
+    {
+	repv *varp = va_arg (vars, repv *);
+	if (!rep_CONSP (list))
+	{
+	    if (i >= required)
+		return rep_TRUE;
+	    else
+	    {
+		rep_signal_missing_arg (i);
+		return rep_FALSE;
+	    }
+	}
+	*varp = rep_CAR (list);
+	list = rep_CDR (list);
+	rep_TEST_INT;
+	if (rep_INTERRUPTP)
+	    return rep_FALSE;
+    }
+    return rep_TRUE;
+}
+
 /* Used for easy handling of `var' objects */
 repv
 rep_handle_var_int(repv val, int *data)
@@ -2284,7 +2314,7 @@ rep_handle_var_long_int(repv val, long *data)
 }
 
 DEFUN("break", Fbreak, Sbreak, (void), rep_Subr0) /*
-::doc:break::
+::doc:rep.lang.debug#break::
 break
 
 The next form to be evaluated will be done so through the Lisp debugger.
@@ -2295,7 +2325,7 @@ The next form to be evaluated will be done so through the Lisp debugger.
 }
 
 DEFUN_INT("step", Fstep, Sstep, (repv form), rep_Subr1, "xForm to step through") /*
-::doc:step::
+::doc:rep.lang.debug#step::
 step FORM
 
 Use the Lisp debugger to evaluate FORM.
@@ -2310,7 +2340,7 @@ Use the Lisp debugger to evaluate FORM.
 }
 
 DEFUN("signal", Fsignal, Ssignal, (repv error, repv data), rep_Subr2) /*
-::doc:signal::
+::doc:rep.lang.interpreter#signal::
 signal ERROR-SYMBOL DATA
 
 Signal that an error has happened. ERROR-SYMBOL is the name of a symbol
@@ -2434,7 +2464,7 @@ rep_mem_error(void)
 }
 
 DEFUN("backtrace", Fbacktrace, Sbacktrace, (repv strm), rep_Subr1) /*
-::doc:backtrace::
+::doc:rep.lang.debug#backtrace::
 backtrace [STREAM]
 
 Prints a backtrace of the current Lisp call stack to STREAM (or to
@@ -2506,7 +2536,7 @@ DEFUN ("debug-inner-frame", Fdebug_inner_frame,
 }
 
 DEFUN("max-lisp-depth", Fmax_lisp_depth, Smax_lisp_depth, (repv val), rep_Subr1) /*
-::doc:max-lisp-depth::
+::doc:rep.lang.interpreter#max-lisp-depth::
 max-lisp-depth [NEW-VALUE]
 
 The maximum number of times that rep_funcall can be called recursively.
@@ -2546,13 +2576,13 @@ rep_lisp_init(void)
     rep_ADD_SUBR(Sapply);
     rep_ADD_SUBR(Sprogn);
     rep_ADD_SUBR(Ssignal);
-    rep_ADD_SUBR(Sbacktrace);
     rep_ADD_SUBR(Smax_lisp_depth);
     rep_pop_structure (tem);
 
     tem = rep_push_structure ("rep.lang.debug");
     rep_ADD_SUBR(Sbreak);
     rep_ADD_SUBR_INT(Sstep);
+    rep_ADD_SUBR(Sbacktrace);
     rep_ADD_SUBR(Sdebug_frame_environment);
     rep_ADD_SUBR(Sdebug_outer_frame);
     rep_ADD_SUBR(Sdebug_inner_frame);
