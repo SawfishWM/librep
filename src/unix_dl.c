@@ -37,6 +37,20 @@
 #   define RTLD_LAZY 1
 #  endif
 # endif
+# if ! defined (RTLD_GLOBAL)
+#  if defined (DL_GLOBAL)
+#   define RTLD_GLOBAL DL_GLOBAL
+#  else
+#   define RTLD_GLOBAL 0
+#  endif
+# endif
+# if ! defined (RTLD_LOCAL)
+#  if defined (DL_LOCAL)
+#   define RTLD_LOCAL DL_LOCAL
+#  else
+#   define RTLD_LOCAL 0
+#  endif
+# endif
 # if ! defined (RTLD_NOW)
 #  if defined (DL_NOW)
 #   define RTLD_NOW DL_NOW
@@ -148,6 +162,7 @@ rep_open_dl_library(repv file_name)
 
 	char buf[256];
 	char *dlname = 0;
+	rep_bool open_globally = rep_FALSE;
 	FILE *fh = fopen(rep_STR(file_name), "r");
 	if (fh == 0)
 	{
@@ -161,22 +176,30 @@ rep_open_dl_library(repv file_name)
 		char *ptr = buf + sizeof("dlname='") - 1;
 		u_char *base;
 		char *end = strchr(ptr, '\'');
-		if (end == 0)
-		    break;
-		*end = 0;
-		base = strrchr(rep_STR(file_name), '/');
-		if (base == 0)
-		    dlname = ptr;
-		else
+		if (end != 0)
 		{
-		    char tem[256];
-		    base++;
-		    memcpy(tem, rep_STR(file_name), base - rep_STR(file_name));
-		    strcpy(tem + (base - rep_STR(file_name)), ptr);
-		    strcpy(buf, tem);
-		    dlname = buf;
+		    *end = 0;
+		    base = strrchr(rep_STR(file_name), '/');
+		    if (base == 0)
+			dlname = ptr;
+		    else
+		    {
+			char tem[256];
+			base++;
+			memcpy(tem, rep_STR(file_name),
+			       base - rep_STR(file_name));
+			strcpy(tem + (base - rep_STR(file_name)), ptr);
+			strcpy(buf, tem);
+			dlname = strdup (buf);
+		    }
 		}
-		break;
+	    }
+	    else if (strncmp("rep_open_globally=", buf,
+			     sizeof("rep_open_globally=") - 1) == 0)
+	    {
+		char *ptr = buf + sizeof ("rep_open_globally=") - 1;
+		if (strncmp ("yes", ptr, 3) == 0)
+		    open_globally = rep_TRUE;
 	    }
 	}
 	fclose(fh);
@@ -195,15 +218,17 @@ rep_open_dl_library(repv file_name)
 
 #if defined (HAVE_DLOPEN)
 	    handle = dlopen(dlname,
-			    rep_SYM(Qdl_load_reloc_now)->value == Qnil
-			    ? RTLD_LAZY : RTLD_NOW);
+			    (rep_SYM(Qdl_load_reloc_now)->value == Qnil
+			     ? RTLD_LAZY : RTLD_NOW)
+			    | (open_globally ? RTLD_GLOBAL : RTLD_LOCAL));
 #elif defined (HAVE_SHL_LOAD)
+	    /* XXX how do we open these locally/globally? */
 	    handle = shl_load (dlname,
 			       (rep_SYM(Qdl_load_reloc_now)->value == Qnil
 				? BIND_DEFERRED : BIND_IMMEDIATE)
 			       | BIND_NONFATAL | DYNAMIC_PATH, 0L);
 #endif
-
+	    free (dlname);
 	    if(handle == 0)
 	    {
 		char *err;
@@ -226,6 +251,9 @@ rep_open_dl_library(repv file_name)
 	    x->file_name = file_name;
 	    x->handle = handle;
 
+	    x->next = dl_list;
+	    dl_list = x;
+
 	    init_func = x_dlsym(handle, "rep_dl_init");
 	    if(init_func != 0)
 	    {
@@ -233,6 +261,13 @@ rep_open_dl_library(repv file_name)
 		if(ret == rep_NULL)
 		{
 		    /* error. abort abort.. */
+		    struct dl_lib_info **ptr;
+		    for (ptr = &dl_list; *ptr != 0; ptr = &((*ptr)->next))
+		    {
+			if (*ptr == x)
+			    *ptr = x->next;
+			break;
+		    }		    
 		    rep_free(x);
 		    dlclose(handle);
 		    return 0;
@@ -257,9 +292,6 @@ rep_open_dl_library(repv file_name)
 		    functions++;
 		}
 	    }
-
-	    x->next = dl_list;
-	    dl_list = x;
 
 	    if (x->feature_sym != Qnil)
 		rep_call_lisp1 (Fsymbol_value (Qprovide, Qt), x->feature_sym);
