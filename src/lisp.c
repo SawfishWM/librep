@@ -462,23 +462,32 @@ read_symbol(repv strm, int *c_p)
 		    case 1:
 			/* We had a leading zero last character. If
 			   this char's an 'x' it's hexadecimal. */
-			if (c == 'x' || c == 'X')
+			switch (c)
 			{
+			case 'x': case 'X':
 			    radix = 16;
 			    nfirst = i + 1;
-			}
-			else if (c >= '0' && c <= '7')
-			{
+			    break;
+
+			case '0': case '1': case '2': case '3':
+			case '4': case '5': case '6': case '7':
 			    radix = 8;
 			    nfirst = i;
-			}
-			else if (c == '.' || c == 'e' || c == 'E')
-			{
+			    break;
+
+			case '.': case 'e': case 'E':
 			    radix = 10;
 			    exact = rep_FALSE;
-			}
-			else
+			    break;
+
+			case '/':
+			    radix = 10;
+			    rational = rep_TRUE;
+			    break;
+
+			default:
 			    radix = 0;
+			}
 			break;
 
 		    default:
