@@ -1,3 +1,7 @@
+Wed Jun 17 17:11:10 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* isearch.jl (isearch-push-match): small fix
+
 Tue Jun 16 12:02:50 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* buffers.jl (save-file-as, insert-file): change messages
