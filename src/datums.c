@@ -39,6 +39,9 @@ static repv printer_alist;
 #define DATUM_ID(x) (rep_TUPLE(x)->a)
 #define DATUM_VALUE(x) (rep_TUPLE(x)->b)
 
+/* This is no longer a symbol, but a datum representing () and false */
+repv Qnil;
+
 
 /* type hooks */
 
@@ -53,18 +56,26 @@ datum_cmp (repv d1, repv d2)
 
 static void
 datum_print (repv stream, repv arg)
-{
-    repv printer = Fassq (DATUM_ID (arg), printer_alist);
-    if (printer && rep_CONSP (printer) && rep_CDR (printer) != Qnil)
-	rep_call_lisp2 (rep_CDR (printer), arg, stream);
-    else if (rep_SYMBOLP (DATUM_ID (arg)))
+{    
+    if (arg == Qnil)
     {
-	rep_stream_puts (stream, "#<datum ", -1, rep_FALSE);
-	rep_stream_puts (stream, rep_PTR (rep_SYM (DATUM_ID (arg))->name), -1, rep_TRUE);
-	rep_stream_putc (stream, '>');
+	DEFSTRING (eol, "()");
+	rep_stream_puts (stream, rep_PTR (rep_VAL (&eol)), 2, rep_TRUE);
     }
     else
-	rep_stream_puts (stream, "#<datum>", -1, rep_FALSE);
+    {
+	repv printer = Fassq (DATUM_ID (arg), printer_alist);
+	if (printer && rep_CONSP (printer) && rep_CDR (printer) != Qnil)
+	    rep_call_lisp2 (rep_CDR (printer), arg, stream);
+	else if (rep_SYMBOLP (DATUM_ID (arg)))
+	{
+	    rep_stream_puts (stream, "#<datum ", -1, rep_FALSE);
+	    rep_stream_puts (stream, rep_PTR (rep_SYM (DATUM_ID (arg))->name), -1, rep_TRUE);
+	    rep_stream_putc (stream, '>');
+	}
+	else
+	    rep_stream_puts (stream, "#<datum>", -1, rep_FALSE);
+    }
 }
 
 
@@ -142,14 +153,22 @@ created using the `make-datum' function).
 /* dl hooks */
 
 void
-rep_datums_init (void)
+rep_pre_datums_init (void)
 {
-    repv tem = rep_push_structure ("rep.data.datums");
-
     datum_type = rep_register_new_type ("datum", datum_cmp,
 					datum_print, datum_print,
 					0, rep_mark_tuple,
 					0, 0, 0, 0, 0, 0, 0);
+    Qnil = rep_make_tuple (datum_type, rep_NULL, rep_NULL);
+    DATUM_ID (Qnil) = Qnil;
+    DATUM_VALUE (Qnil) = Qnil;
+    rep_mark_static (&Qnil);
+}
+
+void
+rep_datums_init (void)
+{
+    repv tem = rep_push_structure ("rep.data.datums");
 
     rep_ADD_SUBR (Smake_datum);
     rep_ADD_SUBR (Sdefine_datum_printer);
