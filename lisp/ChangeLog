@@ -1,3 +1,8 @@
+1998-08-12  John Harper  <john@dcs.warwick.ac.uk>
+
+	* dired.jl (dired-find-file, dired-find-file-other-view,
+	dired-display-file): these now find all _selected_ files
+
 1998-08-11  John Harper  <john@dcs.warwick.ac.uk>
 
 	* miranda.jl (miranda): ensure that a local-file-name is passed
