@@ -35,8 +35,9 @@
 ;; work correctly
 
 ;; Note^2 that this doesn't work quite like Scheme define, in that the
-;; outermost define always affects the global environment (unless within
-;; a with-internal-definitions block)
+;; outermost define always affects the global environment (unless
+;; within a with-internal-definitions block) [the reason for this
+;; ugliness is to avoid redefining lambda]
 
 ;; returns (SYM . DEF)
 (defun define-parse (args)

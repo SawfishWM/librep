@@ -6,10 +6,9 @@ TODO list for librep
 Bugs are marked !, things that should be done soon are marked +,
 and more long-term ideas are marked -
 
-modules
-=======
-
- ! fix dump.jl
+
+Outstanding bugs
+================
 
  ! ref cache can thrash when switching structures quickly
 
@@ -24,22 +23,9 @@ modules
    Xerox scheme closes all macros in the `initial environment', this
    would provide consistency, but would break existing code
 
+   also, macro memoization is very brittle
+
  ! no way to export variables from C code
-
-
-Outstanding bugs
-================
-
- ! closures are too big (8 words)
-
-   1. remove fh_env field by storing this per-structure
-      (using an uninterned symbol) [DONE]
-
-   2. remove next field by allocating in blocks of N a la cons [DONE]
-
-   3. remove structure field by dotting tail of environment to it?
-
-   4. store special_env field in structure as well?
 
  ! doesn't handle NaN or Inf in floats properly (at all)
 
@@ -58,7 +44,7 @@ Outstanding bugs
 
  ! it's impossible for scripts to present their own --help option
 
- ! non-fixnum numbers can't be dumped
+ ! non-fixnum numbers can't be dumped / dump totally broken re: modules
 
  ! `random' only accepts its range as a fixnum
 
@@ -71,11 +57,13 @@ Outstanding bugs
    
    Just call this a [mis-] feature for now..
 
- ! compiler tail-recursion elimination doesn't figure when the binding
-   has been changed; e.g. (let loop ((foo t)) (setq loop print) (loop foo))
+ ! it's legal to do (set foo 42) where the contents of foo has a
+   lexical binding
 
-   need to check for setq's on lexical variables... also need to only
-   allow set to modify special variables
+   this breaks: (let ((var 'loop))
+		  (let loop ((foo t))
+		    (set var print)
+		    (loop foo)))
 
 
 General programming tasks:
@@ -91,9 +79,7 @@ General programming tasks:
    sweep time. Increasing the threshold to 400k still reduces the
    overall time, but only by about 4% over the 200k value
 
-   is it possible to add a good gc?
-
-   maybe add a compile time option to use the Boehm conservative gc?
+   is it possible to add a good (generational?) gc?
 
  - remove special forms (replacing them with macros) where both
    possible and desirable

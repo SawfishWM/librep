@@ -1,3 +1,34 @@
+2000-04-15  John Harper  <john@dcs.warwick.ac.uk>
+
+	* structures.c (F_eval_in_structure): set rep_env to Qnil while
+	evaluating
+
+	* lisp.c (rep_env): removed the kludge that only if the last
+	element is dotted to `t' will the global environment be
+	searched
+	* lispcmds.c (Fload): set rep_env to Qnil not Qt while loading
+	* lispmach.c, bytecodes.h: removed OP_BINDENV and related code
+	* rep_lisp.h (rep_USE_DEFAULT_ENV): set rep_env to Qnil
+
+	* symbols.c (Fsave_environment, Fset_environment): deleted
+	(search_environment): only ever returns cons cell or nil
+
+	* symbols.c (Fsymbol_value, Fdefault_value): fixed bug of
+	allowing special variables not in the environment to be read
+	(i.e. the gaol was broken for specials)
+
+	* unix_dl.c (rep_open_dl_library): use rep_STRUCTUREP instead
+	of F_structurep
+
+	* symbols.c (Fset_special_environment): now takes a second
+	argument, the structure whose environment should be set
+
+	* repint.h, structures.c: moved rep_structure type definition
+	and some macros to <repint.h>
+
+	* rep_lisp.h (rep_funarg): removed `special_env' field, now
+	stored per structure (module)
+
 2000-04-14  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lispmach.c, bytecodes.h: removed OP_DSET bytecode

@@ -1,3 +1,30 @@
+2000-04-16  John Harper  <john@dcs.warwick.ac.uk>
+
+	* scheme-syntax.jl (lambda): now scans out leading internal
+	defines into a letrec
+
+	* compiler*.jl: track which lexical bindings have been modified
+	and which have been captured by closures, then use this
+	information to optimize tail recursion. Also renamed a load of
+	compiler functions to get rid of needless `comp-' prefixes
+
+	* define.jl, scheme-syntax.jl (define): now supports curried
+	functions, e.g. (define ((plus a) b) (+ a b)), then (plus 1)
+	evaluates to the function that adds one to its argument
+
+2000-04-15  John Harper  <john@dcs.warwick.ac.uk>
+
+	* gaol.jl: don't need to build trampoline code anymore, can
+	just use %eval-in-structure
+
+	* compiler-rep.jl (compile-save-environment): deleted
+
+	* bytecode-defs.jl, disassembler.jl: removed `bindenv'
+	instruction
+
+	* gaol.jl: updated for special environment being stored with
+	the structure
+
 2000-04-14  John Harper  <john@dcs.warwick.ac.uk>
 
 	* disassembler.jl, bytecode-defs.jl: removed `dset' bytecode
