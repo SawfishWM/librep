@@ -559,6 +559,22 @@ search_special_environment (repv sym)
     return inlined_search_special_environment (sym);
 }
 
+repv
+rep_call_with_closure (repv closure, repv (*fun)(repv arg), repv arg)
+{
+    repv ret = rep_NULL;
+    if (rep_FUNARGP (closure))
+    {
+	struct rep_Call lc;
+	lc.fun = lc.args = lc.args_evalled_p = Qnil;
+	rep_PUSH_CALL (lc);
+	rep_USE_FUNARG (closure);
+	ret = fun (arg);
+	rep_POP_CALL (lc);
+    }
+    return ret;
+}
+
 
 /* Symbol binding */
 
