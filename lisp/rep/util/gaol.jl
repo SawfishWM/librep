@@ -40,9 +40,9 @@
       car caar cadr case catch cdr cdar cddr char-downcase char-upcase
       closurep complete-string concat cond condition-case cons consp
       copy-sequence copy-stream current-time current-time-string
-      default-boundp default-value defconst define defmacro defsubst
-      defun defvar delete delete-if delete-if-not delete-timer delq
-      digit-char-p documentation elt eq eql equal error eval
+      default-boundp default-value defconst define define-value
+      defmacro defsubst defun defvar delete delete-if delete-if-not
+      delete-timer delq digit-char-p documentation elt eq eql equal error eval
       eval-when-compile expand-last-match featurep filter fix-time flet
       fmakunbound format funcall function functionp garbage-collect
       gensym get get-output-stream-string getenv identity if integerp
