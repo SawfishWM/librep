@@ -28,13 +28,12 @@
 
 _PR int main(int, char **);
 _PR int inner_main(int, char **);
-_PR void doconmsg(u_char *);
+_PR bool on_idle(long since_last_event);
+_PR bool handle_input_exception(VALUE *result_p);
 _PR void main_init(void);
 
-_PR bool input_lock;
-    bool input_lock;
 _PR StrMem main_strmem;
-    StrMem main_strmem;
+StrMem main_strmem;
 
 _PR int recurse_depth;
 int recurse_depth = -1;
@@ -77,7 +76,7 @@ get_main_options(int *argc_p, char ***argv_p)
 	}
 	else if(!strcmp("-v", *argv))
 	{
-	    doconmsg(VERSSTRING "\n");
+	    fputs(VERSSTRING "\n", stdout);
 	    return(FALSE);
 	}
 	else if(!strcmp("-log-msgs", *argv))
@@ -116,7 +115,8 @@ main(int argc, char **argv)
 
     if(sizeof(PTR_SIZED_INT) != sizeof(void *))
     {
-	doconmsg("jade: sizeof(PTR_SIZED_INT) != sizeof(void *); aborting\n");
+	fputs("jade: sizeof(PTR_SIZED_INT) != sizeof(void *); aborting\n",
+	      stderr);
 	return 100;
     }
 
@@ -191,7 +191,7 @@ inner_main(int argc, char **argv)
 		rc = 0;
 	}
 	else
-	    doconmsg("jade: error in initialisation script\n");
+	    fputs("jade: error in initialisation script\n", stderr);
 #ifdef HAVE_SUBPROCESSES
         proc_kill();
 #endif
@@ -205,6 +205,82 @@ inner_main(int argc, char **argv)
     }
     db_kill();
     return(rc);
+}
+
+/* This function gets called when we have idle time available. The
+   single argument is the number of seconds since we weren't idle.
+   Returns TRUE if the display should be refreshed. */
+bool
+on_idle(long since_last_event)
+{
+    /* A timeout; do one of:
+	* Remove messages in minibuffers
+	* Print the current key-prefix
+	* Auto-save a buffer
+	* GC if enough data allocated
+	* Run the `idle-hook'  */
+    if(remove_all_messages(TRUE)
+       || print_event_prefix()
+       || auto_save_buffers(FALSE))
+	return TRUE;
+    else if(data_after_gc > idle_gc_threshold)
+	/* nothing was saved so try a GC */
+	cmd_garbage_collect(sym_t);
+    else
+    {
+	VALUE hook = cmd_symbol_value(sym_idle_hook, sym_t);
+	if(!VOIDP(hook) && !NILP(hook))
+	{
+	    cmd_call_hook(sym_idle_hook, sym_nil, sym_nil);
+	    return TRUE;
+	}
+    }
+    return FALSE;
+}
+
+/* The input loop should call this function when throw_value == LISP_NULL.
+   It returns TRUE when the input loop should exit, returning whatever
+   is stored in *RESULT-P. */
+bool
+handle_input_exception(VALUE *result_p)
+{
+    VALUE tv = throw_value;
+    VALUE car = VCAR(tv);
+    throw_value = LISP_NULL;
+    *result_p = LISP_NULL;
+    
+    if(car == sym_exit)
+    {
+	*result_p = VCDR(tv);
+	if(recurse_depth > 0)
+	    return TRUE;
+    }
+    else if((car == sym_top_level) && (recurse_depth == 0))
+	*result_p = VCDR(tv);
+    else if(car == sym_quit)
+	return TRUE;
+    else if(car == sym_user_interrupt)
+	handle_error(car, sym_nil);
+    else if(car == sym_term_interrupt)
+    {
+	if(recurse_depth == 0)
+	{
+	    /* Autosave all buffers */
+	    while(auto_save_buffers(TRUE) > 0)
+		;
+	}
+	return TRUE;
+    }
+    else if(car == sym_error)
+	handle_error(VCAR(VCDR(tv)), VCDR(VCDR(tv)));
+    else if(recurse_depth == 0)
+	handle_error(sym_no_catcher, LIST_1(car));
+    else
+    {
+	throw_value = tv;
+	return TRUE;
+    }
+    return FALSE;
 }
 
 _PR VALUE cmd_recursive_edit(void);
@@ -235,34 +311,11 @@ original level.
     return(MAKE_INT(recurse_depth));
 }
 
-_PR VALUE cmd_input_lock(VALUE status);
-DEFUN("input-lock", cmd_input_lock, subr_input_lock, (VALUE args), V_SubrN, DOC_input_lock) /*
-::doc:input_lock::
-input-lock [STATUS]
-
-Sets or returns the status of the input lock. When this value is non-zero
-no user input is accepted, only messages from ARexx can get through.
-::end:: */
-{
-    if(CONSP(args))
-    {
-	args = VCAR(args);
-	if(NILP(args))
-	    input_lock = FALSE;
-	else
-	    input_lock = TRUE;
-    }
-    if(input_lock)
-	return(sym_t);
-    return(sym_nil);
-}
-
 void
 main_init(void)
 {
     ADD_SUBR_INT(subr_recursive_edit);
     ADD_SUBR(subr_recursion_depth);
-    ADD_SUBR(subr_input_lock);
     INTERN(quit);
     INTERN(exit);
     INTERN(top_level);
