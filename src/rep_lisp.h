@@ -49,6 +49,9 @@ typedef unsigned rep_PTR_SIZED_INT repv;
 /* The value of this definition must be known by the preprocessor. */
 #define rep_VALUE_BITS rep_PTR_SIZED_INT_BITS
 
+/* Get the integer constant X in the value type */
+#define rep_VALUE_CONST(x) rep_CONCAT(x, rep_PTR_SIZED_INT_SUFFIX)
+
 
 /* Structure of Lisp objects and the pointers to them. */
 
@@ -90,8 +93,10 @@ typedef unsigned rep_PTR_SIZED_INT repv;
 
 /* Bounds of the integer type */
 #define rep_LISP_INT_BITS	(rep_VALUE_BITS - rep_VALUE_INT_SHIFT)
-#define rep_LISP_MAX_INT	((1L << (rep_LISP_INT_BITS - 1)) - 1)
-#define rep_LISP_MIN_INT	(-(1L << (rep_LISP_INT_BITS - 1)))
+#define rep_LISP_MAX_INT	((rep_VALUE_CONST(1) \
+				  << (rep_LISP_INT_BITS - 1)) - 1)
+#define rep_LISP_MIN_INT	(-(rep_VALUE_CONST(1) \
+				   << (rep_LISP_INT_BITS - 1)))
 
 /* Store anything needing >24 bits (future expansion and all that),
    in a cons cell, as one 24 bit, and one eight bit quantity. */
@@ -332,7 +337,7 @@ typedef struct rep_string_struct {
 
 #define rep_STRING_LEN_SHIFT	8
 #define rep_MAX_STRING \
-    ((1L << (rep_VALUE_BITS - rep_STRING_LEN_SHIFT)) - 1)
+    ((rep_VALUE_CONST(1) << (rep_VALUE_BITS - rep_STRING_LEN_SHIFT)) - 1)
 
 /* The number of bytes that need to be allocated for a string cell
    containg X string bytes (including terminating zero). */
@@ -411,11 +416,11 @@ typedef struct rep_symbol_block_struct {
 typedef struct rep_vector_struct {
     repv car;				/* size is bits 8->31 */
     struct rep_vector_struct *next;
-    repv array[0];
+    repv array[1];
 } rep_vector;
 
 /* Bytes to allocate for S objects */
-#define rep_VECT_SIZE(s)	((sizeof(repv) * (s)) + sizeof(rep_vector))
+#define rep_VECT_SIZE(s)	((sizeof(repv) * ((s)-1)) + sizeof(rep_vector))
 
 #define rep_VECT(v)		((rep_vector *)rep_PTR(v))
 #define rep_VECTI(v,i)		(rep_VECT(v)->array[(i)])
