@@ -1,3 +1,10 @@
+Sun May 24 13:18:54 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* keymap.jl (map-keymap-recursively): variable controlling
+	whether map-keymap notices sub-keymaps (t by default)
+	(substitute-key-definition): new command, change key bindings
+	to a particular command so that they invoke a different command
+
 Sat May 23 11:30:19 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* asm-mode.jl, buffer-menu.jl, buffer-summary.jl, c-mode.jl,
