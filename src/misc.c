@@ -560,7 +560,7 @@ rep_misc_init(void)
     if (rep_beep_fun == 0)
 	rep_beep_fun = default_beep;
 
-    rep_INTERN_SPECIAL(operating_system);
+    rep_INTERN(operating_system);
 #ifdef rep_HAVE_UNIX
     rep_INTERN(unix);
     Fset (Qoperating_system, Qunix);
@@ -569,11 +569,11 @@ rep_misc_init(void)
     rep_INTERN_SPECIAL(process_environment);
     Fset (Qprocess_environment, Qnil);
 
-    rep_INTERN_SPECIAL(rep_version);
+    rep_INTERN(rep_version);
     Fset (Qrep_version, rep_VAL(&rep_version_string));
-    rep_INTERN_SPECIAL(rep_interface_id);
+    rep_INTERN(rep_interface_id);
     Fset (Qrep_interface_id, rep_VAL(rep_MAKE_INT(rep_INTERFACE)));
-    rep_INTERN_SPECIAL(rep_build_id);
+    rep_INTERN(rep_build_id);
     Fset (Qrep_build_id, rep_VAL(&build_id_string));
 
     rep_ADD_SUBR_INT(Sbeep);
@@ -614,8 +614,8 @@ rep_misc_init(void)
 	rep_STR(up)[256] = 0;
 	rep_STR(down)[256] = 0;
 
-	rep_INTERN_SPECIAL(upcase_table);
-	rep_INTERN_SPECIAL(downcase_table);
+	rep_INTERN(upcase_table);
+	rep_INTERN(downcase_table);
 	Fset (Qupcase_table, up);
 	Fset (Qdowncase_table, down);
     }
@@ -628,7 +628,7 @@ rep_misc_init(void)
 	rep_STR(flatten)[10] = ' ';
 	rep_STR(flatten)[11] = 0;
 
-	rep_INTERN_SPECIAL(flatten_table);
+	rep_INTERN(flatten_table);
 	Fset (Qflatten_table, flatten);
     }
 }
