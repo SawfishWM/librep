@@ -207,7 +207,13 @@ rep_kill_dl_libraries(void)
 	void (*exit_func)(void) = dlsym(x->handle, "rep_dl_kill");
 	if(exit_func != 0)
 	    exit_func();
+#if 0
+	/* Closing libraries is a _bad_ idea. There's no way
+	   of knowing if any pointers to their contents exist.
+	   For example, it's impossible to completely expunge
+	   libgtk/libgdk, since they install an atexit () handler.. */
 	dlclose(x->handle);
+#endif
 	rep_free(x);
 	x = next;
     }
