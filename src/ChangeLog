@@ -1,5 +1,18 @@
 Sat Jun  6 16:09:35 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* views.c (kill_view): new function to clean up an unused but
+	non-gc'd view
+	(update_views_dimensions): dont crash when the window no longer
+	has room for all views, instead delete views from the top of
+	the window until they all fit
+	(cmd_next_view, cmd_previous_view): don't ignore inactive
+	minibuffer views
+
+	* glyphs.c (make_window_glyphs, make_message_glyphs): handle
+	minibuffer views with more than one line. Always output the
+	minibuffer contents, then if necessary overwrite the _bottom_
+	line with the window's message
+
 	* views.c (cmd_view_position): new function, return the
 	position in the window of a specified view
 	(cmd_find_view_by_pos): include status line in view

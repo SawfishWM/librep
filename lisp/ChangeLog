@@ -1,5 +1,12 @@
 Sat Jun  6 16:11:57 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* windows.jl (goto-next-view): next-view now returns inactive
+	minibuffer views, so check for this
+	(scroll-next-view): use other-view instead of next-view, should
+	really be called scroll-other-view
+	(enlarge-view): allow minibuffer views to be sized, now the
+	bottom _two_ views resize into the view above them
+
 	* edit.jl (mouse-pos): add a check with posp
 	(goto-mouse): return nil or t a la translate-pos-to-view
 	(mouse-select): handle selecting a status line
