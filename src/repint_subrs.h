@@ -110,6 +110,7 @@ extern void rep_pre_structures_init (void);
 extern void rep_structures_init (void);
 
 /* from symbols.c */
+extern repv rep_keyword_obarray;
 extern int rep_pre_symbols_init(void);
 extern void rep_symbols_init(void);
 extern int rep_allocated_funargs, rep_used_funargs;
