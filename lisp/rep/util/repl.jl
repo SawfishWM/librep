@@ -32,6 +32,8 @@
 
     (open rep
 	  rep.structures
+	  rep.regexp
+	  rep.io.streams
 	  rep.io.readline)
 
   (define current-repl (make-fluid))
@@ -318,10 +320,23 @@ enter a meta-command prefixed by a `,' character.\n\n")
        (lambda (var)
 	 (let ((struct (locate-binding* var)))
 	   (if struct
-	       (format standard-output "`%s' is bound in `%s'\n"
-		       var struct)
-	     (format standard-output "`%s' is unbound\n" var)))))
+	       (format standard-output "%s is bound in: %s.\n" var struct)
+	     (format standard-output "%s is unbound.\n" var)))))
   (put 'locate 'repl-help "SYMBOL")
+
+  (put 'whereis 'repl-command
+       (lambda (var)
+	 (let ((out '()))
+	   (structure-walk (lambda (k v)
+			     (when (and (structure-name v)
+					(structure-exports-p v var))
+			       (setq out (cons (structure-name v) out))))
+			   (get-structure '%structures))
+	   (if out
+	       (format standard-output "%s is exported by: %s.\n"
+		       var (mapconcat symbol-name (sort out) ", "))
+	     (format standard-output "No module exports %s.\n" var)))))
+  (put 'whereis 'repl-help "SYMBOL")
 
   (put 'time 'repl-command
        (lambda (form)
