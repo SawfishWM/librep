@@ -265,7 +265,8 @@
 	(vectorp form) (bytecodep form)
 	(eq form t) (eq form nil)))
    ((consp form)
-    (and (eq (car form) 'quote) (compiler-binding-from-rep-p 'quote)))
+    ;; XXX this is wrong, but easy..!
+    (eq (car form) 'quote))
    ((symbolp form)
     (or (assq form (fluid const-env))
 	(compiler-binding-immutable-p form)))
