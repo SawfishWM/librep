@@ -219,6 +219,12 @@
 /* Define if you have the strchr function.  */
 #undef HAVE_STRCHR
 
+/* Define if you have the strcasecmp function.  */
+#undef HAVE_STRCASECMP
+
+/* Define if you have the strncasecmp function.  */
+#undef HAVE_STRNCASECMP
+
 /* Define if you have the strdup function.  */
 #undef HAVE_STRDUP
 
