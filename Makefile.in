@@ -83,7 +83,7 @@ realclean :
 	  [ -d $$dir ] && ( cd $$dir && $(MAKE) $@ ); \
 	done
 	rm -f config.cache config.h config.log config.status Makefile libtool
-	rm -f *~ NEWS DOC.* TAGS build.h rules.mk
+	rm -f *~ NEWS DOC.* TAGS build.h rules.mk librep.spec
 
 TAGS :
 	etags --language=c `find . -name '*.[ch]' -print` \
