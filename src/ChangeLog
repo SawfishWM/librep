@@ -1,5 +1,7 @@
 2000-03-12  John Harper  <john@dcs.warwick.ac.uk>
 
+	* version 0.11.1
+
 	* lispmach.c (Fjade_byte_code): open-coded some fixnum
 	arithmetic operations
 

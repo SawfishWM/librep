@@ -35,6 +35,41 @@ Outstanding bugs
 General programming tasks:
 ==========================
 
+ - Define let and let* as macros (with named variants)?
+
+   let can be done easily:
+
+   (defmacro let args
+     (let
+	 (fun var values)
+       (when (symbolp (car args))
+	 ;; named let
+	 (setq fun (car args))
+	 (setq args (cdr args)))
+       (setq vars (mapcar (lambda (x)
+			    (if (consp x)
+				(car x)
+			      x)) (car args)))
+       (setq values (mapcar (lambda (x)
+			      (if (consp x)
+				  (cons 'progn (cdr x))
+				nil)) (car args)))
+       (if fun
+	   `(letrec ((,fun (lambda ,vars ,@(cdr args))))
+	      (,fun ,@values))
+	 `((lambda ,vars ,@(cdr args)) ,@values))))
+
+   let* also has a simple expansion:
+
+   (let* ((x 1) (y x)) (+ x y)) == ((lambda (x) ((lambda (y) (+ x y)) x)) 1)
+
+   But the problem is that the compiler will generate worse code for
+   this than the current approach (it doesn't notice that the embedded
+   lambdas can use a single binding frame)
+
+   (The other drawback to this approach is that interpreted code will
+   run more slowly..)
+
  - do JIT compilation of bytecode where profitable
 
    there's now GNU lightning, a VCODE-like system, using C macros to do
