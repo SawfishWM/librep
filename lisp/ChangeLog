@@ -1,5 +1,11 @@
 2000-06-19  John Harper  <john@dcs.warwick.ac.uk>
 
+	* compiler-rep.jl (do-pass-2): don't evaluate constants, pass-1
+	doesn't
+
+	* init.jl (defconst): don't evaluate constants (the compiler
+	doesn't)
+
 	* dump.jl, disassembler.jl, compiler-utils.jl,
 	bytecode-defs.jl: s/0x/#x/ and s/0[0-9]/#o[0-9]/
 
