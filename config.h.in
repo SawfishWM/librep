@@ -154,16 +154,19 @@
 #undef HAVE_STPCPY
 
 /* Define if you have the memchr function.  */
-#define HAVE_MEMCHR
+#undef HAVE_MEMCHR
 
 /* Define if you have the lrand48() and srand48() functions */
-#define HAVE_LRAND48
+#undef HAVE_LRAND48
 
 /* Define if you have the setitimer() function */
-#define HAVE_SETITIMER
+#undef HAVE_SETITIMER
 
 /* Define if you have the dladdr() function */
-#define HAVE_DLADDR
+#undef HAVE_DLADDR
+
+/* Define if you have realpath() */
+#undef HAVE_REALPATH
 
 /* Define if you have the <dirent.h> header file.  */
 #undef HAVE_DIRENT_H
