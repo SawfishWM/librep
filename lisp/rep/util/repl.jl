@@ -28,7 +28,7 @@
 (define repl-in-struct (make-fluid))
 
 (defun repl-eval (form)
-  (eval form (%intern-structure (fluid repl-in-struct))))
+  (eval form (intern-structure (fluid repl-in-struct))))
 
 ;;;###autoload
 (defun repl (&optional initial-structure)
@@ -85,27 +85,27 @@
      (lambda (struct &optional form)
        (if form
 	   (format standard-output "%S\n"
-		   (eval form (%get-structure struct)))
+		   (eval form (get-structure struct)))
 	 (fluid-set repl-in-struct struct))))
 (put 'in 'repl-help "STRUCT [FORM ...]")
 
 (put 'load 'repl-command
      (lambda structs
        (mapc (lambda (struct)
-	       (%intern-structure struct)) structs)))
+	       (intern-structure struct)) structs)))
 (put 'load 'repl-help "STRUCT ...")
 
 (put 'reload 'repl-command
      (lambda structs
        (mapc (lambda (struct)
-	       (%name-structure (%get-structure struct) nil)
-	       (%intern-structure struct)) structs)))
+	       (name-structure (get-structure struct) nil)
+	       (intern-structure struct)) structs)))
 (put 'reload 'repl-help "STRUCT ...")
 
 (put 'unload 'repl-command
      (lambda structs
        (mapc (lambda (struct)
-	       (%name-structure (%get-structure struct) nil)) structs)))
+	       (name-structure (get-structure struct) nil)) structs)))
 (put 'unload 'repl-help "STRUCT ...")
 
 (put 'load-file 'repl-command
@@ -116,53 +116,53 @@
 
 (put 'open 'repl-command
      (lambda structs
-       (repl-eval `(,%open-structures (,quote ,structs)))))
+       (repl-eval `(,open-structures (,quote ,structs)))))
 (put 'open 'repl-help "STRUCT ...")
 
 (put 'access 'repl-command
      (lambda structs
-       (repl-eval `(,%access-structures (,quote ,structs)))))
+       (repl-eval `(,access-structures (,quote ,structs)))))
 (put 'access 'repl-help "STRUCT ...")
 
 (put 'structures 'repl-command
      (lambda ()
        (let (structures)
-	 (%structure-walk (lambda (var value)
-			    (setq structures (cons var structures)))
-			  (%get-structure '%structures))
+	 (structure-walk (lambda (var value)
+			   (setq structures (cons var structures)))
+			 (get-structure '%structures))
 	 (format standard-output "%s\n" (sort structures)))))
 
 (put 'interfaces 'repl-command
      (lambda ()
        (let (interfaces)
-	 (%structure-walk (lambda (var value)
-			    (setq interfaces (cons var interfaces)))
-			  (%get-structure '%interfaces))
+	 (structure-walk (lambda (var value)
+			   (setq interfaces (cons var interfaces)))
+			 (get-structure '%interfaces))
 	 (format standard-output "%s\n" (sort interfaces)))))
 
 (put 'bindings 'repl-command
      (lambda ()
-       (%structure-walk (lambda (var value)
-			  (format standard-output "  (%s %S)\n" var value))
-			(%intern-structure (fluid repl-in-struct)))))
+       (structure-walk (lambda (var value)
+			 (format standard-output "  (%s %S)\n" var value))
+		       (intern-structure (fluid repl-in-struct)))))
 
 (put 'exports 'repl-command
      (lambda ()
        (format standard-output "%s\n"
-	       (%structure-interface
-		(%intern-structure (fluid repl-in-struct))))))
+	       (structure-interface
+		(intern-structure (fluid repl-in-struct))))))
 
 (put 'imports 'repl-command
      (lambda ()
        (format standard-output "%s\n"
-	       (%structure-imports
-		(%intern-structure (fluid repl-in-struct))))))
+	       (structure-imports
+		(intern-structure (fluid repl-in-struct))))))
 
 (put 'accessible 'repl-command
      (lambda ()
        (format standard-output "%s\n"
-	       (%structure-accessible
-		(%intern-structure (fluid repl-in-struct))))))
+	       (structure-accessible
+		(intern-structure (fluid repl-in-struct))))))
 
 (put 'collect 'repl-command garbage-collect)
 
@@ -189,9 +189,9 @@
 
 (put 'new 'repl-command
      (lambda (name)
-       (%make-structure nil (lambda ()
-			      (%open-structures '(module-system)))
-			nil name)
+       (make-structure nil (lambda ()
+			     (open-structures '(module-system)))
+		       nil name)
        (fluid-set repl-in-struct name)))
 (put 'new 'repl-help "STRUCT")
 

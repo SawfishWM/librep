@@ -112,12 +112,12 @@
   ;; initialization
   (define (build-structure)
     (unless gaol-structure
-      (setq gaol-structure (%make-structure))
-      (%name-structure gaol-structure '%gaol)
-      (%structure-exports-all gaol-structure t)
+      (setq gaol-structure (make-structure))
+      (name-structure gaol-structure '%gaol)
+      (structure-exports-all gaol-structure t)
       (mapc (lambda (var)
-	      (%structure-set gaol-structure var
-			      (%structure-ref (%current-structure) var)))
+	      (structure-set gaol-structure var
+			     (%structure-ref (current-structure) var)))
 	    gaol-safe-functions)
       (setq file-handler-env (mapcar (lambda (sym)
 				       (cons sym t))
@@ -125,11 +125,10 @@
 
   (defun make-gaol ()
     (build-structure)
-    (let ((gaol (%make-structure
-		 '() (lambda () (%open-structures '(%gaol))))))
+    (let ((gaol (make-structure '() (lambda () (open-structures '(%gaol))))))
       (set-file-handler-environment file-handler-env gaol)
       (set-special-environment gaol-safe-specials gaol)
-      (%structure-install-vm gaol nil)
+      (structure-install-vm gaol nil)
       (call-hook '*make-gaol-hook* (list gaol))
       gaol))
 
@@ -143,7 +142,7 @@
 
   (define (gaol-define var value)
     (build-structure)
-    (%structure-set gaol-structure var value))
+    (structure-set gaol-structure var value))
 
   (define (gaol-define-special var)
     (build-structure)
@@ -161,7 +160,7 @@
 
   (define (gaol-open struct)
     (build-structure)
-    (eval `(,%open-structures '(,struct)) gaol-structure))
+    (eval `(,open-structures '(,struct)) gaol-structure))
 
 ;;; evaluating in the restricted environment
 

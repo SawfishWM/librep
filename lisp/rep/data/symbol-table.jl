@@ -39,17 +39,17 @@
     (open rep structure-internals)
 
   (define (make-symbol-table)
-    (%make-structure))
+    (make-structure))
 
-  ;; XXX this may return #<void>
   (define (symbol-table-ref table var)
-    (%structure-ref table var))
+    (and (structure-bound-p table var)
+	 (%structure-ref table var)))
 
   (define (symbol-table-set table var value)
-    (%structure-set table var value))
+    (structure-set table var value))
 
   (define (symbol-table-boundp table var)
-    (%structure-bound-p table var))
+    (structure-bound-p table var))
 
   (define (symbol-table-walk fun table)
-    (%structure-walk fun table)))
+    (structure-walk fun table)))

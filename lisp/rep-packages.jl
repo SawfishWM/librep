@@ -76,18 +76,19 @@
 (define-interface rep-structures
   (export define-interface %make-interface %parse-interface
 	  define-structure structure %make-structure
+	  define-structure-alias %alias-structure
 	  structure-ref %external-structure-ref))
 
 (define-interface rep-structure-internals
-  (export %make-interface %parse-interface %make-structure
-	  %structure-ref %structure-bound-p %structure-set
-	  %external-structure-ref
-	  %structure-name %structure-interface %structure-exports-p
-	  %structure-imports %structure-accessible %set-interface
-	  %get-structure %name-structure %intern-structure
-	  %open-structures %access-structures %current-structure %structurep
-	  %make-closure-in-structure %structure-walk %structure-exports-all
-	  %structure-install-vm %load-autoload))
+  (export make-interface parse-interface make-structure
+	  %structure-ref structure-bound-p structure-set
+	  external-structure-ref alias-structure
+	  structure-name structure-interface structure-exports-p
+	  structure-imports structure-accessible set-interface
+	  get-structure name-structure structure-file intern-structure
+	  open-structures access-structures current-structure structurep
+	  make-closure-in-structure structure-walk structure-exports-all
+	  structure-install-vm load-autoload))
 
 (define-interface rep-data
   (export cons car cdr list list* make-list append nconc rplaca rplacd
@@ -202,7 +203,7 @@
 					  rep-streams
 					  rep-process))
 
-(%set-interface (%get-structure 'rep) (%parse-interface 'rep))
+(set-interface (get-structure 'rep) (parse-interface 'rep))
 
 
 ;; some more useful modules
@@ -213,16 +214,18 @@
 					     run-byte-code
 					     load %load-suffixes)))
 
+(declare (bound %open-structures))
+
 ;; this must be before the first use of `structure' or `define-structure'
-(%make-structure (%parse-interface 'module-system)
-		 (lambda () (%open-structures '(rep)))
-		 nil 'module-system)
+(make-structure (parse-interface 'module-system)
+		(lambda () (%open-structures '(rep)))
+		nil 'module-system)
 
 (define-structure structure-refs (export structure-ref) (open rep))
 
 (define-structure structure-internals rep-structure-internals)
 
-(let ((struct (%get-structure 'structure-internals)))
+(let ((struct (get-structure 'structure-internals)))
   (mapc (lambda (x)
-	  (%structure-set struct x (%structure-ref (%current-structure) x)))
-	(%structure-interface struct)))
+	  (structure-set struct x (%structure-ref (current-structure) x)))
+	(structure-interface struct)))
