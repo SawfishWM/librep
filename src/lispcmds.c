@@ -31,6 +31,7 @@
 _PR void lispcmds_init(void);
 _PR VALUE sym_or, sym_and;
 _PR VALUE sym_load_path, sym_after_load_alist, sym_lisp_lib_dir;
+_PR VALUE sym_dl_load_path;
 _PR VALUE sym_site_lisp_dir, sym_documentation_file;
 
 DEFSTRING(default_jade_dir, QUOTE(JADE_DIR));
@@ -39,15 +40,20 @@ DEFSTRING(div_zero, "Divide by zero");
 DEFSYM(or, "or");
 DEFSYM(and, "and");
 DEFSYM(load_path, "load-path");
+DEFSYM(dl_load_path, "dl-load-path");
 DEFSYM(after_load_alist, "after-load-alist");
 DEFSYM(jade_dir, "jade-dir");
 DEFSYM(lisp_lib_dir, "lisp-lib-dir");
 DEFSYM(site_lisp_dir, "site-lisp-dir");
+DEFSYM(exec_directory, "exec-directory");
 DEFSYM(documentation_file, "documentation-file"); /*
 ::doc:load_path::
 A list of directory names. When `load' opens a lisp-file it searches each
 directory named in this list in turn until the file is found or the list
 is exhausted.
+::end::
+::doc:dl_load_path::
+List of directories searched for dynamically loaded object files.
 ::end::
 ::doc:after_load_alist::
 A list of (LIBRARY FORMS...). Whenever the `load' command reads a file
@@ -62,6 +68,9 @@ The name of the directory in which the standard lisp files live.
 ::end::
 ::doc:site_lisp_dir::
 The name of the directory in which site-specific Lisp files are stored.
+::end::
+::doc:exec_directory::
+The name of the directory containing Jade's architecture specific files.
 ::end::
 ::doc:documentation_file::
 The name of the file containing all Jade's documentation strings.
@@ -1581,6 +1590,10 @@ loaded and a warning is displayed.
     VALUE name = sym_nil, path;
     VALUE dir = LISP_NULL, try = LISP_NULL;
 
+#ifdef HAVE_DYNAMIC_LOADING
+    bool trying_dl = FALSE;
+#endif
+
     GC_root gc_file, gc_name, gc_path, gc_dir, gc_try;
 
     DECLARE1(file, STRINGP);
@@ -1600,6 +1613,7 @@ loaded and a warning is displayed.
     PUSHGC(gc_try, try);
 
     /* Scan the path for the file to load. */
+research:
     while(NILP(name) && CONSP(path))
     {
 	dir = cmd_file_name_as_directory(STRINGP(VCAR(path))
@@ -1611,8 +1625,20 @@ loaded and a warning is displayed.
 	if(!no_suffix_p)
 	{
 	    VALUE tem;
-	    static char *suffixes[3] = { ".jl", ".jlc", ".jld" };
 	    int i;
+	    static char *lisp_suffixes[3] = { ".jl", ".jlc", ".jld" };
+	    char **suffixes;
+
+#ifdef HAVE_DYNAMIC_LOADING
+	    static char *dl_suffixes[1] = { DYNAMIC_FILE_SUFFIX };
+	    suffixes = (trying_dl) ? dl_suffixes : lisp_suffixes;
+	    if(trying_dl)
+		i = 0;
+	    else
+#else
+	    suffixes = lisp_suffixes;
+#endif
+
 #ifdef DUMPED
 	    i = 2;
 #else
@@ -1656,6 +1682,23 @@ loaded and a warning is displayed.
 	if(INT_P)
 	    goto path_error;
     }
+
+#ifdef HAVE_DYNAMIC_LOADING
+    if(NILP(name) && !trying_dl)
+    {
+	if(NILP(nopath_p))
+	{
+	    path = cmd_symbol_value(sym_dl_load_path, sym_nil);
+	    if(!path)
+		return LISP_NULL;
+	}
+	else
+	    path = LIST_1(null_string());
+	trying_dl = TRUE;
+	goto research;
+    }
+#endif
+
 path_error:
     POPGC; POPGC; POPGC; POPGC; POPGC;
 
@@ -1667,6 +1710,11 @@ path_error:
 	    return sym_nil;
     }
 
+#ifdef HAVE_DYNAMIC_LOADING
+    if(trying_dl)
+	return open_dl_library(name) ? sym_t : LISP_NULL;
+    else
+#endif
     {
 	VALUE stream;
 	GC_root gc_stream;
@@ -2780,6 +2828,12 @@ lispcmds_init(void)
 	VSYM(sym_site_lisp_dir)->value
 	    = concat2(VSTR(VSYM(sym_jade_dir)->value), SITE_LISP_DIR_SUFFIX);
 
+    INTERN(exec_directory); DOC(exec_directory);
+    if(getenv("JADEEXECDIR") != 0)
+	VSYM(sym_exec_directory)->value = string_dup(getenv("JADEEXECDIR"));
+    else
+	VSYM(sym_exec_directory)->value = string_dup(EXEC_DIR);
+
     INTERN(documentation_file); DOC(documentation_file);
     if(getenv("JADEDOCFILE") != 0)
 	VSYM(sym_documentation_file)->value
@@ -2791,6 +2845,9 @@ lispcmds_init(void)
     INTERN(load_path); DOC(load_path);
     VSYM(sym_load_path)->value = list_2(VSYM(sym_lisp_lib_dir)->value,
 					VSYM(sym_site_lisp_dir)->value);
+
+    INTERN(dl_load_path); DOC(dl_load_path);
+    VSYM(sym_dl_load_path)->value = LIST_1(VSYM(sym_exec_directory)->value);
 
     INTERN(after_load_alist); DOC(after_load_alist);
     VSYM(sym_after_load_alist)->value = sym_nil;
