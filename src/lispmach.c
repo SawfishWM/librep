@@ -22,13 +22,15 @@
 #include "jade_protos.h"
 #include "bytecodes.h"
 
+#include <assert.h>
 #ifdef HAVE_ALLOCA
 # include <alloca.h>
 #endif
 
 _PR void lispmach_init(void);
 
-static DEFSYM(bytecode_error, "bytecode-error");
+_PR VALUE sym_bytecode_error;
+DEFSYM(bytecode_error, "bytecode-error");
 DEFSTRING(err_bytecode_error, "Invalid byte code version");
 DEFSTRING(unknown_op, "Unknown lisp opcode");
 
@@ -359,16 +361,15 @@ fetch:
 		    lc.args_evalled_p = sym_t;
 		    lisp_call_stack = &lc;
 
-		    bindings = bindlambdalist(VVECTI(tmp, COMPILED_LAMBDA),
+		    bindings = bindlambdalist(COMPILED_LAMBDA(tmp),
 					      tmp2, FALSE);
 		    if(bindings != LISP_NULL)
 		    {
 			GC_root gc_bindings;
 			PUSHGC(gc_bindings, bindings);
-			TOP = cmd_jade_byte_code
-			    (VVECTI(tmp, COMPILED_CODE),
-			     VVECTI(tmp, COMPILED_CONSTANTS),
-			     MAKE_INT(COMPILED_STACK(tmp)));
+			TOP = cmd_jade_byte_code(COMPILED_CODE(tmp),
+						 COMPILED_CONSTANTS(tmp),
+						 MAKE_INT(COMPILED_STACK(tmp)));
 			POPGC;
 			unbind_symbols(bindings);
 			if(TOP == LISP_NULL
@@ -1122,7 +1123,7 @@ fetch:
 		    POPGC;
 		    throw_value = throwval;
 		}
-		else
+		else if(throw_value != LISP_NULL)
 		{
 		    /* car is an exception-handler, (PC . SP)
 
@@ -1143,6 +1144,18 @@ fetch:
 		    pc = VSTR(code) + VINT(VCAR(item));
 		    bindstack = VCDR(bindstack);
 		    goto fetch;
+		}
+		else
+		{
+		    /* car is an exception handler, but throw_value isn't
+		       set, so there's nothing to handle. Keep unwinding. */
+#if 1
+		    fprintf(stderr, "lispmach: ignoring exception handler (%ld . %ld) pc=%d",
+			    VINT(VCAR(item)), VINT(VCDR(item)), pc - VSTR(code));
+		    cmd_backtrace(cmd_stderr_file());
+		    fputs("\n", stderr);
+#endif
+		    bindstack = VCDR(bindstack);
 		}
 	    }
 	    TOP = LISP_NULL;
@@ -1209,45 +1222,43 @@ Return an object that can be used as the function value of a symbol.
 ::end:: */
 {
     int len = list_length(args);
-    Lisp_Compiled *obj;
+    VALUE obj;
 
-    if(len < 4)
+    if(len < COMPILED_MIN_SLOTS)
 	return signal_missing_arg(len + 1);
     
-    obj = VCOMPILED(cmd_make_vector(MAKE_INT(COMPILED_NSLOTS), sym_nil));
+    obj = cmd_make_vector(MAKE_INT(MIN(len, 6)), sym_nil);
     if(obj != LISP_NULL)
     {
-	obj->car = (obj->car & ~CELL8_TYPE_MASK) | V_Compiled;
+	VCOMPILED(obj)->car = ((VCOMPILED(obj)->car & ~CELL8_TYPE_MASK)
+			       | V_Compiled);
 	if(!LISTP(VCAR(args)))
 	    return signal_arg_error(VCAR(args), 1);
-	VVECTI(obj, COMPILED_LAMBDA) = VCAR(args); args = VCDR(args);
+	VVECTI(obj, 0) = VCAR(args); args = VCDR(args);
 	if(!STRINGP(VCAR(args)))
 	    return signal_arg_error(VCAR(args), 2);
-	VVECTI(obj, COMPILED_CODE) = VCAR(args); args = VCDR(args);
+	VVECTI(obj, 1) = VCAR(args); args = VCDR(args);
 	if(!VECTORP(VCAR(args)))
-	    return signal_arg_error(VCAR(args), 2);
-	VVECTI(obj, COMPILED_CONSTANTS) = VCAR(args); args = VCDR(args);
+	    return signal_arg_error(VCAR(args), 3);
+	VVECTI(obj, 2) = VCAR(args); args = VCDR(args);
 	if(!INTP(VCAR(args)))
-	    return signal_arg_error(VCAR(args), 2);
-	VVECTI(obj, COMPILED_STACK_FLAGS) = VCAR(args); args = VCDR(args);
+	    return signal_arg_error(VCAR(args), 4);
+	VVECTI(obj, 3) = VCAR(args); args = VCDR(args);
 
 	if(CONSP(args))
 	{
-	    VVECTI(obj, COMPILED_DOC) = VCAR(args); args = VCDR(args);
+	    VVECTI(obj, 4) = VCAR(args); args = VCDR(args);
 	    if(CONSP(args))
 	    {
-		VVECTI(obj, COMPILED_INTERACTIVE) = VCAR(args);
-		args = VCDR(args);
+		VVECTI(obj, 5) = VCAR(args); args = VCDR(args);
 		if(CONSP(args) && !NILP(VCAR(args)))
 		{
-		    VVECTI(obj, COMPILED_STACK_FLAGS)
-			= MAKE_INT(VINT(VVECTI(obj, COMPILED_STACK_FLAGS))
-				   | LCFF_IS_MACRO);
+		    VVECTI(obj, 3) = MAKE_INT(VINT(VVECTI(obj, 3)) | 0x10000);
 		}
 	    }
 	}
     }
-    return VAL(obj);
+    return obj;
 }
 			     
 
