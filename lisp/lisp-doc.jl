@@ -114,7 +114,7 @@ NAME is non-nil, then it should be the symbol that is associated with VALUE."
 	(when (setq doc (get symbol 'documentation))
 	  (throw 'exit doc))
 	(when (boundp symbol)
-	  (setq doc (or value (symbol-value symbol t)))
+	  (setq doc (or value (and (boundp symbol) (symbol-value symbol))))
 	  (when (eq 'macro (car doc))
 	    (setq doc (cdr doc)))
 	  (when (and (closurep doc) (eq (car (closure-function doc)) 'lambda))
