@@ -531,12 +531,13 @@ vector_cmp(repv v1, repv v2)
 
 /* Garbage collection */
 
-#define STATIC_ROOTS 256
-static repv *static_roots[STATIC_ROOTS];
-static int next_static_root;
+static repv **static_roots;
+static int next_static_root, allocated_static_roots;
 
 rep_GC_root *rep_gc_root_stack = 0;
 rep_GC_n_roots *rep_gc_n_roots_stack = 0;
+
+rep_bool rep_in_gc = rep_FALSE;
 
 /* rep_data_after_gc = bytes of storage used since last gc
    rep_gc_threshold = value that rep_data_after_gc should be before gc'ing
@@ -550,7 +551,18 @@ static int *gc_stack_high_tide;
 void
 rep_mark_static(repv *obj)
 {
-    assert(next_static_root < STATIC_ROOTS);
+    if (next_static_root == allocated_static_roots)
+    {
+	int new_size = (allocated_static_roots
+			? (allocated_static_roots * 2) : 256);
+	if (static_roots != 0)
+	    static_roots = rep_realloc (static_roots,
+					new_size * sizeof (repv *));
+	else
+	    static_roots = rep_alloc (new_size * sizeof (repv *));
+	assert (static_roots != 0);
+	allocated_static_roots = new_size;
+    }
     static_roots[next_static_root++] = obj;
 }
 
@@ -722,6 +734,8 @@ last garbage-collection is greater than `garbage-threshold'.
     gc_stack_high_tide = &dummy;
 #endif
 
+    rep_in_gc = rep_TRUE;
+
     /* mark static objects */
     for(i = 0; i < next_static_root; i++)
 	rep_MARKVAL(*static_roots[i]);
@@ -780,6 +794,7 @@ last garbage-collection is greater than `garbage-threshold'.
     }
 
     rep_data_after_gc = 0;
+    rep_in_gc = rep_FALSE;
 
 #ifdef GC_MONITOR_STK
     fprintf(stderr, "gc: stack usage = %d\n",
@@ -796,6 +811,7 @@ last garbage-collection is greater than `garbage-threshold'.
 			       rep_MAKE_INT(allocated_string_bytes)),
 		      rep_MAKE_INT(used_vector_slots)));
     }
+
     return(Qt);
 }
 
