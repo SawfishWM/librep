@@ -368,7 +368,7 @@ handle_input(fd_set *inputs, int ready)
     else if(ready == 0)
     {
 	/* A timeout. */
-	if(!INT_P && on_idle(idle_period))
+	if(INT_P || on_idle(idle_period))
 	    refreshp = TRUE;
 
 	idle_period++;
