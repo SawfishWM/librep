@@ -586,7 +586,19 @@ On the Amiga this is taken from the environment variable `HOSTNAME'.
 	return(NULL);
     h = gethostbyname(buf);
     if(h)
-	system_name = string_dup((u_char *)h->h_name);
+    {
+	if(!strchr(h->h_name, '.'))
+	{
+	    /* The official name is not fully qualified. Try looking
+	       through the list of alternatives. */
+	    char **aliases = h->h_aliases;
+	    while(*aliases && !strchr(*aliases, '.'))
+		aliases++;
+	    system_name = string_dup(*aliases ? *aliases : h->h_name);
+	}
+	else
+	    system_name = string_dup((u_char *)h->h_name);
+    }
     else
 	system_name = string_dup(buf);
     mark_static(&system_name);
