@@ -1,3 +1,7 @@
+1999-11-28  John Harper  <john@dcs.warwick.ac.uk>
+
+	* version 0.8
+
 1999-11-27  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_processes.c, timers.c, symbols.c, repsdbm.c, files.c:

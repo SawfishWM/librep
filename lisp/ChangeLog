@@ -1,3 +1,7 @@
+1999-11-28  John Harper  <john@dcs.warwick.ac.uk>
+
+	* version 0.8
+
 1999-11-25  John Harper  <john@dcs.warwick.ac.uk>
 
 	* tilde.jl, tar-file-handler.jl, sort.jl, rep.jl,
@@ -8,8 +12,6 @@
 	namespace and scheme-like function semantics
 
 1999-11-21  John Harper  <john@dcs.warwick.ac.uk>
-
-	* version 0.8
 
 	* gaol.jl (gaol-add-file-handler, gaol-replace-file-handler):
 	new functions, allow access to be granted to file handlers
