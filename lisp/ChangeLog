@@ -1,3 +1,49 @@
+Mon Jun  1 11:26:39 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* read-mail.jl (rm-open-mailbox, rm-close-mailbox,
+	rm-subtract-mailbox, rm-subtract-all-mailboxes): new functions.
+	Also lots of other fixes, it seems to work quite well now
+
+	* rm-mail-dir.jl: don't bind to `+' anymore (used to add a
+	mailbox), instead use `Ctrl-k'
+
+	* rm-restrict.jl (subject): new rule. Also some fixes
+
+	* rm-summary.jl (rm-summary-view): fixed to _always_ return a
+	view or a buffer
+
+	* rm-thread.jl: fix the `date' sort key
+
+	* read-mail.jl (rm-open-mailboxes): list of buffers, this stops
+	buffers being gc'd while they're still in use (references to
+	buffers are by marks, which are `weak' references)
+
+	* rm-restrict.jl: minor changes, renamed rule functions from
+	`rm-rule-X' to `rm-rule:X', added a `(body REGEXP)' rule to
+	search the body of the message
+
+Sun May 31 12:06:02 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* read-mail.jl: more work. pretty much works. getting new mail
+	doesn't though..
+	* rm-misc.jl, rm-output.jl, rm-summary.jl, rm-thread.jl:
+	updated for new read-mail. Mostly untested
+
+	* rm-restrict.jl: allow rules to be defined interactively
+
+	* prompt.jl (prompt-validate-symbol): fixed
+
+	* lisp.jl (identity): new function
+
+	* read-mail.jl: massive changes, there is now a layer between
+	mailbox files and messages: folders. Each folder can contain
+	multiple mailboxes and be restricted to only contain messages
+	meeting a specified restriction rule
+
+	* rm-summary.jl (rm-with-folder, rm-in-folder): moved here from
+	read-mail.jl. All rm-X.jl files need updating for the new
+	read-mail
+
 Sat May 30 12:28:09 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* buffers.jl (find-file-read-only): added DONT-ACTIVATE option,

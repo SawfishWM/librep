@@ -96,7 +96,7 @@
 (autoload 'map-y-or-n-p "prompt")
 (autoload 'read-mail "read-mail" t)
 (autoload 'read-mail-folder "read-mail" t)
-(autoload 'rm-summary "rm-summary" t)
+(autoload 'rm-summarize "rm-summary" t)
 (autoload 'rm-reply "rm-misc" t)
 (autoload 'rm-followup "rm-misc" t)
 (autoload 'rm-output "rm-output" t)
@@ -172,4 +172,7 @@
 (autoload-variable 'cvs-keymap "cvs")
 (bind-keys ctrl-x-keymap "c" '(next-keymap-path '(cvs-keymap)))
 (autoload 'html-style-add-style "html-style")
+(autoload 'rm-filter-by-rule "rm-restrict")
+(autoload 'rm-prompt-for-rule "rm-restrict")
+(autoload 'rm-defrule "rm-restrict" t)
 ;;; ::autoload-end::

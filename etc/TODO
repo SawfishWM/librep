@@ -83,40 +83,18 @@ General programming tasks:
 
  + Make swap-del-bs a runtime option, not compile time
 
+ - Extend the online help
+
+   `C-h m' is the general `context sensitive' help binding. This should
+   work in more circumstances, e.g. in prompts
+
+   Allow `links' between help messages
+
  - Some method of associating ``attributes'' with regions of buffers,
    these attributes would be things like colour, style (bold,
    underline..), and general properties (e.g. read-only, keymaps,
    glyph-tables, etc...). Probably not font-size/family since it's
    nice to keep the idea of a window as a regular grid of glyphs.
-
- - Remove read-mail-mode's concrete link between folders and
-   buffers/files. This would be similar to VM's virtual folder concept.
-   The great thing is that most fundamental parts are already (more or
-   less) implemented, messages are [almost?] always accessed through
-   their message structure, with no dependences on other messages.
-
-   The only major issue is one of data structures, and where to keep
-   the list of messages being viewed (since there's no single buffer,
-   but we may be viewing different virtual folders in separate windows)
-
-   There's two basic ideas here: selection and restriction. We _select_
-   an input set of messages, then _restrict_ it to the messages we wish
-   to display. The selection can be done on a folder by folder basis,
-   adding and removing folders as required. The restriction needs to
-   allow complex rules, most easily done through Lisp, i.e.
-
-	(and (header "From" "john@dcs.warwick.ac.uk")
-	     (not (header "Subject" "Jade")))
-
-   where all strings are regexps. The non `and', `or', `not' forms can
-   be preprocessed to translate to real functions (local macros?). We
-   could provide a defrule statement. The rules can even be compiled
-   for extra speed.
-
-   What other predicates would be useful? Some things that come to
-   mind: date (after/before), size, folder, body search (slow),
-   recipient, sender, flags (unread, deleted, filed, ...), calling of
-   sub-rules.
 
  - Allow jadeclient to communicate inter-host.
 
