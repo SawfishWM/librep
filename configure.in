@@ -61,6 +61,11 @@ AC_PROG_MAKE_SET
 AC_PROG_GCC_TRADITIONAL
 AM_PROG_LIBTOOL
 
+dnl Abort if shared libraries aren't enabled
+if test "${enable_shared}" != "yes"; then
+  AC_MSG_ERROR([Need shared libraries enabled])
+fi
+
 dnl Checks for libraries.
 AC_CHECK_LIB(nsl, xdr_void)
 AC_CHECK_LIB(socket, bind)
