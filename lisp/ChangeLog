@@ -1,3 +1,9 @@
+1999-02-02  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compiler.jl (comp-push-label-addr): new function, replaces
+	comp-get-label-addr
+	(comp-write-raw-op): deleted this function
+
 1999-02-01  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rm-mail-dir.jl (rm-mail-dir-auto-scan-hook): new hook
