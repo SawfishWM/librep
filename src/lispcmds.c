@@ -2387,10 +2387,10 @@ BODY is being evaluated.
 	PUSHGC(gc_throwval, throwval);
 	if(!cmd_progn(VCDR(args)))
 	    res = LISP_NULL;
-	/* Only reinstall the old throw if it's actually an error.
-	   Otherwise it could overwrite an error in the CLEANUP-FORMS.
-	   This way the oldest error takes precedence. */
-	if(throwval != 0)
+	/* Only reinstall the old throw if it's actually an error and there
+	   was no error in the cleanup forms. This way the newest error
+	   takes precedence. */
+	if(throwval != 0 && throw_value == 0)
 	    throw_value = throwval;
 	POPGC; POPGC; POPGC;
 	return(res);
