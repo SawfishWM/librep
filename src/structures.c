@@ -515,6 +515,7 @@ Assign the name NAME (a symbol) to structure object STRUCTURE.
 	F_structure_set (rep_structures_structure,
 			 rep_STRUCTURE (structure)->name, Qnil);
     }
+    cache_flush ();
     return name;
 }
 
