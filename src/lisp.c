@@ -2337,7 +2337,13 @@ rep_signal_missing_arg(int argnum)
 repv
 rep_mem_error(void)
 {
+#if 0
+    /* Nothing really checks for this error.. it will just cause crashes.. */
     return Fsignal(Qno_memory, Qnil);
+#else
+    fprintf (stderr, "rep: virtual memory exhausted\n");
+    abort ();
+#endif
 }
 
 DEFUN("backtrace", Fbacktrace, Sbacktrace, (repv strm), rep_Subr1) /*
