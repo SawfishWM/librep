@@ -126,6 +126,13 @@ in other applications, but also suitable for general use. It was
 originally written to be mostly-compatible with Emacs Lisp, although
 there is no intention of having the two languages fully compatible.
 
+@code{librep} started out as part of a text editor I wrote, which
+gradually warped into being an Emacs-clone as more features were added.
+I got so used to writing code in Lisp, it seemed a good idea to spin
+the Lisp core of the editor into it's own package. Maybe I should just
+have learned Common Lisp or Scheme, but there's something about
+re-inventing wheels@dots{}
+
 @code{rep} stands for ``Read-Eval-Print'', the three main components of
 any Lisp system.
 
@@ -138,7 +145,9 @@ Some of the features of @code{librep} are:
 Common Lisp
 
 @item Mostly-Perl-like regular expressions, including \s, \S, \w, \W,
-\d, \D, \b, \B, classes and ??, ?*, ?+ (non-greedy) operators
+\d, \D, \b, \B, classes and ??, ?*, ?+ (non-greedy) operators (but none
+of the curly-brace quantifiers, and no matching of already-remembered
+expressions)
 
 @item ``Virtual'' file handling, with FTP and @code{rcp} backends
 
@@ -168,9 +177,9 @@ However, there are a few misfeatures that have to be mentioned:
 
 @itemize @bullet
 @item Uses dynamic variable binding (as in Emacs Lisp), so not as fast
-as it could be
+as it could be if lexical scoping was used.
 
-@item The compiler is not as optimising as it should be
+@item The compiler doesn't optimise as much as it should do.
 @end itemize
 
 
@@ -238,13 +247,13 @@ displayed before entering an interactive read-eval-print loop, unless
 The read-eval-print loop simply reads complete Lisp forms (@pxref{The
 Lisp Reader}), evaluates them, before printing the result back to the
 console; this continues ad infinitum, or until you force an EOF (i.e.
-enter @kbd{C-d}).@footnote{Actually, you may have to give EOF twice,
-before it exits, due to a long-standing misfeature in the reader.}
+enter @kbd{C-d}).
 
 
 @subsubheading Implicitly Interpreting @code{rep} Scripts
-@cindex Implicitly Interpreting @code{rep} Scripts
-@cindex HashImplicitly Interpreting @code{rep} Scripts
+@cindex Implicitly Interpreting @code{rep} scripts
+@cindex Executing @code{rep} scripts
+@cindex Scripts, executing implicitly
 
 The @code{rep} interpreter also supports automatic invocation of
 scripts, using the oeprating system's support for @samp{#!} interpreter
@@ -269,7 +278,6 @@ at the start of any scripts you want to execute implicitly (and
 
 @example
 #!/bin/sh
-# Invoke rep passing along all arguments as-is
 exec rep "$0" "$@@"
 !#
 
@@ -292,7 +300,9 @@ exec rep "$0" "$@@"
 
 If the @code{librep} interpreter crashes it's probably a bug (unless
 you're using the @code{rep-gtk} binding, in which case creating invalid
-GTK widget hierarchies can easily crash the Lisp system).
+GTK widget hierarchies can easily crash the Lisp system). If the
+interpreter hangs such that sending it interrupt signals doesn't fix
+the problem, that's probably also a bug.
 
 To help me fix any bugs found please try to collect as much meaningful
 information as possible. This will hopefully include stack backtraces

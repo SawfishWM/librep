@@ -3006,6 +3006,30 @@ If there is no catch with a tag of @var{tag} an error is signalled and
 the interpreter returns to the top-level of evaluation.
 @end defun
 
+There are a number of pre-defined throw tags:
+
+@table @code
+@item quit
+Terminate the @code{librep} interpreter, returning the value of the
+throw (if a number).
+
+@item exit
+Exit the innermost event loop, unless currently in the outermost event
+loop, when control just passes back to the event loop.
+
+@item user-interrupt
+As if a @code{SIGINT} or @kbd{C-c} signal has been received. Control
+passes back to the top-level event loop.
+
+@item term-interrupt
+Triggered when a @code{SIGTERM} or @code{SIGHUP} signal is received.
+Tries to clean up any existing state, then terminates the interpreter.
+@end table
+
+Note that it is the event loop that catches these tags. If no event
+loop is active (i.e. just in read-eval-print on the console mode), any
+uncaught throws will result in termination.
+
 
 @node Function Exits, Cleanup Forms, Catch and Throw, Non-Local Exits
 @subsubsection Function Exits
@@ -5537,6 +5561,9 @@ Return a file object representing the interpreters standard output.
 Return a file object representing the interpreters standard error.
 @end defun
 
+Attempting to close any of these files will result in the associated
+stream being connected to @file{/dev/null}.
+
 
 @node Destroying File Objects, Functions on File Objects, Creating File Objects, File Objects
 @subsubsection Destroying File Objects
@@ -6210,6 +6237,13 @@ uncompress a file into a buffer (for Jade).
     (unless (zerop (call-process proc nil "gunzip" "-c" file-name))
       (signal 'file-error (list "Can't gunzip file" file-name)))))
 @end lisp
+
+The user is able to interrupt synchronous subprocesses (for example if
+they seem to have got wedged somehow). Each time a user-interrupt is
+received by @code{librep} (i.e. the @code{INT} signal), a stronger
+signal is sent to the subprocess. First an interrupt signal, then a
+termination signal, before finally a non-ignoreable quit signal is
+sent.
 
 
 @node Process I/O, Process States, Synchronous Processes, Processes
@@ -6948,6 +6982,7 @@ comfortably fit elsewhere in this manual.
 * Beeping::			Making a ding! sound
 * Messages::                    Writing to the console
 * Command Line Options::	Retrieving command line arguments
+* Shell Commands::		Executing shell commands
 @end menu
 
 
@@ -7156,7 +7191,7 @@ applicable).
 @end defun
 
 
-@node Command Line Options, , Messages, Miscellaneous Functions
+@node Command Line Options, Shell Commands, Messages, Miscellaneous Functions
 @subsection Command Line Options
 @cindex Command line options
 @cindex Options, command line
@@ -7197,6 +7232,38 @@ command-line-args
 command-line-args
     @result{} nil
 @end lisp
+
+
+@node Shell Commands, , Command Line Options, Miscellaneous Functions
+@subsection Executing Shell Commands
+@cindex Executing shell commands
+@cindex Shell commands, executing
+
+The subprocess handling of @code{librep} provides a comprehensive
+interface to starting and controlling external processes
+(@pxref{Processes}). However it can be overkill when all that is
+required is to invoke a shell command, with its I/O going to the same
+places as the interpreter's.
+
+@defun system command
+Execute the shell command @var{command} synchronously, returning its
+exit status. An error will be signalled if the shell process could not
+be started.
+
+The @code{stdin}, @code{stdout} and @code{stderr} streams of the shell
+are left as in the interpreter process.
+@end defun
+
+Note that the exit status is @emph{not} the same as the return code of
+the command. It depends on the operating system, but under UNIX the
+return code can be found through right-shifting the exit status by
+eight bits. Low non-zero values represent that the process was killed
+by a signal.
+
+It is possible to interrupt a running shell process in the same way as
+with a normal synchronous process (@pxref{Synchronous Processes}).
+Interrupt the interpreter, it will send progressively harder-to-ignore
+signals to the child each interrupt, until it is eventually terminated.
 
 
 @node Debugging, Tips, Miscellaneous Functions, The language
