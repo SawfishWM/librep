@@ -21,6 +21,7 @@
 
 (provide 'threads)
 
+;;;###autoload
 (defmacro with-threads-blocked (&rest forms)
   "Evaluate `(progn FORMS)' with thread preemption disabled."
   `(unwind-protect
