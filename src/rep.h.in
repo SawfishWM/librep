@@ -63,6 +63,15 @@ typedef int rep_bool;
    four should be ok for most systems? */
 #undef rep_MALLOC_ALIGNMENT
 
+/* Defined if `long long int' is available */
+#undef rep_HAVE_LONG_LONG
+
+#ifdef rep_HAVE_LONG_LONG
+# define rep_long_long long long
+#else
+# define rep_long_long long
+#endif
+
 
 /* Other public includes */
 
