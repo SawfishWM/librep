@@ -1,3 +1,8 @@
+2001-03-21  John Harper  <jsh@eazel.com>
+
+	* rep/io/file-handlers/tar.jl (tarfh-call-tar): only call
+	tarfh-check-tar-program if the given tar file actually exists
+
 2001-03-12  John Harper  <jsh@eazel.com>
 
 	* rep/io/file-handlers/tar.jl

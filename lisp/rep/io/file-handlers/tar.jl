@@ -57,7 +57,7 @@
 (defvar tarfh-alternative-gnu-tar-programs
   (list "gnutar" "gtar"
 	(expand-file-name
-	 "rep-emulate-gnu-tar" exec-directory)))
+	 "emulate-gnu-tar" exec-directory)))
 
 ;; Initialised to the current tar version
 (defvar tarfh-gnu-tar-version nil)
@@ -112,17 +112,18 @@
     (error "Can't find/execute GNU tar")))
 
 (defun tarfh-call-tar (input-file output op tar-file #!rest args)
-  (unless tarfh-gnu-tar-version
-    (tarfh-check-tar-program))
   ;; XXX handle non-local files by copying
   ;; XXX but then again, that's a bad idea in gaolled code..
-  (setq tar-file (local-file-name tar-file))
-  (let*
-      ((process (make-process output))
-       (mode (cdr (assoc-regexp tar-file tarfh-compression-modes)))
-       (all-args `(,op ,@(and mode (list mode)) "--file" ,tar-file ,@args)))
-    (zerop (apply call-process process input-file
-		  tarfh-gnu-tar-program all-args))))
+  (when (file-exists-p tar-file)
+    (setq tar-file (local-file-name tar-file))
+    (unless tarfh-gnu-tar-version
+      (tarfh-check-tar-program))
+    (let* ((process (make-process output))
+	   (mode (cdr (assoc-regexp tar-file tarfh-compression-modes)))
+	   (all-args `(,op ,@(and mode (list mode))
+		       "--file" ,tar-file ,@args)))
+      (zerop (apply call-process process input-file
+		    tarfh-gnu-tar-program all-args)))))
 
 
 ;; extracting files (with caching)
