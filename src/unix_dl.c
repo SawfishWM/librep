@@ -295,7 +295,7 @@ rep_open_dl_library(repv file_name)
 	    void *handle;
 	    rep_bool relocate_now = rep_FALSE;
 	    if (Qdl_load_reloc_now
-		&& rep_SYM(Qdl_load_reloc_now)->value != Qnil)
+		&& Fsymbol_value (Qdl_load_reloc_now, Qt) != Qnil)
 	    {
 		relocate_now = rep_TRUE;
 	    }

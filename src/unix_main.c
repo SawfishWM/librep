@@ -852,7 +852,7 @@ rep_sys_os_init(void)
     ptr = environ;
     while(*ptr != 0)
 	env = Fcons(rep_string_dup(*ptr++), env);
-    rep_SYM(Qprocess_environment)->value = env;
+    Fset (Qprocess_environment, env);
 
 #ifdef DEBUG_SYS_ALLOC
     rep_ADD_SUBR(Sunix_print_allocations);

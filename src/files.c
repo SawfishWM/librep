@@ -1541,13 +1541,16 @@ set-file-handler-environment ENV
 void
 rep_files_init(void)
 {
+    repv tem;
+
     rep_INTERN_SPECIAL(file_handler_alist);
-    rep_SYM(Qfile_handler_alist)->value = Qnil;
+    Fset (Qfile_handler_alist, Qnil);
 
     rep_INTERN_SPECIAL(default_directory);
-    rep_SYM(Qdefault_directory)->value = rep_getpwd();
-    if(rep_SYM(Qdefault_directory)->value == rep_NULL)
-	rep_SYM(Qdefault_directory)->value = rep_null_string();
+    tem = rep_getpwd();
+    if (tem == rep_NULL)
+	tem = rep_null_string ();
+    Fset (Qdefault_directory, tem);
 
     rep_INTERN(file_name_absolute_p);
     rep_INTERN(expand_file_name);

@@ -562,16 +562,16 @@ rep_misc_init(void)
     rep_INTERN_SPECIAL(operating_system);
 #ifdef rep_HAVE_UNIX
     rep_INTERN(unix);
-    rep_SYM(Qoperating_system)->value = Qunix;
+    Fset (Qoperating_system, Qunix);
 #endif
 
     rep_INTERN_SPECIAL(process_environment);
-    rep_SYM(Qprocess_environment)->value = Qnil;
+    Fset (Qprocess_environment, Qnil);
 
     rep_INTERN_SPECIAL(rep_version);
-    rep_SYM(Qrep_version)->value = rep_VAL(&rep_version_string);
+    Fset (Qrep_version, rep_VAL(&rep_version_string));
     rep_INTERN_SPECIAL(rep_build_id);
-    rep_SYM(Qrep_build_id)->value = rep_VAL(&build_id_string);
+    Fset (Qrep_build_id, rep_VAL(&build_id_string));
 
     rep_ADD_SUBR_INT(Sbeep);
     rep_ADD_SUBR(Scomplete_string);
