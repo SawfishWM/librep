@@ -6575,7 +6575,7 @@ else. This involves quoting regexp meta-characters.
     @result{} "abc"
 
 (quote-regexp "a+c")
-    @result{} "a\+c"
+    @result{} "a\\+c"
 @end lisp
 @end defun
 
