@@ -1131,6 +1131,18 @@ again:
 		    result = LISP_NULL;
 	    }
 	}
+	else if(car == sym_macro)
+	{
+	macro_hack:
+	    /* A macro. This could occur if autoloading from
+	       a macro definition. Try to accommodate.. */
+	    if(!eval_args)
+		/* Args already evaluated. Can't expand the macro */
+		goto invalid;
+	    result = cmd_macroexpand(cmd_cons(lc.fun, arglist), sym_nil);
+	    if(result != LISP_NULL)
+		result = cmd_eval(result);
+	}
 	else if(car == sym_autoload)
 	{
 	    /* lc.fun contains the original function description,
@@ -1151,7 +1163,7 @@ again:
 	    VALUE boundlist;
 
 	    if(COMPILED_MACRO_P(fun))
-		goto invalid;
+		goto macro_hack;
 
 	    boundlist = bindlambdalist(COMPILED_LAMBDA(fun),
 				       arglist, eval_args);
