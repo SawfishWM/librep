@@ -147,7 +147,7 @@
 					       stream 'list-ended) items))))))
 		   (or (string= ended name)
 		       (error "Unmatched items: %s, %s" name ended)))
-		 (list* name params items))))))
+		 (list* name params (nreverse items)))))))
 
   (define (read-xml-item stream #!optional catcher)
     (cond

@@ -1,3 +1,9 @@
+2003-07-08  John Harper  <jsh@unfactored.org>
+
+	* rep/xml/reader.jl (read-tag-body): unreverse items when
+	creating the item. Adapted from a patch from Alexander V.
+	Nikolaev <avn@altlinux.ru>
+
 2003-03-18  John Harper  <jsh@unfactored.org>
 
 	* rep/data/string-util.jl (string-capitalized-p,
