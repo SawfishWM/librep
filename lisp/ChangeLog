@@ -1,3 +1,9 @@
+Fri Apr 24 14:02:50 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* cvs.jl: support for calling CVS commands asychronously,
+	currently, cvs-update, cvs-log, cvs-status,
+	cvs-commit-callback and cvs-diff-cvs take advantage of this
+
 Thu Apr 23 12:02:57 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* cvs.jl (cvs-summary-clean): implemented this command

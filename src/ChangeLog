@@ -1,3 +1,10 @@
+Fri Apr 24 11:35:03 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_processes.c (cmd_active_processes): new function, return
+	a list of all active processes
+	(proc_notification): when calling functions, now pass the
+	process as the sole argument
+
 Wed Apr 22 17:21:07 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* views.c (make_view): try to initialise the vw_BufferList
