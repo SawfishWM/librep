@@ -58,9 +58,9 @@
    that only has 32-bit longs.. */
 #define PTR_SIZED_INT long int
 
-/* If you define this statically allocated Lisp strings will be
-   coded in GCC's asm statement to allow better code generation. */
-#undef INLINE_STATIC_STRINGS
+/* This should be the number of bits in the above type. Only needs
+   changing on 64-bit machines.. */
+#define PTR_SIZED_INT_BITS 32
 
 /* Comment this out to get messages telling you when garbage collection
    takes place. In general gc is fast enough not to be too noticeable
@@ -69,6 +69,10 @@
 
 
 /* General configuration options */
+
+/* If you define this statically allocated Lisp strings will be
+   coded in GCC's asm statement to allow better code generation. */
+#undef INLINE_STATIC_STRINGS
 
 /* Define if dynamic loading is available */
 #undef HAVE_DYNAMIC_LOADING
@@ -185,6 +189,9 @@
 
 /* Define if you have the memchr function.  */
 #define HAVE_MEMCHR
+
+/* Define if you have the lrand48() and srand48() functions */
+#define HAVE_LRAND48
 
 /* Define if you have the <dirent.h> header file.  */
 #undef HAVE_DIRENT_H
