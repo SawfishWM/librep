@@ -47,7 +47,6 @@
       (refq . 0x18)			;pushes val of symbol n (in c-v)
       (setq . 0x20)			;sets sym n (in c-v) to stk[0]; pop
       (list . 0x28)			;makes top n items into a list
-      (bind . 0x30)			;bind constant n to stk[0], pops stk
       (refn . 0x38)
       (setn . 0xe8)
       (refg . 0xe0)
@@ -81,7 +80,7 @@
       (aset . 0x52)
       (aref . 0x53)
       (length . 0x54)
-      (eval . 0x55)
+      (bind . 0x55)
       (add . 0x56)			;adds the top two values
       (neg . 0x57)
       (sub . 0x58)
@@ -237,7 +236,7 @@
      +1  nil nil nil nil nil nil nil
      0   -1  0   0   0   0   +1  0	;0x40
      -1  +1  +1  -1  0   0   -1  -1
-     -1  -1  -1  -1  0   0   -1  0	;0x50
+     -1  -1  -1  -1  0   -1  -1  0	;0x50
      -1  -1  -1  -1  0   0   -1  -1
      -1  -1  -1  0   -1  -1  -1  -1	;0x60
      0   0   -1  0   0   0   0   0
