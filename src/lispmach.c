@@ -482,18 +482,16 @@ again:
 		    {
 			/* A tail call that's safe for eliminating */
 
-			/* squash the call stack */
-			{
-			    repv fun = lc.fun;
-			    repv args = lc.args;
-			    repv args_eval = lc.args_evalled_p;
-			    rep_POP_CALL(lc);
-			    lc.fun = fun;
-			    lc.args = args;
-			    lc.args_evalled_p = args_eval;
-			}
+			/* snap the call stack */
+			rep_call_stack = lc.next;
+			rep_call_stack->fun = lc.fun;
+			rep_call_stack->args = lc.args;
+			rep_call_stack->args_evalled_p = lc.args_evalled_p;
 
-			unbind_all (bindstack);
+			/* since impurity==0 there can only be lexical
+			   bindings; these are unbound by switching
+			   environments.. */
+
 			bindings = (rep_bind_lambda_list
 				    (rep_COMPILED_LAMBDA(tmp),
 				     tmp2, rep_FALSE));
