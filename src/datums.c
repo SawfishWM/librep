@@ -46,8 +46,6 @@ static int datum_type;
 #define DATUMP(x) rep_CELL16_TYPEP(x, datum_type)
 #define DATUM(x) ((datum *) rep_PTR (x))
 
-DEFSYM (datums, "datums");
-
 
 /* type hooks */
 
@@ -125,15 +123,14 @@ DEFUN ("has-type-p", Fhas_type_p,
 
 /* dl hooks */
 
-repv
-rep_dl_init (void)
+void
+rep_datums_init (void)
 {
     datum_type = rep_register_new_type ("datum", 0, datum_print, datum_print,
 					datum_sweep, datum_mark,
 					0, 0, 0, 0, 0, 0, 0);
+
     rep_ADD_SUBR (Smake_datum);
     rep_ADD_SUBR (Sdatum_ref);
     rep_ADD_SUBR (Shas_type_p);
-    rep_INTERN (datums);
-    return Qdatums;
 }
