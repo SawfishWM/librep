@@ -72,6 +72,7 @@ _PR VALUE cmd_defmacro(VALUE);
 DEFUN("defmacro", cmd_defmacro, subr_defmacro, (VALUE args), V_SF, DOC_defmacro) /*
 ::doc:defmacro::
 defmacro NAME LAMBDA-LIST [DOC-STRING] BODY...
+defmacro NAME BYTECODE-OBJECT
 
 Defines a macro called NAME with argument spec. LAMBDA-LIST, documentation
 DOC-STRING (optional) and body BODY. The actual function value is
@@ -90,20 +91,29 @@ Note that macros are expanded at *compile-time* (unless, of course, the Lisp
 code has not been compiled).
 ::end:: */
 {
-    if(CONSP(args)
-       && cmd_fset(VCAR(args), cmd_cons(sym_macro,
-					cmd_cons(sym_lambda, VCDR(args)))))
-    {
-	return(VCAR(args));
-    }
-    else
+    VALUE name;
+    if(!CONSP(args))
 	return signal_missing_arg(1);
+    name = VCAR(args);
+    args = VCDR(args);
+    if(!CONSP(args))
+	return signal_missing_arg(2);
+    if(!COMPILEDP(VCAR(args)))
+	args = cmd_cons(sym_macro, cmd_cons(sym_lambda, args));
+    else
+    {
+	args = VCAR(args);
+	if(!COMPILED_MACRO_P(args))
+	    return signal_arg_error(args, 2);
+    }
+    return (cmd_fset(name, args) != LISP_NULL) ? name : LISP_NULL;
 }
 
 _PR VALUE cmd_defun(VALUE);
 DEFUN("defun", cmd_defun, subr_defun, (VALUE args), V_SF, DOC_defun) /*
 ::doc:defun::
 defun NAME LAMBDA-LIST [DOC-STRING] BODY...
+defun NAME BYTECODE-OBJECT
 
 Defines a function called NAME with argument specification LAMBDA-LIST,
 documentation DOC-STRING (optional) and body BODY. The actual function
@@ -111,13 +121,22 @@ value is,
     `(lambda LAMBDA-LIST [DOC-STRING] BODY...)'
 ::end:: */
 {
-    if(CONSP(args)
-       && cmd_fset(VCAR(args), cmd_cons(sym_lambda, VCDR(args))))
-    {
-	return(VCAR(args));
-    }
-    else
+    VALUE name;
+    if(!CONSP(args))
 	return signal_missing_arg(1);
+    name = VCAR(args);
+    args = VCDR(args);
+    if(!CONSP(args))
+	return signal_missing_arg(2);
+    if(!COMPILEDP(VCAR(args)))
+	args = cmd_cons(sym_lambda, args);
+    else
+    {
+	args = VCAR(args);
+	if(COMPILED_MACRO_P(args))
+	    return signal_arg_error(args, 2);
+    }
+    return (cmd_fset(name, args) != LISP_NULL) ? name : LISP_NULL;
 }
 
 _PR VALUE cmd_defvar(VALUE);
@@ -2008,6 +2027,17 @@ Returns t if ARG is a vector.
     return VECTORP(arg) ? sym_t : sym_nil;
 }
 
+_PR VALUE cmd_bytecodep(VALUE);
+DEFUN("bytecodep", cmd_bytecodep, subr_bytecodep, (VALUE arg), V_Subr1, DOC_bytecodep) /*
+::doc:bytecodep::
+bytecodep ARG
+
+Returns t if ARG is a byte code subroutine (i.e. compiled Lisp code).
+::end:: */
+{
+    return COMPILEDP(arg) ? sym_t : sym_nil;
+}
+
 _PR VALUE cmd_functionp(VALUE);
 DEFUN("functionp", cmd_functionp, subr_functionp, (VALUE arg), V_Subr1, DOC_functionp) /*
 ::doc:functionp::
@@ -2136,7 +2166,7 @@ Returns the doc-string associated with SUBR.
 	return(cmd_read_file_from_to(VAL(&doc_file), VSUBR(subr)->doc_index,
 				     MAKE_INT((int)'\f')));
     case V_Compiled:
-	return VVECTI(subr, COMPILED_DOC);
+	return COMPILED_DOC(subr);
 
     default:
 	return(sym_nil);
@@ -2408,6 +2438,7 @@ lispcmds_init(void)
     ADD_SUBR(subr_integerp);
     ADD_SUBR(subr_stringp);
     ADD_SUBR(subr_vectorp);
+    ADD_SUBR(subr_bytecodep);
     ADD_SUBR(subr_functionp);
     ADD_SUBR(subr_special_form_p);
     ADD_SUBR(subr_subrp);
