@@ -1602,11 +1602,15 @@ thread-join THREAD [MSECS] [DEFAULT-VALUE]
 Suspend the current thread until THREAD has exited, or MSECS
 milliseconds have passed. If THREAD exits normally, return the value of
 the last form it evaluated, else return DEFAULT-VALUE.
+
+It is an error to call thread-join on a THREAD that is not a member of
+current dynamic root.
 ::end:: */
 {
 #ifdef WITH_CONTINUATIONS
     repv self = Fcurrent_thread (Qnil);
-    rep_DECLARE (1, th, XTHREADP (th) && th != self);
+    rep_DECLARE (1, th, XTHREADP (th) && th != self
+		 && THREAD (th)->cont->root == root_barrier);
     if (THREADP (self))
     {
 	rep_GC_root gc_th;

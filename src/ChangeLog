@@ -1,3 +1,14 @@
+2001-01-28  John Harper  <jsh@eazel.com>
+
+	* continuations.c (Fthread_join): as part of the THREAD
+	declaration, check that it's a member of the current dynamic
+	root
+
+2001-01-21  John Harper  <jsh@eazel.com>
+
+	* symbols.c (Fdefvar): the DEFAULT-VALUE parameter is now
+	optional, it defaults to false
+
 2001-01-08  John Harper  <jsh@eazel.com>
 
 	* lisp.c: changed the Lisp reader to treat #\return characters

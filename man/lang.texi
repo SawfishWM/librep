@@ -3249,12 +3249,13 @@ Note that the @code{define} special form may also be used to declare
 block-structured functions, @ref{Definitions}.
 @end defmac
 
-@defspec defvar variable form [doc-string]
+@defspec defvar variable [form [doc-string]]
 This special form defines a special (i.e. dynamically scoped) variable,
 the symbol @var{variable}. If the value of @var{variable} is void the
 @var{form} is evaluated and its value is stored as the value of
 @var{variable} (note that only the default value is modified, never a
-buffer-local value).
+buffer-local value). If no @var{form} is given the assigned value
+defaults to false.
 
 If the @var{doc-string} argument is defined it is a string documenting
 @var{variable}. This string is then stored as the symbol's
@@ -5222,6 +5223,9 @@ Suspends the current thread until either @var{thread} has exited, or
 
 If @var{thread} exits normally, then the value of the last form it
 evaluated is returned; otherwise @var{default-value} is returned.
+
+It is an error to call @code{thread-join} on a @var{thread} that is not
+a member of the current dynamic root.
 @end defun
 
 @defun thread-wake thread
