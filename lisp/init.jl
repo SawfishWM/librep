@@ -166,6 +166,10 @@ functions."
 		   (t (list 'setq x nil)))) bindings)))
 
 (defmacro let-fluids (bindings . body)
+  "Similar to `let' except that the BINDINGS must refer to variables
+containing fluid objects. The fluids will be bound to new locations,
+not the variables containing the fluids."
+
   (let ((fluids nil)
 	(values nil))
     (mapc (lambda (x)
@@ -240,6 +244,9 @@ See also `setq'. Returns the value of the last FORM."
 	    (cons (list 'set-default
 			(list 'quote (car rest)) (nth 1 rest)) body)))))
 
+;; XXX it would be nice to do the same for setq.. might stress the
+;; XXX interpreter somewhat..? :-(
+
 (defmacro define-value (var-form value)
   (if (eq (car var-form) 'quote)
       ;; constant symbol
@@ -247,9 +254,6 @@ See also `setq'. Returns the value of the last FORM."
     ;; non-constant symbol
     ;; XXX highly dubious, and may need changing (only allow specials?)
     (list 'set var-form value)))
-
-;; XXX it would be nice to do the same for setq.. might stress the
-;; XXX interpreter somewhat..? :-(
 
 
 ;; Misc syntax
@@ -333,7 +337,16 @@ BODY form evaluated."
   `(call-with-object ,obj (lambda () ,@body)))
 
 ;; hide compiler declarations
-(defmacro declare ())
+(defmacro declare ()
+  "declare CLAUSES...
+
+Provide the compiler with extra information while compiling the forms
+that appear in the same lexical scope as the declaration.
+
+Each CLAUSE is a list, the first element of which is a symbol defining
+the type of declaration, the other elements relate to the declaration.
+See the `Compiler Declarations' node of the librep manual for details
+of the possible declaration types.")
 
 
 ;; structure (modules) syntax
@@ -354,10 +367,40 @@ BODY form evaluated."
 	((symbolp sig) (%structure-ref (%get-structure '%interfaces) sig))))
 
 (defmacro define-interface (name sig)
+  "Associate the symbol NAME with the module interface SIG (in a
+separate interface-name namespace). An interface specification must be
+of the form:
+
+   INTERFACE ->  (export [ID...])
+	     or  NAME
+	     or  (compound-interface [INTERFACE...])
+
+where an ID is a symbol naming a top-level binding to export, and NAME
+is the name of an interface previously defined using define-interface.
+
+The `export' form adds top-level definitions ID... to the interface;
+the `compound-interface' clauses forms the union of the given
+interfaces."
+
   (list '%make-interface (list 'quote name)
 	(list '%parse-interface (list 'quote sig))))
 
 (defmacro structure (&optional sig config . body)
+  "Create a new module whose interface is SIG, whose configuration is
+defined by CONFIG (either a single clause, or a list of clauses), and
+whose definitions are defined by the list of forms BODY.
+
+See `define-interface' for the interface syntax, each configuration
+clause must have the syntax:
+
+   CLAUSE ->  (open [NAME...])
+	  or  (access [NAME...])
+
+where NAME is the name of a module. Opening a module imports all of its
+exported definitions into the currently module, while accessing a
+module makes the exported definitions available from the current module
+using the `structure-ref' form."
+
   (unless (listp (car config))
     (setq config (list config)))
   (list '%make-structure (list '%parse-interface (list 'quote sig))
@@ -365,6 +408,14 @@ BODY form evaluated."
 	(list* 'lambda nil body)))
 
 (defmacro define-structure (name &optional sig config . body)
+  "Create a module called NAME whose interface is SIG, whose
+configuration is defined by CONFIG (either a single clause, or a list
+of clauses), and whose definitions are defined by the list of forms
+BODY.
+
+See the `define-interface' and `structure' macros for descriptions of
+the interface and configuration clause syntaxes respectively."
+
   (unless (listp (car config))
     (setq config (list config)))
   (list '%make-structure (list '%parse-interface (list 'quote sig))
@@ -379,6 +430,12 @@ BODY form evaluated."
   (list '%access-structures (list 'quote names)))
 
 (defmacro structure-ref (struct-name var-name)
+  "Evaluates to the current value of the global binding of symbol
+VAR-NAME in the module called STRUCT-NAME. This structure must
+previously have been opened or accessed by the current module.
+
+When read, the syntax `FOO#BAR' expands to `(structure-ref FOO BAR)'."
+
   (list '%external-structure-ref
 	(list 'quote struct-name) (list 'quote var-name)))
 
