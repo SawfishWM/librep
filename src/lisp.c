@@ -219,6 +219,39 @@ fast_getc (repv stream)
  
 DEFSTRING(nodot, "Nothing to dot second element of cons-cell to");
 
+static void
+read_comment (repv strm, int *c_p)
+{
+    char terminator = *c_p;
+    register int c;
+    int depth = 1;
+    while ((c = fast_getc (strm)) != EOF)
+    {
+    again:
+	if (c == terminator)
+	{
+	    c = rep_stream_getc (strm);
+	    if (c == EOF || (c == '#' && --depth == 0))
+		break;
+	    else
+		goto again;
+	}
+	else if (c == '#')
+	{
+	    c = rep_stream_getc (strm);
+	    if (c == EOF)
+		break;
+	    else if (c == terminator)
+		depth++;
+	    else
+		goto again;
+	}
+    }
+    if (c != EOF)
+	c = rep_stream_getc (strm);
+    *c_p = c;
+}
+
 static repv
 read_list(repv strm, register int *c_p)
 {
@@ -288,9 +321,23 @@ read_list(repv strm, register int *c_p)
 		rep_stream_ungetc (strm, *c_p);
 		*c_p = '.';
 	    }
-	    /* fall through */
+	    goto do_default;
 
-	default:
+	case '#': {
+		int c = rep_stream_getc (strm);
+		if (c == EOF)
+		    goto end;
+		else if (c == '|')
+		{
+		    *c_p = c;
+		    read_comment (strm, c_p);
+		    continue;
+		}
+		rep_stream_ungetc (strm, c);
+	    }
+	    goto do_default;
+
+	default: do_default:
 	    {
 		register repv this = Fcons(Qnil, Qnil);
 		if(last)
@@ -782,8 +829,6 @@ rep_readl(repv strm, register int *c_p)
 	case '#':
 	    switch(*c_p = rep_stream_getc(strm))
 	    {
-		int comment_terminator;
-
 	    case EOF:
 		goto eof;
 
@@ -827,27 +872,8 @@ rep_readl(repv strm, register int *c_p)
 
 	    case '|':
 		/* comment delimited by `#| ... |#' */
-		comment_terminator = '|';
-		{
-		    register int c;
-		read_comment:
-		    while ((c = fast_getc (strm)) != EOF)
-		    {
-		    comment_again:
-			if (c == comment_terminator)
-			{
-			    c = rep_stream_getc (strm);
-			    if (c == EOF || c == '#')
-				break;
-			    else
-				goto comment_again;
-			}
-		    }
-		    if (c != EOF)
-			c = rep_stream_getc (strm);
-		    *c_p = c;
-		    continue;
-		}
+		read_comment (strm, c_p);
+		continue;
 
 	    case '\\':
 		{
@@ -914,8 +940,8 @@ rep_readl(repv strm, register int *c_p)
 		    if (pos && rep_INTP(pos) && rep_INT(pos) == 2)
 		    {
 			/* #! at the start of the file. Skip until !# */
-			comment_terminator = '!';
-			goto read_comment;
+			read_comment (strm, c_p);
+			continue;
 		    }
 		}
 		goto error;
