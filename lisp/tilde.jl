@@ -49,7 +49,7 @@
     ;; Functions of a single file name that we leave alone. By re-calling
     ;; OP the standard action will occur since this handler is now
     ;; blocked for OP.
-    (apply op args))
+    (apply (symbol-value op) args))
    ((memq op '(local-file-name canonical-file-name open-file
 	       write-buffer-contents read-file-contents insert-file-contents
 	       delete-file delete-directory make-directory file-exists-p
@@ -60,7 +60,7 @@
 	       read-symlink make-symlink))
     ;; All functions which only have a single file name (their first
     ;; argument). Expand the tilde expression then re-call OP.)
-    (apply op (tilde-expand (car args)) (cdr args)))
+    (apply (symbol-value op) (tilde-expand (car args)) (cdr args)))
    (t
     ;; Anything else shouldn't have happened
     (error "Can't expand ~ in %s" (cons op args)))))

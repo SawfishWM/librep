@@ -32,13 +32,13 @@
    "list" nil nil nil nil nil nil nil
    "bind" nil nil nil nil nil nil nil	 ; 0x30
    nil nil nil nil nil nil nil nil
-   "ref" "set" "fref" "fset" "init-bind" "unbind" "dup" "swap"	; 0x40
+   "ref" "set" "dset" nil "init-bind" "unbind" "dup" "swap"	; 0x40
    "pop" "push\tnil" "push\tt" "cons" "car" "cdr" "rplaca" "rplacd"
    "nth" "nthcdr" "aset" "aref" "length" "eval" "add" "neg" "sub"	; 0x50
    "mul" "div" "rem" "lnot" "not" "lor" "land"
    "equal" "eq" "num-eq" "num-not-eq" "gt" "ge" "lt" "le"	; 0x60
    "inc" "dec" "lsh" "zerop" "null" "atom" "consp" "listp"
-   "numberp" "stringp" "vectorp" "catch" "throw" "binderr" nil "fboundp"	; 0x70
+   "numberp" "stringp" "vectorp" "catch" "throw" "binderr" nil nil	; 0x70
    "boundp" "symbolp" "get" "put" "errorpro" "signal" nil "reverse"
    "nreverse" "assoc" "assq" "rassoc" "rassq" "last" "mapcar" "mapc" ; 0x80
    "member" "memq" "delete" "delq" "delete-if" "delete-if-not" "copy-sequence" "sequencep"
@@ -47,7 +47,7 @@
    "pushi\t%d" "pushi\t%d" nil nil nil nil nil nil	 ; 0xa0
    nil nil nil nil nil nil nil nil
    "bindobj" nil nil nil nil nil nil nil	 ; 0xb0
-   nil nil "swap2" "mod" "make-closure" "fbind" "closurep" "bindenv"
+   nil nil "swap2" "mod" "make-closure" nil "closurep" "bindenv"
    nil nil nil nil nil nil nil nil	 ; 0xc0
    nil nil nil nil nil nil nil nil
    nil nil nil nil nil nil nil nil	 ; 0xd0
@@ -81,10 +81,10 @@
       (if (symbolp arg)
 	  (progn
 	    (format stream "Disassembly of function %s:\n\n" arg)
-	    (setq arg (symbol-function arg))
-	    (when (closurep arg)
-	      (setq arg (closure-function arg))))
-	(format stream "Disassembly of form %S:\n\n" arg)))
+	    (setq arg (symbol-value arg)))
+	(format stream "Disassembly of %S:\n\n" arg)))
+    (when (closurep arg)
+      (setq arg (closure-function arg)))
     (cond
      ((and (consp arg) (eq (car arg) 'jade-byte-code))
       (setq code-string (nth 1 arg)

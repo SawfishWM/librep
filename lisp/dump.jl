@@ -361,9 +361,9 @@ the lisp-lib-directory with .jlc as its suffix."
 ;; For all symbol cells in LIST that have a plist property, add its value
 ;; as a constant
 (defun dump-fix-plists (list)
-  (mapc #'(lambda (x &aux plist)
-	    (when (setq plist (dump-has-state-p x 'plist))
-	      (rplacd plist (dump-get-label (dump-add-constant (cdr plist))))))
+  (mapc (lambda (x &aux plist)
+	  (when (setq plist (dump-has-state-p x 'plist))
+	    (rplacd plist (dump-get-label (dump-add-constant (cdr plist))))))
 	list))
 
 

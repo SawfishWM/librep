@@ -45,7 +45,7 @@
 ;;; stack needed is calculated by the compiler.
 
 ;; Instruction set version
-(defconst bytecode-major 7)
+(defconst bytecode-major 8)
 (defconst bytecode-minor 0)
 
 ;; Opcodes
@@ -62,8 +62,7 @@
 
 (defconst op-ref 0x40)			;replace symbol with it's value
 (defconst op-set 0x41)
-(defconst op-fref 0x42)			;similar to ref for function slot
-(defconst op-fset 0x43)
+(defconst op-dset 0x42)
 (defconst op-init-bind 0x44)		;initialise a new set of bindings
 (defconst op-unbind 0x45)		;unbind all bindings in the top set
 (defconst op-dup 0x46)			;duplicate top of stack
@@ -116,7 +115,6 @@
 (defconst op-throw 0x74)
 (defconst op-binderr 0x75)
 (defconst op-unused1 0x76)
-(defconst op-fboundp 0x77)
 (defconst op-boundp 0x78)
 (defconst op-symbolp 0x79)
 (defconst op-get 0x7a)
@@ -166,7 +164,6 @@
 (defconst op-mod 0xbb)
 
 (defconst op-make-closure 0xbc)
-(defconst op-fbind 0xbd)
 (defconst op-closurep 0xbe)
 (defconst op-bindenv 0xbf)
 
@@ -210,13 +207,13 @@
    nil nil nil nil nil nil nil nil
    -1  nil nil nil nil nil nil nil	;0x30
    nil nil nil nil nil nil nil nil
-   0   -1  0   -1  0   0   +1  0	;0x40
+   0   -1  -1  nil 0   0   +1  0	;0x40
    -1  +1  +1  -1  0   0   -1  -1
    -1  -1  -1  -1  0   0   -1  0	;0x50
    -1  -1  -1  -1  0   0   -1  -1
    -1  -1  -1  -1  -1  -1  -1  -1	;0x60
    0   0   -1  0   0   0   0   0
-   0   0   0   nil -1  -1  nil 0	;0x70
+   0   0   0   nil -1  -1  nil nil	;0x70
    0   0   -1  -2  -1  -1  nil 0
    0   -1  -1  -1  -1  0   -1  -1	;0x80
    -1  -1  -1  -1  -1  -1  0   0
@@ -225,7 +222,7 @@
    +1  +1 nil nil nil nil nil nil	;0xa0
    nil nil nil nil nil nil nil nil
    -1  nil nil nil nil nil nil nil	;0xb0
-   nil nil  0  -1   0  -2   0   0
+   nil nil  0  nil -1  -2   0   0
    nil nil nil nil nil nil nil nil	;0xc0
    nil nil nil nil nil nil nil nil
    nil nil nil nil nil nil nil nil	;0xd0
@@ -253,10 +250,10 @@
 ;; list of instructions that can be safely deleted if their result
 ;; isn't actually required
 (defvar comp-side-effect-free-insns
-  (list* op-refq op-ref op-fref op-nth op-nthcdr op-aref op-length op-add
+  (list* op-refq op-ref op-nth op-nthcdr op-aref op-length op-add
 	 op-neg op-sub op-mul op-div op-rem op-lnot op-not op-lor
 	 op-land op-num-eq op-num-noteq op-gt op-ge op-lt op-le op-inc
-	 op-dec op-lsh op-fboundp op-boundp op-get op-reverse op-assoc
+	 op-dec op-lsh op-boundp op-get op-reverse op-assoc
 	 op-assq op-rassoc op-rassq op-last op-copy-sequence op-lxor
 	 op-max op-min op-mod op-make-closure
 	 comp-varref-free-insns))

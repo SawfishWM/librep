@@ -90,13 +90,13 @@
   (unless user
     (setq user (remote-get-user host)))
   (catch 'foo
-    (mapc #'(lambda (s)
-	      (when (and (string= (aref s remote-rep-host) host)
-			 (string= (aref s remote-rep-user) user))
-		;; Move S to the head of the list
-		(setq remote-rep-sessions
-		      (cons s (delq s remote-rep-sessions)))
-		(throw 'foo s)))
+    (mapc (lambda (s)
+	    (when (and (string= (aref s remote-rep-host) host)
+		       (string= (aref s remote-rep-user) user))
+	      ;; Move S to the head of the list
+	      (setq remote-rep-sessions
+		    (cons s (delq s remote-rep-sessions)))
+	      (throw 'foo s)))
 	  remote-rep-sessions)
     ;; Create a new session
     (let*
@@ -107,9 +107,9 @@
 
 (defun remote-rep-open-session (session)
   (let
-      ((process (make-process #'(lambda (data)
-				  (remote-rep-output-filter session data))
-			      'remote-rep-sentinel
+      ((process (make-process (lambda (data)
+				(remote-rep-output-filter session data))
+			      remote-rep-sentinel
 			      nil remote-rep-rsh-program
 			      (list "-l" (aref session remote-rep-user)
 				    (aref session remote-rep-host)
@@ -145,32 +145,32 @@
   (when (or (null user) (string= user ""))
     (setq user (remote-get-user host)))
   (catch 'foo
-    (mapc #'(lambda (s)
-	      (when (and (string= (aref s remote-rep-host) host)
-			 (string= (aref s remote-rep-user) user))
-		(remote-rep-close-session s)
-		(throw 'foo t)))
+    (mapc (lambda (s)
+	    (when (and (string= (aref s remote-rep-host) host)
+		       (string= (aref s remote-rep-user) user))
+	      (remote-rep-close-session s)
+	      (throw 'foo t)))
 	  remote-rep-sessions)))
 
 (defun remote-rep-close-all ()
   "Close all running rep-remote subprocesses."
   (interactive)
-  (mapc 'remote-rep-close-session remote-rep-sessions))
+  (mapc remote-rep-close-session remote-rep-sessions))
 
 (defun remote-rep-get-session-by-process (process)
   (catch 'return
-    (mapc #'(lambda (s)
-	      (and (eq (aref s remote-rep-process) process)
-		   (throw 'return s)))
+    (mapc (lambda (s)
+	    (and (eq (aref s remote-rep-process) process)
+		 (throw 'return s)))
 	  remote-rep-sessions)))
 
 
 ;; Communicating with the remote process
 
-(defun remote-rep-write (session format &rest args)
+(defun remote-rep-write (session fmt &rest args)
   (when (remote-rep-status-p session 'dying)
     (error "rep-remote session is dying"))
-  (apply 'format (aref session remote-rep-process) format args)
+  (apply format (aref session remote-rep-process) fmt args)
   (aset session remote-rep-status 'busy))
 
 (defun remote-rep-send-int (session int)
@@ -195,8 +195,8 @@
     (message (format nil "rep %c %s: " type args) t))
   (remote-rep-while session 'busy type)
   (remote-rep-write session "%c%c" type (length args))
-  (mapc #'(lambda (a)
-	    (remote-rep-send-string session a)) args)
+  (mapc (lambda (a)
+	  (remote-rep-send-string session a)) args)
   (when output-fun
     (funcall output-fun session))
   (remote-rep-while session 'busy type)
@@ -228,9 +228,9 @@
 ;; returns nil or STRING
 (defun remote-rep-read-string (string point)
   (let
-      ((length (remote-rep-read-length string point)))
-    (when (and length (>= (length string) (+ point 8 length)))
-      (substring string (+ point 8) (+ point 8 length)))))
+      ((len (remote-rep-read-length string point)))
+    (when (and len (>= (len string) (+ point 8 len)))
+      (substring string (+ point 8) (+ point 8 len)))))
     
 (defun remote-rep-output-filter (session output)
   (when (aref session remote-rep-pending-output)
@@ -316,42 +316,42 @@
       (unwind-protect
 	  (progn
 	    (aset session remote-rep-callback
-		  #'(lambda (session output point)
-		      (unless remote-rep-len
-			(cond ((= (aref output point) ?\001)
-			       ;; success
-			       (let
-				   ((length (remote-rep-read-length
-					     output (1+ point))))
-				 (if length
-				     (progn
-				       (setq remote-rep-len length)
-				       (setq point (+ point 9)))
-				   ;; wait for next output
-				   (aset session remote-rep-pending-output
-					 (substring output point)))))
-			      ((= (aref output point) ?\177)
-			       ;; failure
-			       (let
-				   ((msg (remote-rep-read-string
-					  output (1+ point))))
-				 (if msg
-				     (progn
-				       (aset session
-					     remote-rep-status 'failure)
-				       (aset session remote-rep-error msg))
-				   (aset remote-rep-pending-output
-					 (substring output point)))))))
-		      (when remote-rep-len
-			(let
-			    ((this (min remote-rep-len
-					(- (length output) point))))
-			  (write remote-rep-get-fh
-				 (substring output point (+ point this)))
-			  (setq remote-rep-len (- remote-rep-len this))
-			  (setq point (+ point this)))
-			(when (zerop remote-rep-len)
-			  (aset session remote-rep-status 'success)))))
+		  (lambda (session output point)
+		    (unless remote-rep-len
+		      (cond ((= (aref output point) ?\001)
+			     ;; success
+			     (let
+				 ((len (remote-rep-read-length
+					output (1+ point))))
+			       (if len
+				   (progn
+				     (setq remote-rep-len len)
+				     (setq point (+ point 9)))
+				 ;; wait for next output
+				 (aset session remote-rep-pending-output
+				       (substring output point)))))
+			    ((= (aref output point) ?\177)
+			     ;; failure
+			     (let
+				 ((msg (remote-rep-read-string
+					output (1+ point))))
+			       (if msg
+				   (progn
+				     (aset session
+					   remote-rep-status 'failure)
+				     (aset session remote-rep-error msg))
+				 (aset remote-rep-pending-output
+				       (substring output point)))))))
+		    (when remote-rep-len
+		      (let
+			  ((this (min remote-rep-len
+				      (- (length output) point))))
+			(write remote-rep-get-fh
+			       (substring output point (+ point this)))
+			(setq remote-rep-len (- remote-rep-len this))
+			(setq point (+ point this)))
+		      (when (zerop remote-rep-len)
+			(aset session remote-rep-status 'success)))))
 	    (unwind-protect
 		(remote-rep-command session ?G nil remote-file)
 	      (aset session remote-rep-callback nil)))
@@ -360,18 +360,17 @@
 (defun remote-rep-put (session local-file remote-file)
   (unwind-protect
       (remote-rep-command session ?P
-			  #'(lambda (session)
-			      (let
-				  ((len (file-size local-file))
-				   (fh (open-file local-file 'read)))
-				(when fh
-				  (unwind-protect
-				      (progn
-					(remote-rep-send-int session len)
-					(copy-stream
-					 fh (aref
-					     session remote-rep-process)))
-				    (close-file fh)))))
+			  (lambda (session)
+			    (let
+				((len (file-size local-file))
+				 (fh (open-file local-file 'read)))
+			      (when fh
+				(unwind-protect
+				    (progn
+				      (remote-rep-send-int session len)
+				      (copy-stream
+				       fh (aref session remote-rep-process)))
+				  (close-file fh)))))
 			  remote-file)
     (remote-rep-invalidate-directory
      session (file-name-directory remote-file))))
@@ -418,26 +417,26 @@
   (let
       (remote-rep-link)
     (aset session remote-rep-callback
-	  #'(lambda (session output point)
-	      (cond ((= (aref output point) ?\001)
-		     ;; success
-		     (setq remote-rep-link
-			   (remote-rep-read-string
-			    output (1+ point)))
-		     (if remote-rep-link
-			 (aset session remote-rep-status 'success)
+	  (lambda (session output point)
+	    (cond ((= (aref output point) ?\001)
+		   ;; success
+		   (setq remote-rep-link
+			 (remote-rep-read-string
+			  output (1+ point)))
+		   (if remote-rep-link
+		       (aset session remote-rep-status 'success)
+		     (aset session remote-rep-pending-output
+			   (substring output point))))
+		  ((= (aref output point) ?\177)
+		   (let
+		       ((msg (remote-rep-read-string
+			      output (1+ point))))
+		     (if msg
+			 (progn
+			   (aset session remote-rep-status 'failure)
+			   (aset session remote-rep-error msg))
 		       (aset session remote-rep-pending-output
-			     (substring output point))))
-		    ((= (aref output point) ?\177)
-		     (let
-			 ((msg (remote-rep-read-string
-				output (1+ point))))
-		       (if msg
-			   (progn
-			     (aset session remote-rep-status 'failure)
-			     (aset session remote-rep-error msg))
-			 (aset session remote-rep-pending-output
-			       (substring output point))))))))
+			     (substring output point))))))))
     (unwind-protect
 	(remote-rep-command session ?l nil file)
       (aset session remote-rep-callback nil))
@@ -469,9 +468,9 @@
 (defun remote-rep-dir-cached-p (session dir)
   (setq dir (directory-file-name dir))
   (catch 'exit
-    (mapc #'(lambda (dir-entry)
-	      (when (string= (aref dir-entry remote-rep-cache-dir) dir)
-		(throw 'exit dir-entry)))
+    (mapc (lambda (dir-entry)
+	    (when (string= (aref dir-entry remote-rep-cache-dir) dir)
+	      (throw 'exit dir-entry)))
 	  (aref session remote-rep-dircache))))
 
 (defun remote-rep-get-file (session filename)
@@ -512,8 +511,8 @@
 	  ;; construct the callback function to have the new cache entry
 	  ;; as the first argument
 	  (aset session remote-rep-callback
-		#'(lambda (&rest args)
-		    (apply 'remote-rep-dircache-callback entry args)))
+		(lambda (&rest args)
+		  (apply 'remote-rep-dircache-callback entry args)))
 	  (unwind-protect
 	      (condition-case nil
 		  (remote-rep-command session ?D nil dir)
@@ -524,9 +523,9 @@
 	    (cons entry (delq entry (aref session remote-rep-dircache)))))
     ;; ENTRY now has the valid dircache directory structure
     (catch 'return
-      (mapc #'(lambda (f)
-		(when (string= (aref f remote-rep-file-name) base)
-		  (throw 'return f)))
+      (mapc (lambda (f)
+	      (when (string= (aref f remote-rep-file-name) base)
+		(throw 'return f)))
 	    (aref entry remote-rep-cache-entries))
       nil)))
 
@@ -590,8 +589,8 @@
 (defun remote-rep-empty-cache ()
   "Discard all cached rep-remote directory entries."
   (interactive)
-  (mapc #'(lambda (ses)
-	    (aset ses remote-rep-dircache nil)) remote-rep-sessions))
+  (mapc (lambda (ses)
+	  (aset ses remote-rep-dircache nil)) remote-rep-sessions))
 
 
 ;; Password caching
@@ -611,19 +610,16 @@
   (let
       ((joined (concat user ?@ host)))
     (catch 'foo
-      (mapc #'(lambda (cell)
-		(when (string= (car cell) joined)
-		  (setcdr cell passwd)
-		  (throw 'foo)))
+      (mapc (lambda (cell)
+	      (when (string= (car cell) joined)
+		(setcdr cell passwd)
+		(throw 'foo)))
 	    remote-rep-passwd-alist)
       (setq remote-rep-passwd-alist (cons (cons joined passwd)
 					  remote-rep-passwd-alist)))))
 
 
 ;; Backend handler
-
-;;;###autoload (put 'rep 'remote-backend 'remote-rep-handler)
-(put 'rep 'remote-backend 'remote-rep-handler)
 
 ;;;###autoload
 (defun remote-rep-handler (split-name op args)
@@ -637,7 +633,7 @@
      ((memq op '(seek-file flush-file write-buffer-contents
 		 read-file-contents insert-file-contents))
       ;; Just pass these through to the underlying file
-      (apply op (file-bound-stream (car args)) (cdr args)))
+      (apply (symbol-value op) (file-bound-stream (car args)) (cdr args)))
      ((eq op 'close-file)
       ;; Close the file, synchronise with the remote file if required
       (let*
@@ -665,7 +661,7 @@
 							 'file-modes
 							 (list (car args))))
 	(unwind-protect
-	    (funcall op local-name)
+	    (funcall (symbol-value op) local-name)
 	  (delete-file local-name)))
       t))
    ((memq op '(write-buffer-contents copy-file-from-local-fs))
@@ -676,7 +672,7 @@
 		       (make-temp-name)))
 	 (session (remote-rep-open-host (nth 1 split-name) (car split-name))))
       (unless (eq op 'copy-file-from-local-fs)
-	(apply op local-name (cdr args)))
+	(apply (symbol-value op) local-name (cdr args)))
       (unwind-protect
 	  (remote-rep-put session local-name (nth 2 split-name))
 	(if (eq op 'copy-file-from-local-fs)
@@ -716,8 +712,8 @@
 	    ;; XXX this assumes local/remote have same naming structure!
 	    ((dir (file-name-as-directory file-name)))
 	  (remote-rep-lookup-file session dir)
-	  (mapcar #'(lambda (f)
-		      (aref f remote-rep-file-name))
+	  (mapcar (lambda (f)
+		    (aref f remote-rep-file-name))
 		  (aref (remote-rep-dir-cached-p session dir)
 			remote-rep-cache-entries))))
        ((eq op 'delete-file)
@@ -745,7 +741,7 @@
 						(open-file local-file type)
 						'remote-file-handler))
 	  (set-file-handler-data local-fh
-				 (vector 'remote-rep-handler
+				 (vector remote-rep-handler
 					 type		;access type
 					 file-name	;remote name
 					 local-file))	;local copy
@@ -786,3 +782,6 @@
 				      0200 0002)) 0)))
 	   (t
 	    (error "Unsupported rep-remote op: %s %s" op args))))))))))
+
+;;;###autoload (put 'rep 'remote-backend remote-rep-handler)
+(put 'rep 'remote-backend remote-rep-handler)

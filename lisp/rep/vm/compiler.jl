@@ -173,7 +173,6 @@ value when given the same inputs. Used when constant folding.")
 					; for all functions/macros in the file
 (defvar comp-defvars nil)		;all variables declared at top-level
 (defvar comp-bindings '())		;list of currently bound variables
-(defvar comp-fun-bindings '())		;list of currently bound functions
 (defvar comp-current-file nil)		;the file being compiled
 (defvar comp-current-fun nil)		;the function being compiled
 (defvar comp-inline-depth 0)		;depth of lambda-inlining
@@ -197,14 +196,14 @@ value when given the same inputs. Used when constant folding.")
 ;   (format comp-output-stream "%s:" comp-current-file))
   (when comp-current-fun
     (format comp-output-stream "%s:" comp-current-fun))
-  (apply 'format comp-output-stream fmt args))
+  (apply format comp-output-stream fmt args))
 
 (put 'compile-error 'error-message "Compilation mishap")
 (defun comp-error (&rest data)
   (signal 'compile-error data))
 
-(defun comp-warning (format &rest args)
-  (apply 'comp-message format args)
+(defun comp-warning (fmt &rest args)
+  (apply comp-message fmt args)
   (write comp-output-stream "\n"))
 
 
@@ -247,42 +246,59 @@ value when given the same inputs. Used when constant folding.")
 
 ;; Test that a reference to variable NAME appears valid
 (defun comp-test-varref (name)
-  (when (and (null (memq name comp-defvars))
+  (when (and (symbolp name)
+	     (null (memq name comp-defvars))
 	     (null (memq name comp-bindings))
+	     (null (assq name comp-defuns))
 	     (not (boundp name)))
     (comp-warning "Reference to undeclared free variable: %s" name)))
+
+;; Test that binding to variable NAME appears valid
+(defun comp-test-varbind (name)
+  (cond ((assq name comp-defuns)
+	 (comp-warning "Binding to %s shadows function" name))
+	;((memq name comp-defvars)
+	; (comp-warning "Binding to %s shadows special variable" name))
+	((memq name comp-bindings)
+	 (comp-warning "Binding to %s shadows earlier binding" name))
+	((and (boundp name) (functionp (symbol-value name)))
+	 (comp-warning "Binding to %s shadows pre-defined value" name))))
 
 ;; Test a call to NAME with NARGS arguments
 ;; XXX functions in comp-fun-bindings aren't type-checked
 (defun comp-test-funcall (name nargs)
-  (catch 'return
-    (let
-	((decl (assq name comp-defuns)))
-      (when (and (null decl) (fboundp name))
-	(setq decl (symbol-function name))
-	(when (or (subrp decl) (and (consp decl) (eq (car decl) 'autoload)))
-	  (throw 'return))
-	(when (eq (car decl) 'macro)
-	  (setq decl (cdr decl)))
-	(when (closurep decl)
-	  (setq decl (closure-function decl)))
-	(if (bytecodep decl)
-	    (comp-remember-fun name (aref decl 0))
-	  (comp-remember-fun name (nth 1 decl)))
-	(setq decl (assq name comp-defuns)))
-      (if (null decl)
-	  (unless (memq name comp-fun-bindings)
-	    (comp-warning "Call to undeclared function: %s" name))
-	(let
-	    ((required (nth 1 decl))
-	     (optional (nth 2 decl))
-	     (rest (nth 3 decl)))
-	  (if (< nargs required)
-	      (comp-warning "%d arguments required by %s; %d supplied"
-			    required name nargs)
-	    (when (and (null rest) (> nargs (+ required (or optional 0))))
-	      (comp-warning "Too many arguments to %s (%d given, %d used)"
-			    name nargs (+ required (or optional 0))))))))))
+  (when (symbolp name)
+    (catch 'return
+      (let
+	  ((decl (assq name comp-defuns)))
+	(when (and (null decl) (boundp name))
+	  (setq decl (symbol-value name))
+	  (when (or (subrp decl)
+		    (and (closurep decl)
+			 (eq (car (closure-function decl)) 'autoload)))
+	    (throw 'return))
+	  (when (eq (car decl) 'macro)
+	    (setq decl (cdr decl)))
+	  (when (closurep decl)
+	    (setq decl (closure-function decl)))
+	  (if (bytecodep decl)
+	      (comp-remember-fun name (aref decl 0))
+	    (comp-remember-fun name (nth 1 decl)))
+	  (setq decl (assq name comp-defuns)))
+	(if (null decl)
+	    (unless (or (memq name comp-bindings)
+			(memq name comp-defvars))
+	      (comp-warning "Call to undeclared function: %s" name))
+	  (let
+	      ((required (nth 1 decl))
+	       (optional (nth 2 decl))
+	       (rest (nth 3 decl)))
+	    (if (< nargs required)
+		(comp-warning "%d arguments required by %s; %d supplied"
+			      required name nargs)
+	      (when (and (null rest) (> nargs (+ required (or optional 0))))
+		(comp-warning "Too many arguments to %s (%d given, %d used)"
+			      name nargs (+ required (or optional 0)))))))))))
 
 
 ;; Top level entrypoints
@@ -306,7 +322,6 @@ is one of these that form is compiled.")
        (comp-defuns '())
        (comp-defvars '())
        (comp-bindings '())
-       (comp-fun-bindings '())
        (comp-output-stream nil)
        (temp-file (make-temp-name))
        src-file dst-file form)
@@ -458,11 +473,11 @@ that files which shouldn't be compiled aren't."
 (defun compile-compiler ()
   (let
       ((comp-write-docs t))
-    (mapc #'(lambda (file)
-	      (setq file (expand-file-name file lisp-lib-directory))
-	      (when (or (not (file-exists-p (concat file ?c)))
-			(file-newer-than-file-p file (concat file ?c)))
-		(compile-file file)))
+    (mapc (lambda (file)
+	    (setq file (expand-file-name file lisp-lib-directory))
+	    (when (or (not (file-exists-p (concat file ?c)))
+		      (file-newer-than-file-p file (concat file ?c)))
+	      (compile-file file)))
 	  '("compiler.jl" "compiler-opt.jl"))))
 
 ;;;###autoload
@@ -470,7 +485,9 @@ that files which shouldn't be compiled aren't."
   "Compiles the body of the function FUNCTION."
   (interactive "aFunction to compile:")
   (let*
-      ((fbody (symbol-function function))
+      ((fbody (if (symbolp function)
+		  (symbol-value function)
+		function))
        (body (if (closurep fbody) (closure-function fbody) fbody))
        (comp-current-fun function)
        (comp-defuns nil)
@@ -481,7 +498,7 @@ that files which shouldn't be compiled aren't."
     (setq body (comp-compile-lambda body function))
     (if (closurep fbody)
 	(set-closure-function fbody body)
-      (fset function body))
+      (set function body))
     function))
     
 
@@ -677,7 +694,7 @@ that files which shouldn't be compiled aren't."
 	 (comp-inc-stack)))))
     ((consp form)
      (when (and (memq (car form) comp-constant-functions)
-		(not (memq (car form) comp-fun-bindings)))
+		(not (memq (car form) comp-bindings)))
        ;; See if this form can be folded
        (setq form (comp-fold-constants form))
        ;; If the form is still a function application, avoid the
@@ -700,8 +717,12 @@ that files which shouldn't be compiled aren't."
 	  ;; Check if there's a special handler for this function
 	  ((and (symbolp (car form))
 		(setq fun (get (car form) 'compile-fun))
-		(not (memq (car form) comp-fun-bindings)))
+		(not (memq (car form) comp-bindings)))
 	   (funcall fun form))
+
+	  ;; Is it a function to be inlined?
+	  ((and (symbolp (car form)) (get (car form) 'compile-inline))
+	   (comp-compile-inline-function form))
 
 	  (t
 	   ;; Expand macros
@@ -720,10 +741,7 @@ that files which shouldn't be compiled aren't."
 					   (cdr form)))
 	      (t
 	       ;; Assume a normal function call
-	       (if (and (symbolp fun)
-			(not (special-form-p fun)))
-		   (comp-compile-constant fun)
-		 (comp-error "Bad function name" fun))
+	       (comp-compile-form fun)
 	       (setq form (cdr form))
 	       (let
 		   ((i 0))
@@ -792,16 +810,16 @@ that files which shouldn't be compiled aren't."
 ;; Remove all keywords from a lambda list ARGS, returning the list of
 ;; variables that would be bound
 (defmacro comp-get-lambda-vars (args)
-  (list 'filter '#'(lambda (x)
-		     (not (memq x '(&optional &rest &aux))))
+  (list 'filter '(lambda (x)
+		   (not (memq x '(&optional &rest &aux))))
 	args))
 
-;; From LIST, `(lambda (ARGS) [DOC-STRING] BODY ...)' returns a byte-code
+;; From LST, `(lambda (ARGS) [DOC-STRING] BODY ...)' returns a byte-code
 ;; vector
-(defun comp-compile-lambda (list &optional name)
+(defun comp-compile-lambda (lst &optional name)
   (let
-      ((args (nth 1 list))
-       (body (nthcdr 2 list))
+      ((args (nth 1 lst))
+       (body (nthcdr 2 lst))
        doc interactive form)
     (when (stringp (car body))
       (setq doc (car body))
@@ -817,12 +835,15 @@ that files which shouldn't be compiled aren't."
 	(setq interactive (compile-form interactive))))
     (when (and comp-write-docs doc name)
       (add-documentation name doc))
-    (when (setq form (let
-			 ((comp-bindings
-			   (nconc (comp-get-lambda-vars args) comp-bindings)))
-		       (compile-form (cons 'progn body))))
-      (make-byte-code-subr args (nth 1 form) (nth 2 form) (nth 3 form)
-			   (and (not comp-write-docs) doc) interactive))))
+    (let
+	((vars (comp-get-lambda-vars args)))
+      (mapc comp-test-varbind vars)
+      (when (setq form (let
+			   ((comp-bindings
+			     (nconc vars comp-bindings)))
+			 (compile-form (cons 'progn body))))
+	(make-byte-code-subr args (nth 1 form) (nth 2 form) (nth 3 form)
+			     (and (not comp-write-docs) doc) interactive)))))
 
 ;; Return t if FORM is a constant
 (defun comp-constant-p (form)
@@ -831,7 +852,7 @@ that files which shouldn't be compiled aren't."
 	(vectorp form) (bytecodep form)
 	(eq form t) (eq form nil)))
    ((consp form)
-    (memq (car form) '(quote function)))
+    (eq (car form) 'quote))
    ((symbolp form)
     (or (const-variable-p form)
 	(assq form comp-const-env)))
@@ -848,12 +869,21 @@ that files which shouldn't be compiled aren't."
     ;; Self-evaluating types
     form)
    ((consp form)
-    ;; only quote or function
+    ;; only quote
     (nth 1 form))
    ((symbolp form)
     (if (const-variable-p form)
 	(symbol-value form)
       (cdr (assq form comp-const-env))))))
+
+(defun comp-constant-function-p (form)
+  (or (memq (car form) '(lambda function))))
+
+(defun comp-constant-function-value (form)
+  (cond ((eq (car form) 'lambda)
+	 form)
+	((eq (car form) 'function)
+	 (nth 1 form))))
 
 
 ;; Managing the output code
@@ -870,11 +900,11 @@ that files which shouldn't be compiled aren't."
     (cond
      ((eq opcode 'label)
       ;; backpatch already output instructions referrring to this label
-      (mapc #'(lambda (addr)
-		(setq comp-output (cons (cons (lsh comp-output-pc -8) addr)
-					comp-output))
-		(setq comp-output (cons (cons (logand comp-output-pc 255)
-					      (1+ addr)) comp-output)))
+      (mapc (lambda (addr)
+	      (setq comp-output (cons (cons (lsh comp-output-pc -8) addr)
+				      comp-output))
+	      (setq comp-output (cons (cons (logand comp-output-pc 255)
+					    (1+ addr)) comp-output)))
 	    arg)
       ;; set the address of the label
       (rplacd insn comp-output-pc))
@@ -918,7 +948,7 @@ that files which shouldn't be compiled aren't."
 	     (error "Argument overflow in insn: %d" opcode)))))))
 
 (defun comp-assemble-bytecodes ()
-  (mapc 'comp-insn-out comp-intermediate-code))
+  (mapc comp-insn-out comp-intermediate-code))
     
 
 ;; Managing the intermediate codes
@@ -955,20 +985,20 @@ that files which shouldn't be compiled aren't."
 (defun comp-fold-constants (form)
   (catch 'exit
     (let
-	((args (mapcar #'(lambda (arg)
-			   (when (consp arg)
-			     (setq arg (macroexpand arg comp-macro-env)))
-			   (when (and (consp arg)
-				      (memq (car arg) comp-constant-functions)
-				      (not (memq (car arg) comp-fun-bindings)))
-			     (setq arg (comp-fold-constants arg)))
-			   (if (comp-constant-p arg)
-			       (comp-constant-value arg)
-			     ;; Not a constant, abort, abort
-			     (throw 'exit form)))
+	((args (mapcar (lambda (arg)
+			 (when (consp arg)
+			   (setq arg (macroexpand arg comp-macro-env)))
+			 (when (and (consp arg)
+				    (memq (car arg) comp-constant-functions)
+				    (not (memq (car arg) comp-bindings)))
+			   (setq arg (comp-fold-constants arg)))
+			 (if (comp-constant-p arg)
+			     (comp-constant-value arg)
+			   ;; Not a constant, abort, abort
+			   (throw 'exit form)))
 		       (cdr form))))
       ;; Now we have ARGS, the constant [folded] arguments from FORM
-      (setq form (apply (car form) args))
+      (setq form (apply (eval (car form)) args))
       ;; If the folded version is a symbol or a list, quote it to preserve
       ;; its constant-ness
       (if (or (symbolp form) (consp form))
@@ -978,11 +1008,10 @@ that files which shouldn't be compiled aren't."
 ;; Source code transformations. These are basically macros that are only
 ;; used at compile-time.
 
-(put 'eval-when-compile 'compile-transform 'comp-trans-eval-when-compile)
 (defun comp-trans-eval-when-compile (form)
   `(quote ,(eval (nth 1 form))))
+(put 'eval-when-compile 'compile-transform comp-trans-eval-when-compile)
 
-(put 'if 'compile-transform 'comp-trans-if)
 (defun comp-trans-if (form)
   (let
       ((condition (nth 1 form))
@@ -991,47 +1020,47 @@ that files which shouldn't be compiled aren't."
     (if (null else-forms)
 	(list 'cond (list condition then-form))
       (list 'cond (list condition then-form) (cons 't else-forms)))))
+(put 'if 'compile-transform comp-trans-if)
 
-(put 'and 'compile-transform 'comp-trans-and)
 (defun comp-trans-and (form)
   (setq form (cdr form))
   (let
-      (list slot)
+      (lst slot)
     (while form
       (if slot
 	  (progn
 	    (setcdr slot (cons (list 'cond (list (car form))) nil))
 	    (setq slot (car (cdr (car (cdr slot))))))
-	(setq list (list 'cond (list (car form)))
-	      slot (car (cdr list))))
+	(setq lst (list 'cond (list (car form))))
+	(setq slot (car (cdr lst))))
       (setq form (cdr form)))
-    list))
+    lst))
+(put 'and 'compile-transform comp-trans-and)
 
-(put 'or 'compile-transform 'comp-trans-or)
 (defun comp-trans-or (form)
-  (cons 'cond (mapcar #'list (cdr form))))
+  (cons 'cond (mapcar list (cdr form))))
+(put 'or 'compile-transform comp-trans-or)
 
-(put 'setq-default 'compile-transform 'comp-trans-setq-default)
 (defun comp-trans-setq-default (form)
   (let
-      (list)
+      (lst)
     (setq form (cdr form))
     (while form
-      (setq list (cons `(set-default ',(car form) ,(nth 1 form)) list)
-	    form (nthcdr 2 form)))
-    (cons 'progn (nreverse list))))
+      (setq lst (cons `(set-default ',(car form) ,(nth 1 form)) lst))
+      (setq form (nthcdr 2 form)))
+    (cons 'progn (nreverse lst))))
+(put 'setq-default 'compile-transform comp-trans-setq-default)
 
-(put 'setq 'compile-transform 'comp-trans-setq)
 (defun comp-trans-setq (form)
   (let
-      (list)
+      (lst)
     (setq form (cdr form))
     (while form
-      (setq list (cons `(set ',(car form) ,(nth 1 form)) list)
-	    form (nthcdr 2 form)))
-    (cons 'progn (nreverse list))))
+      (setq lst (cons `(set ',(car form) ,(nth 1 form)) lst))
+      (setq form (nthcdr 2 form)))
+    (cons 'progn (nreverse lst))))
+(put 'setq 'compile-transform comp-trans-setq)
 
-(put 'defvar 'compile-transform 'comp-trans-defvar)
 (defun comp-trans-defvar (form)
   (let
       ((name (nth 1 form))
@@ -1043,8 +1072,8 @@ that files which shouldn't be compiled aren't."
 	 (put ',name 'variable-documentation ,doc))
        (unless (boundp ',name)
 	 (setq ,name ,value)))))
+(put 'defvar 'compile-transform comp-trans-defvar)
 
-(put 'require 'compile-transform 'comp-trans-require)
 (defun comp-trans-require (form)
   (let
       ((feature (nth 1 form)))
@@ -1052,24 +1081,35 @@ that files which shouldn't be compiled aren't."
       (require (comp-constant-value feature)))
     ;; Must transform to something other than (require FEATURE) to
     ;; prevent infinite regress
-    `(funcall 'require ,feature)))
+    `(funcall require ,feature)))
+(put 'require 'compile-transform comp-trans-require)
 
 
 ;; Functions which compile non-standard functions (ie special-forms)
 
-(put 'quote 'compile-fun 'comp-compile-quote)
 (defun comp-compile-quote (form)
   (comp-compile-constant (car (cdr form))))
+(put 'quote 'compile-fun comp-compile-quote)
 
-(put 'function 'compile-fun 'comp-compile-function)
 (defun comp-compile-function (form)
   (setq form (car (cdr form)))
   (if (symbolp form)
       (comp-compile-constant form)
     (comp-compile-constant (comp-compile-lambda form)))
-  (comp-write-op op-make-closure))
+  (comp-write-op op-nil)
+  (comp-inc-stack)
+  (comp-write-op op-make-closure)
+  (comp-dec-stack))
+(put 'function 'compile-fun comp-compile-function)
 
-(put 'while 'compile-fun 'comp-compile-while)
+(defun comp-compile-lambda-form (form)
+  (comp-compile-constant (comp-compile-lambda form))
+  (comp-write-op op-nil)
+  (comp-inc-stack)
+  (comp-write-op op-make-closure)
+  (comp-dec-stack))
+(put 'lambda 'compile-fun comp-compile-lambda-form)
+
 (defun comp-compile-while (form)
   (let
       ((top-label (comp-make-label))
@@ -1082,21 +1122,20 @@ that files which shouldn't be compiled aren't."
     (comp-set-label test-label)
     (comp-compile-form (nth 1 form))
     (comp-compile-jmp op-jpt top-label)))
+(put 'while 'compile-fun comp-compile-while)
 
 ;; Compile mapc specially if we can open code the function call
-(put 'mapc 'compile-fun 'comp-compile-mapc)
 (defun comp-compile-mapc (form)
   (let
       ((fun (nth 1 form))
-       (list (nth 2 form)))
-    (if (and (comp-constant-p fun)
-	     (eq (car (comp-constant-value fun)) 'lambda))
+       (lst (nth 2 form)))
+    (if (comp-constant-function-p fun)
 	;; We can open code the function
 	(let
 	    ((top-label (comp-make-label))
 	     (test-label (comp-make-label)))
-	  (setq fun (comp-constant-value fun))
-	  (comp-compile-form list)
+	  (setq fun (comp-constant-function-value fun))
+	  (comp-compile-form lst)
 	  (comp-compile-jmp op-jmp test-label)
 	  (comp-set-label top-label)
 	  (comp-write-op op-dup)
@@ -1114,22 +1153,22 @@ that files which shouldn't be compiled aren't."
 	  (comp-write-op op-nil))
       ;; The function must be called, so just use the mapc opcode
       (comp-compile-form fun)
-      (comp-compile-form list)
+      (comp-compile-form lst)
       (comp-write-op op-mapc)
       (comp-dec-stack))))
+(put 'mapc 'compile-fun comp-compile-mapc)
       
-(put 'progn 'compile-fun 'comp-compile-progn)
 (defun comp-compile-progn (form)
   (comp-compile-body (cdr form)))
+(put 'progn 'compile-fun comp-compile-progn)
 
-(put 'prog1 'compile-fun 'comp-compile-prog1)
 (defun comp-compile-prog1 (form)
   (comp-compile-form (nth 1 form))
   (comp-compile-body (nthcdr 2 form))
   (comp-write-op op-pop)
   (comp-dec-stack))
+(put 'prog1 'compile-fun comp-compile-prog1)
 
-(put 'prog2 'compile-fun 'comp-compile-prog2)
 (defun comp-compile-prog2 (form)
   (comp-compile-form (nth 1 form))
   (comp-write-op op-pop)
@@ -1138,15 +1177,14 @@ that files which shouldn't be compiled aren't."
   (comp-compile-body (nthcdr 3 form))
   (comp-write-op op-pop)
   (comp-dec-stack))
+(put 'prog2 'compile-fun comp-compile-prog2)
 
-(put 'set 'compile-fun 'comp-compile-set)
-(put 'fset 'compile-fun 'comp-compile-set)
 (defun comp-compile-set (form)
   (let
       ((fun (car form))
        (sym (nth 1 form))
        (val (nth 2 form)))
-    (if (and (eq fun 'set) (comp-constant-p sym))
+    (if (comp-constant-p sym)
 	;; use setq
 	(progn
 	  (setq sym (comp-constant-value sym))
@@ -1158,8 +1196,9 @@ that files which shouldn't be compiled aren't."
 	  (comp-dec-stack))
       (comp-compile-form sym)
       (comp-compile-form val)
-      (comp-write-op (if (eq fun 'set) op-set op-fset))
+      (comp-write-op op-set)
       (comp-dec-stack))))
+(put 'set 'compile-fun comp-compile-set)
 
 ;; This compiles an inline lambda, i.e. FUN is something like
 ;; (lambda (LAMBDA-LIST...) BODY...)
@@ -1192,8 +1231,10 @@ that files which shouldn't be compiled aren't."
 	((state 'required)
 	 (args-left arg-count)
 	 (bind-stack '())
-	 (comp-bindings (nconc (comp-get-lambda-vars lambda-list)
-			       comp-bindings)))
+	 (vars (comp-get-lambda-vars lambda-list))
+	 (comp-bindings comp-bindings))
+      (mapc comp-test-varbind vars)
+      (setq comp-bindings (nconc vars comp-bindings))
       (while (consp lambda-list)
 	(if (memq (car lambda-list) '(&optional &rest &aux))
 	    (setq state (car lambda-list))
@@ -1269,49 +1310,51 @@ that files which shouldn't be compiled aren't."
 ;; all defsubst declared functions
 (defun comp-compile-inline-function (form)
   (comp-compile-lambda-inline
-   (closure-function (symbol-function (car form))) (cdr form)))
+   (closure-function (symbol-value (car form))) (cdr form)))
 
-(put 'let* 'compile-fun 'comp-compile-let*)
 (defun comp-compile-let* (form)
   (let
-      ((list (car (cdr form)))
+      ((lst (car (cdr form)))
        (comp-bindings comp-bindings))
     (comp-write-op op-init-bind)
-    (while (consp list)
+    (while (consp lst)
       (cond
-	((consp (car list))
+	((consp (car lst))
 	  (let
-	      ((tmp (car list)))
+	      ((tmp (car lst)))
 	    (comp-compile-body (cdr tmp))
+	    (comp-test-varbind (car tmp))
 	    (setq comp-bindings (cons (car tmp) comp-bindings))
 	    (comp-write-op op-bind (comp-add-constant (car tmp)))))
 	(t
 	  (comp-write-op op-nil)
 	  (comp-inc-stack)
-	  (setq comp-bindings (cons (car list) comp-bindings))
-	  (comp-write-op op-bind (comp-add-constant (car list)))))
+	  (comp-test-varbind (car lst))
+	  (setq comp-bindings (cons (car lst) comp-bindings))
+	  (comp-write-op op-bind (comp-add-constant (car lst)))))
       (comp-dec-stack)
-      (setq list (cdr list)))
+      (setq lst (cdr lst)))
     (comp-compile-body (nthcdr 2 form))
     (comp-write-op op-unbind)))
+(put 'let* 'compile-fun comp-compile-let*)
 
-(put 'let 'compile-fun 'comp-compile-let)
 (defun comp-compile-let (form)
   (let
-      ((list (car (cdr form)))
+      ((lst (car (cdr form)))
        (sym-stk nil)
        bindings)
     (comp-write-op op-init-bind)
-    (while (consp list)
+    (while (consp lst)
       (cond
-	((consp (car list))
-	  (setq sym-stk (cons (car (car list)) sym-stk))
-	  (comp-compile-body (cdr (car list))))
+	((consp (car lst))
+	  (setq sym-stk (cons (car (car lst)) sym-stk))
+	  (comp-compile-body (cdr (car lst))))
 	(t
-	  (setq sym-stk (cons (car list) sym-stk))
+	  (setq sym-stk (cons (car lst) sym-stk))
 	  (comp-write-op op-nil)
 	  (comp-inc-stack)))
-      (setq list (cdr list)))
+      (setq lst (cdr lst)))
+    (mapc comp-test-varbind sym-stk)
     (let
 	((comp-bindings (append sym-stk comp-bindings)))
       (while (consp sym-stk)
@@ -1320,66 +1363,43 @@ that files which shouldn't be compiled aren't."
 	(setq sym-stk (cdr sym-stk)))
       (comp-compile-body (nthcdr 2 form)))
     (comp-write-op op-unbind)))
+(put 'let 'compile-fun comp-compile-let)
 
-(put 'flet 'compile-fun 'comp-compile-flet)
-(defun comp-compile-flet (form)
-  (let
-      ((list (car (cdr form)))
-       (sym-stk nil)
-       bindings)
-    (comp-write-op op-init-bind)
-    (while (consp list)
-      (when (consp (car list))
-	(setq sym-stk (cons (car (car list)) sym-stk))
-	(comp-compile-constant
-	 (comp-compile-lambda (cons 'lambda (cdr (car list)))))
-	(comp-write-op op-make-closure))
-      (setq list (cdr list)))
-    (let
-	((comp-fun-bindings (append sym-stk comp-fun-bindings)))
-      (while (consp sym-stk)
-	(comp-compile-constant (car sym-stk))
-	(comp-write-op op-fbind)
-	(comp-dec-stack 2)
-	(setq sym-stk (cdr sym-stk)))
-      (comp-compile-body (nthcdr 2 form)))
-    (comp-write-op op-unbind)))
-
-(put 'macrolet 'compile-fun 'comp-compile-macrolet)
-(defun comp-compile-macrolet (form)
-  ;; need to temporarily add to comp-macro-env
-  (comp-error "compiled macrolet forms are unimplemented"))
-
-(put 'save-environment 'compile-fun 'comp-compile-save-environment)
 (defun comp-compile-save-environment (form)
   (comp-write-op op-bindenv)
   (comp-compile-body (cdr form))
   (comp-write-op op-unbind))
+(put 'save-environment 'compile-fun comp-compile-save-environment)
 
-(put 'defun 'compile-fun 'comp-compile-defun)
 (defun comp-compile-defun (form)
   (comp-compile-constant (nth 1 form))
   (comp-write-op op-dup)
   (comp-inc-stack)
   (comp-compile-constant (comp-compile-lambda (cons 'lambda (nthcdr 2 form))))
+  (comp-write-op op-nil)
+  (comp-inc-stack)
   (comp-write-op op-make-closure)
-  (comp-write-op op-fset)
+  (comp-dec-stack)
+  (comp-write-op op-dset)
   (comp-write-op op-pop)
   (comp-dec-stack 2))
+(put 'defun 'compile-fun comp-compile-defun)
 
-(put 'defmacro 'compile-fun 'comp-compile-defmacro)
 (defun comp-compile-defmacro (form)
   (comp-compile-constant (nth 1 form))
   (comp-write-op op-dup)
   (comp-inc-stack)
   (comp-compile-constant (cons 'macro (comp-compile-lambda
 				       (cons 'lambda (nthcdr 2 form)))))
+  (comp-write-op op-nil)
+  (comp-inc-stack)
   (comp-write-op op-make-closure)
-  (comp-write-op op-fset)
+  (comp-dec-stack)
+  (comp-write-op op-dset)
   (comp-write-op op-pop)
   (comp-dec-stack 2))
+(put 'defmacro 'compile-fun comp-compile-defmacro)
 
-(put 'cond 'compile-fun 'comp-compile-cond)
 (defun comp-compile-cond (form)
   (let
       ((end-label (comp-make-label))
@@ -1448,8 +1468,8 @@ that files which shouldn't be compiled aren't."
       (comp-write-op op-nil))
     (comp-inc-stack)
     (comp-set-label end-label)))
+(put 'cond 'compile-fun comp-compile-cond)
 
-(put 'catch 'compile-fun 'comp-compile-catch)
 (defun comp-compile-catch (form)
   (let
       ((catch-label (comp-make-label))
@@ -1482,8 +1502,8 @@ that files which shouldn't be compiled aren't."
     (comp-compile-body (nthcdr 2 form))
     (comp-write-op op-unbind)
     (comp-set-label end-label)))
+(put 'catch 'compile-fun comp-compile-catch)
 
-(put 'unwind-protect 'compile-fun 'comp-compile-unwind-pro)
 (defun comp-compile-unwind-pro (form)
   (let
       ((cleanup-label (comp-make-label))
@@ -1525,8 +1545,8 @@ that files which shouldn't be compiled aren't."
 
     ;; end:
     (comp-set-label end-label)))
+(put 'unwind-protect 'compile-fun comp-compile-unwind-pro)
 
-(put 'condition-case 'compile-fun 'comp-compile-condition-case)
 (defun comp-compile-condition-case (form)
   (let
       ((cleanup-label (comp-make-label))
@@ -1543,7 +1563,9 @@ that files which shouldn't be compiled aren't."
     (if (consp handlers)
 	(let
 	    ((comp-bindings (if (nth 1 form)
-				(nconc (list (nth 1 form)) comp-bindings)
+				(progn
+				  (comp-test-varbind (nth 1 form))
+				  (nconc (list (nth 1 form)) comp-bindings))
 			      comp-bindings)))
 	  ;; Loop over all but the last handler
 	  (while (consp (cdr handlers))
@@ -1609,16 +1631,16 @@ that files which shouldn't be compiled aren't."
     (comp-write-op op-swap)
     (comp-write-op op-pop)
     (comp-dec-stack)))
+(put 'condition-case 'compile-fun comp-compile-condition-case)
 
-(put 'with-object 'compile-fun 'comp-compile-with-object)
 (defun comp-compile-with-object (form)
   (comp-compile-form (nth 1 form))
   (comp-write-op op-bindobj)
   (comp-dec-stack)
   (comp-compile-body (nthcdr 2 form))
   (comp-write-op op-unbind))
+(put 'with-object 'compile-fun comp-compile-with-object)
 
-(put 'list 'compile-fun 'comp-compile-list)
 (defun comp-compile-list (form)
   (let
       ((count 0))
@@ -1630,18 +1652,17 @@ that files which shouldn't be compiled aren't."
        form (cdr form)))
     (comp-write-op op-list count)
     (comp-dec-stack (1- count))))
+(put 'list 'compile-fun comp-compile-list)
 
 ;; Funcall normally translates to a single call instruction. However,
 ;; if the function being called is a constant lambda expression, open
 ;; code it.
-(put 'funcall 'compile-fun 'comp-compile-funcall)
 (defun comp-compile-funcall (form)
   (let*
       ((fun (nth 1 form))
        (args (nthcdr 2 form))
        (arg-count 0)
-       (open-code (and (comp-constant-p fun)
-		       (eq (car (comp-constant-value fun)) 'lambda))))
+       (open-code (comp-constant-function-p fun)))
     (unless open-code
       (comp-compile-form fun))
     (while args
@@ -1650,13 +1671,15 @@ that files which shouldn't be compiled aren't."
 	    arg-count (1+ arg-count)))
     (if open-code
 	(progn
-	  (comp-compile-lambda-inline (comp-constant-value fun) nil arg-count)
+	  (comp-compile-lambda-inline
+	   (comp-constant-function-value fun) nil arg-count)
 	  ;; We push one less value than when using op-call
 	  (if (zerop arg-count)
 	      (comp-inc-stack)
 	    (comp-dec-stack (1- arg-count))))
       (comp-write-op op-call arg-count)
       (comp-dec-stack arg-count))))
+(put 'funcall 'compile-fun comp-compile-funcall)
 
 ;; Handles (with-X X FORMS...)
 (defun comp-compile-with-form (form)
@@ -1668,13 +1691,13 @@ that files which shouldn't be compiled aren't."
     (comp-compile-body (nthcdr 2 form))
     (comp-write-op op-unbind)))
 
-(put '- 'compile-fun 'comp-compile-minus)
-(put '- 'compile-opcode op-sub)
 (defun comp-compile-minus (form)
   (if (/= (length form) 2)
       (comp-compile-binary-op form)
     (comp-compile-form (car (cdr form)))
     (comp-write-op op-neg)))
+(put '- 'compile-fun comp-compile-minus)
+(put '- 'compile-opcode op-sub)
 
 ;; Instruction with no arguments
 (defun comp-compile-0-args (form)
@@ -1781,151 +1804,149 @@ that files which shouldn't be compiled aren't."
 ;; speed
 
 (progn
-  (put 'cons 'compile-fun 'comp-compile-2-args)
+  (put 'cons 'compile-fun comp-compile-2-args)
   (put 'cons 'compile-opcode op-cons)
-  (put 'car 'compile-fun 'comp-compile-1-args)
+  (put 'car 'compile-fun comp-compile-1-args)
   (put 'car 'compile-opcode op-car)
-  (put 'cdr 'compile-fun 'comp-compile-1-args)
+  (put 'cdr 'compile-fun comp-compile-1-args)
   (put 'cdr 'compile-opcode op-cdr)
-  (put 'rplaca 'compile-fun 'comp-compile-2-args)
+  (put 'rplaca 'compile-fun comp-compile-2-args)
   (put 'rplaca 'compile-opcode op-rplaca)
-  (put 'rplacd 'compile-fun 'comp-compile-2-args)
+  (put 'rplacd 'compile-fun comp-compile-2-args)
   (put 'rplacd 'compile-opcode op-rplacd)
-  (put 'nth 'compile-fun 'comp-compile-2-args)
+  (put 'nth 'compile-fun comp-compile-2-args)
   (put 'nth 'compile-opcode op-nth)
-  (put 'nthcdr 'compile-fun 'comp-compile-2-args)
+  (put 'nthcdr 'compile-fun comp-compile-2-args)
   (put 'nthcdr 'compile-opcode op-nthcdr)
-  (put 'aset 'compile-fun 'comp-compile-3-args)
+  (put 'aset 'compile-fun comp-compile-3-args)
   (put 'aset 'compile-opcode op-aset)
-  (put 'aref 'compile-fun 'comp-compile-2-args)
+  (put 'aref 'compile-fun comp-compile-2-args)
   (put 'aref 'compile-opcode op-aref)
-  (put 'length 'compile-fun 'comp-compile-1-args)
+  (put 'length 'compile-fun comp-compile-1-args)
   (put 'length 'compile-opcode op-length)
-  (put 'eval 'compile-fun 'comp-compile-1-args)
+  (put 'eval 'compile-fun comp-compile-1-args)
   (put 'eval 'compile-opcode op-eval)
-  (put '+ 'compile-fun 'comp-compile-binary-op)
+  (put '+ 'compile-fun comp-compile-binary-op)
   (put '+ 'compile-opcode op-add)
-  (put '* 'compile-fun 'comp-compile-binary-op)
+  (put '* 'compile-fun comp-compile-binary-op)
   (put '* 'compile-opcode op-mul)
-  (put '/ 'compile-fun 'comp-compile-binary-op)
+  (put '/ 'compile-fun comp-compile-binary-op)
   (put '/ 'compile-opcode op-div)
-  (put '% 'compile-fun 'comp-compile-2-args)
+  (put '% 'compile-fun comp-compile-2-args)
   (put '% 'compile-opcode op-rem)
-  (put 'mod 'compile-fun 'comp-compile-2-args)
+  (put 'mod 'compile-fun comp-compile-2-args)
   (put 'mod 'compile-opcode op-mod)
-  (put 'lognot 'compile-fun 'comp-compile-1-args)
+  (put 'lognot 'compile-fun comp-compile-1-args)
   (put 'lognot 'compile-opcode op-lnot)
-  (put 'not 'compile-fun 'comp-compile-1-args)
+  (put 'not 'compile-fun comp-compile-1-args)
   (put 'not 'compile-opcode op-not)
-  (put 'logior 'compile-fun 'comp-compile-binary-op)
+  (put 'logior 'compile-fun comp-compile-binary-op)
   (put 'logior 'compile-opcode op-lor)
-  (put 'logxor 'compile-fun 'comp-compile-binary-op)
+  (put 'logxor 'compile-fun comp-compile-binary-op)
   (put 'logxor 'compile-opcode op-lxor)
-  (put 'logand 'compile-fun 'comp-compile-binary-op)
+  (put 'logand 'compile-fun comp-compile-binary-op)
   (put 'logand 'compile-opcode op-land)
-  (put 'equal 'compile-fun 'comp-compile-2-args)
+  (put 'equal 'compile-fun comp-compile-2-args)
   (put 'equal 'compile-opcode op-equal)
-  (put 'eq 'compile-fun 'comp-compile-2-args)
+  (put 'eq 'compile-fun comp-compile-2-args)
   (put 'eq 'compile-opcode op-eq)
-  (put '= 'compile-fun 'comp-compile-2-args)
+  (put '= 'compile-fun comp-compile-2-args)
   (put '= 'compile-opcode op-num-eq)
-  (put '/= 'compile-fun 'comp-compile-2-args)
+  (put '/= 'compile-fun comp-compile-2-args)
   (put '/= 'compile-opcode op-num-noteq)
-  (put '> 'compile-fun 'comp-compile-transitive-relation)
+  (put '> 'compile-fun comp-compile-transitive-relation)
   (put '> 'compile-opcode op-gt)
-  (put '< 'compile-fun 'comp-compile-transitive-relation)
+  (put '< 'compile-fun comp-compile-transitive-relation)
   (put '< 'compile-opcode op-lt)
-  (put '>= 'compile-fun 'comp-compile-transitive-relation)
+  (put '>= 'compile-fun comp-compile-transitive-relation)
   (put '>= 'compile-opcode op-ge)
-  (put '<= 'compile-fun 'comp-compile-transitive-relation)
+  (put '<= 'compile-fun comp-compile-transitive-relation)
   (put '<= 'compile-opcode op-le)
-  (put '1+ 'compile-fun 'comp-compile-1-args)
+  (put '1+ 'compile-fun comp-compile-1-args)
   (put '1+ 'compile-opcode op-inc)
-  (put '1- 'compile-fun 'comp-compile-1-args)
+  (put '1- 'compile-fun comp-compile-1-args)
   (put '1- 'compile-opcode op-dec)
-  (put 'lsh 'compile-fun 'comp-compile-2-args)
+  (put 'lsh 'compile-fun comp-compile-2-args)
   (put 'lsh 'compile-opcode op-lsh)
-  (put 'zerop 'compile-fun 'comp-compile-1-args)
+  (put 'zerop 'compile-fun comp-compile-1-args)
   (put 'zerop 'compile-opcode op-zerop)
-  (put 'null 'compile-fun 'comp-compile-1-args)
+  (put 'null 'compile-fun comp-compile-1-args)
   (put 'null 'compile-opcode op-null)
-  (put 'atom 'compile-fun 'comp-compile-1-args)
+  (put 'atom 'compile-fun comp-compile-1-args)
   (put 'atom 'compile-opcode op-atom)
-  (put 'consp 'compile-fun 'comp-compile-1-args)
+  (put 'consp 'compile-fun comp-compile-1-args)
   (put 'consp 'compile-opcode op-consp)
-  (put 'listp 'compile-fun 'comp-compile-1-args)
+  (put 'listp 'compile-fun comp-compile-1-args)
   (put 'listp 'compile-opcode op-listp)
-  (put 'numberp 'compile-fun 'comp-compile-1-args)
+  (put 'numberp 'compile-fun comp-compile-1-args)
   (put 'numberp 'compile-opcode op-numberp)
-  (put 'stringp 'compile-fun 'comp-compile-1-args)
+  (put 'stringp 'compile-fun comp-compile-1-args)
   (put 'stringp 'compile-opcode op-stringp)
-  (put 'vectorp 'compile-fun 'comp-compile-1-args)
+  (put 'vectorp 'compile-fun comp-compile-1-args)
   (put 'vectorp 'compile-opcode op-vectorp)
-  (put 'throw 'compile-fun 'comp-compile-2-args)
+  (put 'throw 'compile-fun comp-compile-2-args)
   (put 'throw 'compile-opcode op-throw)
-  (put 'fboundp 'compile-fun 'comp-compile-1-args)
-  (put 'fboundp 'compile-opcode op-fboundp)
-  (put 'boundp 'compile-fun 'comp-compile-1-args)
+  (put 'boundp 'compile-fun comp-compile-1-args)
   (put 'boundp 'compile-opcode op-boundp)
-  (put 'symbolp 'compile-fun 'comp-compile-1-args)
+  (put 'symbolp 'compile-fun comp-compile-1-args)
   (put 'symbolp 'compile-opcode op-symbolp)
-  (put 'get 'compile-fun 'comp-compile-2-args)
+  (put 'get 'compile-fun comp-compile-2-args)
   (put 'get 'compile-opcode op-get)
-  (put 'put 'compile-fun 'comp-compile-3-args)
+  (put 'put 'compile-fun comp-compile-3-args)
   (put 'put 'compile-opcode op-put)
-  (put 'signal 'compile-fun 'comp-compile-2-args)
+  (put 'signal 'compile-fun comp-compile-2-args)
   (put 'signal 'compile-opcode op-signal)
-  (put 'reverse 'compile-fun 'comp-compile-1-args) ; new 12/7/94
+  (put 'reverse 'compile-fun comp-compile-1-args) ; new 12/7/94
   (put 'reverse 'compile-opcode op-reverse)
-  (put 'nreverse 'compile-fun 'comp-compile-1-args)
+  (put 'nreverse 'compile-fun comp-compile-1-args)
   (put 'nreverse 'compile-opcode op-nreverse)
-  (put 'assoc 'compile-fun 'comp-compile-2-args)
+  (put 'assoc 'compile-fun comp-compile-2-args)
   (put 'assoc 'compile-opcode op-assoc)
-  (put 'assq 'compile-fun 'comp-compile-2-args)
+  (put 'assq 'compile-fun comp-compile-2-args)
   (put 'assq 'compile-opcode op-assq)
-  (put 'rassoc 'compile-fun 'comp-compile-2-args)
+  (put 'rassoc 'compile-fun comp-compile-2-args)
   (put 'rassoc 'compile-opcode op-rassoc)
-  (put 'rassq 'compile-fun 'comp-compile-2-args)
+  (put 'rassq 'compile-fun comp-compile-2-args)
   (put 'rassq 'compile-opcode op-rassq)
-  (put 'last 'compile-fun 'comp-compile-1-args)
+  (put 'last 'compile-fun comp-compile-1-args)
   (put 'last 'compile-opcode op-last)
-  (put 'mapcar 'compile-fun 'comp-compile-2-args)
+  (put 'mapcar 'compile-fun comp-compile-2-args)
   (put 'mapcar 'compile-opcode op-mapcar)
-  (put 'member 'compile-fun 'comp-compile-2-args)
+  (put 'member 'compile-fun comp-compile-2-args)
   (put 'member 'compile-opcode op-member)
-  (put 'memq 'compile-fun 'comp-compile-2-args)
+  (put 'memq 'compile-fun comp-compile-2-args)
   (put 'memq 'compile-opcode op-memq)
-  (put 'delete 'compile-fun 'comp-compile-2-args)
+  (put 'delete 'compile-fun comp-compile-2-args)
   (put 'delete 'compile-opcode op-delete)
-  (put 'delq 'compile-fun 'comp-compile-2-args)
+  (put 'delq 'compile-fun comp-compile-2-args)
   (put 'delq 'compile-opcode op-delq)
-  (put 'delete-if 'compile-fun 'comp-compile-2-args)
+  (put 'delete-if 'compile-fun comp-compile-2-args)
   (put 'delete-if 'compile-opcode op-delete-if)
-  (put 'delete-if-not 'compile-fun 'comp-compile-2-args)
+  (put 'delete-if-not 'compile-fun comp-compile-2-args)
   (put 'delete-if-not 'compile-opcode op-delete-if-not)
-  (put 'copy-sequence 'compile-fun 'comp-compile-1-args)
+  (put 'copy-sequence 'compile-fun comp-compile-1-args)
   (put 'copy-sequence 'compile-opcode op-copy-sequence)
-  (put 'sequencep 'compile-fun 'comp-compile-1-args)
+  (put 'sequencep 'compile-fun comp-compile-1-args)
   (put 'sequencep 'compile-opcode op-sequencep)
-  (put 'functionp 'compile-fun 'comp-compile-1-args)
+  (put 'functionp 'compile-fun comp-compile-1-args)
   (put 'functionp 'compile-opcode op-functionp)
-  (put 'special-form-p 'compile-fun 'comp-compile-1-args)
+  (put 'special-form-p 'compile-fun comp-compile-1-args)
   (put 'special-form-p 'compile-opcode op-special-form-p)
-  (put 'subrp 'compile-fun 'comp-compile-1-args)
+  (put 'subrp 'compile-fun comp-compile-1-args)
   (put 'subrp 'compile-opcode op-subrp)
-  (put 'eql 'compile-fun 'comp-compile-2-args)
+  (put 'eql 'compile-fun comp-compile-2-args)
   (put 'eql 'compile-opcode op-eql)
-  (put 'max 'compile-fun 'comp-compile-binary-op)
+  (put 'max 'compile-fun comp-compile-binary-op)
   (put 'max 'compile-opcode op-max)
-  (put 'min 'compile-fun 'comp-compile-binary-op)
+  (put 'min 'compile-fun comp-compile-binary-op)
   (put 'min 'compile-opcode op-min)
-  (put 'filter 'compile-fun 'comp-compile-2-args)
+  (put 'filter 'compile-fun comp-compile-2-args)
   (put 'filter 'compile-opcode op-filter)
-  (put 'macrop 'compile-fun 'comp-compile-1-args)
+  (put 'macrop 'compile-fun comp-compile-1-args)
   (put 'macrop 'compile-opcode op-macrop)
-  (put 'bytecodep 'compile-fun 'comp-compile-1-args)
+  (put 'bytecodep 'compile-fun comp-compile-1-args)
   (put 'bytecodep 'compile-opcode op-bytecodep)
-  (put 'make-closure 'compile-fun 'comp-compile-1-args)
+  (put 'make-closure 'compile-fun comp-compile-2-args)
   (put 'make-closure 'compile-opcode op-make-closure)
-  (put 'closurep 'compile-fun 'comp-compile-1-args)
+  (put 'closurep 'compile-fun comp-compile-1-args)
   (put 'closurep 'compile-opcode op-closurep))

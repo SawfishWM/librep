@@ -71,17 +71,17 @@
 
 (defun tarfh-check-tar-program ()
   (catch 'out
-    (mapc #'(lambda (prog)
-	      (let*
-		  ((output (make-string-output-stream))
-		   (process (make-process output)))
-		(when (zerop (call-process process nil prog "--version"))
-		  (setq output (get-output-stream-string output))
-		  (when (string-looking-at
-			 "(tar )?[(]?GNU tar[)]?\\s*(.*?)\\s*\n" output)
-		    (setq tarfh-gnu-tar-program prog)
-		    (setq tarfh-gnu-tar-version (expand-last-match "\\2"))
-		    (throw 'out t)))))
+    (mapc (lambda (prog)
+	    (let*
+		((output (make-string-output-stream))
+		 (process (make-process output)))
+	      (when (zerop (call-process process nil prog "--version"))
+		(setq output (get-output-stream-string output))
+		(when (string-looking-at
+		       "(tar )?[(]?GNU tar[)]?\\s*(.*?)\\s*\n" output)
+		  (setq tarfh-gnu-tar-program prog)
+		  (setq tarfh-gnu-tar-version (expand-last-match "\\2"))
+		  (throw 'out t)))))
 	  (cons tarfh-gnu-tar-program tarfh-alternative-gnu-tar-programs))
     (error "Can't find/execute GNU tar")))
 
@@ -95,7 +95,7 @@
       ((process (make-process output))
        (mode (cdr (assoc-regexp tar-file tarfh-compression-modes)))
        (all-args `(,op ,@(and mode (list mode)) "--file" ,tar-file ,@args)))
-    (zerop (apply 'call-process process input-file
+    (zerop (apply call-process process input-file
 		  tarfh-gnu-tar-program all-args))))
 
 (defun tarfh-copy-out (tarfile file-name dest-file)
@@ -164,7 +164,7 @@
 	      (cdr (assq (aref mode-string 0) tarfh-list-type-alist))
 	      nil mode-string user group symlink))))
 
-(defun tarfh-file-modtime (file-struct)
+(defun tarfh-file-get-modtime (file-struct)
   (when (stringp (aref file-struct tarfh-file-modtime))
     (require 'date)
     (let
@@ -174,23 +174,23 @@
 	      (aref date date-vec-epoch-time)))))
   (aref file-struct tarfh-file-modtime))
 
-(defun tarfh-file-modes (file-struct)
+(defun tarfh-file-get-modes (file-struct)
   (unless (aref file-struct tarfh-file-modes)
     (let*
 	((string (aref file-struct tarfh-file-modes-string))
 	 (tuple-function
-	  #'(lambda (point tuple)
-	      (+ (ash (+ (if (/= (aref string point) ?-) 4 0)
-			 (if (/= (aref string (1+ point)) ?-) 2 0)
-			 (if (lower-case-p (aref string (+ point 2))) 1 0))
-		      (* tuple 3))
-		 (if (memq (aref string (+ point 2)) '(?s ?S ?t ?T))
-		     (ash 01000 tuple)
-		   0)))))
+	  (lambda (point tuple)
+	    (+ (ash (+ (if (/= (aref string point) ?-) 4 0)
+		       (if (/= (aref string (1+ point)) ?-) 2 0)
+		       (if (lower-case-p (aref string (+ point 2))) 1 0))
+		    (* tuple 3))
+	       (if (memq (aref string (+ point 2)) '(?s ?S ?t ?T))
+		   (ash 01000 tuple)
+		 0)))))
       (aset file-struct tarfh-file-modes
-	    (+ (funcall tuple-function 1 2)
-	       (funcall tuple-function 4 1)
-	       (funcall tuple-function 7 0)))))
+	    (+ (tuple-function 1 2)
+	       (tuple-function 4 1)
+	       (tuple-function 7 0)))))
   (aref file-struct tarfh-file-modes))
 
 (defun tarfh-directory-files (tarfile dir)
@@ -201,11 +201,11 @@
       (setq dir (aref entry tarfh-file-name)))
     (setq dir (file-name-as-directory dir))
     (setq re (concat (quote-regexp dir) "([^/]+)"))
-    (mapc #'(lambda (e)
-	      (when (string-looking-at re (aref e tarfh-file-name))
-		(setq tem (expand-last-match "\\1"))
-		(unless (member tem files)
-		  (setq files (cons tem files)))))
+    (mapc (lambda (e)
+	    (when (string-looking-at re (aref e tarfh-file-name))
+	      (setq tem (expand-last-match "\\1"))
+	      (unless (member tem files)
+		(setq files (cons tem files)))))
 	  (aref (car tarfh-dir-cache) tarfh-cache-entries))
     files))
 
@@ -215,9 +215,9 @@
 	((cache (tarfh-tarfile-cached-p tarfile)))
       (setq name (expand-file-name (file-name-as-directory name) ""))
       (when cache
-	(mapc #'(lambda (entry)
-		  (when (string-head-eq (aref entry tarfh-file-name) name)
-		    (throw 'out t)))
+	(mapc (lambda (entry)
+		(when (string-head-eq (aref entry tarfh-file-name) name)
+		  (throw 'out t)))
 	      (aref cache tarfh-cache-entries))
 	nil))))
 
@@ -228,9 +228,9 @@
 (defun tarfh-tarfile-cached-p (tarfile)
   (setq tarfile (canonical-file-name tarfile))
   (catch 'exit
-    (mapc #'(lambda (dir-entry)
-	      (when (string= tarfile (aref dir-entry tarfh-cache-tarfile))
-		(throw 'exit dir-entry)))
+    (mapc (lambda (dir-entry)
+	    (when (string= tarfile (aref dir-entry tarfh-cache-tarfile))
+	      (throw 'exit dir-entry)))
 	  tarfh-dir-cache)))
 
 (defun tarfh-get-file (tarfile filename)
@@ -253,8 +253,8 @@
 	  ;; add the new (empty) entry for the directory to be read.
 	  (setq entry (vector tarfile (file-modtime tarfile) nil))
 	  (setq tarfh-dir-cache (cons entry tarfh-dir-cache))
-	  (tarfh-call-tar nil #'(lambda (o)
-				  (tarfh-output-function o entry))
+	  (tarfh-call-tar nil (lambda (o)
+				(tarfh-output-function o entry))
 			  "--list" tarfile "--verbose")
 	  (aset entry tarfh-cache-entries
 		(nreverse (aref entry tarfh-cache-entries))))
@@ -262,9 +262,9 @@
       (setq tarfh-dir-cache (cons entry (delq entry tarfh-dir-cache))))
     ;; ENTRY now has the valid dircache directory structure
     (catch 'return
-      (mapc #'(lambda (f)
-		(when (string= (aref f tarfh-file-name) filename)
-		  (throw 'return f)))
+      (mapc (lambda (f)
+	      (when (string= (aref f tarfh-file-name) filename)
+		(throw 'return f)))
 	    (aref entry tarfh-cache-entries)))))
 
 ;; similar to remote-ftp-get-file, but symbolic links are followed
@@ -314,7 +314,7 @@
 	 nil)
 	((memq op '(expand-file-name file-name-nondirectory file-name-directory
 		    file-name-as-directory directory-file-name))
-	 (apply op args))
+	 (apply (symbol-value op) args))
 	((memq op '(write-buffer-contents delete-file delete-directory
 		    make-directory set-file-modes make-symlink
 		    copy-file-from-local-fs copy-file))
@@ -343,7 +343,7 @@
      ((memq op '(seek-file flush-file write-buffer-contents
 		 read-file-contents insert-file-contents))
       ;; Just pass these through to the underlying file
-      (apply op (file-bound-stream (car args)) (cdr args)))
+      (apply (symbol-value op) (file-bound-stream (car args)) (cdr args)))
      ((eq op 'close-file)
       (let*
 	  ((file (car args))
@@ -376,7 +376,7 @@
 	  (tarfh-copy-out tarfile (aref file tarfh-file-full-name) local-name)
 	  (unless (eq op 'copy-file-to-local-fs)
 	    (unwind-protect
-		(funcall op local-name)
+		(funcall (symbol-value op) local-name)
 	      (delete-file local-name)))
 	  t))
        ((eq op 'open-file)
@@ -407,17 +407,17 @@
        ((eq op 'file-size)
 	(and file (aref file tarfh-file-size)))
        ((eq op 'file-modes)
-	(and file (tarfh-file-modes file)))
+	(and file (tarfh-file-get-modes file)))
        ((eq op 'file-modes-as-string)
 	(and file (aref file tarfh-file-modes-string)))
        ((eq op 'file-nlinks)
 	1)
        ((eq op 'file-modtime)
-	(if file (tarfh-file-modtime file) (cons 0 0)))
+	(if file (tarfh-file-get-modtime file) (cons 0 0)))
        ((eq op 'file-owner-p)
 	(and file (tarfh-file-owner-p file)))
        ((eq op 'file-readable-p)
-	(and file (/= (logand (tarfh-file-modes file)
+	(and file (/= (logand (tarfh-file-get-modes file)
 			      (if (tarfh-file-owner-p file)
 				  0400 0004)) 0)))
        ((eq op 'file-writable-p)

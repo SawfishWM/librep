@@ -19,8 +19,8 @@
 ;;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 ;;;###autoload
-(defun sort (list &optional pred)
-  "Sort LIST destructively, but stably, returning the sorted list.
+(defun sort (lst &optional pred)
+  "Sort LST destructively, but stably, returning the sorted list.
 
 If PRED is defined it is used to compare two objects, it should return t
 when the first is `less' than the second. By default the standard less-than
@@ -29,18 +29,18 @@ function (`<') is used.
 The fact that the sort is stable means that sort keys which are equal will
 preserve their original position in relation to each other."
   (let
-      ((len (length list)))
+      ((len (length lst)))
   (if (< len 2)
-      list
+      lst
     ;; default to sorting smaller to greater
-    (unless pred (setq pred '<))
+    (unless pred (setq pred <))
     (let
-	((mid (nthcdr (1- (/ len 2)) list)))
+	((mid (nthcdr (1- (/ len 2)) lst)))
       (setq mid (prog1
 		    (cdr mid)
 		  (rplacd mid nil)))
-      ;; Now we have two separate lists, LIST and MID; sort them..
-      (setq list (sort list pred)
+      ;; Now we have two separate lists, LST and MID; sort them..
+      (setq lst (sort lst pred)
 	    mid (sort mid pred))
       ;; ..then merge them back together
       (let
@@ -48,14 +48,14 @@ preserve their original position in relation to each other."
 	   (out nil)			;Cell whose cdr is next link
 	   tem)
 	;; While both lists have elements compare them
-	(while (and list mid)
-	  (setq tem (if (funcall pred (car mid) (car list))
+	(while (and lst mid)
+	  (setq tem (if (funcall pred (car mid) (car lst))
 			(prog1
 			    mid
 			  (setq mid (cdr mid)))
 		      (prog1
-			  list
-			(setq list (cdr list)))))
+			  lst
+			(setq lst (cdr lst)))))
 	  (if out
 	      (progn
 		(rplacd out tem)
@@ -63,8 +63,8 @@ preserve their original position in relation to each other."
 	    (setq out-head tem
 		  out tem)))
 	;; If either has elements left just append them
-	(when (or list mid)
+	(when (or lst mid)
 	  (if out
-	      (rplacd out (or list mid))
-	    (setq out-head (or list mid))))
+	      (rplacd out (or lst mid))
+	    (setq out-head (or lst mid))))
 	out-head)))))

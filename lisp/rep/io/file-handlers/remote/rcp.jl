@@ -34,13 +34,10 @@
 
 ;; Code:
 
-;;;###autoload (put 'rcp 'remote-backend 'remote-rcp-handler)
-(put 'rcp 'remote-backend 'remote-rcp-handler)
-
 (defun remote-rcp-command (&rest args)
   (message (format nil "Calling rcp with args: %s... " args) t)
   (let
-      ((status (apply 'call-process nil nil rcp-program args)))
+      ((status (apply call-process nil nil rcp-program args)))
     (write t "done")
     (or (zerop status)
 	(error "Couldn't run rcp with args: %s" args))))
@@ -63,7 +60,7 @@
       (remote-rcp-command (remote-rcp-filename split-name) local-name)
       (when (memq op '(read-file-contents insert-file-contents))
 	(unwind-protect
-	    (funcall op local-name)
+	    (funcall (symbol-value op) local-name)
 	  (delete-file local-name)))
       t))
    ((memq op '(write-buffer-contents copy-from-local-fs))
@@ -73,7 +70,7 @@
 			 (car args)
 		       (make-temp-name))))
       (when (eq op 'write-buffer-contents)
-	(apply op local-name (cdr args)))
+	(apply (symbol-value op) local-name (cdr args)))
       (unwind-protect
 	  (remote-rcp-command local-name (remote-rcp-filename split-name))
 	(when (eq op 'write-buffer-contents)
@@ -100,3 +97,6 @@
     nil)
    (t
     (error "Unsupported remote-rcp op: %s %s" op args))))
+
+;;;###autoload (put 'rcp 'remote-backend remote-rcp-handler)
+(put 'rcp 'remote-backend remote-rcp-handler)

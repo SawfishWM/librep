@@ -38,13 +38,13 @@
 	  ((input (read-line standard-input))
 	   next-last)
 	(cond ((string-match "^\\s*n" input)
-	       (setq debug-last 'debug-next)
+	       (setq debug-last debug-next)
 	       (debug-next))
 	      ((string-match "^\\s*s" input)
-	       (setq debug-last 'debug-step)
+	       (setq debug-last debug-step)
 	       (debug-step))
 	      ((string-match "^\\s*c" input)
-	       (setq debug-last 'debug-continue)
+	       (setq debug-last debug-continue)
 	       (debug-continue))
 	      ((string-match "^\\s*r\\w*\\s+" input)
 	       (debug-set-result
@@ -60,7 +60,7 @@
 	      ((string-match "^\\s*$" input)
 	       (if debug-last
 		   (progn
-		     (funcall debug-last)
+		     (debug-last)
 		     (setq next-last debug-last))
 		 (write standard-error "Nothing to repeat\n")))
 	      (t

@@ -5,7 +5,6 @@
 ;;; Changes to it were:
 ;;;	1. Delete backquote-list* definition and replace all
 ;;;	   calls to this function with calls to primitive list*
-;;;	2. Replace single call to defalias with call to fset
 ;;;	3. Replace car-safe with car (car always safe in Jade)
 ;;;	4. Remove autoload cookies since Jade doesn't allow
 ;;;	   autoloaded macros
@@ -87,7 +86,7 @@ Vectors work just like lists.  Nested backquotes are permitted."
     (backquote-process (cdr (backquote-process (nth 1 s)))))
    (t
     (let ((rest s)
-	  item firstlist list lists expression)
+	  item firstlist lst lists expression)
       ;; Scan this list-level, setting LISTS to a list of forms,
       ;; each of which produces a list of elements
       ;; that should go in this level.
@@ -106,20 +105,20 @@ Vectors work just like lists.  Nested backquotes are permitted."
 	  ;; Put the nonspliced items before the first spliced item
 	  ;; into FIRSTLIST.
 	  (if (null lists)
-	      (setq firstlist list
-		    list nil))
+	      (setq firstlist lst
+		    lst nil))
 	  ;; Otherwise, put any preceding nonspliced items into LISTS.
-	  (if list
-	      (setq lists (cons (backquote-listify list '(0 . nil)) lists)))
+	  (if lst
+	      (setq lists (cons (backquote-listify lst '(0 . nil)) lists)))
 	  (setq lists (cons (cdr item) lists))
-	  (setq list nil))
+	  (setq lst nil))
 	 (t
-	  (setq list (cons item list))))
+	  (setq lst (cons item lst))))
 	(setq rest (cdr rest)))
       ;; Handle nonsplicing final elements, and the tail of the list
       ;; (which remains in REST).
-      (if (or rest list)
-	  (setq lists (cons (backquote-listify list (backquote-process rest))
+      (if (or rest lst)
+	  (setq lists (cons (backquote-listify lst (backquote-process rest))
 			    lists)))
       ;; Turn LISTS into a form that produces the combined list. 
       (setq expression
@@ -138,8 +137,8 @@ Vectors work just like lists.  Nested backquotes are permitted."
 ;; and decides between append, list, list*, and cons depending
 ;; on which tags are in the list.
 
-(defun backquote-listify (list old-tail)
-  (let ((heads nil) (tail (cdr old-tail)) (list-tail list) (item nil))
+(defun backquote-listify (lst old-tail)
+  (let ((heads nil) (tail (cdr old-tail)) (list-tail lst) (item nil))
     (if (= (car old-tail) 0)
 	(setq tail (eval tail)
 	      old-tail nil))

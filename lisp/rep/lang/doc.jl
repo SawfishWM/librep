@@ -23,21 +23,23 @@
 (defun apropos-output (symbols use-function)
   (let
       ((separator (make-string 72 ?-)))
-    (mapc #'(lambda (sym)
-	      (write standard-output separator)
-	      (if use-function
-		  (describe-function-1 sym)
-		(describe-variable-1 sym))
-	      (format standard-output "%s\n\n"
-		      (or (documentation sym (not use-function))
-			  "Undocumented"))) symbols)))
+    (mapc (lambda (sym)
+	    (write standard-output separator)
+	    (if use-function
+		(describe-function-1 sym)
+	      (describe-variable-1 sym))
+	    (format standard-output "%s\n\n"
+		    (or (documentation sym (not use-function))
+			"Undocumented"))) symbols)))
 
 ;;;###autoload
 (defun apropos-function (regexp &optional all-functions)
   (format standard-output "Apropos %s `%s':\n\n"
 	  (if all-functions "function" "command") regexp)
   (apropos-output (apropos regexp (if all-functions
-				      'fboundp
+				      (lambda (s)
+					(and (boundp s)
+					     (functionp (symbol-value s))))
 				    'commandp)) t))
 
 ;;;###autoload
@@ -47,7 +49,7 @@
 
 (defun describe-function-1 (fun)
   (let*
-      ((fval (symbol-function fun))
+      ((fval (symbol-value fun))
        (type (cond
 	      ((special-form-p fval)
 	       "Special Form")
@@ -62,7 +64,7 @@
 	      (and (consp fval) (assq 'jade-byte-code fval)))
       (setq type (concat "Compiled " type)))
     (format standard-output "\n%s: %s\n\n" type fun)
-    (when (fboundp fun)
+    (when (boundp fun)
       (when (or (consp fval) (bytecodep fval))
 	;; A Lisp function or macro, print its argument spec.
 	(let
@@ -122,8 +124,8 @@ the function doc is provided."
 		   (setq doc (get symbol 'variable-documentation)))
 	  (throw 'exit doc))
       ;; a function
-      (when (fboundp symbol)
-	(setq doc (symbol-function symbol))
+      (when (boundp symbol)
+	(setq doc (symbol-value symbol))
 	(when (consp doc)
 	  (if (eq 'macro (car doc))
 	      (setq doc (nth 3 doc))
@@ -133,14 +135,14 @@ the function doc is provided."
     ;; Then for doc strings in the databases
     (require 'sdbm)
     (setq key (concat (if is-variable ?V ?S) (symbol-name symbol)))
-    (mapc #'(lambda (file)
-	      (setq dbm (sdbm-open file 'read))
-	      (when dbm
-		(unwind-protect
-		    (setq doc (sdbm-fetch dbm key))
-		  (sdbm-close dbm))
-		(when doc
-		  (throw 'exit doc))))
+    (mapc (lambda (file)
+	    (setq dbm (sdbm-open file 'read))
+	    (when dbm
+	      (unwind-protect
+		  (setq doc (sdbm-fetch dbm key))
+		(sdbm-close dbm))
+	      (when doc
+		(throw 'exit doc))))
 	  documentation-files))))
   
 ;;;###autoload

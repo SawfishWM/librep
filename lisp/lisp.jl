@@ -21,13 +21,6 @@
 ;; This file is loaded right at the beginning of the initialisation
 ;; procedure.
 
-(defvar dumped-lisp-libraries nil
-  "When a dumped binary is being executed, a list of the names of all Lisp
-libraries that were dumped.")
-
-;; A list of the dumped libraries whose .jld files have been autoloaded
-(defvar dumped-loaded-libraries nil)
-
 (defvar standard-output (stdout-file)
   "Stream that `prin?' writes its output to by default.")
 
@@ -46,8 +39,7 @@ call it. Otherwise exactly the same as defun."
   ;; These actions are also hard-coded into dump.jl
   (list 'prog1
 	(cons 'defun decl)
-	(list 'put (list 'quote (car decl))
-	      ''compile-fun ''comp-compile-inline-function)))
+	(list 'put (list 'quote (car decl)) ''compile-inline t)))
 
 
 ;; Convenient conditional macros, defined using cond
@@ -85,39 +77,11 @@ FORMS."
 
 ;; Function to allow easy creation of autoload stubs
 
-(when (boundp 'dumped-lisp-libraries)
-  (setq dumped-loaded-libraries nil))
-
-(defun autoload (symbol file &rest extra)
-  "Tell the evaluator that the function value of SYMBOL will be initialised
-from a named file. The AUTOLOAD-DEFN is the contents of the SYMBOL's
-autoload definition. Currently two items are used, the first is the name
-of the file to load the value of SYMBOL from. The second says whether or
-not the function SYMBOL may be called interactively (as a command)."
-  (cond
-   ((and (boundp 'dumped-lisp-libraries)
-	 (member file dumped-lisp-libraries))
-    ;; If FILE has been dumped, but not yet loaded, load it
-    (unless (member file dumped-loaded-libraries)
-      (load file)
-      (setq dumped-loaded-libraries (cons file dumped-loaded-libraries))))
-   ((not (fboundp symbol))
-    ;; Else just add the autoload defn as normal
-    (fset symbol (list* 'autoload file extra)))))
-
-(defun autoload-variable (symbol file)
-  "Tell the evaluator that the value of SYMBOL can be initialised by loading
-the lisp library called FILE. Note that this doesn't work yet!"
-  (cond
-   ((and (boundp 'dumped-lisp-libraries)
-	 (member file dumped-lisp-libraries))
-    ;; If FILE has been dumped, but not yet loaded, load it
-    (unless (member file dumped-loaded-libraries)
-      (load file)
-      (setq dumped-loaded-libraries (cons file dumped-loaded-libraries))))
-   ((not (boundp symbol))
-    ;; Else just add the autoload defn as normal
-    (set symbol (list 'autoload file)))))
+(defmacro autoload (symbol file &rest extra)
+  "Tell the evaluator that the value of SYMBOL will be initialised
+by loading FILE."
+  `(if (not (boundp ,symbol))
+     (set ,symbol (make-closure (list 'autoload ,symbol ,file ,@extra)))))
 
 
 ;; Hook manipulation
@@ -150,14 +114,14 @@ match the FILE argument to `load'."
 (defun load-all (file)
   "Try to load files called FILE (or FILE.jl, etc) from all directories in the
 LISP load path (except the current directory)."
-  (mapc #'(lambda (dir)
-	    (unless (or (string= dir "") (string= "."))
-	      (let
-		  ((full-name (expand-file-name file dir)))
-		(when (or (file-exists-p full-name)
-			  (file-exists-p (concat full-name ".jl"))
-			  (file-exists-p (concat full-name ".jlc")))
-		  (load full-name nil t)))))
+  (mapc (lambda (dir)
+	  (unless (or (string= dir "") (string= "."))
+	    (let
+		((full-name (expand-file-name file dir)))
+	      (when (or (file-exists-p full-name)
+			(file-exists-p (concat full-name ".jl"))
+			(file-exists-p (concat full-name ".jlc")))
+		(load full-name nil t)))))
 	load-path))
 
 (defmacro eval-when-compile (form)
@@ -178,9 +142,9 @@ is 0)."
   "Scan ALIST for an element whose car is a regular expression matching the
 string INPUT."
   (catch 'return
-    (mapc #'(lambda (cell)
-	      (when (string-match (car cell) input nil fold-case)
-		(throw 'return cell))) alist)))
+    (mapc (lambda (cell)
+	    (when (string-match (car cell) input nil fold-case)
+	      (throw 'return cell))) alist)))
 
 (defun file-newer-than-file-p (file1 file2)
   "Returns t when FILE1 was modified more recently than FILE2."
@@ -200,7 +164,7 @@ string INPUT."
   (cons '< args))
 
 (defun error (&rest args)
-  (signal 'error (list (apply 'format nil args))))
+  (signal 'error (list (apply format nil args))))
 
 (defun eval-and-print (form)
   "Eval FORM then print its value in the status line."
@@ -225,7 +189,7 @@ string INPUT."
 
 ;; null i18n function until gettext is loaded
 
-(unless (fboundp '_)
+(unless (boundp '_)
   (defun _ (arg) arg))
 
 

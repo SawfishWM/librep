@@ -66,4 +66,4 @@
     (if (zerop point)
 	string
       (setq frags (cons (substring string point) frags))
-      (apply 'concat (nreverse frags)))))
+      (apply concat (nreverse frags)))))

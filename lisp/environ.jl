@@ -53,5 +53,5 @@ The `process-environment' variable is destructively modified."
   (let
       ((re (concat (quote-regexp name) ?=)))
     (setq process-environment
-	  (delete-if #'(lambda (x)
-			 (string-looking-at re x)) process-environment))))
+	  (delete-if (lambda (x)
+		       (string-looking-at re x)) process-environment))))

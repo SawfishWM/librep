@@ -33,10 +33,10 @@
     default-value defconst defmacro defsubst defun defvar delete
     delete-if delete-if-not delete-timer delq digit-char-p
     documentation elt eq eql equal error eval eval-when-compile
-    expand-last-match fboundp featurep filter fix-time flet fmakunbound
-    format fset funcall function functionp garbage-collect gensym get
+    expand-last-match featurep filter fix-time flet fmakunbound
+    format funcall function functionp garbage-collect gensym get
     get-output-stream-string getenv identity if integerp interactive
-    last length let let* list list* logand logior lognot logxor
+    lambda last length let let* list list* logand logior lognot logxor
     lower-case-p lsh macroexpand macrolet macrop make-closure make-list
     make-string make-string-input-stream make-string-output-stream
     make-symbol make-vector makunbound mapc mapcar match-end
@@ -48,7 +48,7 @@
     setq setq-default signal sit-for sleep-for sort space-char-p
     special-form-p special-variable-p streamp string-equal
     string-head-eq string-lessp string-looking-at string-match string<
-    string= stringp subr-name subrp substring symbol-function
+    string= stringp subr-name subrp substring
     symbol-name symbol-plist symbol-value symbolp system-name throw
     time-later-p translate-string unless unwind-protect upper-case-p
     user-full-name user-login-name vector vectorp when while
@@ -78,47 +78,46 @@
 
 ;; building the actual environments
 
-(defvar gaol-function-env nil)
+(defvar gaol-env nil)
 (defvar gaol-fh-env nil)
-(defvar gaol-fenv-built nil)
+(defvar gaol-env-built nil)
 
 (defun gaol-rebuild-environment ()
   (let
-      ((env (nconc (mapcar #'(lambda (sym)
-			       (cons sym (and (fboundp sym)
-					      (symbol-function sym))))
+      ((env (nconc (mapcar (lambda (sym)
+			     (cons sym (and (boundp sym)
+					    (symbol-value sym))))
 			   gaol-safe-functions)
-		   (mapcar #'(lambda (cell)
-			       (cons (car cell) (symbol-function (cdr cell))))
+		   (mapcar (lambda (cell)
+			     (cons (car cell) (symbol-value (cdr cell))))
 			   gaol-redefined-functions)))
-       (fh-env (nconc (mapcar #'(lambda (sym)
-				  (cons sym t)) gaol-safe-file-handlers)
-		      (mapcar #'(lambda (cell)
-				  (cons (car cell)
-					(symbol-function (cdr cell))))
+       (fh-env (nconc (mapcar (lambda (sym)
+				(cons sym t)) gaol-safe-file-handlers)
+		      (mapcar (lambda (cell)
+				(cons (car cell) (symbol-value (cdr cell))))
 			      gaol-redefined-file-handlers))))
-    (if gaol-function-env
+    (if gaol-env
 	(progn
 	  ;; affect existing environments
-	  (rplaca gaol-function-env (car env))
-	  (rplacd gaol-function-env (cdr env))
+	  (rplaca gaol-env (car env))
+	  (rplacd gaol-env (cdr env))
 	  (rplaca gaol-fh-env (car fh-env))
 	  (rplacd gaol-fh-env (cdr fh-env)))
-      (setq gaol-function-env env)
+      (setq gaol-env env)
       (setq gaol-fh-env fh-env))
-    (setq gaol-fenv-built t)))
+    (setq gaol-env-built t)))
 
 
 ;; public environment mutators
 
 ;;;###autoload
 (defun gaol-add-function (fun)
-  (setq gaol-fenv-built nil)
+  (setq gaol-env-built nil)
   (setq gaol-safe-functions (nconc gaol-safe-functions (list fun))))
 
 ;;;###autoload
 (defun gaol-replace-function (fun def)
-  (setq gaol-fenv-built nil)
+  (setq gaol-env-built nil)
   (setq gaol-redefined-functions (nconc gaol-redefined-functions
 					(list (cons fun def)))))
 
@@ -133,12 +132,12 @@
 
 ;;;###autoload
 (defun gaol-add-file-handler (fun)
-  (setq gaol-fenv-built nil)
+  (setq gaol-env-built nil)
   (setq gaol-safe-file-handlers (nconc gaol-safe-file-handlers (list fun))))
 
 ;;;###autoload
 (defun gaol-replace-file-handler (fun def)
-  (setq gaol-fenv-built nil)
+  (setq gaol-env-built nil)
   (setq gaol-redefined-file-handlers (nconc gaol-redefined-file-handlers
 					    (list (cons fun def)))))
 
@@ -148,20 +147,19 @@
 ;; create a piece of code that when evaluate will evaluate FORM in
 ;; a secure environment
 (defun gaol-trampoline (form)
-  (unless gaol-fenv-built
+  (unless gaol-env-built
     (gaol-rebuild-environment))
   `(save-environment
-    (set-variable-environment nil)
     (set-special-environment ',gaol-safe-specials)
     (set-file-handler-environment ',gaol-fh-env)
-    (set-function-environment ',gaol-function-env)
+    (set-environment ',gaol-env)
     ,form))
 
 (defun gaol-eval (form)
   (eval (gaol-trampoline form)))
 
 (defun gaol-load (file &optional no-error no-path-is-ignored no-suffix)
-  (gaol-eval `(,(symbol-function 'load) ',file ',no-error t ',no-suffix t)))
+  (gaol-eval `(,(symbol-value 'load) ',file ',no-error t ',no-suffix t)))
 
 
 ;; safe replacement functions

@@ -423,17 +423,17 @@
   (let
       ((comp-constant-usage (make-vector comp-constant-index 0)))
     ;; first count how many times each constant is used
-    (mapc #'(lambda (insn)
-	      (when (memq (car insn) comp-insns-with-constants)
-		(aset comp-constant-usage (cdr insn)
-		      (1+ (aref comp-constant-usage (cdr insn))))))
+    (mapc (lambda (insn)
+	    (when (memq (car insn) comp-insns-with-constants)
+	      (aset comp-constant-usage (cdr insn)
+		    (1+ (aref comp-constant-usage (cdr insn))))))
 	  code-string)
     ;; now sort by usage, minimum to maximum
     (setq comp-constant-alist
 	  (sort comp-constant-alist
-		#'(lambda (x y)
-		    (< (aref comp-constant-usage (cdr x))
-		       (aref comp-constant-usage (cdr y))))))
+		(lambda (x y)
+		  (< (aref comp-constant-usage (cdr x))
+		     (aref comp-constant-usage (cdr y))))))
     ;; delete any unused constants at the head of the list
     (while (and comp-constant-alist
 		(zerop (aref comp-constant-usage
@@ -445,13 +445,13 @@
     ;; reuse comp-constant-usage to map from old to new positions
     (let
 	((i 0))
-      (mapc #'(lambda (c)
-		(aset comp-constant-usage (cdr c) i)
-		(rplacd c i)
-		(setq i (1+ i))) comp-constant-alist))
+      (mapc (lambda (c)
+	      (aset comp-constant-usage (cdr c) i)
+	      (rplacd c i)
+	      (setq i (1+ i))) comp-constant-alist))
     ;; now update the code string
-    (mapc #'(lambda (insn)
-	      (when (memq (car insn) comp-insns-with-constants)
-		(rplacd insn (aref comp-constant-usage (cdr insn)))))
+    (mapc (lambda (insn)
+	    (when (memq (car insn) comp-insns-with-constants)
+	      (rplacd insn (aref comp-constant-usage (cdr insn)))))
 	  code-string)
     code-string))
