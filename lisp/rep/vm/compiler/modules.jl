@@ -30,6 +30,7 @@
 	    variable-ref-p
 	    locate-variable
 	    compiler-symbol-value
+	    compiler-boundp
 	    compiler-binding-from-rep-p
 	    compiler-binding-immutable-p
 	    get-procedure-handler
@@ -144,6 +145,10 @@
 	       (eq (car (closure-function value)) 'autoload))
 	  (load-autoload value)
 	value)))
+
+  (defun compiler-boundp (var)
+    (or (locate-variable var)
+	(and (special-variable-p var) (boundp var))))
 
   ;; return t if the binding of VAR comes from the rep (built-ins) module
   (defun compiler-binding-from-rep-p (var)
