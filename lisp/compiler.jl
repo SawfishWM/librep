@@ -879,6 +879,16 @@ that files which shouldn't be compiled aren't."
        (unless (boundp ',name)
 	 (setq ,name ,value)))))
 
+(put 'require 'compile-transform 'comp-trans-require)
+(defun comp-trans-require (form)
+  (let
+      ((feature (nth 1 form)))
+    (when (comp-constant-p feature)
+      (require (comp-constant-value feature)))
+    ;; Must transform to something other than (require FEATURE) to
+    ;; prevent infinite regress
+    `(funcall 'require ,feature)))
+
 
 ;; Functions which compile non-standard functions (ie special-forms)
 
