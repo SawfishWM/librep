@@ -92,7 +92,6 @@
 	  (setq form nil)))
       (unless (null form)
 	;; A subroutine application of some sort
-	(test-function-call (car form) (length (cdr form)))
 	(let
 	    (fun)
 	  (cond
@@ -105,10 +104,12 @@
 	   ;; Is it a function to be inlined?
 	   ;; XXX broken for module system
 	   ((and (symbolp (car form)) (get (car form) 'compile-inline))
+	    (test-function-call (car form) (length (cdr form)))
 	    (compile-inline-function form))
 
 	   (t
 	    ;; Expand macros
+	    (test-function-call (car form) (length (cdr form)))
 	    (if (not (eq (setq fun (compiler-macroexpand form)) form))
 		;; The macro did something, so start again
 		(compile-form-1 fun return-follows)
