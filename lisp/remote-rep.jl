@@ -229,7 +229,7 @@
 (defun remote-rep-read-string (string point)
   (let
       ((len (remote-rep-read-length string point)))
-    (when (and len (>= (len string) (+ point 8 len)))
+    (when (and len (>= (length string) (+ point 8 len)))
       (substring string (+ point 8) (+ point 8 len)))))
     
 (defun remote-rep-output-filter (session output)
@@ -512,7 +512,7 @@
 	  ;; as the first argument
 	  (aset session remote-rep-callback
 		(lambda (&rest args)
-		  (apply 'remote-rep-dircache-callback entry args)))
+		  (apply remote-rep-dircache-callback entry args)))
 	  (unwind-protect
 	      (condition-case nil
 		  (remote-rep-command session ?D nil dir)
