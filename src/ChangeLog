@@ -1,3 +1,10 @@
+Tue Jun  2 09:06:58 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispcmds.c (cmd_load): after using an entry in
+	after-load-alist, delete it
+
+	* main.c: add -no-rc to usage string
+
 Sun May 31 19:13:39 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* views.c (cmd_viewp): new function

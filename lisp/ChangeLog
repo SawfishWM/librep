@@ -1,3 +1,11 @@
+Tue Jun  2 09:06:16 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* init.jl: -no-rc option to prevent loading of .jaderc and
+	site-init files
+	* Makefile.in: use -no-rc option
+
+	* rm-mail-dir.jl: use new hook name
+
 Mon Jun  1 11:26:39 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* mail-headers.jl (mail-parse-address): some reorganisation to
