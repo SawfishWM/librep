@@ -4,7 +4,7 @@
 @cindex News
 
 
-@unnumberedsec 0.13
+@heading 0.13
 
 @itemize @bullet
 
@@ -144,7 +144,7 @@ tail-recursion in @code{cond} forms when possible
 @end itemize
 
 
-@unnumberedsec 0.12.4
+@heading 0.12.4
 
 @itemize @bullet
 
@@ -184,7 +184,7 @@ anyway)
 @end itemize
 
 
-@unnumberedsec 0.12.3
+@heading 0.12.3
 
 @itemize @bullet
 
@@ -243,7 +243,7 @@ correct module
 @end itemize
 
 
-@unnumberedsec 0.12.2
+@heading 0.12.2
 
 @itemize @bullet
 
@@ -261,7 +261,7 @@ never evaluates its constant)
 @end itemize
 
 
-@unnumberedsec 0.12.1
+@heading 0.12.1
 
 @itemize @bullet
 
@@ -276,7 +276,7 @@ never evaluates its constant)
 @end itemize
 
 
-@unnumberedsec 0.12
+@heading 0.12
 
 @itemize @bullet
 
@@ -413,7 +413,7 @@ functions) now (mostly) works
 @end itemize
 
 
-@unnumberedsec 0.11.3
+@heading 0.11.3
 
 @itemize @bullet
 @item Fixed bug of throwing uninitialized errors when autoloading
@@ -422,7 +422,7 @@ functions) now (mostly) works
 @end itemize
 
 
-@unnumberedsec 0.11.2
+@heading 0.11.2
 
 @itemize @bullet
 
@@ -461,7 +461,7 @@ work on Tru64 now (Aron Griffis)
 @end itemize
 
 
-@unnumberedsec 0.11.1
+@heading 0.11.1
 
 @itemize @bullet
 @item The compiler now eliminates single-function tail calls (instead
@@ -473,7 +473,7 @@ of leaving it to the virtual machine)
 @end itemize
 
 
-@unnumberedsec 0.11
+@heading 0.11
 
 @itemize @bullet
 
@@ -557,7 +557,7 @@ separators are now merged (i.e. @file{@var{foo}/@var{bar}})
 @end itemize
 
 
-@unnumberedsec 0.10
+@heading 0.10
 
 @itemize @bullet
 
@@ -599,7 +599,7 @@ looks like it's the GNU implementation
 @end itemize
 
 
-@unnumberedsec 0.9
+@heading 0.9
 
 @itemize @bullet
 
@@ -625,12 +625,12 @@ it wasn't declared using @code{defvar})
 @end itemize
 
 
-@unnumberedsec 0.8.1
+@heading 0.8.1
 
 Fixed some documentation bugs; fixed some build problems
 
 
-@unnumberedsec 0.8
+@heading 0.8
 
 @itemize @bullet
 
@@ -688,7 +688,7 @@ code to evaluate in
 @end itemize
 
 
-@unnumberedsec 0.7.1
+@heading 0.7.1
 
 @itemize @bullet
 
@@ -708,7 +708,7 @@ macro
 @end itemize
 
 
-@unnumberedsec 0.7
+@heading 0.7
 
 @itemize @bullet
 
@@ -731,7 +731,7 @@ dynamic objects with underscores
 @end itemize
 
 
-@unnumberedsec 0.6.2
+@heading 0.6.2
 
 @itemize @bullet
 
@@ -748,13 +748,13 @@ Griffis
 @end itemize
 
 
-@unnumberedsec 0.6.1
+@heading 0.6.1
 
 No new features; minor portability tweaks and build changes. Fix bug of
 trying to load directories as Lisp scripts
 
 
-@unnumberedsec 0.6
+@heading 0.6
 
 @itemize @bullet
 
@@ -769,7 +769,7 @@ trying to load directories as Lisp scripts
 @end itemize
 
 
-@unnumberedsec 0.5
+@heading 0.5
 
 @itemize @bullet
 
@@ -787,7 +787,7 @@ newer libtool)
 @end itemize
 
 
-@unnumberedsec 0.4
+@heading 0.4
 
 @itemize @bullet
 
@@ -804,7 +804,7 @@ automatically detect the first of these options.
 @end itemize
 
 
-@unnumberedsec 0.3
+@heading 0.3
 
 @itemize @bullet
 
@@ -813,7 +813,7 @@ automatically detect the first of these options.
 @end itemize
 
 
-@unnumberedsec 0.2
+@heading 0.2
 
 @itemize @bullet
 
@@ -834,6 +834,6 @@ libraries.
 @end itemize
 
 
-@unnumberedsec 0.1
+@heading 0.1
 
 First public release.
