@@ -389,7 +389,7 @@ that files which shouldn't be compiled aren't."
   (let
       ((comp-write-docs t)
        (comp-batch-compile t))
-    (compile-directory lisp-lib-dir force-p compile-lib-exclude-list)))
+    (compile-directory lisp-lib-directory force-p compile-lib-exclude-list)))
 
 ;; Used when bootstrapping from the Makefile, recompiles compiler.jl if
 ;; it's out of date
@@ -397,7 +397,7 @@ that files which shouldn't be compiled aren't."
   (let
       ((comp-write-docs t)
        (comp-batch-compile t)
-       (file (expand-file-name "compiler.jl" lisp-lib-dir)))
+       (file (expand-file-name "compiler.jl" lisp-lib-directory)))
     (when (or (not (file-exists-p (concat file ?c)))
 	      (file-newer-than-file-p file (concat file ?c)))
       (compile-file file))))

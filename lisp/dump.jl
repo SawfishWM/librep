@@ -129,7 +129,7 @@ assembler's various pseudo-operations.")
 (defun dump (file-list output-file)
   "Dump each compiled Lisp file named in FILE-LIST, to the assembler
 file OUTPUT-FILE. Note that each input file will be loaded from
-the lisp-lib-dir with .jlc as its suffix."
+the lisp-lib-directory with .jlc as its suffix."
   (let
       (dump-vector-constants
        dump-string-constants
@@ -156,7 +156,7 @@ the lisp-lib-dir with .jlc as its suffix."
 	    (while (consp list-head)
 	      (setq file-full-name (expand-file-name
 				    (concat (car list-head) ".jlc")
-				    lisp-lib-dir))
+				    lisp-lib-directory))
 	      (unless (setq input-stream (open-file file-full-name 'read))
 		(error "Dump: can't open %s" file-full-name))
 	      (unwind-protect
@@ -173,7 +173,7 @@ the lisp-lib-dir with .jlc as its suffix."
 		    (dump-output-non-consts file-full-name
 					    (expand-file-name
 					     (concat (car list-head) ".jld")
-					     lisp-lib-dir)))
+					     lisp-lib-directory)))
 		(close-file input-stream))
 	      (setq list-head (cdr list-head)))
 	    ;; Set the variable dumped-lisp-libraries to the list of
