@@ -1,5 +1,9 @@
 2000-06-04  John Harper  <john@dcs.warwick.ac.uk>
 
+	* rep-repl.jl (rl-completion-generator): fix from Ceri to
+	prepend `^' to start of word, also quote the word being
+	completed
+
 	* define.jl (define-scan-form): don't expand `structure-ref'
 	forms
 
