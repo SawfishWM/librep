@@ -2285,9 +2285,12 @@ DEFUN("unwind-protect", Funwind_protect, Sunwind_protect, (repv args), rep_SF) /
 ::doc:unwind-protect::
 unwind-protect BODY CLEANUP-FORMS...
 
-Eval and return the value of BODY guaranteeing that the CLEANUP-FORMS will
-be evalled no matter what happens (ie, error, non-local exit, etc) while
-BODY is being evaluated.
+Return the result of evaluating BODY. When execution leaves the dynamic
+extent of BODY evaluate `(progn CLEANUP-FORMS)' (even if exiting due to
+an exception within BODY).
+
+Note that when BODY is exited by calling a continuation, it is
+undefined whether or not CLEANUP-FORMS will be evaluated.
 ::end:: */
 {
     if(rep_CONSP(args))
