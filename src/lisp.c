@@ -1416,8 +1416,9 @@ Evaluates FORM and returns its value.
 	    rep_PUSHGC(gc_dbargs, dbargs);
 	    rep_push_regexp_data(&re_data);
 	    rep_single_step_flag = rep_FALSE;
-	    dbres = rep_funcall(Fsymbol_value (Qdebug_entry, Qt),
-				dbargs, rep_FALSE);
+	    dbres = (rep_call_with_barrier
+		     (Ffuncall, Fcons (Fsymbol_value (Qdebug_entry, Qt),
+				       dbargs), rep_TRUE, 0, 0, 0));
 	    rep_pop_regexp_data();
 	    if (dbres != rep_NULL && rep_CONSP(dbres))
 	    {
@@ -1449,8 +1450,9 @@ Evaluates FORM and returns its value.
 		{
 		    rep_push_regexp_data(&re_data);
 		    rep_CAR(dbargs) = result;
-		    dbres = rep_funcall(Fsymbol_value (Qdebug_exit, Qt),
-					dbargs, rep_FALSE);
+		    dbres = (rep_call_with_barrier
+			     (Ffuncall, Fcons (Fsymbol_value (Qdebug_exit, Qt),
+					       dbargs), rep_TRUE, 0, 0, 0));
 		    if(!dbres)
 			result = rep_NULL;
 		    rep_pop_regexp_data();
@@ -1879,9 +1881,11 @@ handler.
 	Fset(Qdebug_on_error, Qnil);
 	rep_single_step_flag = rep_FALSE;
 	rep_PUSHGC(gc_on_error, on_error);
-	tmp = rep_funcall(Fsymbol_value (Qdebug_error_entry, Qt),
-			  rep_list_2(errlist, rep_box_pointer (rep_call_stack)),
-			  rep_FALSE);
+	tmp = (rep_call_with_barrier
+	       (Ffuncall, Fcons (Fsymbol_value (Qdebug_error_entry, Qt),
+				 rep_list_2(errlist,
+					    rep_box_pointer (rep_call_stack))),
+		rep_TRUE, 0, 0, 0));
 	rep_POPGC;
 	Fset(Qdebug_on_error, on_error);
 	if(tmp && (tmp == Qt))
