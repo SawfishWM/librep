@@ -580,6 +580,12 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 			st.c_lflag |= ECHO;
 		    st.c_cc[VMIN] = 1;
 		    st.c_cc[VTIME] = 0;
+		    /* Set some control codes to default values */
+		    st.c_cc[VINTR]  = '\003';	/* ^c */
+		    st.c_cc[VQUIT]  = '\034';	/* ^| */
+		    st.c_cc[VERASE] = '\177';	/* ^? */
+		    st.c_cc[VKILL]  = '\025';	/* ^u */
+		    st.c_cc[VEOF]   = '\004';	/* ^d */
 		    tcsetattr(0, TCSANOW, &st);
 		}
 		else
