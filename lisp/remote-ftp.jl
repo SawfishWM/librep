@@ -253,8 +253,9 @@ file types.")
       ;; Look for `#' progress characters
       (when (string-looking-at "#+" output point)
 	(setq point (match-end))
-	(write t (substring output (match-start) (match-end)))
-	(redisplay))
+	(when remote-ftp-display-progress
+	  (write t (substring output (match-start) (match-end)))
+	  (redisplay)))
       (if (string-looking-at remote-ftp-passwd-msgs output point)
 	  ;; Send password
 	  (progn
