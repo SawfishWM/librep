@@ -1,0 +1,62 @@
+@c -*-Texinfo-*-
+
+@chapter librep Internals
+@cindex librep Internals
+@cindex Embedding librep
+@cindex Interface, C
+@cindex librep internals
+@cindex Internals
+
+This chapter will document the internals of @code{librep}, including
+how to embed the interpreter into general applications, and how to
+write dynamically-loadable C libraries. Unfortunately most of it hasn't
+been written. As always, the best reference is the source, Luke!
+
+@menu
+* Intro To Internals::
+* Data Type Representation::
+* Garbage Collection Internals::
+* Defining Lisp Subrs::
+* Useful Functions::
+* Shared Libraries::
+@end menu
+
+
+@node Intro To Internals, Data Type Representation, , librep Internals
+@section Introduction To librep Internals
+@cindex Introduction to librep internals
+@cindex Internals, introduction to
+
+
+@node Data Type Representation, Garbage Collection Internals, Intro To Internals, librep Internals
+@section Data Type Representation
+@cindex Data type representation
+@cindex Representation of data types
+@cindex Internals, data types
+
+
+@node Garbage Collection Internals, Defining Lisp Subrs, Data Type Representation, librep Internals
+@section Garbage Collection Internals
+@cindex Garbage collection internals
+@cindex Internals, garbage collection
+
+
+@node Defining Lisp Subrs, Useful Functions, Garbage Collection Internals, librep Internals
+@section Defining Lisp Subrs
+@cindex Defining lisp subrs
+@cindex Subrs, defining
+@cindex Internals, defining subrs
+
+
+@node Useful Functions, Shared Libraries, Defining Lisp Subrs, librep Internals
+@section Useful Functions
+@cindex Useful functions
+@cindex Internals, useful functions
+
+
+@node Shared Libraries, , Useful Functions, librep Internals
+@section Shared Libraries
+@cindex Shared libraries
+@cindex Dynamically loaded libraries
+@cindex Libraries, shared
+
