@@ -88,6 +88,24 @@
 
 #define _GNU_SOURCE
 
+/* AIX requires this to be the first thing in the file.  */
+#include <config.h>
+#ifdef __GNUC__
+# define alloca __builtin_alloca
+#else
+# if HAVE_ALLOCA_H
+#  include <alloca.h>
+# else
+#  ifdef _AIX
+ #pragma alloca
+#  else
+#   ifndef alloca /* predefined by HP cc +Olibcalls */
+char *alloca ();
+#   endif
+#  endif
+# endif
+#endif
+
 #include "repint.h"
 #include <string.h>
 #include <assert.h>
@@ -1595,6 +1613,22 @@ rep_get_initial_special_value (repv sym)
 	}
     }
     return rep_NULL;
+}
+
+repv
+rep_documentation_property (repv structure)
+{
+    repv name = rep_STRUCTURE (structure)->name;
+    char *buf;
+
+    if (!rep_SYMBOLP (name))
+	return Qnil;
+
+    name = rep_SYM (name)->name;
+    buf = alloca (rep_STRING_LEN (name) + 32);
+    sprintf (buf, "documentation#%s", rep_STR (name));
+
+    return Fintern (rep_string_dup (buf), Qnil);
 }
 
 
