@@ -73,8 +73,7 @@ pos_getc(TX *tx, VALUE *pos)
     long col = VCOL(*pos);
     if(row < tx->tx_LogicalEnd)
     {
-	LINE *ln = tx->tx_Lines + row;
-	if(col >= (ln->ln_Strlen - 1))
+	if(col >= (tx->tx_Lines[row].ln_Strlen - 1))
 	{
 	    if(++row == tx->tx_LogicalEnd)
 		--row;
@@ -85,7 +84,7 @@ pos_getc(TX *tx, VALUE *pos)
 	    }
 	}
 	else
-	    c = ln->ln_Line[col++];
+	    c = tx->tx_Lines[row].ln_Line[col++];
     }
     *pos = make_pos(col, row);
     return c;
@@ -1194,7 +1193,6 @@ Copy the contents of the current buffer from START to END to stream STREAM.
 {
     TX *tx = curr_vw->vw_Tx;
     long row, col;
-    LINE *line;
 
     DECLARE2(start, POSP);
     DECLARE3(end, POSP);
@@ -1205,22 +1203,22 @@ Copy the contents of the current buffer from START to END to stream STREAM.
 	return(cmd_signal(sym_invalid_area, list_3(VAL(tx), start, end)));
 
     row = VROW(start);
-    line = tx->tx_Lines + row;
-    col = MIN(VCOL(start), line->ln_Strlen - 1);
+    col = MIN(VCOL(start), tx->tx_Lines[row].ln_Strlen - 1);
 
     while(row <= VROW(end))
     {
 	int len = (((row == VROW(end))
-		    ? VCOL(end) : line->ln_Strlen - 1) - col);
-	if(len > 0
-	   && stream_puts(stream, line->ln_Line + col, len, FALSE) != len)
+		    ? VCOL(end) : tx->tx_Lines[row].ln_Strlen - 1) - col);
+	if(len > 0 && stream_puts(stream, tx->tx_Lines[row].ln_Line + col,
+				  len, FALSE) != len)
+	{
 	    return LISP_NULL;
+	}
 	if(row != VROW(end)
 	   && stream_putc(stream, '\n') != 1)
 	    return LISP_NULL;
 	col = 0;
 	row++;
-	line++;
     }
 
     return stream;

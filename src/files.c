@@ -923,7 +923,6 @@ the buffer (ignoring the current restriction).
     if(NILP(handler))
     {
 	long row, col;
-	LINE *line;
 	FILE *fh;
 
 	/* Don't call check_section() since that looks at the restriction. */
@@ -941,14 +940,14 @@ the buffer (ignoring the current restriction).
 	}
 
 	row = VROW(start);
-	line = tx->tx_Lines + row;
-	col = MIN(VCOL(start), line->ln_Strlen - 1);
+	col = MIN(VCOL(start), tx->tx_Lines[row].ln_Strlen - 1);
 
 	while(row <= VROW(end))
 	{
 	    int len = (((row == VROW(end))
-			? VCOL(end) : line->ln_Strlen - 1) - col);
-	    if(len > 0 && fwrite(line->ln_Line + col, 1, len, fh) != len) 
+			? VCOL(end) : tx->tx_Lines[row].ln_Strlen - 1) - col);
+	    if(len > 0
+	       && fwrite(tx->tx_Lines[row].ln_Line + col, 1, len, fh) != len) 
 	    {
 		return signal_file_error(file);
 	    }
@@ -956,7 +955,6 @@ the buffer (ignoring the current restriction).
 		fputc('\n', fh);
 	    col = 0;
 	    row++;
-	    line++;
 	}
 	if(!FILEP(file))
 	    fclose(fh);
@@ -1639,16 +1637,14 @@ read_file_into_tx(TX *tx, FILE *fh, long file_length)
 {
     bool rc = FALSE;
     u_char buf[BUFSIZ];
-    long len, linenum, alloced_lines, chars_read = 0;
-    LINE *line;
+    long len, row, alloced_lines, chars_read = 0;
 
     /* For the first N allocations, use the standard resize_line_list method,
        even if we know the length of the file.. */
     if(!resize_line_list(tx, 1, 0))
 	goto abortmem;
     alloced_lines = 1;
-    linenum = 0;
-    line = tx->tx_Lines;
+    row = 0;
 
     while((len = fread(buf, 1, BUFSIZ, fh)) > 0)
     {
@@ -1657,16 +1653,17 @@ read_file_into_tx(TX *tx, FILE *fh, long file_length)
 	u_char *eol, *cur = buf;
 	while((eol = memchr(cur, '\n', (buf + len) - cur)))
 	{
-	    if(line->ln_Strlen != 0)
+	    if(tx->tx_Lines[row].ln_Strlen != 0)
 	    {
-		newlen = line->ln_Strlen + (eol - cur);
+		newlen = tx->tx_Lines[row].ln_Strlen + (eol - cur);
 		new = alloc_line_buf(tx, newlen);
-		memcpy(new, line->ln_Line, line->ln_Strlen);
-		memcpy(new + line->ln_Strlen - 1, cur, eol - cur);
+		memcpy(new, tx->tx_Lines[row].ln_Line,
+		       tx->tx_Lines[row].ln_Strlen);
+		memcpy(new + tx->tx_Lines[row].ln_Strlen - 1, cur, eol - cur);
 		new[newlen-1] = 0;
-		free_line_buf(tx, line->ln_Line);
-		line->ln_Line = new;
-		line->ln_Strlen = newlen;
+		free_line_buf(tx, tx->tx_Lines[row].ln_Line);
+		tx->tx_Lines[row].ln_Line = new;
+		tx->tx_Lines[row].ln_Strlen = newlen;
 	    }
 	    else
 	    {
@@ -1676,27 +1673,27 @@ read_file_into_tx(TX *tx, FILE *fh, long file_length)
 		    goto abortmem;
 		memcpy(new, cur, newlen);
 		new[newlen] = 0;
-		line->ln_Line = new;
-		line->ln_Strlen = newlen+1;
+		tx->tx_Lines[row].ln_Line = new;
+		tx->tx_Lines[row].ln_Strlen = newlen+1;
 	    }
-	    chars_read += line->ln_Strlen;
+	    chars_read += tx->tx_Lines[row].ln_Strlen;
 
-	    if(++linenum >= alloced_lines)
+	    if(++row >= alloced_lines)
 	    {
 		/* Need to grow the line list. */
 #ifndef NO_ADAPTIVE_LOADING
-		if(file_length >= 0 && linenum > ADAPTIVE_INITIAL_SAMPLES)
+		if(file_length >= 0 && row > ADAPTIVE_INITIAL_SAMPLES)
 		{
 		    /* We know the file_length, and the average bytes-per-line
 		       so far. Re-calibrate our prediction of the total
 		       number of lines. */
-		    long predicted_lines = file_length * linenum / chars_read;
+		    long predicted_lines = file_length * row / chars_read;
 		    /* Ensure that at least some new lines are going
 		       to be allocated.. */
-		    if(predicted_lines < linenum + 32)
-			predicted_lines = linenum + 32;
+		    if(predicted_lines < row + 32)
+			predicted_lines = row + 32;
 		    if(!resize_line_list(tx, predicted_lines - alloced_lines,
-					 linenum))
+					 row))
 			goto abortmem;
 		    alloced_lines = predicted_lines;
 		}
@@ -1705,58 +1702,56 @@ read_file_into_tx(TX *tx, FILE *fh, long file_length)
 		{
 		    /*  We don't know the size of the file;
 		        just pass it off to resize_line_list().. */
-		    if(!resize_line_list(tx, 1, linenum))
+		    if(!resize_line_list(tx, 1, row))
 			goto abortmem;
 		    alloced_lines++;
 		}
-		line = tx->tx_Lines + linenum;
 	    }
-	    else
-		line++;
 	    cur = eol + 1;
 	}
 	if(cur < buf + len)
 	{
-            if(line->ln_Strlen)
+            if(tx->tx_Lines[row].ln_Strlen)
 	    {
                 /* Only way we can get here is if there were *no* newlines in
                    the chunk we just read. */
-		newlen = line->ln_Strlen + len;
+		newlen = tx->tx_Lines[row].ln_Strlen + len;
 		new = alloc_line_buf(tx, newlen);
 		if(!new)
 		    goto abortmem;
-		memcpy(new, line->ln_Line, line->ln_Strlen - 1);
-		memcpy(new + (line->ln_Strlen - 1), buf, len);
+		memcpy(new, tx->tx_Lines[row].ln_Line,
+		       tx->tx_Lines[row].ln_Strlen - 1);
+		memcpy(new + (tx->tx_Lines[row].ln_Strlen - 1), buf, len);
 		new[newlen-1] = 0;
-		free_line_buf(tx, line->ln_Line);
-		line->ln_Line = new;
-		line->ln_Strlen = newlen;
+		free_line_buf(tx, tx->tx_Lines[row].ln_Line);
+		tx->tx_Lines[row].ln_Line = new;
+		tx->tx_Lines[row].ln_Strlen = newlen;
 	    }
             else
 	    {
 		newlen = (buf + len) - cur;
-		line->ln_Line = alloc_line_buf(tx, newlen + 1);
-		if(!line->ln_Line)
+		tx->tx_Lines[row].ln_Line = alloc_line_buf(tx, newlen + 1);
+		if(!tx->tx_Lines[row].ln_Line)
 		    goto abortmem;
-		memcpy(line->ln_Line, cur, newlen);
-		line->ln_Line[newlen] = 0;
-		line->ln_Strlen = newlen + 1;
+		memcpy(tx->tx_Lines[row].ln_Line, cur, newlen);
+		tx->tx_Lines[row].ln_Line[newlen] = 0;
+		tx->tx_Lines[row].ln_Strlen = newlen + 1;
 	    }
 	}
     }
-    if(line->ln_Strlen == 0)
+    if(tx->tx_Lines[row].ln_Strlen == 0)
     {
-	line->ln_Line = alloc_line_buf(tx, 1);
-	if(line->ln_Line == NULL)
+	tx->tx_Lines[row].ln_Line = alloc_line_buf(tx, 1);
+	if(tx->tx_Lines[row].ln_Line == NULL)
 	    goto abortmem;
-	line->ln_Line[0] = 0;
-	line->ln_Strlen = 1;
+	tx->tx_Lines[row].ln_Line[0] = 0;
+	tx->tx_Lines[row].ln_Strlen = 1;
     }
     else
-	chars_read += line->ln_Strlen;
-    linenum++;
+	chars_read += tx->tx_Lines[row].ln_Strlen;
+    row++;
 
-    if(!resize_line_list(tx, linenum - alloced_lines, linenum))
+    if(!resize_line_list(tx, row - alloced_lines, row))
 	goto abortmem;
 
     tx->tx_LogicalStart = 0;
