@@ -300,4 +300,7 @@
 /* Define if we have a broken gcc on alpha */
 #undef BROKEN_ALPHA_GCC
 
+/* Define if using LIBC gettext */
+#undef LIBC_GETTEXT
+
 #endif /* CONFIG_H */
