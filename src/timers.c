@@ -63,8 +63,8 @@ typedef struct lisp_timer {
     repv function;
     long secs, msecs;
     long rel_secs, rel_msecs;
-    int fired : 1;
-    int deleted : 1;
+    u_int fired : 1;
+    u_int deleted : 1;
 } Lisp_Timer;
 
 /* List of all allocated timer objects, linked through next_alloc field */
