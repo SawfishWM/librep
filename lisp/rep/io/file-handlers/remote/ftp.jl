@@ -22,7 +22,6 @@
 ;;    - Allow file transfer mode (binary/ascii) to be determined by
 ;;	matching files against regexp(s)
 ;;    - Cache more than a single directory listing?
-;;    - Passwords are entered into the alist even if they're invalid
 ;;    - Fix all the kludges marked by XXX
 
 (require 'remote)
@@ -136,7 +135,8 @@ file types.")
 (defconst remote-ftp-cached-dir 5)
 (defconst remote-ftp-dircache 6)
 (defconst remote-ftp-pending-output 7)
-(defconst remote-ftp-struct-size 8)
+(defconst remote-ftp-login-data 8)	;PASSWD while logging in
+(defconst remote-ftp-struct-size 9)
 
 (defmacro remote-ftp-status-p (session stat)
   `(eq (aref ,session remote-ftp-status) ,stat))
@@ -284,8 +284,16 @@ file types.")
 	     (list (if (string-match remote-ftp-anon-users
 				     (aref session remote-ftp-user))
 		       remote-ftp-anon-passwd
-		     (remote-ftp-get-passwd (aref session remote-ftp-user)
-					    (aref session remote-ftp-host)))))
+		     (let
+			 ((pass (remote-ftp-get-passwd
+				 (aref session remote-ftp-user)
+				 (aref session remote-ftp-host)
+				 (aref session remote-ftp-login-data))))
+		       (unless pass
+			 (remote-ftp-close-session session)
+			 (error "No valid password"))
+		       (aset session remote-ftp-login-data pass)
+		       pass))))
 	    ;; Can't be anything more?
 	    (setq point (length output)))
 	(if (string-match "\n" output point)
@@ -357,6 +365,13 @@ file types.")
 (defun remote-ftp-login (session)
   (and (remote-ftp-command session 'login "user %s"
 			   (aref session remote-ftp-user))
+       (when (stringp (aref session remote-ftp-login-data))
+	 ;; The password for this session. It seemed successful
+	 ;; so store for later use
+	 (remote-ftp-add-passwd (aref session remote-ftp-user)
+				(aref session remote-ftp-host)
+				(aref session remote-ftp-login-data))
+	 (aset session remote-ftp-login-data nil))
        (remote-ftp-command session 'type "type %s" remote-ftp-transfer-type)
        ;; For testing the reconnection-on-idle
        ;(setq remote-ftp-echo-output t)
@@ -515,16 +530,14 @@ file types.")
 
 ;; Password caching
 
-(defun remote-ftp-get-passwd (user host)
+(defun remote-ftp-get-passwd (user host &optional retrying)
   (let*
       ((joined (concat user ?@ host))
        (cell (assoc joined remote-ftp-passwd-alist)))
     (if cell
 	(cdr cell)
-      (setq cell (pwd-prompt (concat "Password for " joined ?:)))
-      (when cell
-	(remote-ftp-add-passwd user host cell)
-	cell))))
+      (pwd-prompt (concat (if retrying "Try again; p" ?P)
+			  "assword for " joined ?:)))))
 
 ;;;###autoload
 (defun remote-ftp-add-passwd (user host passwd)
