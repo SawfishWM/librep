@@ -688,8 +688,6 @@ again:
 	MARKVAL(VTX(val)->tx_UndoList);
 	MARKVAL(VTX(val)->tx_ToUndoList);
 	MARKVAL(VTX(val)->tx_UndoneList);
-	MARKVAL(VTX(val)->tx_ModStart);
-	MARKVAL(VTX(val)->tx_ModEnd);
 	MARKVAL(VTX(val)->tx_SavedCPos);
 	MARKVAL(VTX(val)->tx_SavedWPos);
 	MARKVAL(VTX(val)->tx_SavedBlockPos[0]);
@@ -717,11 +715,8 @@ again:
 	MARKVAL(VVIEW(val)->vw_CursorPos);
 	MARKVAL(VVIEW(val)->vw_LastCursorPos);
 	MARKVAL(VVIEW(val)->vw_DisplayOrigin);
-	MARKVAL(VVIEW(val)->vw_LastDisplayOrigin);
 	MARKVAL(VVIEW(val)->vw_BlockS);
 	MARKVAL(VVIEW(val)->vw_BlockE);
-	MARKVAL(VVIEW(val)->vw_LastBlockS);
-	MARKVAL(VVIEW(val)->vw_LastBlockE);
 	val = VAL(VVIEW(val)->vw_NextView);
 	if(val != 0 && !INTP(val) && !GC_MARKEDP(val) && !NILP(val))
 	    goto again;
