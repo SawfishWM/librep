@@ -1,3 +1,8 @@
+2000-10-18  John Harper  <john@dcs.warwick.ac.uk>
+
+	* Makefile.in: patch from Scott Heavner <sdh@po.cwru.edu> to
+	fix `install' shell scripting
+
 2000-09-29  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep/lang/define.jl: track bound variables, then don't expand

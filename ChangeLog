@@ -1,3 +1,8 @@
+2000-10-18  John Harper  <john@dcs.warwick.ac.uk>
+
+	* Makefile.in: fix repdoc dependences to refer to the actual
+	file
+
 2000-10-11  John Harper  <john@dcs.warwick.ac.uk>
 
 	* install-aliases: add extra-paranoid quoting
