@@ -73,8 +73,10 @@ HAVE_UNIX=@HAVE_UNIX@
 
 .PHONY: clean realclean install
 
-rep_prog = $(top_builddir)/libtool --mode=execute -dlopen $(top_builddir)/src/libsdbm.la $(top_builddir)/src/rep
-COMPILE_ENV = REPLISPDIR=$(top_builddir)/lisp REPDOCFILE=$(top_builddir)/DOC
+rep_prog = $(top_builddir)/libtool --mode=execute $(top_builddir)/src/rep
+COMPILE_ENV = REPLISPDIR=$(top_builddir)/lisp \
+	      REPEXECDIR=$(top_builddir)/src/.libs \
+	      REPDOCFILE=$(top_builddir)/DOC
 
 # Rule for ``normal'' C objects
 %.o : %.c
@@ -89,9 +91,9 @@ COMPILE_ENV = REPLISPDIR=$(top_builddir)/lisp REPDOCFILE=$(top_builddir)/DOC
 	$(LIBTOOL) $(CC) -c $(CPPFLAGS) $(CFLAGS) $<
 
 # Rule for dlopen'able C objects
-lib%.la : %.c
+%.la : %.c
 	$(LIBTOOL) $(CC) -c $(CPPFLAGS) $(CFLAGS) $<
-	$(LIBTOOL) $(CC) -module $(CPPFLAGS) $(CFLAGS) \
+	$(LIBTOOL) $(CC) -avoid-version -module $(CPPFLAGS) $(CFLAGS) \
 	  -o $@ $*.lo -rpath $(repexecdir)
 
 # Build dependancy files from C source files.

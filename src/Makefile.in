@@ -21,9 +21,9 @@
 top_builddir=..
 VPATH=@top_srcdir@/src:.
 
-COMMON_SRCS =	continuations.c debug-buffer.c files.c find.c lisp.c \
-		lispcmds.c lispmach.c main.c message.c misc.c regexp.c \
-		regsub.c streams.c symbols.c values.c
+COMMON_SRCS =	debug-buffer.c files.c find.c lisp.c lispcmds.c lispmach.c \
+		main.c message.c misc.c regexp.c regsub.c streams.c \
+		symbols.c values.c
 UNIX_SRCS =	unix_dl.c unix_files.c unix_main.c unix_processes.c
 
 INSTALL_HDRS = rep.h rep_lisp.h rep_regexp.h rep_subrs.h
@@ -32,10 +32,11 @@ SRCS = $(COMMON_SRCS) $(UNIX_SRCS)
 OBJS = $(SRCS:.c=.lo)
 
 SDBM_SRCS = sdbm.c sdbm_pair.c sdbm_hash.c
-SDBM_OBJS = $(SDBM_SRCS:.c=.lo)
+SDBM_OBJS = $(SDBM_SRCS:.c=.o)
+SDBM_LOBJS = $(SDBM_SRCS:.c=.lo)
 
-DL_SRCS = repsdbm.c timers.c gettext.c readline.c tables.c
-DL_OBJS = libsdbm.la libtimers.la libgettext.la libreadline.la libtables.la
+DL_SRCS = repsdbm.c timers.c gettext.c readline.c tables.c continuations.c
+DL_OBJS = sdbm.la timers.la gettext.la readline.la tables.la callcc.la
 
 REP_SRCS =	rep.c
 REP_OBJS =	$(REP_SRCS:.c=.o)
@@ -44,10 +45,7 @@ INTL_OBJS_yes=../intl/*.lo
 INTL_OBJS_no=
 INTL_OBJS=$(INTL_OBJS_@USE_INCLUDED_LIBINTL@)
 
-all : libxsdbm.la librep.la $(DL_OBJS) rep rep-config rep-remote rep-xgettext
-
-libxsdbm.la : $(SDBM_OBJS)
-	$(LIBTOOL) $(CC) $(LDFLAGS) -o $@ $^ -rpath $(libdir)
+all : librep.la $(DL_OBJS) rep rep-config rep-remote rep-xgettext
 
 librep.la : $(OBJS) $(LIBOBJS) $(ALLOCA)
 	$(LIBTOOL) $(CC) $(LDFLAGS) -version-info $(libversion) \
@@ -74,7 +72,7 @@ install : all installdirs
 	for dl in $(DL_OBJS); do \
 	  $(LIBTOOL) $(INSTALL_PROGRAM) $$dl $(DESTDIR)${repexecdir}; \
 	done
-	printf "\nrep_open_globally=yes\n" >>$(DESTDIR)${repexecdir}/libgettext.la
+	printf "\nrep_open_globally=yes\n" >>$(DESTDIR)${repexecdir}/gettext.la
 	for i in $(INSTALL_HDRS); do \
 	  $(INSTALL_DATA) $$i $(DESTDIR)$(includedir); \
 	done
@@ -101,20 +99,24 @@ rep-config : rep-config.sh
 	$(SHELL) $< "${prefix}" "${libdir}" "${version}" "${LIBS}" "${repcommonexecdir}" >$@
 	chmod +x $@
 
-repdoc : repdoc.o libxsdbm.la
-	$(LIBTOOL) $(CC) -static $(LDFLAGS) -o $@ repdoc.o libxsdbm.la
+repdoc : repdoc.o $(SDBM_OBJS)
+	$(LIBTOOL) $(CC) -static $(LDFLAGS) -o $@ $^
 
-libsdbm.la : $(SDBM_OBJS) repsdbm.lo
-	$(LIBTOOL) $(CC) $(LDFLAGS) -module -o $@ \
-	 $(SDBM_OBJS) repsdbm.lo -rpath $(repexecdir)
+sdbm.la : $(SDBM_LOBJS) repsdbm.lo
+	$(LIBTOOL) $(CC) $(LDFLAGS) -avoid-version -module -o $@ \
+	 $(SDBM_LOBJS) repsdbm.lo -rpath $(repexecdir)
 
-libgettext.la : gettext.lo
-	$(LIBTOOL) $(CC) $(LDFLAGS) -module -o $@ \
+gettext.la : gettext.lo
+	$(LIBTOOL) $(CC) $(LDFLAGS) -avoid-version -module -o $@ \
 	 $^ $(INTL_OBJS) -rpath $(repexecdir)
 
-libreadline.la : readline.lo
-	$(LIBTOOL) $(CC) $(LDFLAGS) -module -o $@ \
+readline.la : readline.lo
+	$(LIBTOOL) $(CC) $(LDFLAGS) -avoid-version -module -o $@ \
 	 $^ $(READLINE_LIBS) -rpath $(repexecdir)
+
+callcc.la : continuations.lo
+	$(LIBTOOL) $(CC) $(LDFLAGS) -avoid-version -module -o $@ \
+	 $^ -rpath $(repexecdir)
 
 clean :
 	rm -f *~ *.o *.lo *.la build.h

@@ -15,10 +15,10 @@ repdocfile=$repdocfile
 rep_LIBTOOL=\$(repexecdir)/libtool
 
 # use this like:
-# libfoo.la : foo.lo bar.lo
+# foo.la : foo.lo bar.lo
 #	\$(rep_DL_LD) link-opts...
 
-rep_DL_LD=\$(rep_LIBTOOL) \$(CC) -module -rpath \$(repexecdir)
+rep_DL_LD=\$(rep_LIBTOOL) \$(CC) -avoid-version -module -rpath \$(repexecdir)
 rep_DL_INSTALL=\$(rep_LIBTOOL) \$(INSTALL)
 rep_DL_UNINSTALL=\$(rep_LIBTOOL) rm
 
