@@ -100,19 +100,23 @@
   (define self-test-ref (autoloader-ref ref-1))
 
   (define (run-all-self-tests)
-    (walk (lambda (x)
-	    (run-module-self-tests x))))
+    (let ((failures 0))
+      (walk (lambda (x)
+	      (setq failures (+ failures (run-module-self-tests x)))))
+      failures))
 
   (define (run-module-self-tests module)
     (let ((test-case (self-test-ref module)))
-      (when test-case
+      (if (not test-case)
+	  0
 	(format standard-error "%s\n" module)
-	(test-case))))
+	(let-fluids ((failed-tests 0))
+	  (test-case)
+	  (fluid failed-tests)))))
 
   (define (run-self-tests-and-exit)
-    (let-fluids ((failed-tests 0))
-      (run-all-self-tests)
-      (throw 'quit (if (zerop (fluid failed-tests)) 0 1))))
+    (let ((failures (run-all-self-tests)))
+      (throw 'quit (if (zerop failures) 0 1))))
 
 
 ;;; test macros

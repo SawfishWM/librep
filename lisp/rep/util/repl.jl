@@ -67,10 +67,8 @@
 			(while t
 			  (setq sexps (cons (read stream) sexps)))
 		      (end-of-stream (setq sexps (nreverse sexps))))
-		    (if (get (car sexps) 'repl-command)
-			(apply (get (car sexps) 'repl-command) (cdr sexps))
-		      (format standard-output
-			      "unrecognized command name: %s\n" (car sexps)))))
+		    (let ((command (repl-command (car sexps))))
+		      (and command (apply command (cdr sexps))))))
 
 		 ;; ignore empty input lines, or lines with comments only
 		 ((string-looking-at "\\s*(;.*)?$" input))
@@ -159,215 +157,281 @@
 
 ;;; commands
 
-  (put 'in 'repl-command
-       (lambda (struct #!optional form)
-	 (if form
-	     (format standard-output "%S\n"
-		     (eval form (get-structure struct)))
-	   (repl-set-struct (fluid current-repl) struct))))
-  (put 'in 'repl-help "STRUCT [FORM ...]")
+  (define repl-commands '())
 
-  (put 'load 'repl-command
-       (lambda structs
-	 (mapc (lambda (struct)
-		 (intern-structure struct)) structs)))
-  (put 'load 'repl-help "STRUCT ...")
+  (define (define-repl-command name function #!optional doc)
+    (let ((cell (assq name repl-commands)))
+      (if cell
+	  (rplacd cell (list function doc))
+	(setq repl-commands (cons (list name function doc) repl-commands)))))
 
-  (put 'reload 'repl-command
-       (lambda structs
-	 (mapc (lambda (struct)
-		 (name-structure (get-structure struct) nil)
-		 (intern-structure struct)) structs)))
-  (put 'reload 'repl-help "STRUCT ...")
+  (define (find-command name)
+    (let ((cell (assq name repl-commands)))
+      (if cell
+	  cell
+	;; look for an unambiguous match
+	(let ((re (concat "^" (quote-regexp (symbol-name name)))))
+	  (let loop ((rest repl-commands)
+		     (matched nil))
+	    (cond ((null rest)
+		   (if matched
+		       matched
+		     (format standard-output "unknown command: ,%s\n" name)
+		     nil))
+		  ((string-match re (symbol-name (caar rest)))
+		   (if matched
+		       ;; already saw something, exit
+		       (progn
+			 (format standard-output
+				 "non-unique abbreviation: ,%s\n" name)
+			 nil)
+		     (loop (cdr rest) (car rest))))
+		  (t (loop (cdr rest) matched))))))))
 
-  (put 'unload 'repl-command
-       (lambda structs
-	 (mapc (lambda (struct)
-		 (name-structure (get-structure struct) nil)) structs)))
-  (put 'unload 'repl-help "STRUCT ...")
+  (define (repl-command name)
+    (let ((cell (find-command name)))
+      (and cell (cadr cell))))
 
-  (put 'load-file 'repl-command
-       (lambda files
-	 (mapc (lambda (f)
-		 (repl-eval `(,load ,f))) files)))
-  (put 'load-file 'repl-help "\"FILENAME\" ...")
+  (define (repl-documentation name)
+    (let ((cell (find-command name)))
+      (and cell (caddr cell))))
 
-  (put 'open 'repl-command
-       (lambda structs
-	 (repl-eval `(,open-structures (,quote ,structs)))))
-  (put 'open 'repl-help "STRUCT ...")
+  (define-repl-command
+   'in
+   (lambda (struct #!optional form)
+     (if form
+	 (format standard-output "%S\n"
+		 (eval form (get-structure struct)))
+       (repl-set-struct (fluid current-repl) struct)))
+   "STRUCT [FORM ...]")
 
-  (put 'access 'repl-command
-       (lambda structs
-	 (repl-eval `(,access-structures (,quote ,structs)))))
-  (put 'access 'repl-help "STRUCT ...")
+  (define-repl-command
+   'load
+   (lambda structs
+     (mapc (lambda (struct)
+	     (intern-structure struct)) structs))
+   "STRUCT ...")
 
-  (put 'structures 'repl-command
-       (lambda ()
-	 (let (structures)
-	   (structure-walk (lambda (var value)
-			     (declare (unused value))
-			     (setq structures (cons var structures)))
-			   (get-structure '%structures))
-	   (print-list (sort structures)))))
+  (define-repl-command
+   'reload
+   (lambda structs
+     (mapc (lambda (struct)
+	     (name-structure (get-structure struct) nil)
+	     (intern-structure struct)) structs))
+   "STRUCT ...")
 
-  (put 'interfaces 'repl-command
-       (lambda ()
-	 (let (interfaces)
-	   (structure-walk (lambda (var value)
-			     (declare (unused value))
-			     (setq interfaces (cons var interfaces)))
-			   (get-structure '%interfaces))
-	   (print-list (sort interfaces)))))
+  (define-repl-command
+   'unload
+   (lambda structs
+     (mapc (lambda (struct)
+	     (name-structure (get-structure struct) nil)) structs))
+   "STRUCT ...")
 
-  (put 'bindings 'repl-command
-       (lambda ()
-	 (structure-walk (lambda (var value)
-			   (format standard-output "  (%s %S)\n" var value))
-			 (intern-structure
-			  (repl-struct (fluid current-repl))))))
+  (define-repl-command
+   'load-file
+   (lambda files
+     (mapc (lambda (f)
+	     (repl-eval `(,load ,f))) files))
+   "\"FILENAME\" ...")
 
-  (put 'exports 'repl-command
-       (lambda ()
-	 (print-list (structure-interface
-		      (intern-structure
-		       (repl-struct (fluid current-repl)))))))
+  (define-repl-command
+   'open
+   (lambda structs
+     (repl-eval `(,open-structures (,quote ,structs))))
+   "STRUCT ...")
 
-  (put 'imports 'repl-command
-       (lambda ()
-	 (print-list (module-imports (repl-struct (fluid current-repl))))))
+  (define-repl-command
+   'access
+   (lambda structs
+     (repl-eval `(,access-structures (,quote ,structs))))
+   "STRUCT ...")
 
-  (put 'accessible 'repl-command
-       (lambda ()
-	 (print-list (structure-accessible
-		      (intern-structure
-		       (repl-struct (fluid current-repl)))))))
+  (define-repl-command
+   'structures
+   (lambda ()
+     (let (structures)
+       (structure-walk (lambda (var value)
+			 (declare (unused value))
+			 (setq structures (cons var structures)))
+		       (get-structure '%structures))
+       (print-list (sort structures)))))
 
-  (put 'collect 'repl-command garbage-collect)
+  (define-repl-command
+   'interfaces
+   (lambda ()
+     (let (interfaces)
+       (structure-walk (lambda (var value)
+			 (declare (unused value))
+			 (setq interfaces (cons var interfaces)))
+		       (get-structure '%interfaces))
+       (print-list (sort interfaces)))))
 
-  (put 'dis 'repl-command
-       (lambda (arg)
-	 (require 'rep.vm.disassembler)
-	 (disassemble (repl-eval arg))))
-  (put 'dis 'repl-help "FORM")
+  (define-repl-command
+   'bindings
+   (lambda ()
+     (structure-walk (lambda (var value)
+		       (format standard-output "  (%s %S)\n" var value))
+		     (intern-structure
+		      (repl-struct (fluid current-repl))))))
 
-  (put 'compile-proc 'repl-command
-       (lambda args
-	 (require 'rep.vm.compiler)
-	 (mapc (lambda (arg)
-		 (compile-function (repl-eval arg) arg)) args)))
-  (put 'compile-proc 'repl-help "PROCEDURE ...")
+  (define-repl-command
+   'exports
+   (lambda ()
+     (print-list (structure-interface
+		  (intern-structure
+		   (repl-struct (fluid current-repl)))))))
 
-  (put 'compile 'repl-command
-       (lambda args
-	 (require 'rep.vm.compiler)
-	 (if (null args)
-	     (compile-module (repl-struct (fluid current-repl)))
-	   (mapc compile-module args))))
-  (put 'compile 'repl-help "[STRUCT ...]")
+  (define-repl-command
+   'imports
+   (lambda ()
+     (print-list (module-imports (repl-struct (fluid current-repl))))))
 
-  (put 'new 'repl-command
-       (lambda (name)
-	 (declare (bound %open-structures))
-	 (make-structure nil (lambda ()
-			       (%open-structures '(rep.module-system)))
-			 nil name)
-	 (repl-set-struct (fluid current-repl) name)))
-  (put 'new 'repl-help "STRUCT")
+  (define-repl-command
+   'accessible
+   (lambda ()
+     (print-list (structure-accessible
+		  (intern-structure
+		   (repl-struct (fluid current-repl)))))))
 
-  (put 'expand 'repl-command
-       (lambda (form)
-	 (format standard-output "%s\n" (repl-eval `(,macroexpand ',form)))))
-  (put 'expand 'repl-help "FORM")
+  (define-repl-command 'collect garbage-collect)
 
-  (put 'step 'repl-command
-       (lambda (form)
-	 (format standard-output "%s\n" (repl-eval `(,step ',form)))))
-  (put 'step 'repl-help "FORM")
+  (define-repl-command
+   'dis
+   (lambda (arg)
+     (require 'rep.vm.disassembler)
+     (disassemble (repl-eval arg)))
+   "FORM")
 
-  (put 'help 'repl-command
-       (lambda ()
-	 (write standard-output "
+  (define-repl-command
+   'compile-proc
+   (lambda args
+     (require 'rep.vm.compiler)
+     (mapc (lambda (arg)
+	     (compile-function (repl-eval arg) arg)) args))
+   "PROCEDURE ...")
+
+  (define-repl-command
+   'compile
+   (lambda args
+     (require 'rep.vm.compiler)
+     (if (null args)
+	 (compile-module (repl-struct (fluid current-repl)))
+       (mapc compile-module args)))
+   "[STRUCT ...]")
+
+  (define-repl-command
+   'new
+   (lambda (name)
+     (declare (bound %open-structures))
+     (make-structure nil (lambda ()
+			   (%open-structures '(rep.module-system)))
+		     nil name)
+     (repl-set-struct (fluid current-repl) name))
+   "STRUCT")
+
+  (define-repl-command
+   'expand
+   (lambda (form)
+     (format standard-output "%s\n" (repl-eval `(,macroexpand ',form))))
+   "FORM")
+
+  (define-repl-command
+   'step
+   (lambda (form)
+     (format standard-output "%s\n" (repl-eval `(,step ',form))))
+   "FORM")
+
+  (define-repl-command
+   'help
+   (lambda ()
+     (write standard-output "
 Either enter lisp forms to be evaluated, and their result printed, or
-enter a meta-command prefixed by a `,' character.\n\n")
-	 (print-list (sort (apropos "" (lambda (x)
-					 (get x 'repl-command))))
-		     (lambda (x)
-		       (format nil ",%s %s" x (or (get x 'repl-help) ""))))))
+enter a meta-command prefixed by a `,' character. Names of meta-
+commands may be abbreviated to their unique leading characters.\n\n")
+     (print-list (sort (mapcar car repl-commands))
+		 (lambda (x)
+		   (format nil ",%s %s" x (or (repl-documentation x) ""))))))
 
-  (put 'quit 'repl-command (lambda () (throw 'quit 0)))
+  (define-repl-command 'quit (lambda () (throw 'quit 0)))
 
-  (put 'describe 'repl-command
-       (lambda (name)
-	 (require 'rep.lang.doc)
-	 (let* ((value (repl-eval name))
-		(struct (locate-binding* name))
-		(doc (documentation name struct value)))
-	   (write standard-output #\newline)
-	   (describe-value value name struct)
-	   (write standard-output #\newline)
-	   (when doc
-	     (format standard-output "%s\n\n" doc)))))
-  (put 'describe 'repl-help "SYMBOL")
+  (define-repl-command
+   'describe
+   (lambda (name)
+     (require 'rep.lang.doc)
+     (let* ((value (repl-eval name))
+	    (struct (locate-binding* name))
+	    (doc (documentation name struct value)))
+       (write standard-output #\newline)
+       (describe-value value name struct)
+       (write standard-output #\newline)
+       (when doc
+	 (format standard-output "%s\n\n" doc))))
+   "SYMBOL")
 
-  (put 'apropos 'repl-command
-       (lambda (re)
-	 (require 'rep.lang.doc)
-	 (let ((funs (apropos re (lambda (x)
-				   (condition-case nil
-				       (progn
-					 (repl-eval x)
-					 t)
-				     (void-value nil))))))
-	   (mapc (lambda (x)
-		   (describe-value (repl-eval x) x)) funs))))
-  (put 'apropos 'repl-help "\"REGEXP\"")
+  (define-repl-command
+   'apropos
+   (lambda (re)
+     (require 'rep.lang.doc)
+     (let ((funs (apropos re (lambda (x)
+			       (condition-case nil
+				   (progn
+				     (repl-eval x)
+				     t)
+				 (void-value nil))))))
+       (mapc (lambda (x)
+	       (describe-value (repl-eval x) x)) funs)))
+   "\"REGEXP\"")
 
-  (put 'locate 'repl-command
-       (lambda (var)
-	 (let ((struct (locate-binding* var)))
-	   (if struct
-	       (format standard-output "%s is bound in: %s.\n" var struct)
-	     (format standard-output "%s is unbound.\n" var)))))
-  (put 'locate 'repl-help "SYMBOL")
+  (define-repl-command
+   'locate
+   (lambda (var)
+     (let ((struct (locate-binding* var)))
+       (if struct
+	   (format standard-output "%s is bound in: %s.\n" var struct)
+	 (format standard-output "%s is unbound.\n" var))))
+   "SYMBOL")
 
-  (put 'whereis 'repl-command
-       (lambda (var)
-	 (let ((out '()))
-	   (structure-walk (lambda (k v)
-			     (declare (unused k))
-			     (when (and (structure-name v)
-					(structure-exports-p v var))
-			       (setq out (cons (structure-name v) out))))
-			   (get-structure '%structures))
-	   (if out
-	       (format standard-output "%s is exported by: %s.\n"
-		       var (mapconcat symbol-name (sort out) ", "))
-	     (format standard-output "No module exports %s.\n" var)))))
-  (put 'whereis 'repl-help "SYMBOL")
+  (define-repl-command
+   'whereis
+   (lambda (var)
+     (let ((out '()))
+       (structure-walk (lambda (k v)
+			 (declare (unused k))
+			 (when (and (structure-name v)
+				    (structure-exports-p v var))
+			   (setq out (cons (structure-name v) out))))
+		       (get-structure '%structures))
+       (if out
+	   (format standard-output "%s is exported by: %s.\n"
+		   var (mapconcat symbol-name (sort out) ", "))
+	 (format standard-output "No module exports %s.\n" var))))
+   "SYMBOL")
 
-  (put 'time 'repl-command
-       (lambda (form)
-	 (let (t1 t2 ret)
-	   (setq t1 (current-utime))
-	   (setq ret (repl-eval form))
-	   (setq t2 (current-utime))
-	   (format standard-output
-		   "%S\nElapsed: %d seconds\n" ret (/ (- t2 t1) 1e6)))))
-  (put 'time 'repl-help "FORM")
+  (define-repl-command
+   'time
+   (lambda (form)
+     (let (t1 t2 ret)
+       (setq t1 (current-utime))
+       (setq ret (repl-eval form))
+       (setq t2 (current-utime))
+       (format standard-output
+	       "%S\nElapsed: %d seconds\n" ret (/ (- t2 t1) 1e6))))
+   "FORM")
 
-  (put 'profile 'repl-command
-       (lambda (form)
-	 (require 'rep.lang.profiler)
-	 (format standard-output "%S\n\n" (call-in-profiler
-					   (lambda () (repl-eval form))))
-	 (print-profile)))
-  (put 'profile 'repl-help "FORM")
+  (define-repl-command
+   'profile
+   (lambda (form)
+     (require 'rep.lang.profiler)
+     (format standard-output "%S\n\n" (call-in-profiler
+				       (lambda () (repl-eval form))))
+     (print-profile))
+   "FORM")
 
-  (put 'check 'repl-command
-       (lambda (#!optional module)
-	 (require 'rep.test.framework)
-	 (if (null module)
-	     (run-all-self-tests)
-	   (run-module-self-tests module))))
-  (put 'check 'repl-help "[STRUCT]"))
+  (define-repl-command
+   'check
+   (lambda (#!optional module)
+     (require 'rep.test.framework)
+     (if (null module)
+	 (run-all-self-tests)
+       (run-module-self-tests module)))
+   "[STRUCT]"))
