@@ -148,7 +148,7 @@ typedef unsigned rep_PTR_SIZED_INT repv;
 #  error must be updated for Tru64!
 # endif
 #else
-# warning Lets hope your compiler aligns to 4 byte boundaries..
+/* # warning Lets hope your compiler aligns to 4 byte boundaries.. */
 # define rep_ALIGN_CELL(d) d
 #endif
 
