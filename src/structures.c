@@ -91,6 +91,10 @@
 #define _GNU_SOURCE
 
 #include "repint.h"
+#include <string.h>
+#ifdef NEED_MEMORY_H
+# include <memory.h>
+#endif
 
 #define MIN_BUCKETS 8
 #define MAX_MULTIPLIER 2

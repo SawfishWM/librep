@@ -33,6 +33,10 @@
 #define _GNU_SOURCE
 
 #include "repint.h"
+#include <string.h>
+#ifdef NEED_MEMORY_H
+# include <memory.h>
+#endif
 
 #define HIST_SIZE 256
 #define HIST_HASH_FN(x) (((x) >> 4) % HIST_SIZE)
