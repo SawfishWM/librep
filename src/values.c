@@ -459,7 +459,7 @@ rep_cons_block *rep_cons_block_chain;
 rep_cons *rep_cons_freelist;
 int rep_allocated_cons, rep_used_cons;
 
-inline rep_cons *
+rep_cons *
 rep_allocate_cons (void)
 {
     rep_cons *cn;
@@ -493,13 +493,16 @@ cons CAR CDR
 Returns a new cons-cell with car CAR and cdr CDR.
 ::end:: */
 {
-    rep_cons *cn = rep_allocate_cons ();
-    rep_cons_freelist = rep_CONS (cn->cdr);
-    cn->car = car;
-    cn->cdr = cdr;
+    rep_cons *c = rep_cons_freelist;
+    if (c == 0)
+	c = rep_allocate_cons ();
+    rep_cons_freelist = rep_CONS (c->cdr);
     rep_used_cons++;
     rep_data_after_gc += sizeof(rep_cons);
-    return rep_CONS_VAL(cn);
+
+    c->car = car;
+    c->cdr = cdr;
+    return rep_CONS_VAL (c);
 }
 
 void

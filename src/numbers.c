@@ -440,7 +440,7 @@ rep_make_long_uint (u_long in)
     }
 }
 
-inline repv
+repv
 rep_make_long_int (long in)
 {
     if (in >= rep_LISP_MIN_INT && in <= rep_LISP_MAX_INT)
