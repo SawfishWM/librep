@@ -378,6 +378,8 @@ current environment.
     rep_funarg *f = rep_ALLOC_CELL (sizeof (rep_funarg));
     rep_data_after_gc += sizeof (rep_funarg);
     f->car = rep_Funarg;
+    if (rep_bytecode_interpreter != Fjade_byte_code)
+	f->car |= rep_FF_NO_BYTE_CODE;
     f->fun = fun;
     f->name = name;
     f->env = rep_env;
@@ -449,7 +451,19 @@ set-variable-environment ENV
     if (rep_call_stack != 0)
     {
 	if (rep_LISTP (env))
+	{
+	    repv tem;
 	    rep_call_stack->saved_env = env;
+	    tem = Fassq (Qjade_byte_code, env);
+	    if (tem && tem != Qnil)
+	    {
+		tem = rep_CDR (tem);
+		if (rep_CELL8_TYPEP (tem, rep_Subr3))
+		    rep_bytecode_interpreter = rep_SUBR3FUN (tem);
+		else
+		    rep_bytecode_interpreter = 0;
+	    }
+	}
     }
     return Qt;
 }
@@ -553,7 +567,7 @@ rep_bind_symbol(repv oldList, repv symbol, repv newVal)
     }
     else
     {
-	/* lexical binding */
+	/* lexical binding (this code also in lispmach.c:OP_BIND) */
 	rep_env = Fcons (Fcons (symbol, newVal), rep_env);
 	return Fcons (symbol, oldList);
     }
