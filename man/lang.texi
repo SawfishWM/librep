@@ -2654,6 +2654,37 @@ Or another example,
 @result{} 16
 @end lisp
 
+The system is also capable of eliminating tail calls where possible,
+allowing tail-recursive function definitions to run in constant space.
+
+A @dfn{tail-call} is a function call that occurs immediately before
+exiting the containing function. Since the containing function need not
+receive the result of the function call, it is possible to, in effect,
+exit from the containing function before invoking the called function.
+
+Note however, that this is only possible where none of the dynamic
+features of the language (i.e. bindings to special variables,
+@code{unwind-protect}, @code{condition-case}, @code{catch}, etc@dots{})
+are currently active in the containing function.
+
+Consider, for example, the following function:
+
+@lisp
+(defun print-list (l)
+  (unless (null l)
+    (format standard-output "%s\n" (car l))
+    (print-list (cdr l))))
+@end lisp
+
+@noindent
+the call to @code{print-list} occurs in the @dfn{tail-position} of the
+function. This means that the call may be made after removing the
+previous call to @code{print-list} from the interpreter's stack of
+active functions.
+
+[ XXX currently the interpreter is incapable of eliminating tail calls
+to subrs, i.e. Lisp functions implemented in C ]
+
 
 @node Macro Call Forms, Special Forms, Function Call Forms, List Forms
 @subsubsection Macro Call Forms
@@ -5926,19 +5957,6 @@ programs (especially those using a lot of macros) will execute many
 times quicker than their uncompiled version whereas others may only
 execute a bit quicker.
 
-There is also another important reason for using compilation: the
-virtual machine is able to detect and eliminate tail-calls where it is
-possible to do so.@footnote{A @dfn{tail-call} is a function call that
-occurs immediately before exiting the containing function. Since the
-containing function need not receive the result of the function call,
-it is possible to, in effect, exit from the containing function before
-invoking the called function.
-
-Note however, that this is only possible where none of the dynamic
-features of the language (i.e. bindings to special variables,
-@code{unwind-protect}, @code{condition-case}, @code{catch}, etc@dots{})
-are currently active in the containing function.}
-
 @menu
 * Compilation Functions::       How to compile Lisp programs
 * Evaluating at Compile Time::	Evaluating forms ahead of time
@@ -8820,11 +8838,5 @@ only works properly with uncompiled code.
 @item
 Use constants sparingly: personally, I only use them where the
 constants are numeric.
-
-@item
-As I said in the compilation tips (@pxref{Compilation Tips}), try to
-use iteration/mapping instead of recursion. Also the @code{memq} and
-@code{assq} types of functions can be used to search some types of list
-structures very quickly.
 @end itemize
 

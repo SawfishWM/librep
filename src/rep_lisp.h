@@ -571,7 +571,7 @@ typedef struct {
 #define rep_SUBR4FUN(v)	(rep_SUBR(v)->fun.fun4)
 #define rep_SUBR5FUN(v)	(rep_SUBR(v)->fun.fun5)
 #define rep_SUBRNFUN(v)	(rep_SUBR(v)->fun.fun1)
-#define rep_SFFUN(v)	(rep_SUBR(v)->fun.fun1)
+#define rep_SFFUN(v)	(rep_SUBR(v)->fun.fun2)
 
 
 /* Closures */
