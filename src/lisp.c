@@ -181,7 +181,7 @@ repv rep_env;
 /* A list of the special variables that may be accessed in this
    environment, or Qt to denote all specials. This always contains
    at least one cons cell, which is skipped. */
-repv rep_special_env;
+repv rep_special_env, rep_special_bindings;
 
 /* The bytecode interpreter to use. A three-arg subr or a null pointer */
 repv (*rep_bytecode_interpreter)(repv code, repv consts,
@@ -762,18 +762,6 @@ eval_list(repv list)
     return result;
 }
 
-static inline repv
-local_bind_symbol (repv list, repv var, repv val)
-{
-    if (!(rep_SYM(var)->car & rep_SF_SPECIAL))
-    {
-	rep_env = Fcons (Fcons (var, val), rep_env);
-	return Fcons (var, list);
-    }
-    else
-	return rep_bind_symbol (list, var, val);
-}
-
 /* format of lambda-lists is something like,
 
    [{required-symbols}] [&optional {optional-symbols}] [&rest symbol]
@@ -900,7 +888,7 @@ rep_bind_lambda_list(repv lambdaList, repv argList, rep_bool eval_args)
 		Fsignal(Qmissing_arg, rep_LIST_1(argspec));
 		goto error;
 	    }
-	    boundlist = local_bind_symbol(boundlist, argspec, argobj);
+	    boundlist = rep_bind_symbol(boundlist, argspec, argobj);
 	    break;
 
 	case STATE_REST:
@@ -919,12 +907,12 @@ rep_bind_lambda_list(repv lambdaList, repv argList, rep_bool eval_args)
 	    }
 	    else
 		argobj = argList;
-	    boundlist = local_bind_symbol(boundlist, argspec, argobj);
+	    boundlist = rep_bind_symbol(boundlist, argspec, argobj);
 	    state = STATE_AUX;
 	    break;
 
 	case STATE_AUX:
-	    boundlist = local_bind_symbol(boundlist, argspec, Qnil);
+	    boundlist = rep_bind_symbol(boundlist, argspec, Qnil);
 	}
 
 	rep_TEST_INT;
@@ -1015,8 +1003,8 @@ rep_load_autoload(repv funarg)
 	u_long old_msg_len;
 	repv tmp;
 
-	if (rep_SYM (Qbatch_mode)->value == Qnil
-	    && rep_SYM (Qautoload_verbose)->value != Qnil
+	if (Fsymbol_value (Qbatch_mode, Qt) == Qnil
+	    && Fsymbol_value (Qautoload_verbose, Qt) != Qnil
 	    && rep_message_fun != 0)
 	{
 	    (*rep_message_fun)(rep_save_message, &old_msg, &old_msg_len);
@@ -1034,8 +1022,8 @@ rep_load_autoload(repv funarg)
 	tmp = rep_call_lisp2 (load, file, Qt);
 	rep_POPGC; rep_POPGC;
 
-	if (rep_SYM (Qbatch_mode)->value == Qnil
-	    && rep_SYM (Qautoload_verbose)->value != Qnil
+	if (Fsymbol_value (Qbatch_mode, Qt) == Qnil
+	    && Fsymbol_value (Qautoload_verbose, Qt) != Qnil
 	    && rep_message_fun != 0)
 	{
 	    (*rep_message_fun)(rep_messagef,
@@ -1373,11 +1361,6 @@ eval(repv obj)
 	    result = rep_funcall(funcobj, rep_CDR(obj), rep_TRUE);
 	break;
 
-    case rep_Var:
-	if(!(result = rep_VARFUN(obj)(rep_NULL)))
-	    Fsignal(Qvoid_value, rep_LIST_1(obj));
-	break;
-
     default:
 	result = obj;
 	break;
@@ -1643,15 +1626,6 @@ rep_lisp_prin(repv strm, repv obj)
 	rep_stream_puts(strm, tbuf, -1, rep_FALSE);
 	break;
 
-    case rep_Var:
-#ifdef HAVE_SNPRINTF
-	snprintf(tbuf, sizeof(tbuf), "#<var %s>", rep_STR(rep_XSUBR(obj)->name));
-#else
-	sprintf(tbuf, "#<var %s>", rep_STR(rep_XSUBR(obj)->name));
-#endif
-	rep_stream_puts(strm, tbuf, -1, rep_FALSE);
-	break;
-
     case rep_Funarg:
 	if (rep_STRINGP(rep_FUNARG(obj)->name))
 	{
@@ -1775,14 +1749,10 @@ rep_copy_list(repv list)
 repv
 rep_handle_var_int(repv val, int *data)
 {
-    if(val)
-    {
-	if(rep_INTP(val))
-	    *data = rep_INT(val);
-	return rep_NULL;
-    }
-    else
-	return rep_MAKE_INT(*data);
+    int old = *data;
+    if(rep_INTP(val))
+	*data = rep_INT(val);
+    return rep_MAKE_INT (old);
 }
 
 /* Similar, but for variables containing greater than 24 bits of data,
@@ -1790,14 +1760,10 @@ rep_handle_var_int(repv val, int *data)
 repv
 rep_handle_var_long_int(repv val, long *data)
 {
-    if(val)
-    {
-	if(rep_LONG_INTP(val))
-	    *data = rep_LONG_INT(val);
-	return rep_NULL;
-    }
-    else
-	return rep_MAKE_LONG_INT(*data);
+    long old = *data;
+    if(rep_LONG_INTP(val))
+	*data = rep_LONG_INT(val);
+    return rep_MAKE_LONG_INT(old);
 }
 
 DEFUN("break", Fbreak, Sbreak, (void), rep_Subr0) /*
@@ -2134,8 +2100,10 @@ DEFUN("debug-frame-environment", Fdebug_frame_environment,
 	return Qnil;
 }
 
-DEFUN("max-lisp-depth", Vmax_lisp_depth, Smax_lisp_depth, (repv val), rep_Var) /*
+DEFUN("max-lisp-depth", Fmax_lisp_depth, Smax_lisp_depth, (repv val), rep_Subr1) /*
 ::doc:max-lisp-depth::
+max-lisp-depth [NEW-VALUE]
+
 The maximum number of times that rep_funcall can be called recursively.
 
 This is intended to stop infinite recursion, if the default value of 250 is
@@ -2148,10 +2116,6 @@ too small (you get errors in normal use) set it to something larger.
 void
 rep_lisp_init(void)
 {
-    rep_USE_DEFAULT_ENV;
-    rep_mark_static (&rep_env);
-    rep_mark_static (&rep_special_env);
-
     rep_INTERN(quote); rep_INTERN(lambda); rep_INTERN(macro);
     rep_INTERN(backquote); rep_INTERN(backquote_unquote); rep_INTERN(backquote_splice);
     rep_INTERN(autoload); rep_INTERN(function);
@@ -2197,11 +2161,11 @@ rep_lisp_init(void)
     rep_INTERN(term_interrupt);
 
     rep_INTERN_SPECIAL(debug_on_error);
-    rep_SYM(Qdebug_on_error)->value = Qnil;
+    Fset (Qdebug_on_error, Qnil);
     rep_INTERN_SPECIAL(backtrace_on_error);
-    rep_SYM(Qbacktrace_on_error)->value = Qnil;
+    Fset (Qbacktrace_on_error, Qnil);
     rep_INTERN_SPECIAL(debug_macros);
-    rep_SYM(Qdebug_macros)->value = Qnil;
+    Fset (Qdebug_macros, Qnil);
     rep_INTERN_SPECIAL(error_handler_function);
 
     rep_int_cell = Fcons(Quser_interrupt, Qnil);
@@ -2212,9 +2176,9 @@ rep_lisp_init(void)
     rep_INTERN_SPECIAL(print_escape); 
     rep_INTERN_SPECIAL(print_length);
     rep_INTERN_SPECIAL(print_level);
-    rep_SYM(Qprint_escape)->value = Qnil;
-    rep_SYM(Qprint_length)->value = Qnil;
-    rep_SYM(Qprint_level)->value = Qnil;
+    Fset (Qprint_escape, Qnil);
+    Fset (Qprint_length, Qnil);
+    Fset (Qprint_level, Qnil);
     rep_INTERN(newlines);
 
     rep_INTERN_SPECIAL(autoload_verbose);
