@@ -104,9 +104,11 @@
 	  make-fluid fluid fluid-set with-fluids fluid-let
 
 	  ;; init.jl
-	  setcar setcdr string= string< nop identity interactive
-	  caar cdar cadr cddr caaar cdaar cadar cddar caadr cdadr caddr
-	  cdddr _
+	  setcar setcdr string= string< nop identity interactive _
+	  caar cdar cadr cddr
+	  caaar cdaar cadar cddar caadr cdadr caddr cdddr
+	  caaaar cadaar caadar caddar caaadr cadadr caaddr cadddr
+	  cdaaar cddaar cdadar cdddar cdaadr cddadr cdaddr cddddr
 
 	  ;; string-util.jl
 	  string-upper-case-p string-lower-case-p string-capitalized-p

@@ -506,6 +506,7 @@ extern repv Frequire(repv);
 extern repv rep_push_structure (const char *name);
 extern repv rep_pop_structure (repv old);
 extern repv rep_add_subr(rep_xsubr *, rep_bool);
+extern void rep_structure_exports_all (repv s, rep_bool status);
 
 /* from values.c */
 extern repv Qafter_gc_hook;
