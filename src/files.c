@@ -1813,6 +1813,7 @@ files_init(void)
     ADD_SUBR(subr_directory_file_name);
 
     ADD_SUBR(subr_open_file);
+    ADD_SUBR(subr_make_file_from_stream);
     ADD_SUBR(subr_close_file);
     ADD_SUBR(subr_flush_file);
     ADD_SUBR(subr_seek_file);
