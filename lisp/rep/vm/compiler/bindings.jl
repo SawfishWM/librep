@@ -104,8 +104,9 @@
 	       (new (fluid lex-bindings) (cdr new)))
 	      ((= new-d old-d)
 	       (fluid-set lex-bindings new))
-	    (unless (or (memq 'referenced (cdar new))
-			(memq 'no-location (cdar new)))
+	    (unless (or (cell-tagged-p 'referenced (car new))
+			(cell-tagged-p 'no-location (car new))
+			(cell-tagged-p 'maybe-unused (car new)))
 	      (compiler-warning 'unused "Unused variable: %s" (caar new))))))))
 
   ;; note that symbol VAR has been bound
@@ -318,6 +319,13 @@
 	(tag-binding (car vars) 'heap-allocated)
 	(loop (cdr vars)))))
   (put 'heap-allocated 'compiler-decl-fun declare-heap-allocated)
+
+  (define (declare-unused form)
+    (let loop ((vars (cdr form)))
+      (when vars
+	(tag-binding (car vars) 'maybe-unused)
+	(loop (cdr vars)))))
+  (put 'unused 'compiler-decl-fun declare-unused)
 
   (define (declare-unsafe-for-call/cc)
     (fluid-set unsafe-for-call/cc t))
