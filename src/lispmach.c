@@ -752,13 +752,51 @@ again:
 	    CALL_1(Feval);
 
 	case OP_ADD:
-	    CALL_2(rep_number_add);
+	    /* open-code fixnum arithmetic */
+	    tmp = RET_POP;
+	    tmp2 = TOP;
+	    if (rep_INTP (tmp) && rep_INTP (tmp2))
+	    {
+		long x = rep_INT (tmp2) + rep_INT (tmp);
+		if (x >= rep_LISP_MIN_INT && x <= rep_LISP_MAX_INT)
+		{
+		    TOP = rep_MAKE_INT (x);
+		    goto fetch;
+		}
+	    }
+	    TOP = rep_number_add (tmp2, tmp);
+	    break;
 
 	case OP_NEG:
-	    CALL_1(rep_number_neg);
+	    /* open-code fixnum arithmetic */
+	    tmp = TOP;
+	    if (rep_INTP (tmp))
+	    {
+		long x = - rep_INT (tmp);
+		if (x >= rep_LISP_MIN_INT && x <= rep_LISP_MAX_INT)
+		{
+		    TOP = rep_MAKE_INT (x);
+		    goto fetch;
+		}
+	    }
+	    TOP = rep_number_neg (tmp);
+	    break;
 
 	case OP_SUB:
-	    CALL_2(rep_number_sub);
+	    /* open-code fixnum arithmetic */
+	    tmp = RET_POP;
+	    tmp2 = TOP;
+	    if (rep_INTP (tmp) && rep_INTP (tmp2))
+	    {
+		long x = rep_INT (tmp2) - rep_INT (tmp);
+		if (x >= rep_LISP_MIN_INT && x <= rep_LISP_MAX_INT)
+		{
+		    TOP = rep_MAKE_INT (x);
+		    goto fetch;
+		}
+	    }
+	    TOP = rep_number_sub (tmp2, tmp);
+	    break;
 
 	case OP_MUL:
 	    CALL_2(rep_number_mul);
@@ -773,6 +811,7 @@ again:
 	    CALL_1(Flognot);
 
 	case OP_NOT:
+	case OP_NULL:
 	    if(TOP == Qnil)
 		TOP = Qt;
 	    else
@@ -790,7 +829,13 @@ again:
 
 	case OP_EQUAL:
 	    tmp = RET_POP;
-	    if(!(rep_value_cmp(TOP, tmp)))
+	    tmp2 = TOP;
+	    if (rep_INTP (tmp) && rep_INTP (tmp2))
+	    {
+		TOP = (tmp2 == tmp) ? Qt : Qnil;
+		goto fetch;
+	    }
+	    if(!(rep_value_cmp(tmp2, tmp)))
 		TOP = Qt;
 	    else
 		TOP = Qnil;
@@ -837,23 +882,45 @@ again:
 	    break;
 
 	case OP_INC:
-	    CALL_1(Fplus1);
+	    tmp = TOP;
+	    if (rep_INTP (tmp))
+	    {
+		long x = rep_INT (tmp) + 1;
+		if (x <= rep_LISP_MAX_INT)
+		{
+		    TOP = rep_MAKE_INT (x);
+		    goto fetch;
+		}
+	    }
+	    TOP = Fplus1 (tmp);
+	    break;
 
 	case OP_DEC:
-	    CALL_1(Fsub1);
+	    tmp = TOP;
+	    if (rep_INTP (tmp))
+	    {
+		long x = rep_INT (tmp) - 1;
+		if (x >= rep_LISP_MIN_INT)
+		{
+		    TOP = rep_MAKE_INT (x);
+		    goto fetch;
+		}
+	    }
+	    TOP = Fsub1 (tmp);
+	    break;
 
 	case OP_ASH:
 	    CALL_2(Fash);
 
 	case OP_ZEROP:
-	    CALL_1(Fzerop);
-
-	case OP_NULL:
-	    if(rep_NILP(TOP))
-		TOP = Qt;
-	    else
-		TOP = Qnil;
-	    goto fetch;
+	    tmp = TOP;
+	    if (rep_INTP (tmp))
+	    {
+		TOP = (tmp == rep_MAKE_INT (0)) ? Qt : Qnil;
+		goto fetch;
+	    }
+	    TOP = Fzerop (tmp);
+	    break;
 
 	case OP_ATOM:
 	    if(!rep_CONSP(TOP))
