@@ -38,10 +38,19 @@
       (sym def)
     (if (consp (car args))
 	;; (define (foo args...) body...)
-	(progn
+	(let
+	    ((arg-spec (cdar args))
+	     header)
 	  (setq sym (caar args))
-	  (setq def `(lambda ,(cdar args)
-		       ,(define-scan-internals (cdr args)))))
+	  (setq args (cdr args))
+	  (while (or (stringp (car args))
+		     (eq (caar args) 'interactive))
+	    (setq header (cons (car args) header))
+	    (setq args (cdr args)))
+	  (setq def `(lambda ,arg-spec
+		       ,@(reverse header)
+		       ,(define-scan-internals args))))
+
       ;; (define foo bar)
       (setq sym (car args))
       (setq def (define-scan-form (cadr args))))
@@ -121,7 +130,7 @@
   (let
       ((def (define-parse args)))
     (if (eq (cadr def) 'lambda)
-	(list 'defun (car def) (caddr def) (car (cdddr def)))
+	(list* 'defun (car def) (cddr def))
       (list 'define-value (list 'quote (car def)) (cdr def)))))
 
 ;;;###autoload
