@@ -20,10 +20,8 @@
 
 (provide 'debug)
 
-(defvar debug-buffer (make-buffer "*debugger*")
+(defvar debug-buffer (open-buffer "*debugger*")
   "Buffer to use for the Lisp debugger.")
-(set-buffer-special debug-buffer t)
-(add-buffer debug-buffer)
 
 (defvar debug-ctrl-c-keymap (make-keylist)
   "Keymap for debugger's ctrl-c prefix.")

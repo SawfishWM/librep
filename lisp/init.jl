@@ -52,7 +52,6 @@
    (format (stderr-file) "error in local config--> %S\n" error-data)))
 
 ;; Set up the first window as command shell type thing
-(set-buffer-special default-buffer t)
 (with-buffer default-buffer
   (lisp-mode))
 
@@ -63,6 +62,7 @@
 	(version-string))
 ;; Don't want it in the undo list
 (setq buffer-undo-list nil)
+(set-buffer-modified default-buffer nil)
 
 ;; Use all arguments which are left.
 (let

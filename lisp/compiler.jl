@@ -162,7 +162,6 @@ their position in that file.")
       (if comp-batch-compile
 	  (setq comp-output-stream (stdout-file))
 	(setq comp-output-stream (open-buffer "*compilation-output*"))
-	(set-buffer-special comp-output-stream t)
 	(goto-buffer comp-output-stream)
 	(goto (end-of-buffer))))
 ; (when comp-current-file

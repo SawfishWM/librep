@@ -66,7 +66,6 @@
        (print-escape 'newlines))
     (unless stream
       (setq stream (open-buffer "*disassembly*"))
-      (set-buffer-special stream t)
       (clear-buffer stream)
       (goto-other-view)
       (goto-buffer stream)
