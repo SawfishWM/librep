@@ -116,24 +116,6 @@ sigchld_handler(int sig)
     got_sigchld = TRUE;
 }
 
-static INLINE void
-register_input_fd(int fd)
-{
-#ifdef HAVE_X11
-    FD_SET(fd, &x11_fd_read_set);
-    x11_fd_read_action[fd] = read_from_process;
-#endif
-}
-
-static INLINE void
-deregister_input_fd(int fd)
-{
-#ifdef HAVE_X11
-    FD_CLR(fd, &x11_fd_read_set);
-    x11_fd_read_action[fd] = NULL;
-#endif
-}
-
 static void
 close_proc_files(struct Proc *pr)
 {
@@ -581,11 +563,11 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 		    fcntl(pr->pr_Stdin, F_SETFD, 1);
 		    fcntl(pr->pr_Stdout, F_SETFD, 1);
 		    fcntl(pr->pr_Stdout, F_SETFL, O_NONBLOCK);
-		    register_input_fd(pr->pr_Stdout);
+		    register_input_fd(pr->pr_Stdout, read_from_process);
 		    if(pr->pr_Stderr != pr->pr_Stdout)
 		    {
 			fcntl(pr->pr_Stderr, F_SETFL, O_NONBLOCK);
-			register_input_fd(pr->pr_Stderr);
+			register_input_fd(pr->pr_Stderr, read_from_process);
 		    }
 		    process_run_count++;
 		}
@@ -1053,23 +1035,17 @@ set in the PROCESS prior to calling this function.
     return cmd_signal(sym_bad_arg, list_1(arg_list));
 }
 
-_PR VALUE cmd_signal_process(VALUE proc, VALUE sig, VALUE grp);
-DEFUN("signal-process", cmd_signal_process, subr_signal_process, (VALUE proc, VALUE sig, VALUE grp), V_Subr3, DOC_signal_process) /*
-::doc:signal_process::
-signal-process PROCESS SIGNAL [SIGNAL-GROUP]
-
-If PROCESS is running asynchronously then send signal number SIGNAL to it.
-
-If SIGNAL-GROUP is non-nil also send the signal to all processes in the
-process group of PROCESS.
-::end:: */
+/* If PROC is running asynchronously then send signal number SIGNAL
+   to it. If SIGNAL-GROUP is non-nil send the signal to all processes
+   in the process group of PROC. Returns t if successful. */
+static VALUE
+do_signal_command(VALUE proc, int signal, VALUE signal_group)
 {
     VALUE res = sym_nil;
     DECLARE1(proc, PROCESSP);
-    DECLARE2(sig, INTP);
     if(VPROC(proc)->pr_Status > 0)
     {
-	if(signal_process(VPROC(proc), VINT(sig), !NILP(grp)))
+	if(signal_process(VPROC(proc), signal, !NILP(signal_group)))
 	    res = sym_t;
     }
     else
@@ -1077,7 +1053,7 @@ process group of PROCESS.
 	static DEFSTRING(not_running, "Not running");
 	res = cmd_signal(sym_process_error, list_2(proc, VAL(not_running)));
     }
-    return(res);
+    return res;
 }
 
 _PR VALUE cmd_interrupt_process(VALUE proc, VALUE grp);
@@ -1085,10 +1061,11 @@ DEFUN("interrupt-process", cmd_interrupt_process, subr_interrupt_process, (VALUE
 ::doc:interrupt_process::
 interrupt-process PROCESS [SIGNAL-GROUP]
 
-Do (signal-process PROCESS SIGINT SIGNAL-GROUP) or equivalent.
+Interrupt the asynchronous process PROCESS. If SIGNAL-GROUP is t, interrupt
+all child processes of PROCESS (it's process group).
 ::end:: */
 {
-    return(cmd_signal_process(proc, MAKE_INT(SIGINT), grp));
+    return do_signal_command(proc, SIGINT, grp);
 }
 
 _PR VALUE cmd_kill_process(VALUE proc, VALUE grp);
@@ -1096,10 +1073,11 @@ DEFUN("kill-process", cmd_kill_process, subr_kill_process, (VALUE proc, VALUE gr
 ::doc:kill_process::
 kill-process PROCESS [SIGNAL-GROUP]
 
-Do (signal-process PROCESS SIGKILL SIGNAL-GROUP) or equivalent.
+Kill the asynchronous process PROCESS. If SIGNAL-GROUP is t, kill all
+child processes of PROCESS (it's process group).
 ::end:: */
 {
-    return(cmd_signal_process(proc, MAKE_INT(SIGKILL), grp));
+    return do_signal_command(proc, SIGKILL, grp);
 }
 
 _PR VALUE cmd_stop_process(VALUE proc, VALUE grp);
@@ -1111,7 +1089,7 @@ Suspends execution of PROCESS, see `continue-process'. If SIGNAL-GROUP is
 non-nil also suspends the processes in the process group of PROCESS.
 ::end:: */
 {
-    return(cmd_signal_process(proc, MAKE_INT(SIGSTOP), grp));
+    return do_signal_command(proc, SIGSTOP, grp);
 }
 
 _PR VALUE cmd_continue_process(VALUE proc, VALUE grp);
@@ -1130,9 +1108,9 @@ PROCESS.
     {
 	if(signal_process(VPROC(proc), SIGCONT, !NILP(grp)))
 	{
-	    queue_notify(VPROC(proc));
 	    VPROC(proc)->pr_Status = PR_RUNNING;
 	    res = sym_t;
+	    queue_notify(VPROC(proc));
 	}
     }
     else
@@ -1523,7 +1501,6 @@ proc_init(void)
     ADD_SUBR(subr_start_process);
     ADD_SUBR(subr_call_process);
     ADD_SUBR(subr_call_process_area);
-    ADD_SUBR(subr_signal_process);
     ADD_SUBR(subr_interrupt_process);
     ADD_SUBR(subr_kill_process);
     ADD_SUBR(subr_stop_process);
