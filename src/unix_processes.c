@@ -628,12 +628,12 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 		    if(setsid() < 0)
 		    {
 			perror("child: setsid()");
-			exit(255);
+			_exit(255);
 		    }
 		    if((slave = open(slavenam, O_RDWR)) < 0)
 		    {
 			perror("child: open(slave)");
-			exit(255);
+			_exit(255);
 		    }
 		    close(pr->pr_Stdin);
 #ifdef HAVE_DEV_PTMX
@@ -678,7 +678,7 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 		    if(setpgid(0, 0) != 0)
 		    {
 			perror("setpgid");
-			exit(255);
+			_exit(255);
 		    }
 		    close (stdin_fds[0]);
 		    dup2 (stdin_fds[1], 0);
@@ -692,7 +692,7 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 		    if(setpgid(0, 0) != 0)
 		    {
 			perror("setpgid");
-			exit(255);
+			_exit(255);
 		    }
 		    dup2(stdin_fds[0], 0);
 		    close(stdin_fds[0]);
@@ -715,7 +715,7 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 
 		execvp(argv[0], argv);
 		perror("child subprocess can't exec");
-		exit(255);
+		_exit(255);
 
 	    case -1:
 		/* Clean up all open files */
@@ -1967,8 +1967,8 @@ rep_system (char *command)
 	argv[3] = 0;
 	signal (SIGPIPE, SIG_DFL);
 	execve ("/bin/sh", argv, environ);
-	perror ("exec /bin/sh");
-	exit (255);
+	perror ("can't exec /bin/sh");
+	_exit (255);
 
     default:
 	do {

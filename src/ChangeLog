@@ -1,3 +1,20 @@
+2001-03-22  John Harper  <jsh@eazel.com>
+
+	* numbers.c (rep_parse_number, rep_print_number_to_string): use
+	a macro to save and install the locale. The old way was broken
+	since I didn't realize that setlocale returns the current
+	locale, not the previous one
+
+2001-03-21  John Harper  <jsh@eazel.com>
+
+	* unix_processes.c (run_process, rep_system): if the child
+	process has to abort for some reason (e.g. exec fails), use
+	_exit () instead of exit (). This avoids calling any atexit
+	handlers (which were inherited from the parent process, and
+	may, for example, close the X connection if GTK+ is loaded)
+
+	This fixes the tar-file-handler-broken-on-solaris problem
+
 2001-03-12  John Harper  <jsh@eazel.com>
 
 	* numbers.c (rep_parse_number): if strto[l]l gives a range

@@ -881,6 +881,21 @@ parse_integer_to_float (char *buf, u_int len, u_int radix,
 }
 #endif
 
+#define INSTALL_LOCALE(var, type, locale)	\
+    do {					\
+	char *tem = setlocale (type, 0);	\
+	if (tem != 0)				\
+	{					\
+	    int len = strlen (tem);		\
+	    char *copy = alloca (len + 1);	\
+	    memcpy (copy, tem, len);		\
+	    copy[len] = 0;			\
+	    (var) = copy;			\
+	}					\
+	else					\
+	    (var) = 0;				\
+    } while (0)
+
 repv
 rep_parse_number (char *buf, u_int len, u_int radix, int sign, u_int type)
 {
@@ -1049,7 +1064,7 @@ rep_parse_number (char *buf, u_int len, u_int radix, int sign, u_int type)
 
     case rep_NUMBER_FLOAT:
 #ifdef HAVE_SETLOCALE
-	old_locale = setlocale (LC_NUMERIC, "C");
+	INSTALL_LOCALE (old_locale, LC_NUMERIC, "C");
 #endif
 	d = strtod (buf, &tem);
 #ifdef HAVE_SETLOCALE
@@ -1145,7 +1160,7 @@ rep_print_number_to_string (repv obj, int radix, int prec)
     case rep_NUMBER_FLOAT:		/* XXX handle radix arg */
 	sprintf (fmt, "%%.%dg", prec < 0 ? 16 : prec);
 #ifdef HAVE_SETLOCALE
-	old_locale = setlocale (LC_NUMERIC, "C");
+	INSTALL_LOCALE (old_locale, LC_NUMERIC, "C");
 #endif
 #ifdef HAVE_SNPRINTF
 	snprintf(buf, sizeof(buf), fmt, rep_NUMBER(obj,f));
