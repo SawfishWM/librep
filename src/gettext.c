@@ -30,13 +30,18 @@
 # define gnu_gettext gettext
 # define gnu_textdomain textdomain
 # define gnu_bindtextdomain bindtextdomain
+# define gnu_bind_textdomain_codeset bind_textdomain_codeset 
 #else
 # define gnu_gettext gettext__
 # define gnu_textdomain textdomain__
 # define gnu_bindtextdomain bindtextdomain__
+# ifdef FIXME_SOMEONE_PLEASE
+#  define gnu_bind_textdomain_codeset bind_textdomain_codeset__ 
+# endif
 extern char *gnu_gettext (const char *msgid);
 extern char *gnu_textdomain (const char *domainname);
 extern char *gnu_bindtextdomain (const char *domainname, const char *dirname);
+extern char *gnu_bind_textdomain_codeset (const char *domainname, const char *codeset);
 #endif
 
 DEFUN("gettext", Fgettext, Sgettext, (repv in), rep_Subr1)
@@ -65,6 +70,27 @@ DEFUN("bindtextdomain", Fbindtextdomain,
     return out ? rep_string_dup (out) : Qnil;
 }
 
+
+DEFUN("bindtextdomaincodeset", Fbindtextdomaincodeset,
+      Sbindtextdomaincodeset, (repv dom, repv cod), rep_Subr2)
+{
+    char *domainname = 0, *codeset = 0, *out;
+
+    if (rep_STRINGP(dom))
+	domainname = rep_STR(dom);
+    if (rep_STRINGP(cod))
+        codeset = rep_STR(cod);
+
+#ifdef gnu_bind_textdomain_codeset
+    out = gnu_bind_textdomain_codeset (domainname, codeset);
+#else
+    out = NULL;
+#endif
+
+    return out ? rep_string_dup (out) : Qnil;
+}
+
+
 DEFUN("textdomain", Ftextdomain, Stextdomain, (repv dom), rep_Subr1)
 {
     char *domainname = 0, *out;
@@ -90,6 +116,7 @@ rep_dl_init(void)
     rep_alias_structure ("gettext");
     rep_ADD_SUBR(Sgettext);
     rep_ADD_SUBR(Sbindtextdomain);
+    rep_ADD_SUBR(Sbindtextdomaincodeset);
     rep_ADD_SUBR(Stextdomain);
     ret = rep_pop_structure (tem);
 

@@ -1,3 +1,10 @@
+2002-05-06  John Harper  <jsh@unfactored.org>
+
+	* gettext.c (bindtextdomaincodeset): new stub. Patch from
+	Christophe Fergeau <teuf@users.sourceforge.net>. Only does
+	anything when not using the build in gettext implementation
+	(which needs to be updated)
+
 2002-03-30  John Harper  <jsh@unfactored.org>
 
 	* sockets.c: added IS_REGISTERED flag so we never try to call
