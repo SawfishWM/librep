@@ -35,7 +35,7 @@ preserve their original position in relation to each other."
     ;; default to sorting smaller to greater
     (unless pred (setq pred <))
     (let
-	((mid (nthcdr (1- (/ len 2)) lst)))
+	((mid (nthcdr (1- (quotient len 2)) lst)))
       (setq mid (prog1
 		    (cdr mid)
 		  (rplacd mid nil)))
