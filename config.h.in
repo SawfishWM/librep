@@ -231,6 +231,9 @@
 /* Define if you have the strtoll function. */
 #undef HAVE_STRTOLL
 
+/* Define if you have the strtoq function. */
+#undef HAVE_STRTOQ
+
 /* Define if you have the <dirent.h> header file.  */
 #undef HAVE_DIRENT_H
 
