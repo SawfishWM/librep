@@ -61,7 +61,7 @@
 ;;; module environment of form being compiled
 
   ;; the name of the module being compiled in
-  (define current-module (make-fluid *root-structure*))
+  (define current-module (make-fluid *user-structure*))
 
   ;; if true, the namespace of the module being compiled in; only
   ;; set when compiling code outside a module definition
