@@ -1377,7 +1377,7 @@ loaded and a warning is displayed.
 
     repv name = Qnil, path;
     repv dir = rep_NULL, try = rep_NULL;
-    repv result;
+    repv result = rep_NULL;
     repv suffixes;
 
 #ifdef HAVE_DYNAMIC_LOADING
