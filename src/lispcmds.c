@@ -2816,8 +2816,9 @@ rep_lispcmds_init(void)
 	= Fcons (rep_SYM(Qdocumentation_file)->value, Qnil);
 
     rep_INTERN(load_path);
-    rep_SYM(Qload_path)->value = rep_list_2(rep_SYM(Qlisp_lib_directory)->value,
-					rep_SYM(Qsite_lisp_directory)->value);
+    rep_SYM(Qload_path)->value = rep_list_3(rep_SYM(Qlisp_lib_directory)->value,
+					rep_SYM(Qsite_lisp_directory)->value,
+					rep_null_string ());
 
     rep_INTERN(dl_load_path);
     rep_SYM(Qdl_load_path)->value = Qnil;
