@@ -33,6 +33,7 @@
 	    compiler-message
 	    compiler-error
 	    compiler-warning
+	    compiler-deprecated
 	    remember-function forget-function
 	    remember-variable
 	    remember-lexical-variable
@@ -71,12 +72,12 @@
   (defvar output-stream (make-fluid))	;stream for compiler output
 
   ;; also: shadowing
-  (defvar *compiler-warnings* '(unused bindings parameters misc))
+  (defvar *compiler-warnings* '(unused bindings parameters misc deprecated))
 
 
 ;;; Message output
 
-  (defun compiler-message (fmt &rest args)
+  (defun compiler-message (fmt #!rest args)
     (when (null (fluid output-stream))
       (if (or batch-mode (not (featurep 'jade)))
 	  (fluid-set output-stream (stdout-file))
@@ -95,21 +96,28 @@
     (apply format (fluid output-stream) fmt args))
 
   (put 'compile-error 'error-message "Compilation mishap")
-  (defun compiler-error (text &rest data)
+  (defun compiler-error (text #!rest data)
     (signal 'compile-error (cons (format nil "%s: %s" (fluid current-fun) text)
 				 data)))
 
-  (defun compiler-warning (type fmt &rest args)
+  (defun compiler-warning (type fmt #!rest args)
     (when (memq type *compiler-warnings*)
       (apply compiler-message fmt args)
       (write (fluid output-stream) "\n")))
+
+  (define deprecated-seen '())
+
+  (defun compiler-deprecated (id fmt #!rest args)
+    (unless (memq id deprecated-seen)
+      (apply compiler-warning 'deprecated (concat "deprecated - " fmt) args)
+      (setq deprecated-seen (cons id deprecated-seen))))
 
 
 ;;; Code to handle warning tests
 
   ;; Note that there's a function or macro NAME with lambda-list ARGS
   ;; in the current file
-  (defun remember-function (name args &optional body)
+  (defun remember-function (name args #!optional body)
     (when body
       (let ((cell (assq name (fluid inline-env))))
 	;; a function previously declared inline
@@ -118,32 +126,31 @@
     (if (assq name (fluid defuns))
 	(compiler-warning 'misc "Multiply defined function or macro: %s" name)
       (let
-	  ((count (vector 0 nil nil))	;required, optional, rest
+	  ((count (vector 0 nil nil)) ;required, optional, rest
+	   (keys '())
 	   (state 0))
 	;; Scan the lambda-list for the number of required and optional
-	;; arguments, and whether there's a &rest clause
-	(if (numberp args)
-	    (progn
-	      ;; decode numeric arg-spec
-	      (aset count 0 (logand args #xfff))
-	      (aset count 1 (logand (ash args -12) #xfff))
-	      (aset count 2 (not (zerop (ash args -24)))))
-	  (while args
-	    (if (symbolp args)
-		;; (foo . bar)
-		(aset count 2 t)
-	      (if (memq (car args) '(&optional &rest))
-		  (cond
-		   ((eq (car args) '&optional)
-		    (setq state 1)
-		    (aset count 1 0))
-		   ((eq (car args) '&rest)
-		    (setq args nil)
-		    (aset count 2 t)))
-		(aset count state (1+ (aref count state)))))
-	    (setq args (cdr args))))
+	;; arguments, and whether there's a #!rest clause
+	(while args
+	  (if (symbolp args)
+	      ;; (foo . bar)
+	      (aset count 2 t)
+	    (if (memq (car args) '(&optional &rest #!optional #!key #!rest))
+		(case (car args)
+		  ((&optional #!optional)
+		   (setq state 1)
+		   (aset count 1 0))
+		  ((#!key)
+		   (setq state 'key))
+		  ((&rest #!rest)
+		   (setq args nil)
+		   (aset count 2 t)))
+	      (if (numberp state)
+		  (aset count state (1+ (aref count state)))
+		(setq keys (cons (car args) keys)))))
+	  (setq args (cdr args)))
 	(fluid-set defuns (cons (list name (aref count 0)
-				      (aref count 1) (aref count 2))
+				      (aref count 1) (aref count 2) keys)
 				(fluid defuns))))))
 
   (defun forget-function (name)
@@ -171,6 +178,7 @@
   ;; Test that a reference to variable NAME appears valid
   (defun test-variable-ref (name)
     (when (and (symbolp name)
+	       (not (keywordp name))
 	       (null (memq name (fluid defvars)))
 	       (null (memq name (fluid defines)))
 	       (not (has-local-binding-p name))
@@ -195,6 +203,7 @@
 
   ;; Test a call to NAME with NARGS arguments
   ;; XXX functions in comp-fun-bindings aren't type-checked
+  ;; XXX this doesn't handle #!key params
   (defun test-function-call (name nargs)
     (when (symbolp name)
       (catch 'return
@@ -240,7 +249,7 @@
 
   ;; Increment the current stack size, setting the maximum stack size if
   ;; necessary
-  (defmacro increment-stack (&optional n)
+  (defmacro increment-stack (#!optional n)
     (list 'when (list '> (list 'fluid-set 'current-stack
 			       (if n
 				   (list '+ '(fluid current-stack) n)
@@ -249,7 +258,7 @@
 	  '(fluid-set max-stack (fluid current-stack))))
 
   ;; Decrement the current stack usage
-  (defmacro decrement-stack (&optional n)
+  (defmacro decrement-stack (#!optional n)
     (list 'fluid-set 'current-stack 
 	  (if n
 	      (list '- '(fluid current-stack) n)
@@ -273,7 +282,7 @@
       (while args
 	(if (symbolp args)
 	    (setq vars (cons args vars))
-	  (unless (memq (car args) '(&optional &rest))
+	  (unless (memq (car args) '(#!optional #!key #!rest &optional &rest))
 	    (setq vars (cons (car args) vars))))
 	(setq args (cdr args)))
       (nreverse vars)))
