@@ -20,6 +20,12 @@
 
 #include "jade.h"
 #include "jade_protos.h"
+#ifndef HAVE_ALLOCA
+/* TODO: fix the need for alloca() */
+# error You need alloca()!
+#else
+# include <alloca.h>
+#endif
 
 #include <string.h>
 #include <stdlib.h>
@@ -718,7 +724,9 @@ eval_list(VALUE list)
    [{required-symbols}] [&optional {optional-symbols}] [&rest symbol]
    [&aux {auxiliary-symbols}]
 
-   NB: auxiliary symbols are set to nil. */
+   NB: auxiliary symbols are set to nil. Also note that the lambdaList
+   arg isn't protected from gc by this function; it's assumed that
+   this is done by the caller. */
 VALUE
 bindlambdalist(VALUE lambdaList, VALUE argList, bool eval_args)
 {
@@ -726,12 +734,36 @@ bindlambdalist(VALUE lambdaList, VALUE argList, bool eval_args)
 #define STATE_OPTIONAL 2
 #define STATE_REST     3
 #define STATE_AUX      4
+
+    VALUE *evalled_args;
+    int evalled_nargs;
     VALUE boundlist = sym_nil;
+
+    GC_root gc_arglist, gc_boundlist;
+    GC_n_roots gc_evalled_args;
+
+    PUSHGC(gc_arglist, argList);
+    PUSHGC(gc_boundlist, boundlist);
+
+    /* Evaluate arguments, and stick them in the evalled_args array */
+    if(eval_args)
+    {
+	int i;
+	evalled_nargs = list_length(argList);
+	evalled_args = alloca(sizeof(VALUE) * evalled_nargs);
+	PUSHGCN(gc_evalled_args, evalled_args, 0);
+	for(i = 0; i < evalled_nargs; i++)
+	{
+	    if((evalled_args[i] = cmd_eval(VCAR(argList))) == LISP_NULL)
+		goto error;
+	    argList = VCDR(argList);
+	    gc_evalled_args.count++;
+	}
+    }
+
     if(CONSP(lambdaList))
     {
-	GC_root gc_boundlist;
-	char state = STATE_REQUIRED;
-	PUSHGC(gc_boundlist, boundlist);
+	int state = STATE_REQUIRED;
 	while(CONSP(lambdaList) && SYMBOLP(VCAR(lambdaList)))
 	{
 	    VALUE argobj;
@@ -742,7 +774,8 @@ bindlambdalist(VALUE lambdaList, VALUE argList, bool eval_args)
 		{
 		    if(state > STATE_OPTIONAL)
 		    {
-			cmd_signal(sym_invalid_lambda_list, LIST_1(lambdaList));
+			cmd_signal(sym_invalid_lambda_list,
+				   LIST_1(lambdaList));
 			goto error;
 		    }
 		    state = STATE_OPTIONAL;
@@ -753,7 +786,8 @@ bindlambdalist(VALUE lambdaList, VALUE argList, bool eval_args)
 		{
 		    if(state > STATE_REST)
 		    {
-			cmd_signal(sym_invalid_lambda_list, LIST_1(lambdaList));
+			cmd_signal(sym_invalid_lambda_list,
+				   LIST_1(lambdaList));
 			goto error;
 		    }
 		    state = STATE_REST;
@@ -767,58 +801,74 @@ bindlambdalist(VALUE lambdaList, VALUE argList, bool eval_args)
 		    continue;
 		}
 	    }
+
 	    switch(state)
 	    {
 	    case STATE_REQUIRED:
-		if(!CONSP(argList))
+	    case STATE_OPTIONAL:
+		if(eval_args && evalled_nargs > 0)
+		{
+		    argobj = *evalled_args++;
+		    evalled_nargs--;
+		    gc_evalled_args.count--;
+		}
+		else if(!eval_args && CONSP(argList))
+		{
+		    argobj = VCAR(argList);
+		    argList = VCDR(argList);
+		}
+		else if(state == STATE_OPTIONAL)
+		    argobj = sym_nil;
+		else
 		{
 		    cmd_signal(sym_missing_arg, LIST_1(argspec));
 		    goto error;
 		}
-		/* FALL THROUGH */
-	    case STATE_OPTIONAL:
-		if(CONSP(argList))
-		{
-		    if(eval_args)
-		    {
-			if(!(argobj = cmd_eval(VCAR(argList))))
-			    goto error;
-		    }
-		    else
-			argobj = VCAR(argList);
-		    argList = VCDR(argList);
-		}
-		else
-		    argobj = sym_nil;
 		boundlist = bind_symbol(boundlist, argspec, argobj);
 		break;
+
 	    case STATE_REST:
 		if(eval_args)
 		{
-		    if(!(argobj = eval_list(argList)))
-			goto error;
+		    VALUE list = sym_nil;
+		    VALUE *ptr = &list;
+		    while(evalled_nargs > 0)
+		    {
+			*ptr = cmd_cons(*evalled_args++, sym_nil);
+			ptr = &(VCDR(*ptr));
+			evalled_nargs--;
+			gc_evalled_args.count--;
+		    }
+		    argobj = list;
 		}
 		else
 		    argobj = argList;
 		boundlist = bind_symbol(boundlist, argspec, argobj);
 		state = STATE_AUX;
 		break;
+
 	    case STATE_AUX:
 		boundlist = bind_symbol(boundlist, argspec, sym_nil);
 	    }
+
 	    lambdaList = VCDR(lambdaList);
+
 	    TEST_INT;
 	    if(INT_P)
-		goto error;
+	    {
+	    error:
+		unbind_symbols(boundlist);
+		boundlist = LISP_NULL;
+		break;
+	    }
 	}
-	POPGC;
     }
-    return boundlist;
 
-error:
-    POPGC;
-    unbind_symbols(boundlist);
-    return LISP_NULL;
+    if(eval_args)
+	POPGCN;
+    POPGC; POPGC;
+
+    return boundlist;
 }
 
 VALUE
