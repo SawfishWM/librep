@@ -20,7 +20,7 @@ to call to generate completions. The @code{rl-completion-generator}
 method of supplying this function is deprecated
 
 @item Fixed bugs when handling character-case in regexp module (Andrew
-Rodinoff)
+Rodionoff)
 
 @item Added an @code{premature-end-of-stream} error. This is signalled
 instead of @code{end-of-stream} when reading characters in the middle

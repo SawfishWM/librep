@@ -1,3 +1,8 @@
+2000-12-27  John Harper  <jsh@eazel.com>
+
+	* rules.mk.sh: removed the `-export-symbols-regex' option, it's
+	not possible to just export `rep_dl_foo' symbols..
+
 2000-12-06  John Harper  <jsh@eazel.com>
 
 	* install-aliases (dosome): patch from Peter Teichman
