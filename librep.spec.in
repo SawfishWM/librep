@@ -13,11 +13,12 @@ Source: ftp://ftp.dcs.warwick.ac.uk/people/John.Harper/librep/librep-%{ver}.tar.
 URL: http://www.dcs.warwick.ac.uk/~john/sw/librep.html
 Packager: John Harper <john@dcs.warwick.ac.uk>
 Buildroot: /var/tmp/%{nam}-root
+PreReq: /sbin/install-info
 
 %description
-This is a lightweight LISP environment for UNIX. It contains a LISP
+This is a lightweight Lisp environment for UNIX. It contains a Lisp
 interpreter, byte-code compiler and virtual machine. Applications may
-use the LISP interpreter as an extension language, or it may be used
+use the Lisp interpreter as an extension language, or it may be used
 for standalone scripts.
 
 Originally inspired by Emacs Lisp, the language dialect combines many
@@ -45,6 +46,14 @@ make install \
     prefix=$RPM_BUILD_ROOT%{_prefix} \
     aclocaldir=$RPM_BUILD_ROOT%{_prefix}/share/aclocal
 gzip -9nf $RPM_BUILD_ROOT%{_prefix}/info/librep*
+
+%post
+/sbin/install-info /usr/info/librep.info.gz /usr/info/dir
+
+%preun
+if [ "$1" = 0 ]; then
+    /sbin/install-info --delete /usr/info/librep.info.gz /usr/info/dir
+fi
 
 %clean
 rm -rf $RPM_BUILD_ROOT
