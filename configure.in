@@ -76,6 +76,7 @@ AC_FUNC_ALLOCA
 AC_FUNC_MEMCMP
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS(getcwd gethostname select socket strcspn strerror strstr strtol psignal strsignal)
+AC_REPLACE_FUNCS(realpath)
 
 dnl Custom tests
 
