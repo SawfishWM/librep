@@ -411,7 +411,7 @@ Returns t if FILE is a symbolic link to another file.
 {
     struct stat statb;
     DECLARE1(file, STRINGP);
-    if(!stat(VSTR(file), &statb))
+    if(!lstat(VSTR(file), &statb))
     {
 	if(S_ISLNK(statb.st_mode))
 	    return(sym_t);
