@@ -1,3 +1,19 @@
+2000-04-06  John Harper  <john@dcs.warwick.ac.uk>
+
+	* values.c, lispmach.c, lisp.c: removed all min-stack stuff, an
+	ancient relic from the Amiga
+
+	* lisp.c (fast_getc): inlined getc function that handles
+	reading from files locally (seems to decrease start up time by
+	around 25%), only called from within loops
+
+	* values.c (cons_sweep): don't try to free unused allocation
+	blocks, profiling shows this function takes around 10% time
+	cumulatively, so attempt to optimize it
+
+	* continuations.c (primitive_call_cc): save current regexp data
+	across continuations
+
 2000-04-03  John Harper  <john@dcs.warwick.ac.uk>
 
 	* symbols.c (symbol_cmp): compare symbol names if non-equal
