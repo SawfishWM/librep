@@ -968,10 +968,10 @@ Returns t when ARG is an array.
 
 DEFUN("aset", Faset, Saset, (repv array, repv index, repv new), rep_Subr3) /*
 ::doc:Saset::
-aset ARRAY INDEX NEW-repv
+aset ARRAY INDEX NEW-VALUE
 
 Sets element number INDEX (a positive integer) of ARRAY (can be a vector
-or a string) to NEW-repv, returning NEW-repv. Note that strings
+or a string) to NEW-VALUE, returning NEW-VALUE. Note that strings
 can only contain characters (ie, integers).
 ::end:: */
 {
@@ -1696,6 +1696,14 @@ path_error:
 		rep_POPGC; rep_POPGC;
 		return rep_NULL;
 	    }
+	}
+	if (rep_throw_value
+	    && rep_CAR(rep_throw_value) == Qerror
+	    && rep_CONSP(rep_CDR(rep_throw_value))
+	    && rep_CAR(rep_CDR(rep_throw_value)) == Qend_of_stream)
+	{
+	    /* lose the end-of-stream error. */
+	    rep_throw_value = rep_NULL;
 	}
 	rep_POPGC;
 
