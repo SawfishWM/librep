@@ -44,7 +44,8 @@ DEFSYM(site_lisp_directory, "site-lisp-directory");
 DEFSYM(exec_directory, "exec-directory");
 DEFSYM(documentation_file, "documentation-file");
 DEFSYM(documentation_files, "documentation-files");
-DEFSYM(dl_load_reloc_now, "dl-load-reloc-now"); /*
+DEFSYM(dl_load_reloc_now, "dl-load-reloc-now");
+DEFSYM(load_filename, "load-filename"); /*
 ::doc:Vload-path::
 A list of directory names. When `load' opens a lisp-file it searches each
 directory named in this list in turn until the file is found or the list
@@ -83,6 +84,10 @@ A list of database names containing all documentation strings.
 ::doc:Vdl-load-reloc-now::
 When non-nil, dynamically loaded libraries have all symbol relocations
 perfromed at load-time, not as required.
+::end::
+::doc:Vload-filename::
+While using the `load' function to load a Lisp library, this variable is
+set to the name of the file being loaded.
 ::end:: */
 
 DEFUN("quote", Fquote, Squote, (repv args), rep_SF) /*
@@ -1672,8 +1677,8 @@ path_error:
     else
 #endif
     {
-	repv stream;
-	rep_GC_root gc_stream;
+	repv stream, bindings = Qnil;
+	rep_GC_root gc_stream, gc_bindings;
 
 	repv tem;
 	int c;
@@ -1686,14 +1691,17 @@ path_error:
        	    return rep_NULL;
 	}
 
+	bindings = rep_bind_symbol (bindings, Qload_filename, name);
 	rep_PUSHGC(gc_stream, stream);
+	rep_PUSHGC(gc_bindings, bindings);
 	c = rep_stream_getc(stream);
 	while((c != EOF) && (tem = rep_readl(stream, &c)))
 	{
 	    rep_TEST_INT;
 	    if(rep_INTERRUPTP || !Feval(tem))
 	    {
-		rep_POPGC; rep_POPGC;
+		rep_unbind_symbols (bindings);
+		rep_POPGC; rep_POPGC; rep_POPGC;
 		return rep_NULL;
 	    }
 	}
@@ -1705,7 +1713,8 @@ path_error:
 	    /* lose the end-of-stream error. */
 	    rep_throw_value = rep_NULL;
 	}
-	rep_POPGC;
+	rep_POPGC; rep_POPGC;
+	rep_unbind_symbols (bindings);
 
 	/* Loading succeeded. Look for an applicable item in
 	   the after-load-alist. */
@@ -2852,4 +2861,6 @@ rep_lispcmds_init(void)
 
     rep_INTERN(dl_load_reloc_now);
     rep_SYM(Qdl_load_reloc_now)->value = Qnil;
+
+    rep_INTERN(load_filename);
 }
