@@ -1,3 +1,7 @@
+1999-04-28  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compiler.jl (compile-batch): new function
+
 1999-04-19  John Harper  <john@dcs.warwick.ac.uk>
 
 	* compiler.jl (compile-file): minor fix to error handling
