@@ -1,3 +1,8 @@
+2002-01-20  John Harper  <jsh@unfactored.org>
+
+	* rep/data/trie.jl: new module. A useful data structure for
+	encoding word lists as character trees
+
 2001-12-20  John Harper  <jsh@unfactored.org>
 
 	* rep/net/rpc.jl: new (incompatible) rpc protocol. It now
