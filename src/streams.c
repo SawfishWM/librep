@@ -74,8 +74,6 @@ format function. FUNCTION is called as (FUNCTION repv), and should
 return the string to be inserted.
 ::end:: */
 
-DEFSTRING(proc_not_input, "Processes are not input streams");
-
 int
 rep_stream_getc(repv stream)
 {
