@@ -75,6 +75,8 @@ Outstanding bugs
 General programming tasks:
 ==========================
 
+ + allow the rng to be seeded with a given value
+
  + comparison of datums currently compares type id and contents
 
    should be defined by programmer, e.g.:
