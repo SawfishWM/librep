@@ -212,6 +212,10 @@
       (emit-insn '(pop))))
   (put 'case 'scheme-compile-fun compile-case)
 
+  (put 'call/cc 'scheme-compile-fun (get 'call/cc 'rep-compile-fun))
+  (put 'call-with-current-continuation 'scheme-compile-fun
+       (get 'call-with-current-continuation 'rep-compile-fun))
+
   (defun do-predicate (form)
     (let* ((rep-fun (or (get (car form) 'scheme-compile-rep) (car form)))
 	   (rep-compiler (get rep-fun 'rep-compile-fun)))
