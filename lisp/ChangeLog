@@ -1,3 +1,12 @@
+Thu Jun 25 00:50:35 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* loadkeys.jl: use find-matching-bracket as a command, not
+	called as a function
+
+	* help.jl (apropos-output): new function, used by
+	apropos-function and apropos-variable to format the list of
+	symbols and their documentation
+
 Mon Jun 22 09:22:53 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* read-mail.jl (rm-add-mailbox, rm-subtract-mailbox,
