@@ -2089,22 +2089,9 @@ DEFUN("catch", Fcatch, Scatch, (repv args), rep_SF) /*
 ::doc:catch::
 catch TAG FORMS...
 
-Evaluates FORMS, non-local exits are allowed with `(throw TAG)'.
-The value of `catch' is either the value of the last FORM or the
-value given to the throw command.
-
-There are several pre-defined `catch'es which are,
-  'defun
-     Around all defuns, the `return' command uses this, it basically does
-     (throw 'defun X).
-  'exit
-     Exits one level of recursive-editing (but doesn't work in the top
-     level.
-  'top-level
-     At the top-level recursive-edit (ie, the one which you're in when
-     the editor is started).
-  'quit
-     Kills the editor.
+Evaluate FORMS in an implicit progn; non-local exits are allowed with
+`(throw TAG)'. The value of the `catch' form is either the value of the
+progn or the value given to any matching `throw' form.
 ::end:: */
     /* Non-local exits don't bother with jmp_buf's and the like, they just
        unwind normally through all levels of recursion with a rep_NULL result.
