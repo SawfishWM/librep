@@ -1,5 +1,14 @@
 1998-07-07  John Harper  <john@dcs.warwick.ac.uk>
 
+	* edit.jl (insert-block): renamed as yank-block; now sets
+	yank-last-item so that yank-next works as would be expected
+	(yank-get-string): removed NOT-BLOCK parameter; under X11 only
+	returns the selection if it's not owned by us (so no yanking
+	unkilled blocks anymore)
+	(yank, yank-rectangle): removed DONT-YANK-BLOCK arg
+	(yank-next): should work correctly when yank-last-item is nil
+	* loadkeys.jl: bound RMB-Click1 to copy-block-as-kill
+
 	* edit.jl (paragraph-start): new variable, finer control over
 	paragraph definition
 	(forward-paragraph): use paragraph start
