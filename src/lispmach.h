@@ -201,12 +201,18 @@ list_ref (repv list, int elt)
 # define PROFILE_NEXT
 #endif
 
-#define SAFE_NEXT	\
+#define SAFE_NEXT__	\
     do {		\
 	CHECK_NEXT;	\
 	PROFILE_NEXT;	\
 	X_SAFE_NEXT;	\
     } while (0)
+
+#ifndef OPTIMIZE_FOR_SPACE
+# define SAFE_NEXT SAFE_NEXT__
+#else
+# define SAFE_NEXT goto safe_next
+#endif
 
 #define FETCH	    (*pc++)
 #define FETCH2(var) ((var) = (FETCH << ARG_SHIFT), (var) += FETCH)
@@ -2244,7 +2250,10 @@ again: {
 	    TOP = rep_NULL;
 	    RETURN;
 	}
-	SAFE_NEXT;
+#ifdef OPTIMIZE_FOR_SPACE
+    safe_next:
+#endif
+	SAFE_NEXT__;
     }
 
 quit:
