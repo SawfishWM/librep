@@ -18,7 +18,6 @@
 ;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 (define-structure gaol (export gaol-rebuild-environment
-			       gaol-add-function
 			       gaol-replace-function
 			       gaol-add-special
 			       gaol-add-file-handler
@@ -72,17 +71,13 @@
       table-set table-unset table-walk))
 
   ;; alist mapping functions to their safe versions
-  (define gaol-redefined-functions
-    '((require . gaol:require)))
+  (define gaol-redefined-functions)
 
   ;; list of accessible special variables
   (define gaol-safe-specials
-    '(batch-mode downcase-table features file-handler-alist
+    '(batch-mode downcase-table file-handler-alist
       flatten-table operating-system rep-version upcase-table
       load-filename macro-environment))
-
-  ;; features that the restricted code may ask for
-  (define gaol-safe-features '(timers tables))
 
   ;; list of file handlers that may be called. These functions shouldn't
   ;; be added to the function environment, since that would allow _any_
@@ -95,43 +90,46 @@
 
 ;;; building the actual environments
 
-  (define-value 'gaol-structure nil)
-  (define-value 'gaol-fh-env nil)
+  (define gaol-structure nil)
+  (define gaol-fh-env nil)
+  (define gaol-needs-rebuilding t)
 
+  ;; XXX should create a named gaol environment, then let all
+  ;; gaolled code open it in their own structure..
   (defun gaol-rebuild-environment ()
-    (let
-	((fh-env (nconc (mapcar (lambda (sym)
-				  (cons sym t)) gaol-safe-file-handlers)
-			(mapcar (lambda (cell)
-				  (cons (car cell) (symbol-value (cdr cell))))
-				gaol-redefined-file-handlers))))
-      (unless gaol-structure
-	(setq gaol-structure (%make-structure)))
-      (mapc (lambda (sym)
-	      (%structure-set
-	       gaol-structure sym (%structure-ref (%current-structure) sym)))
-	    gaol-safe-functions)
-      (mapc (lambda (cell)
-	      (%structure-set gaol-structure (car cell) (cdr cell)))
-	    gaol-redefined-functions)
-      (%set-interface gaol-structure
-		      (nconc (mapcar car gaol-redefined-functions)
-			     gaol-safe-functions))
-      (if gaol-fh-env
-	  (progn
-	    ;; affect existing environment
-	    (rplaca gaol-fh-env (car fh-env))
-	    (rplacd gaol-fh-env (cdr fh-env)))
-	(setq gaol-fh-env fh-env))))
+    (when gaol-needs-rebuilding
+      (let
+	  ((fh-env (nconc (mapcar (lambda (sym)
+				    (cons sym t)) gaol-safe-file-handlers)
+			  (mapcar (lambda (cell)
+				    (cons (car cell)
+					  (symbol-value (cdr cell))))
+				  gaol-redefined-file-handlers))))
+	(unless gaol-structure
+	  (setq gaol-structure (%make-structure)))
+	(mapc (lambda (sym)
+		(%structure-set
+		 gaol-structure sym (%structure-ref (%current-structure) sym)))
+	      gaol-safe-functions)
+	(mapc (lambda (cell)
+		(%structure-set gaol-structure (car cell) (cdr cell)))
+	      gaol-redefined-functions)
+;	(%set-interface gaol-structure
+;			(nconc (mapcar car gaol-redefined-functions)
+;			       gaol-safe-functions))
+	(if gaol-fh-env
+	    (progn
+	      ;; affect existing environment
+	      (rplaca gaol-fh-env (car fh-env))
+	      (rplacd gaol-fh-env (cdr fh-env)))
+	  (setq gaol-fh-env fh-env))
+	(setq gaol-needs-rebuilding nil))))
 
 
 ;;; public environment mutators
 
-  (defun gaol-add-function (fun)
-    (format standard-error "gaol-add-function is no longer supported"))
-
   (defun gaol-replace-function (fun def)
-    (setq gaol-structure nil)
+    (setq gaol-needs-rebuilding t)
     (setq gaol-redefined-functions (nconc gaol-redefined-functions
 					  (list (cons fun def)))))
 
@@ -139,15 +137,12 @@
     ;; use nconc to affect existing environments
     (setq gaol-safe-specials (nconc gaol-safe-specials (list var))))
 
-  (defun gaol-add-feature (feature)
-    (setq gaol-safe-features (cons feature (delq feature gaol-safe-features))))
-
   (defun gaol-add-file-handler (fun)
-    (setq gaol-structure nil)
+    (setq gaol-needs-rebuilding t)
     (setq gaol-safe-file-handlers (nconc gaol-safe-file-handlers (list fun))))
 
   (defun gaol-replace-file-handler (fun def)
-    (setq gaol-structure nil)
+    (setq gaol-needs-rebuilding t)
     (setq gaol-redefined-file-handlers (nconc gaol-redefined-file-handlers
 					      (list (cons fun def)))))
 
@@ -157,8 +152,7 @@
   ;; create a piece of code that when evaluate will evaluate FORM in
   ;; a secure environment
   (defun gaol-trampoline (form)
-    (unless gaol-structure
-      (gaol-rebuild-environment))
+    (gaol-rebuild-environment)
     `(save-environment
       (set-special-environment ',gaol-safe-specials)
       (set-file-handler-environment ',gaol-fh-env)
@@ -169,13 +163,4 @@
     (eval (gaol-trampoline form)))
 
   (defun gaol-load (file &optional no-error no-path-is-ignored no-suffix)
-    (gaol-eval `(,(symbol-value 'load) ',file ',no-error t ',no-suffix t)))
-
-
-;;; safe replacement functions
-
-  (defun gaol:require (feature)
-    (unless (memq feature gaol-safe-features)
-      (error "Gaolled code trying to require %s" feature))
-    (require feature)
-    (gaol-rebuild-environment)))
+    (gaol-eval `(,(symbol-value 'load) ',file ',no-error t ',no-suffix t))))
