@@ -2812,7 +2812,7 @@ All of the other conditionals can be written in terms of @code{cond},
 
 (when @var{c} @var{t}@dots{}) @equiv{} (cond (@var{c} @var{t}@dots{}))
 
-(unless @var{c} @var{e}@dots{}) @equiv{} (cond (@var{c}) (t @var{e}@dots{}))
+(unless @var{c} @var{e}@dots{}) @equiv{} (cond ((not @var{c}) @var{e}@dots{}))
 @end lisp
 @end defspec
 
