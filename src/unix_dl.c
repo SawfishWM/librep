@@ -244,10 +244,15 @@ rep_open_dl_library(repv file_name)
 		char *end = strchr (ptr, '\'');
 		if (end != 0)
 		{
+		    rep_GC_root gc_file_name;
+		    rep_bool success;
 		    char *string = alloca (end - ptr + 1);
 		    memcpy (string, ptr, end - ptr);
 		    string[end - ptr] = 0;
-		    if (!load_requires (string))
+		    rep_PUSHGC (gc_file_name, file_name);
+		    success = load_requires (string);
+		    rep_POPGC;
+		    if (!success)
 			goto out;
 		}
 	    }
