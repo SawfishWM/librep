@@ -1269,7 +1269,12 @@ next:
 }
 
 DEFUN("make-variable-special", Fmake_variable_special,
-      Smake_variable_special, (repv sym), rep_Subr1)
+      Smake_variable_special, (repv sym), rep_Subr1) /*
+::doc:make-variable-special::
+make-variable-special SYMBOL
+
+Mark SYMBOL as being a special (dynamically-bound) variable.
+::end:: */
 {
     int spec;
     rep_DECLARE1(sym, rep_SYMBOLP);
@@ -1341,15 +1346,14 @@ DEFUN("make-keyword", Fmake_keyword, Smake_keyword, (repv in), rep_Subr1) /*
 make-keyword SYMBOL
 
 Return the keyword symbol that should be used in argument lists to
-provide the mark the value of the argument called SYMBOL.
+provide the mark the value of the argument called SYMBOL. An error is
+signalled if SYMBOL is itself a keyword.
 ::end:: */
 {
     repv str, name, key;
     int name_len;
 
-    rep_DECLARE1 (in, rep_SYMBOLP);
-    if (rep_KEYWORDP (in))
-	return in;
+    rep_DECLARE (1, in, rep_SYMBOLP (in) && !rep_KEYWORDP (in));
 
     name = rep_SYM (in)->name;
     name_len = rep_STRING_LEN (name);
