@@ -21,11 +21,7 @@
 /* notes:
 
    The api of this module (except for make-table) was mostly borrowed
-   from Scheme48. The implementation is all my own fault..
-
-   todo:
-
-   support for weak keys */
+   from Scheme48. The implementation is all my own fault.. */
 
 #define _GNU_SOURCE
 
@@ -52,6 +48,7 @@ struct table_struct {
     node **buckets;
     repv hash_fun;
     repv compare_fun;
+    repv guardian;			/* non-null if a weak table */
 };
 
 #define TABLEP(v) rep_CELL16_TYPEP(v, table_type)
@@ -77,12 +74,14 @@ table_mark (repv val)
 	node *n;
 	for (n = TABLE(val)->buckets[i]; n != 0; n = n->next)
 	{
-	    rep_MARKVAL(n->key);
+	    if (!TABLE(val)->guardian)
+		rep_MARKVAL(n->key);
 	    rep_MARKVAL(n->value);
 	}
     }
     rep_MARKVAL(TABLE(val)->hash_fun);
     rep_MARKVAL(TABLE(val)->compare_fun);
+    rep_MARKVAL(TABLE(val)->guardian);
 }
 
 static void
@@ -202,7 +201,7 @@ DEFUN("equal-hash", Fequal_hash, Sequal_hash, (repv x, repv n_), rep_Subr2)
 /* table functions */
 
 DEFUN("make-table", Fmake_table, Smake_table,
-      (repv hash_fun, repv cmp_fun), rep_Subr3)
+      (repv hash_fun, repv cmp_fun, repv is_weak), rep_Subr3)
 {
     table *tab;
     rep_DECLARE(1, hash_fun, Ffunctionp (hash_fun) != Qnil);
@@ -217,8 +216,15 @@ DEFUN("make-table", Fmake_table, Smake_table,
     tab->compare_fun = cmp_fun;
     tab->total_buckets = 0;
     tab->total_nodes = 0;
+    tab->guardian = (is_weak == Qnil) ? rep_NULL : Fmake_primitive_guardian ();
 
     return rep_VAL(tab);
+}
+
+DEFUN("make-weak-table", Fmake_weak_table, Smake_weak_table,
+      (repv hash_fun, repv cmp_fun), rep_Subr2)
+{
+    return Fmake_table (hash_fun, cmp_fun, Qt);
 }
 
 DEFUN("tablep", Ftablep, Stablep, (repv arg), rep_Subr1)
@@ -347,9 +353,35 @@ DEFUN("table-set", Ftable_set, Stable_set,
 	bin = hash_key_to_bin (tab, n->hash);
 	n->next = TABLE(tab)->buckets[bin];
 	TABLE(tab)->buckets[bin] = n;
+	if (TABLE(tab)->guardian)
+	    Fprimitive_guardian_push (TABLE(tab)->guardian, n->key);
     }
     n->value = value;
     return value;
+}
+
+DEFUN("table-unset", Ftable_unset, Stable_unset,
+      (repv tab, repv key), rep_Subr2)
+{
+    node *n;
+    rep_DECLARE1(tab, TABLEP);
+    n = lookup (tab, key);
+    if (n != 0)
+    {
+	int bin = hash_key_to_bin (tab, n->hash);
+	node **ptr;
+	for (ptr = &(TABLE(tab)->buckets[bin]);
+	     *ptr != 0; ptr = &((*ptr)->next))
+	{
+	    if (*ptr == n)
+	    {
+		*ptr = n->next;
+		rep_free (n);
+		return Qt;
+	    }
+	}
+    }
+    return Qnil;
 }
 
 DEFUN("table-walk", Ftable_walk, Stable_walk, (repv fun, repv tab), rep_Subr2)
@@ -375,16 +407,38 @@ DEFUN("table-walk", Ftable_walk, Stable_walk, (repv fun, repv tab), rep_Subr2)
     return rep_throw_value ? rep_NULL : Qnil;
 }
 
+DEFUN("tables-after-gc", Ftables_after_gc, Stables_after_gc, (void), rep_Subr0)
+{
+    table *x;
+    for (x = all_tables; x != 0; x = x->next)
+    {
+	if (x->guardian)
+	{
+	    repv key;
+	    while ((key = Fprimitive_guardian_pop (x->guardian)) != Qnil)
+	    {
+		rep_GC_root gc_key;
+		rep_PUSHGC (gc_key, key);
+		Ftable_unset (rep_VAL (x), key);
+		rep_POPGC;
+	    }
+	}
+    }
+    return Qnil;
+}
+
 
 /* dl hooks */
 
 repv
 rep_dl_init (void)
 {
+    repv tem;
     table_type = rep_register_new_type ("table", 0, table_print, table_print,
 					table_sweep, table_mark,
 					0, 0, 0, 0, 0, 0, 0);
     rep_ADD_SUBR(Smake_table);
+    rep_ADD_SUBR(Smake_weak_table);
     rep_ADD_SUBR(Sstring_hash);
     rep_ADD_SUBR(Ssymbol_hash);
     rep_ADD_SUBR(Seq_hash);
@@ -392,7 +446,14 @@ rep_dl_init (void)
     rep_ADD_SUBR(Stablep);
     rep_ADD_SUBR(Stable_ref);
     rep_ADD_SUBR(Stable_set);
+    rep_ADD_SUBR(Stable_unset);
     rep_ADD_SUBR(Stable_walk);
+
+    tem = Fsymbol_value (Qafter_gc_hook, Qt);
+    if (rep_VOIDP (tem))
+	tem = Qnil;
+    Fset (Qafter_gc_hook, Fcons (rep_VAL(&Stables_after_gc), tem));
+
     rep_INTERN (tables);
     return Qtables;
 }
