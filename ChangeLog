@@ -1,3 +1,11 @@
+2000-06-07  John Harper  <john@dcs.warwick.ac.uk>
+
+	* configure.in, Makefile.in: moved DOC file to ${repexecdir}
+	since GDBM databases are endian-specific
+
+	[ this is sub-optimal, since the lisp files are shared, but
+	it's okay for now .. ]
+
 2000-05-31  Karl M. Hegbloom  <karlheg@debian.org>
 
 	* Makefile.in (TAGS): Use --regex to grab DEFSTRING, DEFSYM,

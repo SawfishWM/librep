@@ -10,11 +10,6 @@ and more long-term ideas are marked -
 Before release
 ==============
 
- ! DOC files are endian-specific
-
- ! (compile-form '(while X Y Z)) broken
-   (compile-form '(while 0 1 2)) doesn't terminate
-
  ! scheme define/lambda doesn't splice begin forms
 
  + do something with the define-value ugliness?

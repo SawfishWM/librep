@@ -235,15 +235,15 @@ list_ref (repv list, int elt)
 # define BEGIN_DISPATCH SAFE_NEXT; {
 # define END_DISPATCH }
 
-# define TAG(op) rep_CONCAT(insn_, op)
-# define TAG0(op) rep_CONCAT(insn_0_, op)
-# define TAG1(op) rep_CONCAT(insn_1_, op)
-# define TAG2(op) rep_CONCAT(insn_2_, op)
-# define TAG_DEFAULT insn_default
+# define TAG(op)	rep_CONCAT(insn_, op)
+# define TAG0(op)	rep_CONCAT(insn_0_, op)
+# define TAG1(op)	rep_CONCAT(insn_1_, op)
+# define TAG2(op)	rep_CONCAT(insn_2_, op)
+# define TAG_DEFAULT	insn_default
 
-# define BEGIN_INSN(op) TAG(op): {
+# define BEGIN_INSN(op) TAG(op): { 
 # define BEGIN_DEFAULT_INSN TAG_DEFAULT: {
-# define END_INSN }
+# define END_INSN	}
 
 # define BEGIN_INSN_WITH_ARG(op)	\
     TAG2(op):				\
@@ -254,14 +254,8 @@ list_ref (repv list, int elt)
 	arg = pc[-1] - op;		\
     BEGIN_INSN(op)
 
-# define SAFE_NEXT goto *cfa[FETCH]
-# ifdef THREADED_VM_INLINE_ERROR_HANDLING
-   /* this hits the icache too much, I think (it certainly gives no
-      speedup on my mobile PII) */
-#  define NEXT		do { if (!ERROR_OCCURRED_P) SAFE_NEXT; else goto error; } while (0)
-# else
-#  define NEXT		goto check_error
-# endif
+# define SAFE_NEXT	goto *cfa[FETCH]
+# define NEXT		goto check_error
 # define RETURN		goto quit
 # define HANDLE_ERROR	goto error
 

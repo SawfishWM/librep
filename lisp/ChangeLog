@@ -1,3 +1,22 @@
+2000-06-07  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compiler-basic.jl (compile-lambda): when adding doc strings,
+	don't concatenate lambda-doc onto actual doc, add two separate
+	items to the database
+
+	* lisp-doc.jl (doc-file-ref, doc-file-set): functions to access
+	doc files
+	(add-documentation-params): store a parameter-list for a named
+	function in the doc file
+
+	* compiler-opt.jl (peephole-optimizer): when threading jmp
+	instructions, ignore instructions that wouldn't change
+	(fixes a non-termination case)
+
+	* compiler-opt.jl (constant-optimizer): remember to update
+	constant-index so that the resulting vector contains no unused
+	entries
+
 2000-06-05  John Harper  <john@dcs.warwick.ac.uk>
 
 	* compiler-modules.jl (compile-top-level-structure,
