@@ -1743,16 +1743,17 @@ Returns X raised to the power Y.
 If X is negative and Y is a non-integer, then an arithmetic error is
 signalled (mathematically should return a complex number).
 
-If X and Y are both integers (and Y is a non-negative fixnum), the
-result will be exact.
+If X and Y are both integers (and Y is a fixnum), the result will be
+exact.
 ::end:: */
 {
     repv out;
     rep_DECLARE1 (arg1, rep_NUMERICP);
     rep_DECLARE1 (arg2, rep_NUMERICP);
 
-    if (rep_INTEGERP (arg1) && rep_INTP (arg2) && rep_INT (arg2) >= 0)
+    if (rep_INTEGERP (arg1) && rep_INTP (arg2))
     {
+	int neg = rep_INT (arg2) < 0;
 	if (rep_INTP (arg1))
 	{
 	    arg1 = promote_to (arg1, rep_NUMBER_BIGNUM);
@@ -1760,7 +1761,10 @@ result will be exact.
 	}
 	else
 	    out = dup (arg1);
-	mpz_pow_ui (rep_NUMBER(out,z), rep_NUMBER(arg1,z), rep_INT(arg2));
+	mpz_pow_ui (rep_NUMBER(out,z), rep_NUMBER(arg1,z),
+		    neg ? -rep_INT(arg2) : rep_INT (arg2));
+	if (neg)
+	    out = rep_number_div (rep_MAKE_INT (1), out);
     }
     else
     {
