@@ -42,6 +42,10 @@ rep_cons *rep_dumped_cons_start, *rep_dumped_cons_end;
 rep_symbol *rep_dumped_symbols_start, *rep_dumped_symbols_end;
 repv rep_dumped_non_constants;
 
+int rep_guardian_type;
+
+DEFSYM(after_gc_hook, "after-gc-hook");
+
 
 /* Type handling */
 
@@ -541,6 +545,126 @@ vector_cmp(repv v1, repv v2)
 }
 
 
+/* Guardians */
+
+static rep_guardian *guardians;
+
+DEFUN("make-primitive-guardian", Fmake_primitive_guardian,
+      Smake_primitive_guardian, (void), rep_Subr0)
+{
+    rep_guardian *g = rep_ALLOC_CELL (sizeof (rep_guardian));
+    rep_data_after_gc += sizeof (rep_guardian);
+    g->car = rep_guardian_type;
+    g->accessible = Qnil;
+    g->inaccessible = Qnil;
+    g->next = guardians;
+    guardians = g;
+    return rep_VAL(g);
+}
+
+DEFUN("primitive-guardian-push", Fprimitive_guardian_push,
+       Sprimitive_guardian_push, (repv g, repv obj), rep_Subr2)
+{
+    rep_DECLARE1 (g, rep_GUARDIANP);
+    rep_GUARDIAN(g)->accessible = Fcons (obj, rep_GUARDIAN(g)->accessible);
+    return g;
+}
+
+DEFUN("primitive-guardian-pop", Fprimitive_guardian_pop,
+      Sprimitive_guardian_pop, (repv g), rep_Subr1)
+{
+    rep_DECLARE1 (g, rep_GUARDIANP);
+    if (rep_GUARDIAN(g)->inaccessible != Qnil)
+    {
+	repv ret = rep_CAR (rep_GUARDIAN(g)->inaccessible);
+	rep_GUARDIAN(g)->inaccessible = rep_CDR (rep_GUARDIAN(g)->inaccessible);
+	return ret;
+    }
+    else
+	return Qnil;
+}
+
+static void
+mark_guardian (repv g)
+{
+    /* accessible list is marked by run_guardians */
+    rep_MARKVAL (rep_GUARDIAN(g)->inaccessible);
+}
+
+static void
+run_guardians (void)
+{
+    struct saved {
+	struct saved *next;
+	repv obj;
+    } *changed = 0;
+
+    /* scan all guardians for unmarked objects that used to be accessible */
+    rep_guardian *g;
+    for (g = guardians; g != 0; g = g->next)
+    {
+	repv *ptr = &g->accessible;
+	/* cons cells store mark bit in CDR, so mask it out. */
+	while ((*ptr & ~rep_VALUE_CONS_MARK_BIT) != Qnil)
+	{
+	    repv cell = *ptr & ~rep_VALUE_CONS_MARK_BIT;
+	    if (!rep_GC_MARKEDP (rep_CAR (cell)))
+	    {
+		/* move object to inaccessible list */
+		struct saved *new;
+		*ptr = rep_CDR (cell);
+		rep_CDR (cell) = g->inaccessible;
+		g->inaccessible = cell;
+
+		/* note that we need to mark this object */
+		new = alloca (sizeof (struct saved));
+		new->obj = rep_CAR (cell);
+		new->next = changed;
+		changed = new;
+	    }
+	    else
+		ptr = rep_CDRLOC (cell);
+
+	    /* mark the list infrastructure */
+	    rep_GC_SET_CONS (cell);
+	}
+    }
+
+    /* mark any objects that changed state */
+    while (changed != 0)
+    {
+	rep_MARKVAL (changed->obj);
+	changed = changed->next;
+    }
+}
+
+static void
+sweep_guardians (void)
+{
+    rep_guardian *g = guardians;
+    guardians = 0;
+    while (g)
+    {
+	rep_guardian *next = g->next;
+	if (!rep_GC_CELL_MARKEDP (rep_VAL (g)))
+	    rep_FREE_CELL (g);
+	else
+	{
+	    rep_GC_CLR_CELL (rep_VAL (g));
+	    g->next = guardians;
+	    guardians = g;
+	}
+	g = next;
+    }
+}
+
+static void
+print_guardian (repv stream, repv obj)
+{
+    rep_stream_puts (stream, "#<guardian>", -1, rep_FALSE);
+}
+
+
 /* Garbage collection */
 
 static repv **static_roots;
@@ -808,6 +932,9 @@ last garbage-collection is greater than `garbage-threshold'.
 	lc = lc->next;
     }
 
+    /* move and mark any guarded objects that became inaccessible */
+    run_guardians ();
+
     /* Finished marking, start sweeping. */
 
     for(i = 0; i < TYPE_HASH_SIZE; i++)
@@ -836,6 +963,8 @@ last garbage-collection is greater than `garbage-threshold'.
 	rep_stream_putc (stream, '\n');
     }
 #endif
+
+    Fcall_hook (Qafter_gc_hook, Qnil, Qnil);
 
     if(rep_NILP(noStats))
     {
@@ -885,6 +1014,11 @@ rep_pre_values_init(void)
 		  rep_lisp_prin, rep_lisp_prin, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     rep_register_type(rep_SubrN, "subrn", rep_ptr_cmp,
 		  rep_lisp_prin, rep_lisp_prin, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+
+    rep_guardian_type = rep_register_new_type ("guardian", rep_ptr_cmp,
+					       print_guardian, print_guardian,
+					       sweep_guardians, mark_guardian,
+					       0, 0, 0, 0, 0, 0, 0);
 }
 
 void
@@ -894,6 +1028,10 @@ rep_values_init(void)
     rep_ADD_SUBR(Sgarbage_threshold);
     rep_ADD_SUBR(Sidle_garbage_threshold);
     rep_ADD_SUBR_INT(Sgarbage_collect);
+    rep_ADD_SUBR(Smake_primitive_guardian);
+    rep_ADD_SUBR(Sprimitive_guardian_push);
+    rep_ADD_SUBR(Sprimitive_guardian_pop);
+    rep_INTERN_SPECIAL(after_gc_hook);
 }
 
 void
