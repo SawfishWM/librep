@@ -3,6 +3,26 @@
 @appendix News
 @cindex News
 
+@heading 0.13.4
+
+@itemize @bullet
+
+@item Don't restrict symbols exported from plugin libraries, some need
+to export symbols to work properly (this bug only seemed to appear on
+Solaris systems)
+
+@item Added @code{rep_file_type} and @code{rep_guardian_type} to the
+list of symbols exported from librep
+
+@item Fixed the @code{install-aliases} script (Peter Teichman)
+
+@item New module @code{rep.threads.condition-variable}
+
+@item Added @code{string-split} and @code{string-replace} to the gaol
+
+@end itemize
+
+
 @heading 0.13.3
 
 @itemize @bullet

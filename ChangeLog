@@ -1,3 +1,7 @@
+2001-01-04  John Harper  <jsh@eazel.com>
+
+	* configure.in: version 0.13.4
+
 2000-12-27  John Harper  <jsh@eazel.com>
 
 	* rules.mk.sh: removed the `-export-symbols-regex' option, it's
