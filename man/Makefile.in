@@ -64,3 +64,5 @@ distclean : clean
 	rm -f Makefile
 
 realclean : distclean
+
+check :

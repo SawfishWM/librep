@@ -39,6 +39,11 @@ build.h : build-info config.status
 rules.mk : rules.mk.sh config.status
 	$(SHELL) $< '$(repdir)' '$(repcommonexecdir)' '$(repdocfile)' >$@
 
+check :
+	set -e; for dir in $(ALL_SUBDIRS); do \
+	  [ -d $$dir ] && ( cd $$dir && $(MAKE) $@ ); \
+	done
+
 install : all installdirs
 	set -e; for dir in $(INSTALL_SUBDIRS); do \
 	  ( cd $$dir && $(MAKE) $@ ); \
