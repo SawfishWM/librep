@@ -597,7 +597,7 @@ enough memory has been allocated to make it worthwhile, evaluation
 stops and the garbage collector works its way through memory deciding
 which objects may still be referenced, and which are stale. The stale
 objects are then recorded as being available for reuse and evaluation
-continues.
+continues. (But @pxref{Guardians})
 
 @defun garbage-collect
 Runs the garbage collector, usually this function doesn't need to
@@ -618,6 +618,11 @@ collection, for another collection to be triggered.
 This is usually set to a lot less than @code{garbage-threshold} since
 the small delay caused by garbage collection is unnoticeable if the
 system is already idle.
+@end defvar
+
+@defvar after-gc-hook
+A hook (@pxref{Normal Hooks}) called immediately after each invocation
+of the garbage collector.
 @end defvar
 
 
@@ -7132,6 +7137,7 @@ comfortably fit elsewhere in this manual.
 * Command Line Options::	Retrieving command line arguments
 * Shell Commands::		Executing shell commands
 * Timers::			Asynchronous timers
+* Guardians::			Protecting objects from GC
 @end menu
 
 
@@ -7424,7 +7430,7 @@ Interrupt the interpreter, it will send progressively harder-to-ignore
 signals to the child each interrupt, until it is eventually terminated.
 
 
-@node Timers, , Shell Commands, Miscellaneous Functions
+@node Timers, Guardians, Shell Commands, Miscellaneous Functions
 @subsection Asynchronous Timers
 @cindex Asynchronous timers
 @cindex Timers, asynchronous
@@ -7460,6 +7466,81 @@ Reset the timer object @var{timer}. If either/both of @var{seconds} and
 the specified time period. If neither are defined then the current
 interval of the timer is preserved.
 @end defun
+
+
+@node Guardians, , Timers, Miscellaneous Functions
+@subsection Guardians
+@cindex Guardians
+@cindex Garbage collection, guardians
+
+A @dfn{guardian} is a lisp object used to control when other data
+objects are recycled by the garbage collector (@pxref{Garbage
+Collection}). The usual behaviour of the gc is to recycle objects as
+soon as they have no remaining references.
+
+Guardians allow the programmer to detect when a specified object would
+be freed by the garbage collector, and to implement their own
+allocation policy. This can be useful, for example, with objects that
+have a high creation-overhead, and thus need to be cached for
+performance reasons.
+
+@defun make-guardian
+This function allocates and returns a new guardian. Each guardian has a
+list of data objects associated with it; some of which may have been
+proved to have no remaining references to them (except from the
+guardian system).
+
+Calling the guardian object with a single argument, adds that value to
+the list of objects associated with that guardian. Calling the guardian
+with no arguments has one of two effects:
+
+@itemize @bullet
+@item
+If objects are associated with the guardian that have been proved to be
+inaccessible, then return one of those objects, and remove it from the
+list of objects associated with the guardian.
+
+@item
+If none of the associated objects have been proved to be inaccessible,
+then return the value @code{nil}.
+@end itemize
+@end defun
+
+Note the use of the word ``prove'' in the above description, objects
+are only moved into a guardian's inaccessible set by the garbage
+collector.
+
+Here is an example use of the guardian system:
+
+@lisp
+;; create a new guardian object
+(setq G (make-guardian))
+
+;; create a lisp object
+(setq x (cons 'a 'b))
+   @result{} (a . b)
+
+;; protect the object using the guardian
+(G x)
+
+;; remove the sole reference to the object
+(setq x nil)
+   @result{} nil
+
+;; invoke the garbage collector, this will
+;; prove that the value added to the
+;; guardian is no longer accessible
+(garbage-collect)
+
+;; call the guardian to retrieve the
+;; inaccessible value
+(G)
+   @result{} (a . b)
+
+;; no more inaccessible values available
+(G)
+   @result{} nil
+@end lisp
 
 
 @node Debugging, Tips, Miscellaneous Functions, The language
