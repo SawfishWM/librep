@@ -1,3 +1,13 @@
+2000-06-07  John Harper  <john@dcs.warwick.ac.uk>
+
+	* symbols.c (Fclosure_name): new function
+
+	* numbers.c (Fquotient): raise an arith-error if tryign to
+	divide by zero
+
+	* datums.c: added a comparison function, recursively compares
+	datum values if keys are the same
+
 2000-06-05  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_processes.c: allocate a cell16 type instead of cell8

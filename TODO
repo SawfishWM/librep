@@ -134,17 +134,10 @@ General programming tasks:
    this may be overkill? capture of introduced bindings can be avoided
    using gensyms, capture of introduced free variables could be avoided
    by introducing a way of tagging variable references with the
-   structure they need to be dereferenced in. E.g. I had:
+   structure they need to be dereferenced in.
 
-   #`SYM => #<CURRENT-STRUCTURE:SYM>
-
-   then write macros as:
-
-   (defmacro push (a l)
-     `(,#`setq ,l (,#`cons ,a ,l)))
-
-   but this is ugly, and only solves the problem for global bindings.
-   (it also makes problems for code-walking after macro expansion)
+   [ I have an experimental low-level hygienic macro implementation,
+     but it's a long way from being useful ]
 
  - do JIT compilation of bytecode where profitable
 
