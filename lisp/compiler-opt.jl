@@ -125,12 +125,22 @@
 		 (rplacd insn0 nil)
 		 (setq keep-going t))))
 
-	 ;; {<const>,dup}; {setq,bindspec} X; refq X
-	 ;;    --> {<const>,dup}; {setq,bindspec} X; {<const>,dup}
-	 ((and (or (eq (car insn1) op-setq)
-		   (eq (car insn1) op-bindspec))
-	       (eq (car insn2) op-refq)
-	       (eq (cdr insn1) (cdr insn2))
+	 ;; {<const>,dup}; {setq,bind} X; refq X
+	 ;;    --> {<const>,dup}; {setq,bind} X; {<const>,dup}
+	 ;; {<const>,dup}; setn #X; refn #X
+	 ;;    --> {<const>,dup}; setn #X; {<const>, dup}
+	 ;; {<const>,dup}; bind X; refn #0
+	 ;;    --> {<const>,dup}; bind X; {<const>, dup}
+	 ((and (or (and (or (eq (car insn1) op-setq)
+			    (eq (car insn1) op-bindspec))
+			(eq (car insn2) op-refq)
+			(eq (cdr insn1) (cdr insn2)))
+		   (and (eq (car insn1) op-setn)
+			(eq (car insn2) op-refn)
+			(eq (cdr insn1) (cdr insn2)))
+		   (and (eq (car insn1) op-bind)
+			(eq (car insn2) op-refn)
+			(eq (cdr insn2) 0)))
 	       (or (eq (car insn0) op-dup)
 		   (memq (car insn0) comp-constant-insns)))
 	  (rplaca insn2 (car insn0))
@@ -149,19 +159,19 @@
 	  (setq extra-stack 1)
 	  (setq keep-going t))
 
-	 ;; dup; {setq,bindspec} X; pop --> {setq,bindspec} X
+	 ;; dup; {<varset>,<varbind>} X; pop --> {<varset>,<varbind>} X
 	 ((and (eq (car insn0) op-dup)
-	       (or (eq (car insn1) op-setq)
-		   (eq (car insn1) op-bindspec))
+	       (or (memq (car insn1) comp-varset-insns)
+		   (memq (car insn1) comp-varbind-insns))
 	       (eq (car insn2) op-pop))
 	  (rplaca insn2 (car insn1))
 	  (rplacd insn2 (cdr insn1))
 	  (comp-peep-del-0-1)
 	  (setq keep-going t))
 
-	 ;; refq X; refq X --> refq X; dup
-	 ((and (eq (car insn0) op-refq)
-	       (eq (car insn1) op-refq)
+	 ;; <varref> X; <varref> X --> refq X; dup
+	 ((and (memq (car insn0) comp-varref-insns)
+	       (eq (car insn1) (car insn0))
 	       (eq (cdr insn0) (cdr insn1)))
 	  (rplaca insn1 op-dup)
 	  (rplacd insn1 nil)
@@ -274,21 +284,27 @@
 	    (rplacd insn1 arg)
 	    (setq keep-going t)))
 
-	 ;; {bind,bindspec} X; unbind --> unbind
+	 ;; {bind,bindspec} X; unbind --> pop; unbind
 	 ((and (memq (car insn0) comp-varbind-insns)
 	       (eq (car insn1) op-unbind))
-	  (comp-peep-del-0)
+	  (rplaca insn0 op-pop)
+	  (rplacd insn0 nil)
 	  (setq keep-going t))
 
-	 ;; refq X; dup... ; refq X --> refq X; dup...; dup
-	 ((and (eq (car insn0) op-refq)
+	 ;; init-bind; unbind --> deleted
+	 ((and (eq (car insn0) op-init-bind)
+	       (eq (car insn1) op-unbind))
+	  (comp-peep-del-0-1))
+
+	 ;; <varref> X; dup... ; <varref> X --> <varref> X; dup...; dup
+	 ((and (memq (car insn0) comp-varref-insns)
 	       (eq (car insn1) op-dup))
 	  (let
 	      ((tem (nthcdr 2 point)))
 	    (while (eq (car (car tem)) op-dup)
 	      (setq tem (cdr tem)))
-	    (when (and (eq (car (car tem)) op-refq)
-		       (eq (cdr insn0) (cdr (car tem))))
+	    (when (and (eq (car (car tem)) (car insn0))
+		       (eq (cdr (car tem)) (cdr insn0)))
 	      (rplaca (car tem) op-dup)
 	      (rplacd (car tem) nil)
 	      (setq keep-going t))))
@@ -401,10 +417,10 @@
     (comp-peep-refill)
     (while insn0
       (cond
-       ;; <const> X; {setq,bindspec} Y; <const X>
-       ;;   --> <const X>; dup; {setq,bindspec} Y
-       ((and (or (eq (car insn1) op-setq)
-		 (eq (car insn1) op-bindspec))
+       ;; <const> X; {<varref>,<varbind>} Y; <const X>
+       ;;   --> <const X>; dup; {<varref>,<varbind>} Y
+       ((and (or (memq (car insn1) comp-varset-insns)
+		 (memq (car insn1) comp-varbind-insns))
 	     (memq (car insn0) comp-constant-insns)
 	     (eq insn0 insn2))
 	(rplaca insn2 (car insn1))
@@ -415,9 +431,9 @@
 	(setq keep-going t))
 
        ;; <const> X; {dup,<const> X}... --> <const> X; dup...
-       ;; refq X; {dup,refq X}... --> refq X; dup...
+       ;; <varref> X; {dup,<varref> X}... --> <varref> X; dup...
        ((or (memq (car insn0) comp-constant-insns)
-	    (eq (car insn0) op-refq))
+	    (memq (car insn0) comp-varref-insns))
 	(setq tem (nthcdr 2 point))
 	(while (or (eq (car (car tem)) op-dup)
 		   (equal (car tem) insn0))
