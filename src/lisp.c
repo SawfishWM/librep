@@ -258,45 +258,42 @@ read_list(VALUE strm, register int *c_p)
     }
 }
 
-/*
- * could be number *or* symbol
- */
+/* Could be a symbol or a number */
 static VALUE
 read_symbol(VALUE strm, int *c_p)
 {
 #define SYM_BUF_LEN 255
     VALUE result;
     u_char buff[SYM_BUF_LEN + 1];
-    register u_char *buf = buff + 1;
+    u_char *buf = buff + 1;
     int c = *c_p;
-    register int i = 0;
-    bool couldbenum = TRUE;
+    int i = 0;
+
+    /* For parsing numbers, while radix != zero, it might still be
+       an integer that we're reading. */
+    int radix = -1, sign = 1;
+    long value = 0;
+
     buff[0] = V_StaticString;
     while((c != EOF) && (i < SYM_BUF_LEN))
     {
 	switch(c)
 	{
-	case ' ':
-	case '\t':
-	case '\n':
-	case '\f':
-	case '(':
-	case ')':
-	case '[':
-	case ']':
-	case '\'':
-	case '"':
-	case ';':
+	case ' ':  case '\t': case '\n': case '\f':
+	case '(':  case ')':  case '[':  case ']':
+	case '\'': case '"':  case ';':
 	    goto done;
+
 	case '\\':
-	    couldbenum = FALSE;
+	    radix = 0;
 	    c = stream_getc(strm);
 	    if(c == EOF)
 		return(cmd_signal(sym_end_of_stream, LIST_1(strm)));
 	    buf[i++] = c;
 	    break;
+
 	case '|':
-	    couldbenum = FALSE;
+	    radix = 0;
 	    c = stream_getc(strm);
 	    while((c != EOF) && (c != '|') && (i < SYM_BUF_LEN))
 	    {
@@ -306,17 +303,66 @@ read_symbol(VALUE strm, int *c_p)
 	    if(c == EOF)
 		return(cmd_signal(sym_end_of_stream, LIST_1(strm)));
 	    break;
+
 	default:
-	    if(couldbenum)
+	    if(radix != 0)
 	    {
-		/*
-		 * if c isn't a digit (decimal or hex) and c isn't a sign
-		 * at the start of the string then it's not a number!
-		 */
-		if(!(isdigit(c) || ((i >= 2) && isxdigit(c)) || ((i == 1) && (toupper(c) == 'X'))))
+		/* It still may be a number that we're parsing */
+		if(i == 0 && (c == '-' || c == '+'))
+		    /* A leading sign */
+		    sign = (c == '-') ? -1 : 1;
+		else if(radix == -1)
 		{
-		    if(!((i == 0) && ((c == '+') || (c == '-'))))
-			couldbenum = FALSE;
+		    /* Deduce the base next (or that we're not
+		       looking at a number) */
+		    if(!isdigit(c))
+			radix = 0;
+		    else if(c == '0')
+			radix = 1;	/* octal or hex */
+		    else
+		    {
+			radix = 10;
+			value = c - '0';
+		    }
+		}
+		else if(radix == 1)
+		{
+		    /* We had a leading zero last character. If
+		       this char's an 'x' it's hexadecimal. */
+		    if(toupper(c) == 'X')
+			radix = 16;
+		    else if(isdigit(c))
+		    {
+			radix = 8;
+			value = (value * radix) + (c - '0');
+		    }
+		    else
+			radix = 0;
+		}
+		else
+		{
+		    /* Now we're speculatively reading a number
+		       of base radix. */
+		    if(radix <= 10)
+		    {
+			if(c >= '0' && c <= ('0' + radix - 1))
+			    value = value * radix + (c - '0');
+			else
+			    radix = 0;
+		    }
+		    else
+		    {
+			/* hex */
+			if(isxdigit(c))
+			{
+			    if(c >= '0' && c <= '9')
+				value = value * 16 + (c - '0');
+			    else
+				value = value * 16 + 10 + (toupper(c) - 'A');
+			}
+			else
+			    radix = 0;
+		    }
 		}
 	    }
 	    buf[i++] = c;
@@ -331,10 +377,16 @@ read_symbol(VALUE strm, int *c_p)
     }
 done:
     buf[i] = 0;
-    if(couldbenum && ((i > 1) || isdigit(*buf)))
+    if(radix > 0)
     {
-	char *dummy;
-	result = MAKE_INT(strtol(buf, &dummy, 0));
+	/* It was a number */
+	value *= sign;
+	if(value < LISP_MIN_INT || value > LISP_MAX_INT)
+	{
+	    static DEFSTRING(overflow, "Integer limit exceeded");
+	    return cmd_signal(sym_arith_error, LIST_1(VAL(overflow)));
+	}
+	result = MAKE_INT(value);
     }
     else
     {
