@@ -828,6 +828,30 @@ SYMBOL the buffer-local value in the current buffer is set. Returns repv.
     return val;
 }
 
+DEFUN("define-value", Fdefine_value, Sdefine_value,
+      (repv sym, repv value), rep_Subr2) /*
+::doc:define-value::
+define-value SYMBOL VALUE
+
+Similar to `set', but marks that the variable has been defined.
+::end:: */
+{
+    repv ret;
+    rep_DECLARE1(sym, rep_SYMBOLP);
+    ret = Fset (sym, value);
+    if (ret != rep_NULL)
+    {
+	rep_SYM(sym)->car |= rep_SF_DEFVAR;
+	if (rep_CDR(rep_special_env) == Qt
+	    && (rep_SYM(sym)->car & rep_SF_WEAK))
+	{
+	    rep_SYM(sym)->car &= ~rep_SF_WEAK;
+	    rep_SYM(sym)->car |= rep_SF_WEAK_MOD;
+	}
+    }
+    return ret;
+}
+
 DEFUN("set-default", Fset_default, Sset_default,
       (repv sym, repv val), rep_Subr2) /*
 ::doc:set-default::
@@ -1450,6 +1474,7 @@ rep_symbols_init(void)
     rep_ADD_SUBR(Sdefvar);
     rep_ADD_SUBR(Ssymbol_value);
     rep_ADD_SUBR_INT(Sset);
+    rep_ADD_SUBR(Sdefine_value);
     rep_ADD_SUBR(Ssetplist);
     rep_ADD_SUBR(Ssymbol_name);
     rep_ADD_SUBR(Sdefault_value);
