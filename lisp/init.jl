@@ -21,6 +21,8 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
+(setq backtrace-on-error '(missing-arg))
+
 (defvar standard-output (stdout-file)
   "Stream that `prin?' writes its output to by default.")
 
@@ -257,26 +259,20 @@ Evaluate FORM1 discarding its result, then evaluate FORM2 followed by
   (list '%make-interface (list 'quote name)
 	(list '%parse-interface (list 'quote sig))))
 
-(defmacro structure (sig . body)
-  (let
-      (header)
-    (while (memq (caar body) '(open access))
-      (setq header (cons (car body) header))
-      (setq body (cdr body)))
-    (list '%make-structure (list '%parse-interface (list 'quote sig))
-	  (list* 'lambda nil (cons '(open module-system) (nreverse header)))
-	  (list* 'lambda nil body))))
+(defmacro structure (sig &optional config . body)
+  (unless (listp (car config))
+    (setq config (list config)))
+  (list '%make-structure (list '%parse-interface (list 'quote sig))
+	(list* 'lambda nil (cons '(open module-system) config))
+	(list* 'lambda nil body)))
 
-(defmacro define-structure (name sig . body)
-  (let
-      (header)
-    (while (memq (caar body) '(open access))
-      (setq header (cons (car body) header))
-      (setq body (cdr body)))
-    (list '%make-structure (list '%parse-interface (list 'quote sig))
-	  (list* 'lambda nil (cons '(open module-system) (nreverse header)))
-	  (list* 'lambda nil body)
-	  (list 'quote name))))
+(defmacro define-structure (name sig &optional config . body)
+  (unless (listp (car config))
+    (setq config (list config)))
+  (list '%make-structure (list '%parse-interface (list 'quote sig))
+	(list* 'lambda nil (cons '(open module-system) config))
+	(list* 'lambda nil body)
+	(list 'quote name)))
 
 (defmacro structure-open names
   (list '%open-structures (list 'quote names)))

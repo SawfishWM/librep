@@ -269,21 +269,24 @@
     (let
 	((opened '(module-system))
 	 (accessed '())
+	 (config (car body))
 	 header)
 
-      (while (memq (caar body) '(open access))
-	(let
-	    ((clause (car body)))
-	  (case (car clause)
-	    ((open)
-	     (setq opened (nconc (reverse (cdr clause)) opened))
-	     (setq header (cons `(%open-structures ',(cdr clause)) header)))
+      (setq body (cdr body))
+      (unless (listp (car config))
+	(setq config (list config)))
+      (mapc (lambda (clause)
+	      (case (car clause)
+		((open)
+		 (setq opened (nconc (reverse (cdr clause)) opened))
+		 (setq header (cons `(%open-structures ',(cdr clause))
+				    header)))
 
-	    ((access)
-	     (setq accessed (nconc (reverse (cdr clause)) accessed))
-	     (setq header (cons `(%access-structures ',(cdr clause)) header))))
-
-	  (setq body (cdr body))))
+		((access)
+		 (setq accessed (nconc (reverse (cdr clause)) accessed))
+		 (setq header (cons `(%access-structures ',(cdr clause))
+				    header)))))
+	    config)
       (setq header (cons '(%open-structures '(module-system))
 			 (nreverse header)))
 
