@@ -362,16 +362,14 @@ that files which shouldn't be compiled aren't."
 	      (defines nil)
 	      (current-fun function)
 	      (output-stream nil))
-  (let* ((fbody (if (symbolp function)
-		    (symbol-value function)
-		  function))
-	 (body (if (closurep fbody) (closure-function fbody) fbody)))
+  (let
+      ((body (closure-function function)))
     (when (assq 'jade-byte-code body)
       (compiler-error "Function already compiled" function))
-    (setq body (compile-lambda body function))
-    (if (closurep fbody)
-	(set-closure-function fbody body)
-      (set function body))
+    (call-with-module-declared
+     (closure-structure function)
+     (lambda ()
+       (set-closure-function function (compile-lambda body function))))
     function)))
     
 (defun compile-form (form)
