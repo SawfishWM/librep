@@ -1,3 +1,7 @@
+2000-09-24  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep/data.jl (remove-if, remove-if-not): new functions
+
 2000-09-22  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep/vm/compiler/modules.jl (note-require): try to fix this

@@ -1,3 +1,24 @@
+2000-09-24  John Harper  <john@dcs.warwick.ac.uk>
+
+	* find.c (rep_string_modified): new function, removes the
+	modified string from the regexp cache if it's stored there
+
+	* lispcmds.c, misc.c (Faset, Ftranslate_string): call
+	rep_string_modified ()
+
+2000-09-23  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.c (rep_read_symbol): accept an OBARRAY parameter
+	(rep_readl): read keywords into their own obarray
+
+	* symbols.c (Fmake_keyword, rep_keyword_obarray): use a
+	dedicated obarray for keyword symbols
+
+	* lisp.c: use uninterned symbols for #!optional, #!rest and
+	#!key
+
+	* symbols.c (rep_scm_f, rep_scm_t): now uninterned symbols
+
 2000-09-22  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_dl.c (rep_open_dl_library): check if snprintf () exists
