@@ -35,30 +35,7 @@
 	  rep.vm.compiler.lap
 	  rep.vm.compiler.utils)
 
-  ;; XXX move to rep.vm.bytecodes at some point
-
-  (define byte-varref-free-insns
-    '(dup push cons car cdr eq equal zerop null atom consp listp
-      numberp stringp vectorp symbolp sequencep functionp
-      special-form-p subrp eql macrop bytecodep caar cadr cdar
-      cadddr caddddr cadddddr caddddddr cadddddddr scm-test
-      test-scm test-scm-f))
-
-  (define byte-side-effect-free-insns
-    (append '(refn refg slot-ref ref nth nthcdr aref length add neg
-	      sub mul div rem lnot not lor land gt ge lt le inc dec ash
-	      boundp get reverse assoc assq rassoc rassq last copy-sequence
-	      lxor max min mod make-closure enclose quotient floor ceiling
-	      truncate round exp log sin cos tan sqrt expt structure-ref)
-           byte-varref-free-insns))
-
-  (define byte-conditional-jmp-insns '(jpn jpt jn jt jnp jtp))
-  (define byte-jmp-insns (list* 'jmp 'ejmp byte-conditional-jmp-insns))
-  (define byte-varref-insns '(refn refg slot-ref))
-  (define byte-varset-insns '(setn setg slot-set))
-  (define byte-varbind-insns '(bind))
-  
- 
+
 ;; Peephole optimiser
 
 ;; todo:
@@ -268,6 +245,18 @@
 	 ;; push 0; {add,sub} --> <deleted>
 	 ((and (equal insn0 '(push 0)) (memq (car insn1) '(add sub)))
 	  (del-0-1)
+	  (setq keep-going t))
+
+	 ;; push 0; num-eq --> zerop
+	 ((and (equal insn0 '(push 0)) (eq (car insn1) 'num-eq))
+	  (rplaca insn1 'zerop)
+	  (del-0)
+	  (setq keep-going t))
+
+	 ;; zerop; not --> not-zero-p
+	 ((and (eq (car insn0) 'zerop) (eq (car insn1) 'not))
+	  (rplaca insn1 'not-zero-p)
+	  (del-0)
 	  (setq keep-going t))
 
 	 ;; jmp X; X: --> X:
