@@ -28,6 +28,8 @@
 
 _PR void lispmach_init(void);
 
+static VALUE sym_bytecode_error;
+
 /* Unbind one level of the BIND-STACK and return the new head of the stack.
    Each item in the BIND-STACK may be one of:
 	(t . FORM)
@@ -1064,8 +1066,32 @@ of byte code. See the functions `compile-file', `compile-directory' and
     return(bindstack);
 }
 
+_PR VALUE cmd_validate_byte_code(VALUE bc_major, VALUE bc_minor, VALUE e_major, VALUE e_minor);
+DEFUN("validate-byte-code", cmd_validate_byte_code, subr_validate_byte_code, (VALUE bc_major, VALUE bc_minor, VALUE e_major, VALUE e_minor), V_Subr4, DOC_validate_byte_code) /*
+::doc:validate_byte_code::
+validate-byte-code BC-MAJOR BC-MINOR JADE-MAJOR JADE-MINOR
+
+Check that byte codes from instruction set BC-MAJOR.BC-MINOR, compiled
+by Jade version JADE-MAJOR.JADE-MINOR, may be executed. If not, an error
+will be signalled.
+::end:: */
+{
+    if(!NUMBERP(bc_major) || !NUMBERP(bc_minor)
+       || !NUMBERP(e_major) || !NUMBERP(e_minor)
+       || VNUM(bc_major) != BYTECODE_MAJOR_VERSION
+       || VNUM(bc_minor) < BYTECODE_MINOR_VERSION
+       || VNUM(e_major) != MAJOR
+       || VNUM(e_minor) < MINOR)
+	return cmd_signal(sym_bytecode_error, sym_nil);
+    else
+	return sym_t;
+}
+
 void
 lispmach_init(void)
 {
     ADD_SUBR(subr_jade_byte_code);
+    ADD_SUBR(subr_validate_byte_code);
+    INTERN(sym_bytecode_error, "bytecode-error");
+    cmd_put(sym_bytecode_error, sym_error_message, MKSTR("Invalid byte code version"));
 }
