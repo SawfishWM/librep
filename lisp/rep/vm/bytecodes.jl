@@ -46,7 +46,7 @@
 
 ;; Instruction set version
 (defconst bytecode-major 8)
-(defconst bytecode-minor 1)
+(defconst bytecode-minor 2)
 
 ;; Opcodes
 (defconst op-call 0x08)			;call (stk[n] stk[n-1] ... stk[0])
@@ -160,6 +160,18 @@
 (defconst op-pushi-pair-neg 0xa0)
 (defconst op-pushi-pair-pos 0xa1)
 
+(defconst op-caar 0xa2)
+(defconst op-cadr 0xa3)
+(defconst op-cdar 0xa4)
+(defconst op-cddr 0xa5)
+
+(defconst op-caddr 0xa6)
+(defconst op-cadddr 0xa7)
+(defconst op-caddddr 0xa8)
+(defconst op-cadddddr 0xa9)
+(defconst op-caddddddr 0xaa)
+(defconst op-cadddddddr 0xab)
+
 (defconst op-bindobj 0xb0)
 (defconst op-swap2 0xba)
 (defconst op-mod 0xbb)
@@ -220,8 +232,8 @@
    -1  -1  -1  -1  -1  -1  0   0
    0   0   0   -1  -1  -1  -1  -1	;0x90
    0   0   +1  +1  +1  +1  +1  +1
-   +1  +1 nil nil nil nil nil nil	;0xa0
-   nil nil nil nil nil nil nil nil
+   +1  +1  0   0   0   0   0   0	;0xa0
+   0   0   0   0   nil nil nil nil
    -1  nil nil nil nil nil nil nil	;0xb0
    nil nil  0  nil -1  -2   0   0
    nil nil nil nil nil nil nil nil	;0xc0
@@ -245,7 +257,9 @@
   (list* op-dup op-cons op-car op-cdr op-eq op-equal op-zerop op-null
 	 op-atom op-consp op-listp op-numberp op-stringp op-vectorp
 	 op-symbolp op-sequencep op-functionp op-special-form-p
-	 op-subrp op-eql op-macrop op-bytecodep
+	 op-subrp op-eql op-macrop op-bytecodep op-caar op-cadr
+	 op-cdar op-cadddr op-caddddr op-cadddddr op-caddddddr 
+	 op-cadddddddr
 	 comp-constant-insns))
 
 ;; list of instructions that can be safely deleted if their result
