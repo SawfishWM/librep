@@ -1342,7 +1342,13 @@ DEFUN ("export-bindings", Fexport_bindings,
 	repv var = rep_CAR (vars);
 	rep_struct_node *n = lookup (s, var);
 	if (n != 0)
-	    n->is_exported = 1;
+	{
+	    if (!n->is_exported)
+	    {
+		n->is_exported = 1;
+		cache_invalidate_symbol (var);
+	    }
+	}
 	else if (!structure_exports_inherited_p (s, var))
 	{
 	    s->inherited = Fcons (var, s->inherited);

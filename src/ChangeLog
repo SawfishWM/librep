@@ -1,3 +1,8 @@
+2001-04-20  John Harper  <jsh@eazel.com>
+
+	* structures.c (Fexport_bindings): flush the symbol from the
+	cache even if we just set the is_exported bit
+
 2001-04-16  John Harper  <jsh@eazel.com>
 
 	* unix_dl.c: include <sys/dl.h> if HAVE_SYS_DL_H is defined and
