@@ -1,8 +1,8 @@
-#| rep.jl -- read-eval-print loop
+#| bootstrap for rep module
 
    $Id$
 
-   Copyright (C) 1993, 1994 John Harper <john@dcs.warwick.ac.uk>
+   Copyright (C) 1993, 1994, 2000 John Harper <john@dcs.warwick.ac.uk>
 
    This file is part of librep.
 
@@ -21,71 +21,61 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure user (export rep)
-  (open rep)
+(declare (in-module rep))
 
-  (setq *user-structure* 'user)
-  (setq *root-structure* 'user)
+(open-structures '(rep.module-system
+		   rep.lang.interpreter
+		   rep.lang.symbols
+		   rep.lang.math
+		   rep.lang.debug
+		   rep.vm.interpreter
+		   rep.io.streams
+		   rep.io.files
+		   rep.io.processes
+		   rep.io.file-handlers
+		   rep.data
+		   rep.regexp
+		   rep.system))
 
-  (defun rep ()
-    (repl 'user))
+;;(setq backtrace-on-error '(void-value invalid-function bad-arg missing-arg))
 
-  ;; Install all autoload hooks.
-  (load-all "autoload" (lambda (f) (load f nil t)))
+(defvar standard-output (stdout-file)
+  "Stream that `prin?' writes its output to by default.")
 
-  ;; Do operating-system initialisation
-  (load-all (concat "os-" (symbol-name operating-system)) t)
-  
-  ;; Load site specific initialisation. Errors here are trapped since
-  ;; they're probably not going to result in an unusable state
-  (unless (get-command-line-option "--no-rc")
-    (condition-case error-data
-	(progn
-	  ;; First the site-wide stuff
-	  (load-all "site-init")
-	  ;; Now try to interpret the user's startup file, or failing that
-	  ;; the default.jl file providing site-wide user options
-	  (or
-	   (load (concat (user-home-directory) ".reprc") t t t)
-	   (load "rep-default" t)))
-      (error
-       (default-error-handler (car error-data) (cdr error-data)))))
-  
-  ;; Use all arguments which are left.
-  (let
-      ((do-load (lambda (name)
-		  (cond ((file-exists-p name)
-			 (load name nil t t))
-			((string-match "\\.jlc?$" name)
-			 (load name))
-			(t (require (intern name))))))
-       arg)
-    (while (setq arg (car command-line-args))
-      (setq command-line-args (cdr command-line-args))
-      (cond
-       ((member arg '("--call" "-f"))
-	(setq arg (car command-line-args))
-	(setq command-line-args (cdr command-line-args))
-	((symbol-value (read-from-string arg))))
-       ((member arg '("--load" "-l"))
-	(setq arg (car command-line-args))
-	(setq command-line-args (cdr command-line-args))
-	(do-load arg))
-       ((member arg '("-s" "--scheme"))
-	(setq arg (car command-line-args))
-	(setq command-line-args (cdr command-line-args))
-	(setq batch-mode t)
-	(if (file-exists-p arg)
-	    (structure () (open scheme) (load arg 'nil 't 't))
-	  (structure () (open scheme) (load arg))))
-       ((member arg '("--quit" "-q"))
-	(throw 'quit 0))
-       (t
-	(setq batch-mode t)
-	(do-load arg)))))
+(defvar standard-input (stdin-file)
+  "Stream that `read' takes its input from by default.")
 
-  (unless batch-mode
-    (format standard-output "rep %s, Copyright (C) 1999-2000 John Harper
-rep comes with ABSOLUTELY NO WARRANTY; for details see the file COPYING
-Built %s\n" rep-version rep-build-id)
-    (rep)))
+(defvar standard-error (stderr-file)
+  "Standard stream for error output.")
+
+;; null i18n function until gettext is loaded
+(unless (boundp '_)
+  (defun _ (arg) arg)
+  (export-bindings '(_)))
+
+(export-bindings (parse-interface '(compound-interface
+				    (structure-interface rep.lang.interpreter)
+				    (structure-interface rep.lang.debug)
+				    (structure-interface rep.lang.symbols)
+				    (structure-interface rep.lang.math)
+				    (structure-interface rep.lang.debug)
+				    (structure-interface rep.data)
+				    (structure-interface rep.regexp)
+				    (structure-interface rep.system)
+				    (structure-interface rep.io.files)
+				    (structure-interface rep.io.streams)
+				    (structure-interface rep.io.processes)
+				    (structure-interface rep.io.file-handlers)
+				    (structure-interface rep.vm.interpreter)
+				    (structure-interface rep.module-system)
+				    (export backquote))))
+
+(setq *root-structure* 'rep)
+
+(require 'rep.lang.backquote)
+(require 'rep.io.file-handlers.tilde)
+
+;;; ::autoload-start::
+(autoload 'debug-entry "rep/lang/debugger")
+(autoload 'debug-error-entry "rep/lang/debugger")
+;;; ::autoload-end::
