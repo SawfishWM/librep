@@ -24,6 +24,18 @@
 #include <assert.h>
 #include <string.h>
 
+/* we define some extensions to the libtool .la file. As well as using
+   the dlname entry to find the .so file to open, we also look for:
+
+     rep_open_globally=[yes|no]
+
+	whether or not to open with RTLD_GLOBAL
+
+     rep_requires='FEATURES...'
+
+	FEATURES is space separated list of feature symbols.
+	Each of which must be provided by a dl object. */
+
 #ifdef HAVE_DYNAMIC_LOADING
 
 #if defined (HAVE_DLFCN_H)
@@ -140,14 +152,36 @@ static struct dl_lib_info *
 find_dl_by_feature(repv feature)
 {
     struct dl_lib_info *x = dl_list;
-    assert(rep_SYMBOLP(feature));
+    assert (rep_STRINGP(feature));
     while(x != 0)
     {
-	if(x->feature_sym == feature)
+	if(rep_SYMBOLP(x->feature_sym)
+	   && strcmp (rep_STR(rep_SYM(x->feature_sym)->name),
+		      rep_STR(feature)) == 0)
+	{
 	    return x;
+	}
 	x = x->next;
     }
     return 0;
+}
+
+static rep_bool
+load_requires (char *ptr)
+{
+    ptr += strspn (ptr, " \t");
+    while (*ptr != 0)
+    {
+	char *end = ptr + strcspn (ptr, " \t");
+	repv name = rep_string_dupn (ptr, end - ptr);
+	if (find_dl_by_feature (name) == 0)
+	{
+	    if (Fload (name, Qnil, Qnil, Qnil, Qnil) == rep_NULL)
+		return rep_FALSE;
+	}
+	ptr = end + strspn (end, " \t");
+    }
+    return rep_TRUE;
 }
 
 void *
@@ -181,16 +215,18 @@ rep_open_dl_library(repv file_name)
 		    *end = 0;
 		    base = strrchr(rep_STR(file_name), '/');
 		    if (base == 0)
-			dlname = ptr;
+		    {
+			dlname = alloca (strlen (ptr) + 1);
+			strcpy (dlname, ptr);
+		    }
 		    else
 		    {
-			char tem[256];
 			base++;
-			memcpy(tem, rep_STR(file_name),
+			dlname = alloca (strlen(ptr) +
+					 base - rep_STR(file_name) + 1);
+			memcpy(dlname, rep_STR(file_name),
 			       base - rep_STR(file_name));
-			strcpy(tem + (base - rep_STR(file_name)), ptr);
-			strcpy(buf, tem);
-			dlname = strdup (buf);
+			strcpy(dlname + (base - rep_STR(file_name)), ptr);
 		    }
 		}
 	    }
@@ -200,6 +236,20 @@ rep_open_dl_library(repv file_name)
 		char *ptr = buf + sizeof ("rep_open_globally=") - 1;
 		if (strncmp ("yes", ptr, 3) == 0)
 		    open_globally = rep_TRUE;
+	    }
+	    else if (strncmp("rep_requires='", buf,
+			     sizeof ("rep_requires='") - 1) == 0)
+	    {
+		char *ptr = buf + sizeof ("rep_requires='") - 1;
+		char *end = strchr (ptr, '\'');
+		if (end != 0)
+		{
+		    char *string = alloca (end - ptr + 1);
+		    memcpy (string, ptr, end - ptr);
+		    string[end - ptr] = 0;
+		    if (!load_requires (string))
+			goto out;
+		}
 	    }
 	}
 	fclose(fh);
@@ -228,7 +278,6 @@ rep_open_dl_library(repv file_name)
 				? BIND_DEFERRED : BIND_IMMEDIATE)
 			       | BIND_NONFATAL | DYNAMIC_PATH, 0L);
 #endif
-	    free (dlname);
 	    if(handle == 0)
 	    {
 		char *err;
@@ -250,6 +299,7 @@ rep_open_dl_library(repv file_name)
 	    }
 	    x->file_name = file_name;
 	    x->handle = handle;
+	    x->feature_sym = Qnil;
 
 	    x->next = dl_list;
 	    dl_list = x;
@@ -258,7 +308,7 @@ rep_open_dl_library(repv file_name)
 	    if(init_func != 0)
 	    {
 		repv ret = init_func(file_name);
-		if(ret == rep_NULL)
+		if(ret == rep_NULL || ret == Qnil)
 		{
 		    /* error. abort abort.. */
 		    struct dl_lib_info **ptr;
@@ -272,6 +322,8 @@ rep_open_dl_library(repv file_name)
 		    dlclose(handle);
 		    return 0;
 		}
+		else if (rep_SYMBOLP(ret) && ret != Qt)
+		    x->feature_sym = ret;
 	    }
 
 	    feature_sym = x_dlsym (handle, "rep_dl_feature");
@@ -280,8 +332,6 @@ rep_open_dl_library(repv file_name)
 	    {
 		x->feature_sym = *feature_sym;
 	    }
-	    else
-		x->feature_sym = Qnil;
 
 	    functions = x_dlsym(handle, "rep_dl_subrs");
 	    if(functions != 0)
@@ -294,9 +344,14 @@ rep_open_dl_library(repv file_name)
 	    }
 
 	    if (x->feature_sym != Qnil)
-		rep_call_lisp1 (Fsymbol_value (Qprovide, Qt), x->feature_sym);
+	    {
+		/* don't call lisp provide, we want to avoid gc */
+		Fset (Qfeatures, Fcons (x->feature_sym,
+					Fsymbol_value (Qfeatures, Qnil)));
+	    }
 	}
     }
+out:
     return x;
 }
 
@@ -338,7 +393,9 @@ rep_kill_dl_libraries(void)
 void *
 rep_find_dl_symbol (repv feature, char *symbol)
 {
-    struct dl_lib_info *x = find_dl_by_feature (feature);
+    struct dl_lib_info *x;
+    assert(rep_SYMBOLP(feature));
+    x = find_dl_by_feature (rep_SYM(feature)->name);
     if (x != 0)
 	return x_dlsym (x->handle, symbol);
     else
