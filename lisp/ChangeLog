@@ -1,3 +1,10 @@
+2000-03-04  John Harper  <john@dcs.warwick.ac.uk>
+
+	* string-util.jl: new file, some string functions (case
+	manipulation)
+
+	* dump.jl: replaced most instances of integerp by fixnump
+
 2000-03-01  John Harper  <john@dcs.warwick.ac.uk>
 
 	* dump.jl: dump strings correctly again (still doesn't handle
