@@ -60,9 +60,10 @@ _PR VALUE make_pos(long, long);
 _PR void mark_static(VALUE *);
 _PR void mark_value(VALUE);
 
-_PR void values_init (void);
-_PR void values_init2(void);
+_PR void pre_values_init (void);
+_PR void values_init(void);
 _PR void values_kill (void);
+_PR void dumped_init(void);
 
 #define DT_NULL { 0, 0, 0, 0, 0 }
 Lisp_Type_Data data_types[V_MAX] = {
@@ -72,6 +73,8 @@ Lisp_Type_Data data_types[V_MAX] = {
     { vector_cmp, lisp_prin, lisp_prin, vector_sweep, "vector" },
     DT_NULL,
     { string_cmp, string_princ, string_print, string_sweep, "string" },
+    DT_NULL,
+    { vector_cmp, lisp_prin, lisp_prin, NULL, "bytecode-subr" },
     DT_NULL,
     { type_cmp, lisp_prin, lisp_prin, NULL, "void" },
     DT_NULL,
@@ -107,8 +110,6 @@ Lisp_Type_Data data_types[V_MAX] = {
     DT_NULL,
     { ptr_cmp, glyphtable_prin, glyphtable_prin,
       glyphtable_sweep, "glyph-table" },
-    DT_NULL,
-    { vector_cmp, lisp_prin, lisp_prin, NULL, "byte-code" },
 };
 
 
@@ -207,7 +208,12 @@ int
 string_cmp(VALUE v1, VALUE v2)
 {
     if(STRINGP(v1) && STRINGP(v2))
-	return strcmp(VSTR(v1), VSTR(v2));
+    {
+	long len1 = STRING_LEN(v1);
+	long len2 = STRING_LEN(v2);
+	long tem = memcmp(VSTR(v1), VSTR(v2), MIN(len1, len2));
+	return tem != 0 ? tem : (len1 - len2);
+    }
     else
 	return 1;
 }
@@ -617,26 +623,40 @@ again:
 
     if(CONSP(val))
     {
-	/* A cons. Attempts to walk though whole lists at a time
-	   (since Lisp lists mainly link from the cdr).  */
-	GC_SET_CONS(val);
-	if(NILP(VGCDR(val)))
-	    /* End of a list. We can safely mark the car non-recursively.  */
-	    val = VCAR(val);
+	if(CONS_WRITABLE_P(val))
+	{
+	    /* A cons. Attempts to walk though whole lists at a time
+	       (since Lisp lists mainly link from the cdr).  */
+	    GC_SET_CONS(val);
+	    if(NILP(VGCDR(val)))
+		/* End of a list. We can safely
+		   mark the car non-recursively.  */
+		val = VCAR(val);
+	    else
+	    {
+		MARKVAL(VCAR(val));
+		val = VGCDR(val);
+	    }
+	    if(val && !INTP(val) && !GC_MARKEDP(val))
+		goto again;
+	    return;
+	}
 	else
 	{
-	    MARKVAL(VCAR(val));
-	    val = VGCDR(val);
+	    /* A constant cons cell. */
+	    return;
 	}
-	if(val && !INTP(val) && !GC_MARKEDP(val))
-	    goto again;
-	return;
     }
 
     /* So we know that it's a cell8 object */
     switch(VCELL8_TYPE(val))
     {
-    case V_Vector: case V_Compiled:
+    case V_Vector:
+    case V_Compiled:
+#ifdef DUMPED
+	/* Ensure that read-only objects aren't marked */
+	if(VECTOR_WRITABLE_P(val))
+#endif
 	{
 	    int i, len = VVECT_LEN(val);
 	    GC_SET_CELL(val);
@@ -646,6 +666,7 @@ again:
 	break;
 
     case V_Symbol:
+	/* Dumped symbols are dumped read-write, so no worries.. */
 	GC_SET_CELL(val);
 	MARKVAL(VSYM(val)->name);
 	MARKVAL(VSYM(val)->value);
@@ -888,14 +909,14 @@ last garbage-collection is greater than `garbage-threshold'.
 
 
 void
-values_init(void)
+pre_values_init(void)
 {
     sm_init(&lisp_strmem);
     lisp_strmem.sm_UseMallocChain = TRUE;
 }
 
 void
-values_init2(void)
+values_init(void)
 {
     ADD_SUBR(subr_cons);
     ADD_SUBR(subr_pos);
@@ -926,3 +947,42 @@ values_kill(void)
     vector_chain = NULL;
     sm_kill(&lisp_strmem);
 }
+
+
+/* Support for dumped Lisp code */
+
+#ifdef DUMPED
+
+void
+dumped_init(void)
+{
+    /* Main function is to go through all dumped symbols, interning
+       them, and changing LISP_NULL values to be void. */
+    Lisp_Symbol *sym;
+
+    /* But first, intern nil, it'll be filled in later. */
+    sym_nil = cmd_intern_symbol(VAL(DUMPED_SYM_NIL), void_value);
+
+    /* Initialise allocated_X counts */
+    allocated_cons = &dumped_cons_end - &dumped_cons_start;
+    allocated_symbols = &dumped_symbols_end - &dumped_symbols_start;
+    /* ish.. */
+    used_vector_slots = ((&dumped_vectors_end - &dumped_vectors_start)
+			 + (&dumped_bytecode_end - &dumped_bytecode_start));
+
+    /* Stop one symbol too early, since we've already added it (nil) */
+    for(sym = &dumped_symbols_start; sym < (&dumped_symbols_end)-1; sym++)
+    {
+	/* Second arg is [OBARRAY], but it's only checked against
+	   being a vector. */
+	cmd_intern_symbol(VAL(sym), void_value);
+	if(sym->value == LISP_NULL)
+	    sym->value = void_value;
+	if(sym->function == LISP_NULL)
+	    sym->function = void_value;
+	if(sym->prop_list == LISP_NULL)
+	    sym->prop_list = sym_nil;
+    }
+}
+
+#endif /* DUMPED */
