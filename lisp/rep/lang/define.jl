@@ -62,76 +62,80 @@
   `(mapcar (lambda (f)
 	     (define-scan-form f)) ,body))
 
-;; this needs to handle all special forms
+;; This needs to handle all special forms. It also needs to handle any
+;; macros that the compiler wants to see without being expanded..
 (defun define-scan-form (form)
-  (case (car form)
-    ((let let* letrec)
-     (let*
-	 ((type (car form))
-	  fun values body)
-       (setq form (cdr form))
-       (when (and (eq type 'let) (car form) (symbolp (car form)))
-	 (setq fun (car form))
-	 (setq form (cdr form)))
-       (setq values (mapcar (lambda (lst)
-			      (if (consp lst)
-				  (cons (car lst) (define-scan-body (cdr lst)))
-				lst))
-			    (car form)))
-       (setq body (define-scan-internals (cdr form)))
-       (if fun
-	   (list type fun values body)
-	 (list type values body))))
+  (if (atom form)
+      form
+    (case (car form)
+      ((let let* letrec)
+       (if (and (eq (car form) 'let) (cadr form) (symbolp (cadr form)))
+	   ;; named let, expand
+	   (define-scan-form (macroexpand-1 form macro-environment))
+	 (let* ((type (car form))
+		fun values body)
+	   (setq form (cdr form))
+	   (when (and (eq type 'let) (car form) (symbolp (car form)))
+	     (setq fun (car form))
+	     (setq form (cdr form)))
+	   (setq values (mapcar (lambda (lst)
+				  (if (consp lst)
+				      (cons (car lst) (define-scan-body
+						       (cdr lst)))
+				    lst))
+				(car form)))
+	   (setq body (define-scan-internals (cdr form)))
+	   (if fun
+	       (list type fun values body)
+	     (list type values body)))))
 
-    ((setq)
-     (let loop ((rest (cdr form))
-		(out nil))
-       (if rest
-	   (loop (cddr rest)
-		 (cons (list (car rest)
-			     (define-scan-form (cadr rest))) out))
-	 (cons (car form) (apply nconc (nreverse out))))))
+      ((setq)
+       (let loop ((rest (cdr form))
+		  (out nil))
+	 (if rest
+	     (loop (cddr rest)
+		   (cons (list (car rest)
+			       (define-scan-form (cadr rest))) out))
+	   (cons (car form) (apply nconc (nreverse out))))))
 
-    ((cond)
-     (cons 'cond (mapcar (lambda (clause)
-			   (define-scan-body clause)) (cdr form))))
+      ((cond)
+       (cons 'cond (mapcar (lambda (clause)
+			     (define-scan-body clause)) (cdr form))))
 
-    ((case)
-     (list* 'case
-	    (define-scan-form (nth 1 form))
-	    (mapcar (lambda (clause)
-		      (cons (car clause) (define-scan-body (cdr clause))))
-		    (nthcdr 2 form))))
+      ((case)
+       (list* 'case
+	      (define-scan-form (nth 1 form))
+	      (mapcar (lambda (clause)
+			(cons (car clause) (define-scan-body (cdr clause))))
+		      (nthcdr 2 form))))
 
-    ((condition-case)
-     (list* 'condition-case (nth 1 form) (define-scan-body (nthcdr 2 form))))
+      ((condition-case)
+       (list* 'condition-case (nth 1 form) (define-scan-body (nthcdr 2 form))))
 
-    ((catch unwind-protect progn)
-     (cons (car form) (define-scan-body (cdr form))))
+      ((catch unwind-protect progn)
+       (cons (car form) (define-scan-body (cdr form))))
 
-    ((quote structure-ref)
-     form)
+      ((quote structure-ref) form)
 
-    ((lambda)
-     (let ((body (nthcdr 2 form))
-	   (header nil))
-       ;; skip doc strings and interactive decls..
-       (while (or (stringp (car body)) (eq (caar body) 'interactive))
-	 (setq header (cons (car body) header))
-	 (setq body (cdr body)))
-       `(lambda ,(cadr form)
-	  ,@(nreverse header)
-	  ,(define-scan-internals body))))
+      ((lambda)
+       (let ((body (nthcdr 2 form))
+	     (header nil))
+	 ;; skip doc strings and interactive decls..
+	 (while (or (stringp (car body)) (eq (caar body) 'interactive))
+	   (setq header (cons (car body) header))
+	   (setq body (cdr body)))
+	 `(lambda ,(cadr form)
+	    ,@(nreverse header)
+	    ,(define-scan-internals body))))
 
-    ((defvar)
-     (list* 'defvar (nth 1 form) (define-scan-form (nth 2 form))
-	    (nthcdr 3 form)))
+      ((defvar)
+       (list* 'defvar (nth 1 form) (define-scan-form (nth 2 form))
+	      (nthcdr 3 form)))
 
-    (t
-     (setq form (macroexpand form macro-environment))
-     (if (consp form)
-	 (define-scan-body form)
-       form))))
+      (t (let ((expansion (macroexpand-1 form macro-environment)))
+	   (if (eq expansion form)
+	       (define-scan-body form)
+	     (define-scan-form expansion)))))))
 
 ;;;###autoload
 (defmacro define (&rest args)
