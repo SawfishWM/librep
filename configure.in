@@ -102,13 +102,6 @@ AC_REPLACE_FUNCS(realpath)
 
 dnl Custom tests
 
-dnl FIXME: Currently only GNU CC can compile Jade (some uses of
-dnl FIXME: nested functions to aid debugging and laziness)
-if test "x${GCC}" != "xyes"; then
-  AC_MSG_ERROR([You currently need GNU CC to compile Jade.
-Send abusive email to john@dcs.warwick.ac.uk to get this fixed!]);
-fi
-
 dnl If using GCC and it doesn't look as though the cflags have been
 dnl set explicitly, add some warning options. Turn off implicit-int
 dnl warnings since the X11 includes on Solaris generate a lot of these
@@ -166,7 +159,7 @@ AC_ARG_ENABLE(dballoc,
 AC_ARG_ENABLE(dbsyms,
  [  --enable-dbsyms	  When writing debug output, translate addresses
 			   to symbol names. [default=yes]
-  --disable-dbsyms	  Don't do this],
+  --disable-dbsyms],
  [if test "$enableval" != "no"; then AC_DEFINE(DB_RESOLVE_SYMBOLS) fi],
  [AC_DEFINE(DB_RESOLVE_SYMBOLS)])
 
@@ -174,31 +167,69 @@ dnl Assumption for now
 HAVE_UNIX=1
 AC_DEFINE(rep_HAVE_UNIX, 1)
 
-dnl These will only need changing for a 64-bit pointer model, and even
-dnl then only if sizeof(long) < sizeof(void *)
+dnl We need to find an integer type that's big enough to store any pointer
+AC_MSG_CHECKING([for data type to store Lisp values])
 AC_ARG_WITH(value-type,
  [  --with-value-type=TYPE  Implicitly signed data type, as wide as a
-			   pointer. [TYPE=long int]],
- [AC_DEFINE_UNQUOTED(rep_PTR_SIZED_INT, ${with_value_type})],
- [AC_DEFINE(rep_PTR_SIZED_INT, long int)])
+			   pointer. [TYPE=<probed>]], [],
+ [with_value_type="undef"])
+if test "${with_value_type}" = "undef"; then
+  AC_TRY_RUN([main () { exit (!(sizeof (int) >= sizeof (void *)));}],
+	     [with_value_type=int])
+fi
+if test "${with_value_type}" = "undef"; then
+  AC_TRY_RUN([main () { exit (!(sizeof (long int) >= sizeof (void *)));}],
+	     [with_value_type="long int"])
+fi
+if test "${with_value_type}" = "undef"; then
+  AC_TRY_RUN([main () { exit (!(sizeof (long long int) >= sizeof (void *)));}],
+	     [with_value_type="long long int"])
+fi
+if test "${with_value_type}" = "undef"; then
+  AC_MSG_ERROR([can't find Lisp type; set --with-value-type])
+fi
+AC_MSG_RESULT([${with_value_type}])
+AC_DEFINE_UNQUOTED(rep_PTR_SIZED_INT, ${with_value_type})
 
-dnl Also, this is still valid as long as it's _less_ than the actual
-dnl number of bits in the type
-AC_ARG_WITH(value-bits,
- [  --with-value-bits=BITS  Must be less than or equal to the number
-			   of bits in the --with-value-type data type.
-			   [BITS=32]],
- [AC_DEFINE_UNQUOTED(rep_PTR_SIZED_INT_BITS, ${with_value_bits})],
- [AC_DEFINE(rep_PTR_SIZED_INT_BITS, 32)])
+dnl What's the suffix to get an integer constant of the above size?
+AC_MSG_CHECKING([for value type constant suffix])
+case "${with_value_type}" in
+  "long long int"|"long long")
+    rep_value_suffix=LL
+    ;;
+  *)
+    dnl We should be okay to default to longs..
+    rep_value_suffix=L
+    ;;
+esac
+AC_MSG_RESULT([${rep_value_suffix}])
+AC_DEFINE_UNQUOTED(rep_PTR_SIZED_INT_SUFFIX, ${rep_value_suffix})
+
+dnl What's the printf integer conversion for this type?
+AC_MSG_CHECKING([for value printf conversion])
+case "${with_value_type}" in
+  "long long int"|"long long")
+    dnl other options would be L or q!?
+    rep_value_conv=ll
+    ;;
+  long|"long int")
+    rep_value_conv=l
+    ;;
+  *)
+    rep_value_conv=
+    ;;
+esac
+AC_MSG_RESULT([${rep_value_conv}])
+AC_DEFINE_UNQUOTED(rep_PTR_SIZED_INT_CONV, "${rep_value_conv}")
 
 dnl This is the malloc granularity. It's unlikely that anything has
 dnl less alignment than the default value of four bytes
 AC_ARG_WITH(malloc-alignment,
  [  --with-malloc-alignment=BYTES
 			  Must be less than or equal to the alignment
-			   returned by the malloc function. [BYTES=4]],
- [AC_DEFINE_UNQUOTED(rep_MALLOC_ALIGNMENT, ${with_malloc_alignment})],
- [AC_DEFINE(rep_MALLOC_ALIGNMENT, 4)])
+			   returned by the malloc function. [BYTES=4]], [],
+ [with_malloc_alignment=4])
+AC_DEFINE_UNQUOTED(rep_MALLOC_ALIGNMENT, ${with_malloc_alignment})
 
 dnl Nonstandard exported symbols
 AC_SUBST(version)
