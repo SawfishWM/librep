@@ -28,7 +28,8 @@
 				   compile-batch
 				   compile-compiler
 				   compile-function
-				   compile-form)
+				   compile-form
+				   compile-module)
   (open rep
 	compiler-utils
 	compiler-basic
@@ -364,14 +365,13 @@ that files which shouldn't be compiled aren't."
 	      (output-stream nil))
   (let
       ((body (closure-function function)))
-    (when (assq 'jade-byte-code body)
-      (compiler-error "Function already compiled" function))
-    (call-with-module-declared
-     (closure-structure function)
-     (lambda ()
-       (set-closure-function function (compile-lambda body function))))
+    (unless (bytecodep body)
+      (call-with-module-declared
+       (closure-structure function)
+       (lambda ()
+	 (set-closure-function function (compile-lambda body function)))))
     function)))
-    
+
 (defun compile-form (form)
   "Compile the Lisp form FORM into a byte code form."
 
