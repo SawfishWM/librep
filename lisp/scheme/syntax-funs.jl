@@ -142,7 +142,14 @@
     (let ((vars (mapcar car bindings))
 	  (setters (mapcar (lambda (x) `(set! ,@x)) bindings))
 	  (initial (make-list (length bindings) ''())))
-      `((lambda ,vars ,@setters ,@body) ,@initial)))
+      (let loop ((header '())
+		 (body body))
+	(if (eq (caar body) 'define)
+	    (loop (cons (parse-define (car body)) header) (cdr body))
+	  (if header
+	      `((lambda ,vars ,@setters
+		  (letrec ,(nreverse header) ,@body)) ,@initial)
+	    `((lambda ,vars ,@setters ,@body) ,@initial))))))
 
   (define (expand-do vars test . body)
     (let ((tem (gensym)))
