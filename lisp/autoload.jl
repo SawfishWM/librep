@@ -49,4 +49,6 @@
 (autoload 'remote-rep-add-passwd "remote-rep" t)
 (put 'rep 'remote-backend 'remote-rep-handler)
 (autoload 'remote-rep-handler "remote-rep")
+(setq file-handler-alist (cons '("#tar\\b" . tar-file-handler) file-handler-alist))
+(autoload 'tar-file-handler "tar-file-handler")
 ;;; ::autoload-end::
