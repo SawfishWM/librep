@@ -76,15 +76,10 @@ usage(char *prog_name, void (*sys_usage)(void))
     fprintf(stderr, "usage: %s [OPTIONS...]\n", prog_name);
     fputs ("\nwhere OPTIONS may include:\n"
 	   "    --init FILE  use FILE instead of `init.jl' to boot from\n"
-	   "    --version    print version/revision details\n"
 	   "    --batch      don't open any windows; process args and exit\n"
 	   "    --interp     don't load compiled Lisp files\n", stderr);
     if (sys_usage != 0)
 	(*sys_usage)();
-    fputs ("    --no-rc      don't load rc or site-init files\n"
-	   "    -f FUNCTION  call the Lisp function FUNCTION\n"
-	   "    -l FILE      load the file of Lisp forms called FILE\n"
-	   "    -q           quit\n", stderr);
 }
 
 DEFSTRING(noarg, "No argument for option");
@@ -181,11 +176,6 @@ get_main_options(char *prog_name, int *argc_p,
 
     if (rep_get_option ("--init", &opt))
 	init_script = opt;
-    if (rep_get_option ("--version", 0))
-    {
-	fputs("rep version " rep_VERSION "\n", stdout);
-	return rep_FALSE;
-    }
     if (rep_get_option("--batch", 0))
 	rep_SYM(Qbatch_mode)->value = Qt;
     if (rep_get_option("--interp", 0))
