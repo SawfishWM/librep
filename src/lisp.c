@@ -184,7 +184,8 @@ repv rep_env;
 repv rep_special_env;
 
 /* The bytecode interpreter to use. A three-arg subr or a null pointer */
-repv (*rep_bytecode_interpreter)(repv code, repv consts, repv stack);
+repv (*rep_bytecode_interpreter)(repv code, repv consts,
+				 repv stack, repv frame);
 
 /* The lisp-call backtrace; also used for saving and restoring
    the current environment */
@@ -761,6 +762,18 @@ eval_list(repv list)
     return result;
 }
 
+static inline repv
+local_bind_symbol (repv list, repv var, repv val)
+{
+    if (!(rep_SYM(var)->car & rep_SF_SPECIAL))
+    {
+	rep_env = Fcons (Fcons (var, val), rep_env);
+	return Fcons (var, list);
+    }
+    else
+	return rep_bind_symbol (list, var, val);
+}
+
 /* format of lambda-lists is something like,
 
    [{required-symbols}] [&optional {optional-symbols}] [&rest symbol]
@@ -878,7 +891,7 @@ rep_bind_lambda_list(repv lambdaList, repv argList, rep_bool eval_args)
 		    Fsignal(Qmissing_arg, rep_LIST_1(argspec));
 		    goto error;
 		}
-		boundlist = rep_bind_symbol(boundlist, argspec, argobj);
+		boundlist = local_bind_symbol(boundlist, argspec, argobj);
 		break;
 
 	    case STATE_REST:
@@ -897,12 +910,12 @@ rep_bind_lambda_list(repv lambdaList, repv argList, rep_bool eval_args)
 		}
 		else
 		    argobj = argList;
-		boundlist = rep_bind_symbol(boundlist, argspec, argobj);
+		boundlist = local_bind_symbol(boundlist, argspec, argobj);
 		state = STATE_AUX;
 		break;
 
 	    case STATE_AUX:
-		boundlist = rep_bind_symbol(boundlist, argspec, Qnil);
+		boundlist = local_bind_symbol(boundlist, argspec, Qnil);
 	    }
 
 	    lambdaList = rep_CDR(lambdaList);
@@ -1074,6 +1087,7 @@ rep_funcall(repv fun, repv arglist, rep_bool eval_args)
     repv result = rep_NULL;
     struct rep_Call lc;
     rep_bool was_closed = rep_FALSE;
+    rep_GC_root gc_fun, gc_args;
 
     rep_TEST_INT;
     if(rep_INTERRUPTP)
@@ -1093,8 +1107,9 @@ rep_funcall(repv fun, repv arglist, rep_bool eval_args)
 	return Fsignal(Qerror, rep_LIST_1(rep_VAL(&max_depth)));
     }
 
-    /* Note that by putting FUN and ARGLIST in the backtrace,
-       they're automagically protected from gc. */
+    rep_PUSHGC (gc_fun, fun);
+    rep_PUSHGC (gc_args, arglist);
+
     lc.fun = fun;
     lc.args = arglist;
     lc.args_evalled_p = eval_args ? Qnil : Qt;
@@ -1263,14 +1278,11 @@ again:
 					     arglist, eval_args);
 	    if(boundlist != rep_NULL)
 	    {
-		rep_GC_root gc_boundlist;
-		rep_PUSHGC(gc_boundlist, boundlist);
 		result = (rep_bytecode_interpreter
 			  (rep_COMPILED_CODE(fun),
 			   rep_COMPILED_CONSTANTS(fun),
-			   rep_MAKE_INT(rep_COMPILED_STACK(fun))));
-		rep_POPGC;
-		rep_unbind_symbols(boundlist);
+			   rep_MAKE_INT(rep_COMPILED_STACK(fun)),
+			   boundlist));
 	    }
 	    else
 		result = rep_NULL;
@@ -1288,6 +1300,7 @@ again:
 
 end:
     rep_POP_CALL(lc);
+    rep_POPGC; rep_POPGC;
     lisp_depth--;
     return result;
 }
