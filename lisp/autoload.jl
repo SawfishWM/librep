@@ -58,6 +58,7 @@
 (autoload 'describe-key "keymap" t)
 (autoload 'where-is "keymap" t)
 (autoload 'substitute-key-definition "keymap" t)
+(autoload 'map-keymap "keymap")
 (autoload 'latin-1-mode "latin-1" t)
 (autoload 'lisp-mode "lisp-mode" t)
 (autoload 'eval-sexp "lisp-mode" t)

@@ -1,5 +1,8 @@
 Thu Jun  4 14:53:30 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* prompt.jl (prompt-complete): pass prompt-list-fold-case along
+	to complete-string
+
 	* buffers.jl, bytecodes.jl, compiler.jl, disassembler.jl,
 	environ.jl, keymap.jl, lisp-mode.jl, lisp.jl, prompt.jl,
 	server.jl, tags.jl: excise all traces of the return function
