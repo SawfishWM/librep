@@ -184,6 +184,9 @@
 /* Define if you have the grantpt (and ptsname and unlockpt) function. */
 #undef HAVE_GRANTPT
 
+/* Define if you have the getpagesize function. */
+#undef HAVE_GETPAGESIZE
+
 /* Define if you have the stpcpy function.  */
 #undef HAVE_STPCPY
 
@@ -237,5 +240,8 @@
 
 /* Define if you have the socket library (-lsocket).  */
 #undef HAVE_LIBSOCKET
+
+/* Define if GNU malloc is available */
+#undef HAVE_GNU_MALLOC
 
 #endif /* JADE_CONFIG_H */

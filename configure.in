@@ -67,6 +67,17 @@ AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
 AC_CHECK_HEADERS(fcntl.h sys/ioctl.h sys/time.h sys/utsname.h unistd.h siginfo.h memory.h stropts.h termios.h)
 
+dnl Check for native GNU malloc
+AC_CACHE_CHECK([for native GNU malloc], jade_cv_header_gnu_malloc,
+ AC_EGREP_HEADER([r_re_alloc], [malloc.h],
+  [jade_cv_header_gnu_malloc=yes],[jade_cv_header_gnu_malloc=no]))
+AC_DEFINE(HAVE_GNU_MALLOC)
+if test ${jade_cv_header_gnu_malloc} = yes; then
+  HAVE_GNU_MALLOC=1
+else
+  HAVE_GNU_MALLOC=0
+fi
+
 dnl Check for dynamic loading; currently only <dlfcn.h> with dlopen() etc
 AC_CHECK_HEADER(dlfcn.h,
 [AC_DEFINE(HAVE_DLFCN_H)
@@ -96,7 +107,7 @@ dnl Checks for library functions.
 AC_FUNC_ALLOCA
 AC_FUNC_MEMCMP
 AC_FUNC_VPRINTF
-AC_CHECK_FUNCS(getcwd gethostname select socket strcspn strerror strstr strtol psignal strsignal snprintf grantpt lrand48)
+AC_CHECK_FUNCS(getcwd gethostname select socket strcspn strerror strstr strtol psignal strsignal snprintf grantpt lrand48 getpagesize)
 AC_REPLACE_FUNCS(realpath)
 
 dnl Custom tests
@@ -185,6 +196,7 @@ AC_SUBST(dumped_lisp_files)
 AC_SUBST(dump_flags)
 AC_SUBST(HAVE_UNIX)
 AC_SUBST(HAVE_X11)
+AC_SUBST(HAVE_GNU_MALLOC)
 AC_SUBST(dynamic_file_suffix)
 AC_SUBST(DL_CFLAGS)
 AC_SUBST(DL_LDFLAGS)

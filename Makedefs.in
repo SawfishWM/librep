@@ -57,6 +57,11 @@ INSTALL_PROGRAM=@INSTALL_PROGRAM@
 
 HAVE_X11=@HAVE_X11@
 HAVE_UNIX=@HAVE_UNIX@
+HAVE_GNU_MALLOC=@HAVE_GNU_MALLOC@
+
+ifeq ($(HAVE_GNU_MALLOC),0)
+ CPPFLAGS += -I$(top_srcdir)/malloc-src
+endif
 
 .PHONY: clean realclean install
 

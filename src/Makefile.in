@@ -75,6 +75,10 @@ ifneq ($(HAVE_X11), 0)
  LIBS += $(X11LIBS)
 endif
 
+ifeq ($(HAVE_GNU_MALLOC),0)
+ LIBS := ../lib/gmalloc.o $(LIBS) ../lib/libmalloc.a
+endif
+
 ifeq ($(DUMPED_JADE), 0)
  all : jade
 else
