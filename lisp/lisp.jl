@@ -195,11 +195,9 @@ string INPUT."
 
 (defmacro string= (&rest args)
   (cons 'equal args))
-(fset 'string-equal-p (symbol-function 'string=))
 
 (defmacro string< (&rest args)
   (cons '< args))
-(fset 'string-less-p (symbol-function 'string<))
 
 (defun error (&rest args)
   (signal 'error (list (apply 'format nil args))))
