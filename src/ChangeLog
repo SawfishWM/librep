@@ -1,3 +1,8 @@
+1998-10-06  John Harper  <john@dcs.warwick.ac.uk>
+
+	* views.c (format_mode_string): fix printing percentages when
+	buffer is narrowed
+
 1998-10-04  John Harper  <john@dcs.warwick.ac.uk>
 
 	* debug-buffer.c (db_print_backtrace): minor bug fix

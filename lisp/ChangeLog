@@ -1,3 +1,14 @@
+1998-10-07  John Harper  <john@dcs.warwick.ac.uk>
+
+	* send-mail.jl (sendmail-send-message): when handling FCC
+	headers, temporarily mangle ^From_ to >From_ while saving the
+	message
+
+1998-10-05  John Harper  <john@dcs.warwick.ac.uk>
+
+	* read-mail.jl (rm-command-items): use rm-with-summary instead
+	of just switching buffers
+
 1998-10-04  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rm-summary.jl, rm-output.jl, rm-mail-dir.jl, read-mail.jl:
