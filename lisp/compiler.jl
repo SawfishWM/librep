@@ -318,15 +318,8 @@ is one of these that form is compiled.")
 		(progn
 		  ;; Pass 2. The actual compile
 		  (format dst-file
-			  ";; Source file: %s
-;; Compiled by %s@%s on %s
-;; %s: %s
-
-(validate-byte-code %d %d %d %d)\n\n"
-			  file-name (user-login-name) (system-name)
-			  (current-time-string)
-			  (version-string) (build-id-string)
-			  bytecode-major bytecode-minor
+			  ";; Source file: %s\n(validate-byte-code %d %d %d %d)\n"
+			  file-name bytecode-major bytecode-minor
 			  (major-version-number) (minor-version-number))
 		  (condition-case nil
 		      (while t
@@ -911,22 +904,6 @@ that files which shouldn't be compiled aren't."
       (comp-dec-stack))
     (setq form (nthcdr 2 form))))
 
-(put 'set 'compile-fun 'comp-compile-set)
-(defun comp-compile-set (form)
-  (comp-compile-form (nth 2 form))
-  (comp-compile-form (nth 1 form))
-  (comp-write-op op-set)
-  (comp-dec-stack))
-
-(put 'fset 'compile-fun 'comp-compile-fset)
-(defun comp-compile-fset (form)
-  (comp-compile-form (nth 2 form))
-  (comp-write-op op-dup)
-  (comp-inc-stack)
-  (comp-compile-form (nth 1 form))
-  (comp-write-op op-fset)
-  (comp-dec-stack 2))
-
 ;; This compiles an inline lambda, i.e. FUN is something like
 ;; (lambda (LAMBDA-LIST...) BODY...)
 ;; If PUSHED-ARGS-ALREADY is non-nil it should be a count of the number
@@ -1092,8 +1069,8 @@ that files which shouldn't be compiled aren't."
   (comp-write-op op-dup)
   (comp-inc-stack)
   (comp-compile-constant (comp-compile-lambda (cons 'lambda (nthcdr 2 form))))
-  (comp-write-op op-swap)
   (comp-write-op op-fset)
+  (comp-write-op op-pop)
   (comp-dec-stack 2))
 
 (put 'defmacro 'compile-fun 'comp-compile-defmacro)
@@ -1103,8 +1080,8 @@ that files which shouldn't be compiled aren't."
   (comp-inc-stack)
   (comp-compile-constant (comp-compile-lambda
 			  (cons 'lambda (nthcdr 2 form)) t))
-  (comp-write-op op-swap)
   (comp-write-op op-fset)
+  (comp-write-op op-pop)
   (comp-dec-stack 2))
 
 (put 'cond 'compile-fun 'comp-compile-cond)
@@ -1496,6 +1473,10 @@ that files which shouldn't be compiled aren't."
 ;; speed
 
 (progn
+  (put 'set 'compile-fun 'comp-compile-2-args)
+  (put 'set 'compile-opcode op-set)
+  (put 'fset 'compile-fun 'comp-compile-2-args)
+  (put 'fset 'compile-opcode op-fset)
   (put 'cons 'compile-fun 'comp-compile-2-args)
   (put 'cons 'compile-opcode op-cons)
   (put 'car 'compile-fun 'comp-compile-1-args)
