@@ -234,6 +234,7 @@ rep_find_dl_symbol (repv feature, char *symbol)
 rep_bool
 rep_find_c_symbol(void *ptr, char **symbol_name_p, void **symbol_addr_p)
 {
+#ifdef HAVE_DLADDR
     Dl_info info;
     if(dladdr(ptr, &info) != 0)
     {
@@ -242,6 +243,7 @@ rep_find_c_symbol(void *ptr, char **symbol_name_p, void **symbol_addr_p)
 	return rep_TRUE;
     }
     else
+#endif
 	return rep_FALSE;
 }
 	
