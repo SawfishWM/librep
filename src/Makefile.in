@@ -164,4 +164,6 @@ distclean : clean
 
 realclean : distclean
 
+check :
+
 -include $(SRCS:%.c=.%.d) $(DL_SRCS:%.c=.%.d) $(REP_SRCS:%.c=.%.d)

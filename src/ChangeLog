@@ -1,3 +1,7 @@
+2001-03-26  John Harper  <jsh@eazel.com>
+
+	* Makefile.in: added a `check' target
+
 2001-03-22  John Harper  <jsh@eazel.com>
 
 	* version 0.13.5
