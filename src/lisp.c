@@ -796,6 +796,7 @@ rep_bind_lambda_list(repv lambdaList, repv argList, rep_bool eval_args)
     repv *evalled_args;
     int evalled_nargs;
     repv boundlist = Qnil;
+    int state;
 
     rep_GC_root gc_arglist, gc_boundlist;
     rep_GC_n_roots gc_evalled_args;
@@ -828,106 +829,110 @@ rep_bind_lambda_list(repv lambdaList, repv argList, rep_bool eval_args)
 	rep_POPGC;
     }
 
-    if(rep_CONSP(lambdaList))
+    state = STATE_REQUIRED;
+    while (1)
     {
-	int state = STATE_REQUIRED;
-	while(rep_CONSP(lambdaList) && rep_SYMBOLP(rep_CAR(lambdaList)))
+	repv argobj;
+	repv argspec;
+
+	if (rep_CONSP(lambdaList) && rep_SYMBOLP(rep_CAR(lambdaList)))
 	{
-	    repv argobj;
-	    repv argspec = rep_CAR(lambdaList);
+	    argspec = rep_CAR(lambdaList);
+	    lambdaList = rep_CDR(lambdaList);
+
 	    if(rep_STR(rep_SYM(argspec)->name)[0] == '&')
 	    {
 		if(argspec == Qamp_optional)
 		{
 		    if(state > STATE_OPTIONAL)
 		    {
-			Fsignal(Qinvalid_lambda_list,
-				   rep_LIST_1(lambdaList));
+			Fsignal(Qinvalid_lambda_list, rep_LIST_1(lambdaList));
 			goto error;
 		    }
 		    state = STATE_OPTIONAL;
-		    lambdaList = rep_CDR(lambdaList);
 		    continue;
 		}
 		else if(argspec == Qamp_rest)
 		{
 		    if(state > STATE_REST)
 		    {
-			Fsignal(Qinvalid_lambda_list,
-				   rep_LIST_1(lambdaList));
+			Fsignal(Qinvalid_lambda_list, rep_LIST_1(lambdaList));
 			goto error;
 		    }
 		    state = STATE_REST;
-		    lambdaList = rep_CDR(lambdaList);
 		    continue;
 		}
 		else if(argspec == Qamp_aux)
 		{
 		    state = STATE_AUX;
-		    lambdaList = rep_CDR(lambdaList);
 		    continue;
 		}
 	    }
+	}
+	else if (lambdaList != Qnil && rep_SYMBOLP(lambdaList))
+	{
+	    state = STATE_REST;
+	    argspec = lambdaList;
+	    lambdaList = Qnil;
+	}
+	else
+	    break;
 
-	    switch(state)
+	switch(state)
+	{
+	case STATE_REQUIRED:
+	case STATE_OPTIONAL:
+	    if(eval_args && evalled_nargs > 0)
 	    {
-	    case STATE_REQUIRED:
-	    case STATE_OPTIONAL:
-		if(eval_args && evalled_nargs > 0)
+		argobj = *evalled_args++;
+		evalled_nargs--;
+		gc_evalled_args.count--;
+	    }
+	    else if(!eval_args && rep_CONSP(argList))
+	    {
+		argobj = rep_CAR(argList);
+		argList = rep_CDR(argList);
+	    }
+	    else if(state == STATE_OPTIONAL)
+		argobj = Qnil;
+	    else
+	    {
+		Fsignal(Qmissing_arg, rep_LIST_1(argspec));
+		goto error;
+	    }
+	    boundlist = local_bind_symbol(boundlist, argspec, argobj);
+	    break;
+
+	case STATE_REST:
+	    if(eval_args)
+	    {
+		repv list = Qnil;
+		repv *ptr = &list;
+		while(evalled_nargs > 0)
 		{
-		    argobj = *evalled_args++;
+		    *ptr = Fcons(*evalled_args++, Qnil);
+		    ptr = &(rep_CDR(*ptr));
 		    evalled_nargs--;
 		    gc_evalled_args.count--;
 		}
-		else if(!eval_args && rep_CONSP(argList))
-		{
-		    argobj = rep_CAR(argList);
-		    argList = rep_CDR(argList);
-		}
-		else if(state == STATE_OPTIONAL)
-		    argobj = Qnil;
-		else
-		{
-		    Fsignal(Qmissing_arg, rep_LIST_1(argspec));
-		    goto error;
-		}
-		boundlist = local_bind_symbol(boundlist, argspec, argobj);
-		break;
-
-	    case STATE_REST:
-		if(eval_args)
-		{
-		    repv list = Qnil;
-		    repv *ptr = &list;
-		    while(evalled_nargs > 0)
-		    {
-			*ptr = Fcons(*evalled_args++, Qnil);
-			ptr = &(rep_CDR(*ptr));
-			evalled_nargs--;
-			gc_evalled_args.count--;
-		    }
-		    argobj = list;
-		}
-		else
-		    argobj = argList;
-		boundlist = local_bind_symbol(boundlist, argspec, argobj);
-		state = STATE_AUX;
-		break;
-
-	    case STATE_AUX:
-		boundlist = local_bind_symbol(boundlist, argspec, Qnil);
+		argobj = list;
 	    }
+	    else
+		argobj = argList;
+	    boundlist = local_bind_symbol(boundlist, argspec, argobj);
+	    state = STATE_AUX;
+	    break;
 
-	    lambdaList = rep_CDR(lambdaList);
+	case STATE_AUX:
+	    boundlist = local_bind_symbol(boundlist, argspec, Qnil);
+	}
 
-	    rep_TEST_INT;
-	    if(rep_INTERRUPTP)
-	    {
-	    error:
-		rep_unbind_symbols(boundlist);
-		boundlist = rep_NULL;
-		break;
-	    }
+	rep_TEST_INT;
+	if(rep_INTERRUPTP) {
+	error:
+	    rep_unbind_symbols(boundlist);
+	    boundlist = rep_NULL;
+	    break;
 	}
     }
 
