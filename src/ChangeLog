@@ -1,3 +1,9 @@
+2001-06-26  John Harper  <jsh@pixelslut.com>
+
+	* sockets.c (Fsocket_server): HOSTNAME arg can now be nil,
+	meaning to use INADDR_ANY when binding to the socket (listen
+	for all addresses)
+
 2001-06-18  John Harper  <jsh@pixelslut.com>
 
 	* repgdbm.c, repsdbm.c (rep_dl_kill): new functions, close all

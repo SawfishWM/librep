@@ -328,19 +328,25 @@ make_inet_socket (repv hostname, int port,
 
     name.sin_family = AF_INET;
     name.sin_port = htons (port);
-    hostinfo = gethostbyname (rep_STR (hostname));
-    if (hostinfo != 0)
+    if (rep_STRINGP (hostname))
     {
-	name.sin_addr = * (struct in_addr *) hostinfo->h_addr;
-
-	s = maker (PF_INET, SOCK_STREAM, &name, sizeof (name));
+	hostinfo = gethostbyname (rep_STR (hostname));
+	if (hostinfo != 0)
+	    name.sin_addr = * (struct in_addr *) hostinfo->h_addr;
+	else
+	{
+	    errno = ENOENT;
+	    return rep_signal_file_error (hostname);
+	}
     }
     else
-	errno = ENOENT;
+	name.sin_addr.s_addr = INADDR_ANY;
+
+    s = maker (PF_INET, SOCK_STREAM, &name, sizeof (name));
 
     if (s != 0)
     {
-	s->addr = hostname;
+	s->addr = rep_string_dup (inet_ntoa (name.sin_addr));
 	s->port = rep_MAKE_INT (port);
 	s->sentinel = sentinel;
 	s->stream = stream;
@@ -363,7 +369,7 @@ is closed down remotely SENTINEL will be called with the socket as its
 single argument.
 ::end:: */
 {
-    rep_DECLARE (1, host, rep_STRINGP (host));
+    rep_DECLARE (1, host, rep_NILP (host) || rep_STRINGP (host));
     rep_DECLARE (2, port, rep_INTP (port));
 
     return make_inet_socket (host, rep_INT (port),
@@ -373,10 +379,11 @@ single argument.
 DEFUN ("socket-server", Fsocket_server, Ssocket_server,
        (repv host, repv port, repv callback, repv sentinel), rep_Subr4) /*
 ::doc:rep.io.sockets#socket-server::
-socket-server HOSTNAME PORT [CALLBACK] [SENTINEL]
+socket-server [HOSTNAME] PORT [CALLBACK] [SENTINEL]
 
 Create and return a socket connected listening for connections on the
-host called HOSTNAME (a string) with port number PORT.
+host called HOSTNAME (a string) with port number PORT. If HOSTNAME is
+false, listen for any incoming addresses.
 
 When a connection is requested CALLBACK is called with the server
 socket as its sole argument. It must call `socket-accept' to make the
@@ -386,7 +393,7 @@ When the socket is shutdown remotely, SENTINEL is called with the
 socket as its only argument.
 ::end:: */
 {
-    rep_DECLARE (1, host, rep_STRINGP (host));
+    rep_DECLARE (1, host, rep_NILP (host) || rep_STRINGP (host));
     rep_DECLARE (2, port, rep_INTP (port));
 
     return make_inet_socket (host, rep_INT (port),
