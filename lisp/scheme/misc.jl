@@ -119,8 +119,10 @@
   (define (open-input-file name) (open-file name 'read))
   (define (open-output-file name) (open-file name 'write))
 
-  (define close-input-port close-file)
-  (define close-output-port close-file)
+  (define (close-input-port f)
+    (unless (and (filep f) (null (file-binding f)))
+      close-file))
+  (define close-output-port close-input-port)
 
 ;;; input
 
