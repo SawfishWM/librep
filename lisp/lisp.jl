@@ -88,13 +88,23 @@ loaded is either FILE (if given), or the print name of FEATURE."
 
 ;; Function to allow easy creation of autoload stubs
 
-(defun autoload (symbol &rest autoload-defn)
+(when (boundp 'dumped-lisp-libraries)
+  (setq dumped-loaded-libraries nil))
+
+(defun autoload (symbol file &rest extra)
   "Tell the evaluator that the function value of SYMBOL will be initialised
 from a named file. The AUTOLOAD-DEFN is the contents of the SYMBOL's
 autoload definition. Currently two items are used, the first is the name
 of the file to load the value of SYMBOL from. The second says whether or
 not the function SYMBOL may be called interactively (as a command)."
-  (fset symbol (cons 'autoload autoload-defn)))
+  (if (and (boundp 'dumped-lisp-libraries)
+	   (member file dumped-lisp-libraries))
+      ;; If FILE has been dumped, but not yet loaded, load it
+      (unless (member file dumped-loaded-libraries)
+	(load file)
+	(setq dumped-loaded-libraries (cons file dumped-loaded-libraries)))
+    ;; Else just add the autoload defn as normal
+    (fset symbol (cons 'autoload (cons file extra)))))
 
 
 ;; Hook manipulation
