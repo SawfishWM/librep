@@ -42,17 +42,6 @@
 static struct sigaction chld_sigact;
 static sigset_t chld_sigset;
 
-static void *proc_db;
-
-/* Debugging */
-#define __waitpid__(x, y, z)						\
-    ({ pid_t p;								\
-       db_printf(proc_db, "%s:%d: calling waitpid(%d, %p, %d)..",	\
-		 __FUNCTION__, __LINE__, (int)(x), y, z);		\
-       p = waitpid(x, y, z);						\
-       db_printf(proc_db, " pid=%d.\n", (int)p);			\
-       p; })
-
 struct Proc
 {
     u_char	pr_Type;
@@ -113,7 +102,6 @@ static void read_from_one_fd(struct Proc *pr, int fd, bool cursor_on);
 static void read_from_process(int);
 _PR int	 write_to_process(VALUE, u_char *, int);
 _PR void proc_mark(VALUE);
-_PR void proc_sweep(void);
 _PR void proc_prin(VALUE, VALUE);
 _PR void sigchld_restart(bool);
 _PR void proc_init(void);
@@ -205,12 +193,10 @@ check_for_zombies(void)
 	return FALSE;
 
     got_sigchld = FALSE;
-    while((pid = __waitpid__(-1, &status, WNOHANG | WUNTRACED)) > 0
+    while((pid = waitpid(-1, &status, WNOHANG | WUNTRACED)) > 0
 	  || errno == EINTR)
     {
 	struct Proc *pr = process_chain;
-	db_printf(proc_db, "check_for_zombies: pid=%d, status=0x%x",
-		  pid, status);
 	while(pr)
 	{
 	    if((pr->pr_Status > 0) && (pr->pr_Pid == pid))
@@ -384,7 +370,7 @@ kill_process(struct Proc *pr)
 	    /* is this too heavy-handed?? */
 	    if(!signal_process(pr, SIGKILL, TRUE))
 		kill(-pr->pr_Pid, SIGKILL);
-	    __waitpid__(pr->pr_Pid, &pr->pr_ExitStatus, 0);
+	    waitpid(pr->pr_Pid, &pr->pr_ExitStatus, 0);
 	    process_run_count--;
 	}
 	close_proc_files(pr);
@@ -676,7 +662,7 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 			    }
 			}
 		    }
-		    __waitpid__(pr->pr_Pid, &pr->pr_ExitStatus, 0);
+		    waitpid(pr->pr_Pid, &pr->pr_ExitStatus, 0);
 		    close(pr->pr_Stdout);
 		    close(pr->pr_Stderr);
 		    pr->pr_Stdout = 0;
@@ -1549,7 +1535,11 @@ proc_init(void)
     ADD_SUBR(subr_process_connection_type);
     ADD_SUBR(subr_set_process_connection_type);
 
-    proc_db = db_alloc(__FILE__, 4096);
+    /* Initialise the type information. */
+    data_types[V_Process].compare = ptr_cmp;
+    data_types[V_Process].princ = proc_prin;
+    data_types[V_Process].print = proc_prin;
+    data_types[V_Process].sweep = proc_sweep;
 }
 
 void
