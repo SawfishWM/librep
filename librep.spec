@@ -1,6 +1,6 @@
 
 %define nam	librep
-%define ver	0.3
+%define ver	0.4
 %define rel	1
 
 Summary: embeddable Lisp environment
