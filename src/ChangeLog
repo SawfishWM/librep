@@ -1,3 +1,10 @@
+2001-08-01  John Harper  <jsh@pixelslut.com>
+
+	* tables.c (Ftable_unset): fixed bug of not decrementing
+	total_nodes
+
+	* tables.c (Ftable_size): new function
+
 2001-07-29  John Harper  <jsh@pixelslut.com>
 
 	* continuations.c (Fcurrent_thread, Fall_threads): if operating

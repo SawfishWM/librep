@@ -462,6 +462,7 @@ Remove any value stored in TABLE associated with KEY.
 	    {
 		*ptr = n->next;
 		rep_free (n);
+		TABLE(tab)->total_nodes--;
 		return Qt;
 	    }
 	}
@@ -497,6 +498,18 @@ each pair, the function is called with arguments `(KEY VALUE)'.
 
     rep_POPGC; rep_POPGC;
     return rep_throw_value ? rep_NULL : Qnil;
+}
+
+DEFUN ("table-size", Ftable_size, Stable_size,
+       (repv tab), rep_Subr1) /*
+::doc:rep.data.tables#table-size::
+table-size TABLE
+
+Returns the number of items currently stored in TABLE.
+::end:: */
+{
+    rep_DECLARE1 (tab, TABLEP);
+    return rep_make_long_int (TABLE (tab)->total_nodes);
 }
 
 DEFUN("tables-after-gc", Ftables_after_gc, Stables_after_gc, (void), rep_Subr0)
@@ -549,6 +562,7 @@ rep_dl_init (void)
     rep_ADD_SUBR(Stable_set);
     rep_ADD_SUBR(Stable_unset);
     rep_ADD_SUBR(Stable_walk);
+    rep_ADD_SUBR(Stable_size);
     rep_ADD_INTERNAL_SUBR(Stables_after_gc);
     return rep_pop_structure (tem);
 }
