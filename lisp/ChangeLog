@@ -1,3 +1,8 @@
+2000-07-24  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep/vm/compiler/modules.jl (compiler-macroexpand-1): handle
+	autoloading macros
+
 2000-07-23  John Harper  <john@dcs.warwick.ac.uk>
 
 	Wholesale reorganization of the lisp code, to support the new

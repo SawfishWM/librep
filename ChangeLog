@@ -1,5 +1,8 @@
 2000-07-24  John Harper  <john@dcs.warwick.ac.uk>
 
+	* install-aliases: don't use -h or -H options to grep. Solaris
+	grep chokes on -H and neither are needed anyway
+
 	* librep.spec.in: added install-aliases
 
 2000-07-23  John Harper  <john@dcs.warwick.ac.uk>
