@@ -1,5 +1,8 @@
 2000-03-01  John Harper  <john@dcs.warwick.ac.uk>
 
+	* numbers.c (rep_print_number_to_string): avoid trying to print
+	non-numeric things as numbers
+
 	* misc.c (Fsystem): given an interactive decl
 
 	* repgdbm.c: new file, binding for GDBM. Mostly compatible with
