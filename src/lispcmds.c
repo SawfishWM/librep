@@ -1415,12 +1415,17 @@ its value.
     res = Feval(rep_CAR(args));
     rep_POPGC;
     args = rep_CDR(args);
-    if(res != rep_NULL && rep_CONSP(args))
+    if(res != rep_NULL)
     {
-	if(!rep_NILP(res))
-	    res = Feval(rep_CAR(args));
+	if (rep_CONSP(args))
+	{
+	    if(!rep_NILP(res))
+		res = Feval(rep_CAR(args));
+	    else
+		res = Fprogn(rep_CDR(args));
+	}
 	else
-	    res = Fprogn(rep_CDR(args));
+	    res = Qnil;
     }
     return res;
 }
