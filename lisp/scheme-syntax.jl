@@ -79,6 +79,7 @@
 
   (defmacro and args
     (rep#cond
+     ((null args) '#t)
      ((null (cdr args)) (car args))
      (t `(cond (,(car args) (and ,@(cdr args))) (else #f)))))
 
