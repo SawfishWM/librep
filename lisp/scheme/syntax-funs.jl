@@ -37,7 +37,7 @@
 	    expand-delay
 	    expand-define)
 
-    (open rep scheme.utils)
+    (open rep)
 
 ;;; syntax
 
@@ -72,7 +72,7 @@
   (define (expand-cond . args)
     (let ((first (car args))
 	  (rest (cdr args)))
-      (cond ((null args) #f)
+      (cond ((null args) '#f)
 	    ((eq (car first) 'else)
 	     `(begin ,@(cdr first)))
 	    ((eq (cadr first) '=>)
@@ -102,7 +102,7 @@
 
   (define (expand-or . args)
     (cond
-     ((null args) #f)
+     ((null args) '#f)
      ((null (cdr args)) (car args))
      (t (let ((tem (gensym)))
 	  `((lambda (,tem)
