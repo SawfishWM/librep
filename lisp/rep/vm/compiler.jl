@@ -352,7 +352,7 @@ is one of these that form is compiled.")
 		(error
 		 ;; Be sure to remove any partially written dst-file.
 		 ;; Also, signal the error again so that the user sees it.
-		 (delete-file temp-name)
+		 (delete-file temp-file)
 		 ;; Hack to signal error without entering the debugger (again)
 		 (throw 'error error-info)))
 	      ;; Copy the file to its correct location
