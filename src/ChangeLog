@@ -1,5 +1,8 @@
 Tue Apr 21 16:45:05 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* unix_processes.c (get_pty): minor change to order in which
+	pty masters are searched
+
 	* misc.c (cmd_sleep_for): new function, pauses for a specified
 	time length
 	* unix_main.c (sys_sleep_for): support for sleep-for
