@@ -389,6 +389,7 @@ extern repv Fset_closure_function (repv funarg, repv fun);
 extern repv Fclosurep (repv arg);
 extern repv Fsymbol_value(repv, repv);
 extern repv Fset(repv, repv);
+extern repv Fdefine_value(repv, repv);
 extern repv Fsetplist(repv, repv);
 extern repv Fsymbol_name(repv);
 extern repv Fdefault_value(repv, repv);
