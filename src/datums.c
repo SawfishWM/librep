@@ -157,6 +157,8 @@ DEFUN ("%scheme-bool-printer", F_scheme_bool_printer,
 void
 rep_datums_init (void)
 {
+    repv tem = rep_push_structure ("rep.data.datums");
+
     datum_type = rep_register_new_type ("datum", datum_cmp,
 					datum_print, datum_print,
 					0, rep_mark_tuple,
@@ -177,4 +179,6 @@ rep_datums_init (void)
 			   rep_VAL (&S_scheme_bool_printer));
     rep_mark_static (&rep_scm_t);
     rep_mark_static (&rep_scm_f);
+
+    rep_pop_structure (tem);
 }

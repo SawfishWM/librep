@@ -881,7 +881,9 @@ rep_sys_os_init(void)
     Fset (Qprocess_environment, env);
 
 #ifdef DEBUG_SYS_ALLOC
-    rep_ADD_SUBR(Sunix_print_allocations);
+    { repv tem = rep_push_structure ("rep.lang.debug");
+      rep_ADD_SUBR(Sunix_print_allocations);
+      rep_pop_structure (tem); }
 #endif
 
     rep_proc_init();

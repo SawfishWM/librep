@@ -195,7 +195,7 @@ DEFUN ("profile-interval", Fprofile_interval,
 repv
 rep_dl_init (void)
 {
-    repv tem = rep_push_structure ("record-profile");
+    repv tem = rep_push_structure ("rep.lang.record-profile");
 
     rep_ADD_SUBR (Sstart_profiler);
     rep_ADD_SUBR (Sstop_profiler);

@@ -156,9 +156,11 @@ signalled.
 void
 rep_fluids_init (void)
 {
+    repv tem = rep_push_structure ("rep.lang.interpreter");
     rep_INTERN (fluid);
     rep_ADD_SUBR (Smake_fluid);
     rep_ADD_SUBR (Sfluid);
     rep_ADD_SUBR (Sfluid_set);
     rep_ADD_SUBR (Swith_fluids);
+    rep_pop_structure (tem);
 }

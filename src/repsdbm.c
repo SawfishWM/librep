@@ -256,7 +256,9 @@ rep_dl_init (void)
     rep_INTERN (insert);
     rep_INTERN (replace);
 
-    tem = rep_push_structure ("sdbm");
+    tem = rep_push_structure ("rep.io.db.sdbm");
+    /* ::alias:sdbm rep.io.db.sdbm:: */
+    rep_alias_structure ("sdbm");
     rep_ADD_SUBR(Ssdbm_open);
     rep_ADD_SUBR(Ssdbm_close);
     rep_ADD_SUBR(Ssdbm_fetch);

@@ -1213,6 +1213,7 @@ Returns t if ARG is an output stream.
 void
 rep_streams_init(void)
 {
+    repv tem = rep_push_structure ("rep.io.streams");
     rep_INTERN_SPECIAL(format_hooks_alist);
     rep_ADD_SUBR(Swrite);
     rep_ADD_SUBR(Sread_char);
@@ -1230,4 +1231,5 @@ rep_streams_init(void)
     rep_ADD_SUBR(Sget_output_stream_string);
     rep_ADD_SUBR(Sinput_stream_p);
     rep_ADD_SUBR(Soutput_stream_p);
+    rep_pop_structure (tem);
 }

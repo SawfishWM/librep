@@ -2063,14 +2063,27 @@ Return an object that can be used as the function value of a symbol.
     return vec;
 }
 
+DEFUN("bytecodep", Fbytecodep, Sbytecodep, (repv arg), rep_Subr1) /*
+::doc:bytecodep::
+bytecodep ARG
+
+Returns t if ARG is a byte code subroutine (i.e. compiled Lisp code).
+::end:: */
+{
+    return rep_COMPILEDP(arg) ? Qt : Qnil;
+}
+
 void
 rep_lispmach_init(void)
 {
+    repv tem = rep_push_structure ("rep.vm.interpreter");
     rep_INTERN(run_byte_code);
     rep_ADD_SUBR(Srun_byte_code);
     rep_ADD_SUBR(Svalidate_byte_code);
     rep_ADD_SUBR(Smake_byte_code_subr);
+    rep_ADD_SUBR(Sbytecodep);
     rep_INTERN(bytecode_error); rep_ERROR(bytecode_error);
+    rep_pop_structure (tem);
 }
 
 void

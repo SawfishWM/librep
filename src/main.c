@@ -138,25 +138,6 @@ rep_get_option (char *option, repv *argp)
     return rep_FALSE;
 }
 
-DEFUN("get-command-line-option", Fget_command_line_option,
-      Sget_command_line_option, (repv opt, repv arg), rep_Subr2) /*
-::doc:get-command-line-option::
-get-command-line-option OPTION [REQUIRES-ARGUMENT]
-
-Returns t if OPTION was specified on the command line (OPTION is typically
-a word beginning with `--'). If REQUIRES-ARGUMENT is non-nil, this option
-requires a parameter, the value of which is returned. If a parameters isn't
-supplied an error is signalled.
-::end:: */
-{
-    repv param = Qt;
-    rep_DECLARE1(opt, rep_STRINGP);
-    if (rep_get_option (rep_STR(opt), (arg == Qnil) ? 0 : &param))
-	return param;
-    else
-	return Qnil;
-}
-
 static int
 get_main_options(char *prog_name, int *argc_p,
 		 char ***argv_p, void (*sys_usage)(void))
@@ -297,29 +278,44 @@ rep_init_from_dump(char *prog_name, int *argc, char ***argv,
 }
 
 /* Should be called sometime after calling rep_init*. It will load
-   the standard init script, plus FILE if non-nil. Returns the
+   the standard init scripts, plus FILE if non-nil. Returns the
    result of the last form evaluated. */
 repv
 rep_load_environment (repv file)
 {
-    repv old = rep_structure;
+    /* Modules that have Lisp code stored in the filing system. */
+    static const char *init[] = {
+	"rep.lang.interpreter",
+	"rep.structures",
+	"rep.module-system",
+	"rep.lang.math",
+	"rep.data",
+	"rep.system",
+	"rep.io.streams",
+	"rep.io.files",
+	"rep.io.file-handlers",
+	"rep",
+	0
+    };
+    const char **ptr;
+
     repv res = Qnil;
-    rep_GC_root gc_file, gc_old;
+    rep_GC_root gc_file;
 
     rep_PUSHGC (gc_file, file);
-    rep_PUSHGC (gc_old, old);
 
-    /* 1. Do the rep bootstrap in the `rep' structure */
-    rep_structure = rep_default_structure;
+    /* 1. Do the rep bootstrap */
+
     if (rep_dumped_non_constants != rep_NULL)
 	res = Feval (rep_dumped_non_constants);
-    if (res != rep_NULL)
-	res = Fload (init_script, Qnil, Qnil, Qnil, Qnil);
 
-    rep_POPGC;
-    rep_structure = old;
+    for (ptr = init; res != rep_NULL && *ptr != 0; ptr++)
+    {
+	res = rep_bootstrap_structure (*ptr);
+    }
 
-    /* 2. Do the caller-local bootstrap in the original structure */
+    /* 2. Do the caller-local bootstrap */
+
     if (res != rep_NULL && rep_STRINGP(file))
 	res = Fload (file, Qnil, Qnil, Qnil, Qnil);
 
@@ -521,8 +517,11 @@ original level.
 static void
 rep_main_init(void)
 {
+    repv tem = rep_push_structure ("rep.system");
     rep_ADD_SUBR_INT(Srecursive_edit);
     rep_ADD_SUBR(Srecursion_depth);
+    rep_pop_structure (tem);
+
     rep_INTERN(quit);
     rep_INTERN(exit);
     rep_INTERN(top_level);
@@ -532,7 +531,6 @@ rep_main_init(void)
     Fset (Qbatch_mode, Qnil);
     rep_INTERN_SPECIAL(interpreted_mode);
     Fset (Qinterpreted_mode, Qnil);
-    rep_ADD_SUBR(Sget_command_line_option);
     rep_INTERN_SPECIAL(program_name);
     rep_INTERN_SPECIAL(error_mode);
     Fset (Qerror_mode, Qnil);

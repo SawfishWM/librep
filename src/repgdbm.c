@@ -249,7 +249,9 @@ rep_dl_init (void)
     rep_INTERN (replace);
     rep_INTERN (no_lock);
 
-    tem = rep_push_structure ("gdbm");
+    tem = rep_push_structure ("rep.io.db.gdbm");
+    /* ::alias:gdbm rep.io.db.gdbm:: */
+    rep_alias_structure ("gdbm");
     rep_ADD_SUBR(Sgdbm_open);
     rep_ADD_SUBR(Sgdbm_close);
     rep_ADD_SUBR(Sgdbm_fetch);

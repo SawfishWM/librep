@@ -1100,14 +1100,16 @@ rep_pre_values_init(void)
 void
 rep_values_init(void)
 {
+    repv tem = rep_push_structure ("rep.data");
     rep_ADD_SUBR(Scons);
     rep_ADD_SUBR(Sgarbage_threshold);
     rep_ADD_SUBR(Sidle_garbage_threshold);
     rep_ADD_SUBR_INT(Sgarbage_collect);
-    rep_ADD_SUBR(Smake_primitive_guardian);
-    rep_ADD_SUBR(Sprimitive_guardian_push);
-    rep_ADD_SUBR(Sprimitive_guardian_pop);
+    rep_ADD_INTERNAL_SUBR(Smake_primitive_guardian);
+    rep_ADD_INTERNAL_SUBR(Sprimitive_guardian_push);
+    rep_ADD_INTERNAL_SUBR(Sprimitive_guardian_pop);
     rep_INTERN_SPECIAL(after_gc_hook);
+    rep_pop_structure (tem);
 }
 
 void

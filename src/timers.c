@@ -369,7 +369,9 @@ rep_dl_init (void)
     sigaddset (&alrm_sigset, SIGALRM);
     rep_sig_restart (SIGALRM, rep_TRUE);
 
-    tem = rep_push_structure ("timers");
+    tem = rep_push_structure ("rep.io.timers");
+    /* ::alias:timers rep.io.timers:: */
+    rep_alias_structure ("timers");
     rep_ADD_SUBR(Smake_timer);
     rep_ADD_SUBR(Sdelete_timer);
     rep_ADD_SUBR(Sset_timer);

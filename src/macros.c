@@ -176,9 +176,11 @@ rep_macros_clear_history (void)
 void
 rep_macros_init (void)
 {
+    repv tem = rep_push_structure ("rep.lang.interpreter");
     rep_ADD_SUBR(Smacroexpand);
     rep_ADD_SUBR(Smacroexpand_1);
     rep_INTERN_SPECIAL(macro_environment);
     Fset (Qmacro_environment, Qnil);
     rep_macros_clear_history ();
+    rep_pop_structure (tem);
 }

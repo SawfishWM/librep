@@ -1934,6 +1934,8 @@ rep_system (char *command)
 void
 rep_proc_init(void)
 {
+    repv tem;
+
     /* Setup SIGCHLD stuff.  */
     sigemptyset(&chld_sigset);
     sigaddset(&chld_sigset, SIGCHLD);
@@ -1952,6 +1954,8 @@ rep_proc_init(void)
     rep_INTERN(pipe);
     rep_INTERN(pty);
     rep_INTERN(socketpair);
+
+    tem = rep_push_structure ("rep.io.processes");
     rep_ADD_SUBR(Smake_process);
     rep_ADD_SUBR(Sstart_process);
     rep_ADD_SUBR(Scall_process);
@@ -1983,6 +1987,7 @@ rep_proc_init(void)
     rep_ADD_SUBR(Sset_process_connection_type);
     rep_ADD_SUBR(Sactive_processes);
     rep_ADD_SUBR(Saccept_process_output);
+    rep_pop_structure (tem);
 
     process_type = rep_register_new_type ("subprocess", rep_ptr_cmp,
 					  proc_prin, proc_prin,

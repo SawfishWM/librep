@@ -2348,9 +2348,13 @@ too small (you get errors in normal use) set it to something larger.
     return rep_handle_var_int(val, &rep_max_lisp_depth);
 }
 
+DEFSYM(rep_lang_interpreter, "rep.lang.interpreter");
+
 void
 rep_lisp_init(void)
 {
+    repv tem;
+
     rep_INTERN(quote); rep_INTERN(lambda); rep_INTERN(macro);
     rep_INTERN(backquote); rep_INTERN(backquote_unquote);
     rep_INTERN(backquote_splice);
@@ -2361,17 +2365,23 @@ rep_lisp_init(void)
     rep_INTERN_SPECIAL(debug_error_entry);
     rep_INTERN(amp_optional); rep_INTERN(amp_rest);
     rep_mark_static((repv *)&rep_throw_value);
+
+    tem = rep_push_structure ("rep.lang.interpreter");
     rep_ADD_SUBR(Sload_autoload);
     rep_ADD_SUBR(Sfuncall);
     rep_ADD_SUBR(Sprogn);
-    rep_ADD_SUBR(Sbreak);
-    rep_ADD_SUBR_INT(Sstep);
     rep_ADD_SUBR(Ssignal);
     rep_ADD_SUBR(Sbacktrace);
     rep_ADD_SUBR(Smax_lisp_depth);
+    rep_pop_structure (tem);
+
+    tem = rep_push_structure ("rep.lang.debug");
+    rep_ADD_SUBR(Sbreak);
+    rep_ADD_SUBR_INT(Sstep);
     rep_ADD_SUBR(Sdebug_frame_environment);
     rep_ADD_SUBR(Sdebug_outer_frame);
     rep_ADD_SUBR(Sdebug_inner_frame);
+    rep_pop_structure (tem);
 
     /* Stuff for error-handling */
     rep_INTERN(error_message);
@@ -2418,4 +2428,10 @@ rep_lisp_init(void)
 
     rep_INTERN(load);
     rep_INTERN(require);
+
+    /* Allow the bootstrap code to work.. */
+    rep_INTERN (rep_lang_interpreter);
+    rep_STRUCTURE (rep_default_structure)->imports
+	= Fcons (Qrep_lang_interpreter,
+		 rep_STRUCTURE (rep_default_structure)->imports);
 }

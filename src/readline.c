@@ -205,7 +205,9 @@ rep_dl_init(void)
     rl_basic_quote_characters = "\"";
     init_bouncing_parens();
 #endif
-    tem = rep_push_structure ("readline");
+    tem = rep_push_structure ("rep.io.readline");
+    /* ::alias:readline rep.io.readline:: */
+    rep_alias_structure ("readline");
     rep_ADD_SUBR(Sreadline);
     return rep_pop_structure (tem);
 }

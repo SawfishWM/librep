@@ -79,7 +79,9 @@ DEFSTRING(underscore, "_");
 repv
 rep_dl_init(void)
 {
-    repv tem = rep_push_structure ("gettext"), ret;
+    repv tem = rep_push_structure ("rep.i18n.gettext"), ret;
+    /* ::alias:gettext rep.i18n.gettext:: */
+    rep_alias_structure ("gettext");
     rep_ADD_SUBR(Sgettext);
     rep_ADD_SUBR(Sbindtextdomain);
     rep_ADD_SUBR(Stextdomain);

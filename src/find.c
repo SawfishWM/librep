@@ -514,7 +514,7 @@ rep_regerror(char *err)
 void
 rep_find_init(void)
 {
-    rep_INTERN(regexp_error); rep_ERROR(regexp_error);
+    repv tem = rep_push_structure ("rep.regexp");
     rep_ADD_SUBR(Sstring_match);
     rep_ADD_SUBR(Sstring_looking_at);
     rep_ADD_SUBR(Sexpand_last_match);
@@ -522,7 +522,9 @@ rep_find_init(void)
     rep_ADD_SUBR(Smatch_end);
     rep_ADD_SUBR(Squote_regexp);
     rep_ADD_SUBR(Sregexp_cache_control);
+    rep_pop_structure (tem);
 
+    rep_INTERN(regexp_error); rep_ERROR(regexp_error);
     rep_regsub_fun = rep_default_regsub;
     rep_regsublen_fun = rep_default_regsublen;
 }

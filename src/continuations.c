@@ -1763,6 +1763,8 @@ Return the name of the thread THREAD.
 void
 rep_continuations_init (void)
 {
+    repv tem = rep_push_structure ("rep.lang.interpreter");
+
 #ifdef WITH_CONTINUATIONS
     rep_continuation_type = rep_register_new_type ("continuation",
 						   rep_ptr_cmp,
@@ -1776,7 +1778,7 @@ rep_continuations_init (void)
     exit_barrier_cell = Fcons (Qnil, Qnil);
     rep_mark_static (&exit_barrier_cell);
     rep_INTERN(continuation);
-    rep_ADD_SUBR(Sprimitive_invoke_continuation);
+    rep_ADD_INTERNAL_SUBR(Sprimitive_invoke_continuation);
 #endif
 
     rep_ADD_SUBR(Scall_cc);
@@ -1784,6 +1786,9 @@ rep_continuations_init (void)
     rep_ADD_SUBR(Scall_with_object);
     rep_ADD_SUBR(Scall_with_dynamic_root);
     rep_ADD_SUBR(Scall_with_barrier);
+    rep_pop_structure (tem);
+
+    tem = rep_push_structure ("rep.threads");
     rep_ADD_SUBR(Smake_thread);
     rep_ADD_SUBR(Sthread_yield);
     rep_ADD_SUBR(Sthread_delete);
@@ -1798,4 +1803,5 @@ rep_continuations_init (void)
     rep_ADD_SUBR(Sthread_forbid);
     rep_ADD_SUBR(Sthread_permit);
     rep_ADD_SUBR(Sthread_name);
+    rep_pop_structure (tem);
 }

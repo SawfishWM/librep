@@ -449,7 +449,9 @@ rep_dl_init (void)
 	tem = Qnil;
     Fset (Qafter_gc_hook, Fcons (rep_VAL(&Stables_after_gc), tem));
 
-    tem = rep_push_structure ("tables");
+    tem = rep_push_structure ("rep.data.tables");
+    /* ::alias:tables rep.data.tables:: */
+    rep_alias_structure ("tables");
     rep_ADD_SUBR(Smake_table);
     rep_ADD_SUBR(Smake_weak_table);
     rep_ADD_SUBR(Sstring_hash);

@@ -411,6 +411,15 @@ Return the structure associated with the closure FUNARG.
     return rep_FUNARG(funarg)->structure;
 }
 
+DEFUN ("set-closure-structure", Fset_closure_structure,
+       Sset_closure_structure, (repv closure, repv structure), rep_Subr2)
+{
+    rep_DECLARE1 (closure, rep_FUNARGP);
+    rep_DECLARE2 (structure, rep_STRUCTUREP);
+    rep_FUNARG (closure)->structure = structure;
+    return Qnil;
+}
+
 DEFUN("closure-name", Fclosure_name,
       Sclosure_name, (repv funarg), rep_Subr1) /*
 ::doc:closure-name::
@@ -1282,6 +1291,8 @@ rep_pre_symbols_init(void)
 void
 rep_symbols_init(void)
 {
+    repv tem;
+
     /* Fiddly details of initialising the first symbol. We initialise
        all fields in case it was dumped. */
     Qnil = Fintern(rep_VAL(&str_nil), rep_obarray);
@@ -1295,30 +1306,27 @@ rep_symbols_init(void)
     rep_mark_static (&rep_env);
     rep_mark_static (&rep_special_bindings);
 
+    tem = rep_push_structure ("rep.lang.interpreter");
     Fstructure_set (rep_structure, Qnil, Qnil);
     Fstructure_set (rep_structure, Qt, Qt);
     Fmake_binding_immutable (Qnil);
     Fmake_binding_immutable (Qt);
+    rep_pop_structure (tem);
 
     plist_structure = Fmake_structure (Qnil, Qnil, Qnil, Qnil);
     rep_mark_static (&plist_structure);
 
     rep_INTERN(documentation);
     rep_INTERN(permanent_local);
+
+    tem = rep_push_structure ("rep.lang.symbols");
     rep_ADD_SUBR(Smake_symbol);
     rep_ADD_SUBR(Smake_obarray);
     rep_ADD_SUBR(Sfind_symbol);
     rep_ADD_SUBR(Sintern_symbol);
     rep_ADD_SUBR(Sintern);
     rep_ADD_SUBR(Sunintern);
-    rep_ADD_SUBR(Smake_closure);
-    rep_ADD_SUBR(Sclosure_function);
-    rep_ADD_SUBR(Sset_closure_function);
-    rep_ADD_SUBR(Sclosure_structure);
-    rep_ADD_SUBR(Sclosure_name);
-    rep_ADD_SUBR(Sclosurep);
-    rep_ADD_SUBR(Sset_special_environment);
-    rep_ADD_SUBR(Sdefvar);
+        rep_ADD_SUBR(Sdefvar);
     rep_ADD_SUBR(Ssymbol_value);
     rep_ADD_SUBR_INT(Sset);
     rep_ADD_SUBR(Ssetplist);
@@ -1337,7 +1345,22 @@ rep_symbols_init(void)
     rep_ADD_SUBR(Sapropos);
     rep_ADD_SUBR(Smake_variable_special);
     rep_ADD_SUBR(Sspecial_variable_p);
+    rep_ADD_SUBR(Sobarray);
+    rep_pop_structure (tem);
+
+    tem = rep_push_structure ("rep.lang.interpreter");
+    rep_ADD_SUBR(Smake_closure);
+    rep_ADD_SUBR(Sclosure_function);
+    rep_ADD_SUBR(Sset_closure_function);
+    rep_ADD_SUBR(Sclosure_structure);
+    rep_ADD_SUBR(Sset_closure_structure);
+    rep_ADD_SUBR(Sclosure_name);
+    rep_ADD_SUBR(Sclosurep);
+    rep_ADD_SUBR(Sset_special_environment);
+    rep_pop_structure (tem);
+
+    tem = rep_push_structure ("rep.lang.debug");
     rep_ADD_SUBR_INT(Strace);
     rep_ADD_SUBR_INT(Suntrace);
-    rep_ADD_SUBR(Sobarray);
+    rep_pop_structure (tem);
 }

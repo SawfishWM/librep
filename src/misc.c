@@ -563,13 +563,35 @@ values represent that the process was killed by a signal.
     return rep_system (rep_STR (command));
 }
 
+DEFUN("get-command-line-option", Fget_command_line_option,
+      Sget_command_line_option, (repv opt, repv arg), rep_Subr2) /*
+::doc:get-command-line-option::
+get-command-line-option OPTION [REQUIRES-ARGUMENT]
+
+Returns t if OPTION was specified on the command line (OPTION is typically
+a word beginning with `--'). If REQUIRES-ARGUMENT is non-nil, this option
+requires a parameter, the value of which is returned. If a parameters isn't
+supplied an error is signalled.
+::end:: */
+{
+    repv param = Qt;
+    rep_DECLARE1(opt, rep_STRINGP);
+    if (rep_get_option (rep_STR(opt), (arg == Qnil) ? 0 : &param))
+	return param;
+    else
+	return Qnil;
+}
+
 void
 rep_misc_init(void)
 {
     int i;
+    repv tem;
 
     if (rep_beep_fun == 0)
 	rep_beep_fun = default_beep;
+
+    tem = rep_push_structure ("rep.system");
 
     rep_INTERN(operating_system);
 #ifdef rep_HAVE_UNIX
@@ -588,7 +610,6 @@ rep_misc_init(void)
     Fset (Qrep_build_id, rep_VAL(&build_id_string));
 
     rep_ADD_SUBR_INT(Sbeep);
-    rep_ADD_SUBR(Scomplete_string);
     rep_ADD_SUBR(Scurrent_time);
     rep_ADD_SUBR(Scurrent_utime);
     rep_ADD_SUBR(Sfix_time);
@@ -596,13 +617,17 @@ rep_misc_init(void)
     rep_ADD_SUBR(Stime_later_p);
     rep_ADD_SUBR(Ssleep_for);
     rep_ADD_SUBR(Ssit_for);
-
+    rep_ADD_SUBR(Sget_command_line_option);
+    rep_ADD_SUBR_INT(Ssystem);
     rep_ADD_SUBR(Suser_login_name);
     rep_ADD_SUBR(Suser_full_name);
     rep_ADD_SUBR(Suser_home_directory);
     rep_ADD_SUBR(Ssystem_name);
     rep_ADD_SUBR(Smessage);
-    rep_ADD_SUBR(Srandom);
+
+    rep_pop_structure (tem);
+
+    tem = rep_push_structure ("rep.data");
     rep_ADD_SUBR(Stranslate_string);
     rep_ADD_SUBR(Salpha_char_p);
     rep_ADD_SUBR(Supper_case_p);
@@ -612,8 +637,7 @@ rep_misc_init(void)
     rep_ADD_SUBR(Sspace_char_p);
     rep_ADD_SUBR(Schar_upcase);
     rep_ADD_SUBR(Schar_downcase);
-    rep_ADD_SUBR_INT(Ssystem);
-
+    rep_ADD_SUBR(Scomplete_string);
     {
 	repv up = rep_make_string (257);
 	repv down = rep_make_string (257);
@@ -643,4 +667,9 @@ rep_misc_init(void)
 	rep_INTERN(flatten_table);
 	Fset (Qflatten_table, flatten);
     }
+    rep_pop_structure (tem);
+
+    tem = rep_push_structure ("rep.lang.math");
+    rep_ADD_SUBR(Srandom);
+    rep_pop_structure (tem);
 }

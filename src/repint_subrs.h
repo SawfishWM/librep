@@ -56,7 +56,6 @@ extern repv rep_copy_list(repv);
 extern rep_bool rep_compare_error(repv error, repv handler);
 extern void rep_lisp_init(void);
 extern rep_bool rep_single_step_flag;
-extern repv rep_call_lispn (repv fun, int argc, repv *argv);
 
 /* from lispcmds.c */
 extern rep_xsubr Slambda;
@@ -87,7 +86,6 @@ extern void rep_misc_init(void);
 /* from numbers.c */
 extern repv rep_parse_number (char *buf, u_int len, u_int radix,
 			      int sign, u_int type);
-extern repv rep_foldl (repv args, repv (*op)(repv, repv));
 extern void rep_numbers_init (void);
 
 /* from regsub.c */
@@ -106,6 +104,7 @@ extern repv Fstructure_set (repv, repv, repv);
 extern repv Fstructure_bound_p (repv, repv);
 extern repv Fexternal_structure_ref (repv, repv);
 extern repv Fintern_structure (repv);
+extern repv Fget_structure (repv);
 extern repv rep_get_initial_special_value (repv sym);
 extern void rep_pre_structures_init (void);
 extern void rep_structures_init (void);
