@@ -42,4 +42,10 @@
 /* For the client/server stuff. */
 #define JADE_SOCK_NAME ".Jade_rendezvous"
 
+enum server_request {
+    req_find_file = 0,
+    req_eval,
+    req_end_of_session
+};
+
 #endif /* _UNIX_DEFS_H */
