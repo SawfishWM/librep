@@ -1184,7 +1184,7 @@ rep_load_autoload(repv funarg)
 	     || rep_SYMBOLP(rep_CAR(rep_CDR(aload_def)))))
     {
 	return Fsignal(Qinvalid_autoload,
-		       rep_list_2(fun, rep_VAL(&invl_autoload)));
+		       rep_list_2(aload_def, rep_VAL(&invl_autoload)));
     }
 
     fun = rep_CAR(aload_def);
