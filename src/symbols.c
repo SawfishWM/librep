@@ -90,6 +90,11 @@ static rep_funarg_block *funarg_block_chain;
 static rep_funarg *funarg_freelist;
 int rep_allocated_funargs, rep_used_funargs;
 
+/* support for scheme boolean type */
+DEFSYM(hash_t, "#t");
+DEFSYM(hash_f, "#f");
+repv rep_scm_t, rep_scm_f;
+
 
 /* Symbol management */
 
@@ -148,6 +153,12 @@ symbol_print(repv strm, repv obj)
     register u_char *out = buf;
     register u_char *s;
     rep_bool seen_digit = rep_FALSE;
+
+    if (obj == Qhash_f || obj == Qhash_t)
+    {
+	symbol_princ (strm, obj);
+	return;
+    }
 
     s = rep_STR (rep_SYM (obj)->name);
     switch (*s++)
@@ -1318,6 +1329,9 @@ rep_symbols_init(void)
 
     rep_INTERN(documentation);
     rep_INTERN(permanent_local);
+
+    rep_INTERN(hash_t); rep_INTERN (hash_f);
+    rep_scm_t = Qhash_t; rep_scm_f = Qhash_f;
 
     tem = rep_push_structure ("rep.lang.symbols");
     rep_ADD_SUBR(Smake_symbol);
