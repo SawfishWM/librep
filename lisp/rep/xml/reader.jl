@@ -106,9 +106,11 @@
 	(if (memq (current stream) '(#\? #\/ #\>))
 	    (nreverse params)
 	  (let ((name (read-token stream)))
+	    (eat-whitespace stream)
 	    (or (= (current stream) #\=)
 		(error "Expected '=' character: %s" stream))
 	    (next stream)
+	    (eat-whitespace stream)
 	    (let ((data (read-quoted-token stream)))
 	      (loop (cons (cons name data) params)))))))
 

@@ -150,8 +150,9 @@
 	value)))
 
   (defun compiler-boundp (var)
-    (or (locate-variable var)
-	(and (special-variable-p var) (boundp var))))
+    (and (symbolp var)
+	 (or (locate-variable var)
+	     (and (special-variable-p var) (boundp var)))))
 
   ;; return t if the binding of VAR comes from the rep (built-ins) module
   (defun compiler-binding-from-rep-p (var)

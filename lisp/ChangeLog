@@ -1,3 +1,13 @@
+2002-09-21  John Harper  <jsh@unfactored.org>
+
+	* rep/vm/compiler/modules.jl (compiler-boundp): check if arg is
+	a symbol
+
+2002-08-01  John Harper  <jsh@unfactored.org>
+
+	* rep/xml/reader.jl (read-param-list): skip whitespace around
+	'=' characters in attribute lists
+
 2002-06-22  John Harper  <jsh@unfactored.org>
 
 	* version 0.16.1
