@@ -45,7 +45,11 @@ install : all installdirs
 	$(INSTALL_DATA) DOC.dir $(DESTDIR)$(repdir)/$(version)
 	$(INSTALL_SCRIPT) libtool $(DESTDIR)$(repcommonexecdir)
 	$(INSTALL_DATA) rules.mk $(DESTDIR)$(repcommonexecdir)
-	$(INSTALL_DATA) rep.m4 $(DESTDIR)$(aclocaldir)
+	@echo "---------------------------------------------------------"
+	@echo "Trying to install rep.m4 in $(DESTDIR)$(aclocaldir);"
+	@echo "if this fails, install it manually in a suitable location"
+	@echo "---------------------------------------------------------"
+	-$(INSTALL_DATA) rep.m4 $(DESTDIR)$(aclocaldir)
 
 installdirs : $(top_srcdir)/mkinstalldirs
 	$(SHELL) $(top_srcdir)/mkinstalldirs $(DESTDIR)$(repdir)/$(version) \
