@@ -486,6 +486,7 @@ rep_get_long_int (repv in)
     return 0;
 }
 
+#if SIZEOF_LONG_LONG > SIZEOF_LONG
 repv
 rep_make_longlong_int (rep_long_long in)
 {
@@ -555,6 +556,23 @@ rep_get_longlong_int (repv in)
     }
     return 0;
 }
+
+
+#else /* SIZEOF_LONG_LONG > SIZEOF_LONG */
+
+repv
+rep_make_longlong_int (rep_long_long in)
+{
+    return rep_make_long_int (in);
+}
+
+rep_long_long
+rep_get_longlong_int (repv in)
+{
+    return rep_get_long_int (in);
+}
+
+#endif /* ! SIZEOF_LONG_LONG > SIZEOF_LONG */
 
 repv
 rep_make_float (double in, rep_bool force)
