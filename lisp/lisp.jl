@@ -1,4 +1,4 @@
-;;;; lisp.jl -- Some Lispy functions
+;;;; lisp.jl -- Some fundamental Lisp functions
 ;;;  Copyright (C) 1993, 1994 John Harper <john@dcs.warwick.ac.uk>
 ;;;  $Id$
 
@@ -157,6 +157,16 @@ is 0)."
   "A do-nothing command."
   (interactive))
 
+(defmacro return (&optional arg)
+  "Return ARG from the outermost function."
+  (list 'throw ''defun arg))
+
+(defmacro function (arg)
+  "Normally the same as `quote'. When being compiled, if ARG is not a symbol
+it causes ARG to be compiled as a lambda expression. This macro is also
+available as the reader shortcut #', i.e. #'foo == (function foo)."
+  (list 'quote arg))
+
 
 ;; Macros for handling positions
 
@@ -167,4 +177,3 @@ is 0)."
 (defmacro pos-line (p)
   "Return the row pointed to by position P."
   (list 'car p))
-
