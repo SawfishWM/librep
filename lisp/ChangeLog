@@ -1,3 +1,17 @@
+1999-12-07  John Harper  <john@dcs.warwick.ac.uk>
+
+	* disassembler.jl, compiler.jl, bytecodes.jl (op-enclose): new
+	instruction
+
+	* lisp.jl (unless): if the condition evaluates true, then
+	return nil, not the value of the condition (this is the
+	behaviour in cl and elisp)
+
+1999-12-06  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.jl (letrec): new macro, as in scheme, creates mutually
+	recursive bindings
+
 1999-12-05  John Harper  <john@dcs.warwick.ac.uk>
 
 	* version 0.8.1

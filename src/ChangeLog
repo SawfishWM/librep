@@ -1,3 +1,13 @@
+1999-12-07  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep-xgettext.jl: scan the car of lists as well as the cdr;
+	only emit duplicated strings once
+
+	* lispmach.c, bytecodes.h (OP_ENCLOSE): new instruction, a
+	single-argument version of OP_MAKE_CLOSURE
+
+	* symbols.c (Fmake_variable_special): new function
+
 1999-12-06  John Harper  <john@dcs.warwick.ac.uk>
 
 	* main.c (usage): fix backslash lossage (pointed out by Conrad
