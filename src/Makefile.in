@@ -82,7 +82,7 @@ uninstall :
 	done
 
 rep-config : rep-config.sh
-	$(SHELL) $< "${prefix}" "${exec_prefix}" "${version}" "${LIBS}" >$@
+	$(SHELL) $< "${prefix}" "${exec_prefix}" "${version}" "${LIBS}" "${repexecdir}" >$@
 	chmod +x $@
 
 repdoc : repdoc.o libxsdbm.la

@@ -159,7 +159,7 @@ extern repv Vmax_lisp_depth(repv val);
 /* from lispcmds.c */
 extern repv Qor, Qand;
 extern repv Qload_path, Qafter_load_alist, Qlisp_lib_directory;
-extern repv Qdl_load_path;
+extern repv Qdl_load_path, Qdl_load_reloc_now;
 extern repv Qsite_lisp_directory, Qdocumentation_file, Qdocumentation_files;
 extern repv Fquote(repv);
 extern repv Fdefmacro(repv);
@@ -286,7 +286,7 @@ extern rep_bool (*rep_on_idle_fun)(int since_last);
 extern repv Qidle_hook;
 extern void (*rep_on_termination_fun)(void);
 extern repv Qexit, Qquit, Qtop_level, Qcommand_line_args;
-extern repv Qbatch_mode, Qinterpreted_mode;
+extern repv Qbatch_mode, Qinterpreted_mode, Qprogram_name;
 extern repv Frecursive_edit(void);
 extern repv Frecursion_depth(void);
 extern repv Fget_command_line_option (repv, repv);
@@ -454,6 +454,7 @@ extern repv Vgarbage_threshold(repv val);
 extern repv Vidle_garbage_threshold(repv val);
 extern repv Fgarbage_collect(repv noStats);
 extern int rep_data_after_gc, rep_gc_threshold, rep_idle_gc_threshold;
+extern rep_bool rep_in_gc;
 
 #ifdef rep_HAVE_UNIX
 

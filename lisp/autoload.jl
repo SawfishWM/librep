@@ -19,6 +19,7 @@
 ;;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 ;;; ::autoload-start::
+(autoload 'compile-file "compiler" t)
 (autoload 'compile-directory "compiler" t)
 (autoload 'compile-lisp-lib "compiler" t)
 (autoload 'compile-function "compiler" t)

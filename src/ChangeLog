@@ -1,3 +1,25 @@
+1999-03-16  John Harper  <john@dcs.warwick.ac.uk>
+
+	* values.c: allocate the buffer of static gc roots dynamically
+
+	* rep_lisp.h: define some new macros, rep_CDRLOC, and various
+	rep_CAAR, rep_CADR combinations (up to four dereferences)
+
+	* rep-config.sh: new option `--execdir'
+
+	* main.c (Qprogram_name): new symbol argv[0] of the invoking
+	program
+
+	* lispcmds.c (Qdl_load_reloc_now): new symbol
+	* unix_dl.c (rep_open_dl_library): when dl-load-reloc-now is
+	non-nil, open with the RTLD_NOW mode, not RTLD_LAZY
+
+1999-03-15  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep_lisp.h (rep_DECLARE): the third argument is now the
+	entire predicate expression, not just the name of the
+	predicate. The rep_DECLAREX variants are unchanged
+
 1999-03-12  John Harper  <john@dcs.warwick.ac.uk>
 
 	* files.c (file_prin): the `name' field is _nil_ if unbound,
