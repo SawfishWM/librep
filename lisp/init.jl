@@ -203,7 +203,9 @@ If all of the ARGS have been evaluated and none have a non-`nil' value
 `nil' is the value of the `or' form.
 
 If there are no ARGS `nil' is returned."
-  (cons 'cond (mapcar list args)))
+  (if (null args)
+      'nil
+    (cons 'cond (mapcar list args))))
 
 (defmacro and args
   "The first of the ARGS is evaluated. If it is `nil' no more of the
@@ -211,12 +213,14 @@ ARGS are evaluated and `nil' is the value of the `and' statement.
 Otherwise the next member of ARGS is evaluated and its value tested. If
 none of the ARGS are `nil' the computed value of the last member of ARGS
 is returned from the `and' form."
-  (let loop ((rest (nreverse args))
-	     (body nil))
-    (cond ((null rest) body)
-	  (t (loop (cdr rest) (if body 
-				  (list 'cond (list (car rest) body))
-				(car rest)))))))
+  (if (null args)
+      't
+    (let loop ((rest (nreverse args))
+	       (body nil))
+      (cond ((null rest) body)
+	    (t (loop (cdr rest) (if body 
+				    (list 'cond (list (car rest) body))
+				  (car rest))))))))
 
 
 ;; set syntax
@@ -317,7 +321,8 @@ Evaluate FORM1 discarding its result, then evaluate FORM2 followed by
   (%structure-set (%get-structure '%interfaces) name sig))
 
 (defun %parse-interface (sig)
-  (cond ((eq (car sig) 'export)
+  (cond ((null sig) '())
+	((eq (car sig) 'export)
 	 (cdr sig))
 	((eq (car sig) 'compound-interface)
 	 (apply append (mapcar %parse-interface (cdr sig))))
@@ -327,14 +332,14 @@ Evaluate FORM1 discarding its result, then evaluate FORM2 followed by
   (list '%make-interface (list 'quote name)
 	(list '%parse-interface (list 'quote sig))))
 
-(defmacro structure (sig &optional config . body)
+(defmacro structure (&optional sig config . body)
   (unless (listp (car config))
     (setq config (list config)))
   (list '%make-structure (list '%parse-interface (list 'quote sig))
 	(list* 'lambda nil (cons '(open module-system) config))
 	(list* 'lambda nil body)))
 
-(defmacro define-structure (name sig &optional config . body)
+(defmacro define-structure (name &optional sig config . body)
   (unless (listp (car config))
     (setq config (list config)))
   (list '%make-structure (list '%parse-interface (list 'quote sig))
