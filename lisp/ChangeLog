@@ -1,3 +1,13 @@
+1998-08-10  John Harper  <john@dcs.warwick.ac.uk>
+
+	* remote-ftp.jl (remote-ftp-handler): support for opening
+	remote files with open-file. All access types are supported
+	(read, write, append), a local copy is used so all operations
+	on this copy should work
+
+	* remote.jl (remote-file-handler): slight change to the
+	conventions for working with remote file handles
+
 1998-08-09  John Harper  <john@dcs.warwick.ac.uk>
 
 	* help.jl (apropos-variable): quote the query string when

@@ -1,3 +1,8 @@
+1998-08-10  John Harper  <john@dcs.warwick.ac.uk>
+
+	* files.c (files_init): ADD_SUBR the make-file-from-stream
+	function
+
 1998-08-06  John Harper  <john@dcs.warwick.ac.uk>
 
 	* buffers.c, debug-buffer.c, lisp.c, streams.c, symbols.c,
