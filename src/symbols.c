@@ -798,18 +798,22 @@ SYMBOL in buffers or windows which do not have their own local value.
 ::end:: */
 {
     repv val = rep_void_value;
-    int spec;
     rep_DECLARE1(sym, rep_SYMBOLP);
-    
-    spec = search_special_environment (sym);
-    if (spec < 0 || !(rep_SYM(sym)->car & rep_SF_WEAK_MOD))
+
+    if (rep_SYM(sym)->car & rep_SF_SPECIAL)
     {
-	repv tem = search_special_bindings (sym);
-	if (tem != Qnil)
-	    val = rep_CDR (tem);
-	else
-	    val = F_structure_ref (rep_specials_structure, sym);
+	int spec = search_special_environment (sym);
+	if (spec < 0 || !(rep_SYM(sym)->car & rep_SF_WEAK_MOD))
+	{
+	    repv tem = search_special_bindings (sym);
+	    if (tem != Qnil)
+		val = rep_CDR (tem);
+	    else
+		val = F_structure_ref (rep_specials_structure, sym);
+	}
     }
+    else
+	val = F_structure_ref (rep_structure, sym);
 
     if(no_err == Qnil && rep_VOIDP(val))
 	return Fsignal(Qvoid_value, rep_LIST_1(sym));
@@ -878,33 +882,31 @@ DEFUN("set-default", Fset_default, Sset_default,
 ::doc:set-default::
 set-default SYMBOL VALUE
 
-Sets the default value of SYMBOL to VALUE, then returns VALUE. Also
-makes the symbol special if it isn't already.
+Sets the default value of SYMBOL to VALUE, then returns VALUE.
 ::end:: */
 {
-    int spec;
-
     rep_DECLARE1(sym, rep_SYMBOLP);
-
-    spec = search_special_environment (sym);
-    if (spec)
+    if (rep_SYM (sym)->car & rep_SF_SPECIAL)
     {
-	repv tem;
+	int spec = search_special_environment (sym);
+	if (spec)
+	{
+	    repv tem;
 
-	if (spec > 0 && rep_SYM(sym)->car & rep_SF_WEAK_MOD)
-	    return Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
+	    if (spec > 0 && rep_SYM(sym)->car & rep_SF_WEAK_MOD)
+		return Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
 
-	if (!(rep_SYM(sym)->car & rep_SF_SPECIAL))
-	    Fmake_variable_special (sym);
-
-	tem = search_special_bindings (sym);
-	if (tem != Qnil)
-	    rep_CDR (tem) = val;
+	    tem = search_special_bindings (sym);
+	    if (tem != Qnil)
+		rep_CDR (tem) = val;
+	    else
+		val = F_structure_set (rep_specials_structure, sym, val);
+	}
 	else
-	    val = F_structure_set (rep_specials_structure, sym, val);
+	    return Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
     }
     else
-	return Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
+	F_structure_set (rep_structure, sym, val);
     return val;
 }
 
@@ -943,16 +945,20 @@ default-boundp SYMBOL
 Returns t if SYMBOL has a default value.
 ::end:: */
 {
-    repv tem;
     rep_DECLARE1(sym, rep_SYMBOLP);
-    tem = search_special_bindings (sym);
-    if (tem != Qnil)
-	return rep_VOIDP (rep_CDR (tem));
-    else
+    if (rep_SYM(sym)->car & rep_SF_SPECIAL)
     {
-	tem = F_structure_ref (rep_specials_structure, sym);
-	return rep_VOIDP (tem) ? Qnil : Qt;
+	repv tem = search_special_bindings (sym);
+	if (tem != Qnil)
+	    return rep_VOIDP (rep_CDR (tem));
+	else
+	{
+	    tem = F_structure_ref (rep_specials_structure, sym);
+	    return rep_VOIDP (tem) ? Qnil : Qt;
+	}
     }
+    else
+	return F_structure_bound_p (rep_structure, sym);
 }
 
 DEFUN("boundp", Fboundp, Sboundp, (repv sym), rep_Subr1) /*
