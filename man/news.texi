@@ -3,6 +3,34 @@
 @appendix News
 @cindex News
 
+@heading 0.17
+
+@itemize @bullet
+
+@item Added @code{rep.ffi} module (Foreign Function Interface). Uses
+gcc's libffi. Very untested.
+
+@item Partial implementation of guile's @code{GH} interface.
+
+@item Bug fixes:
+
+@itemize @minus
+
+@item Don't hang in select for a second when starting processes via the
+@code{system} function (race condition that only seems to show up on
+Linux 2.6 kernels)
+
+@item Miscellaneous fixes for Mac OS X.
+
+@item Don't return a reversed list of items from the XML parser.
+(Alexander V. Nikolaev)
+
+@item Fixes to string capitalization functions. (Charles Stewart)
+
+@end itemize
+@end itemize
+
+
 @heading 0.16
 
 @itemize @bullet

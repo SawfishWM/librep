@@ -1,3 +1,7 @@
+2003-11-24  John Harper  <jsh@unfactored.org>
+
+	* version 0.17
+
 2003-05-08  John Harper  <jsh@unfactored.org>
 
 	* rep/util/repl.jl (,collect): print memory usage statistics

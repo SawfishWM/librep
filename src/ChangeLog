@@ -1,3 +1,7 @@
+2003-11-24  John Harper  <jsh@unfactored.org>
+
+	* version 0.17
+
 2003-10-28  John Harper  <jsh@unfactored.org>
 
 	* unix_processes.c (rep_system): rearranged code so we don't

@@ -16,3 +16,4 @@ build.h
 rules.mk
 librep.spec
 doc-strings
+autom4te.cache
