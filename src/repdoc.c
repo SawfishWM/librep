@@ -65,7 +65,8 @@ scanfile(FILE *src, SDBM *sdbm)
 	    key.dsize = strlen(id);
             value.dptr = buf;
 	    value.dsize = strlen(buf);
-	    sdbm_store (sdbm, key, value, SDBM_REPLACE);
+	    if (sdbm_store (sdbm, key, value, SDBM_REPLACE) < 0)
+		perror ("sdbm_store");
 	}
     }
 }
