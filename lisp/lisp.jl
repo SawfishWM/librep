@@ -120,15 +120,14 @@ match the FILE argument to `load'."
 
 (defun load-all (file)
   "Try to load files called FILE (or FILE.jl, etc) from all directories in the
-LISP load path (except the current directory)."
+LISP load path."
   (mapc (lambda (dir)
-	  (unless (or (string= dir "") (string= dir "."))
-	    (let
-		((full-name (expand-file-name file dir)))
-	      (when (or (file-exists-p full-name)
-			(file-exists-p (concat full-name ".jl"))
-			(file-exists-p (concat full-name ".jlc")))
-		(load full-name nil t)))))
+	  (let
+	      ((full-name (expand-file-name file dir)))
+	    (when (or (file-exists-p full-name)
+		      (file-exists-p (concat full-name ".jl"))
+		      (file-exists-p (concat full-name ".jlc")))
+	      (load full-name nil t))))
 	load-path))
 
 (defmacro eval-when-compile (form)
