@@ -346,8 +346,29 @@ make_inet_socket (repv hostname, int port,
 
     if (s != 0)
     {
-	s->addr = rep_string_dup (inet_ntoa (name.sin_addr));
-	s->port = rep_MAKE_INT (port);
+	socklen_t length = sizeof (name);
+	getsockname (s->sock, (struct sockaddr *) &name, &length);
+
+	s->port = rep_MAKE_INT (ntohs (name.sin_port));
+
+	if (name.sin_addr.s_addr == INADDR_ANY)
+	{
+	    /* Try to guess the ip address we're listening on */
+	    char hname[128];
+	    struct hostent *ent;
+	    gethostname (hname, sizeof (hname) - 1);
+	    ent = gethostbyname (hname);
+	    if (ent != 0)
+	    {
+		struct in_addr *addr = (struct in_addr *) ent->h_addr_list[0];
+		s->addr = rep_string_dup (inet_ntoa (*addr));
+	    }
+	    else
+		s->addr = rep_string_dup (inet_ntoa (name.sin_addr));
+	}
+	else
+	    s->addr = rep_string_dup (inet_ntoa (name.sin_addr));
+	    
 	s->sentinel = sentinel;
 	s->stream = stream;
 	return rep_VAL (s);
@@ -369,7 +390,7 @@ is closed down remotely SENTINEL will be called with the socket as its
 single argument.
 ::end:: */
 {
-    rep_DECLARE (1, host, rep_NILP (host) || rep_STRINGP (host));
+    rep_DECLARE (1, host, rep_STRINGP (host));
     rep_DECLARE (2, port, rep_INTP (port));
 
     return make_inet_socket (host, rep_INT (port),
@@ -379,11 +400,12 @@ single argument.
 DEFUN ("socket-server", Fsocket_server, Ssocket_server,
        (repv host, repv port, repv callback, repv sentinel), rep_Subr4) /*
 ::doc:rep.io.sockets#socket-server::
-socket-server [HOSTNAME] PORT [CALLBACK] [SENTINEL]
+socket-server [HOSTNAME] [PORT] [CALLBACK] [SENTINEL]
 
 Create and return a socket connected listening for connections on the
 host called HOSTNAME (a string) with port number PORT. If HOSTNAME is
-false, listen for any incoming addresses.
+false, listen for any incoming addresses. If PORT is undefined a random
+port will be chosen.
 
 When a connection is requested CALLBACK is called with the server
 socket as its sole argument. It must call `socket-accept' to make the
@@ -394,9 +416,9 @@ socket as its only argument.
 ::end:: */
 {
     rep_DECLARE (1, host, rep_NILP (host) || rep_STRINGP (host));
-    rep_DECLARE (2, port, rep_INTP (port));
+    rep_DECLARE (2, port, rep_NILP (port) || rep_INTP (port));
 
-    return make_inet_socket (host, rep_INT (port),
+    return make_inet_socket (host, rep_INTP (port) ? rep_INT (port) : 0,
 			     make_server_socket, callback, sentinel);
 }
 
