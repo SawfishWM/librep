@@ -104,6 +104,7 @@ modules, each item has the form `(NAME INTERFACE)'. CONFIG and BODY are
 exactly the same as in the `define-structure' syntax."
   (unless (listp (car config))
     (setq config (list config)))
+  (require 'rep.lang.backquote)
   (let ((tem (gensym)))
     `(let ((,tem (list (structure () ((export-all) ,@config) ,@body))))
        ,@(mapcar (lambda (x)

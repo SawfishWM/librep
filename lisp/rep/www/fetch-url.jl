@@ -41,8 +41,7 @@
 	(signal 'wget (list url)))))
 
   (define (fetch-url-async url dest-stream callback &optional error-stream)
-    (let ((process (make-process dest-stream))
-	  (errors (make-string-output-stream)))
+    (let ((process (make-process dest-stream)))
       (set-process-error-stream process (or error-stream standard-error))
       (set-process-function process callback)
       (start-process process nil *wget-program* "-nv" "-O" "-" url))))
