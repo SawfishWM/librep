@@ -115,6 +115,11 @@
 ;;; It shouldn't break anything much, since the compiler will give
 ;;; warnings if any funky dynamic-scope tricks are used without the
 ;;; symbols being defvar'd (and therefore declared special/dynamic)
+;;;
+;;; The constant folding code is a bit simplistic. For example the form
+;;; (+ 1 2 3) would be folded to 6, but (+ 1 2 x) *isn't* folded to
+;;; (+ 3 x) as we would like. This is due to the view of folded functions
+;;; as ``side-effect-free constant black boxes''.
 
 
 ;; Options
@@ -128,6 +133,15 @@ their position in that file.")
 
 (defvar comp-batch-compile nil
   "When t, all output goes to standard output.")
+
+(defvar comp-constant-functions
+  '(+ - * / % mod max min 1+ 1- car cdr assoc assq rassoc rassq nth nthcdr
+    last member memq arrayp aref substring concat length elt lognot not
+    logior logxor logand equal = /= > < >= <= lsh ash zerop null atom consp
+    listp numberp integerp stringp vectorp bytecodep functionp macrop
+    special-form-p subrp sequencep)
+  "List of side-effect-free functions. They should always return the same
+value when given the same inputs. Used when constant folding.")
 
 
 ;; Environment of this byte code sequence being compiled
@@ -561,51 +575,61 @@ that files which shouldn't be compiled aren't."
 	 (comp-write-op op-refq (comp-add-constant form))
 	 (comp-inc-stack)))))
     ((consp form)
-     ;; A subroutine application of some sort
-     (comp-test-funcall (car form) (length (cdr form)))
-     (let
-	 (fun)
-       (cond
-	;; Check if there's a source code transformation
-	((and (symbolp (car form))
-	      (setq fun (get (car form) 'compile-transform)))
-	 ;; Yes, there is, so call it.
-	 (comp-compile-form (funcall fun form)))
+     (when (memq (car form) comp-constant-functions)
+       ;; See if this form can be folded
+       (setq form (comp-fold-constants form))
+       ;; If the form is still a function application, avoid the
+       ;; extra recursion
+       (unless (consp form)
+	 (comp-compile-form form)
+	 (setq form nil)))
+     (unless (null form)
+       ;; A subroutine application of some sort
+       (comp-test-funcall (car form) (length (cdr form)))
+       (let
+	   (fun)
+	 (cond
+	  ;; Check if there's a source code transformation
+	  ((and (symbolp (car form))
+		(setq fun (get (car form) 'compile-transform)))
+	   ;; Yes, there is, so call it.
+	   (comp-compile-form (funcall fun form)))
 
-	;; Check if there's a special handler for this function
-	((and (symbolp (car form))
-	      (setq fun (get (car form) 'compile-fun)))
-	 (funcall fun form))
+	  ;; Check if there's a special handler for this function
+	  ((and (symbolp (car form))
+		(setq fun (get (car form) 'compile-fun)))
+	   (funcall fun form))
 
-	(t
-	 ;; Expand macros
-	 (if (not (eq (setq fun (macroexpand form comp-macro-env)) form))
-	     ;; The macro did something, so start again
-	     (comp-compile-form fun)
-	   ;; No special handler, so do it ourselves
-	   (setq fun (car form))
-	   (cond
-	    ((and (consp fun) (eq (car fun) 'lambda))
-	     ;; An inline lambda expression
-	     (comp-compile-lambda-inline (car form) (cdr form)))
-	    ((and (symbolp fun) (assq fun comp-inline-env))
-	     ;; A call to a function that should be open-coded
-	     (comp-compile-lambda-inline (cdr (assq fun comp-inline-env))
-					 (cdr form)))
-	    (t
-	     ;; Assume a normal function call
-	     (if (symbolp fun)
-		 (comp-compile-constant fun)
-	       (comp-error "Bad function name" fun))
-	     (setq form (cdr form))
-	     (let
-		 ((i 0))
-	       (while (consp form)
-		 (comp-compile-form (car form))
-		 (setq i (1+ i)
-		       form (cdr form)))
-	       (comp-write-op op-call i)
-	       (comp-dec-stack i)))))))))
+	  (t
+	   ;; Expand macros
+	   (if (not (eq (setq fun (macroexpand form comp-macro-env)) form))
+	       ;; The macro did something, so start again
+	       (comp-compile-form fun)
+	     ;; No special handler, so do it ourselves
+	     (setq fun (car form))
+	     (cond
+	      ((and (consp fun) (eq (car fun) 'lambda))
+	       ;; An inline lambda expression
+	       (comp-compile-lambda-inline (car form) (cdr form)))
+	      ((and (symbolp fun) (assq fun comp-inline-env))
+	       ;; A call to a function that should be open-coded
+	       (comp-compile-lambda-inline (cdr (assq fun comp-inline-env))
+					   (cdr form)))
+	      (t
+	       ;; Assume a normal function call
+	       (if (and (symbolp fun)
+			(not (special-form-p fun)))
+		   (comp-compile-constant fun)
+		 (comp-error "Bad function name" fun))
+	       (setq form (cdr form))
+	       (let
+		   ((i 0))
+		 (while (consp form)
+		   (comp-compile-form (car form))
+		   (setq i (1+ i)
+			 form (cdr form)))
+		 (comp-write-op op-call i)
+		 (comp-dec-stack i))))))))))
     (t
      ;; Not a variable reference or a function call; so what is it?
      (comp-compile-constant form))))
@@ -679,7 +703,7 @@ that files which shouldn't be compiled aren't."
       (make-byte-code-subr args (nth 1 form) (nth 2 form) (nth 3 form)
 			   doc interactive macrop))))
 
-;; Return t if FORM is a constant, definition from dump.jl
+;; Return t if FORM is a constant
 (defun comp-constant-p (form)
   (cond
    ((or (integerp form) (stringp form)
@@ -687,11 +711,14 @@ that files which shouldn't be compiled aren't."
 	(eq form t) (eq form nil)))
    ((consp form)
     (memq (car form) '(quote function)))
+   ((symbolp form)
+    (or (const-variable-p form)
+	(assq form comp-const-env)))
    ;; What other constant forms have I missed..?
    (t
     nil)))
 
-;; If FORM is a constant, return its value, also from dump.jl
+;; If FORM is a constant, return its value
 (defun comp-constant-value (form)
   (cond
    ((or (integerp form) (stringp form)
@@ -701,8 +728,13 @@ that files which shouldn't be compiled aren't."
     form)
    ((consp form)
     ;; only quote or function
-    (nth 1 form))))
+    (nth 1 form))
+   ((symbolp form)
+    (if (const-variable-p form)
+	(symbol-value form)
+      (cdr (assq form comp-const-env))))))
 
+
 ;; Managing the output code
 
 ;; Return a new label
@@ -766,6 +798,32 @@ that files which shouldn't be compiled aren't."
 	  label (cdr label))))
 
 
+;; Constant folding
+
+;; This assumes that FORM is a list, and its car is one of the functions
+;; in the comp-constant-functions list
+(defun comp-fold-constants (form)
+  (catch 'exit
+    (let
+	((args (mapcar #'(lambda (arg)
+			   (when (consp arg)
+			     (setq arg (macroexpand arg comp-macro-env)))
+			   (when (and (consp arg)
+				      (memq (car arg) comp-constant-functions))
+			     (setq arg (comp-fold-constants arg)))
+			   (if (comp-constant-p arg)
+			       (comp-constant-value arg)
+			     ;; Not a constant, abort, abort
+			     (throw 'exit form)))
+		       (cdr form))))
+      ;; Now we have ARGS, the constant [folded] arguments from FORM
+      (setq form (apply (car form) args))
+      ;; If the folded version is a symbol or a list, quote it to preserve
+      ;; its constant-ness
+      (if (or (symbolp form) (consp form))
+	  (setq form (list 'quote form))
+	form))))
+
 ;; Source code transformations. These are basically macros that are only
 ;; used at compile-time.
 
@@ -807,6 +865,19 @@ that files which shouldn't be compiled aren't."
       (setq list (cons `(set-default ',(car form) ,(nth 1 form)) list)
 	    form (nthcdr 2 form)))
     (cons 'progn (nreverse list))))
+
+(put 'defvar 'compile-transform 'comp-trans-defvar)
+(defun comp-trans-defvar (form)
+  (let
+      ((name (nth 1 form))
+       (value (nth 2 form))
+       (doc (nth 3 form)))
+    (comp-remember-var name)
+    `(progn
+       (when ,doc
+	 (put ',name 'variable-documentation ,doc))
+       (unless (boundp ',name)
+	 (setq ,name ,value)))))
 
 
 ;; Functions which compile non-standard functions (ie special-forms)
@@ -1091,22 +1162,36 @@ that files which shouldn't be compiled aren't."
        (need-trailing-nil t))
     (setq form (cdr form))
     (while (consp form)
-      (let
+      (let*
 	  ((subl (car form))
+	   (condition (car subl))
 	   (next-label (comp-make-label)))
-	(if (eq (car subl) t)
-	    ;; condition t -- always taken
-	    (progn
+	;; See if we can squash a constant condition to t or nil
+	(when (comp-constant-p condition)
+	  (setq condition (not (not (comp-constant-value condition)))))
+	(cond
+	 ((eq condition t)
+	  ;; condition t -- always taken
+	  (if (consp (cdr subl))
 	      ;; There's something besides the condition
-	      (if (consp (cdr subl))
-		  (progn
-		    (comp-compile-body (cdr subl))
-		    (comp-dec-stack))
-		(comp-write-op op-t))
-	      (when (consp (cdr form))
-		(comp-warning "Unreachable code after t in cond statement"))
-	      (setq need-trailing-nil nil))
-	  ;; non-t condition
+	      (progn
+		(comp-compile-body (cdr subl))
+		(comp-dec-stack))
+	    (if (eq condition (car subl))
+		(comp-write-op op-t)
+	      (comp-compile-constant (car subl))
+	      (comp-dec-stack)))
+	  (when (consp (cdr form))
+	    (comp-warning "Unreachable conditions after t in cond statement")
+	    ;; Ignore the rest of the statement
+	    (setq form nil))
+	  (setq need-trailing-nil nil))
+	 ((eq condition nil)
+	  ;; condition nil -- never taken
+	  (when (cdr subl)
+	    (comp-warning "Unreachable forms after nil in cond statement")))
+	 (t
+	  ;; non t-or-nil condition
 	  (comp-compile-form (car subl))
 	  (comp-dec-stack)
 	  (if (consp (cdr subl))
@@ -1133,7 +1218,7 @@ that files which shouldn't be compiled aren't."
 	      ;; This is the last condition list, since there's no
 	      ;; action to take, just fall out the bottom, with the
 	      ;; condition as value.
-	      (setq need-trailing-nil nil)))))
+	      (setq need-trailing-nil nil))))))
       (setq form (cdr form)))
     (when need-trailing-nil
       (comp-write-op op-nil))
