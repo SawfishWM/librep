@@ -801,6 +801,16 @@ that files which shouldn't be compiled aren't."
 (defun comp-trans-or (form)
   (cons 'cond (mapcar #'list (cdr form))))
 
+(put 'setq-default 'compile-transform 'comp-trans-setq-default)
+(defun comp-trans-setq-default (form)
+  (let
+      (list)
+    (setq form (cdr form))
+    (while form
+      (setq list (cons `(set-default ',(car form) ,(nth 1 form)) list)
+	    form (nthcdr 2 form)))
+    (cons 'progn (nreverse list))))
+
 
 ;; Functions which compile non-standard functions (ie special-forms)
 
