@@ -23,9 +23,9 @@
 #include <config.h>
 #include <rep.h>
 
-extern char *gettext (const char *msgid);
-extern char *textdomain (const char *domainname);
-extern char *bindtextdomain (const char *domainname, const char *dirname);
+extern char *gnu_gettext (const char *msgid);
+extern char *gnu_textdomain (const char *domainname);
+extern char *gnu_bindtextdomain (const char *domainname, const char *dirname);
 
 DEFSYM(gettext, "gettext");
 
@@ -34,7 +34,7 @@ DEFUN("_", Fgettext, Sgettext, (repv in), rep_Subr1)
     char *out;
     rep_DECLARE1(in, rep_STRINGP);
 
-    out = gettext (rep_STR(in));
+    out = gnu_gettext (rep_STR(in));
     if (out == 0 || (u_char *) out == rep_STR(in))
 	return in;
     else
@@ -51,7 +51,7 @@ DEFUN("bindtextdomain", Fbindtextdomain,
     if (rep_STRINGP(dir))
 	dirname = rep_STR(dir);
 
-    out = bindtextdomain (domainname, dirname);
+    out = gnu_bindtextdomain (domainname, dirname);
     return out ? rep_string_dup (out) : Qnil;
 }
 
@@ -62,7 +62,7 @@ DEFUN("textdomain", Ftextdomain, Stextdomain, (repv dom), rep_Subr1)
     if (rep_STRINGP(dom))
 	domainname = rep_STR(dom);
 
-    out = textdomain (domainname);
+    out = gnu_textdomain (domainname);
     return out ? rep_string_dup (out) : Qnil;
 }
 
