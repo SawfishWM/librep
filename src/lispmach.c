@@ -42,7 +42,9 @@ static DEFSTRING(err_bytecode_error, "Invalid byte code version");
 	VIEW
 		set VIEW as current in its window
 	WINDOW
-		set WINDOW as current. */
+		set WINDOW as current.
+	(PC . STACK-DEPTH)
+		not unbound here; install exception handler at PC */
 static INLINE VALUE
 unbind_one_level(VALUE bind_stack)
 {
@@ -62,7 +64,7 @@ unbind_one_level(VALUE bind_stack)
 		   reinstall BUFFER in VIEW */
 		swap_buffers_tmp(VVIEW(VCDR(item)), VTX(VCAR(item)));
 	    }
-	    else
+	    else if(CONSP(VCAR(item)))
 	    {
 		/* A set of symbol bindings (let or let*). */
 		unbind_symbols(item);
@@ -167,6 +169,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
     PUSHGCN(gc_stackbase, stackbase, 0);
 
     pc = VSTR(code);
+fetch:
     while((c = *pc++) != 0)
     {
 	if(c < OP_LAST_WITH_ARGS)
@@ -392,7 +395,6 @@ of byte code. See the functions `compile-file', `compile-directory' and
 	    {
 		register VALUE tmp;
 		VALUE tmp2;
-		int i;
 
 	    case OP_POP:
 		POP;
@@ -742,14 +744,20 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		    TOP = sym_nil;
 		break;
 
-	    case OP_CATCH_KLUDGE:
-		/* This is very crude.	*/
-		tmp = RET_POP;
-		tmp = cmd_cons(tmp, cmd_cons(TOP, sym_nil));
-		gc_stackbase.count = STK_USE;
-		if((TOP = cmd_catch(tmp)))
-		    break;
-		goto error;
+	    case OP_CATCH:
+		/* This takes two arguments, TAG and THROW-VALUE.
+		   THROW-VALUE is the saved copy of throw_value,
+		   if (car THROW-VALUE) == TAG we match, and we
+		   leave two values on the stack, nil on top (to
+		   pacify EJMP), (cdr THROW-VALUE) below that. */
+		tmp = RET_POP;		/* tag */
+		tmp2 = TOP;		/* throw_value */
+		if(CONSP(tmp2) && VCAR(tmp2) == tmp)
+		{
+		    TOP = VCDR(tmp2);	/* leave result at stk[1] */
+		    PUSH(sym_nil);	/* cancel error */
+		}
+		break;
 
 	    case OP_THROW:
 		tmp = RET_POP;
@@ -758,19 +766,15 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		/* This isn't really an error :-)  */
 		goto error;
 
-	    case OP_UNWIND_PRO:
+	    case OP_BINDERR:
+		/* Pop our single argument and cons it onto the bind-
+		   stack in a pair with the current stack-pointer.
+		   This installs an address in the code string as an
+		   error handler. */
 		tmp = RET_POP;
-		bindstack = cmd_cons(cmd_cons(sym_t, tmp), bindstack);
+		bindstack = cmd_cons(cmd_cons(tmp, MAKE_INT(STK_USE)),
+				     bindstack);
 		break;
-
-#if 0
-	    case OP_UN_UNWIND_PRO:
-		gc_stackbase.count = STK_USE;
-		/* there will only be one form (a lisp-code) */
-		cmd_eval(VCDR(VCAR(bindstack)));
-		bindstack = VCDR(bindstack);
-		break;
-#endif
 
 	    case OP_FBOUNDP:
 		CALL_1(cmd_fboundp);
@@ -791,22 +795,31 @@ of byte code. See the functions `compile-file', `compile-directory' and
 	    case OP_PUT:
 		CALL_3(cmd_put);
 
-	    case OP_ERROR_PRO:
-		/* bit of a kludge, this just calls the special-form, it
-		   takes an extra argument on top of the stack - the number
-		   of arguments that it has been given.	 */
-		i = VINT(RET_POP);
-		tmp = sym_nil;
-		while(i--)
-		    tmp = cmd_cons(RET_POP, tmp);
-		gc_stackbase.count = STK_USE;
-		tmp = cmd_error_protect(tmp);
-		if(tmp)
+	    case OP_ERRORPRO:
+		/* This should be called with three values on the stack.
+			1. conditions of the error handler
+			2. throw_value of the exception
+			3. symbol to bind the error data to (or nil)
+
+		   This function pops (1) and tests it against the error
+		   in (2). If they match it sets (2) to nil, and binds the
+		   error data to the symbol in (3). */
+		tmp = RET_POP;
+		if(compare_error(TOP, tmp))
 		{
-		    PUSH(tmp);
-		    break;
+		    /* The handler matches the error. */
+		    tmp = TOP;		/* the throw_value */
+		    tmp2 = stackp[-1];	/* the symbol to bind to */
+		    if(SYMBOLP(tmp2) && !NILP(tmp2))
+			bindstack = cmd_cons(bind_symbol(sym_nil, tmp2,
+							 VCDR(tmp)),
+					     bindstack);
+		    else
+			/* Placeholder to allow simple unbinding */
+			bindstack = cmd_cons(sym_nil, bindstack);
+		    TOP = sym_nil;
 		}
-		goto error;
+		break;
 
 	    case OP_SIGNAL:
 		CALL_2(cmd_signal);
@@ -991,6 +1004,15 @@ of byte code. See the functions `compile-file', `compile-directory' and
 
 	    /* Jump instructions follow */
 
+	    case OP_EJMP:
+		/* Pop the stack; if it's nil jmp pc[0,1], otherwise
+		   set throw_value=ARG and goto the error handler. */
+		tmp = RET_POP;
+		if(NILP(tmp))
+		    goto do_jmp;
+		throw_value = tmp;
+		goto error;
+
 	    case OP_JN:
 		if(NILP(RET_POP))
 		    goto do_jmp;
@@ -1058,15 +1080,39 @@ of byte code. See the functions `compile-file', `compile-directory' and
 	    error:
 		while(CONSP(bindstack))
 		{
-		    GC_root gc_throwval;
-		    VALUE throwval = throw_value;
-		    throw_value = LISP_NULL;
-		    PUSHGC(gc_throwval, throwval);
+		    VALUE item = VCAR(bindstack);
+		    if(!CONSP(item) || !INTP(VCAR(item)) || !INTP(VCDR(item)))
+		    {
+			GC_root gc_throwval;
+			VALUE throwval = throw_value;
+			throw_value = LISP_NULL;
+			PUSHGC(gc_throwval, throwval);
+			bindstack = unbind_one_level(bindstack);
+			POPGC;
+			throw_value = throwval;
+		    }
+		    else
+		    {
+			/* car is an exception-handler, (PC . SP)
 
-		    bindstack = unbind_one_level(bindstack);
+			   When the code at PC is called, it will have
+			   the current stack usage set to SP, and then
+			   the value of throw_value pushed on top.
 
-		    POPGC;
-		    throw_value = throwval;
+			   The handler can then use the EJMP instruction
+			   to pass control back to the error: label, or
+			   simply continue execution as normal.
+
+			   Note how we remove the bindstack entry before
+			   jumping :-) */
+
+			stackp = (stackbase - 1) + VINT(VCDR(item));
+			PUSH(throw_value);
+			throw_value = LISP_NULL;
+			pc = VSTR(code) + VINT(VCAR(item));
+			bindstack = VCDR(bindstack);
+			goto fetch;
+		    }
 		}
 		TOP = LISP_NULL;
 		goto quit;

@@ -21,8 +21,8 @@
 #ifndef BYTECODES_H
 #define BYTECODES_H
 
-#define BYTECODE_MAJOR_VERSION 2
-#define BYTECODE_MINOR_VERSION 5
+#define BYTECODE_MAJOR_VERSION 3
+#define BYTECODE_MINOR_VERSION 0
 
 /* Number of bits encoded in each extra opcode forming the argument. */
 #define ARG_SHIFT    8
@@ -121,16 +121,22 @@
 #define OP_NUMBERP 0x70			/* push (numberp pop[1]) */
 #define OP_STRINGP 0x71			/* push (stringp pop[1]) */
 #define OP_VECTORP 0x72			/* push (vectorp pop[1]) */
-#define OP_CATCH_KLUDGE 0x73		/* push (catch pop[1] pop[2]) */
-#define OP_THROW 0x74			/* push (throw pop[1]) */
-#define OP_UNWIND_PRO 0x75		/* magic */
-#define OP_UN_UNWIND_PRO obsolete	/* more magic */
+#define OP_CATCH 0x73			/* if stk[0] == (car stk[1])
+					    then stk[0] := nil,
+					         stk[1] = (cdr stk[1]) */
+#define OP_THROW 0x74			/* throw_val = (cons pop[1] pop[2]),
+					   goto error-handler */
+#define OP_BINDERR 0x75			/* bind (cons pop[1] SP) */
+#define OP_UNUSED1 0x76
 #define OP_FBOUNDP 0x77			/* call-1 fboundp */
 #define OP_BOUNDP 0x78			/* call-1 boundp */
 #define OP_SYMBOLP 0x79			/* push (symbolp pop[1]) */
 #define OP_GET 0x7a			/* call-2 get */
 #define OP_PUT 0x7b			/* call-3 put */
-#define OP_ERROR_PRO 0x7c		/* push (error-protect pop[2] pop[1]) */
+#define OP_ERRORPRO 0x7c		/* cond = pop[1];
+					   if match_error(stk[0], cond)
+					    then bindsym (stk[1], cdr stk[0]),
+					         stk[0] = nil */
 #define OP_SIGNAL 0x7d			/* call-2 signal */
 #define OP_RETURN 0x7e			/* (throw 'defun pop[0]) */
 
@@ -186,8 +192,11 @@
 #define OP_POS 0xbc			/* call-2 pos */
 #define OP_POSP 0xbd			/* call-1 posp */
 
-#define OP_LAST_BEFORE_JMPS 0xf8
+#define OP_LAST_BEFORE_JMPS 0xf7
 
+#define OP_EJMP 0xf8			/* if (not pop[1]) jmp pc[0,1]
+					   else throw_val = arg,
+					        goto error-handler */
 #define OP_JPN 0xf9			/* if (not stk[0]) pop; jmp pc[0,1] */
 #define OP_JPT 0xfa			/* if stk[0] pop; jmp pc[0,1] */
 #define OP_JMP 0xfb			/* jmp pc[0,1] */
