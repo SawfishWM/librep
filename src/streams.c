@@ -55,7 +55,6 @@ _PR int stream_ungetc(VALUE, int);
 _PR int stream_putc(VALUE, int);
 _PR int stream_puts(VALUE, void *, int, bool);
 _PR int stream_read_esc(VALUE, int *);
-_PR void stream_put_cntl(VALUE, int);
 
 _PR void file_sweep(void);
 _PR int file_cmp(VALUE, VALUE);
@@ -624,46 +623,6 @@ stream_read_esc(VALUE stream, int *c_p)
     }
     *c_p = stream_getc(stream);
     return(c);
-}
-
-/* Print an escape sequence for the character C to STREAM. */
-void
-stream_put_cntl(VALUE stream, int c)
-{
-    stream_putc(stream, '\\');
-    switch(c)
-    {
-    case '\n':
-	stream_putc(stream, 'n');
-	break;
-
-    case '\t':
-	stream_putc(stream, 't');
-	break;
-
-    case '\r':
-	stream_putc(stream, 'r');
-	break;
-
-    case '\f':
-	stream_putc(stream, 'f');
-	break;
-
-    case '\a':
-	stream_putc(stream, 'a');
-	break;
-
-    default:
-        if(c <= 0x3f)
-	    stream_putc(stream, c + 0x40);
-	else
-	{
-	    stream_putc(stream, c / 64);
-	    stream_putc(stream, (c % 64) / 8);
-	    stream_putc(stream, c % 8);
-	}
-	break;
-    }
 }
 
 _PR VALUE cmd_write(VALUE stream, VALUE data, VALUE len);
