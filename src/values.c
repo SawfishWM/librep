@@ -108,7 +108,7 @@ Lisp_Type_Data data_types[V_MAX] = {
     DT_NULL,
     { ptr_cmp, view_prin, view_prin, view_sweep, "view" },
     DT_NULL,
-    { mark_cmp, mark_prin, mark_prin, mark_sweep, "mark" },
+    { mark_cmp, mark_prin, mark_prin, NULL, "mark" },
     DT_NULL,
     { ptr_cmp, file_prin, file_prin, file_sweep, "file" },
     DT_NULL,
@@ -750,11 +750,14 @@ again:
     case V_Mark:
 	GC_SET_CELL(val);
 	if(!MARK_RESIDENT_P(VMARK(val)))
+	    MARKVAL(VMARK(val)->file);
+	else
 	{
 	    /* TXs don't get marked here. They should still be able to
 	       be gc'd if there's marks pointing to them. The marks will
-	       just get made non-resident.  */
-	    MARKVAL(VMARK(val)->file);
+	       just get made non-resident. But to do this we'll need
+	       the name of the file they point to.. */
+	    MARKVAL(VTX(VMARK(val)->file)->tx_CanonicalFileName);
 	}
 	MARKVAL(VMARK(val)->pos);
 	break;
