@@ -215,6 +215,10 @@ if test "x${GCC}" = "xyes" -a "x$CFLAGS" = "x-g -O2"; then
   CFLAGS="${CFLAGS} -Wall -Wmissing-prototypes -Wno-implicit-int"
 fi
 
+AC_ARG_WITH(extra-cflags,
+  [  --with-extra-cflags=FLAGS Extra flags to pass to C compiler],
+  CFLAGS="${CFLAGS} $with_extra_cflags")
+
 dnl Does <unistd.h> declare char **environ?
 AC_CACHE_CHECK([whether unistd.h declares environ], jade_cv_decl_environ,
  AC_TRY_COMPILE([#include <unistd.h>], [char **foo = environ;],
