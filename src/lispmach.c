@@ -115,17 +115,14 @@ rep_bind_object(repv obj)
 	return Qnil;
 }
 
-/* copied from symbols.c
-
-   Returns (SYM . VALUE) if a lexical binding. Returns t if the actual
-   value is in the symbol's function slot */
+/* Walk COUNT entries down the environment */
 static inline repv
-search_environment (repv sym)
+snap_environment (int count)
 {
-    register repv env = rep_env;
-    while (rep_CONSP(env) && rep_CAR(rep_CAR(env)) != sym)
-	env = rep_CDR(env);
-    return rep_CONSP(env) ? rep_CAR(env) : env;
+    register repv ptr = rep_env;
+    while (count-- > 0)
+	ptr = rep_CDR(ptr);
+    return rep_CAR(ptr);
 }
 
 
@@ -408,7 +405,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		{
 		    repv bindings;
 
-		    if (search_environment (Qjade_byte_code) == Qnil)
+		    if (rep_bytecode_interpreter == 0)
 			goto invalid;
 
 		    bindings = rep_bind_lambda_list(rep_COMPILED_LAMBDA(tmp),
@@ -417,9 +414,10 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		    {
 			rep_GC_root gc_bindings;
 			rep_PUSHGC(gc_bindings, bindings);
-			TOP = Fjade_byte_code(rep_COMPILED_CODE(tmp),
-					      rep_COMPILED_CONSTANTS(tmp),
-					      rep_MAKE_INT(rep_COMPILED_STACK(tmp)));
+			TOP = (rep_bytecode_interpreter
+			       (rep_COMPILED_CODE(tmp),
+				rep_COMPILED_CONSTANTS(tmp),
+				rep_MAKE_INT(rep_COMPILED_STACK(tmp))));
 			rep_POPGC;
 			rep_unbind_symbols(bindings);
 		    }
@@ -439,44 +437,10 @@ of byte code. See the functions `compile-file', `compile-directory' and
 	    goto fetch;
 
 	CASE_OP_ARG(OP_REFQ)
-	    /* optimise for common case of lexical binding */
-	    tmp = rep_VECT(consts)->array[arg];
-	    if (rep_SYMBOLP(tmp))
-	    {
-		register repv x = tmp;
-		if ((rep_SYM(x)->car & (rep_SF_LOCAL | rep_SF_SPECIAL)) == 0)
-		{
-		    /* lexically bound variable */
-		    x = search_environment (x);
-		    if (rep_CONSP(x))
-		    {
-			PUSH(rep_CDR(x));
-			goto fetch;
-		    }
-		}
-	    }
-	    /* fall back to common method */
 	    PUSH(Fsymbol_value(rep_VECT(consts)->array[arg], Qnil));
 	    break;
 
 	CASE_OP_ARG(OP_SETQ)
-	    /* optimise for common case of lexical binding */
-	    tmp = rep_VECT(consts)->array[arg];
-	    if (rep_SYMBOLP(tmp))
-	    {
-		register repv x = tmp;
-		if ((rep_SYM(x)->car & (rep_SF_LOCAL | rep_SF_SPECIAL)) == 0)
-		{
-		    /* lexically bound variable */
-		    x = search_environment (x);
-		    if (rep_CONSP(x))
-		    {
-			rep_CDR(x) = RET_POP;
-			goto fetch;
-		    }
-		}
-	    }
-	    /* fall back to common method */
 	    Fset(rep_VECT(consts)->array[arg], RET_POP);
 	    break;
 
@@ -490,12 +454,45 @@ of byte code. See the functions `compile-file', `compile-directory' and
 	CASE_OP_ARG(OP_BIND)
 	    tmp = rep_VECT(consts)->array[arg];
 	    tmp2 = RET_POP;
-	    if(rep_SYMBOLP(tmp))
-		rep_CAR(bindstack) = rep_bind_symbol(rep_CAR(bindstack),
-						     tmp, tmp2);
-	    else
-		rep_signal_arg_error(tmp, 1);
+	    rep_env = Fcons (Fcons (tmp, tmp2), rep_env);
+	    rep_CAR(bindstack) = Fcons (tmp, rep_CAR(bindstack));
+	    goto fetch;
+
+	CASE_OP_ARG(OP_BINDSPEC)
+	    tmp = rep_VECT(consts)->array[arg];
+	    tmp2 = RET_POP;
+	    if (!(rep_SYM(tmp)->car & rep_SF_SPECIAL))
+		rep_SYM(tmp)->car |= rep_SF_SPECIAL;
+	    rep_CAR(bindstack) = rep_bind_symbol(rep_CAR(bindstack),
+						 tmp, tmp2);
 	    break;
+
+	CASE_OP_ARG(OP_REFN)
+	    tmp = snap_environment (arg);
+	    PUSH(rep_CDR(tmp));
+	    goto fetch;
+
+	CASE_OP_ARG(OP_SETN)
+	    tmp = snap_environment (arg);
+	    rep_CDR(tmp) = RET_POP;
+	    goto fetch;
+
+	CASE_OP_ARG(OP_REFG)
+	    tmp = rep_SYM(rep_VECT(consts)->array[arg])->value;
+	    /* rep_Var types are flagged as special */
+	    if (!rep_VOIDP(tmp))
+	    {
+		PUSH(tmp);
+		goto fetch;
+	    }
+	    /* fallback */
+	    goto rep_CONCAT(op_,OP_REFQ);
+
+	CASE_OP_ARG(OP_SETG)
+	    tmp = rep_SYM(rep_VECT(consts)->array[arg])->value;
+	    /* rep_Var types are flagged as special */
+	    rep_SYM(tmp)->value = RET_POP;
+	    goto fetch;
 
 	case OP_REF:
 	    TOP = Fsymbol_value(TOP, Qnil);
