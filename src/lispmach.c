@@ -347,7 +347,7 @@ list_ref (repv list, int elt)
  &&TAG(OP_CADDDDR), &&TAG(OP_CADDDDDR), &&TAG(OP_CADDDDDDR), &&TAG(OP_CADDDDDDDR), /*A8*/	\
  &&TAG(OP_FLOOR), &&TAG(OP_CEILING), &&TAG(OP_TRUNCATE), &&TAG(OP_ROUND),			\
 												\
- &&TAG_DEFAULT, &&TAG(OP_FORBID), &&TAG(OP_PERMIT), &&TAG(OP_EXP), /*B0*/			\
+ &&TAG(OP_APPLY), &&TAG(OP_FORBID), &&TAG(OP_PERMIT), &&TAG(OP_EXP), /*B0*/			\
  &&TAG(OP_LOG), &&TAG(OP_SIN), &&TAG(OP_COS), &&TAG(OP_TAN),					\
  &&TAG(OP_SQRT), &&TAG(OP_EXPT), &&TAG(OP_SWAP2), &&TAG(OP_MOD), /*B8*/				\
  &&TAG(OP_MAKE_CLOSURE), &&TAG(OP_UNBINDALL_0), &&TAG(OP_CLOSUREP), &&TAG(OP_POP_ALL),		\
@@ -733,7 +733,7 @@ again:
 				/* A tail call that's safe for eliminating */
 				repv bindings;
 
-				/* snap the call stack */
+				/* snap the call stack when tail calling */
 				rep_call_stack = lc.next;
 				rep_call_stack->fun = lc.fun;
 				rep_call_stack->args = lc.args;
@@ -750,10 +750,13 @@ again:
 				{
 				    int n_req_s, n_req_b;
 
+				    frame = bindings;
+
+				    /* inputs: tmp=bytecode-subr */
+				do_tail_recursion:
 				    /* set up parameters */
 				    code = rep_COMPILED_CODE (tmp);
 				    consts = rep_COMPILED_CONSTANTS (tmp);
-				    frame = bindings;
 
 				    rep_POPGCN; rep_POPGCN; rep_POPGC; rep_POPGC;
 
@@ -1705,6 +1708,49 @@ again:
 
 	BEGIN_INSN (OP_ROUND)
 	    CALL_1(Fround);
+	END_INSN
+
+	BEGIN_INSN (OP_APPLY)
+	    repv args = RET_POP;
+	    tmp = TOP;
+	    SYNC_GC;
+	    if (impurity == 0 && *pc == OP_RETURN && rep_FUNARGP (tmp)
+		&& rep_COMPILEDP (rep_FUNARG (tmp)->fun)
+		&& rep_STRUCTURE (rep_FUNARG (tmp)->structure)->apply_bytecode == 0)
+	    {
+		/* a doable tail-call */
+		repv bindings;
+		int nargs, i;
+		rep_USE_FUNARG (tmp);
+		tmp = rep_FUNARG (tmp)->fun;
+		nargs = rep_list_length (args);
+		{
+#ifdef __GNUC__
+		    repv argv[nargs];
+#else
+		    repv *argv = rep_alloc (sizeof (repv) * nargs);
+#endif
+		    for (i = 0; i < nargs; i++)
+		    {
+			argv[i] = rep_CAR (args);
+			args = rep_CDR (args);
+		    }
+		    bindings = (make_bytecode_frame
+				(rep_COMPILED_LAMBDA (tmp), nargs, argv));
+#ifndef __GNUC__
+		    rep_free (argv);
+#endif
+		}
+		if (bindings != rep_NULL)
+		{
+		    frame = bindings;
+		    goto do_tail_recursion;	/* passes `tmp' */
+		}
+		HANDLE_ERROR;
+	    }
+	    /* not a tail call */
+	    TOP = rep_apply (tmp, args);
+	    NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_FORBID)

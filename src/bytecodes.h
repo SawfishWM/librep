@@ -22,7 +22,7 @@
 #define BYTECODES_H
 
 #define BYTECODE_MAJOR_VERSION 10
-#define BYTECODE_MINOR_VERSION 0
+#define BYTECODE_MINOR_VERSION 1
 
 /* Number of bits encoded in each extra opcode forming the argument. */
 #define ARG_SHIFT    8
@@ -214,7 +214,7 @@
 #define OP_TRUNCATE 0xae
 #define OP_ROUND 0xaf
 
-#define OP_UNUSED1 0xb0
+#define OP_APPLY 0xb0
 #define OP_FORBID 0xb1
 #define OP_PERMIT 0xb2
 
