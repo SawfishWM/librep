@@ -1,5 +1,15 @@
 2000-02-17  John Harper  <john@dcs.warwick.ac.uk>
 
+	* lisp.jl (prin1-to-string, read-from-string, setcar, setcdr,
+	string=, string<, caar, cadr, cadr, cdar, cdar, cddr, cddr,
+	caddr, caddr, call-with-current-continuation): changed these
+	from macros to functions
+
+	* compiler.jl (caar, cadr, cadr, cdar, cdar, cddr, cddr, caddr,
+	caddr, setcar, setcar, setcdr, setcdr, string=, string=,
+	string<, string<): generate single instructions for these
+	functions
+
 	* remote-rep.jl: make this work again
 
 2000-02-10  John Harper  <john@dcs.warwick.ac.uk>
