@@ -89,7 +89,7 @@ directory substituted for the single %s format specifier.")
   "220 |230 |226 |25. |221 |200 |[Hh]ash mark"
   "Regular expression matching ftp \"success\" messages.")
 
-(defvar remote-ftp-bad-msgs "55. |500 "
+(defvar remote-ftp-bad-msgs "55. |500 |\\?Invalid command"
   "Regular expression matching ftp \"failure\" messages.")
 
 (defvar remote-ftp-skip-msgs
@@ -335,25 +335,45 @@ file types.")
   (remote-ftp-command session 'get "get %s %s" remote-file local-file))
 
 (defun remote-ftp-put (session local-file remote-file)
-  (remote-ftp-command session 'put "put %s %s" local-file remote-file))
+  (unwind-protect
+      (remote-ftp-command session 'put "put %s %s" local-file remote-file)
+    (remote-ftp-invalidate-directory
+     session (file-name-directory remote-file))))
 
 (defun remote-ftp-rm (session remote-file)
-  (remote-ftp-command session 'rm "delete %s" remote-file))
+  (unwind-protect
+      (remote-ftp-command session 'rm "delete %s" remote-file)
+    (remote-ftp-invalidate-directory
+     session (file-name-directory remote-file))))
 
 (defun remote-ftp-mv (session old-name new-name)
-  (remote-ftp-command session 'mv "rename %s %s" old-name new-name))
+  (unwind-protect
+      (remote-ftp-command session 'mv "rename %s %s" old-name new-name)
+    (remote-ftp-invalidate-directory
+     session (file-name-directory old-name))
+    (remote-ftp-invalidate-directory
+     session (file-name-directory new-name))))
 
 (defun remote-ftp-rmdir (session remote-dir)
-  (remote-ftp-command session 'rmdir "rmdir %s" remote-dir))
+  (unwind-protect
+      (remote-ftp-command session 'rmdir "rmdir %s" remote-dir)
+    (remote-ftp-invalidate-directory
+     session (file-name-directory remote-dir))))
 
 (defun remote-ftp-mkdir (session remote-dir)
-  (remote-ftp-command session 'mkdir "mkdir %s" remote-dir))
+  (unwind-protect
+      (remote-ftp-command session 'mkdir "mkdir %s" remote-dir)
+    (remote-ftp-invalidate-directory
+     session (file-name-directory remote-dir))))
 
 (defun remote-ftp-chmod (session mode file)
   ;; XXX Some FTP clients (i.e. Solaris 2.6) don't have the
   ;; XXX chmod command. Perhaps we could use "quote site chmod .."
   ;; XXX but the Solaris ftpd doesn't support this either..
-  (remote-ftp-command session 'chmod "chmod %o %s" mode file))
+  (unwind-protect
+      (remote-ftp-command session 'chmod "chmod %o %s" mode file)
+    (remote-ftp-invalidate-directory
+     session (file-name-directory file))))
 
 
 ;; Directory handling/caching
@@ -428,6 +448,7 @@ file types.")
 	    dir (file-name-directory dir))
       (when (string= base "")
 	(setq base ".")))
+    (setq dir (directory-file-name dir))
     (unless (and (stringp (aref session remote-ftp-cached-dir))
 		 (string= dir (aref session remote-ftp-cached-dir)))
       ;; Cache directory DIR
@@ -450,6 +471,13 @@ file types.")
     (when file-struct
       (aset session remote-ftp-dircache
 	    (cons file-struct (aref session remote-ftp-dircache))))))
+
+(defun remote-ftp-invalidate-directory (session directory)
+  (when (and (stringp (aref session remote-ftp-cached-dir))
+	     (string= (directory-file-name directory)
+		      (aref session remote-ftp-cached-dir)))
+    (aset session remote-ftp-cached-dir nil)
+    (aset session remote-ftp-dircache nil)))
 
 
 ;; Password caching
