@@ -66,8 +66,9 @@
 #define MAKE_INT(x)	(((x) << VALUE_INT_SHIFT) | VALUE_IS_INT)
 
 /* Assuming we're using 32 bit VALUEs. */
-#define LISP_MAX_INT	((1 << 29) - 1)
-#define LISP_MIN_INT	(-(1 << 29))
+#define LISP_INT_BITS   (32 - VALUE_INT_SHIFT)
+#define LISP_MAX_INT	((1 << (LISP_INT_BITS - 1)) - 1)
+#define LISP_MIN_INT	(-(1 << (LISP_INT_BITS - 1)))
 
 /* Store anything needing >24 bits (future expansion and all that),
    in a cons cell, as one 24 bit, and one eight bit quantity. */
@@ -111,11 +112,14 @@ typedef struct {
     /* Data follows, in real objects. */
 } Lisp_Cell;
 
-/* If this bit is set in the car of a cell, bits 1->6 of the car
-   are type data, bit 7 is the GC mark bit. */
+/* If this bit is set in the car of a cell, bits 1->5 of the car
+   are type data, bit 6 is set if the object is allocated staticaly,
+   bit 7 is the GC mark bit. This means a maximum of 2^4, i.e. 32,
+   cell8 types. */
 #define CELL_IS_8		1
 #define CELL8_MARK_BIT		0x80
-#define CELL8_TYPE_MASK		0x7f
+#define CELL8_STATIC_BIT	0x40
+#define CELL8_TYPE_MASK		0x3f
 #define CELL8_TYPE_BITS		8
 
 /* Build a `Lisp_Cell *' pointer out of a VALUE of a normal type */
@@ -130,6 +134,8 @@ typedef struct {
 
 #define SET_CELL8_TYPE(v, t) \
    (VPTR(v)->car = (VPTR(v)->car & CELL8_TYPE_MASK) | (t))
+
+#define VCELL8_STATIC_P(v)	(VPTR(v)->car & CELL8_STATIC_BIT)
 
 
 /* Structure of a cons cell */
@@ -202,8 +208,9 @@ typedef struct lisp_cons_block {
 #define V_View		0x21
 #define V_Mark		0x23
 #define V_File		0x25
-#define V_GlyphTable	0x29
-#define V_MAX		0x2a
+#define V_GlyphTable	0x27
+#define V_Compiled	0x29
+#define V_MAX		0x40		/* nothing from here on */
 
 /* Assuming that V is a cell, return the type code */
 #define VCELL_TYPE(v)	(CONSP(v) ? V_Cons : VCELL8_TYPE(v))
@@ -258,13 +265,11 @@ extern Lisp_Type_Data data_types[V_MAX];
    the two). */
 
 typedef struct {
-    /* Bits 0->7 are standard cell8 defines. If bit 8 is set the
-       string is allocated statically. Bits 9->31 store the length
+    /* Bits 0->7 are standard cell8 defines. Bits 8->31 store the length
        of the string.
 
-       This means that strings can't contain more than 2^23-1 bytes
-       (thats about 8.3MB, though it could be easily multiplied
-       by four if it was important..) */
+       This means that strings can't contain more than 2^24-1 bytes
+       (thats about 16.7MB) */
     VALUE car;
 
     union {
@@ -279,26 +284,23 @@ typedef struct {
     } data;
 } Lisp_String;
 
-#define LISP_MAX_STRING		((1 << 23) - 1)
-#define STRING_LEN_SHIFT	9
+#define LISP_MAX_STRING		((1 << 24) - 1)
+#define STRING_LEN_SHIFT	8
 
 /* The number of bytes that need to be allocated for a string cell
    containg X string bytes (including terminating zero). */
 #define DSTRING_SIZE(x) 	(sizeof(VALUE) + (x))
 
-/* This bit set in car means the string is statically allocated, and
-   by implication, read-only. */
-#define STRING_STATIC		0x0100
-
 #define STRINGP(v)		VCELL8_TYPEP(v, V_String)
 #define VSTRING(v)		((Lisp_String *)VPTR(v))
 
-#define STRING_LEN(v)		(VSTRING(v)->car >> 9)
-#define MAKE_STRING_CAR(len, st) (((len) << 9) | (st) | V_String)
+#define STRING_LEN(v)		(VSTRING(v)->car >> STRING_LEN_SHIFT)
+
+#define MAKE_STRING_CAR(len)	(((len) << STRING_LEN_SHIFT) | V_String)
 
 /* True if this string may be written to; generally V_StaticString types
    are made from C string-constants and usually in read-only storage. */
-#define STRING_WRITABLE_P(s)	(!(VSTRING(s)->car & STRING_STATIC))
+#define STRING_WRITABLE_P(s)	(!VCELL8_STATIC_P(s))
 
 #ifndef INLINE_STATIC_STRINGS
 
@@ -313,7 +315,7 @@ struct static_string {
 # define DEFSTRING(v, s) 					\
     static struct static_string v ALIGN_CELL			\
 	= { ((sizeof(s) - 1) << STRING_LEN_SHIFT)		\
-	    | STRING_STATIC | V_String, s }
+	    | CELL8_STATIC_BIT | V_String, s }
 
 # define VSTR(v)	((VSTRING(v)->car & STRING_STATIC)	\
 			 ? VSTRING(v)->data.static_string	\
@@ -332,7 +334,7 @@ struct static_string {
     __asm__ (".align " QUOTE(CELL_ALIGNMENT) "\n"			\
 	     QUOTE(v) ":\n"						\
 	     "\t.long (((2f-1f)-1) << " QUOTE(STRING_LEN_SHIFT) ") | "	\
-	     QUOTE(STRING_STATIC) " | " QUOTE(V_String) "\n" 		\
+	     QUOTE(CELL8_STATIC_BIT) " | " QUOTE(V_String) "\n"		\
 	     "1:\t.asciz \"" s "\"\n2:\n")
 
 # define VSTR(v)	(VSTRING(v)->data.dynamic_string)
@@ -342,25 +344,6 @@ struct static_string {
 # define DS_NL "\\n"
 
 #endif /* INLINE_STATIC_STRINGS */
-
-
-/* Vectors */
-
-typedef struct lisp_vector {
-    VALUE car;				/* size is bits 8->31 */
-    struct lisp_vector *next;
-    VALUE array[0];
-} Lisp_Vector;
-
-#define VECT_SIZE(s) ((sizeof(VALUE) * (s)) + sizeof(Lisp_Vector))
-
-#define VVECT(v)	((Lisp_Vector *)VPTR(v))
-#define VVECTI(v,i)	(VVECT(v)->array[(i)])
-
-#define VVECT_LEN(v)	(VVECT(v)->car >> 8)
-#define VSET_VECT_LEN(v,l) (VVECT(v)->car = ((l) << 8 | V_Vector))
-
-#define VECTORP(v)	VCELL8_TYPEP(v, V_Vector)
 
 
 /* Symbols */
@@ -405,6 +388,56 @@ typedef struct lisp_symbol_block {
 
 #define NILP(v)		((v) == sym_nil)
 #define LISTP(v)	(NILP(v) || CONSP(v))
+
+
+/* Vectors */
+
+typedef struct lisp_vector {
+    VALUE car;				/* size is bits 8->31 */
+    struct lisp_vector *next;
+    VALUE array[0];
+} Lisp_Vector;
+
+/* Bytes to allocate for S objects */
+#define VECT_SIZE(s)	((sizeof(VALUE) * (s)) + sizeof(Lisp_Vector))
+
+#define VVECT(v)	((Lisp_Vector *)VPTR(v))
+#define VVECTI(v,i)	(VVECT(v)->array[(i)])
+
+#define VVECT_LEN(v)	(VVECT(v)->car >> 8)
+#define VSET_VECT_LEN(v,l) (VVECT(v)->car = ((l) << 8 | V_Vector))
+
+#define VECTORP(v)	VCELL8_TYPEP(v, V_Vector)
+
+
+/* Compiled Lisp functions; this is a constant-sized vector. */
+
+#define COMPILED_LAMBDA		0	/* lambda list */
+#define COMPILED_CODE		1	/* byte-code string */
+#define COMPILED_CONSTANTS	2	/* constant vector */
+#define COMPILED_STACK_FLAGS	3	/* int: stack depth (0->15) and
+					        flags (16->?) */
+#define COMPILED_DOC		4	/* doc string */
+#define COMPILED_INTERACTIVE	5	/* interactive spec */
+#define COMPILED_NSLOTS		6
+
+typedef struct {
+    VALUE car;
+    struct lisp_vector *next;
+    VALUE array[COMPILED_NSLOTS];
+} Lisp_Compiled;
+
+/* Definition is a macro, not a defun */
+#define LCFF_IS_MACRO	    (1 << 16)
+
+#define COMPILED_MACRO_P(v) \
+    (VINT(VVECTI(v, COMPILED_STACK_FLAGS)) & LCFF_IS_MACRO)
+
+#define COMPILED_STACK(v) \
+    (VINT(VVECTI(v, COMPILED_STACK_FLAGS)) & 0xffff)
+
+#define COMPILEDP(v)	    VCELL8_TYPEP(v, V_Compiled)
+#define VCOMPILED(v)	    ((Lisp_Compiled *)VPTR(v))
 
 
 /* Positions */
