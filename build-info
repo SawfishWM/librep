@@ -8,6 +8,7 @@ repdir="$3"
 replispdir="$4"
 repexecdir="$5"
 repdocfile="$6"
+repcommonexecdir="$7"
 
 sys_name="`hostname`.`domainname`"
 user_name="$LOGNAME"
@@ -29,6 +30,7 @@ cat <<EOF
 #define REP_DIRECTORY "$repdir"
 #define REP_LISP_DIRECTORY "$replispdir"
 #define REP_EXEC_DIRECTORY "$repexecdir"
+#define REP_COMMON_EXEC_DIRECTORY "$repcommonexecdir"
 #define REP_DOC_FILE "$repdocfile"
 
 #define BUILD_HOST "$sys_name"

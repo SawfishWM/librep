@@ -45,6 +45,7 @@ AC_CANONICAL_HOST
 repdir='${datadir}/rep'
 replispdir='${repdir}/${version}/lisp'
 repexecdir='${libexecdir}/rep/${version}/${host_type}'
+repcommonexecdir='${libexecdir}/rep/${host_type}'
 repdocfile='${repdir}/${version}/DOC'
 
 dnl Checks for programs.
@@ -197,6 +198,7 @@ AC_SUBST(version)
 AC_SUBST(libversion)
 AC_SUBST(repdir)
 AC_SUBST(repexecdir)
+AC_SUBST(repcommonexecdir)
 AC_SUBST(replispdir)
 AC_SUBST(repdocfile)
 AC_SUBST(opt_enable_dumped)

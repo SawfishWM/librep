@@ -29,30 +29,32 @@ all : build.h rules.mk DOC.dir
 
 build.h : build-info config.status
 	$(top_srcdir)/build-info $(host_type) $(version) \
-	  '$(repdir)' '$(replispdir)' '$(repexecdir)' '$(repdocfile)' >$@
+	  '$(repdir)' '$(replispdir)' '$(repexecdir)' \
+	  '$(repdocfile)' '$(repcommonexecdir)' >$@
 
 rules.mk : rules.mk.sh config.status
 	$(SHELL) $(top_srcdir)/rules.mk.sh '$(repdir)' \
-	  '$(repexecdir)' '$(repdocfile)' >$@
+	  '$(repcommonexecdir)' '$(repdocfile)' >$@
 
 install : all installdirs
 	set -e; for dir in $(SUBDIRS); do \
 	  ( cd $$dir && $(MAKE) $@ ); \
 	done
 	$(INSTALL_DATA) DOC.* $(repdir)/$(version)
-	$(INSTALL_PROGRAM) libtool $(repexecdir)
-	$(INSTALL_DATA) rules.mk $(repexecdir)
+	$(INSTALL_PROGRAM) libtool $(repcommonexecdir)
+	$(INSTALL_DATA) rules.mk $(repcommonexecdir)
 	$(INSTALL_DATA) rep.m4 $(aclocaldir)
 
 installdirs : $(top_srcdir)/mkinstalldirs
 	$(SHELL) $(top_srcdir)/mkinstalldirs $(repdir)/$(version) \
-	  $(bindir) $(aclocaldir)
+	  $(bindir) $(aclocaldir) $(repcommonexecdir)
 
 uninstall :
 	-set -e; for dir in $(SUBDIRS); do \
 	  ( cd $$dir && $(MAKE) $@ ); \
 	done
 	rm -rf $(repdir)/$(version)
+	rm -f $(repcommonexecdir)/rules.mk $(repcommonexecdir)/libtool
 	rm -f $(aclocaldir)/rep.m4
 
 DOC.dir : repdoc
