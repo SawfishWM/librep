@@ -1,3 +1,14 @@
+1998-10-23  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rm-mail-dir.jl (rm-mail-dir-scan-messages,
+	rm-mail-dir-scanner): when invoked by C-k, if an address has no
+	real name, prompt for one
+
+1998-10-22  John Harper  <john@dcs.warwick.ac.uk>
+
+	* mime-decode.jl (mime-decode-content-disp): check the length
+	of the string before looking for a `;' character
+
 1998-10-20  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rm-mime.jl (rm-mime-display-markers): command to redisplay

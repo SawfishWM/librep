@@ -45,9 +45,6 @@ Outstanding bugs
 General programming tasks:
 ==========================
 
- + Remove use of gc_inhibit kludge in streams.c (when calling functions
-   that mimic streams)
-
  + Allow redisplay to be preempted by input becoming available (test
    where in the redisplay algorithms though, in the diff, or the
    drawing, or both!?)

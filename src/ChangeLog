@@ -1,3 +1,23 @@
+1998-10-23  John Harper  <john@dcs.warwick.ac.uk>
+
+	* edit.c: use GNU malloc's r_alloc relocating allocator for the
+	buffer line arrays (the tx_Lines field)
+	* streams.c, regjade.c, movement.c, glyphs.c, files.c,
+	editcommands.c, edit.c: remove all caching of the tx_Lines
+	field, the relocating malloc would screw this up
+
+	* values.c (gc_inhibit): removed this ill-advised feature (I
+	thought this the reason that the memory usage increased
+	massively sometimes--it's not, but it's a Good Thing) Anyway,
+	the effect of removing this variable is that all functions that
+	call stream_(getc|ungetc|putc|puts) must protect themselves
+	against a garbage collection (since a stream may be a Lisp
+	function)
+
+	* unix_processes.c, streams.c, main.c, lispmach.c, lisp.h,
+	lisp.c, keys.c: added more gc protection for the loss of
+	gc_inhibit
+
 1998-10-19  John Harper  <john@dcs.warwick.ac.uk>
 
 	* faces.c (mark_glyph_buf_faces): ignore GA_Garbage attributes
