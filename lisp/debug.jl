@@ -98,7 +98,7 @@ commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM',
       (when data
 	(mapc (lambda (cell)
 		(format standard-error "%16s %S\n"
-			(symbol-name (car cell)) (cdr cell)))
+			(symbol-name (cadr cell)) (cddr cell)))
 	      (car data)))))
 
   (defun eval-in-frame (form)
@@ -106,7 +106,7 @@ commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM',
 	;; (ENV . STRUCTURE)
 	((data (debug-frame-environment (fluid frame-pointer))))
       (when data
-	(%eval-in-structure form (cdr data) (car data)))))
+	(eval form (cdr data) (car data)))))
 
   (defun entry (debug-obj debug-depth debug-frame-pointer)
     (catch 'debug
