@@ -225,6 +225,12 @@ string INPUT."
 (defmacro interactive ())
 
 
+;; null i18n function until gettext is loaded
+
+(unless (fboundp '_)
+  (defun _ (arg) arg))
+
+
 ;; Setup format-hooks-alist to a few default'ish things
 
 (setq format-hooks-alist '((?D . file-name-directory)
