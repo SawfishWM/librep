@@ -41,7 +41,7 @@ librep.ps : librep.dvi
 man : librep.info librep.dvi librep.ps
 
 install : librep.info installdirs
-	for f in librep*.info; do \
+	for f in librep.info*; do \
 	  $(INSTALL_DATA) $$f $(DESTDIR)$(infodir); \
 	done
 
