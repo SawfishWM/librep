@@ -31,7 +31,6 @@
 #endif
 
 DEFSTRING(default_rep_directory, REP_DIRECTORY);
-DEFSTRING(div_zero, "Divide by zero");
 
 DEFSYM(or, "or");
 DEFSYM(and, "and");
@@ -1831,204 +1830,6 @@ again:
     return Qt;
 }
 
-/*
- * some arithmetic commands
- */
-
-#define APPLY_OP(op)					\
-    if(rep_CONSP(args) && rep_INTP(rep_CAR(args)))			\
-    {							\
-	long sum = rep_INT(rep_CAR(args));			\
-	int i = 2;					\
-	args = rep_CDR(args);				\
-	while(rep_CONSP(args))				\
-	{						\
-	    if(!rep_INTP(rep_CAR(args)))			\
-		return rep_signal_arg_error(rep_CAR(args), i);	\
-	    sum = sum op rep_INT(rep_CAR(args));		\
-	    args = rep_CDR(args);				\
-	    i++;					\
-	    rep_TEST_INT;					\
-	    if(rep_INTERRUPTP)					\
-		return(rep_NULL);			\
-	}						\
-	return(rep_MAKE_INT(sum));				\
-    }							\
-    return (rep_CONSP(args)					\
-	    ? rep_signal_arg_error(rep_CAR(args), 1)		\
-	    : rep_signal_missing_arg(1));
-
-DEFUN("+", Fplus, Splus, (repv args), rep_SubrN) /*
-::doc:+::
-+ NUMBERS...
-
-Adds all NUMBERS together. If no arguments are given returns 0.
-::end:: */
-{
-    if(rep_NILP(args))
-	return rep_MAKE_INT(0);
-    APPLY_OP( + )
-}
-
-DEFUN("-", Fminus, Sminus, (repv args), rep_SubrN) /*
-::doc:-::
-- NUMBER [NUMBERS...]
-
-Either returns the negation of NUMBER or the value of NUMBER minus
-NUMBERS
-::end:: */
-{
-    if(rep_CONSP(args))
-    {
-	if(!rep_CONSP(rep_CDR(args)))
-	    return(rep_MAKE_INT(-rep_INT(rep_CAR(args))));
-	else
-	    APPLY_OP( - )
-    }
-    return rep_signal_missing_arg(1);
-}
-
-DEFUN("*", Fproduct, Sproduct, (repv args), rep_SubrN) /*
-::doc:*::
-* NUMBERS...
-
-Multiplies all NUMBERS together. If no numbers are given returns 1.
-::end:: */
-{
-    if(rep_NILP(args))
-	return rep_MAKE_INT(1);
-    APPLY_OP( * )
-}
-
-DEFUN("/", Fdivide, Sdivide, (repv args), rep_SubrN) /*
-::doc:/::
-/ NUMBERS...
-
-Divides NUMBERS (in left-to-right order), ie,
-  (/ 100 2
-   => 10
-::end:: */
-{
-    if(rep_CONSP(args) && rep_INTP(rep_CAR(args)))
-    {
-	long sum = rep_INT(rep_CAR(args));
-	int i = 1;
-	args = rep_CDR(args);
-	while(rep_CONSP(args))
-	{
-	    if(!rep_INTP(rep_CAR(args)))
-	       return rep_signal_arg_error(rep_CAR(args), i);
-	    if(rep_INT(rep_CAR(args)) == 0)
-		return Fsignal(Qarith_error, rep_LIST_1(rep_VAL(&div_zero)));
-	    sum = sum / rep_INT(rep_CAR(args));
-	    args = rep_CDR(args);
-	    i++;
-	    rep_TEST_INT;
-	    if(rep_INTERRUPTP)
-		return(rep_NULL);
-	}
-	return(rep_MAKE_INT(sum));
-    }
-    return (rep_CONSP(args)
-	    ? rep_signal_arg_error(rep_CAR(args), 1) : rep_signal_missing_arg(1));
-}
-
-DEFUN("%", Fremainder, Sremainder, (repv n1, repv n2), rep_Subr2) /*
-::doc:%::
-% DIVIDEND DIVISOR
-
-Returns the integer remainder after dividing DIVIDEND by DIVISOR.
-::end:: */
-{
-    rep_DECLARE1(n1, rep_INTP);
-    rep_DECLARE2(n2, rep_INTP);
-    if(rep_INT(n2) == 0)
-	return Fsignal(Qarith_error, rep_LIST_1(rep_VAL(&div_zero)));
-    return rep_MAKE_INT(rep_INT(n1) % rep_INT(n2));
-}
-
-DEFUN("mod", Fmod, Smod, (repv n1, repv n2), rep_Subr2) /*
-::doc:mod::
-mod DIVIDEND DIVISOR
-
-Returns the value of DIVIDEND modulo DIVISOR; unlike the % (remainder)
-function the behaviour of `mod' is well-defined for negative arguments,
-we have that,
-
-	(mod X Y) == X - (* Y (floor (/ X Y))),	for Y not equal to zero
-
-assuming that (floor Z) gives the least integer greater than or equal to Z,
-and that floating point division is used.
-::end:: */
-{
-    long tem;
-    rep_DECLARE1(n1, rep_INTP);
-    rep_DECLARE2(n2, rep_INTP);
-    if(rep_INT(n2) == 0)
-	return Fsignal(Qarith_error, rep_LIST_1(rep_VAL(&div_zero)));
-
-    /* This code from GNU Emacs */
-    tem = rep_INT(n1) % rep_INT(n2);
-    /* If the "remainder" comes out with the wrong sign, fix it.  */
-    if (rep_INT(n2) < 0 ? tem > 0 : tem < 0)
-	tem += rep_INT(n2);
-
-    return rep_MAKE_INT(tem);
-}
-
-DEFUN("lognot", Flognot, Slognot, (repv num), rep_Subr1) /*
-::doc:lognot::
-lognot NUMBER
-
-Returns the bitwise logical `not' of NUMBER.
-::end:: */
-{
-    rep_DECLARE1(num, rep_INTP);
-    return(rep_MAKE_INT(~rep_INT(num)));
-}
-
-DEFUN("not", Fnot, Snot, (repv arg), rep_Subr1) /*
-::doc:not::
-not ARG
-
-If ARG is nil returns t, else returns nil.
-::end:: */
-{
-    if(rep_NILP(arg))
-	return(Qt);
-    return(Qnil);
-}
-
-DEFUN("logior", Flogior, Slogior, (repv args), rep_SubrN) /*
-::doc:logior::
-logior NUMBERS...
-
-Returns the bitwise logical `inclusive-or' of its arguments.
-::end:: */
-{
-    APPLY_OP( | )
-}
-
-DEFUN("logxor", Flogxor, Slogxor, (repv args), rep_SubrN) /*
-::doc:logxor::
-logxor NUMBERS...
-
-Returns the bitwise logical `exclusive-or' of its arguments.
-::end:: */
-{
-    APPLY_OP( ^ )
-}
-
-DEFUN("logand", Flogand, Slogand, (repv args), rep_SubrN) /*
-::doc:logand::
-logand NUMBERS...
-
-Returns the bitwise logical `and' of its arguments.
-::end:: */
-{
-    APPLY_OP( & )
-}
-
 DEFUN("equal", Fequal, Sequal, (repv val1, repv val2), rep_Subr2) /*
 ::doc:equal::
 equal VALUE1 VALUE2
@@ -2053,18 +1854,16 @@ this may or may not be true for numbers of the same value (see `eql').
     return (val1 == val2) ? Qt : Qnil;
 }
 
-DEFUN("eql", Feql, Seql, (repv arg1, repv arg2), rep_Subr2) /*
-::doc:eql::
-eql ARG1 ARG2
-Similar to `eq' except that numbers (integers, characters) with the same
-value will always be considered `eql' (this may or may not be the case
-with `eq'.
+DEFUN("not", Fnot, Snot, (repv arg), rep_Subr1) /*
+::doc:not::
+not ARG
+
+If ARG is nil returns t, else returns nil.
 ::end:: */
 {
-    if(rep_INTP(arg1) && rep_INTP(arg2))
-	return(rep_INT(arg1) == rep_INT(arg2) ? Qt : Qnil);
-    else
-	return(arg1 == arg2 ? Qt : Qnil);
+    if(rep_NILP(arg))
+	return(Qt);
+    return(Qnil);
 }
 
 DEFUN("string-head-eq", Fstring_head_eq, Sstring_head_eq, (repv str1, repv str2), rep_Subr2) /*
@@ -2135,34 +1934,6 @@ Returns t if STRING1 is `less' than STRING2, ignoring case.
     return *s2 ? Qt : Qnil;
 }
 
-
-DEFUN("=", Fnum_eq, Snum_eq, (repv num1, repv num2), rep_Subr2) /*
-::doc:=::
-= NUMBER1 NUMBER2
-
-Returns t if NUMBER1 and NUMBER2 are equal.
-::end:: */
-{
-    rep_DECLARE1(num1, rep_INTP);
-    rep_DECLARE2(num2, rep_INTP);
-    if(rep_INT(num1) == rep_INT(num2))
-	return(Qt);
-    return(Qnil);
-}
-
-DEFUN("/=", Fnum_noteq, Snum_noteq, (repv num1, repv num2), rep_Subr2) /*
-::doc:/=::
-/= NUMBER1 NUMBER2
-
-Returns t if NUMBER1 and NUMBER2 are unequal.
-::end:: */
-{
-    rep_DECLARE1(num1, rep_INTP);
-    rep_DECLARE2(num2, rep_INTP);
-    if(rep_INT(num1) != rep_INT(num2))
-	return(Qt);
-    return(Qnil);
-}
 
 #define APPLY_COMPARISON(op)				\
     if(rep_CONSP(args) && rep_CONSP(rep_CDR(args)))		\
@@ -2280,71 +2051,6 @@ arguments.
     return min;
 }
 
-DEFUN("1+", Fplus1, Splus1, (repv num), rep_Subr1) /*
-::doc:1+::
-1+ NUMBER
-
-Return NUMBER plus 1.
-::end:: */
-{
-    rep_DECLARE1(num, rep_INTP);
-    return(rep_MAKE_INT(rep_INT(num) + 1));
-}
-
-DEFUN("1-", Fsub1, Ssub1, (repv num), rep_Subr1) /*
-::doc:1-::
-1- NUMBER
-
-Return NUMBER minus 1.
-::end:: */
-{
-    rep_DECLARE1(num, rep_INTP);
-    return(rep_MAKE_INT(rep_INT(num) - 1));
-}
-
-DEFUN("lsh", Flsh, Slsh, (repv num, repv shift), rep_Subr2) /*
-::doc:lsh::
-lsh NUMBER COUNT
-
-Shift the bits in NUMBER by COUNT bits to the left, a negative COUNT means
-shift right.
-::end:: */
-{
-    rep_DECLARE1(num, rep_INTP);
-    rep_DECLARE2(shift, rep_INTP);
-    if(rep_INT(shift) > 0)
-	return(rep_MAKE_INT(rep_INT(num) << rep_INT(shift)));
-    /* ensure that a zero is in the top bit. */
-    return(rep_MAKE_INT((rep_INT(num) >> -rep_INT(shift)) & 0x7fffffff));
-}
-
-DEFUN("ash", Fash, Sash, (repv num, repv shift), rep_Subr2) /*
-::doc:ash::
-ash NUMBER COUNT
-
-Use an arithmetic shift to shift the bits in NUMBER by COUNT bits to the left,
-a negative COUNT means shift right.
-::end:: */
-{
-    rep_DECLARE1(num, rep_INTP);
-    rep_DECLARE2(shift, rep_INTP);
-    if(rep_INT(shift) > 0)
-	return(rep_MAKE_INT(rep_INT(num) << rep_INT(shift)));
-    return(rep_MAKE_INT(rep_INT(num) >> -rep_INT(shift)));
-}
-
-DEFUN("zerop", Fzerop, Szerop, (repv num), rep_Subr1) /*
-::doc:zerop::
-zerop NUMBER
-
-t if NUMBER is zero.
-::end:: */
-{
-    if(rep_INTP(num) && (rep_INT(num) == 0))
-	return(Qt);
-    return(Qnil);
-}
-
 DEFUN("null", Fnull, Snull, (repv arg), rep_Subr1) /*
 ::doc:null::
 null ARG
@@ -2383,26 +2089,6 @@ Returns t if ARG is a list, (either a cons-cell or nil).
 ::end:: */
 {
     return rep_LISTP(arg) ? Qt : Qnil;
-}
-
-DEFUN("numberp", Fnumberp, Snumberp, (repv arg), rep_Subr1) /*
-::doc:numberp::
-numberp ARG
-
-Return t if ARG is a number.
-::end:: */
-{
-    return rep_INTP(arg) ? Qt : Qnil;
-}
-
-DEFUN("integerp", Fintegerp, Sintegerp, (repv arg), rep_Subr1) /*
-::doc:integerp::
-integerp ARG
-
-Return t if ARG is a integer.
-::end:: */
-{
-    return rep_INTP(arg) ? Qt : Qnil;
 }
 
 DEFUN("stringp", Fstringp, Sstringp, (repv arg), rep_Subr1) /*
@@ -2844,42 +2530,22 @@ rep_lispcmds_init(void)
     rep_ADD_SUBR(Sor);
     rep_ADD_SUBR(Sapply);
     rep_ADD_SUBR_INT(Sload);
-    rep_ADD_SUBR(Splus);
-    rep_ADD_SUBR(Sminus);
-    rep_ADD_SUBR(Sproduct);
-    rep_ADD_SUBR(Sdivide);
-    rep_ADD_SUBR(Sremainder);
-    rep_ADD_SUBR(Smod);
-    rep_ADD_SUBR(Slognot);
     rep_ADD_SUBR(Snot);
-    rep_ADD_SUBR(Slogior);
-    rep_ADD_SUBR(Slogxor);
-    rep_ADD_SUBR(Slogand);
     rep_ADD_SUBR(Sequal);
     rep_ADD_SUBR(Seq);
-    rep_ADD_SUBR(Seql);
     rep_ADD_SUBR(Sstring_head_eq);
     rep_ADD_SUBR(Sstring_equal);
     rep_ADD_SUBR(Sstring_lessp);
-    rep_ADD_SUBR(Snum_eq);
-    rep_ADD_SUBR(Snum_noteq);
     rep_ADD_SUBR(Sgtthan);
     rep_ADD_SUBR(Sgethan);
     rep_ADD_SUBR(Sltthan);
     rep_ADD_SUBR(Slethan);
     rep_ADD_SUBR(Smax);
     rep_ADD_SUBR(Smin);
-    rep_ADD_SUBR(Splus1);
-    rep_ADD_SUBR(Ssub1);
-    rep_ADD_SUBR(Slsh);
-    rep_ADD_SUBR(Sash);
-    rep_ADD_SUBR(Szerop);
     rep_ADD_SUBR(Snull);
     rep_ADD_SUBR(Satom);
     rep_ADD_SUBR(Sconsp);
     rep_ADD_SUBR(Slistp);
-    rep_ADD_SUBR(Snumberp);
-    rep_ADD_SUBR(Sintegerp);
     rep_ADD_SUBR(Sstringp);
     rep_ADD_SUBR(Svectorp);
     rep_ADD_SUBR(Sbytecodep);
