@@ -1,3 +1,9 @@
+Fri May 29 15:17:38 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* html-style.jl (html-style-default, html-style-current,
+	html-style-alist, html-style-set-style, html-style-add-style):
+	support for multiple styles
+
 Thu May 28 18:02:48 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* mail-headers.jl (mail-timezone-alist): moved to maildefs.jl
