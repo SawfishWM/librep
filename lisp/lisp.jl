@@ -62,7 +62,7 @@ call it. Otherwise exactly the same as defun."
 (defmacro when (condition &rest forms)
   "Evaluates CONDITION, if it is non-nil an implicit progn is performed
 with FORMS."
-  (list 'cond (cons condition forms)))
+  (list 'if condition (cons 'progn forms)))
 
 (defmacro unless (condition &rest forms)
   "Evaluates CONDITION, if it is nil an implicit progn is performed with
