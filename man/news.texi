@@ -6,7 +6,7 @@
 
 @section 0.4
 
-@itemize
+@itemize @bullet
 
 @item Added @samp{--with-value-type}, and
 @samp{--with-malloc-alignment} configure options. Also added code to
