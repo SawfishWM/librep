@@ -51,6 +51,31 @@ char *alloca ();
 
 /* #define DEBUG_GC */
 
+#define rep_CONSBLK_SIZE	510		/* ~4k */
+#define rep_STRINGBLK_SIZE	510		/* ~4k */
+
+/* Structure of cons allocation blocks */
+typedef struct rep_cons_block_struct {
+    union {
+	struct rep_cons_block_struct *p;
+	/* ensure that the following cons cell is aligned to at
+	   least sizeof (rep_cons) (for the dcache) */
+	rep_cons dummy;
+    } next;
+    rep_cons cons[rep_CONSBLK_SIZE];
+} rep_cons_block;
+
+/* Structure of string header allocation blocks */
+typedef struct rep_string_block_struct {
+    union {
+	struct rep_string_block_struct *p;
+	/* ensure that the following cons cell is aligned to at
+	   least sizeof (rep_string) (for the dcache) */
+	rep_string dummy;
+    } next;
+    rep_string data[rep_STRINGBLK_SIZE];
+} rep_string_block;
+
 #ifdef DEBUG_GC
 static int debug_gc = 0;
 #endif
@@ -202,8 +227,9 @@ rep_type_cmp(repv val1, repv val2)
 
 /* Strings */
 
-static rep_string *strings;
-static int allocated_strings, allocated_string_bytes;
+static rep_string_block *string_block_chain;
+static rep_string *string_freelist;
+static int allocated_strings, used_strings, allocated_string_bytes;
 
 DEFSTRING(null_string_const, "");
 
@@ -221,22 +247,41 @@ repv
 rep_make_string(long len)
 {
     rep_string *str;
-    int memlen;
 
     if(len > rep_MAX_STRING)
 	return Fsignal(Qerror, rep_LIST_1(rep_VAL(&string_overflow)));
 
-    memlen = rep_DSTRING_SIZE(len);
-    str = rep_ALLOC_CELL(memlen);
-    if(str != NULL)
+    /* find a string header */
+    str = string_freelist;
+    if(str == NULL)
     {
-	str->car = rep_MAKE_STRING_CAR(len - 1);
-	str->next = strings;
-	str->data = ((char *)str) + sizeof (rep_string);
-	strings = str;
-	allocated_strings++;
-	allocated_string_bytes += memlen;
-	rep_data_after_gc += memlen;
+	rep_string_block *cb;
+	cb = rep_alloc(sizeof(rep_string_block));
+	if(cb != NULL)
+	{
+	    int i;
+	    allocated_strings += rep_STRINGBLK_SIZE;
+	    cb->next.p = string_block_chain;
+	    string_block_chain = cb;
+	    for(i = 0; i < (rep_STRINGBLK_SIZE - 1); i++)
+		cb->data[i].car = rep_VAL(&cb->data[i + 1]);
+	    cb->data[i].car = 0;
+	    string_freelist = cb->data;
+	}
+	else
+	    return rep_mem_error();
+	str = string_freelist;
+    }
+    string_freelist = rep_STRING(str->car);
+    used_strings++;
+    rep_data_after_gc += sizeof(rep_string);
+
+    str->car = rep_MAKE_STRING_CAR (len - 1);
+    str->data = rep_alloc (len);
+    if(str->data != NULL)
+    {
+	allocated_string_bytes += len;
+	rep_data_after_gc += len;
 	return rep_VAL(str);
     }
     else
@@ -305,24 +350,57 @@ string_cmp(repv v1, repv v2)
 static void
 string_sweep(void)
 {
-    rep_string *x = strings;
-    strings = 0;
-    allocated_strings = 0;
+    rep_string_block *cb = string_block_chain;
+    string_block_chain = NULL;
+    string_freelist = NULL;
+    used_strings = 0;
     allocated_string_bytes = 0;
-    while(x != 0)
+    while(cb != NULL)
     {
-	rep_string *next = x->next;
-	if(rep_GC_CELL_MARKEDP(rep_VAL(x)))
+	rep_string_block *nxt = cb->next.p;
+	rep_string *newfree = NULL, *newfreetail = NULL, *this;
+	int i, newused = 0;
+	for(i = 0, this = cb->data; i < rep_STRINGBLK_SIZE; i++, this++)
 	{
-	    rep_GC_CLR_CELL(rep_VAL(x));
-	    x->next = strings;
-	    strings = x;
-	    allocated_strings++;
-	    allocated_string_bytes += rep_DSTRING_SIZE(rep_STRING_LEN(rep_VAL(x)));
+	    /* if on the freelist then the CELL_IS_8 bit
+	       will be unset (since the pointer is long aligned) */
+	    if(rep_CELL_CONS_P(rep_VAL(this))
+	       || !rep_GC_CELL_MARKEDP(rep_VAL(this)))
+	    {
+		if(!newfreetail)
+		    newfreetail = this;
+		if (!rep_CELL_CONS_P(rep_VAL(this)))
+		    rep_free (this->data);
+		this->car = rep_VAL(newfree);
+		newfree = this;
+	    }
+	    else
+	    {
+		rep_GC_CLR_CELL(rep_VAL(this));
+		allocated_string_bytes += rep_STRING_LEN(rep_VAL(this));
+		newused++;
+	    }
+	}
+	if(newused == 0)
+	{
+	    /* Whole block is unused, get rid of it.  */
+	    rep_free(cb);
+	    allocated_strings -= rep_STRINGBLK_SIZE;
 	}
 	else
-	    rep_free(x);
-	x = next;
+	{
+	    if(newfreetail != NULL)
+	    {
+		/* Link this mini-freelist onto the main one.  */
+		newfreetail->car = rep_VAL(string_freelist);
+		string_freelist = newfree;
+		used_strings += newused;
+	    }
+	    /* Have to rebuild the block chain as well.  */
+	    cb->next.p = string_block_chain;
+	    string_block_chain = cb;
+	}
+	cb = nxt;
     }
 }
 
@@ -1020,11 +1098,13 @@ last garbage-collection is greater than `garbage-threshold'.
     if(rep_NILP(noStats))
     {
 	return(rep_list_4(Fcons(rep_MAKE_INT(used_cons),
-			       rep_MAKE_INT(allocated_cons - used_cons)),
+				rep_MAKE_INT(allocated_cons - used_cons)),
 		      Fcons(rep_MAKE_INT(rep_used_symbols),
-			       rep_MAKE_INT(rep_allocated_symbols - rep_used_symbols)),
-		      Fcons(rep_MAKE_INT(allocated_strings),
-			       rep_MAKE_INT(allocated_string_bytes)),
+			    rep_MAKE_INT(rep_allocated_symbols
+					 - rep_used_symbols)),
+		      rep_list_3(rep_MAKE_INT(used_strings),
+				 rep_MAKE_INT(allocated_strings),
+				 rep_MAKE_INT(allocated_string_bytes)),
 		      rep_MAKE_INT(used_vector_slots)));
     }
 
@@ -1086,7 +1166,7 @@ rep_values_kill(void)
 {
     rep_cons_block *cb = cons_block_chain;
     rep_vector *v = vector_chain;
-    rep_string *s = strings;
+    rep_string_block *s = string_block_chain;
     while(cb != NULL)
     {
 	rep_cons_block *nxt = cb->next.p;
@@ -1101,13 +1181,19 @@ rep_values_kill(void)
     }
     while(s != NULL)
     {
-	rep_string *nxt = s->next;
-	rep_FREE_CELL(s);
+	int i;
+	rep_string_block *nxt = s->next.p;
+	for (i = 0; i < rep_STRINGBLK_SIZE; i++)
+	{
+	    if (!rep_CELL_CONS_P (rep_VAL(s->data + i)))
+		rep_free (s->data[i].data);
+	}
+	rep_free(s);
 	s = nxt;
     }
     cons_block_chain = NULL;
     vector_chain = NULL;
-    strings = NULL;
+    string_block_chain = NULL;
 }
 
 
