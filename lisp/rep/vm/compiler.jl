@@ -153,6 +153,19 @@ their position in that file.")
   "List of side-effect-free functions. They should always return the same
 value when given the same inputs. Used when constant folding.")
 
+(defvar comp-nth-insns (list (cons 0 op-car)
+			     (cons 1 op-cadr)
+			     (cons 2 op-caddr)
+			     (cons 3 op-cadddr)
+			     (cons 4 op-caddddr)
+			     (cons 5 op-cadddddr)
+			     (cons 6 op-caddddddr)
+			     (cons 7 op-cadddddddr)))
+
+(defvar comp-nthcdr-insns (list (cons 0 nil)
+				(cons 1 op-cdr)
+				(cons 2 op-cddr)))
+
 
 ;; Environment of this byte code sequence being compiled
 
@@ -1680,6 +1693,29 @@ that files which shouldn't be compiled aren't."
     (comp-compile-body (nthcdr 2 form))
     (comp-write-op op-unbind)))
 
+(defun comp-compile-nth (form)
+  (let
+      ((insn (cdr (assq (nth 1 form) comp-nth-insns))))
+    (if insn
+	(progn
+	  (comp-compile-form (nth 2 form))
+	  (comp-write-op insn))
+      (comp-compile-2-args form))))
+(put 'nth 'compile-fun comp-compile-nth)
+(put 'nth 'compile-opcode op-nth)
+
+(defun comp-compile-nthcdr (form)
+  (let
+      ((insn (assq (nth 1 form) comp-nthcdr-insns)))
+    (if insn
+	(progn
+	  (comp-compile-form (nth 2 form))
+	  (when (cdr insn)
+	    (comp-write-op (cdr insn))))
+      (comp-compile-2-args form))))
+(put 'nthcdr 'compile-fun comp-compile-nthcdr)
+(put 'nthcdr 'compile-opcode op-nthcdr)
+
 (defun comp-compile-minus (form)
   (if (/= (length form) 2)
       (comp-compile-binary-op form)
@@ -1803,10 +1839,6 @@ that files which shouldn't be compiled aren't."
   (put 'rplaca 'compile-opcode op-rplaca)
   (put 'rplacd 'compile-fun comp-compile-2-args)
   (put 'rplacd 'compile-opcode op-rplacd)
-  (put 'nth 'compile-fun comp-compile-2-args)
-  (put 'nth 'compile-opcode op-nth)
-  (put 'nthcdr 'compile-fun comp-compile-2-args)
-  (put 'nthcdr 'compile-opcode op-nthcdr)
   (put 'aset 'compile-fun comp-compile-3-args)
   (put 'aset 'compile-opcode op-aset)
   (put 'aref 'compile-fun comp-compile-2-args)
