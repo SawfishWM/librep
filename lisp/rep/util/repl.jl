@@ -91,7 +91,7 @@
       (if (eq (car data) 'user-interrupt)
 	  (progn
 	    (format standard-output "User interrupt!\n")
-	    (loop))
+	    t)
 	(raise-exception data)))
     (let-fluids ((current-repl (make-repl initial-structure)))
       (write standard-output "\nEnter `,help' to list commands.\n")
