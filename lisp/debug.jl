@@ -83,23 +83,19 @@ commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM',
 
   (defun print-locals ()
     (let
-	;; (ENV SPECIAL-ENV FH-ENV STRUCTURE)
+	;; (ENV . STRUCTURE)
 	((data (debug-frame-environment (fluid frame-pointer))))
       (when data
 	(mapc (lambda (cell)
 		(format standard-error "%16s %S\n" (car cell) (cdr cell)))
-	      (nth 0 data)))))
+	      (car data)))))
 
   (defun eval-in-frame (form)
     (let
-	;; (ENV SPECIAL-ENV FH-ENV STRUCTURE)
+	;; (ENV . STRUCTURE)
 	((data (debug-frame-environment (fluid frame-pointer))))
       (when data
-	(eval `(save-environment
-		(set-special-environment ',(nth 1 data))
-		(set-file-handler-environment ',(nth 2 data))
-		(set-environment ',(nth 0 data))
-		(,%eval-in-structure ',form ,(nth 3 data)))))))
+	(%eval-in-structure form (cdr data) (car data)))))
 
   (defun entry (debug-obj debug-depth debug-frame-pointer)
     (catch 'debug
