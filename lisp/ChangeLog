@@ -1,3 +1,9 @@
+1999-06-03  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep.jl: loading a script implies --batch (but not when loaded
+	via the -l option). Don't print the banner until immediately
+	before entering the read-eval-print loop
+
 1999-05-27  John Harper  <john@dcs.warwick.ac.uk>
 
 	* cgi-get.jl (cgi-get-params): new file, process the

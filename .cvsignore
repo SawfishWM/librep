@@ -13,3 +13,4 @@ aclocal.m4
 libtool
 NEWS
 build.h
+rules.mk

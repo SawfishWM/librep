@@ -54,4 +54,4 @@ General programming tasks:
 Manual tasks:
 =============
 
- + Hack one from the old Jade manual
+ + Document the internals (i.e. the C interface)

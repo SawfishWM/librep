@@ -1,3 +1,17 @@
+1999-06-03  John Harper  <john@dcs.warwick.ac.uk>
+
+	* misc.c (default_beep): new function, echo ^G, used to
+	initialise the rep_beep_fun hook
+
+	* main.c (Fget_command_line_option): don't return rep_NULL when
+	an option requiring an argument isn't given
+
+	* lispmach.c (Fjade_byte_code): optimise common cases of
+	OP_REFQ and OP_SETQ instructions, when accessing a variable
+	which can't be locally stored, and isn't a rep_Var type
+
+	* unix_processes.c (Fsignal_process): new function
+
 1999-05-31  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep_regexp.h (NGSTAR, NGPLUS): new operators, non-greedy plus
