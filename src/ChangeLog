@@ -1,3 +1,21 @@
+2000-02-07  John Harper  <john@dcs.warwick.ac.uk>
+
+	* continuations.c (unlink_thread): unlink from the actual
+	barrier the thread is in, not the current root
+	(thread_suspend): don't use LONG_MAX when setting timeval
+	members, it produces warning with the weird Solaris definition
+
+	* lisp.c (rep_funcall): don't install closed environments until
+	last possible moment (notably, not until _after_ evaluating any
+	arguments)
+
+	* lisp.c (read_symbol): make "," and "`" terminate symbols
+
+	* lispmach.c (bound_specials): fixed for new way of remembering
+	bound variables
+
+	* lispcmds.c (Fload): fix interpreted-mode breaking dl loads
+
 2000-02-06  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lispmach.c, bytecodes.h (rep_FORBID, rep_PERMIT): new
