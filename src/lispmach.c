@@ -1341,13 +1341,13 @@ again:
 	    if(rep_NILP(RET_POP))
 		goto do_jmp;
 	    pc += 2;
-	    break;
+	    goto fetch;
 
 	case OP_JT:
 	    if(!rep_NILP(RET_POP))
 		goto do_jmp;
 	    pc += 2;
-	    break;
+	    goto fetch;
 
 	case OP_JPN:
 	    if(rep_NILP(TOP))
@@ -1356,7 +1356,7 @@ again:
 		goto do_jmp;
 	    }
 	    pc += 2;
-	    break;
+	    goto fetch;
 
 	case OP_JPT:
 	    if(!rep_NILP(TOP))
@@ -1365,21 +1365,21 @@ again:
 		goto do_jmp;
 	    }
 	    pc += 2;
-	    break;
+	    goto fetch;
 
 	case OP_JNP:
 	    if(rep_NILP(TOP))
 		goto do_jmp;
 	    POP;
 	    pc += 2;
-	    break;
+	    goto fetch;
 
 	case OP_JTP:
 	    if(rep_NILP(TOP))
 	    {
 		POP;
 		pc += 2;
-		break;
+		goto fetch;
 	    }
 	    /* FALL THROUGH */
 
@@ -1387,22 +1387,24 @@ again:
 	do_jmp:
 	    pc = rep_STR(code) + ((pc[0] << ARG_SHIFT) | pc[1]);
 
-	    /* Test if an error occurred (or an interrupt) */
+	    /* Test if an interrupt occurred... */
 	    rep_TEST_INT;
 	    if(rep_INTERRUPTP)
 		goto error;
-	    /* Test for gc time */
-	    if(rep_data_after_gc >= rep_gc_threshold)
-	    {
-		gc_stackbase.count = STK_USE;
-		Fgarbage_collect(Qt);
-	    }
+
+	    /* ...or if it's time to gc... */
 	    gc_stackbase.count = STK_USE;
+	    if(rep_data_after_gc >= rep_gc_threshold)
+		Fgarbage_collect(Qt);
+
+	    /* ...or time to switch threads */
 	    rep_MAY_YIELD;
 	    break;
 
 	default:
-	    Fsignal(Qerror, rep_list_2(rep_VAL(&unknown_op), rep_MAKE_INT(insn)));
+	    Fsignal(Qerror, rep_list_2(rep_VAL(&unknown_op),
+				       rep_MAKE_INT(insn)));
+	    goto error;
 	}
 
 #ifdef CHECK_STACK_USAGE
