@@ -20,7 +20,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "sdbm.h"
+#include <gdbm.h>
 #include <fcntl.h>
 
 static void
@@ -31,7 +31,7 @@ usage(void)
 }
 
 static void
-scanfile(FILE *src, SDBM *sdbm)
+scanfile(FILE *src, GDBM_FILE sdbm)
 {
     char buf[512];
     while(fgets(buf, 512, src))
@@ -65,8 +65,8 @@ scanfile(FILE *src, SDBM *sdbm)
 	    key.dsize = strlen(id);
             value.dptr = buf;
 	    value.dsize = strlen(buf);
-	    if (sdbm_store (sdbm, key, value, SDBM_REPLACE) < 0)
-		perror ("sdbm_store");
+	    if (gdbm_store (sdbm, key, value, GDBM_REPLACE) < 0)
+		perror ("gdbm_store");
 	}
     }
 }
@@ -74,12 +74,12 @@ scanfile(FILE *src, SDBM *sdbm)
 int
 main(int ac, char **av)
 {
-    SDBM *docdbm;
+    GDBM_FILE docdbm;
     ac--;
     av++;
     if(ac < 2)
 	usage();
-    docdbm = sdbm_open(*av++, O_RDWR | O_CREAT, 0666);
+    docdbm = gdbm_open(*av++, 0, GDBM_WRCREAT, 0666, 0);
     ac--;
     if(docdbm == 0)
     {
