@@ -26,7 +26,7 @@ INSTALL_SUBDIRS = src lisp man
 all : build.h rules.mk DOC.dir
 	set -e; for dir in $(ALL_SUBDIRS); do \
 	  [ -d $$dir ] && ( cd $$dir && $(MAKE) $@ ); \
- 	done
+	done
 
 build.h : build-info config.status
 	$(top_srcdir)/build-info $(host_type) $(version) \

@@ -1,3 +1,8 @@
+1999-12-06  John Harper  <john@dcs.warwick.ac.uk>
+
+	* main.c (usage): fix backslash lossage (pointed out by Conrad
+	Steenberg <conrad@srl.caltech.edu)
+
 1999-12-05  John Harper  <john@dcs.warwick.ac.uk>
 
 	* version 0.8.1
