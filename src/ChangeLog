@@ -1,3 +1,8 @@
+1999-08-16  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispcmds.c (lispcmds_init): add REP_COMMON_EXEC_DIRECTORY to
+	the dl-load-path
+
 1999-08-15  John Harper  <john@dcs.warwick.ac.uk>
 
 	* timers.c: added some documentation strings
