@@ -18,9 +18,11 @@
 ;;; along with Jade; see the file COPYING.  If not, write to
 ;;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-
 ;; This file is loaded right at the beginning of the initialisation
-;; procedure. First of all set up some really common LISP functions
+;; procedure.
+
+
+;; Convenient conditional macros, all defined using cond
 
 (defmacro if (condition then-form &rest else-forms)
   "Eval CONDITION, if it is non-nil then eval THEN-FORM and return it's 
@@ -41,11 +43,30 @@ with FORMS."
 FORMS."
   (list 'cond (cons condition nil) (cons 't forms)))
 
+(defmacro or (&rest forms)
+  "Evaluates each member of FORMS in turn until one returns t, the result of
+which is returned. If none are t then return nil."
+  (cons 'cond (mapcar #'list forms)))
+
+(defmacro and (&rest forms &aux slot list)
+  "Evaluates each member of FORMS in turn, until one returns nil, and returns
+nil. If none return nil then the value of the last form evaluated is
+returned."
+  (while forms
+    (if slot
+	(progn
+	  (setcdr slot (cons (list 'cond (list (car forms))) nil))
+	  (setq slot (car (cdr (car (cdr slot))))))
+      (setq list (list 'cond (list (car forms)))
+	    slot (car (cdr list))))
+    (setq forms (cdr forms)))
+  list)
+
 
 ;; Feature definition
 
 (defvar features ()
-  "A list of symbols definining which ``features'' Jade currently has loaded.
+  "A list of symbols defining which ``features'' Jade currently has loaded.
 This is used by the `featurep', `provide' and `require' functions.")
 
 (defun require (feature &optional file)
@@ -93,16 +114,16 @@ is non-nil in which case it is added at the end."
   (set hook-symbol (delete old-func (symbol-value hook-symbol))))
 
 
-;; Miscellaneia
+;; Miscellanea
 
-(defun prin1-to-string (arg)
-  "Return a string representing OBJECT."
-  (format nil "%S" arg))
+(defmacro prin1-to-string (arg)
+  "Return a string representing ARG."
+  (list 'format nil "%S" arg))
 
-(defun read-from-string (string &optional start)
+(defmacro read-from-string (string &optional start)
   "Reads an object from STRING, starting at character number START (default
 is 0)."
-  (read (make-string-input-stream string start)))
+  (list 'read (list 'make-string-input-stream string start)))
 
 ;; Some function pseudonyms
 (defmacro setcar (&rest args)
