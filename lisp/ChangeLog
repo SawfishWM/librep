@@ -1,3 +1,8 @@
+1999-03-03  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep.jl: print a message if unknown command-line options are
+	encountered
+
 src/1999-02-28  John Harper  <john@dcs.warwick.ac.uk>
 
 	* MAJOR CHANGES: separated all LISP interpreter specific parts
