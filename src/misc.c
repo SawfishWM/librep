@@ -294,22 +294,28 @@ DEFUN("user-login-name", cmd_user_login_name, subr_user_login_name, (void), V_Su
 user-login-name
 
 Returns the login name of the user (a string).
-On the Amiga this is taken from the environment variable `USERNAME'.
 ::end:: */
 {
     return sys_user_login_name();
 }
 
-_PR VALUE cmd_user_full_name(void);
-DEFUN("user-full-name", cmd_user_full_name, subr_user_full_name, (void), V_Subr0, DOC_user_full_name) /*
+_PR VALUE cmd_user_full_name(VALUE arg);
+DEFUN("user-full-name", cmd_user_full_name, subr_user_full_name, (VALUE arg), V_Subr1, DOC_user_full_name) /*
 ::doc:user_full_name::
-user-full-name
+user-full-name [REAL-NAME]
 
-Returns the real name of the user (a string).
-On the Amiga this is taken from the environment variable `REALNAME'.
+Returns the real name of the user (a string). If REAL-NAME is non-nil, it's
+the name to return in subsequent calls.
 ::end:: */
 {
-    return sys_user_full_name();
+    static VALUE saved_name;
+    if(STRINGP(arg))
+    {
+	if(!saved_name)
+	    mark_static(&saved_name);
+	saved_name = arg;
+    }
+    return saved_name ? saved_name : sys_user_full_name();
 }
 
 _PR VALUE cmd_user_home_directory(VALUE user);
