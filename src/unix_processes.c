@@ -229,6 +229,27 @@ proc_notification(void)
     return rep_TRUE;
 }
 
+static inline rep_bool
+notify_queued_p (struct Proc *pr)
+{
+    return pr->pr_NotifyNext != 0;
+}
+
+static void
+notify_1 (struct Proc *pr)
+{
+    if (notify_queued_p (pr))
+    {
+	struct Proc **ptr = &notify_chain;
+	while (*ptr != pr)
+	    ptr = &((*ptr)->pr_NotifyNext);
+	*ptr = pr->pr_NotifyNext;
+	pr->pr_NotifyNext = NULL;
+	if (pr->pr_NotifyFun && pr->pr_NotifyFun != Qnil)
+	    rep_call_lisp1 (pr->pr_NotifyFun, rep_VAL (pr));
+    }
+}
+
 /* Checks if any of my children are zombies, takes appropriate action. */
 static rep_bool
 check_for_zombies(void)
@@ -1842,6 +1863,17 @@ Return a list containing all active process objects.
     return head;
 }
 
+#define MAX_HANDLERS 16
+static void (*input_handlers[MAX_HANDLERS])(int);
+static int n_input_handlers = 0;
+
+void
+rep_register_process_input_handler (void (*handler)(int))
+{
+    assert (n_input_handlers < MAX_HANDLERS);
+    input_handlers[n_input_handlers++] = handler;
+}
+
 DEFUN("accept-process-output", Faccept_process_output,
       Saccept_process_output, (repv secs, repv msecs), rep_Subr2) /*
 ::doc:accept-process-output::
@@ -1857,15 +1889,58 @@ Note that output includes notification of process termination.
     /* Only wait for output if nothing already waiting. */
     if(!got_sigchld && !notify_chain)
     {
-	result = rep_accept_input((rep_INTP(secs) ? rep_INT(secs) * 1000 : 0)
-				  + (rep_INTP(msecs) ? rep_INT(msecs) : 0),
-				  (void *)&read_from_process);
+	result = (rep_accept_input_for_callbacks
+		  ((rep_INTP(secs) ? rep_INT(secs) * 1000 : 0)
+		   + (rep_INTP(msecs) ? rep_INT(msecs) : 0),
+		   n_input_handlers, input_handlers));
     }
     if(got_sigchld || notify_chain)
     {
 	result = Qnil;
 	rep_proc_periodically();
     }
+    return result;
+}
+
+DEFUN("accept-process-output-1", Faccept_process_output_1,
+      Saccept_process_output_1,
+      (repv process, repv secs, repv msecs), rep_Subr3) /*
+::doc:accept-process-output-1::
+accept-process-output-1 PROCESS [SECONDS] [MILLISECONDS]
+
+Wait SECONDS plus MILLISECONDS for output from the asynchronous
+subprocess PROCESS. If any arrives, process it, then return nil.
+Otherwise return t.
+
+Note that output includes notification of process termination.
+::end:: */
+{
+    repv result = Qt;
+    rep_DECLARE1 (process, PROCESSP);
+
+    /* Only wait for output if nothing already waiting. */
+    if (got_sigchld)
+	check_for_zombies ();
+
+    if (!notify_queued_p (VPROC (process)))
+    {
+	int fds[2];
+	fds[0] = VPROC (process)->pr_Stdout;
+	fds[1] = VPROC (process)->pr_Stderr;
+	result = (rep_accept_input_for_fds
+		  ((rep_INTP(secs) ? rep_INT(secs) * 1000 : 0)
+		   + (rep_INTP(msecs) ? rep_INT(msecs) : 0), 2, fds));
+    }
+
+    if (got_sigchld)
+	check_for_zombies ();
+
+    if (notify_queued_p (VPROC (process)))
+    {
+	notify_1 (VPROC (process));
+	result = Qt;
+    }
+
     return result;
 }
 
@@ -1987,6 +2062,7 @@ rep_proc_init(void)
     rep_ADD_SUBR(Sset_process_connection_type);
     rep_ADD_SUBR(Sactive_processes);
     rep_ADD_SUBR(Saccept_process_output);
+    rep_ADD_SUBR(Saccept_process_output_1);
     rep_pop_structure (tem);
 
     process_type = rep_register_new_type ("subprocess", rep_ptr_cmp,
@@ -1994,6 +2070,7 @@ rep_proc_init(void)
 					  proc_sweep, proc_mark,
 					  mark_active_processes,
 					  0, 0, proc_putc, proc_puts, 0, 0);
+    rep_register_process_input_handler (read_from_process);
 }
 
 void
