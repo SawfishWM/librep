@@ -37,8 +37,8 @@ extern void rep_find_kill(void);
 /* from lisp.c */
 extern repv rep_readl(repv, int *);
 extern repv rep_bind_lambda_list(repv lambdaList, repv argList,
-				  rep_bool eval_args);
-extern repv rep_eval_lambda(repv, repv, rep_bool eval_args);
+				 rep_bool eval_args, rep_bool eval_in_env);
+extern repv rep_eval_lambda(repv, repv, rep_bool, rep_bool);
 extern void rep_lisp_prin(repv, repv);
 extern void rep_string_princ(repv, repv);
 extern void rep_string_print(repv, repv);
