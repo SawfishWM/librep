@@ -106,12 +106,16 @@ DEFUN("function", Ffunction, Sfunction, (repv args), rep_SF) /*
 function ARG
 #'ARG
 
-Returns the closure of ARG.
+If ARG is a symbol, dereference it, otherwise enclose it.
 ::end:: */
 {
-    if(rep_CONSP(args))
+    if(!rep_CONSP(args))
+	return rep_signal_missing_arg(1);
+    args = rep_CAR (args);
+    if (rep_SYMBOLP (args))
+	return Fsymbol_value (args, Qnil);
+    else
 	return Fmake_closure (rep_CAR(args), Qnil);
-    return rep_signal_missing_arg(1);
 }
 
 DEFUN("lambda", Flambda, Slambda, (repv args), rep_SF) /*
