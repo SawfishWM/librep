@@ -1,3 +1,14 @@
+1998-08-09  John Harper  <john@dcs.warwick.ac.uk>
+
+	* help.jl (apropos-variable): quote the query string when
+	displaying results
+
+	* windows.jl (scroll-next-view): pass the other-view an
+	argument `t' to stop it altering the size of any views
+
+	* cvs.jl (cvs-add-change-log-entries): now prompt for the name
+	of the ChangeLog file associated with each directory
+
 1998-08-06  John Harper  <john@dcs.warwick.ac.uk>
 
 	* dict.jl (dict-lookup): quote the word being queried
