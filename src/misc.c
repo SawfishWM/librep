@@ -392,6 +392,10 @@ with the current time of day.
 	limit = rep_INT(arg);
     else
 	limit = rep_LISP_MAX_INT;
+
+    if (limit <= 0)
+	return 0;
+
     divisor = rep_LISP_MAX_INT / limit;
     do {
 	val = rand();
