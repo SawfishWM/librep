@@ -142,26 +142,49 @@ hash_string (register u_char *ptr)
     return rep_MAKE_INT (TRUNC (value));
 }
 
-DEFUN("string-hash", Fstring_hash, Sstring_hash, (repv string), rep_Subr1)
+DEFUN("string-hash", Fstring_hash, Sstring_hash, (repv string), rep_Subr1) /*
+::doc:string-hash::
+string-hash STRING
+
+Return a positive fixnum somehow related to the contents of STRING,
+such that (string= X Y) implies (= (string-hash X) (string-hash Y)).
+::end:: */
 {
     rep_DECLARE1(string, rep_STRINGP);
     return hash_string (rep_STR (string));
 }
 
-DEFUN("symbol-hash", Fsymbol_hash, Ssymbol_hash, (repv sym), rep_Subr1)
+DEFUN("symbol-hash", Fsymbol_hash, Ssymbol_hash, (repv sym), rep_Subr1) /*
+::doc:symbol-hash::
+symbol-hash SYMBOL
+
+Return a positive fixnum somehow related to the name of SYMBOL.
+::end:: */
 {
     rep_DECLARE1(sym, rep_SYMBOLP);
     return hash_string (rep_STR (rep_SYM (sym)->name));
 }
 
-DEFUN("eq-hash", Feq_hash, Seq_hash, (repv value), rep_Subr1)
+DEFUN("eq-hash", Feq_hash, Seq_hash, (repv value), rep_Subr1) /*
+::doc:eq-hash::
+eq-hash ARG
+
+Return a positive fixnum somehow related to object ARG, such that (eq X
+Y) implies (= (eq-hash X) (eq-hash Y)).
+::end:: */
 {
     hash_value hv = value;
     return rep_MAKE_INT (TRUNC (hv));
 }
 
 /* XXX This is probably _very_ sub-optimal.. */
-DEFUN("equal-hash", Fequal_hash, Sequal_hash, (repv x, repv n_), rep_Subr2)
+DEFUN("equal-hash", Fequal_hash, Sequal_hash, (repv x, repv n_), rep_Subr2) /*
+::doc:equal-hash::
+equal-hash ARG
+
+Return a positive fixnum somehow related to ARG, such that (equal X Y)
+implies (= (equal-hash X) (equal-hash Y)).
+::end:: */
 {
     int n = rep_INTP (n_) ? rep_INT (n_) : rep_PTR_SIZED_INT_BITS / 2;
     if (rep_CONSP (x))
@@ -208,7 +231,15 @@ DEFUN("equal-hash", Fequal_hash, Sequal_hash, (repv x, repv n_), rep_Subr2)
 /* table functions */
 
 DEFUN("make-table", Fmake_table, Smake_table,
-      (repv hash_fun, repv cmp_fun, repv is_weak), rep_Subr3)
+      (repv hash_fun, repv cmp_fun, repv is_weak), rep_Subr3) /*
+::doc:make-table::
+make-table HASH-FUNCTION COMPARE-FUNCTION
+
+Create and return a new hash table. When storing and referencing keys
+it will use the function HASH-FUNCTION to map keys to hash codes
+(positive fixnums), and the predicate function COMPARE-FUNCTION to
+compare two keys (should return true if the keys are considered equal).
+::end:: */
 {
     table *tab;
     rep_DECLARE(1, hash_fun, Ffunctionp (hash_fun) != Qnil);
@@ -229,12 +260,28 @@ DEFUN("make-table", Fmake_table, Smake_table,
 }
 
 DEFUN("make-weak-table", Fmake_weak_table, Smake_weak_table,
-      (repv hash_fun, repv cmp_fun), rep_Subr2)
+      (repv hash_fun, repv cmp_fun), rep_Subr2) /*
+::doc:make-weak-table::
+make-weak-table HASH-FUNCTION COMPARE-FUNCTION
+
+Similar to `make-table, except that key-value pairs stored in the table
+are said to be ``weakly keyed''. That is, they are only retained in the
+table as long the key has not been garbage collected.
+
+Unlike with tables created by the `make-table function, the fact that
+the key is stored in the table is not considered good enough to prevent
+it being garbage collected.
+::end:: */
 {
     return Fmake_table (hash_fun, cmp_fun, Qt);
 }
 
-DEFUN("tablep", Ftablep, Stablep, (repv arg), rep_Subr1)
+DEFUN("tablep", Ftablep, Stablep, (repv arg), rep_Subr1) /*
+::doc:tablep::
+tablep ARG
+
+Return true if ARG is a hash table.
+::end:: */
 {
     return TABLEP(arg) ? Qt : Qnil;
 }
@@ -296,7 +343,13 @@ lookup (repv tab, repv key)
     return 0;
 }
 
-DEFUN("table-ref", Ftable_ref, Stable_ref, (repv tab, repv key), rep_Subr2)
+DEFUN("table-ref", Ftable_ref, Stable_ref, (repv tab, repv key), rep_Subr2) /*
+::doc:table-ref::
+table-ref TABLE KEY
+
+Return the value stored in hash table TABLE indexed by object KEY.
+Returns false if no such value exists.
+::end:: */
 {
     node *n;
     rep_DECLARE1(tab, TABLEP);
@@ -305,7 +358,13 @@ DEFUN("table-ref", Ftable_ref, Stable_ref, (repv tab, repv key), rep_Subr2)
 }
 
 DEFUN("table-bound-p", Ftable_bound_p,
-      Stable_bound_p, (repv tab, repv key), rep_Subr2)
+      Stable_bound_p, (repv tab, repv key), rep_Subr2) /*
+::doc:table-bound-p::
+table-bound-p TABLE KEY
+
+Returns true if the hash table TABLE contains a value associated with
+KEY.
+::end:: */
 {
     node *n;
     rep_DECLARE1(tab, TABLEP);
@@ -314,7 +373,12 @@ DEFUN("table-bound-p", Ftable_bound_p,
 }
 
 DEFUN("table-set", Ftable_set, Stable_set,
-      (repv tab, repv key, repv value), rep_Subr3)
+      (repv tab, repv key, repv value), rep_Subr3) /*
+::doc:table-set::
+table-set TABLE KEY VALUE
+
+Associate VALUE with KEY in hash table TABLE. Returns VALUE.
+::end:: */
 {
     node *n;
     rep_DECLARE1(tab, TABLEP);
@@ -377,7 +441,12 @@ DEFUN("table-set", Ftable_set, Stable_set,
 }
 
 DEFUN("table-unset", Ftable_unset, Stable_unset,
-      (repv tab, repv key), rep_Subr2)
+      (repv tab, repv key), rep_Subr2) /*
+::doc:table-unset::
+table-unset TABLE KEY
+
+Remove any value stored in TABLE associated with KEY.
+::end:: */
 {
     node *n;
     rep_DECLARE1(tab, TABLEP);
@@ -400,7 +469,14 @@ DEFUN("table-unset", Ftable_unset, Stable_unset,
     return Qnil;
 }
 
-DEFUN("table-walk", Ftable_walk, Stable_walk, (repv fun, repv tab), rep_Subr2)
+DEFUN("table-walk", Ftable_walk, Stable_walk,
+      (repv fun, repv tab), rep_Subr2) /*
+::doc:table-walk::
+table-walk FUNCTION TABLE
+
+Call FUNCTION for every key-value pair stored in hash table TABLE. For
+each pair, the function is called with arguments `(KEY VALUE)'.
+::end:: */
 {
     rep_GC_root gc_tab, gc_fun;
     int i;
