@@ -23,7 +23,10 @@ lispdir = .
 all :
 
 lisp :
-	$(bindir)/jade -geometry +0+0 -log-msgs -f sleep-window -f compile-lisp-lib -q
+	$(bindir)/jade -geometry +0+0 -log-msgs -f sleep-window -l compiler \
+		-f compile-compiler -q
+	$(bindir)/jade -geometry +0+0 -log-msgs -f sleep-window \
+		-f compile-lisp-lib -q
 
 install :
 	for f in *.jl; \
@@ -31,7 +34,10 @@ install :
 	  $(INSTALL_DATA) $$f $(lispdir)/$$f; \
 	done
 	$(INSTALL_DATA) ../DOC $(lispdir)/../DOC
-	$(bindir)/jade -geometry +0+0 -log-msgs -f sleep-window -f compile-lisp-lib -q
+	$(bindir)/jade -geometry +0+0 -log-msgs -f sleep-window -l compiler \
+		-f compile-compiler -q
+	$(bindir)/jade -geometry +0+0 -log-msgs -f sleep-window \
+		-f compile-lisp-lib -q
 
 uninstall :
 	-rm -f $(lispdir)/*.jl $(lispdir)/*.jlc $(lispdir)/../DOC
