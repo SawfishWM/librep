@@ -584,9 +584,6 @@ typedef struct rep_funarg_struct {
     repv structure;
 } rep_funarg;
 
-/* Is this closure allowed to execute byte-code? */
-#define rep_FF_NO_BYTE_CODE	(1 << rep_CELL8_TYPE_BITS)
-
 #define rep_FUNARG(v) ((rep_funarg *)rep_PTR(v))
 #define rep_FUNARGP(v) (rep_CELL8_TYPEP(v, rep_Funarg))
 
