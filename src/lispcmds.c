@@ -1281,37 +1281,6 @@ First evals FORM1 then FORMS, returns the value that FORM1 gave.
     return rep_signal_missing_arg(1);
 }
 
-DEFUN("prog2", Fprog2, Sprog2, (repv args), rep_SF) /*
-::doc:prog2::
-prog2 FORM1 FORM2 FORMS...
-
-Evals FORM1 then FORM2 then the rest. Returns whatever FORM2 gave.
-::end:: */
-{
-    if(rep_CONSP(args) && rep_CONSP(rep_CDR(args)))
-    {
-	repv res;
-	rep_GC_root gc_args, gc_res;
-	rep_PUSHGC(gc_args, args);
-	if(Feval(rep_CAR(args)))
-	{
-	    res = Feval(rep_CAR(rep_CDR(args)));
-	    if(res)
-	    {
-		rep_PUSHGC(gc_res, res);
-		if(!Fprogn(rep_CDR(rep_CDR(args))))
-		    res = rep_NULL;
-		rep_POPGC;
-	    }
-	}
-	else
-	    res = rep_NULL;
-	rep_POPGC;
-	return(res);
-    }
-    return rep_signal_missing_arg(rep_CONSP(args) ? 2 : 1);
-}
-
 DEFUN("while", Fwhile, Swhile, (repv args), rep_SF) /*
 ::doc:while::
 while CONDITION FORMS...
@@ -2459,7 +2428,6 @@ rep_lispcmds_init(void)
     rep_ADD_SUBR(Scopy_sequence);
     rep_ADD_SUBR(Selt);
     rep_ADD_SUBR(Sprog1);
-    rep_ADD_SUBR(Sprog2);
     rep_ADD_SUBR(Swhile);
     rep_ADD_SUBR(Scond);
     rep_ADD_SUBR(Scase);
