@@ -857,7 +857,7 @@ arrayp ARG
 Returns t when ARG is an array.
 ::end:: */
 {
-    return((VECTORP(arg) || STRINGP(arg)) ? sym_t : sym_nil);
+    return((VECTORP(arg) || STRINGP(arg) || COMPILEDP(arg)) ? sym_t : sym_nil);
 }
 
 _PR VALUE cmd_aset(VALUE, VALUE, VALUE);
@@ -882,7 +882,7 @@ can only contain characters (ie, integers).
 	    return(new);
 	}
     }
-    else if(VECTORP(array))
+    else if(VECTORP(array) || COMPILEDP(array))
     {
 	if(VINT(index) < VVECT_LEN(array))
 	{
@@ -910,7 +910,7 @@ can be a vector or a string. INDEX starts at zero.
 	if(VINT(index) < STRING_LEN(array))
 	    return(MAKE_INT(VSTR(array)[VINT(index)]));
     }
-    else if(VECTORP(array))
+    else if(VECTORP(array) || COMPILEDP(array))
     {
 	if(VINT(index) < VVECT_LEN(array))
 	    return(VVECTI(array, VINT(index)));
@@ -1057,7 +1057,7 @@ Returns the number of elements in SEQUENCE (a string, list or vector).
     case V_String:
 	return(MAKE_INT(STRING_LEN(sequence)));
 	break;
-    case V_Vector:
+    case V_Vector: case V_Compiled:
 	return(MAKE_INT(VVECT_LEN(sequence)));
 	break;
     case V_Cons:
@@ -1112,11 +1112,12 @@ Returns a new sequence whose elements are eq to those in SEQUENCE.
 	    }
 	}
 	break;
-    case V_Vector:
+    case V_Vector: case V_Compiled:
 	res = make_vector(VVECT_LEN(seq));
 	if(res)
 	{
 	    int i, len = VVECT_LEN(seq);
+	    VVECT(res)->car = VVECT(seq)->car;
 	    for(i = 0; i < len; i++)
 		VVECTI(res, i) = VVECTI(seq, i);
 	}
@@ -2028,6 +2029,7 @@ symbol `lambda'
     case V_Subr4:
     case V_Subr5:
     case V_SubrN:
+    case V_Compiled:
 	return(sym_t);
     case V_Cons:
 	arg = VCAR(arg);
@@ -2076,6 +2078,7 @@ Returns t if arg is a primitive function.
     case V_SubrN:
     case V_SF:
     case V_Var:
+    case V_Compiled:
 	return(sym_t);
     default:
 	return(sym_nil);
@@ -2090,7 +2093,10 @@ sequencep ARG
 Returns t is ARG is a sequence (a list, vector or string).
 ::end:: */
 {
-    return (LISTP(arg) || VECTORP(arg) || STRINGP(arg)) ? sym_t : sym_nil;
+    if(LISTP(arg) || VECTORP(arg) || STRINGP(arg) || COMPILEDP(arg))
+	return sym_t;
+    else
+	return sym_nil;
 }
 
 _PR VALUE cmd_subr_documentation(VALUE subr, VALUE useVar);
@@ -2127,6 +2133,9 @@ Returns the doc-string associated with SUBR.
     case V_Var:
 	return(cmd_read_file_from_to(VAL(&doc_file), VSUBR(subr)->doc_index,
 				     MAKE_INT((int)'\f')));
+    case V_Compiled:
+	return VVECTI(subr, COMPILED_DOC);
+
     default:
 	return(sym_nil);
     }
@@ -2199,7 +2208,7 @@ returned.
     PUSHGC(gc_type, type);
     while(CONSP(hook))
     {
-	res = funcall(VCAR(hook), arg_list);
+	res = cmd_funcall(cmd_cons(VCAR(hook), arg_list));
 	hook = VCDR(hook);
 	TEST_INT;
 	if(INT_P)
