@@ -112,6 +112,7 @@ enum ValueType
 #define NUMBERP(v)	VTYPEP(v, V_Number)
 #define CHARP(v)	NUMBERP(v)
 #define CONSP(v)	VTYPEP(v, V_Cons)
+#define LISTP(v)	(NILP(v) || CONSP(v))
 #define VECTORP(v)	VTYPEP(v, V_Vector)
 #define SYMBOLP(v)	VTYPEP(v, V_Symbol)
 #define BUFFERP(v)	VTYPEP(v, V_Buffer)
