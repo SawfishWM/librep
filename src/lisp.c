@@ -2228,77 +2228,6 @@ rep_compare_error(repv error, repv handler)
     return rep_FALSE;
 }
 
-DEFUN("condition-case", Fcondition_case, Scondition_case,
-      (repv args, repv tail_posn), rep_SF) /*
-::doc:condition-case::
-condition-case VAR FORM HANDLERS...
-
-Evaluates FORM with error-handlers in place, if no errors occur return the
-value returned by FORM, else the value of whichever handler's body was
-evaluated.
-
-Each HANDLER is a list of `(rep_ERROR BODY...)'. rep_ERROR defines which types of
-errors the handler catches, either a symbol or a list of symbols. The
-special symbol `error' matches all types of errors.
-
-If VAR is non-nil it's a symbol whose values is bound to
-`(rep_ERROR-SYMBOL . DATA)' while the handler is evaluated (these are the
-arguments given to `signal' when the error was raised).
-::end:: */
-{
-    repv var, res = rep_NULL;
-    rep_GC_root gc_args;
-    if(!rep_CONSP(args))
-	return rep_signal_missing_arg(1);
-    rep_PUSHGC(gc_args, args);
-    var = rep_CAR(args);
-    args = rep_CDR(args);
-    if(!rep_CONSP(args))
-	return Qnil;
-    res = rep_eval(rep_CAR(args), Qnil);
-    args = rep_CDR(args);
-    if(res == rep_NULL && rep_throw_value != rep_NULL
-       && (rep_CAR(rep_throw_value) == Qerror) && rep_CONSP(rep_CDR(rep_throw_value)))
-    {
-	/* an error.  */
-	repv error = rep_CDR(rep_throw_value);
-	repv throw_val = rep_throw_value;
-	rep_throw_value = rep_NULL;
-	while(rep_CONSP(args) && rep_CONSP(rep_CAR(args)))
-	{
-	    repv handler = rep_CAR(args);
-	    if(rep_compare_error(error, rep_CAR(handler)))
-	    {
-		repv bindlist = Qnil;
-		rep_GC_root gc_bindlist;
-		if(rep_SYMBOLP(var) && !rep_NILP(var))
-		{
-		    bindlist = rep_bind_symbol(Qnil, var, error);
-		    rep_PUSHGC(gc_bindlist, bindlist);
-		}
-		res = Fprogn(rep_CDR(handler), Qnil);
-		if(rep_SYMBOLP(var) && !rep_NILP(var))
-		{
-		    rep_POPGC;
-		    rep_unbind_symbols(bindlist);
-		}
-		break;
-	    }
-	    args = rep_CDR(args);
-	    rep_TEST_INT;
-	    if(rep_INTERRUPTP)
-	    {
-		res = rep_NULL;
-		break;
-	    }
-	    if(!rep_CONSP(args))
-		rep_throw_value = throw_val; /* reinstall the error */
-	}
-    }
-    rep_POPGC;
-    return res;
-}
-
 void
 rep_handle_error(repv error, repv data)
 {
@@ -2450,7 +2379,6 @@ rep_lisp_init(void)
     rep_ADD_SUBR(Sbreak);
     rep_ADD_SUBR_INT(Sstep);
     rep_ADD_SUBR(Ssignal);
-    rep_ADD_SUBR(Scondition_case);
     rep_ADD_SUBR(Sbacktrace);
     rep_ADD_SUBR(Smax_lisp_depth);
     rep_ADD_SUBR(Sdebug_frame_environment);
