@@ -10,8 +10,10 @@ AC_DEFUN(AM_PATH_REP,
   AC_MSG_CHECKING(for rep - version >= $min_rep_version)
   rep_version=`rep-config --version`
   if test $? -eq 0; then
-    rep_major=`echo $rep_version | sed -e 's/\([[0-9]]\+\)\.\([[0-9]]\+\)/\1/'`
-    rep_minor=`echo $rep_version | sed -e 's/\([[0-9]]\+\)\.\([[0-9]]\+\)/\2/'`
+    rep_major=`echo $rep_version \
+	| sed -e 's/\([[0-9]]\+\)\.\([[0-9]]\+\)\(\.\([[0-9]]\+\)\)\?/\1/'`
+    rep_minor=`echo $rep_version \
+	| sed -e 's/\([[0-9]]\+\)\.\([[0-9]]\+\)\(\.\([[0-9]]\+\)\)\?/\2/'`
     min_rep_major=`echo $min_rep_version \
 	| sed -e 's/\([[0-9]]\+\)\.\([[0-9]]\+\)/\1/'`
     min_rep_minor=`echo $min_rep_version \
