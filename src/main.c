@@ -195,6 +195,40 @@ get_main_options(char *prog_name, int *argc_p,
     return rep_TRUE;
 }
 
+static void
+check_configuration (int *stack_low)
+{
+    int stack_high;
+    int stack_dir = (&stack_high < stack_low) ? -1 : +1;
+
+    if (sizeof (rep_PTR_SIZED_INT) < sizeof(void *))
+    {
+	fprintf (stderr,
+	" ** error: --with-value-type is incorrect; it should be `%s'\n",
+		 (sizeof (int) >= sizeof (void *)) ? "int"
+		 : (sizeof (long) >= sizeof (void *)) ? "long"
+		 : (sizeof (rep_long_long) >= sizeof (void *)) ? "long long"
+		 : "<unknown>");
+	exit (10);
+    }
+
+    if (sizeof (rep_PTR_SIZED_INT) != rep_PTR_SIZED_INT_SIZEOF)
+    {
+	fprintf (stderr,
+	" ** error: --with-value-sizeof is incorrect; it should be %d\n",
+		 sizeof (rep_PTR_SIZED_INT));
+	exit (10);
+    }
+
+    if (stack_dir != STACK_DIRECTION)
+    {
+	fprintf (stderr,
+	" ** error: --with-stack-direction is incorrect; it should be %d\n",
+		 stack_dir);
+	exit (10);
+    }
+}
+
 /* Note that `argc' _must_ (I mean _must_!) be a pointer to the real
    argc on the stack frame of the outermost procedure */
 void
@@ -211,12 +245,8 @@ rep_init_from_dump(char *prog_name, int *argc, char ***argv,
 		   void (*sys_symbols)(void), void (*sys_usage)(void),
 		   char *dump_file)
 {
-    if(sizeof(rep_PTR_SIZED_INT) < sizeof(void *))
-    {
-	fputs("sizeof(rep_PTR_SIZED_INT) < sizeof(void *); aborting\n",
-	      stderr);
-	exit(10);
-    }
+    int dummy;
+    check_configuration (&dummy);
 
     if(!sys_memory_init())
 	exit(10);
