@@ -113,6 +113,14 @@ is non-nil in which case it is added at the end."
   "Remove FUNCTION-NAME from the hook HOOK-SYMBOL."
   (set hook-symbol (delete old-func (symbol-value hook-symbol))))
 
+(defun eval-after-load (library form &aux tem)
+  "Arrange for FORM to be evaluated immediately after the library of Lisp code
+LIBRARY has been read by the `load' function. Note that LIBRARY must exactly
+match the FILE argument to `load'."
+  (if (setq tem (assoc library after-load-alist))
+      (rplacd tem (cons form (cdr tem)))
+    (setq after-load-alist (cons (cons library (list form)) after-load-alist))))
+
 
 ;; Miscellanea
 
