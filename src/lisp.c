@@ -79,6 +79,10 @@ volatile repv rep_throw_value;
    call Fcons() (maybe in gc?) so this is always valid.  */
 repv rep_int_cell, rep_term_cell;
 
+/* Used to mark tail calling throws */
+rep_ALIGN_CELL(static rep_cell tail_call_tag) = { rep_Void };
+#define TAIL_CALL_TAG rep_VAL(&tail_call_tag)
+
 DEFSYM(error, "error");
 DEFSTRING(err_error, "Error");
 DEFSYM(error_message, "error-message");
@@ -984,7 +988,7 @@ eval_list(repv list)
     while(rep_CONSP(list))
     {
 	repv tmp;
-	if(!(tmp = Feval(rep_CAR(list))))
+	if(!(tmp = rep_eval(rep_CAR(list), Qnil)))
 	{
 	    result = rep_NULL;
 	    break;
@@ -1004,7 +1008,7 @@ eval_list(repv list)
 	}
     }
     if(result && last && !rep_NILP(list))
-	*last = Feval(list);
+	*last = rep_eval(list, Qnil);
     rep_POPGC; rep_POPGC;
     return result;
 }
@@ -1031,7 +1035,7 @@ copy_to_vector (repv argList, int nargs, repv *args,
 	rep_PUSHGC(gc_old_struct, old_struct);
 	for(i = 0; i < nargs; i++)
 	{
-	    if((args[i] = Feval(rep_CAR(argList))) == rep_NULL)
+	    if((args[i] = rep_eval(rep_CAR(argList), Qnil)) == rep_NULL)
 	    {
 		rep_POPGC;
 		rep_POPGCN;
@@ -1162,7 +1166,7 @@ out:
     /* Instantiate the bindings in reverse order, so that they
        end up in the same order that the compiler compiles
        inline lambdas and tail-recursive function applications */
-    boundlist = Qnil;
+    boundlist = rep_NEW_FRAME;
     while (frame != 0)
     {
 	boundlist = binder (boundlist, frame->sym, frame->value);
@@ -1202,31 +1206,61 @@ rep_bind_lambda_list(repv lambdaList, repv argList,
 				   evalled_nargs, rep_bind_symbol);
 }
 
-repv
-rep_eval_lambda(repv lambdaExp, repv argList,
-		rep_bool eval_args, rep_bool eval_in_env)
+static repv
+eval_lambda(repv lambdaExp, repv argList, rep_bool eval_args,
+	    rep_bool eval_in_env, repv tail_posn)
 {
-    repv result = rep_NULL;
-    if(rep_CONSP(rep_CDR(lambdaExp)))
+    repv result;
+again:
+    result = rep_NULL;
+    lambdaExp = rep_CDR(lambdaExp);
+    if(rep_CONSP(lambdaExp))
     {
 	repv boundlist;
 	rep_GC_root gc_lambdaExp, gc_argList;
+
 	rep_PUSHGC(gc_lambdaExp, lambdaExp);
 	rep_PUSHGC(gc_argList, argList);
-	lambdaExp = rep_CDR(lambdaExp);
 	boundlist = rep_bind_lambda_list(rep_CAR(lambdaExp), argList,
 					 eval_args, eval_in_env);
+	rep_POPGC; rep_POPGC;
+
 	if(boundlist)
 	{
+	    /* The body of the function is only in the tail position
+	       if the parameter list only creates lexical bindings */
+	    repv new_tail_posn = !rep_SPEC_BINDINGS (boundlist) ? Qt : Qnil;
+
 	    rep_GC_root gc_boundlist;
 	    rep_PUSHGC(gc_boundlist, boundlist);
-	    result = Fprogn(rep_CDR(lambdaExp));
+	    result = Fprogn(rep_CDR(lambdaExp), new_tail_posn);
 	    rep_POPGC;
 	    rep_unbind_symbols(boundlist);
+
+	    if (tail_posn == Qnil
+		&& result == rep_NULL && rep_throw_value
+		&& rep_CAR (rep_throw_value) == TAIL_CALL_TAG
+		&& rep_CONSP (rep_CDR (rep_throw_value)))
+	    {
+		/* tail position ends here, so unwrap the saved call */
+		repv func = rep_CADR (rep_throw_value);
+		repv args = rep_CDDR (rep_throw_value);
+		rep_throw_value = rep_NULL;
+		if (rep_FUNARGP (func) && rep_CONSP (rep_FUNARG (func)->fun)
+		    && rep_CAR (rep_FUNARG (func)->fun) == Qlambda)
+		{
+		    rep_USE_FUNARG (func);
+		    lambdaExp = rep_FUNARG (func)->fun;
+		    argList = args;
+		    eval_args = rep_FALSE;
+		    goto again;
+		}
+		else
+		    result = rep_apply (func, args);
+	    }
 	}
 	else
 	    result = rep_NULL;
-	rep_POPGC; rep_POPGC;
     }
     return result;
 }
@@ -1353,11 +1387,8 @@ DEFUN ("%load-autoload", F_load_autoload,
 
 DEFSTRING(max_depth, "max-lisp-depth exceeded, possible infinite recursion?");
 
-/* Applies ARGLIST to FUN. If EVAL-ARGS is true, all arguments will be
-   evaluated first. Note that both FUN and ARGLIST are gc-protected
-   for the duration of this function. */
-repv
-rep_funcall(repv fun, repv arglist, rep_bool eval_args)
+static repv
+funcall (repv fun, repv arglist, rep_bool eval_args, repv tail_posn)
 {
     int type;
     repv result = rep_NULL;
@@ -1455,7 +1486,7 @@ again:
 		    argv[i] = rep_CAR(arglist);
 		else
 		{
-		    argv[i] = Feval(rep_CAR(arglist));
+		    argv[i] = rep_eval(rep_CAR(arglist), Qnil);
 		    if(argv[i] == rep_NULL)
 		    {
 			rep_POPGCN;
@@ -1497,25 +1528,9 @@ again:
 	/* don't allow unclosed lambdas for security reasons */
 	if(closure && car == Qlambda)
 	{
-	    /* rep_eval_lambda() expanded inline. */
-	    if(rep_CONSP(rep_CDR(fun)))
-	    {
-		repv boundlist;
-		fun = rep_CDR(fun);
-		rep_USE_FUNARG(closure);
-		boundlist = rep_bind_lambda_list(rep_CAR(fun), arglist,
-						 eval_args, rep_FALSE);
-		if(boundlist != rep_NULL)
-		{
-		    rep_GC_root gc_boundlist;
-		    rep_PUSHGC(gc_boundlist, boundlist);
-		    result = Fprogn(rep_CDR(fun));
-		    rep_POPGC;
-		    rep_unbind_symbols(boundlist);
-		}
-		else
-		    result = rep_NULL;
-	    }
+	    rep_USE_FUNARG (closure);
+	    result = eval_lambda (fun, arglist, eval_args,
+				  rep_FALSE, tail_posn);
 	}
 	else if(car == Qmacro)
 	{
@@ -1577,6 +1592,21 @@ end:
     return result;
 }
 
+/* Applies ARGLIST to FUN. If EVAL-ARGS is true, all arguments will be
+   evaluated first. Note that both FUN and ARGLIST are gc-protected
+   for the duration of this function. */
+repv
+rep_funcall(repv fun, repv arglist, rep_bool eval_args)
+{
+    return funcall (fun, arglist, eval_args, Qnil);
+}
+
+repv
+rep_apply (repv fun, repv args)
+{
+    return rep_funcall (fun, args, rep_FALSE);
+}
+
 DEFUN("funcall", Ffuncall, Sfuncall, (repv args), rep_SubrN) /*
 ::doc:funcall::
 funcall FUNCTION ARGS...
@@ -1591,7 +1621,7 @@ Calls FUNCTION with arguments ARGS... and returns the result.
 }
 
 static repv
-eval(repv obj)
+eval(repv obj, repv tail_posn)
 {
     switch(rep_TYPE(obj))
     {
@@ -1609,20 +1639,26 @@ eval(repv obj)
 	if (rep_CONSP (rep_CAR (obj)) && rep_CAAR (obj) == Qlambda)
 	{
 	    /* inline lambda; don't need to enclose it.. */
-	    ret = rep_eval_lambda (rep_CAR (obj), rep_CDR (obj),
-				   rep_TRUE, rep_TRUE);
+	    struct rep_Call lc;
+	    lc.fun = rep_CAR (obj);
+	    lc.args = rep_CDR (obj);
+	    lc.args_evalled_p = Qnil;
+	    rep_PUSH_CALL (lc);
+	    ret = eval_lambda (rep_CAR (obj), rep_CDR (obj),
+			       rep_TRUE, rep_TRUE, tail_posn);
+	    rep_POP_CALL (lc);
 	}
 	else
 	{
 	    repv funcobj;
 	    rep_GC_root gc_obj;
 	    rep_PUSHGC (gc_obj, obj);
-	    funcobj = Feval (rep_CAR(obj));
+	    funcobj = rep_eval (rep_CAR(obj), Qnil);
 	    rep_POPGC;
 	    if(funcobj == rep_NULL)
 		ret = rep_NULL;
 	    else if(rep_CELL8_TYPEP(funcobj, rep_SF))
-		ret = rep_SFFUN(funcobj)(rep_CDR(obj));
+		ret = rep_SFFUN(funcobj)(rep_CDR(obj), tail_posn);
 	    else if(rep_CONSP(funcobj) && rep_CAR(funcobj) == Qmacro)
 	    {
 		/* A macro */
@@ -1640,12 +1676,32 @@ eval(repv obj)
 		else
 		    form = Fmacroexpand(obj, Qnil);
 
-		ret = form ? Feval (form) : rep_NULL;
+		ret = form ? rep_eval (form, tail_posn) : rep_NULL;
+	    }
+	    else if (rep_FUNARGP (funcobj) && tail_posn != Qnil)
+	    {
+		/* This call can be performed later without losing any
+		   state, so package it up, then throw back to the
+		   innermost non-tail-position, where the function
+		   call will be evaluated.. */
+
+		repv args;
+
+		rep_PUSHGC (gc_obj, funcobj);
+		args = eval_list (rep_CDR (obj));
+		rep_POPGC;
+
+		if (args != rep_NULL)
+		{
+		    rep_throw_value = Fcons (TAIL_CALL_TAG,
+					     Fcons (funcobj, args));
+		}
+		ret = rep_NULL;
 	    }
 	    else
 	    {
 		rep_lisp_depth--;
-		return rep_funcall(funcobj, rep_CDR(obj), rep_TRUE);
+		return funcall (funcobj, rep_CDR(obj), rep_TRUE, tail_posn);
 	    }
 	}
 	rep_lisp_depth--;
@@ -1658,7 +1714,7 @@ eval(repv obj)
 }
 
 repv
-Feval (repv obj)
+rep_eval (repv obj, repv tail_posn)
 {
     static int DbDepth;
     rep_bool newssflag = rep_TRUE;
@@ -1677,7 +1733,7 @@ Feval (repv obj)
     }
 
     if(!rep_single_step_flag)
-	return eval(obj);
+	return eval(obj, tail_posn);
 
     DbDepth++;
     result = rep_NULL;
@@ -1704,16 +1760,16 @@ Feval (repv obj)
 		case 1:
 		    /* single step cdr and following stuff  */
 		    rep_single_step_flag = rep_TRUE;
-		    result = eval(rep_CDR(dbres));
+		    result = eval(rep_CDR(dbres), Qnil);
 		    rep_single_step_flag = rep_FALSE;
 		    break;
 		case 2:
 		    /* run through cdr and step following  */
-		    result = eval(rep_CDR(dbres));
+		    result = eval(rep_CDR(dbres), Qnil);
 		    break;
 		case 3:
 		    /* run cdr and following  */
-		    result = eval(rep_CDR(dbres));
+		    result = eval(rep_CDR(dbres), Qnil);
 		    newssflag = rep_FALSE;
 		    break;
 		case 4:
@@ -1743,7 +1799,13 @@ Feval (repv obj)
     return result;
 }
 
-DEFUN("progn", Fprogn, Sprogn, (repv args), rep_SF) /*
+repv
+Feval (repv form)
+{
+    return rep_eval (form, Qnil);
+}
+
+DEFUN("progn", Fprogn, Sprogn, (repv args, repv tail_posn), rep_SF) /*
 ::doc:progn::
 progn FORMS...
 
@@ -1756,14 +1818,13 @@ one.
     rep_PUSHGC(gc_args, args);
     while(rep_CONSP(args))
     {
-	result = Feval(rep_CAR(args));
+	result = rep_eval(rep_CAR(args),
+			  rep_CDR (args) == Qnil ? tail_posn : Qnil);
 	args = rep_CDR(args);
 	rep_TEST_INT;
 	if(!result || rep_INTERRUPTP)
 	    break;
     }
-    if(result && !rep_NILP(args))
-	result = Feval(args);
     rep_POPGC;
     return result;
 }
@@ -2058,7 +2119,7 @@ Use the Lisp debugger to evaluate FORM.
     repv res;
     rep_bool oldssf = rep_single_step_flag;
     rep_single_step_flag = rep_TRUE;
-    res = Feval(form);
+    res = rep_eval(form, Qnil);
     rep_single_step_flag = oldssf;
     return res;
 }
@@ -2138,7 +2199,8 @@ rep_compare_error(repv error, repv handler)
     return rep_FALSE;
 }
 
-DEFUN("condition-case", Fcondition_case, Scondition_case, (repv args), rep_SF) /*
+DEFUN("condition-case", Fcondition_case, Scondition_case,
+      (repv args, repv tail_posn), rep_SF) /*
 ::doc:condition-case::
 condition-case VAR FORM HANDLERS...
 
@@ -2164,7 +2226,7 @@ arguments given to `signal' when the error was raised).
     args = rep_CDR(args);
     if(!rep_CONSP(args))
 	return Qnil;
-    res = Feval(rep_CAR(args));
+    res = rep_eval(rep_CAR(args), Qnil);
     args = rep_CDR(args);
     if(res == rep_NULL && rep_throw_value != rep_NULL
        && (rep_CAR(rep_throw_value) == Qerror) && rep_CONSP(rep_CDR(rep_throw_value)))
@@ -2185,7 +2247,7 @@ arguments given to `signal' when the error was raised).
 		    bindlist = rep_bind_symbol(Qnil, var, error);
 		    rep_PUSHGC(gc_bindlist, bindlist);
 		}
-		res = Fprogn(rep_CDR(handler));
+		res = Fprogn(rep_CDR(handler), Qnil);
 		if(rep_SYMBOLP(var) && !rep_NILP(var))
 		{
 		    rep_POPGC;
