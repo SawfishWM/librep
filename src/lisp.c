@@ -1770,7 +1770,7 @@ apply FUNCTION ARGS... ARG-LIST
 
 Calls FUNCTION passing all of ARGS to it as well as all elements in ARG-LIST.
 ie,
-  (apply '+ 1 2 3 '(4 5 6))
+  (apply + 1 2 3 '(4 5 6))
    => 21
 ::end:: */
 {

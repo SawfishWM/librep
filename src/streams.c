@@ -980,7 +980,7 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 		switch (c)
 		{
 		    int radix, len, actual_len;
-		    u_char buf[256], fmt[32], *ptr;
+		    u_char buf[256], *ptr;
 
 		case 'c':
 		    rep_stream_putc (stream, rep_INT (val));
@@ -1058,10 +1058,6 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 		    rep_print_val (stream, val);
 		    break;
 
-		case 0:
-		    last_fmt = fmt;
-		    goto end_of_input;
-
 		default:
 		    if (extra_formats == rep_NULL)
 		    {
@@ -1081,6 +1077,13 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 				val = rep_null_string ();
 			    goto unquoted;
 			}
+		    }
+		    else
+		    {
+			DEFSTRING (err, "Unknown format conversion");
+			Fsignal (Qerror, rep_list_2 (rep_VAL (&err),
+						     rep_MAKE_INT (c)));
+			goto exit;
 		    }
 		}
 		this_arg++;

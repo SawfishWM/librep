@@ -127,7 +127,8 @@ uninstall :
 
 rep-config : rep-config.sh Makefile
 	$(SHELL) $< "${prefix}" "${libdir}" "${version}" \
-	  "${LDFLAGS} ${LIBS} ${GMP_LIBS}" "${repcommonexecdir}">$@
+	  "${LDFLAGS} ${LIBS} ${GMP_LIBS}" "${repcommonexecdir}" \
+	  "${repdir}/site-lisp" >$@
 	chmod +x $@
 
 repdoc : repdoc.o

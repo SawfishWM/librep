@@ -1,3 +1,11 @@
+2001-12-17  John Harper  <jsh@unfactored.org>
+
+	* rep-config.sh, Makefile.in: added --lispdir option
+
+	* streams.c (Fformat): signal an error on unknown format
+	conversions and end of input string in the middle of a format
+	directive
+
 2001-12-04  John Harper  <jsh@unfactored.org>
 
 	* numbers.c (Finexact_to_exact): made this handle fractional
