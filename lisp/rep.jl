@@ -46,7 +46,7 @@
 	  ;; Now try to interpret the user's startup file, or failing that
 	  ;; the default.jl file providing site-wide user options
 	  (or
-	   (load (concat (user-home-directory) ".reprc") t t)
+	   (load (concat (user-home-directory) ".reprc") t t t)
 	   (load "rep-default" t)))
       (error
        (default-error-handler (car error-data) (cdr error-data)))))
