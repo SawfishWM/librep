@@ -148,56 +148,8 @@ DEFSYM(read, "read");
 DEFSYM(write, "write");
 DEFSYM(append, "append");
 
-enum file_ops {
-    op_file_name_absolute_p = 0,
-    op_expand_file_name,
-    op_local_file_name,
-    op_canonical_file_name,
-    op_file_name_nondirectory,
-    op_file_name_directory,
-    op_file_name_as_directory,
-    op_directory_file_name,
-    op_open_file,
-    op_close_file,
-    op_flush_file,
-    op_seek_file,
-    op_write_buffer_contents,		/* these three for jade */
-    op_read_file_contents,
-    op_insert_file_contents,
-    op_delete_file,
-    op_rename_file,
-    op_make_directory,
-    op_delete_directory,
-    op_copy_file,
-    op_copy_file_to_local_fs,
-    op_copy_file_from_local_fs,
-    op_file_readable_p,
-    op_file_writable_p,
-    op_file_exists_p,
-    op_file_regular_p,
-    op_file_directory_p,
-    op_file_symlink_p,
-    op_file_owner_p,
-    op_file_nlinks,
-    op_file_size,
-    op_file_modes,
-    op_set_file_modes,
-    op_file_modes_as_string,
-    op_file_modtime,
-    op_directory_files,
-    op_read_symlink,
-    op_make_symlink,
-
-    op_MAX
-};
-
-struct blocked_op {
-    struct blocked_op *next;
-    repv handler;
-};
-
 /* Vector of blocked operations */
-static struct blocked_op *blocked_ops[op_MAX];
+struct blocked_op *rep_blocked_ops[op_MAX];
 
 int rep_op_write_buffer_contents = op_write_buffer_contents;
 int rep_op_read_file_contents = op_read_file_contents;
@@ -244,7 +196,7 @@ rep_get_file_handler(repv file_name, int op)
 	if(tem && !rep_NILP(tem))
 	{
 	    /* Check that this operation isn't already active. */
-	    struct blocked_op *ptr = blocked_ops[op];
+	    struct blocked_op *ptr = rep_blocked_ops[op];
 	    repv handler = rep_CDR(rep_CAR(list));
 	    while(ptr != 0 && ptr->handler != handler)
 		ptr = ptr->next;
@@ -317,11 +269,11 @@ rep_call_file_handler(repv handler, int op, repv sym, int nargs, ...)
     }
 
     rep_push_regexp_data(&matches);
-    op_data.next = blocked_ops[op];
-    blocked_ops[op] = &op_data;
+    op_data.next = rep_blocked_ops[op];
+    rep_blocked_ops[op] = &op_data;
     /* handler and arg_list are automatically gc-protected by rep_funcall */
     res = rep_funcall(handler, arg_list, rep_FALSE);
-    blocked_ops[op] = op_data.next;
+    rep_blocked_ops[op] = op_data.next;
     rep_pop_regexp_data();
 
     rep_POP_CALL(lc);
