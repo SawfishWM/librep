@@ -61,6 +61,9 @@
   (put '\#cond 'unscheme-compile-fun (get 'cond 'rep-compile-fun))
   (put 'case 'unscheme-compile-fun (get 'case 'rep-compile-fun))
 
+  (put 'list-tail 'unscheme-compile-fun (get 'scheme-compile-fun 'list-tail))
+  (put 'list-ref 'unscheme-compile-fun (get 'scheme-compile-fun 'list-ref))
+  
   ;; set properties of scheme functions that are pseudonyms of rep fns
   (mapc (lambda (cell)
 	  (if (symbolp cell)
@@ -71,7 +74,7 @@
 	      (when op
 		(put (car cell) 'rep-compile-opcode op)))))
 	'(list list* cons car cdr apply
-	  caar cadr cdar cddr caddr
+	  caar cadr cdar cddr caddr cadddr
 	  (set-car! . rplaca)
 	  (set-cdr! . rplacd)
 	  (string-set! . aset)
