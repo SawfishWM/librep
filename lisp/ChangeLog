@@ -1,4 +1,23 @@
+2000-06-19  John Harper  <john@dcs.warwick.ac.uk>
+
+	* dump.jl, disassembler.jl, compiler-utils.jl,
+	bytecode-defs.jl: s/0x/#x/ and s/0[0-9]/#o[0-9]/
+
+	* gaol.jl: can now create multiple gaols (though each has the
+	same default contents). This allows gaolled code to defun to
+	its heart's content without affecting anything else. New
+	function make-gaol returns a gaol (a structure), gaol-eval and
+	gaol-load optionally take a gaol as their second arg
+
+	* tar-file-handler.jl: when reading files from (non-huge) tar
+	archives unpack the entire contents. This unpacked version is
+	kept around for a while to service subsequent reads to other
+	files in the same archive (this is a huge win when reading
+	compressed sawfish themes)
+
 2000-06-18  John Harper  <john@dcs.warwick.ac.uk>
+
+	* version 0.12.1
 
 	* compiler-rep.jl (compile-declare): push `nil' onto the stack
 	(since all forms are assumed to leave a value on the stack)

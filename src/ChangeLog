@@ -1,3 +1,9 @@
+2000-06-19  John Harper  <john@dcs.warwick.ac.uk>
+
+	* structures.c (structure_exports_inherited_p): if export_all
+	flag is set, then return t immediately
+	(F_structure_exports_all): new function
+
 2000-06-18  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep.c (usage): added \n\ line terminations, from Sam Falkner

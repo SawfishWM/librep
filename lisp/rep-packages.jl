@@ -83,9 +83,10 @@
 	  %external-structure-ref
 	  %structure-name %structure-interface %structure-exports-p
 	  %structure-imports %structure-accessible %set-interface
-	  %get-structure %intern-structure %open-structures
-	  %access-structures %current-structure %structurep
-	  %make-closure-in-structure %structure-walk %load-autoload))
+	  %get-structure %name-structure %intern-structure
+	  %open-structures %access-structures %current-structure %structurep
+	  %make-closure-in-structure %structure-walk %structure-exports-all
+	  %load-autoload))
 
 (define-interface rep-data
   (export cons car cdr list list* make-list append nconc rplaca rplacd
