@@ -1,138 +1,155 @@
-/* Makefile.in -- cpp input for the src directory's Makefile
-   Copyright (C) 1993, 1994 John Harper <john@dcs.warwick.ac.uk>
-   $Id$
+# Makefile.in -- input for the src directory's Makefile
+# Copyright (C) 1998 John Harper <john@dcs.warwick.ac.uk>
+# $Id$
+#
+# This file is part of Jade.
+#
+# Jade is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+#
+# Jade is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Jade; see the file COPYING.  If not, write to
+# the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-   Jade is free software; you can redistribute it and/or modify it
-   under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
-   any later version.
+version=@version@
+SHELL=/bin/sh
 
-   Jade is distributed in the hope that it will be useful, but
-   WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
-   GNU General Public License for more details.
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+datadir=@datadir@
+top_srcdir=@top_srcdir@
+srcdir=@srcdir@
+bindir=@bindir@
+includedir=@includedir@
+infodir=@infodir@
+libdir=@libdir@
+libexecdir=@libexecdir@
+localstatedir=@localstatedir@
+mandir=@mandir@
+sharedstatedir=@sharedstatedir@
 
-   You should have received a copy of the GNU General Public License
-   along with Jade; see the file COPYING.  If not, write to
-   the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+jadedir=@jadedir@
+lispdir=@lispdir@
+dumped_lisp_files=@dumped_lisp_files@
+enable_dumped=@enable_dumped@
 
- CFLAGS = _CFLAGS
- LDFLAGS = _LDFLAGS
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@
+CFLAGS=$(CPPFLAGS) @CFLAGS@ @X_CFLAGS@
+LDFLAGS=@LDFLAGS@
+LIBS=@LIBOBJS@ @LIBS@
+X11LIBS=@X_PRE_LIBS@ -lX11 @X_LIBS@ @X_EXTRA_LIBS@
 
-#define MAKEFILE_CONFIG
-#include "config.h"
+HAVE_X11=@HAVE_X11@
+HAVE_UNIX=@HAVE_UNIX@
 
-#define CONCAT(a,b) __CONCAT(a,b)
-#define __CONCAT(a,b) a ## b
+VPATH=@top_srcdir@/src:../lib:.
+
+# Check if we're building a dumped binary
+ifeq ($(notdir $(shell pwd)), jaded)
+  DUMPED_JADE = 1
+else
+  DUMPED_JADE = 0
+endif
 
 COMMON_SRCS =	buffers.c commands.c debug-buffer.c edit.c editcommands.c \
 		find.c glyphs.c housekeeping.c io.c keys.c lisp.c \
-		lispcmds.c lispmach.c main.c misc.c movement.c refresh.c \
-		render.c streams.c stringmem.c symbols.c undo.c values.c \
-		views.c windows.c
-COMMON_HDRS =	jade.h edit.h lisp.h value.h keys.h config.h stringmem.h \
-		doc-strings.h revision.h
+		lispcmds.c lispmach.c main.c misc.c movement.c redisplay.c \
+		regexp.c regjade.c regsub.c streams.c stringmem.c \
+		symbols.c undo.c values.c views.c windows.c
+COMMON_HDRS =	jade.h edit.h lisp.h value.h keys.h stringmem.h \
+		revision.h regexp.h
 
-X11_SRCS +=	x11_display.c x11_eventloop.c x11_keys.c x11_misc.c \
-		x11_render.c x11_windows.c
-X11_HDRS +=	x11_defs.h x11_windowsys.h
+X11_SRCS =	x11_keys.c x11_main.c x11_misc.c x11_windows.c
+X11_HDRS =	x11_defs.h x11_windowsys.h
 
-UNIX_SRCS +=	lists.c unix_misc.c unix_processes.c unix_memory.c \
+UNIX_SRCS =	lists.c unix_main.c unix_processes.c unix_memory.c \
 		unix_server.c
-UNIX_HDRS +=	unix_defs.h
-
-AMIGA_SRCS +=	amiga_clipboard.c amiga_commandline.c amiga_display.c \
-		amiga_eventloop.c amiga_keys.c amiga_memory.c amiga_menus.c \
-		amiga_minrexx.c amiga_misc.c amiga_render.c amiga_server.c \
-		amiga_stksize.c amiga_windows.c
-AMIGA_HDRS +=	amiga_defs.h amiga_windowsys.h
+UNIX_HDRS =	unix_defs.h
 
 SRCS = $(COMMON_SRCS)
 HDRS = $(COMMON_HDRS)
 
-ALL_SRCS = $(COMMON_SRCS) $(X11_SRCS) $(UNIX_SRCS) $(AMIGA_SRCS)
+ifneq ($(HAVE_X11), 0)
+ SRCS += $(X11_SRCS)
+ HDRS += $(X11_HDRS)
+endif
 
-RE_LIB = regexp/libregexp.a
-LIBS = $(RE_LIB)
-
-#ifdef HAVE_X11
-SRCS += $(X11_SRCS)
-HDRS += $(X11_HDRS)
-LIBS += -L$(XLIBDIR) -lX11
-#endif /* HAVE_X11 */
-
-#ifdef HAVE_UNIX
-SRCS += $(UNIX_SRCS)
-HDRS += $(UNIX_HDRS)
-#endif /* HAVE_UNIX */
-
-#ifdef HAVE_AMIGA
-SRCS += $(AMIGA_SRCS)
-HDRS += $(AMIGA_HDRS)
-#endif /* HAVE_AMIGA */
+ifneq ($(HAVE_UNIX), 0)
+ SRCS += $(UNIX_SRCS)
+ HDRS += $(UNIX_HDRS)
+endif
 
 OBJS = $(SRCS:.c=.o)
 
-/* Redefine how to make `.o' from `.c', the -DJADE_DIR has to be here
-   so CFLAGS is available to the user.  */
-.c.o :
-	$(CC) -c $(CFLAGS) $(CPPFLAGS) CONCAT(-DJADE_DIR=, _JADE_DIR) -o $@ $<
+ifeq ($(DUMPED_JADE), 1)
+ CFLAGS := $(CFLAGS) -DDUMPED
+ DUMP_FLAGS := @dump_flags@
+ DUMPED_IN  := $(dumped_lisp_files)
+ DUMPED_SRC := $(addprefix $(lispdir)/, $(addsuffix .jl, $(DUMPED_IN)))
+ DUMPED_CMP := $(DUMPED_SRC:.jl=.jlc)
+ DUMPED_ASM := dumped.s
+ DUMPED_OBJ := $(DUMPED_ASM:.s=.o)
+ OBJS       += $(DUMPED_OBJ)
+endif
 
+ifneq ($(HAVE_X11), 0)
+ JADE_LIBS = $(LIBS) $(X11LIBS)
+else
+ JADE_LIBS = $(LIBS)
+endif
+JADECLIENT_LIBS = $(LIBS)
+
+.c.o :
+	$(CC) -c $(CFLAGS) -DJADE -DJADE_DIR=$(jadedir) -I. -I../lib -I.. -o $@ $<
+
+.PHONY: clean realclean
+
+ifeq ($(DUMPED_JADE), 0)
 all : jade jadeclient
 
-jade : jade_protos.h $(OBJS) re
-	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LIBS) $(EXTRA_LIBS)
+jade : jade_protos.h doc-strings.h $(OBJS)
+	$(CC) $(LDFLAGS) -o jade $(OBJS) $(JADE_LIBS)
+else
+all : jaded jadeclient
 
-jade_protos.h : stripproto $(SRCS)
-	./stripproto -o $@ $(SRCS)
+jaded : jade_protos.h doc-strings.h $(OBJS)
+	$(CC) $(LDFLAGS) -o jaded $(OBJS) $(JADE_LIBS)
+endif
 
-re :
-	(cd regexp && $(MAKE))
-
-/* I guess that properly this should depend on $(SRCS) but that would mean
-   that whenever *any* source file is modified everything has to be re-built!
-   This way when a doc-string is changed in a source file you should delete
-   the doc-strings.h file to force it to be rebuilt.  */
-doc-strings.h : makedoc
-	./makedoc DOC.bare doc-strings.h $(SRCS)
-	cp DOC.bare ../DOC
-
-build.h : doc-strings.h
-	./build-info
-
-stripproto : stripproto.o
-	$(CC) $(LDFLAGS) -o $@ stripproto.o $(EXTRA_LIBS)
-
-makedoc : makedoc.o
-	$(CC) $(LDFLAGS) -o $@ makedoc.o $(EXTRA_LIBS)
-
-#ifdef HAVE_UNIX
 jadeclient : unix_client.o
-	$(CC) $(LDFLAGS) -o $@ unix_client.o $(EXTRA_LIBS)
-#endif
+	$(CC) $(LDFLAGS) -o $@ $^ $(JADECLIENT_LIBS)
 
-#ifdef HAVE_AMIGA
-jadeclient : amiga_client.o
-	$(CC) $(LDFLAGS) -o $@ amiga_client.o
-#endif
+ifeq ($(DUMPED_JADE), 1)
+$(DUMPED_ASM) : $(DUMPED_CMP)
+	../jade/jade -geometry +0+0 -log-msgs -f sleep-window \
+	  -l dump -f dump-batch $(DUMP_FLAGS) -o $@ $(dumped_lisp_files) -q
 
-nobak :
-	-rm -f *~
+$(DUMPED_CMP) : $(DUMPED_SRC)
+	(cd $(top_srcdir)/lisp && $(MAKE) lisp)
+endif
 
-clean : nobak
-	-rm -f *.o jade_protos.h doc-strings.h build.h core
+clean :
+	rm -f *~ *.o build.h core
 
 realclean : clean
-	-rm -f jade jadeclient DOC.bare makedoc stripproto
-	-rm -f config.* Makefile
-	-(cd regexp && $(MAKE) clean)
+	rm -f jade jaded jadeclient makedoc stripproto Makefile
+ifeq ($(DUMPED_JADE), 1)
+	rm -f dump.out dumped.s
+endif
 
 buffers.o	: $(HDRS)
-commandline.o	: $(HDRS)
 commands.o	: $(HDRS)
+debug-buffer.o	: $(HDRS)
 edit.o		: $(HDRS)
 editcommands.o	: $(HDRS)
-editrect.o	: $(HDRS)
 find.o		: $(HDRS)
 glyphs.o	: $(HDRS)
 housekeeping.o	: $(HDRS)
@@ -144,8 +161,7 @@ lispmach.o	: $(HDRS) bytecodes.h
 main.o		: $(HDRS)
 misc.o		: $(HDRS) build.h
 movement.o	: $(HDRS)
-refresh.o	: $(HDRS)
-render.o	: $(HDRS)
+redisplay.o	: $(HDRS)
 streams.o	: $(HDRS)
 stringmem.o	: $(HDRS)
 symbols.o	: $(HDRS)
@@ -154,38 +170,22 @@ values.o	: $(HDRS)
 views.o		: $(HDRS)
 windows.o	: $(HDRS)
 
-#ifdef HAVE_X11
-x11_commandline.o : $(HDRS)
-x11_display.o	: $(HDRS)
-x11_eventloop.o : $(HDRS)
-x11_keys.o	: $(HDRS)
-x11_misc.o	: $(HDRS)
-x11_render.o	: $(HDRS)
-x11_windows.o	: $(HDRS)
-#endif /* HAVE_X11 */
+regerror.c	: $(HDRS) regprog.h regmagic.h
+regexp.c	: $(HDRS) regprog.h regmagic.h
+regsub.c	: $(HDRS) regprog.h regmagic.h
+regjade.c	: $(HDRS) regprog.h regmagic.h
 
-#ifdef HAVE_UNIX
-unix_memory.o	: $(HDRS)
-unix_misc.o	: $(HDRS)
-unix_processes.o : $(HDRS)
-unix_server.o	: $(HDRS)
-#endif /* HAVE_UNIX */
+ifneq ($(HAVE_X11), 0)
+ x11_keys.o	: $(HDRS)
+ x11_main.o	: $(HDRS)
+ x11_misc.o	: $(HDRS)
+ x11_render.o	: $(HDRS)
+ x11_windows.o	: $(HDRS)
+endif
 
-#ifdef HAVE_AMIGA
-amiga_client.o	: amiga_server.h
-amiga_clipboard.o : $(HDRS)
-amiga_commandline.o: $(HDRS)
-amiga_display.o : $(HDRS)
-amiga_eventloop.o : $(HDRS)
-amiga_keys.o	: $(HDRS)
-amiga_memory.o	: $(HDRS)
-amiga_menus.o	: $(HDRS)
-amiga_minrexx.o : $(HDRS)
-amiga_misc.o	: $(HDRS)
-amiga_render.o	: $(HDRS)
-amiga_server.o	: $(HDRS) amiga_server.h
-amiga_stksize.o : $(HDRS)
-amiga_windows.o : $(HDRS)
-#else
-lists.o		: $(HDRS)
-#endif /* HAVE_AMIGA */
+ifneq ($(HAVE_UNIX), 0)
+ unix_main.o	: $(HDRS)
+ unix_memory.o	: $(HDRS)
+ unix_processes.o : $(HDRS)
+ unix_server.o	: $(HDRS)
+endif
