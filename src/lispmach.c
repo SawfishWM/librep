@@ -71,9 +71,11 @@ static u_long byte_code_usage[256];
 	FUNARG
 		instantiate this closure
 	(PC . STACK-DEPTH)
-		not unbound here; install exception handler at PC */
-inline void
-rep_unbind_object(repv item)
+		not unbound here; install exception handler at PC
+
+   returns the number of dynamic bindings removed */
+static inline int
+inline_unbind_object(repv item)
 {
     if(rep_CONSP(item))
     {
@@ -81,31 +83,43 @@ rep_unbind_object(repv item)
 	{
 	    /* unwind-protect protection forms. */
 	    Feval(rep_CDR(item));
+	    return 1;
 	}
 	else if(rep_SYMBOLP(rep_CAR(item)) || rep_CONSP(rep_CAR(item)))
 	{
 	    /* A set of symbol bindings (let or let*). */
-	    rep_unbind_symbols(item);
+	    return rep_unbind_symbols(item);
 	}
 	else
 	{
 	    rep_type *t = rep_get_data_type(rep_TYPE(rep_CAR(item)));
 	    if (t->unbind != 0)
 		t->unbind(item);
+	    return 1;
 	}
     }
     else if (rep_FUNARGP(item))
+    {
 	rep_USE_FUNARG(item);
+	return 1;
+    }
     else
     {
 	rep_type *t = rep_get_data_type(rep_TYPE(item));
 	if (t->unbind != 0)
 	    t->unbind(item);
+	return 1;
     }
 }
 
+int
+rep_unbind_object (repv item)
+{
+    return inline_unbind_object (item);
+}
+
 /* Bind one object, returning the handle to later unbind by. */
-inline repv
+repv
 rep_bind_object(repv obj)
 {
     rep_type *t = rep_get_data_type(rep_TYPE(obj));
@@ -113,6 +127,29 @@ rep_bind_object(repv obj)
 	return t->bind(obj);
     else
 	return Qnil;
+}
+
+static inline void
+unbind_all (repv stack)
+{
+    while (rep_CONSP (stack))
+    {
+	rep_unbind_object (rep_CAR (stack));
+	stack = rep_CDR (stack);
+    }
+}
+
+static inline repv
+unbind_all_but_one (repv stack)
+{
+    if (!rep_CONSP(stack))
+	return Qnil;
+    while (rep_CONSP(rep_CDR(stack)))
+    {
+	rep_unbind_object (rep_CAR (stack));
+	stack = rep_CDR (stack);
+    }
+    return stack;
 }
 
 /* Walk COUNT entries down the environment */
@@ -123,6 +160,20 @@ snap_environment (int count)
     while (count-- > 0)
 	ptr = rep_CDR(ptr);
     return rep_CAR(ptr);
+}
+
+/* The number of special variables bound by FRAME */
+static inline int
+bound_specials (repv frame)
+{
+    int specials = 0;
+    while(rep_CONSP(frame))
+    {
+	if (rep_CONSP(rep_CAR(frame)))
+	    specials++;
+	frame = rep_CDR(frame);
+    }
+    return specials;
 }
 
 
@@ -176,9 +227,10 @@ list_ref (repv list, int elt)
 	    arg = insn - op;						\
 	rep_CONCAT(op_, op):
 
-DEFUN("jade-byte-code", Fjade_byte_code, Sjade_byte_code, (repv code, repv consts, repv stkreq), rep_Subr3) /*
+DEFUN("jade-byte-code", Fjade_byte_code, Sjade_byte_code,
+      (repv code, repv consts, repv stkreq, repv frame), rep_Subr4) /*
 ::doc:jade-byte-code::
-jade-byte-code CODE-STRING CONST-VEC MAX-STACK
+jade-byte-code CODE-STRING CONST-VEC MAX-STACK [FRAME]
 
 Evaluates the string of byte codes CODE-STRING, the constants that it
 references are contained in the vector CONST-VEC. MAX-STACK is a number
@@ -194,24 +246,32 @@ of byte code. See the functions `compile-file', `compile-directory' and
     register repv *stackp;
     /* This holds a list of sets of bindings, it can also hold the form of
        an unwind-protect that always gets eval'd (when the car is t).  */
-    repv bindstack = Qnil;
+    repv bindstack;
     register u_char *pc;
     rep_GC_root gc_code, gc_consts, gc_bindstack;
     /* The `gcv_N' field is only filled in with the stack-size when there's
        a chance of gc.	*/
     rep_GC_n_roots gc_stackbase;
 
-    rep_DECLARE1(code, rep_STRINGP);
-    rep_DECLARE2(consts, rep_VECTORP);
+    /* this is the number of dynamic `bindings' in effect (including
+       non-variable bindings). */
+    int impurity;
+
     rep_DECLARE3(stkreq, rep_INTP);
 
+again_stack:
     stackbase = alloca(sizeof(repv) * (rep_INT(stkreq) + 1));
-
     /* Make sure that even when the stack has no entries, the TOP
        element still != 0 (for the error-detection at label quit:) */
     *stackbase++ = Qt;
 
+again:
+    rep_DECLARE1(code, rep_STRINGP);
+    rep_DECLARE2(consts, rep_VECTORP);
+
     stackp = stackbase - 1;
+    bindstack = Fcons (frame, Qnil);
+    impurity = bound_specials (frame);
     rep_PUSHGC(gc_code, code);
     rep_PUSHGC(gc_consts, consts);
     rep_PUSHGC(gc_bindstack, bindstack);
@@ -238,10 +298,6 @@ of byte code. See the functions `compile-file', `compile-directory' and
 	    int arg;
 	    repv tmp, tmp2;
 	    struct rep_Call lc;
-
-	case 0:
-	    /* Terminating NUL character acts as return instruction */
-	    goto quit;
 
 	CASE_OP_ARG(OP_CALL)
 #ifdef MINSTACK
@@ -408,18 +464,57 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		    if (rep_bytecode_interpreter == 0)
 			goto invalid;
 
-		    bindings = rep_bind_lambda_list(rep_COMPILED_LAMBDA(tmp),
-						    tmp2, rep_FALSE);
-		    if(bindings != rep_NULL)
+		    if (impurity != 0 || *pc != OP_RETURN)
 		    {
-			rep_GC_root gc_bindings;
-			rep_PUSHGC(gc_bindings, bindings);
-			TOP = (rep_bytecode_interpreter
-			       (rep_COMPILED_CODE(tmp),
-				rep_COMPILED_CONSTANTS(tmp),
-				rep_MAKE_INT(rep_COMPILED_STACK(tmp))));
-			rep_POPGC;
-			rep_unbind_symbols(bindings);
+			bindings = (rep_bind_lambda_list
+				    (rep_COMPILED_LAMBDA(tmp),
+				     tmp2, rep_FALSE));
+			if(bindings != rep_NULL)
+			{
+			    TOP = (rep_bytecode_interpreter
+				   (rep_COMPILED_CODE(tmp),
+				    rep_COMPILED_CONSTANTS(tmp),
+				    rep_MAKE_INT(rep_COMPILED_STACK(tmp)),
+				    bindings));
+			}
+		    }
+		    else
+		    {
+			/* A tail call that's safe for eliminating */
+
+			/* squash the call stack */
+			{
+			    repv fun = lc.fun;
+			    repv args = lc.args;
+			    repv args_eval = lc.args_evalled_p;
+			    rep_POP_CALL(lc);
+			    lc.fun = fun;
+			    lc.args = args;
+			    lc.args_evalled_p = args_eval;
+			}
+
+			unbind_all (bindstack);
+			bindings = (rep_bind_lambda_list
+				    (rep_COMPILED_LAMBDA(tmp),
+				     tmp2, rep_FALSE));
+			if(bindings != rep_NULL)
+			{
+			    /* set up parameters */
+			    code = rep_COMPILED_CODE (tmp);
+			    consts = rep_COMPILED_CONSTANTS (tmp);
+			    frame = bindings;
+
+			    /* do the goto, after deciding if the
+			       current stack allocation is sufficient. */
+			    rep_POPGCN; rep_POPGC; rep_POPGC; rep_POPGC;
+			    if (rep_COMPILED_STACK (tmp) > rep_INT(stkreq))
+			    {
+				stkreq = rep_MAKE_INT(rep_COMPILED_STACK(tmp));
+				goto again_stack;
+			    }
+			    else
+				goto again;
+			}
 		    }
 		}
 		else
@@ -465,6 +560,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		rep_SYM(tmp)->car |= rep_SF_SPECIAL;
 	    rep_CAR(bindstack) = rep_bind_symbol(rep_CAR(bindstack),
 						 tmp, tmp2);
+	    impurity++;
 	    break;
 
 	CASE_OP_ARG(OP_REFN)
@@ -519,7 +615,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 
 	case OP_UNBIND:
 	    gc_stackbase.count = STK_USE;
-	    rep_unbind_object(rep_CAR(bindstack));
+	    impurity -= inline_unbind_object(rep_CAR(bindstack));
 	    bindstack = rep_CDR(bindstack);
 	    break;
 
@@ -860,6 +956,18 @@ of byte code. See the functions `compile-file', `compile-directory' and
 	       error handler. */
 	    tmp = RET_POP;
 	    bindstack = Fcons(Fcons(tmp, rep_MAKE_INT(STK_USE)), bindstack);
+	    impurity++;
+	    break;
+
+	case OP_RETURN:
+	    gc_stackbase.count = STK_USE;
+	    unbind_all (bindstack);
+	    goto quit;
+
+	case OP_UNBINDALL:
+	    gc_stackbase.count = STK_USE;
+	    bindstack = unbind_all_but_one (bindstack);
+	    impurity = 0;
 	    break;
 
 	case OP_BOUNDP:
@@ -895,8 +1003,12 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		tmp = rep_CDR(TOP);	/* the error data */
 		tmp2 = stackp[-1];	/* the symbol to bind to */
 		if(rep_SYMBOLP(tmp2) && !rep_NILP(tmp2))
+		{
 		    bindstack = Fcons(rep_bind_symbol(Qnil, tmp2, tmp),
-					 bindstack);
+				      bindstack);
+		    if (rep_SYM(tmp2)->car & rep_SF_SPECIAL)
+			impurity++;
+		}
 		else
 		    /* Placeholder to allow simple unbinding */
 		    bindstack = Fcons(Qnil, bindstack);
@@ -1099,6 +1211,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 	case OP_BINDOBJ:
 	    tmp = RET_POP;
 	    bindstack = Fcons(rep_bind_object(tmp), bindstack);
+	    impurity++;
 	    break;
 
 	case OP_SWAP2:
@@ -1123,6 +1236,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 
 	case OP_BINDENV:
 	    bindstack = Fcons (Fmake_closure (Qnil, Qnil), bindstack);
+	    impurity++;
 	    break;
 
 	/* Jump instructions follow */
@@ -1227,7 +1341,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		    rep_throw_value = rep_NULL;
 		    rep_PUSHGC(gc_throwval, throwval);
 		    gc_stackbase.count = STK_USE;
-		    rep_unbind_object(item);
+		    impurity -= rep_unbind_object(item);
 		    bindstack = rep_CDR(bindstack);
 		    rep_POPGC;
 		    rep_throw_value = throwval;
@@ -1249,6 +1363,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		    rep_throw_value = rep_NULL;
 		    pc = rep_STR(code) + rep_INT(rep_CAR(item));
 		    bindstack = rep_CDR(bindstack);
+		    impurity--;
 		    goto fetch;
 		}
 		else
@@ -1256,6 +1371,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		    /* car is an exception handler, but rep_throw_value isn't
 		       set, so there's nothing to handle. Keep unwinding. */
 		    bindstack = rep_CDR(bindstack);
+		    impurity--;
 		}
 	    }
 	    TOP = rep_NULL;
