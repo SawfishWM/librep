@@ -26,6 +26,7 @@
 _PR void *open_dl_library(VALUE file_name);
 _PR void mark_dl_data(void);
 _PR void kill_dl_libraries(void);
+_PR bool find_c_symbol(void *, char **, void **);
 
 #ifdef HAVE_DLFCN_H
 # include <dlfcn.h>
@@ -136,6 +137,22 @@ kill_dl_libraries(void)
 	str_free(x);
 	x = next;
     }
+}
+
+/* Attempt to find the name and address of the nearest symbol before or
+   equal to PTR */
+bool
+find_c_symbol(void *ptr, char **symbol_name_p, void **symbol_addr_p)
+{
+    struct dl_info info;
+    if(dladdr(ptr, &info) != 0)
+    {
+	*symbol_name_p = (char *)info.dli_sname;
+	*symbol_addr_p = info.dli_saddr;
+	return TRUE;
+    }
+    else
+	return FALSE;
 }
 	
 #endif /* HAVE_DYNAMIC_LOADING */
