@@ -96,7 +96,7 @@ rep_register_type(u_int code, char *name,
     }
     t->code = code;
     t->name = name;
-    t->compare = compare;
+    t->compare = compare ? compare : rep_ptr_cmp;
     t->princ = princ;
     t->print = print;
     t->sweep = sweep;
