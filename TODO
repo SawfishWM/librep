@@ -10,8 +10,6 @@ and more long-term ideas are marked -
 Outstanding bugs
 ================
 
- ! (canonical-file-name "~") gives an error: Can't find home directory, .
-
  ! uses setlocale("LC_NUMERIC", "C") to make floating point I/O work,
    need to reimplement this locally
 
@@ -77,7 +75,6 @@ Outstanding bugs
  + deprecated:
 
    * 0xNN and 0NN integer syntaxes [0.13+]
-   * define-value [0.13+]
    * &optional and &rest (replaced by #!optional and #!rest) [0.13+]
 
 
@@ -158,6 +155,9 @@ General programming tasks:
    (there is now support for waking threads via polling)
 
  - add regression tests
+
+   [ partially done, there is a test framework now, but only a couple
+   of modules define tests ]
 
  - scheme compilation is worse than rep compilation
 

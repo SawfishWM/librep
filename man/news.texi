@@ -3,6 +3,107 @@
 @appendix News
 @cindex News
 
+@heading 0.15
+
+@itemize @bullet
+
+@item Parser can now associate lexical location (file name and line
+number) with parsed objects. Added @code{call-with-lexical-origins} and
+@code{lexical-origin} functions. This adds memory overhead but is only
+enabled in interpreted mode, or other times it could be useful (e.g.
+when compiling)
+
+@item The compiler enables line-numbering, and uses the information
+when it prints errors. It also prints errors in a more standard format
+(intended to mimic GCC), and distinguishes warnings from errors 
+
+@item Debugger is much improved, and supports emacs-style emission of
+line number tokens. Use the included @file{rep-debugger.el} elisp code
+to source-debug rep programs in Emacs!
+
+@item New command line option @samp{--debug}. When given, rep starts up
+in the debugger
+
+@item Reformatted backtrace output. Also backtraces only ever include
+evaluated argument lists now. They also include lexical information
+when possible
+
+@item Syntax errors include error description and line number
+
+@item Now supports weak reference objects. New functions
+@code{make-weak-ref}, @code{weak-ref}, @code{weak-ref-set}. A weak
+reference is a pointer to another object. When that object is garbage
+collected, the pointer in the weak reference is set to false.
+
+@item New `error helper' module. When an error is handled, this module
+is called and tries to print a human-understandable message explaining
+why the error may have occurred
+
+@item Added an @code{#undefined} value. Returned by @code{%define} and
+the macros using it (@code{defun}, @code{defmacro}, etc@dots{})
+
+@item New function @code{table-size} in module @code{rep.data.tables}
+
+@item @code{thread-suspend} returns true iff the timeout was reached
+(i.e. return false if @code{thread-wake} was used to unsuspend the
+thread)
+
+@item Objects defined using the @code{object} macro now have an
+implicit @code{self} binding -- the object representing their self (or
+their most derived self)
+
+@item Added @var{timeout} parameter to @code{condition-variable-wait}
+and @code{obtain-mutex} functions
+
+@item New @code{rep.threads.message-port} module, implements a simple
+message queue for threads
+
+@item Bug fixes:
+
+@itemize @minus
+
+@item Remembered that file sizes may not fit in fixnums
+
+@item Don't preserve trailing slashes in results of canonical-file-name
+(to make the path canonical)
+
+@item Don't signal an error when end of file is encountered immediately
+after reading @samp{#\X} syntax
+
+@item @code{current-thread} and @code{all-threads} will create a thread
+object for the implicit thread if there isn't one already
+
+@item In C subrs that take optional integer arguments, signal an error
+if the given value isn't an integer or undefined (false). Also, accept
+all types of numbers where it makes sense to do so
+
+@item Signal an error if end of file is read while parsing a block
+comment
+
+@item Don't ever return a null object from @code{current-time-string}
+
+@item Catch errors signalled during command line option processing, and
+pass them to the standard error handler
+
+@item Right hand side of @code{letrec} bindings may now have more than
+one form
+
+@item The @code{object} macro now evaluates its @var{base-object}
+parameter exactly once
+
+@item Finally removed @code{define-value}
+
+@item Ignore null lines (or lines which only have comments) in the repl
+
+@item In the compiler, don't expand macros which have have been
+shadowed by local bindings
+
+@item Don't print some compiler errors/warnings twice
+
+@end itemize
+@end itemize
+
+
 @heading 0.14
 
 @itemize @bullet
@@ -46,6 +147,7 @@ interpreter with the @samp{--check} option will run all tests that have
 been set up to be autoloaded
 
 @item Bug fixes:
+
 @itemize @minus
 
 @item When reading from strings, don't choke on zero bytes
