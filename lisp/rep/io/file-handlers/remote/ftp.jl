@@ -59,7 +59,7 @@ concurrently.")
 (defvar remote-ftp-transfer-type 'binary
   "Mode in which to transfer files, one of the symbols `binary' or `ascii'.")
 
-(defvar remote-ftp-display-progress t
+(defvar remote-ftp-display-progress nil
   "When non-nil, show progress of FTP transfers.")
 
 (defvar remote-ftp-echo-output nil
@@ -67,14 +67,6 @@ concurrently.")
 
 (defvar remote-ftp-passwd-alist nil
   "Alist of (USER@HOST . PASSWD) defining all known FTP passwords.")
-
-(defvar remote-ftp-host-user-alist nil
-  "Alist of (HOST-REGEXP . USER-NAME) matching FTP session host names to
-usernames. Only used when no username is given in a filename.")
-
-(defvar remote-ftp-default-user (user-login-name)
-  "Default username to use for FTP sessions when none is specified, either
-explicitly, or by the remote-ftp-host-user-alist variable.")
 
 (defvar remote-ftp-ls-format "ls \"-la %s\""
   "FTP command format string to produce an `ls -l' format listing of the
@@ -126,7 +118,7 @@ FTP process should be abandoned, and a new session started.")
 (defvar remote-ftp-passwd-msgs "[Pp]assword: *"
   "Regular expression matching password prompt.")
 
-(defvar remote-ftp-ls-l-regexp "([a-zA-Z-]+)[ \t]+([0-9]+)[ \t]+([a-zA-Z0-9_]+)[ \t]+([a-zA-Z0-9_]+)[\t ]+([0-9]+)[ \t]+([a-zA-Z]+[ \t]+[0-9]+[ \t]+[0-9:]+)[ \t]+([^/ \t\n]+)"
+(defvar remote-ftp-ls-l-regexp "([a-zA-Z-]+)\\s+(\\d+)\\s+(\\w+)\\s+(\\w+)\\s+(\\d+)\\s+([a-zA-Z]+\\s+\\d+\\s+[0-9:]+)\\s+([^/ \t\n]+)"
   "Regexp defining `ls -l' output syntax. Hairy.")
 
 (defvar remote-ftp-ls-l-type-alist '((?- . file) (?d . directory)
@@ -154,7 +146,7 @@ file types.")
 ;; Return an ftp structure for HOST and USER, with a running ftp session
 (defun remote-ftp-open-host (host &optional user)
   (unless user
-    (setq user (remote-ftp-get-user host)))
+    (setq user (remote-get-user host)))
   (catch 'foo
     (mapc #'(lambda (s)
 	      (when (and (string= (aref s remote-ftp-host) host)
@@ -210,7 +202,7 @@ file types.")
   "Close the FTP subprocess connect to `USER@HOST'."
   (interactive "sHost:\nsUser:")
   (when (or (null user) (string= user ""))
-    (setq user (remote-ftp-get-user host)))
+    (setq user (remote-get-user host)))
   (catch 'foo
     (mapc #'(lambda (s)
 	      (when (and (string= (aref s remote-ftp-host) host)
@@ -230,10 +222,6 @@ file types.")
 	      (and (eq (aref s remote-ftp-process) process)
 		   (throw 'return s)))
 	  remote-ftp-sessions)))
-
-(defun remote-ftp-get-user (host)
-  (or (cdr (assoc-regexp host remote-ftp-host-user-alist))
-      remote-ftp-default-user))
 
 
 ;; Communicating with ftp sessions
@@ -488,8 +476,9 @@ file types.")
 (defconst remote-ftp-file-mode-string 5)
 (defconst remote-ftp-file-nlinks 6)
 (defconst remote-ftp-file-user 7)
-(defconst remote-ftp-file-group 7)
-(defconst remote-ftp-file-struct-size 8)
+(defconst remote-ftp-file-group 8)
+(defconst remote-ftp-file-symlink 9)
+(defconst remote-ftp-file-struct-size 10)
 
 (defconst remote-ftp-cache-dir 0)
 (defconst remote-ftp-cache-expiry 1)
@@ -507,10 +496,13 @@ file types.")
 	 (size (read-from-string (substring string
 					    (match-start 5) (match-end 5))))
 	 (modtime (substring string (match-start 6) (match-end 6)))
-	 (name (substring string (match-start 7) (match-end 7))))
+	 (name (substring string (match-start 7) (match-end 7)))
+	 symlink)
+      (when (string-match ".*\\s+->\\s+(\\S+)" string point)
+	(setq symlink (substring string (match-start 1) (match-end 1))))
       (vector name size modtime (cdr (assq (aref mode-string 0)
 					   remote-ftp-ls-l-type-alist))
-	      nil mode-string nlinks user group))))
+	      nil mode-string nlinks user group symlink))))
 
 (defun remote-ftp-file-modtime (file-struct)
   (when (stringp (aref file-struct remote-ftp-file-modtime))
@@ -619,6 +611,12 @@ file types.")
     (when entry
       (aset session remote-ftp-dircache
 	    (delq entry (aref session remote-ftp-dircache))))))
+
+(defun remote-ftp-empty-cache ()
+  "Discard all cached FTP directory entries."
+  (interactive)
+  (mapc #'(lambda (ses)
+	    (aset ses remote-ftp-dircache nil)) remote-ftp-sessions))
 
 
 ;; Password caching
@@ -802,5 +800,9 @@ file types.")
 	    (and file (/= (logand (remote-ftp-file-modes file)
 				  (if (remote-ftp-file-owner-p session file)
 				      0200 0002)) 0)))
+	   ((eq op 'read-symlink)
+	    (and file (or (aref file remote-ftp-file-symlink)
+			  (signal 'file-error
+				  (list "File isn't a symlink:" split-name)))))
 	   (t
 	    (error "Unsupported FTP op: %s %s" op args))))))))))
