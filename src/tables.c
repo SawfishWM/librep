@@ -161,21 +161,27 @@ DEFUN("eq-hash", Feq_hash, Seq_hash, (repv value), rep_Subr1)
 }
 
 /* XXX This is probably _very_ sub-optimal.. */
-DEFUN("equal-hash", Fequal_hash, Sequal_hash, (repv x), rep_Subr1)
+DEFUN("equal-hash", Fequal_hash, Sequal_hash, (repv x, repv n_), rep_Subr2)
 {
+    int n = rep_INTP (n_) ? rep_INT (n_) : rep_PTR_SIZED_INT_BITS / 2;
     if (rep_CONSP (x))
     {
-	repv left = Fequal_hash (rep_CAR(x));
-	repv right = Fequal_hash (rep_CDR(x));
-	return rep_MAKE_INT (rep_INT (left) ^ (rep_INT (right) >> 1));
+	if (n > 0)
+	{
+	    repv left = Fequal_hash (rep_CAR(x), rep_MAKE_INT (n/2));
+	    repv right = Fequal_hash (rep_CDR(x), rep_MAKE_INT (n/2));
+	    return rep_MAKE_INT ((rep_INT (left) << 1) + rep_INT (right));
+	}
+	else
+	    return rep_MAKE_INT (rep_Cons);
     }
     else if (rep_VECTORP (x) || rep_COMPILEDP (x))
     {
-	int i;
 	repv hash = 0;
-	for (i = 0; i < rep_VECT_LEN (x); i++)
+	int i = MIN (n, rep_VECT_LEN (x));
+	while (i-- > 0)
 	{
-	    repv tem = Fequal_hash (rep_VECTI (x, i));
+	    repv tem = Fequal_hash (rep_VECTI (x, i), rep_MAKE_INT (n/2));
 	    hash = hash * 33 + rep_INT (tem);
 	}
 	return rep_MAKE_INT (TRUNC (hash));
@@ -184,8 +190,10 @@ DEFUN("equal-hash", Fequal_hash, Sequal_hash, (repv x), rep_Subr1)
 	return Fstring_hash (x);
     else if (rep_SYMBOLP (x))
 	return Fsymbol_hash (x);
+    else if (rep_INTP (x))
+	return rep_MAKE_INT (TRUNC (rep_INT (x)));
     else
-	return Feq_hash (x);
+	return rep_MAKE_INT (rep_TYPE (x) * 255);
 }
 
 
@@ -216,7 +224,7 @@ DEFUN("tablep", Ftablep, Stablep, (repv arg), rep_Subr1)
     return TABLEP(arg) ? Qt : Qnil;
 }
 
-static inline hash_value
+static hash_value
 hash_key (repv tab, repv key)
 {
     repv hash;
@@ -224,6 +232,10 @@ hash_key (repv tab, repv key)
 	hash = Fstring_hash (key);
     else if (TABLE(tab)->hash_fun == rep_VAL(&Ssymbol_hash))
 	hash = Fsymbol_hash (key);
+    else if (TABLE(tab)->hash_fun == rep_VAL(&Seq_hash))
+	hash = Feq_hash (key);
+    else if (TABLE(tab)->hash_fun == rep_VAL(&Sequal_hash))
+	hash = Fequal_hash (key, Qnil);
     else
     {
 	rep_GC_root gc_tab;
