@@ -45,7 +45,7 @@ install : all installdirs
 	for d in $(INSTALL_DIRS); do \
 	  for f in  $(foreach x,$(INSTALL_FILES),$$d/$(x)); do \
 	    $(INSTALL_DATA) $$f $(DESTDIR)$(replispdir)/$$d; \
-	  done \
+	  done; \
 	done
 	$(SHELL) $(top_srcdir)/install-aliases -l . $(DESTDIR)$(replispdir)
 
@@ -56,7 +56,7 @@ uninstall :
 	for d in $(INSTALL_DIRS); do \
 	  for f in $(foreach x,$(INSTALL_FILES),$$d/$(x)); do \
 	    rm -f $(DESTDIR)$(replispdir)/$$f; \
-	  done \
+	  done; \
 	done
 
 clean :
