@@ -226,9 +226,6 @@ General programming tasks:
    2. optimize the search (binary search if all clauses have same type
       and are orderable?)
 
- - Use two passes for `concat'; the first pass calculates the new
-   string's length, the second builds it
-
  - Add more backends for accessing remote files
 
    Make remote-rcp work properly, and add others (ssh, http, ..?)
