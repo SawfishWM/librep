@@ -1279,19 +1279,32 @@ that files which shouldn't be compiled aren't."
     (comp-write-op op-list count)
     (comp-dec-stack (1- count))))
 
+;; Funcall normally translates to a single call instruction. However,
+;; if the function being called is a constant lambda expression, open
+;; code it.
 (put 'funcall 'compile-fun 'comp-compile-funcall)
 (defun comp-compile-funcall (form)
-  (let
+  (let*
       ((fun (nth 1 form))
        (args (nthcdr 2 form))
-       (arg-count 0))
-    (comp-compile-form fun)
+       (arg-count 0)
+       (open-code (and (comp-constant-p fun)
+		       (eq (car (comp-constant-value fun)) 'lambda))))
+    (unless open-code
+      (comp-compile-form fun))
     (while args
       (comp-compile-form (car args))
       (setq args (cdr args)
 	    arg-count (1+ arg-count)))
-    (comp-write-op op-call arg-count)
-    (comp-dec-stack arg-count)))
+    (if open-code
+	(progn
+	  (comp-compile-lambda-inline (comp-constant-value fun) nil arg-count)
+	  ;; We push one less value than when using op-call
+	  (if (zerop arg-count)
+	      (comp-inc-stack)
+	    (comp-dec-stack (1- arg-count))))
+      (comp-write-op op-call arg-count)
+      (comp-dec-stack arg-count))))
 
 ;; Handles (with-X X FORMS...)
 (defun comp-compile-with-form (form)
