@@ -1799,9 +1799,9 @@ end:
 
 DEFUN("signal", Fsignal, Ssignal, (repv error, repv data), rep_Subr2) /*
 ::doc:Ssignal::
-signal rep_ERROR-SYMBOL DATA
+signal ERROR-SYMBOL DATA
 
-Signal that an error has happened. rep_ERROR-SYMBOL is the name of a symbol
+Signal that an error has happened. ERROR-SYMBOL is the name of a symbol
 classifying the type of error, it should have a property `error-message'
 (a string) with a short description of the error message.
 DATA is a list of objects which are relevant to the error -- they will
