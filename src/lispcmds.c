@@ -1288,10 +1288,8 @@ within STRUCTURE. The value of the last form evaluated is returned.
 	rep_TEST_INT;
 	if (rep_INTERRUPTP || !(result = rep_eval (tem, Qnil)))
 	{
-	    rep_unbind_symbols (bindings);
-	    rep_POP_CALL (lc);
-	    rep_POPGC; rep_POPGC;
-	    return rep_NULL;
+	    result = rep_NULL;
+	    goto out;
 	}
     }
     if (rep_throw_value
@@ -1302,6 +1300,7 @@ within STRUCTURE. The value of the last form evaluated is returned.
 	/* lose the end-of-stream error. */
 	rep_throw_value = rep_NULL;
     }
+out:
     rep_POP_CALL (lc);
     rep_POPGC; rep_POPGC;
 
