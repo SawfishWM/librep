@@ -18,14 +18,29 @@
    along with Jade; see the file COPYING.  If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
+/* AIX requires this to be the first thing in the file.  */
+#include <config.h>
+#ifdef __GNUC__
+# define alloca __builtin_alloca
+#else
+# if HAVE_ALLOCA_H
+#  include <alloca.h>
+# else
+#  ifdef _AIX
+ #pragma alloca
+#  else
+#   ifndef alloca /* predefined by HP cc +Olibcalls */
+char *alloca ();
+#   endif
+#  endif
+# endif
+#endif
+
 #include "jade.h"
 #include "jade_protos.h"
 #include "bytecodes.h"
 
 #include <assert.h>
-#ifdef HAVE_ALLOCA
-# include <alloca.h>
-#endif
 
 _PR void lispmach_init(void);
 
@@ -172,12 +187,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
     DECLARE2(consts, VECTORP);
     DECLARE3(stkreq, INTP);
 
-#ifdef HAVE_ALLOCA
     stackbase = alloca(sizeof(VALUE) * VINT(stkreq));
-#else
-    if(!(stackbase = str_alloc(sizeof(VALUE) * VINT(stkreq))))
-	return(NULL);
-#endif
 
     stackp = stackbase - 1;
     PUSHGC(gc_code, code);
@@ -1193,10 +1203,6 @@ fetch:
 quit:
     /* only use this var to save declaring another */
     bindstack = TOP;
-
-#ifndef HAVE_ALLOCA
-    str_free(stackbase);
-#endif
 
     POPGCN; POPGC; POPGC; POPGC;
     return bindstack;
