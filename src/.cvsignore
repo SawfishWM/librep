@@ -1,7 +1,6 @@
 *.la
 *.lo
 Makefile
-rep.h
 .libs
 repdoc
 rep
@@ -10,3 +9,5 @@ rep-remote
 rep-xgettext
 srep
 .libexec
+rep_config.h
+.*.d

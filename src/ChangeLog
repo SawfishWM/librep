@@ -1,16 +1,23 @@
-2000-08-30    <john@dcs.warwick.ac.uk>
+2000-08-31  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep.h, rep_config.h.in, Makefile.in, rep-config.sh: don't
+	have machine-local defs in rep.h (under $prefix/include). Let
+	configure build rep_config.h, install it under libexec, then
+	include it from rep.h
+
+2000-08-30  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep_subrs.h: s/new/new_/ and s/template/template_/ in
 	argument names to allow inclusion by C++ code
 
-2000-08-28    <john@dcs.warwick.ac.uk>
+2000-08-28  John Harper  <john@dcs.warwick.ac.uk>
 
 	* tables.c: added doc strings
 
 	* symbols.c (Fmake_keyword): signal an error if the argument is
 	itself a keyword
 
-2000-08-27    <john@dcs.warwick.ac.uk>
+2000-08-27  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lispmach.h: implemented OP_FOO_ARG_ changes; optimized gc
 	protection handling; fixed bug of exiting the vm and possibly

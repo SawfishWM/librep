@@ -1,3 +1,7 @@
+2000-08-31  John Harper  <john@dcs.warwick.ac.uk>
+
+	* configure.in: create rep_config.h instead of rep.h
+
 2000-08-29    <john@dcs.warwick.ac.uk>
 
 	* librep.spec.in: librep-devel requires exactly @version@ of
