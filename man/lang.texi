@@ -2172,8 +2172,8 @@ example: labels in a compiler).
 
 @defun make-symbol print-name
 This function creates and returns a new, uninterned, symbol whose print
-name is the string @var{print-name}. Its variable and function value
-cells are void (undefined) and it will have an empty property list.
+name is the string @var{print-name}. Its value cell is void (undefined) 
+and it will have an empty property list.
 
 @lisp
 (make-symbol "foo")
@@ -2753,7 +2753,7 @@ implicit progn on the @var{true-forms} is returned, otherwise
 
 @defmac unless condition else-forms@dots{}
 This special form evaluates @var{condition}, if its computed value is
-not @code{nil} its value is returned. Otherwise the @var{else-forms}
+not @code{nil}, @code{nil} is returned. Otherwise the @var{else-forms}
 are evaluated sequentially, the value of the last is returned.
 @end defmac
 
@@ -2812,7 +2812,7 @@ All of the other conditionals can be written in terms of @code{cond},
 
 (when @var{c} @var{t}@dots{}) @equiv{} (cond (@var{c} @var{t}@dots{}))
 
-(unless @var{c} @var{e}@dots{}) @equiv{} (cond (@var{e}) (t @var{e}@dots{}))
+(unless @var{c} @var{e}@dots{}) @equiv{} (cond (@var{c}) (t @var{e}@dots{}))
 @end lisp
 @end defspec
 
@@ -3467,7 +3467,7 @@ The value returned is @var{variable}.
 @end defun
 
 @defun const-variable-p variable
-Returns @code{t} if the value of the symbol @var{variable} may be altered,
+Returns @code{t} if the value of the symbol @var{variable} may not be altered,
 @code{nil} otherwise.
 @end defun
 
@@ -4148,10 +4148,10 @@ file).
 @cindex Lexical environment
 @cindex Environment, lexical
 
-We have already seen how the @code{let}, @code{let*} and @code{flet}
-allow temporary values to be assigned to variables, and local functions
-to be defined. These are mostly achieved through manipulation of the
-current lexical environment.
+We have already seen how the @code{let} and @code{let*} allow temporary 
+values to be assigned to variables, and local functions to be defined. 
+These are mostly achieved through manipulation of the current lexical 
+environment.
 
 When any function is defined, it is associated with the currently
 active lexical environment (a function and its environment is
@@ -4535,7 +4535,7 @@ Only escape double-quote, backslash, newline, @kbd{TAB}, and formfeed
 characters.
 
 @item t
-Escape double-quote, backslahs, and all control characters (anything
+Escape double-quote, backslash, and all control characters (anything
 with a numeric value less than 32, or greater than 126).
 @end table
 @end defvar
@@ -5253,7 +5253,7 @@ Disassembly:
 0		refq	[0] x   ;load x onto the stack
 1		refq	[1] y   ;load y onto the stack
 2		gt              ;greater-than comparison
-3		jn	12      ;if x > y goto 12
+3		jn	12      ;if !(x > y) goto 12
 6		refq	[0] x
 7		refq	[1] y
 8		sub             ;x - y on stack
@@ -5339,7 +5339,7 @@ In this simplest form, @emph{all} functions are called. In an
 @code{and} type hook, functions are only invoked while all others have
 returned @code{t}. As soon as the first function in the hook returns
 @code{nil}, no others will be called. Finally, an @code{or} type hook
-aborts when a function returns a @code{nil} result.
+aborts when a function returns a non-@code{nil} result.
 
 @defun call-hook hook arg-list &optional type
 
