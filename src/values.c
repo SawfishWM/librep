@@ -883,6 +883,10 @@ last garbage-collection is greater than `garbage-threshold'.
     mark_active_processes();
 #endif
 
+#ifdef HAVE_DYNAMIC_LOADING
+    mark_dl_data();
+#endif
+
 #ifdef HAVE_AMIGA
     /* Mark the strings in the menu strip.  */
     ami_mark_menus();
