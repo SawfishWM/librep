@@ -3,12 +3,12 @@
 @chapter News
 @cindex News
 
-@section 0.6.1
+@unnumberedsec 0.6.1
 
 No new features; minor portability tweaks and build changes
 
 
-@section 0.6
+@unnumberedsec 0.6
 
 @itemize @bullet
 
@@ -23,7 +23,7 @@ No new features; minor portability tweaks and build changes
 @end itemize
 
 
-@section 0.5
+@unnumberedsec 0.5
 
 @itemize @bullet
 
@@ -41,7 +41,7 @@ newer libtool)
 @end itemize
 
 
-@section 0.4
+@unnumberedsec 0.4
 
 @itemize @bullet
 
@@ -58,7 +58,7 @@ automatically detect the first of these options.
 @end itemize
 
 
-@section 0.3
+@unnumberedsec 0.3
 
 @itemize @bullet
 
@@ -67,7 +67,7 @@ automatically detect the first of these options.
 @end itemize
 
 
-@section 0.2
+@unnumberedsec 0.2
 
 @itemize @bullet
 
@@ -88,6 +88,6 @@ libraries.
 @end itemize
 
 
-@section 0.1
+@unnumberedsec 0.1
 
 First public release.

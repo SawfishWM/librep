@@ -36,7 +36,7 @@ librep.dvi : $(SRCS)
 	$(TEXI2DVI) $<
 
 librep.ps : librep.dvi
-	$(DVIPS) librep.dvi
+	$(DVIPS) -f <librep.dvi >librep.ps
 
 man : librep.info librep.dvi librep.ps
 
@@ -50,7 +50,7 @@ uninstall :
 	rm -f $(infodir)/librep.info*
 
 clean :
-	rm -f *~ librep.info* librep.dvi librep.ps
+	rm -f *~ librep.info* librep.?? librep.??
 
 realclean : clean
 	rm -f Makefile
