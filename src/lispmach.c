@@ -159,6 +159,18 @@ list_ref (repv list, int elt)
 #define BIND_TOP_P	(bindp < bindbase)
 #define BIND_PUSH(x)	(*(++bindp) = (x))
 
+#define ASSERT_STACK_BOUNDS 			\
+    do {					\
+	assert (STK_USE <= v_stkreq);		\
+	assert (BIND_USE <= b_stkreq + 1);	\
+    } while (0)
+
+#ifdef CHECK_STACK_USAGE
+# define SAFE_NEXT do { ASSERT_STACK_BOUNDS; X_SAFE_NEXT; } while (0)
+#else
+# define SAFE_NEXT X_SAFE_NEXT
+#endif
+
 #define FETCH	    (*pc++)
 #define FETCH2(var) ((var) = (FETCH << ARG_SHIFT), (var) += FETCH)
 
@@ -215,7 +227,7 @@ list_ref (repv list, int elt)
 # define BEGIN_DEFAULT_INSN default: {
 # define END_INSN }
 
-# define SAFE_NEXT	goto fetch
+# define X_SAFE_NEXT	goto fetch
 # define INLINE_NEXT	if (!ERROR_OCCURRED_P) SAFE_NEXT; else HANDLE_ERROR
 # define NEXT		goto check_error
 # define RETURN		goto quit
@@ -258,7 +270,7 @@ list_ref (repv list, int elt)
 	arg = pc[-1] - op;		\
     BEGIN_INSN(op)
 
-# define SAFE_NEXT	goto *cfa[FETCH]
+# define X_SAFE_NEXT	goto *cfa[FETCH]
 # define INLINE_NEXT	if (!ERROR_OCCURRED_P) SAFE_NEXT; else HANDLE_ERROR
 # define NEXT		goto check_error
 # define RETURN		goto quit
@@ -1902,10 +1914,6 @@ again:
 	    TOP = rep_NULL;
 	    RETURN;
 	}
-#ifdef CHECK_STACK_USAGE
-        assert (STK_USE <= v_stkreq);
-        assert (BIND_USE <= b_stkreq + 1);
-#endif
 	SAFE_NEXT;
     }
 
