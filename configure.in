@@ -109,9 +109,30 @@ dnl Check for dynamic loading
 AC_CHECK_HEADER(dlfcn.h, [AC_DEFINE(HAVE_DLFCN_H)])
 AC_CHECK_HEADER(dl.h, [AC_DEFINE(HAVE_DL_H)])
 dl_ok=no
-AC_CHECK_FUNC(dlopen, [AC_DEFINE(HAVE_DLOPEN) dl_ok=yes])
-AC_CHECK_FUNC(shl_load, [AC_DEFINE(HAVE_SHL_LOAD) dl_ok=yes])
-if test $dl_ok = yes; then
+AC_CHECK_FUNC(dlopen, [AC_DEFINE(HAVE_DLOPEN) dl_ok=dl])
+AC_CHECK_FUNC(shl_load, [AC_DEFINE(HAVE_SHL_LOAD) dl_ok=shl])
+
+if test $dl_ok = dl; then
+  AC_MSG_CHECKING([for preceding underscore in symbols])
+  dnl copied from glib configure.in
+  AC_TRY_RUN([#ifdef HAVE_DLFCN_H
+	      # include <dlfcn.h>
+	      #endif
+              int glib_underscore_test (void) { return 42; }
+              int main() {
+                void *f1 = (void*)0, *f2 = (void*)0, *handle;
+                handle = dlopen ((void*)0, 0);
+                if (handle) {
+                  f1 = dlsym (handle, "glib_underscore_test");
+                  f2 = dlsym (handle, "_glib_underscore_test");
+                } return (!f2 || f1);
+              }],
+              [AC_DEFINE(DLSYM_NEED_USCORE)
+	       AC_MSG_RESULT(yes)],
+	      [AC_MSG_RESULT(no)])
+fi
+
+if test $dl_ok != no; then
   AC_DEFINE(HAVE_DYNAMIC_LOADING)
 else
   AC_MSG_ERROR([can't figure out how to do dynamic loading])
