@@ -47,7 +47,17 @@ string INPUT."
 	((fun (car lst)) lst)
 	(t (member-if fun (cdr lst)))))
 
-(export-bindings '(assoc-regexp setcar setcdr string= string< member-if))
+(defun remove (elt lst #!optional (samep equal))
+  (let loop ((rest lst)
+	     (out '()))
+    (cond ((null rest) (nreverse out))
+	  ((samep (car rest) elt) (loop (cdr rest) out))
+	  (t (loop (cdr rest) (cons (car rest) out))))))
+
+(defun remq (elt lst) (remove elt lst eq))
+
+(export-bindings '(assoc-regexp setcar setcdr string= string<
+		   member-if remove remq))
 
 
 ;; cons accessors
