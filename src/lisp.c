@@ -106,6 +106,18 @@ VALUE sym_stack_error;
 _PR VALUE debug_on_error, sym_error_info;
 VALUE debug_on_error, sym_error_info;
 
+_PR VALUE sym_print_escape_newlines, sym_print_length, sym_print_level;
+VALUE sym_print_escape_newlines, sym_print_length, sym_print_level; /*
+::doc:print_escape_newlines::
+When non-nil `print' escapes newline, form-feed, and tab characters.
+::end::
+::doc:print_length::
+The maximum number of list elements to print before abbreviating.
+::end::
+::doc:print_level::
+The number of list levels to descend when printing before abbreviating.
+::end:: */
+
 /*
  * When TRUE cmd_eval() calls the "debug-entry" function
  */
@@ -1233,10 +1245,14 @@ call_lisp2(VALUE function, VALUE arg1, VALUE arg2)
 void
 lisp_prin(VALUE strm, VALUE obj)
 {
+    static int print_level = 0;
+
     switch(VTYPE(obj))
     {
 	u_char tbuf[40];
 	int j;
+	int print_length;
+	VALUE tem;
 
     case V_Number:
 	sprintf(tbuf, "%ld", VNUM(obj));
@@ -1244,23 +1260,45 @@ lisp_prin(VALUE strm, VALUE obj)
 	break;
 
     case V_Cons:
-	stream_putc(strm, '\(');
+	tem = cmd_symbol_value(sym_print_level, sym_t);
+	if(tem && NUMBERP(tem) && print_level >= VNUM(tem))
+	{
+	    stream_puts(strm, "...", 3, FALSE);
+	    return;
+	}
+	print_level++;
+	stream_putc(strm, '(');
+	tem = cmd_symbol_value(sym_print_length, sym_t);
+	print_length = 0;
 	while(CONSP(VCDR(obj)))
 	{
+	    if(tem && NUMBERP(tem) && print_length >= VNUM(tem))
+	    {
+		stream_puts(strm, "...", 3, FALSE);
+		goto cons_out;
+	    }
 	    print_val(strm, VCAR(obj));
 	    obj = VCDR(obj);
 	    stream_putc(strm, ' ');
 	    TEST_INT;
 	    if(INT_P)
-		return;
+		goto cons_out;
+	    print_length++;
 	}
-	print_val(strm, VCAR(obj));
-	if(!NILP(VCDR(obj)))
+	if(tem && NUMBERP(tem) && print_length >= VNUM(tem))
+	    stream_puts(strm, "...", 3, FALSE);
+	else
 	{
-	    stream_puts(strm, " . ", -1, FALSE);
-	    print_val(strm, VCDR(obj));
+	    print_val(strm, VCAR(obj));
+	    if(!NILP(VCDR(obj)))
+	    {
+		stream_puts(strm, " . ", -1, FALSE);
+		print_val(strm, VCDR(obj));
+	    }
 	}
+    cons_out:
 	stream_putc(strm, ')');
+	print_level--;
 	break;
 
     case V_Vector:
@@ -1325,25 +1363,34 @@ string_print(VALUE strm, VALUE obj)
     int len = STRING_LEN(obj);
     u_char *s = VSTR(obj);
     u_char c;
+    VALUE escape_newlines = NULL;
     stream_putc(strm, '\"');
     while(len-- > 0)
     {
 	switch(c = *s++)
 	{
-#ifdef PRINT_ESCAPE_TAB_NL
 	case '\t':
-	    stream_puts(strm, "\\t", 2, FALSE);
-	    break;
 	case '\n':
-	    stream_puts(strm, "\\n", 2, FALSE);
+	case '\f':
+	    if(!escape_newlines)
+		escape_newlines = cmd_symbol_value(sym_print_escape_newlines,
+						   sym_t);
+	    if(VOIDP(escape_newlines) || escape_newlines == sym_nil)
+		stream_putc(strm, (int)c);
+	    else
+		stream_puts(strm, (c == '\t' ? "\\t"
+				   : ((c == '\n') ? "\\n" : "\\f")),
+			    2, FALSE);
 	    break;
-#endif
+
 	case '\\':
 	    stream_puts(strm, "\\\\", 2, FALSE);
 	    break;
+
 	case '"':
 	    stream_puts(strm, "\\\"", 2, FALSE);
 	    break;
+
 	default:
 	    stream_putc(strm, (int)c);
 	}
@@ -1835,5 +1882,15 @@ lisp_init(void)
 
     int_cell = cmd_cons(sym_user_interrupt, sym_nil);
     mark_static(&int_cell);
+
+    INTERN(sym_print_escape_newlines, "print-escape-newlines");
+    INTERN(sym_print_length, "print-length");
+    INTERN(sym_print_level, "print-level");
+    DOC_VAR(sym_print_escape_newlines, DOC_print_escape_newlines);
+    DOC_VAR(sym_print_length, DOC_print_length);
+    DOC_VAR(sym_print_level, DOC_print_level);
+    VSYM(sym_print_escape_newlines)->sym_Value = sym_nil;
+    VSYM(sym_print_length)->sym_Value = sym_nil;
+    VSYM(sym_print_level)->sym_Value = sym_nil;
 }
 
