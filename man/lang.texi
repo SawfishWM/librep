@@ -4675,9 +4675,6 @@ reactivated, allowing these variables and functions to be accessed. The
 already been described, allowing closures to be created
 (@pxref{Anonymous Functions}).
 
-This section describes the other methods for affecting the current
-environment.
-
 @defun closurep arg
 Returns non-@code{nil} if @var{arg} is a closure.
 @end defun
@@ -4685,57 +4682,6 @@ Returns non-@code{nil} if @var{arg} is a closure.
 @defun closure-function closure
 Returns the function object associated with the lexical closure
 @var{closure}.
-@end defun
-
-@defspec save-environment forms@dots{}
-Evaluate all of @var{forms}, then reload the environment that was
-active when the special form was entered. Returns the value of the last
-form to be evaluated.
-@end defspec
-
-@defun set-environment env
-Set the current variable environment to the list @var{env}.
-Each element of the list is a cons cell @code{(@var{symbol} .
-@var{value})} defining the currently bound local variables, and their
-values.
-
-If the last cons cell in the list is dotted to the symbol @code{t}
-instead of @code{nil}, then all globally defined values are also
-available.
-@end defun
-
-As seen in the @code{set-environment} function, the lexical environment
-also provides a crude method of restricting which variables may be
-accessed by forms evaluating within the environment (and thus, which
-functions may be called). A similar feature allows the set of special
-variables accessible from the environment to be defined.
-
-@defun set-special-environment env
-Set the list of symbols defining the special variables accessible from
-the current environment to @var{env}. If @var{env} is the symbol
-@code{t}, then all special variables are accessible.
-@end defun
-
-In the case of a restricted special environment, new special variables
-may still be defined (by @code{defvar}), but only if they have not
-previously been defined elsewhere (by @code{defvar}).
-
-Finally, the lexical environment also allows access to be granted to
-specific file handlers. This special case is necessary to enable a
-two-level system of file-access-control, first it must be possible to
-call the underlying file operation function (e.g.
-@code{directory-files}, or whatever), then it must be possible to call
-the file handler.
-
-@defun set-file-handler-environment env
-Set the currently accessible file handlers to the list @var{env}.
-Alternatively, if @var{env} is actually the symbol @code{t}, then all
-handlers are accessible (provided they're in the function environment).
-
-Each entry in the list must be a cons cell @code{(@var{handler} .
-@var{closure})} mapping handlers to their implementation. If
-@var{closure} is actually the symbol @code{t} then the default handler
-function is called in an unrestricted lexical environment.
 @end defun
 
 

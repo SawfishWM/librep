@@ -21,8 +21,6 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(setq backtrace-on-error '(missing-arg))
-
 (defvar standard-output (stdout-file)
   "Stream that `prin?' writes its output to by default.")
 
