@@ -26,10 +26,13 @@
 #define HAVE_SUBPROCESSES
 
 /* default directory to look for scripts in */
-#define LISP_LIB_DIR QUOTE(JADE_DIR) "/lisp/"
+#define LISP_LIB_DIR QUOTE(JADE_DIR) "/" VERSID "/lisp/"
+
+/* Site scripts directory */
+#define SITE_LISP_DIR QUOTE(JADE_DIR) "/site-lisp/"
 
 /* file containing doc-strings */
-#define DOC_FILE QUOTE(JADE_DIR) "/DOC"
+#define DOC_FILE QUOTE(JADE_DIR) "/" VERSID "/DOC"
 
 /* From `unix_memory.c'  */
 #define myfree(p) do { if(p) free(p); } while(0)
