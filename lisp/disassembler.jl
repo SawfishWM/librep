@@ -38,7 +38,7 @@
    "mul" "div" "rem" "lnot" "not" "lor" "land"
    "equal" "eq" "num-eq" "num-not-eq" "gt" "ge" "lt" "le"	; 0x60
    "inc" "dec" "lsh" "zerop" "null" "atom" "consp" "listp"
-   "numberp" "stringp" "vectorp" "catch" "throw" "binderr" nil nil	; 0x70
+   "numberp" "stringp" "vectorp" "catch" "throw" "binderr" "return" "unbindall"	; 0x70
    "boundp" "symbolp" "get" "put" "errorpro" "signal" nil "reverse"
    "nreverse" "assoc" "assq" "rassoc" "rassq" "last" "mapcar" "mapc" ; 0x80
    "member" "memq" "delete" "delq" "delete-if" "delete-if-not" "copy-sequence" "sequencep"
