@@ -636,12 +636,10 @@ that files which shouldn't be compiled aren't."
 
 ;; Remove all keywords from a lambda list ARGS, returning the list of
 ;; variables that would be bound
-(defun comp-get-lambda-vars (args)
-  (delq nil (mapcar #'(lambda (x)
-			(if (memq x '(&optional &rest &aux))
-			    nil
-			  x))
-		    args)))
+(defmacro comp-get-lambda-vars (args)
+  (list 'filter '#'(lambda (x)
+		     (not (memq x '(&optional &rest &aux))))
+	args))
 
 ;; From LIST, `(lambda (ARGS) [DOC-STRING] BODY ...)' returns a byte-code
 ;; vector
@@ -869,8 +867,8 @@ that files which shouldn't be compiled aren't."
   (comp-write-op op-fset)
   (comp-dec-stack 2))
 
-;; This compiles an inline lambda, i.e. FORM is something like
-;;	((lambda (LAMBDA-LIST...) BODY...) ARGS...)
+;; This compiles an inline lambda, i.e. FUN is something like
+;; (lambda (LAMBDA-LIST...) BODY...)
 ;; If PUSHED-ARGS-ALREADY is non-nil it should be a count of the number
 ;; of arguments pushed onto the stack (in reverse order). In this case,
 ;; ARGS is ignored
