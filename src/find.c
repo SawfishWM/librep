@@ -419,7 +419,8 @@ DEFUN("re-search-forward", cmd_re_search_forward, subr_re_search_forward, (VALUE
 re-search-forward REGEXP [POS] [BUFFER] [IGNORE-CASE-P]
 
 Scans forwards from POS (or the cursor), in BUFFER, looking for a match
-with REGEXP. Returns the position of the next match or nil.
+with REGEXP. Returns the position of the next match or nil. Updates the
+match data.
 
 When IGNORE-CASE-P is non-nil the case of matched strings are ignored. Note
 that character classes are still case-significant.
@@ -456,7 +457,8 @@ DEFUN("re-search-backward", cmd_re_search_backward, subr_re_search_backward, (VA
 re-search-backward REGEXP [POS] [BUFFER] [IGNORE-CASE-P]
 
 Scans backwards from POS (or the cursor), in BUFFER, looking for a match
-with REGEXP. Returns the position of the next match or nil.
+with REGEXP. Returns the position of the next match or nil. Updates the
+match data.
 
 When IGNORE-CASE-P is non-nil the case of matched strings are ignored. Note
 that character classes are still case-significant.
@@ -493,7 +495,8 @@ DEFUN("search-forward", cmd_search_forward, subr_search_forward, (VALUE str, VAL
 search-forward STRING [POS] [BUFFER] [IGNORE-CASE-P]
 
 Scans forwards from POS (or the cursor), in BUFFER, looking for a match
-with STRING. Returns the position of the next match or nil.
+with STRING. Returns the position of the next match or nil. Updates the
+match data.
 ::end:: */
 {
     DECLARE1(str, STRINGP);
@@ -532,7 +535,8 @@ DEFUN("search-backward", cmd_search_backward, subr_search_backward, (VALUE str, 
 search-backward STRING [POS] [BUFFER] [IGNORE-CASE-P]
 
 Scans backwards from POS (or the cursor), in BUFFER, looking for a match
-with STRING. Returns the position of the next match or nil.
+with STRING. Returns the position of the next match or nil. Updates the
+match data.
 ::end:: */
 {
     DECLARE1(str, STRINGP);
@@ -620,13 +624,11 @@ DEFUN("string-match", cmd_string_match, subr_string_match, (VALUE re, VALUE str,
 ::doc:string_match::
 string-match REGEXP STRING [IGNORE-CASE-P] [START]
 
-Return t if REGEXP matches STRING.
+Return t if REGEXP matches STRING. Updates the match data.
 
 When IGNORE-CASE-P is non-nil the case of matched strings are ignored. Note
-that character classes are still case-significant.
-
-When defined, START is the index of the first character to start matching
-at (counting from zero).
+that character classes are still case-significant. When defined, START is
+the index of the first character to start matching at (counting from zero).
 ::end:: */
 {
     regexp *prog;
@@ -656,7 +658,7 @@ DEFUN("looking-at", cmd_looking_at, subr_looking_at, (VALUE re, VALUE pos, VALUE
 ::doc:looking_at::
 looking-at REGEXP [POS] [BUFFER] [IGNORE-CASE-P]
 
-Returns t if REGEXP matches the text at POS.
+Returns t if REGEXP matches the text at POS. Updates the match data.
 ::end:: */
 {
     DECLARE1(re, STRINGP);
@@ -682,6 +684,53 @@ Returns t if REGEXP matches the text at POS.
     }
     return LISP_NULL;
 }
+
+_PR VALUE cmd_buffer_compare_string(VALUE string, VALUE pos, VALUE casep, VALUE len);
+DEFUN("buffer-compare-string", cmd_buffer_compare_string, subr_buffer_compare_string, (VALUE string, VALUE pos, VALUE casep, VALUE len), V_Subr4, DOC_buffer_compare_string) /*
+::doc:buffer_compare_string::
+buffer-compare-string STRING [POSITION] [IGNORE-CASE] [LENGTH] 
+
+Compare the characters in STRING with characters in the current buffer.
+If LENGTH is defined, at most LENGTH characters are matched. When defined,
+POSITION gives the first character in the buffer to match with. Unless
+IGNORE-CASE is t, the match is case-significant.
+
+If STRING matches the buffer, then the position of the character following
+the last compared character is returned, otherwise nil is returned. Updates
+the match data.
+::end:: */
+{
+    long length;
+    TX *tx = curr_vw->vw_Tx;
+    DECLARE1(string, STRINGP);
+    length = STRING_LEN(string);
+    if(INTP(len))
+    {
+	if(VINT(len) <= length)
+	    length = VINT(len);
+	else
+	    return signal_arg_error(len, 2);
+    }
+    if(!POSP(pos))
+	pos = get_tx_cursor(tx);
+    if(check_line(tx, pos))
+    {
+	Pos ppos;
+	COPY_VPOS(&ppos, pos);
+	if(buffer_compare_n(tx, &ppos, VSTR(string), length,
+			    NILP(casep) ? strncmp : strncasecmp))
+	{
+	    VALUE end = COPY_POS(&ppos);
+	    set_string_match(tx, pos, end);
+	    return end;
+	}
+	else
+	    return sym_nil;
+    }
+    else
+	return LISP_NULL;
+}
+    
 
 _PR VALUE cmd_expand_last_match(VALUE template);
 DEFUN("expand-last-match", cmd_expand_last_match, subr_expand_last_match, (VALUE template), V_Subr1, DOC_expand_last_match) /*
@@ -922,6 +971,7 @@ find_init(void)
     ADD_SUBR(subr_char_search_backward);
     ADD_SUBR(subr_string_match);
     ADD_SUBR(subr_looking_at);
+    ADD_SUBR(subr_buffer_compare_string);
     ADD_SUBR(subr_expand_last_match);
     ADD_SUBR(subr_match_start);
     ADD_SUBR(subr_match_end);
