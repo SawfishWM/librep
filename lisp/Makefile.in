@@ -44,7 +44,7 @@ INSTALL_PROGRAM=@INSTALL_PROGRAM@
 
 jade_prog := ../jade/jade
 
-COMPILE_ENV := JADELISPLIB=. JADEDOCFILE=../DOC
+COMPILE_ENV := JADELISPLIB=.
 
 all :
 
@@ -71,11 +71,10 @@ install :
 		-f sleep-window -f compile-lisp-lib -q
 
 uninstall :
-	-rm -f *.jl "$(lispdir)/*.jlc" $(lispdir)/../DOC
+	-rm -f *.jl *.jlc DOC
 
 clean :
-	-rm -f *.jlc *.jld dump.out *~
-	-cp ../lib/DOC-bare ../DOC
+	-rm -f *.jlc DOC *.jld dump.out *~
 
 realclean : clean
 	-rm -f Makefile
