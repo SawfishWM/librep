@@ -22,70 +22,36 @@
 
    These were inspired by Rees' The Scheme of Things column:
 
-     ftp://ftp.cs.indiana.edu/pub/scheme-repository/doc/pubs/opaque.ps.gz
-
-   XXX if they get used heavily it would make sense to allocate them in
-   XXX blocks of N? */
+     ftp://ftp.cs.indiana.edu/pub/scheme-repository/doc/pubs/opaque.ps.gz */
 
 #define _GNU_SOURCE
 
 #include "repint.h"
 
-typedef struct datum_struct datum;
-struct datum_struct {
-    repv car;
-    datum *next;
-    repv id;
-    repv printer;
-    repv value;
-};
-
-static datum *all_datums;
 static int datum_type;
+
+/* List of (ID . PRINTER) */
+static repv printer_alist;
 
 #define DATUMP(x) rep_CELL16_TYPEP(x, datum_type)
 #define DATUM(x) ((datum *) rep_PTR (x))
+
+#define DATUM_ID(x) (rep_TUPLE(x)->a)
+#define DATUM_VALUE(x) (rep_TUPLE(x)->b)
 
 
 /* type hooks */
 
 static void
-datum_mark (repv val)
-{
-    rep_MARKVAL (DATUM (val)->id);
-    rep_MARKVAL (DATUM (val)->printer);
-    rep_MARKVAL (DATUM (val)->value);
-}
-
-static void
-datum_sweep (void)
-{
-    datum *x = all_datums;
-    all_datums = 0;
-    while (x != 0)
-    {
-	datum *next = x->next;
-	if (!rep_GC_CELL_MARKEDP (rep_VAL(x)))
-	    rep_FREE_CELL (x);
-	else
-	{
-	    rep_GC_CLR_CELL (rep_VAL(x));
-	    x->next = all_datums;
-	    all_datums = x;
-	}
-	x = next;
-    }
-}
-
-static void
 datum_print (repv stream, repv arg)
 {
-    if (DATUM (arg)->printer != Qnil)
-	rep_call_lisp2 (DATUM (arg)->printer, arg, stream);
-    else if (rep_SYMBOLP (DATUM (arg)->id))
+    repv printer = Fassq (DATUM_ID (arg), printer_alist);
+    if (printer && rep_CONSP (printer) && rep_CDR (printer) != Qnil)
+	rep_call_lisp2 (rep_CDR (printer), arg, stream);
+    else if (rep_SYMBOLP (DATUM_ID (arg)))
     {
 	rep_stream_puts (stream, "#<datum ", -1, rep_FALSE);
-	rep_stream_puts (stream, rep_PTR (rep_SYM (DATUM (arg)->id)->name), -1, rep_TRUE);
+	rep_stream_puts (stream, rep_PTR (rep_SYM (DATUM_ID (arg))->name), -1, rep_TRUE);
 	rep_stream_putc (stream, '>');
     }
     else
@@ -95,25 +61,34 @@ datum_print (repv stream, repv arg)
 
 /* lisp functions */
 
-DEFUN ("make-datum", Fmake_datum, Smake_datum,
-       (repv value, repv id, repv printer), rep_Subr3) /*
+DEFUN ("make-datum", Fmake_datum,
+       Smake_datum, (repv value, repv id), rep_Subr2) /*
 ::doc:make-datum::
-make-datum VALUE ID PRINTER
+make-datum VALUE ID
 
 Create and return a new data object of type ID (an arbitrary value), it
-will have object VALUE associated with it. When printed, the function
-PRINTER will be called with two arguments, the data object itself and
-the stream to print to.
+will have object VALUE associated with it.
 ::end:: */
 {
-    datum *d = rep_ALLOC_CELL (sizeof (datum));
-    d->next = all_datums;
-    all_datums = d;
-    d->car = datum_type;
-    d->id = id;
-    d->value = value;
-    d->printer = printer;
-    return rep_VAL (d);
+    return rep_make_tuple (datum_type, id, value);
+}
+
+DEFUN ("define-datum-printer", Fdefine_datum_printer,
+       Sdefine_datum_printer, (repv id, repv printer), rep_Subr2) /*
+::doc:define-datum-printer::
+define-datum-printer ID PRINTER
+
+Register a custom printer for all datums with type ID. When these
+objects printed are, the function PRINTER will be called with two
+arguments, the datum and the stream to print to.
+::end:: */
+{
+    repv cell = Fassq (id, printer_alist);
+    if (cell && rep_CONSP (cell))
+	rep_CDR (cell) = printer;
+    else
+	printer_alist = Fcons (Fcons (id, printer), printer_alist);
+    return printer;
 }
 
 DEFUN ("datum-ref", Fdatum_ref, Sdatum_ref, (repv obj, repv id), rep_Subr2) /*
@@ -124,8 +99,8 @@ If data object DATUM has type ID, return its associated value, else
 signal an error.
 ::end:: */
 {
-    rep_DECLARE (1, obj, DATUMP (obj) && DATUM (obj)->id == id);
-    return DATUM (obj)->value;
+    rep_DECLARE (1, obj, DATUMP (obj) && DATUM_ID (obj) == id);
+    return DATUM_VALUE (obj);
 }
 
 DEFUN ("datum-set", Fdatum_set, Sdatum_set,
@@ -137,8 +112,8 @@ If data object DATUM has type ID, modify its associated value to be
 VALUE, else signal an error.
 ::end:: */
 {
-    rep_DECLARE (1, obj, DATUMP (obj) && DATUM (obj)->id == id);
-    DATUM (obj)->value = value;
+    rep_DECLARE (1, obj, DATUMP (obj) && DATUM_ID (obj) == id);
+    DATUM_VALUE (obj) = value;
     return value;
 }
 
@@ -151,7 +126,7 @@ Return `t' if object ARG has data type ID (and thus was initially
 created using the `make-datum' function).
 ::end:: */
 {
-    return (DATUMP (arg) && DATUM (arg)->id == id) ? Qt : Qnil;
+    return (DATUMP (arg) && DATUM_ID (arg) == id) ? Qt : Qnil;
 }
 
 
@@ -161,11 +136,14 @@ void
 rep_datums_init (void)
 {
     datum_type = rep_register_new_type ("datum", 0, datum_print, datum_print,
-					datum_sweep, datum_mark,
+					0, rep_mark_tuple,
 					0, 0, 0, 0, 0, 0, 0);
 
     rep_ADD_SUBR (Smake_datum);
+    rep_ADD_SUBR (Sdefine_datum_printer);
     rep_ADD_SUBR (Sdatum_ref);
     rep_ADD_SUBR (Sdatum_set);
     rep_ADD_SUBR (Shas_type_p);
+    printer_alist = Qnil;
+    rep_mark_static (&printer_alist);
 }
