@@ -752,73 +752,25 @@ again:
 	    CALL_1(Feval);
 
 	case OP_ADD:
-	    tmp = RET_POP;
-	    if(rep_INTP(tmp) && rep_INTP(TOP))
-		TOP = rep_MAKE_INT(rep_INT(TOP) + rep_INT(tmp));
-	    else
-	    {
-		if(rep_INTP(tmp))
-		    rep_signal_arg_error(TOP, 2);
-		else
-		    rep_signal_arg_error(tmp, 1);
-	    }
-	    break;
+	    CALL_2(rep_number_add);
 
 	case OP_NEG:
-	    if(rep_INTP(TOP))
-		TOP = rep_MAKE_INT(-rep_INT(TOP));
-	    else
-		rep_signal_arg_error(TOP, 1);
-	    break;
+	    CALL_1(rep_number_neg);
 
 	case OP_SUB:
-	    tmp = RET_POP;
-	    if(rep_INTP(tmp) && rep_INTP(TOP))
-		TOP = rep_MAKE_INT(rep_INT(TOP) - rep_INT(tmp));
-	    else
-	    {
-		if(rep_INTP(tmp))
-		    rep_signal_arg_error(TOP, 2);
-		else
-		    rep_signal_arg_error(tmp, 1);
-	    }
-	    break;
+	    CALL_2(rep_number_sub);
 
 	case OP_MUL:
-	    tmp = RET_POP;
-	    if(rep_INTP(tmp) && rep_INTP(TOP))
-		TOP = rep_MAKE_INT(rep_INT(TOP) * rep_INT(tmp));
-	    else
-	    {
-		if(rep_INTP(tmp))
-		    rep_signal_arg_error(TOP, 2);
-		else
-		    rep_signal_arg_error(tmp, 1);
-	    }
-	    break;
+	    CALL_2(rep_number_mul);
 
 	case OP_DIV:
-	    tmp = RET_POP;
-	    if(rep_INTP(tmp) && rep_INTP(TOP))
-		TOP = rep_MAKE_INT(rep_INT(TOP) / rep_INT(tmp));
-	    else
-	    {
-		if(rep_INTP(tmp))
-		    rep_signal_arg_error(TOP, 2);
-		else
-		    rep_signal_arg_error(tmp, 1);
-	    }
-	    break;
+	    CALL_2(rep_number_div);
 
 	case OP_REM:
 	    CALL_2(Fremainder);
 
 	case OP_LNOT:
-	    if(rep_INTP(TOP))
-		TOP = rep_MAKE_INT(~rep_INT(TOP));
-	    else
-		rep_signal_arg_error(TOP, 1);
-	    break;
+	    CALL_1(Flognot);
 
 	case OP_NOT:
 	    if(TOP == Qnil)
@@ -828,43 +780,13 @@ again:
 	    goto fetch;
 
 	case OP_LOR:
-	    tmp = RET_POP;
-	    if(rep_INTP(tmp) && rep_INTP(TOP))
-		TOP = rep_MAKE_INT(rep_INT(TOP) | rep_INT(tmp));
-	    else
-	    {
-		if(rep_INTP(tmp))
-		    rep_signal_arg_error(TOP, 2);
-		else
-		    rep_signal_arg_error(tmp, 1);
-	    }
-	    break;
+	    CALL_2(rep_number_logior);
 
 	case OP_LXOR:
-	    tmp = RET_POP;
-	    if(rep_INTP(tmp) && rep_INTP(TOP))
-		TOP = rep_MAKE_INT(rep_INT(TOP) ^ rep_INT(tmp));
-	    else
-	    {
-		if(rep_INTP(tmp))
-		    rep_signal_arg_error(TOP, 2);
-		else
-		    rep_signal_arg_error(tmp, 1);
-	    }
-	    break;
+	    CALL_2(rep_number_logxor);
 
 	case OP_LAND:
-	    tmp = RET_POP;
-	    if(rep_INTP(tmp) && rep_INTP(TOP))
-		TOP = rep_MAKE_INT(rep_INT(TOP) & rep_INT(tmp));
-	    else
-	    {
-		if(rep_INTP(tmp))
-		    rep_signal_arg_error(TOP, 2);
-		else
-		    rep_signal_arg_error(tmp, 1);
-	    }
-	    break;
+	    CALL_2(rep_number_logand);
 
 	case OP_EQUAL:
 	    tmp = RET_POP;
@@ -921,28 +843,16 @@ again:
 	    break;
 
 	case OP_INC:
-	    if(rep_INTP(TOP))
-		TOP = rep_MAKE_INT(rep_INT(TOP) + 1);
-	    else
-		rep_signal_arg_error(TOP, 1);
-	    break;
+	    CALL_1(Fplus1);
 
 	case OP_DEC:
-	    if(rep_INTP(TOP))
-		TOP = rep_MAKE_INT(rep_INT(TOP) - 1);
-	    else
-		rep_signal_arg_error(TOP, 1);
-	    break;
+	    CALL_1(Fsub1);
 
 	case OP_LSH:
 	    CALL_2(Flsh);
 
 	case OP_ZEROP:
-	    if(rep_INTP(TOP) && (rep_INT(TOP) == 0))
-		TOP = Qt;
-	    else
-		TOP = Qnil;
-	    break;
+	    CALL_1(Fzerop);
 
 	case OP_NULL:
 	    if(rep_NILP(TOP))
@@ -973,7 +883,7 @@ again:
 	    goto fetch;
 
 	case OP_NUMBERP:
-	    if(rep_INTP(TOP))
+	    if(rep_NUMERICP(TOP))
 		TOP = Qt;
 	    else
 		TOP = Qnil;
@@ -1087,6 +997,9 @@ again:
 	    gc_stackbase.count = STK_USE;
 	    CALL_2(Fsignal);
 
+	case OP_QUOTIENT:
+	    CALL_2(Fquotient);
+
 	case OP_REVERSE:
 	    CALL_1(Freverse);
 
@@ -1152,12 +1065,7 @@ again:
 	    CALL_1(Fsubrp);
 
 	case OP_EQL:
-	    tmp = RET_POP;
-	    if(rep_INTP(tmp) && rep_INTP(TOP))
-		TOP = (rep_INT(TOP) == rep_INT(tmp) ? Qt : Qnil);
-	    else
-		TOP = (TOP == tmp ? Qt : Qnil);
-	    goto fetch;
+	    CALL_2(Feql);
 
 	case OP_MAX:
 	    tmp = RET_POP;
@@ -1275,6 +1183,18 @@ again:
 	    TOP = list_ref (TOP, 7);
 	    goto fetch;
 
+	case OP_FLOOR:
+	    CALL_1(Ffloor);
+
+	case OP_CEILING:
+	    CALL_1(Fceiling);
+
+	case OP_TRUNCATE:
+	    CALL_1(Ftruncate);
+
+	case OP_ROUND:
+	    CALL_1(Fround);
+
 	case OP_BINDOBJ:
 	    tmp = RET_POP;
 	    bindstack = Fcons(rep_bind_object(tmp), bindstack);
@@ -1290,6 +1210,27 @@ again:
 	    rep_PERMIT;
 	    PUSH (rep_PREEMPTABLE_P ? Qnil : Qt);
 	    goto fetch;
+
+	case OP_EXP:
+	    CALL_1(Fexp);
+
+	case OP_LOG:
+	    CALL_1(Flog);
+
+	case OP_COS:
+	    CALL_1(Fcos);
+
+	case OP_SIN:
+	    CALL_1(Fsin);
+
+	case OP_TAN:
+	    CALL_1(Ftan);
+
+	case OP_SQRT:
+	    CALL_1(Fsqrt);
+
+	case OP_EXPT:
+	    CALL_2(Fexpt);
 
 	case OP_SWAP2:
 	    tmp = TOP;

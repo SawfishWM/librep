@@ -154,7 +154,7 @@
 					    then bindsym (stk[1], cdr stk[0]),
 					         stk[0] = nil */
 #define OP_SIGNAL 0x7d			/* call-2 signal */
-#define OP_UNUSED2 0x7e
+#define OP_QUOTIENT 0x7e
 #define OP_REVERSE 0x7f			/* call-1 reverse */
 #define OP_NREVERSE 0x80		/* call-1 nreverse */
 #define OP_ASSOC 0x81			/* call-2 assoc */
@@ -204,9 +204,22 @@
 #define OP_CADDDDDDR 0xaa
 #define OP_CADDDDDDDR 0xab
 
+#define OP_FLOOR 0xac
+#define OP_CEILING 0xad
+#define OP_TRUNCATE 0xae
+#define OP_ROUND 0xaf
+
 #define OP_BINDOBJ 0xb0			/* bind stk[0] */
 #define OP_FORBID 0xb1
 #define OP_PERMIT 0xb2
+
+#define OP_EXP 0xb3
+#define OP_LOG 0xb4
+#define OP_SIN 0xb5
+#define OP_COS 0xb6
+#define OP_TAN 0xb7
+#define OP_SQRT 0xb8
+#define OP_EXPT 0xb9
 
 #define OP_SWAP2 0xba			/* stk[0] = stk[1], stk[1] = stk[2],
 					   stk[2] = stk[0]. */
