@@ -1,3 +1,16 @@
+1999-11-15  John Harper  <john@dcs.warwick.ac.uk>
+
+	* repint_subrs.h, rep_subrs.h (rep_call_stack): now in rep_subrs.h
+
+	* rep_lisp.h (rep_SF_DEFVAR): new flag, has the symbol been
+	defvar'd (set by rep_INTERN_SPECIAL)
+	* symbols.c (Fdefvar): moved here from lispcmds.c, allow
+	restricted environments to defvar un-defvar'd symbols
+
+	* unix_processes.c (run_process, rep_system): reset SIGPIPE to
+	SIG_DFL before calling exec () (from lantz moore
+	<lmoore@contigo.com>)
+
 1999-11-11  John Harper  <john@dcs.warwick.ac.uk>
 
 	* symbols.c (Fsetplist, Fsymbol_plist, Fput): symbol must be in
