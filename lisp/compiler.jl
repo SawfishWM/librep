@@ -406,7 +406,8 @@ don't macroexpand the form before compiling.")
 		  (condition-case nil
 		      (while t
 			(setq form (read src-file))
-			(unless (memq (car form) comp-top-level-unexpanded)
+			(unless (or (memq (car form) comp-top-level-unexpanded)
+				    (memq (car form) comp-top-level-compiled))
 			  (setq form (macroexpand form comp-macro-env)))
 			(cond
 			 ((eq (car form) 'defun)
@@ -456,7 +457,6 @@ don't macroexpand the form before compiling.")
 			  (if (memq (car form) comp-top-level-unexpanded)
 			      (setq form (comp-compile-top-form form))
 			    ;; just in case?
-			    (setq form (macroexpand form comp-macro-env))
 			    (when (memq (car form) comp-top-level-compiled)
 			      ;; Compile this form
 			      (setq form (compile-form form))))
@@ -1185,35 +1185,6 @@ that files which shouldn't be compiled aren't."
 ;; Source code transformations. These are basically macros that are only
 ;; used at compile-time.
 
-(defun comp-trans-if (form)
-  (let
-      ((condition (nth 1 form))
-       (then-form (nth 2 form))
-       (else-forms (nthcdr 3 form)))
-    (if (null else-forms)
-	(list 'cond (list condition then-form))
-      (list 'cond (list condition then-form) (cons 't else-forms)))))
-(put 'if 'compile-transform comp-trans-if)
-
-(defun comp-trans-and (form)
-  (setq form (cdr form))
-  (let
-      (lst slot)
-    (while form
-      (if slot
-	  (progn
-	    (setcdr slot (cons (list 'cond (list (car form))) nil))
-	    (setq slot (car (cdr (car (cdr slot))))))
-	(setq lst (list 'cond (list (car form))))
-	(setq slot (car (cdr lst))))
-      (setq form (cdr form)))
-    lst))
-(put 'and 'compile-transform comp-trans-and)
-
-(defun comp-trans-or (form)
-  (cons 'cond (mapcar list (cdr form))))
-(put 'or 'compile-transform comp-trans-or)
-
 (defun comp-trans-setq-default (form)
   (let
       (lst)
@@ -1515,6 +1486,7 @@ that files which shouldn't be compiled aren't."
     (comp-write-op op-unbindall)
     (comp-write-op op-jmp (comp-start-label))))
 
+;; compile let specially to coalesce all bindings into a single frame
 (defun comp-compile-let* (form &optional return-follows)
   (let
       ((lst (car (cdr form)))
@@ -1542,36 +1514,9 @@ that files which shouldn't be compiled aren't."
     (comp-write-op op-unbind)))
 (put 'let* 'compile-fun comp-compile-let*)
 
-(defun comp-compile-let (form &optional return-follows)
-  (let
-      ((lst (car (cdr form)))
-       (sym-stk nil)
-       bindings)
-    (comp-write-op op-init-bind)
-    (while (consp lst)
-      (cond
-	((consp (car lst))
-	  (setq sym-stk (cons (caar lst) sym-stk))
-	  (comp-compile-body (cdar lst)))
-	(t
-	  (setq sym-stk (cons (car lst) sym-stk))
-	  (comp-write-op op-nil)
-	  (comp-inc-stack)))
-      (setq lst (cdr lst)))
-    (mapc comp-test-varbind sym-stk)
-    (let
-	((comp-spec-bindings comp-spec-bindings)
-	 (comp-lex-bindings comp-lex-bindings)
-	 (comp-lexically-pure comp-lexically-pure)
-	 (comp-lambda-name comp-lambda-name))
-      (while (consp sym-stk)
-	(comp-emit-binding (car sym-stk))
-	(comp-dec-stack)
-	(setq sym-stk (cdr sym-stk)))
-      (comp-compile-body (nthcdr 2 form) return-follows))
-    (comp-write-op op-unbind)))
-(put 'let 'compile-fun comp-compile-let)
+;; let can be compiled straight from its macro definition
 
+;; compile letrec specially to handle tail recursion elimination
 (defun comp-compile-letrec (form &optional return-follows)
   (let
       ((bindings (car (cdr form)))
