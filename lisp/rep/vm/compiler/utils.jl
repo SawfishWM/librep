@@ -31,7 +31,7 @@
 	    compiler-message
 	    compiler-error
 	    compiler-warning
-	    remember-function
+	    remember-function forget-function
 	    remember-variable
 	    remember-lexical-variable
 	    test-variable-ref
@@ -68,6 +68,9 @@
 
   (defvar output-stream (make-fluid))	;stream for compiler output
 
+  ;; also: shadowing
+  (defvar *compiler-warnings* '(unused bindings parameters misc))
+
 
 ;;; Message output
 
@@ -94,9 +97,10 @@
     (signal 'compile-error (cons (format nil "%s: %s" (fluid current-fun) text)
 				 data)))
 
-  (defun compiler-warning (fmt &rest args)
-    (apply compiler-message fmt args)
-    (write (fluid output-stream) "\n"))
+  (defun compiler-warning (type fmt &rest args)
+    (when (memq type *compiler-warnings*)
+      (apply compiler-message fmt args)
+      (write (fluid output-stream) "\n")))
 
 
 ;;; Code to handle warning tests
@@ -110,7 +114,7 @@
 	(when (and cell (not (cdr cell)))
 	  (rplacd cell (list* 'lambda args body)))))
     (if (assq name (fluid defuns))
-	(compiler-warning "Multiply defined function or macro: %s" name)
+	(compiler-warning 'misc "Multiply defined function or macro: %s" name)
       (let
 	  ((count (vector 0 nil nil))	;required, optional, rest
 	   (state 0))
@@ -140,13 +144,17 @@
 				      (aref count 1) (aref count 2))
 				(fluid defuns))))))
 
+  (defun forget-function (name)
+    (let ((cell (assq name (fluid defuns))))
+      (fluid-set defuns (delq cell (fluid defuns)))))
+
   ;; Similar for variables
   (defun remember-variable (name)
     (cond ((memq name (fluid defines))
 	   (compiler-error
 	    "Variable %s was previously declared lexically" name))
 	  ((memq name (fluid defvars))
-	   (compiler-warning "Multiply defined variable: %s" name))
+	   (compiler-warning 'misc "Multiply defined variable: %s" name))
 	  (t
 	   (fluid-set defvars (cons name (fluid defvars))))))
 
@@ -154,7 +162,7 @@
     (cond ((memq name (fluid defvars))
 	   (compiler-error "Variable %s was previously declared special" name))
 	  ((memq name (fluid defines))
-	   (compiler-warning "Multiply defined lexical variable: %s" name))
+	   (compiler-warning 'misc "Multiply defined lexical variable: %s" name))
 	  (t
 	   (fluid-set defines (cons name (fluid defines))))))
 
@@ -163,25 +171,25 @@
     (when (and (symbolp name)
 	       (null (memq name (fluid defvars)))
 	       (null (memq name (fluid defines)))
-	       (null (memq name (fluid spec-bindings)))
-	       (null (assq name (fluid lex-bindings)))
+	       (not (has-local-binding-p name))
 	       (null (assq name (fluid defuns)))
 	       (not (special-variable-p name))
 	       (not (boundp name))
 	       (not (locate-variable name)))
-      (compiler-warning "Reference to undeclared free variable: %s" name)))
+      (compiler-warning
+       'bindings "Reference to undeclared free variable: %s" name)))
 
   ;; Test that binding to variable NAME appears valid
   (defun test-variable-bind (name)
     (cond ((assq name (fluid defuns))
-	   (compiler-warning "Binding to %s shadows function" name))
-	  ;((memq name (fluid defvars))
-	  ; (compiler-warning "Binding to %s shadows special variable" name))
-	  ((or (memq name (fluid spec-bindings))
-	       (assq name (fluid lex-bindings)))
-	   (compiler-warning "Binding to %s shadows earlier binding" name))
+	   (compiler-warning
+	    'shadowing "Binding to %s shadows function" name))
+	  ((has-local-binding-p name)
+	   (compiler-warning
+	    'shadowing "Binding to %s shadows earlier binding" name))
 	  ((and (boundp name) (functionp (symbol-value name)))
-	   (compiler-warning "Binding to %s shadows pre-defined value" name))))
+	   (compiler-warning
+	    'shadowing "Binding to %s shadows pre-defined value" name))))
 
   ;; Test a call to NAME with NARGS arguments
   ;; XXX functions in comp-fun-bindings aren't type-checked
@@ -202,28 +210,27 @@
 	      (setq decl (cdr decl)))
 	    (when (closurep decl)
 	      (setq decl (closure-function decl)))
-	    (if (bytecodep decl)
-		(remember-function name (aref decl 0))
+	    (unless (bytecodep decl)
 	      (remember-function name (nth 1 decl)))
 	    (setq decl (assq name (fluid defuns))))
 	  (if (null decl)
-	      (unless (or (memq name (fluid spec-bindings))
-			  (assq name (fluid lex-bindings))
+	      (unless (or (has-local-binding-p name)
 			  (memq name (fluid defvars))
 			  (memq name (fluid defines))
 			  (locate-variable name))
-		(compiler-warning "Call to undeclared function: %s" name))
+		(compiler-warning
+		 'misc "Call to undeclared function: %s" name))
 	    (let
 		((required (nth 1 decl))
 		 (optional (nth 2 decl))
 		 (rest (nth 3 decl)))
 	      (if (< nargs required)
 		  (compiler-warning
-		   "%d arguments required by %s; %d supplied"
+		   'parameters "%d arguments required by %s; %d supplied"
 		   required name nargs)
 		(when (and (null rest) (> nargs (+ required (or optional 0))))
 		  (compiler-warning
-		   "Too many arguments to %s (%d given, %d used)"
+		   'parameters "Too many arguments to %s (%d given, %d used)"
 		   name nargs (+ required (or optional 0)))))))))))
 
 
@@ -317,7 +324,7 @@
 	  (let ((handler (get (or (car clause) clause) 'compiler-decl-fun)))
 	    (if handler
 		(handler clause)
-	      (compiler-warning "unknown declaration" clause)))) form))
+	      (compiler-warning 'misc "unknown declaration" clause)))) form))
 
 (defun declare-inline (form)
   (mapc (lambda (name)

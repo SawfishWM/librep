@@ -30,7 +30,6 @@
 	  rep.vm.compiler.modules
 	  rep.vm.compiler.utils
 	  rep.vm.compiler.basic
-	  rep.vm.compiler.const
 	  rep.vm.compiler.inline
 	  rep.vm.compiler.lap
 	  rep.vm.compiler.bindings
@@ -60,13 +59,6 @@
   ;; form is one of these that form is compiled.
   (define top-level-compiled
     '(if cond when unless let let* letrec begin and or case))
-
-  ;; setup properties to tell the compiler where to look for symbols
-  ;; in the `scheme'  package
-  (put 'scheme 'compiler-handler-property 'scheme-compile-fun)
-  (put 'scheme 'compiler-transform-property 'scheme-compile-transform)
-
-  (put 'scheme 'compiler-sequencer 'begin)
 
 
 ;;; pass 1 support
@@ -98,8 +90,6 @@
 
     form)
 
-  (put 'scheme 'compiler-pass-1 pass-1)
-
 
 ;;; pass 2 support
 
@@ -118,8 +108,6 @@
 	  ((memq (car form) top-level-compiled)
 	   (setq form (compile-form form))))
     form)
-
-  (put 'scheme 'compiler-pass-2 pass-2)
 
   ;; XXX this is broken, e.g.: (define ((foo a) b) (+ a b))
   (defun compile-define (form)
@@ -140,7 +128,6 @@
   ;; tells the constant-folder which functions can be removed
   (defun foldablep (name)
     (memq name constant-functions))
-  (put 'scheme 'compiler-foldablep foldablep)
 
 
 ;;; special compilers
@@ -158,7 +145,7 @@
     (let ((sym (nth 1 form))
 	  (val (nth 2 form)))
       (compile-form-1 val)
-      (emit-insn (bytecode dup))
+      (emit-insn '(dup))
       (increment-stack)
       (emit-varset sym)
       (decrement-stack)))
@@ -168,7 +155,7 @@
 
   (defun compile-\#test (form)
     (compile-form-1 (cadr form))
-    (emit-insn (bytecode scm-test)))
+    (emit-insn '(scm-test)))
   (put '\#test 'scheme-compile-fun compile-\#test)
 
   ;; compile let* specially to coalesce all bindings into a single frame
@@ -199,30 +186,30 @@
 	     (forms (cdar form))
 	     (next-label (make-label)))
 	  (cond ((consp cases)
-		 (emit-insn (bytecode dup))
+		 (emit-insn '(dup))
 		 (increment-stack)
 		 (if (consp (cdr cases))
 		     ;; >1 possible case
 		     (progn
 		       (compile-constant cases)
-		       (emit-insn (bytecode memql)))
+		       (emit-insn '(memql)))
 		   ;; only one case, use eql
 		   (compile-constant (car cases))
-		   (emit-insn (bytecode eql)))
+		   (emit-insn '(eql)))
 		 (decrement-stack)
-		 (emit-jmp-insn (bytecode jn) next-label)
+		 (emit-insn `(jn ,next-label))
 		 (decrement-stack))
 		((not (eq cases 'else))
 		 (compiler-error "Badly formed clause in case statement")))
 	  (compile-body forms return-follows)
 	  (decrement-stack)
-	  (emit-jmp-insn (bytecode jmp) end-label)
+	  (emit-insn `(jmp ,end-label))
 	  (fix-label next-label)
 	  (setq form (cdr form))))
       (increment-stack)
       (fix-label end-label)
-      (emit-insn (bytecode swap))
-      (emit-insn (bytecode pop))))
+      (emit-insn '(swap))
+      (emit-insn '(pop))))
   (put 'case 'scheme-compile-fun compile-case)
 
   (defun do-predicate (form)
@@ -232,11 +219,11 @@
 
   (defun compile-predicate (form)
     (do-predicate form)
-    (emit-insn (bytecode test-scm)))
+    (emit-insn '(test-scm)))
 
   (defun compile-nil-predicate (form)
     (do-predicate form)
-    (emit-insn (bytecode test-scm-f)))
+    (emit-insn '(test-scm-f)))
 
   ;; set properties of scheme functions that are pseudonyms of rep fns
   (mapc (lambda (cell)
@@ -296,4 +283,14 @@
 	      (put cell 'scheme-compile-fun compile-nil-predicate)
 	    (put (car cell) 'scheme-compile-fun compile-nil-predicate)
 	    (put (car cell) 'scheme-compile-rep (cdr cell))))
-	'(memq memv member assq assoc)))
+	'(memq memv member assq assoc))
+
+  ;; setup properties to tell the compiler where to look for symbols
+  ;; in the `scheme'  package
+  (unless (get 'scheme 'compiler-handler-property)
+    (put 'scheme 'compiler-handler-property 'scheme-compile-fun)
+    (put 'scheme 'compiler-transform-property 'scheme-compile-transform)
+    (put 'scheme 'compiler-sequencer 'begin)
+    (put 'scheme 'compiler-pass-1 pass-1)
+    (put 'scheme 'compiler-pass-2 pass-2)
+    (put 'scheme 'compiler-foldablep foldablep)))

@@ -43,10 +43,8 @@
   (define-structure-alias compiler rep.vm.compiler)
 
   (define compiler-sources '(rep.vm.compiler
-			     rep.vm.compiler.asm
 			     rep.vm.compiler.basic
 			     rep.vm.compiler.bindings
-			     rep.vm.compiler.const
 			     rep.vm.compiler.inline
 			     rep.vm.compiler.lap
 			     rep.vm.compiler.modules
@@ -54,6 +52,9 @@
 			     rep.vm.compiler.rep
 			     rep.vm.compiler.src
 			     rep.vm.compiler.utils
+			     rep.vm.assembler
+			     rep.vm.bytecodes
+			     rep.vm.bytecode-defs
 			     rep.data.sort))
 
   ;; regexp matching library files not to compile
@@ -213,78 +214,75 @@ we would like. This is due to the view of folded functions as
   "Compiles the file of jade-lisp code FILE-NAME into a new file called
 `(concat FILE-NAME ?c)' (ie, `foo.jl' => `foo.jlc')."
   (interactive "fLisp file to compile:")
-  (let
-      ((temp-file (make-temp-name))
-       src-file dst-file body header form)
-    (let-fluids ((current-file file-name)
-		 (spec-bindings nil)
-		 (lex-bindings nil))
-    (unwind-protect
-	(progn
-	  (message (concat "Compiling " file-name "...") t)
-	  (when (setq src-file (open-file file-name 'read))
-	    (unwind-protect
-		(progn
-		  ;; Read the file
+  (let ((temp-file (make-temp-name))
+	src-file dst-file body header)
+    (let-fluids ((current-file file-name))
+      (call-with-frame
+       (lambda ()
+	 (unwind-protect
+	     (progn
+	       (message (concat "Compiling " file-name "...") t)
+	       (when (setq src-file (open-file file-name 'read))
+		 (unwind-protect
+		     (progn
+		       ;; Read the file
 
-		  ;; First check for `#! .. !#' at start of file
-		  (if (and (= (read-char src-file) ?#)
-			   (= (read-char src-file) ?!))
-		      (let
-			  ((out (make-string-output-stream))
-			   tem)
-			(write out "#!")
-			(catch 'done
-			  (while (setq tem (read-char src-file))
-			    (write out tem)
-			    (when (and (= tem ?!)
-				       (setq tem (read-char src-file)))
-			      (write out tem)
-			      (when (= tem ?#)
-				(throw 'done t)))))
-			(setq header (get-output-stream-string out)))
-		    (seek-file src-file 0 'start))
+		       ;; First check for `#! .. !#' at start of file
+		       (if (and (= (read-char src-file) ?#)
+				(= (read-char src-file) ?!))
+			   (let ((out (make-string-output-stream))
+				 tem)
+			     (write out "#!")
+			     (catch 'done
+			       (while (setq tem (read-char src-file))
+				 (write out tem)
+				 (when (and (= tem ?!)
+					    (setq tem (read-char src-file)))
+				   (write out tem)
+				   (when (= tem ?#)
+				     (throw 'done t)))))
+			     (setq header (get-output-stream-string out)))
+			 (seek-file src-file 0 'start))
 
-		  ;; Scan for top-level definitions in the file.
-		  ;; Also eval require forms (for macro defs)
-		  (condition-case nil
-		      (while t
-			(setq body (cons (read src-file) body)))
-		    (end-of-stream)))
-	      (close-file src-file))
-	    (setq body (compile-module-body (nreverse body) nil t t))
-	    (when (setq dst-file (open-file temp-file 'write))
-	      (condition-case error-info
-		  (unwind-protect
-		      (progn
-			;; write out the results
-			(when header
-			  (write dst-file header))
-			(format dst-file
-				";; Source file: %s\n(validate-byte-code %d %d)\n"
-				file-name bytecode-major bytecode-minor)
-			(mapc (lambda (form)
-				(when form
-				  (print form dst-file))) body)
-			(write dst-file ?\n))
-		    (close-file dst-file))
-		(error
-		 ;; Be sure to remove any partially written dst-file.
-		 ;; Also, signal the error again so that the user sees it.
-		 (delete-file temp-file)
-		 ;; Hack to signal error without entering the debugger (again)
-		 (throw 'error error-info)))
-	      ;; Copy the file to its correct location, and copy
-	      ;; permissions from source file
-	      (let
-		  ((real-name (concat file-name (if (string-match
-						     "\\.jl$" file-name)
-						    ?c ".jlc"))))
-		(copy-file temp-file real-name)
-		(set-file-modes real-name (file-modes file-name)))
-	      t)))
-      (when (file-exists-p temp-file)
-	(delete-file temp-file))))))
+		       ;; Scan for top-level definitions in the file.
+		       ;; Also eval require forms (for macro defs)
+		       (condition-case nil
+			   (while t
+			     (setq body (cons (read src-file) body)))
+			 (end-of-stream)))
+		   (close-file src-file))
+		 (setq body (compile-module-body (nreverse body) nil t t))
+		 (when (setq dst-file (open-file temp-file 'write))
+		   (condition-case error-info
+		       (unwind-protect
+			   (progn
+			     ;; write out the results
+			     (when header
+			       (write dst-file header))
+			     (format dst-file ";; Source file: %s\n(validate-byte-code %d %d)\n"
+				     file-name bytecode-major bytecode-minor)
+			     (mapc (lambda (form)
+				     (when form
+				       (print form dst-file))) body)
+			     (write dst-file ?\n))
+			 (close-file dst-file))
+		     (error
+		      ;; Be sure to remove any partially written dst-file.
+		      ;; Also, signal the error again so that the user sees it.
+		      (delete-file temp-file)
+		      ;; Hack to signal error without entering the
+		      ;; debugger (again)
+		      (throw 'error error-info)))
+		   ;; Copy the file to its correct location, and copy
+		   ;; permissions from source file
+		   (let ((real-name (concat file-name (if (string-match
+							   "\\.jl$" file-name)
+							  ?c ".jlc"))))
+		     (copy-file temp-file real-name)
+		     (set-file-modes real-name (file-modes file-name)))
+		   t)))
+	   (when (file-exists-p temp-file)
+	     (delete-file temp-file))))))))
 
 (defun compile-directory (dir-name &optional force-p exclude-re)
   "Compiles all Lisp files in the directory DIRECTORY-NAME whose object
@@ -302,9 +300,9 @@ EXCLUDE-RE may be a regexp matching files which shouldn't be compiled."
 		     (compile-directory abs-file force-p exclude-re))
 		    ((string-match "\\.jl$" file)
 		     (let* ((c-name (concat abs-file ?c)))
-		   (when (or (not (file-exists-p c-name))
-			     (file-newer-than-file-p abs-file c-name))
-		     (compile-file abs-file))))))))
+		       (when (or force-p (not (file-exists-p c-name))
+				 (file-newer-than-file-p abs-file c-name))
+			 (compile-file abs-file))))))))
 	(directory-files dir-name))
   t)
 
@@ -314,17 +312,15 @@ is true it's as though all files were out of date.
 This makes sure that all doc strings are written to their special file and
 that files which shouldn't be compiled aren't."
   (interactive "\nP")
-  (let
-      ((*compiler-write-docs* t))
+  (let ((*compiler-write-docs* t))
     (compile-directory (or directory lisp-lib-directory)
 		       force-p lib-exclude-re)))
 
 ;; Call like `rep --batch -l compiler -f compile-lib-batch [--force] DIR'
 (defun compile-lib-batch ()
-  (let
-      ((force (when (equal (car command-line-args) "--force")
-		(setq command-line-args (cdr command-line-args))
-		t))
+  (let ((force (when (equal (car command-line-args) "--force")
+		 (setq command-line-args (cdr command-line-args))
+		 t))
        (dir (car command-line-args)))
     (setq command-line-args (cdr command-line-args))
     (compile-lisp-lib dir force)))
@@ -340,13 +336,11 @@ that files which shouldn't be compiled aren't."
 ;; Used when bootstrapping from the Makefile, recompiles compiler.jl if
 ;; it's out of date
 (defun compile-compiler ()
-  (let
-      ((*compiler-write-docs* t))
+  (let ((*compiler-write-docs* t))
     (mapc (lambda (package)
-	    (let
-		((file (expand-file-name
-			(concat (structure-file package) ".jl")
-			lisp-lib-directory)))
+	    (let ((file (expand-file-name
+			 (concat (structure-file package) ".jl")
+			 lisp-lib-directory)))
 	      (when (or (not (file-exists-p (concat file ?c)))
 			(file-newer-than-file-p file (concat file ?c)))
 		(compile-file file))))

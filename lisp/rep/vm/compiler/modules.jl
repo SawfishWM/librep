@@ -48,10 +48,8 @@
 	  rep.structures
 	  rep.vm.compiler.basic
 	  rep.vm.compiler.bindings
-	  rep.vm.compiler.const
 	  rep.vm.compiler.utils
-	  rep.vm.compiler.lap
-	  rep.vm.bytecodes)
+	  rep.vm.compiler.lap)
 
   (define macro-env (make-fluid '()))		;alist of (NAME . MACRO-DEF)
   (define default-macro-env (make-fluid '()))
@@ -148,17 +146,14 @@
   (defun compiler-binding-from-rep-p (var)
     (if (structure-ref-p var)
 	(eq (nth 1 var) 'rep)
-      (and (not (or (memq var (fluid spec-bindings))
-		    (assq var (fluid lex-bindings))))
+      (and (not (has-local-binding-p var))
 	   (eq (locate-variable var) 'rep))))
 
   ;; return t if the binding of VAR is a known constant
   ;; (not including those in comp-constant-env)
   (defun compiler-binding-immutable-p (var)
-    (and (not (or (memq var (fluid spec-bindings))
-		  (assq var (fluid lex-bindings))))
-	 (let
-	     ((struct (locate-variable var)))
+    (and (not (has-local-binding-p var))
+	 (let ((struct (locate-variable var)))
 	   (and struct (binding-immutable-p (variable-stem var)
 					    (find-structure struct))))))
 
@@ -166,8 +161,7 @@
     (and (fluid current-language) (get (fluid current-language) prop)))
 
   (defun get-procedure-handler (name prop-name)
-    (unless (or (memq name (fluid spec-bindings))
-		(assq name (fluid lex-bindings)))
+    (unless (has-local-binding-p name)
       (let*
 	  ((struct (locate-variable name))
 	   (prop (and struct (get struct prop-name))))
@@ -351,22 +345,16 @@
 	(compile-form-1 '%make-structure)
 	(compile-form-1 `(%parse-interface ',sig))
 	(if header
-	    (progn
-	      (compile-constant `(lambda () ,@header))
-	      (emit-insn (bytecode enclose))
-	      (note-closure-made))
+	    (compile-lambda-constant `(lambda () ,@header))
 	  (compile-constant nil))
 	(if body
-	    (progn
-	      ;; compile non-top-level structure bodies, so that
-	      ;; they can access the active bindings
-	      (compile-constant (compile-lambda `(lambda () ,@body)))
-	      (emit-insn (bytecode enclose))
-	      (note-closure-made))
+	    ;; compile non-top-level structure bodies, so that
+	    ;; they can access the active bindings
+	    (compile-lambda-constant (compile-lambda `(lambda () ,@body)))
 	  (compile-constant nil))
 	(when name
 	  (compile-constant name))
-	(emit-insn (bytecode call) (if name 4 3))
+	(emit-insn `(call ,(if name 4 3)))
 	(decrement-stack (if name 4 3)))))
 
   (defun compile-structure-ref (form)
@@ -380,13 +368,13 @@
 	  (compiler-error "Referencing non-exported variable" struct var))
       (compile-constant struct)
       (compile-constant var)
-      (emit-insn (bytecode structure-ref))
+      (emit-insn '(structure-ref))
       (decrement-stack)))
 
 
 ;;; exported top-level functions
 
-  (defun compile-function (function)
+  (defun compile-function (function &optional name)
     "Compiles the body of the function FUNCTION."
     (interactive "aFunction to compile:")
     (let-fluids ((defuns nil)
@@ -394,13 +382,12 @@
 		 (defines nil)
 		 (current-fun function)
 		 (output-stream nil))
-      (let
-	  ((body (closure-function function)))
+      (let ((body (closure-function function)))
 	(unless (bytecodep body)
 	  (call-with-module-declared
 	   (closure-structure function)
 	   (lambda ()
-	     (set-closure-function function (compile-lambda body function)))))
+	     (set-closure-function function (compile-lambda body name)))))
 	function)))
 
   (defun compile-module (struct)
@@ -410,4 +397,4 @@
       (when struct
 	(structure-walk (lambda (var value)
 			  (when (closurep value)
-			    (compile-function value))) struct)))))
+			    (compile-function value var))) struct)))))

@@ -25,8 +25,7 @@
 
     (open rep
 	  rep.vm.compiler.modules
-	  rep.vm.compiler.rep
-	  rep.vm.bytecodes)
+	  rep.vm.compiler.rep)
 
   ;; setup properties to tell the compiler where to look for symbols
   ;; in the `no-lang'  package

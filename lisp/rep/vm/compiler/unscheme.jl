@@ -28,26 +28,12 @@
 	  rep.vm.compiler.modules
 	  rep.vm.compiler.utils
 	  rep.vm.compiler.basic
-	  rep.vm.compiler.const
 	  rep.vm.compiler.inline
 	  rep.vm.compiler.lap
 	  rep.vm.compiler.bindings
 	  rep.vm.compiler.rep
 	  rep.vm.compiler.scheme
 	  rep.vm.bytecodes)
-
-  ;; setup properties to tell the compiler where to look for symbols
-  ;; in the `unscheme'  package
-  (put 'unscheme 'compiler-handler-property 'unscheme-compile-fun)
-  (put 'unscheme 'compiler-transform-property 'unscheme-compile-transform)
-  (put 'unscheme 'compiler-sequencer 'begin)
-
-
-;;; parasite on scheme compiler
-
-  (put 'unscheme 'compiler-pass-1 (get 'scheme 'compiler-pass-1))
-  (put 'unscheme 'compiler-pass-2 (get 'scheme 'compiler-pass-2))
-  (put 'unscheme 'compiler-foldablep (get 'scheme 'compiler-foldablep))
 
 
 ;;; special compilers
@@ -118,4 +104,14 @@
 	  (string>=? . >=)
 	  (vector? . vectorp)
 	  (procedure? . functionp)
-	  memq memv member assq assoc)))
+	  memq memv member assq assoc))
+
+  ;; setup properties to tell the compiler where to look for symbols
+  ;; in the `unscheme'  package
+  (unless (get 'unscheme 'compiler-handler-property)
+    (put 'unscheme 'compiler-handler-property 'unscheme-compile-fun)
+    (put 'unscheme 'compiler-transform-property 'unscheme-compile-transform)
+    (put 'unscheme 'compiler-sequencer 'begin)
+    (put 'unscheme 'compiler-pass-1 (get 'scheme 'compiler-pass-1))
+    (put 'unscheme 'compiler-pass-2 (get 'scheme 'compiler-pass-2))
+    (put 'unscheme 'compiler-foldablep (get 'scheme 'compiler-foldablep))))

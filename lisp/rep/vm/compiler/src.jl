@@ -37,10 +37,8 @@
 ;;; Constant folding
 
   (defun foldablep (name)
-    (unless (or (memq name (fluid spec-bindings))
-		(assq name (fluid lex-bindings)))
-      (let
-	  ((fun (get-procedure-handler name 'compiler-foldablep)))
+    (unless (has-local-binding-p name)
+      (let ((fun (get-procedure-handler name 'compiler-foldablep)))
 	(and fun (fun name)))))
 
   (defun quote-constant (value)

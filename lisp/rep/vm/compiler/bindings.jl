@@ -23,51 +23,89 @@
 
 (define-structure rep.vm.compiler.bindings
 
-    (export spec-bindings lex-bindings
+    (export lex-bindings spec-bindings
 	    lexically-pure
+	    call-with-frame
 	    spec-bound-p
+	    has-local-binding-p
+	    tag-binding binding-tagged-p
 	    note-binding
 	    note-bindings
-	    binding-lexical-addr
-	    emit-binding
-	    emit-varset
+	    emit-binding emit-varset emit-varref
 	    note-binding-modified
 	    binding-modified-p
-	    note-binding-captured
-	    binding-captured-p
-	    note-closure-made)
+	    binding-enclosed-p
+	    note-binding-referenced
+	    binding-referenced-p
+	    binding-tail-call-only-p
+	    note-closure-made
+	    allocate-bindings)
 
     (open rep
 	  rep.vm.compiler.utils
 	  rep.vm.compiler.lap
-	  rep.vm.compiler.basic
-	  rep.vm.compiler.const
-	  rep.vm.bytecodes)
+	  rep.vm.compiler.basic)
 
   (define spec-bindings (make-fluid '()))	;list of bound variables
   (define lex-bindings (make-fluid '()))	;alist of bound variables
   (define lexically-pure (make-fluid t))	;any dynamic state?
 
-  (defun spec-bound-p (var)
+  (define (spec-bound-p var)
     (or (memq var (fluid defvars))
 	(special-variable-p var)
 	(memq var (fluid spec-bindings))))
 
+  (define (lexical-binding var) (assq var (fluid lex-bindings)))
+
+  (define (lexically-bound-p var)
+    (let ((cell (lexical-binding var)))
+      (and cell (not (cell-tagged-p 'no-location cell)))))
+
+  (define (has-local-binding-p var)
+    (or (memq var (fluid spec-bindings))
+	(lexical-binding var)))
+
+  (define (cell-tagged-p tag cell) (memq tag (cdr cell)))
+  (define (tag-cell tag cell)
+    (unless (cell-tagged-p tag cell)
+      (rplacd cell (cons tag (cdr cell)))))
+
   ;; note that the outermost binding of symbol VAR has state TAG
-  (defun tag-binding (var tag)
-    (let ((cell (assq var (fluid lex-bindings))))
+  (define (tag-binding var tag)
+    (let ((cell (lexical-binding var)))
       (when cell
-	(unless (memq tag (cdr cell))
-	  (rplacd cell (cons tag (cdr cell)))))))
+	(tag-cell tag cell))))
+
+  ;; note that the outermost binding of symbol VAR has state TAG
+  (define (untag-binding var tag)
+    (let ((cell (lexical-binding var)))
+      (when cell
+	(when (cell-tagged-p tag cell)
+	  (rplacd cell (delq tag (cdr cell)))))))
 
   ;; return t if outermost binding of symbol VAR has state TAG
-  (defun binding-tagged-p (var tag)
-    (let ((cell (assq var (fluid lex-bindings))))
-      ;; hardcoded in binding-lexical-addr
-      (and cell (memq tag (cdr cell)))))
+  (define (binding-tagged-p var tag)
+    (let ((cell (lexical-binding var)))
+      (and cell (cell-tagged-p tag cell))))
+
+  ;; install a new binding contour, such that THUNK can add any bindings
+  ;; (lexical and special), then when THUNK exits, the bindings are removed
+  (define (call-with-frame thunk)
+    (let ((old-d (length (fluid lex-bindings))))
+      (let-fluids ((spec-bindings (fluid spec-bindings))
+		   (lexically-pure (fluid lexically-pure)))
+	(prog1 (thunk)
+	  ;; check for unused variables
+	  (do ((new-d (length (fluid lex-bindings)) (1- new-d))
+	       (new (fluid lex-bindings) (cdr new)))
+	      ((= new-d old-d)
+	       (fluid-set lex-bindings new))
+	    (unless (or (memq 'referenced (cdar new))
+			(memq 'no-location (cdar new)))
+	      (compiler-warning 'unused "Unused variable: %s" (caar new))))))))
 
   ;; note that symbol VAR has been bound
-  (defun note-binding (var &optional without-location)
+  (define (note-binding var &optional without-location)
     (if (spec-bound-p var)
 	(progn
 	  ;; specially bound (dynamic scope)
@@ -77,72 +115,172 @@
       (fluid-set lex-bindings (cons (list var) (fluid lex-bindings)))
       (when without-location
 	(tag-binding var 'no-location)))
-    (when (eq var (fluid lambda-name))
-      (fluid-set lambda-name nil)))
+    ;; XXX handled by `modified' tag?
+;    (when (eq var (fluid lambda-name))
+;      (fluid-set lambda-name nil))
+)
 
   (defmacro note-bindings (vars)
     (list 'mapc 'note-binding vars))
 
   ;; note that the outermost binding of VAR has been modified
-  (defun note-binding-modified (var)
+  (define (note-binding-modified var)
     (tag-binding var 'modified))
 
-  (defun binding-modified-p (var)
+  (define (binding-modified-p var)
     (binding-tagged-p var 'modified))
 
-  ;; note that the outermost binding of VAR has been captured by a closure
-  (defun note-binding-captured (var)
-    (tag-binding var 'captured))
+  (define (binding-enclosed-p var)
+    (binding-tagged-p var 'enclosed))
 
-  (defun binding-captured-p (var)
-    (binding-tagged-p var 'captured))
+  (define (note-binding-referenced var &optional for-tail-call)
+    (tag-binding var 'referenced)
+    (unless for-tail-call
+      (tag-binding var 'not-tail-call-only)))
 
-  ;; note that all current lexical bindings have been captured
-  (defun note-closure-made ()
+  (define (binding-referenced-p var)
+    (binding-tagged-p var 'referenced))
+
+  (define (binding-tail-call-only-p var)
+    (not (binding-tagged-p var 'not-tail-call-only)))
+
+  ;; note that all current lexical bindings have been enclosed
+  (define (note-closure-made)
     (mapc (lambda (cell)
-	    (note-binding-captured (car cell))) (fluid lex-bindings)))
+	    (tag-cell 'enclosed cell)) (fluid lex-bindings)))
 
-  (defun binding-lexical-addr (var)
+  (define (emit-binding var)
     (if (spec-bound-p var)
-	nil
-      (catch 'out
-	(let
-	    ((i 0))
-	  (mapc (lambda (x)
-		  (unless (memq 'no-location (cdr x))
-		    (when (eq (car x) var)
-		      (throw 'out i))
-		    (setq i (1+ i))))
-		(fluid lex-bindings))
-	  nil))))
+	(progn
+	  (emit-insn `(push ,var))
+	  (increment-stack)
+	  (emit-insn '(spec-bind))
+	  (decrement-stack))
+      (emit-insn `(lex-bind ,var ,(fluid lex-bindings)))))
 
-  (defun emit-binding (var)
-    (if (spec-bound-p var)
-	(emit-insn (bytecode bindspec) (add-constant var))
-      (emit-insn (bytecode bind)))
-    (note-binding var))
-
-  (defun emit-varset (sym)
+  (define (emit-varset sym)
     (test-variable-ref sym)
-    (if (spec-bound-p sym)
-	(emit-insn (bytecode setq) (add-constant sym))
-      (let
-	  ((lex-addr (binding-lexical-addr sym)))
-	(if lex-addr
+    (cond ((spec-bound-p sym)
+	   (emit-insn `(push ,sym))
+	   (increment-stack)
+	   (emit-insn '(%set))
+	   (decrement-stack))
+	  ((lexically-bound-p sym)
 	    ;; The lexical address is known. Use it to avoid scanning
-	    (progn
-	      (emit-insn (bytecode setn) lex-addr)
-	      (note-binding-modified sym))
-	  ;; No lexical binding, but not special either. Just
-	  ;; update the global value
-	  (emit-insn (bytecode setg) (add-constant sym))))))
+	   (emit-insn `(lex-set ,sym ,(fluid lex-bindings)))
+	   (note-binding-modified sym))
+	  (t
+	   ;; No lexical binding, but not special either. Just
+	   ;; update the global value
+	   (emit-insn `(setg ,sym)))))
+
+  (define (emit-varref form &optional in-tail-slot)
+    (cond ((spec-bound-p form)
+	   ;; Specially bound
+	   (emit-insn `(push ,form))
+	   (increment-stack)
+	   (emit-insn '(ref))
+	   (decrement-stack))
+	  ((lexically-bound-p form)
+	    ;; We know the lexical address, so use it
+	   (emit-insn `(lex-ref ,form ,(fluid lex-bindings)))
+	   (note-binding-referenced form in-tail-slot))
+	  (t
+	   ;; It's not bound, so just update the global value
+	   (emit-insn `(refg ,form)))))
+
+
+;; allocation of bindings, either on stack or in heap
+
+  (define (heap-binding-p cell)
+    (or (cell-tagged-p 'captured cell)
+	;; used to tag bindings unconditionally on the heap
+	(cell-tagged-p 'heap-allocated cell)))
+
+  ;; heap addresses count up from the _most_ recent binding
+  (define (heap-address var bindings)
+    (let loop ((rest bindings)
+	       (i 0))
+      (cond ((null rest) (error "No heap address for %s" var))
+	    ((or (not (heap-binding-p (car rest)))
+		 (cell-tagged-p 'no-location (car rest)))
+	     (loop (cdr rest) i))
+	    ((eq (caar rest) var) i)
+	    (t (loop (cdr rest) (1+ i))))))
+
+  ;; slot addresses count up from the _least_ recent binding
+  (define (slot-address var bindings base)
+    (let loop ((rest bindings))
+      (cond ((eq rest base) (error "No slot address for %s, %s" var bindings))
+	    ((eq (caar rest) var)
+	     (let loop-2 ((rest (cdr rest))
+			  (i 0))
+	       (cond ((eq rest base) i)
+		     ((or (heap-binding-p (car rest))
+			  (cell-tagged-p 'no-location (car rest)))
+		      (loop-2 (cdr rest) i))
+		     (t (loop-2 (cdr rest) (1+ i))))))
+	    (t (loop (cdr rest))))))
+
+  (define (identify-captured-bindings asm lex-env)
+    (mapc (lambda (insn)
+	    (case (car insn)
+	      ((lex-ref lex-set)
+	       (let ((cell (assq (nth 1 insn) lex-env)))
+		 (when cell
+		   (tag-cell 'captured cell))))
+	      ((push-bytecode)
+	       (identify-captured-bindings (nth 1 insn) (nth 2 insn)))))
+	  (assembly-code asm)))
+
+  ;; Extra pass over the output pseudo-assembly code; converts
+  ;; pseudo-instructions accessing lexical bindings into real
+  ;; instructions accessing either the heap or the slot registers
+  (define (allocate-bindings-1 asm base-env)
+    (let ((max-slot 0))
+      (let loop ((rest (assembly-code asm)))
+	(when rest
+	  (case (caar rest)
+	    ((lex-bind lex-ref lex-set)
+	     (let* ((var (nth 1 (car rest)))
+		    (bindings (nth 2 (car rest)))
+		    (cell (assq var bindings)))
+	       (if (heap-binding-p cell)
+		   (rplaca rest (case (caar rest)
+				  ((lex-bind) (list 'bind))
+				  ((lex-ref)
+				   (list 'refn (heap-address var bindings)))
+				  ((lex-set)
+				   (list 'setn (heap-address var bindings)))))
+		 (let ((slot (slot-address var bindings base-env)))
+		   (setq max-slot (max max-slot (1+ slot)))
+		   (rplaca rest (case (caar rest)
+				  ((lex-bind lex-set)
+				   (list 'slot-set slot))
+				  ((lex-ref)
+				   (list 'slot-ref slot))))))))
+	    ((push-bytecode)
+	     (let ((asm (nth 1 (car rest)))
+		   (env (nth 2 (car rest)))
+		   (doc (nth 3 (car rest)))
+		   (interactive (nth 4 (car rest))))
+	       (allocate-bindings-1 asm env)
+	       (rplaca rest (list 'push (assemble-assembly-to-subr
+					 asm doc interactive))))))
+	  (loop (cdr rest))))
+      (assembly-slots-set asm max-slot)
+      asm))
+
+  (define (allocate-bindings asm)
+    (identify-captured-bindings asm (fluid lex-bindings))
+    (allocate-bindings-1 asm (fluid lex-bindings)))
 
 
 ;; declarations
 
   ;; (declare (bound VARIABLE))
 
-  (defun declare-bound (form)
+  (define (declare-bound form)
     (let loop ((vars (cdr form)))
       (when vars
 	(note-binding (car vars) t)
@@ -151,7 +289,7 @@
 
   ;; (declare (special VARIABLE))
 
-  (defun declare-special (form)
+  (define (declare-special form)
     (let loop ((vars (cdr form)))
       (when vars
 	(fluid-set spec-bindings (cons (car vars) (fluid spec-bindings)))

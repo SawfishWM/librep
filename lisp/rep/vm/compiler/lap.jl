@@ -27,47 +27,77 @@
 	    emit-insn
 	    make-label
 	    push-label-addr
-	    emit-jmp-insn
 	    fix-label
-	    get-start-label)
+	    prefix-label
+	    push-state
+	    pop-state
+	    reload-state
+	    saved-state)
 
     (open rep
 	  rep.vm.compiler.utils
-	  rep.vm.bytecodes)
+	  rep.vm.compiler.bindings)
+
+  (define saved-state (make-fluid))
 
   ;; list of (INSN . [ARG]), (TAG . REFS)
   (define intermediate-code (make-fluid '()))
 
   ;; Output one opcode and its optional argument
-  (defmacro emit-insn (opcode &optional arg)
-    `(fluid-set intermediate-code (cons (cons ,opcode ,arg)
-					(fluid intermediate-code))))
+  (define (emit-insn insn)
+    (when (consp insn)
+      ;; so the peepholer can safely modify code
+      (setq insn (copy-sequence insn)))
+    (fluid-set intermediate-code (cons insn (fluid intermediate-code))))
 
   ;; Create a new label
-  (defmacro make-label ()
-    ;; a label is either (label . nil) or (label . (CODE-REFS...))
-    ;; or (label BYTE-ADDRESS)
-    `(cons 'label nil))
+  (define make-label gensym)
 
   ;; Arrange for the address of LABEL to be pushed onto the stack
-  (defmacro push-label-addr (label)
-    `(progn
-       (emit-insn (bytecode pushi-pair-pos) ,label)
-       (increment-stack)))
-
-  (defun emit-jmp-insn (opcode label)
-    (emit-insn opcode label))
+  (define (push-label-addr label)
+    (emit-insn `(push-label ,label))
+    (increment-stack))
 
   ;; Set the address of the label LABEL to the current pc
-  (defmacro fix-label (label)
-    `(fluid-set intermediate-code (cons ,label (fluid intermediate-code))))
+  (define fix-label emit-insn)
 
-  ;; return the label marking the start of the bytecode sequence
-  (defun get-start-label ()
-    (let
-	((label (last (fluid intermediate-code))))
-      (unless (eq (car label) 'label)
-      (setq label (make-label))
-	(fluid-set intermediate-code (nconc (fluid intermediate-code)
-					    (list label))))
-      label)))
+  (define (prefix-label label)
+    (fluid-set intermediate-code (nconc (list label)
+					(fluid intermediate-code))))
+
+  (define (push-state)
+    (fluid-set saved-state
+	       (cons (list (cons intermediate-code (fluid intermediate-code))
+			   (cons spec-bindings (fluid spec-bindings))
+			   (cons lex-bindings
+				 (mapcar (lambda (x)
+					   (copy-sequence x))
+					 (fluid lex-bindings)))
+			   (cons lexically-pure (fluid lexically-pure))
+			   (cons current-stack (fluid current-stack))
+			   (cons max-stack (fluid max-stack))
+			   (cons current-b-stack (fluid current-b-stack))
+			   (cons max-b-stack (fluid max-b-stack)))
+		     (fluid saved-state))))
+
+  (define (pop-state)
+    (fluid-set saved-state (cdr (fluid saved-state))))
+
+  ;; reload lex-bindings value, preserving eq-ness of cells
+  (define (reload-lex-bindings saved)
+    (let loop ((rest (fluid lex-bindings)))
+      (if (eq (caar rest) (caar saved))
+	  (progn
+	    (fluid-set lex-bindings rest)
+	    (do ((old rest (cdr old))
+		 (new saved (cdr new)))
+		((null old))
+	      (rplacd (car old) (cdr (car new)))))
+	(loop (cdr rest)))))
+
+  (define (reload-state)
+    (mapc (lambda (cell)
+	    (if (eq (car cell) lex-bindings)
+		(reload-lex-bindings (cdr cell))
+	      (fluid-set (car cell) (cdr cell))))
+	  (car (fluid saved-state)))))
