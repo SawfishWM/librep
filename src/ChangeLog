@@ -1,3 +1,8 @@
+1998-09-13  John Harper  <john@dcs.warwick.ac.uk>
+
+	* x11_windows.c (sys_draw_glyphs): when drawing underlines,
+	draw one less pixel than before
+
 1998-09-10  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_main.c (sys_sit_for): only redisplay if the timeout

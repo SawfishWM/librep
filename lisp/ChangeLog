@@ -1,3 +1,12 @@
+1998-09-13  John Harper  <john@dcs.warwick.ac.uk>
+
+	* ispell.jl (ispell-ignore-word-hook): new hook, called
+	immediately prior to spell-checking each word, if the hook
+	returns t, don't check the word and assume it's ok
+
+	* tex-mode.jl (tex-spell-ignore-word-hook): don't spell-check
+	any words preceded by a backslash (i.e. TeX commands)
+
 1998-09-12  John Harper  <john@dcs.warwick.ac.uk>
 
 	* init.jl: load files for the window- and operating-system,
