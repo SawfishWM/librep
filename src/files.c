@@ -1446,6 +1446,24 @@ CONTENTS may be relative to the directory containing FILENAME.
 
 /* Utility functions */
 
+repv
+rep_file_fdopen (int fd, char *mode)
+{
+    rep_file *ptr;
+    for (ptr = file_list; ptr != 0; ptr = ptr->next)
+    {
+	if (rep_LOCAL_FILE_P (rep_VAL (ptr)) && fileno (ptr->file.fh) == fd)
+	    return rep_VAL (ptr);
+    }
+    ptr = rep_FILE (make_file ());
+    ptr->handler = Qt;
+    ptr->file.fh = fdopen (fd, mode);
+    if (ptr->file.fh == 0)
+	return rep_NULL;
+    else
+	return rep_VAL (ptr);
+}
+
 DEFSTRING(stdin_name, "<stdin>");
 DEFUN("stdin-file", Fstdin_file, Sstdin_file, (void), rep_Subr0) /*
 ::doc:stdin-file::
