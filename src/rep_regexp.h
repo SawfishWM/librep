@@ -98,10 +98,22 @@ extern int rep_regmatch_string(rep_regexp *, char *, int);
 				 * times. */
 #define PLUS	11		/* node Match this (simple) thing 1 or more
 				 * times. */
+#define WORD	12		/* no   Match alphanumeric or _ char */
+#define NWORD	13		/* no   Match non-(alphanumeric or _) char */
+#define WSPC	14		/* no   Match whitespace char */
+#define NWSPC	15		/* no   Match non-whitespace char */
+#define DIGI	16		/* no   Match digit char */
+#define NDIGI	17		/* no   Match non-digit char */
+#define WEDGE	18		/* no	Match "" at word boundary */
+#define NWEDGE	19		/* no	Match "" not at word boundary */
 #define OPEN	20		/* no	Mark this point in input as start of
 				 * #n. */
 /* OPEN+1 is number 1, etc. */
 #define CLOSE	30		/* no	Analogous to OPEN. */
+#define NGSTAR	40		/* node Match this (simple) thing 0 or more
+				   times (non-greedily) */
+#define NGPLUS	41		/* node	Match this (simple) thing 1 or more
+				   times (non-greedily) */
 
 /*
  * Opcode notes:
