@@ -39,8 +39,6 @@
 # error "Need an operating system definition"
 #endif
 
-#include <build.h>
-
 enum file_ops {
     op_file_name_absolute_p = 0,
     op_expand_file_name,
