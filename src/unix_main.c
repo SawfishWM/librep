@@ -783,16 +783,22 @@ rep_pre_sys_os_init(void)
 #ifdef SIGINT
     if(signal(SIGINT, interrupt_signal_handler) == SIG_IGN)
 	signal(SIGINT, SIG_IGN);
+    else
+	rep_sig_restart (SIGINT, rep_FALSE);
 #endif
 
     /* Finally, the termination signals */
 #ifdef SIGTERM
     if(signal(SIGTERM, termination_signal_handler) == SIG_IGN)
 	signal(SIGTERM, SIG_IGN);
+    else
+	rep_sig_restart (SIGTERM, rep_FALSE);
 #endif
 #ifdef SIGHUP
     if(signal(SIGHUP, termination_signal_handler) == SIG_IGN)
 	signal(SIGHUP, SIG_IGN);
+    else
+	rep_sig_restart (SIGHUP, rep_FALSE);
 #endif
 
 #ifdef SIGUSR1
