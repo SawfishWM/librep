@@ -96,6 +96,7 @@
 (autoload 'map-y-or-n-p "prompt")
 (autoload 'read-mail "read-mail" t)
 (autoload 'read-mail-folder "read-mail" t)
+(autoload 'rm-summary "rm-summary" t)
 (autoload 'rm-reply "rm-misc" t)
 (autoload 'rm-followup "rm-misc" t)
 (autoload 'rm-output "rm-output" t)

@@ -1,5 +1,19 @@
 Mon May 25 17:12:39 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* compiler.jl, lisp.jl: support for eval-when-compile
+	construct, though I'm not sure if it has the correct semantics
+	at anything but the top-level?
+
+	* read-mail.jl, rm-summary.jl: removed all of the mail summary
+	code to rm-summary.jl. read-mail.jl still has a few calls to it
+	though (but only if a summary exists). Deletion marks are now
+	stored along with all the other message attributes
+	* rm-misc.jl, rm-output.jl, rm-mail-dir.jl: minor updates to
+	work with separate summary
+
+	* rm-thread.jl (rm-inter-thread-sort-key,
+	rm-intra-thread-sort-key): control over how threads are sorted
+
 	* compiler.jl (comp-compile-top-form): when compiling defvars,
 	if the value is a list but not a constant, compile it to
 	bytecode
