@@ -88,7 +88,7 @@ While using the `load' function to load a Lisp library, this variable is
 set to the name of the file being loaded.
 ::end:: */
 
-DEFUN("quote", Fquote, Squote, (repv args), rep_SF) /*
+DEFUN("quote", Fquote, Squote, (repv args, repv tail_posn), rep_SF) /*
 ::doc:quote::
 quote ARG
 'ARG
@@ -101,7 +101,7 @@ Returns ARG.
     return rep_signal_missing_arg(1);
 }
 
-DEFUN("lambda", Flambda, Slambda, (repv args), rep_SF) /*
+DEFUN("lambda", Flambda, Slambda, (repv args, repv tail_posn), rep_SF) /*
 ::doc:lambda::
 lambda LAMBDA-LIST BODY...
 
@@ -1178,7 +1178,7 @@ Return the element of SEQUENCE at position INDEX (counting from zero).
 	return(Faref(seq, index));
 }
 
-DEFUN("prog1", Fprog1, Sprog1, (repv args), rep_SF) /*
+DEFUN("prog1", Fprog1, Sprog1, (repv args, repv tail_posn), rep_SF) /*
 ::doc:prog1::
 prog1 FORM1 FORMS...
 
@@ -1190,11 +1190,11 @@ First evals FORM1 then FORMS, returns the value that FORM1 gave.
 	repv res;
 	rep_GC_root gc_args, gc_res;
 	rep_PUSHGC(gc_args, args);
-	res = Feval(rep_CAR(args));
+	res = rep_eval(rep_CAR(args), Qnil);
 	if(res)
 	{
 	    rep_PUSHGC(gc_res, res);
-	    if(!Fprogn(rep_CDR(args)))
+	    if(!Fprogn(rep_CDR(args), Qnil))
 		res = rep_NULL;
 	    rep_POPGC;
 	}
@@ -1204,7 +1204,7 @@ First evals FORM1 then FORMS, returns the value that FORM1 gave.
     return rep_signal_missing_arg(1);
 }
 
-DEFUN("while", Fwhile, Swhile, (repv args), rep_SF) /*
+DEFUN("while", Fwhile, Swhile, (repv args, repv tail_posn), rep_SF) /*
 ::doc:while::
 while CONDITION FORMS...
 
@@ -1217,10 +1217,10 @@ procedure, else return nil.
 	rep_GC_root gc_args;
 	repv cond = rep_CAR(args), wval, body = rep_CDR(args);
 	rep_PUSHGC(gc_args, args);
-	while((wval = Feval(cond)) && !rep_NILP(wval))
+	while((wval = rep_eval(cond, Qnil)) && !rep_NILP(wval))
 	{
 	    rep_TEST_INT;
-	    if(rep_INTERRUPTP || !Fprogn(body))
+	    if(rep_INTERRUPTP || !Fprogn(body, Qnil))
 	    {
 		wval = rep_NULL;
 		break;
@@ -1234,7 +1234,7 @@ procedure, else return nil.
     return rep_signal_missing_arg(1);
 }
 
-DEFUN("cond", Fcond, Scond, (repv args), rep_SF) /*
+DEFUN("cond", Fcond, Scond, (repv args, repv tail_posn), rep_SF) /*
 ::doc:cond::
 cond (CONDITION FORMS... ) ...
 
@@ -1261,13 +1261,13 @@ like the last else in an else-if statement in C.
     while(rep_CONSP(args) && rep_CONSP(rep_CAR(args)))
     {
 	repv cndlist = rep_CAR(args);
-	if(!(res = Feval(rep_CAR(cndlist))))
+	if(!(res = rep_eval(rep_CAR(cndlist), Qnil)))
 	    break;
 	if(!rep_NILP(res))
 	{
 	    if(rep_CONSP(rep_CDR(cndlist)))
 	    {
-		if(!(res = Fprogn(rep_CDR(cndlist))))
+		if(!(res = Fprogn(rep_CDR(cndlist), tail_posn)))
 		    break;
 	    }
 	    break;
@@ -1278,7 +1278,7 @@ like the last else in an else-if statement in C.
     return(res);
 }
 
-DEFUN("case", Fcase, Scase, (repv args), rep_SF) /*
+DEFUN("case", Fcase, Scase, (repv args, repv tail_posn), rep_SF) /*
 ::doc:case::
 case KEY CLAUSES...
 
@@ -1300,7 +1300,7 @@ undefined.
 	return rep_signal_missing_arg (0);
     
     rep_PUSHGC(gc_args, args);
-    key = Feval (rep_CAR(args));
+    key = rep_eval (rep_CAR(args), Qnil);
     rep_POPGC;
     if (key == rep_NULL)
 	return rep_NULL;
@@ -1316,7 +1316,7 @@ undefined.
 	    while (rep_CONSP(ptr))
 	    {
 		if (Feql (key, rep_CAR(ptr)) != Qnil)
-		    return Fprogn (rep_CDAR(args));
+		    return Fprogn (rep_CDAR(args), tail_posn);
 		ptr = rep_CDR(ptr);
 		rep_TEST_INT;
 		if (rep_INTERRUPTP)
@@ -1324,7 +1324,7 @@ undefined.
 	    }
 	}
 	else if (rep_CAAR(args) == Qt)
-	    return Fprogn (rep_CDAR(args));
+	    return Fprogn (rep_CDAR(args), tail_posn);
 	else
 	    return rep_signal_arg_error (rep_CAR(args), i);
 	args = rep_CDR(args);
@@ -1582,7 +1582,7 @@ path_error:
 	while((c != EOF) && (tem = rep_readl(stream, &c)))
 	{
 	    rep_TEST_INT;
-	    if(rep_INTERRUPTP || !(result = Feval(tem)))
+	    if(rep_INTERRUPTP || !(result = rep_eval(tem, Qnil)))
 	    {
 		rep_unbind_symbols (bindings);
 		rep_POP_CALL(lc);
@@ -1624,7 +1624,7 @@ again:
 		     Fdelq(tem, Fsymbol_value (Qafter_load_alist, Qt)));
 	    
 		/* Then evaluate it */
-		Fprogn(rep_CDR(tem));
+		Fprogn(rep_CDR(tem), Qnil);
 
 		/* Try for another entry */
 		goto again;
@@ -2072,7 +2072,7 @@ returned.
     return res;
 }
 
-DEFUN("catch", Fcatch, Scatch, (repv args), rep_SF) /*
+DEFUN("catch", Fcatch, Scatch, (repv args, repv tail_posn), rep_SF) /*
 ::doc:catch::
 catch TAG FORMS...
 
@@ -2089,11 +2089,11 @@ progn or the value given to any matching `throw' form.
 	repv tag, res = rep_NULL;
 	rep_GC_root gc_args, gc_tag;
 	rep_PUSHGC(gc_args, args);
-	tag = Feval(rep_CAR(args));
+	tag = rep_eval(rep_CAR(args), Qnil);
 	if(tag)
 	{
 	    rep_PUSHGC(gc_tag, tag);
-	    if(!(res = Fprogn(rep_CDR(args))))
+	    if(!(res = Fprogn(rep_CDR(args), Qnil)))
 	    {
 		if(rep_throw_value && (rep_CAR(rep_throw_value) == tag))
 		{
@@ -2123,7 +2123,8 @@ repv from it. TAG and repv are both evaluated fully.
     return(rep_NULL);
 }
 
-DEFUN("unwind-protect", Funwind_protect, Sunwind_protect, (repv args), rep_SF) /*
+DEFUN("unwind-protect", Funwind_protect,
+      Sunwind_protect, (repv args, repv tail_posn), rep_SF) /*
 ::doc:unwind-protect::
 unwind-protect BODY CLEANUP-FORMS...
 
@@ -2140,12 +2141,12 @@ undefined whether or not CLEANUP-FORMS will be evaluated.
 	repv res, throwval;
 	rep_GC_root gc_args, gc_res, gc_throwval;
 	rep_PUSHGC(gc_args, args);
-	res = Feval(rep_CAR(args));
+	res = rep_eval(rep_CAR(args), Qnil);
 	rep_PUSHGC(gc_res, res);
 	throwval = rep_throw_value;
 	rep_throw_value = rep_NULL;
 	rep_PUSHGC(gc_throwval, throwval);
-	if(!Fprogn(rep_CDR(args)))
+	if(!Fprogn(rep_CDR(args), Qnil))
 	    res = rep_NULL;
 	/* Only reinstall the old throw if it's actually an error and there
 	   was no error in the cleanup forms. This way the newest error
@@ -2158,7 +2159,8 @@ undefined whether or not CLEANUP-FORMS will be evaluated.
     return rep_signal_missing_arg(1);
 }
 
-DEFUN("with-object", Fwith_object, Swith_object, (repv args), rep_SF) /*
+DEFUN("with-object", Fwith_object, Swith_object,
+      (repv args, repv tail_posn), rep_SF) /*
 ::doc:with-object::
 with-object ARG FORMS...
 
@@ -2172,7 +2174,7 @@ of whatever was changed. Return the value of the last FORM evaluated.
     {
 	rep_GC_root gc_args;
 	rep_PUSHGC(gc_args, args);
-	res = Feval(rep_CAR(args));
+	res = rep_eval(rep_CAR(args), Qnil);
 	if (res != rep_NULL)
 	{
 	    repv handle = rep_bind_object(res);
@@ -2180,7 +2182,7 @@ of whatever was changed. Return the value of the last FORM evaluated.
 	    {
 		rep_GC_root gc_handle;
 		rep_PUSHGC(gc_handle, handle);
-		res = Fprogn(rep_CDR(args));
+		res = Fprogn(rep_CDR(args), Qnil);
 		rep_POPGC;
 		rep_PUSHGC(gc_handle, res);
 		rep_unbind_object(handle);

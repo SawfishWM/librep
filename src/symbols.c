@@ -592,7 +592,7 @@ rep_add_binding_to_env (repv env, repv sym, repv value)
 
 /* More lisp functions */
 
-DEFUN("defvar", Fdefvar, Sdefvar, (repv args), rep_SF) /*
+DEFUN("defvar", Fdefvar, Sdefvar, (repv args, repv tail_posn), rep_SF) /*
 ::doc:defvar::
 defvar NAME DEFAULT-VALUE [DOC-STRING]
 
@@ -991,7 +991,7 @@ Returns t if ARG is a symbol.
     return(rep_SYMBOLP(sym) ? Qt : Qnil);
 }
 
-DEFUN("setq", Fsetq, Ssetq, (repv args), rep_SF) /*
+DEFUN("setq", Fsetq, Ssetq, (repv args, repv tail_posn), rep_SF) /*
 ::doc:setq::
 setq { SYMBOL FORM }...
 
