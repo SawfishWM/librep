@@ -1,5 +1,13 @@
 Sat Apr 18 00:19:49 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* buffers.jl (revert-buffer): attempt to leave the cursor in
+	its original position (by saving the surrounding lines, then
+	searching for them). Also added a new optional argument, FORCE,
+	which prevents confirmation from the user being asked for
+
+	* rcs.jl (rcs-command): when REREAD-BUFFER is t, use
+	revert-buffer to achieve this
+
 	* Makefile.in: use JADELISPLIB and JADEDOCFILE to allow proper
 	compilation of Lisp files before they've been installed
 

@@ -1,5 +1,8 @@
 Sat Apr 18 00:16:46 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* find.c (buffer_reverse_strpbrk): when matching a newline, the
+	position returned was one column too far to the left
+
 	* unix_processes.c (run_process): when running synchronously,
 	if the child exits before EOFs are received, allow a few more
 	polls of input before exiting. Hopefully this should be enough
