@@ -56,14 +56,14 @@ rep : $(REP_OBJS) $(EXTRA_LIBOBJS) librep.la
 rep-remote : rep-remote.c
 
 install : all installdirs
-	$(LIBTOOL) cp librep.la ${libdir}
+	$(LIBTOOL) ${INSTALL_DATA} librep.la ${libdir}
 	$(LIBTOOL) -n --finish ${libdir}
-	$(LIBTOOL) cp rep ${bindir}
-	$(LIBTOOL) cp repdoc ${bindir}
-	$(INSTALL_SCRIPT) rep-config ${bindir}
-	$(INSTALL_PROGRAM) rep-remote ${bindir}
+	$(LIBTOOL) ${INSTALL_PROGRAM} -m 755 rep ${bindir}
+	$(LIBTOOL) ${INSTALL_PROGRAM} -m 755 repdoc ${bindir}
+	$(INSTALL_SCRIPT) -m 755 rep-config ${bindir}
+	$(INSTALL_PROGRAM) -m 755 rep-remote ${bindir}
 	for dl in $(DL_OBJS); do \
-	  $(LIBTOOL) cp $$dl ${repexecdir}; \
+	  $(LIBTOOL) ${INSTALL_DATA} $$dl ${repexecdir}; \
 	done
 	for i in $(INSTALL_HDRS); do \
 	  $(INSTALL_DATA) $$i $(includedir); \
