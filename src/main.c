@@ -147,7 +147,6 @@ inner_main(int argc, char **argv)
     buffers_init();
     commands_init();
     edit_init();
-    editrect_init();
     find_init();
     glyphs_init();
     io_init();
