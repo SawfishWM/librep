@@ -1,5 +1,10 @@
 2000-02-08  John Harper  <john@dcs.warwick.ac.uk>
 
+	* lisp.c (Fmacroexpand): while evaluating the macro expansion,
+	bind the special variable macro-environment to the environment
+	passed into macroexpand. This allows macros to expand inner
+	macro forms correctly
+
 	* continuations.c (Fthread_queue_length): deleted this
 	function, it's pretty useless
 

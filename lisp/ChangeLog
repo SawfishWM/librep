@@ -1,5 +1,13 @@
 2000-02-08  John Harper  <john@dcs.warwick.ac.uk>
 
+	* compiler.jl (comp-compile-case): fixed this, wasn't dup'ing
+	the key before each comparison, only before the first
+
+	* define.jl: now that macros can find the macro environment
+	they were invoked through, it's possible to implement this
+	properly, scanning out define's from all suitable forms
+	automatically
+
 	* compiler-opt.jl (comp-peephole-opt): fix typo in `jt X; nil
 	--> jpt X' pattern
 
