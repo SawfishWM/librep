@@ -220,11 +220,16 @@ See also `setq'. Returns the value of the last FORM."
 			(list 'quote (car rest)) (nth 1 rest)) body)))))
 
 (defmacro define-value (var-form value)
-  (or (eq (car var-form) 'quote)
-      (error "define-value can only set constant symbols: %s" var-form))
-  (list 'progn
-	(list 'setq (nth 1 var-form) value)
-	(list 'mark-symbol-defined var-form)))
+  (if (eq (car var-form) 'quote)
+      ;; constant symbol
+      (list 'progn
+	    (list 'setq (nth 1 var-form) value)
+	    (list 'mark-symbol-defined var-form))
+    ;; non-constant symbol
+    ;; XXX highly dubious, and may need changing (only allow specials?)
+    (list 'progn
+	  (list 'set var-form value)
+	  (list 'mark-symbol-defined var-form))))
 
 ;; XXX it would be nice to do the same for setq.. might stress the
 ;; XXX interpreter somewhat..? :-(
