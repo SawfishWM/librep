@@ -1,5 +1,26 @@
 @c -*-Texinfo-*-
 
-@section Version 1.0
+@chapter News
+@cindex News
+
+
+@section 0.2
+
+@itemize @bullet
+
+@item The variables @code{error-mode} and @code{interrupt-mode} control
+where errors and user-interrupts (i.e. @code{SIGINT} signals) are
+handled. The three possible values are: @code{top-level}, @code{exit}
+and @code{nil} (denotes the current event loop).
+
+@item Fixed bug where all dynamic types were erroneously @code{symbolp}.
+
+@item @code{SIGINT}, @code{SIGHUP} and @code{SIGTERM} signals should
+now be caught more successfully.
+
+@end itemize
+
+
+@section 0.1
 
 First public release.
