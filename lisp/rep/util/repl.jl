@@ -261,3 +261,12 @@ enter a meta-command prefixed by a `,' character.\n")
 	 (format standard-output
 		 "%S\nElapsed: %d seconds\n" ret (/ (- t2 t1) 1e6)))))
 (put 'time 'repl-help "FORM")
+
+(put 'profile 'repl-command
+     (lambda (form)
+       (require 'profiler)
+       (format standard-output "%S\n\n" (call-in-profiler
+					 (lambda () (repl-eval form))))
+       (print-profile)))
+
+(put 'profile 'repl-help "FORM")
