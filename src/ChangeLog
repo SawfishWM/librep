@@ -1,3 +1,13 @@
+Thu May 28 18:07:09 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.h (MAKE_TIME, GET_TIME, TIMEP): new way of storing
+	timestamps (DAYS . SECONDS) instead of in long-integer form
+	* unix_files.c (sys_file_modtime): use new timestamp format
+	* misc.c (cmd_current_time, cmd_current_time_string): use new
+	timestamp format
+	(cmd_fix_time): new function to normalise the two parts of a
+	timestamp
+
 Mon May 25 17:11:32 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lispcmds.c (cmd_if, cmd_and, cmd_or): reinstated these

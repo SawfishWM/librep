@@ -1,3 +1,12 @@
+Thu May 28 18:02:48 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* mail-headers.jl (mail-timezone-alist): moved to maildefs.jl
+	* maildefs.jl (mail-month-alist): added full names, as well as
+	abbreviations
+
+	* rm-restrict.jl (rm-parse-date, rm-rule-sent-date): support
+	for relative dates (i.e. "2 days ago" and so on)
+
 Tue May 26 13:15:11 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rm-restrict.jl: new file, rule-based message selection
