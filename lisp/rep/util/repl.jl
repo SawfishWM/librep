@@ -23,60 +23,72 @@
 
 (define-structure rep.util.repl
 
-    (export repl)
+    (export repl
+	    make-repl
+	    repl-struct
+	    repl-pending
+	    repl-iterate)
 
     (open rep
 	  rep.structures
 	  rep.io.readline)
 
-  (define repl-in-struct (make-fluid))
+  (define current-repl (make-fluid))
 
-  (defun repl-eval (form)
-    (eval form (intern-structure (fluid repl-in-struct))))
+  (define (make-repl &optional initial-struct)
+    (cons (or initial-struct *user-structure*) nil))
 
-  (defun repl (&optional initial-structure)
-    (let ((print-escape t)
-	  input)
-      (let-fluids ((repl-in-struct (or initial-structure *user-structure*)))
-	(write standard-output "\nEnter `,help' to list commands.\n")
-	(catch 'out
-	  (while t
-	    (setq input (concat
-			 input (readline
-				(format nil (if input "" "%s> ")
-					(fluid repl-in-struct)))))
-	    (catch 'next
-	      (condition-case data
-		  (progn
-		    (if (string-looking-at "\\s*,\\s*" input)
-			;; a `,' introduces a meta command
-			(let ((stream (make-string-input-stream
-				       input (match-end)))
-			      sexps)
-			  (condition-case nil
-			      (while t
-				(setq sexps (cons (read stream) sexps)))
-			    (end-of-stream
-			     (setq sexps (nreverse sexps))))
-			  (if (get (car sexps) 'repl-command)
-			      (apply (get (car sexps) 'repl-command)
-				     (cdr sexps))
-			    (format standard-output
-				    "unrecognized command name: %s\n"
-				    (car sexps))))
-		      (let ((form (condition-case nil
-				      (read-from-string input)
-				    (end-of-stream
-				     (if (and input (not (string= "" input)))
-					 (throw 'next)
-				       (throw 'out))))))
-			(format standard-output "%S\n" (repl-eval form))))
-		    (setq input nil))
-		(error
-		 (error-handler-function (car data) (cdr data))
-		 (setq input nil)))))))))
+  (define repl-struct car)
+  (define repl-pending cdr)
+  (define repl-set-struct rplaca)
+  (define repl-set-pending rplacd)
 
-  (defun print-list (data &optional map)
+  (define (repl-eval form)
+    (eval form (intern-structure (repl-struct (fluid current-repl)))))
+
+  (define (repl-iterate repl input)
+    (setq input (concat (repl-pending repl) input))
+    (repl-set-pending repl nil)
+    (let-fluids ((current-repl repl))
+      (let ((print-escape t))
+	(catch 'return
+	  (condition-case data
+	      (progn
+		(if (string-looking-at "\\s*,\\s*" input)
+		    ;; a `,' introduces a meta command
+		    (let ((stream (make-string-input-stream input (match-end)))
+			  (sexps '()))
+		      (condition-case nil
+			  (while t
+			    (setq sexps (cons (read stream) sexps)))
+			(end-of-stream (setq sexps (nreverse sexps))))
+		      (if (get (car sexps) 'repl-command)
+			  (apply (get (car sexps) 'repl-command) (cdr sexps))
+			(format standard-output
+				"unrecognized command name: %s\n"
+				(car sexps))))
+		  (let ((form (condition-case nil
+				  (read-from-string input)
+				(end-of-stream
+				 (repl-set-pending repl input)
+				 (throw 'return
+					(and input
+					     (not (string= "" input))))))))
+		    (format standard-output "%S\n" (repl-eval form))))
+		t)
+	    (error
+	     (error-handler (car data) (cdr data))))))))
+
+  (define (repl &optional initial-structure)
+    (let ((r (make-repl initial-structure)))
+      (write standard-output "\nEnter `,help' to list commands.\n")
+      (let loop ()
+	(let ((input (readline (format nil (if (repl-pending r) "" "%s> ")
+				       (repl-struct r)))))
+	  (when (and input (repl-iterate r input))
+	    (loop))))))
+
+  (define (print-list data &optional map)
     (unless map (setq map identity))
     (let* ((count (length data))
 	   (mid (inexact->exact (ceiling (/ count 2)))))
@@ -91,7 +103,7 @@
 	    (format standard-output " %s" (map (car right))))
 	  (write standard-output #\newline)))))
 
-  (defun rl-completion-generator (w)
+  (define (rl-completion-generator w)
     (apropos (concat #\^ (quote-regexp w))
 	     (lambda (x)
 	       (condition-case nil
@@ -100,12 +112,19 @@
 		     t)
 		 (void-value nil)))))
 
+  (define (error-handler err data)
+    (write standard-error
+	   (format nil "\^G*** %s: %s\n"
+		   (or (get err 'error-message) err)
+		   (mapconcat (lambda (x)
+				(format nil "%s" x)) data ", "))))
+
   (put 'in 'repl-command
        (lambda (struct &optional form)
 	 (if form
 	     (format standard-output "%S\n"
 		     (eval form (get-structure struct)))
-	   (fluid-set repl-in-struct struct))))
+	   (repl-set-struct (fluid current-repl) struct))))
   (put 'in 'repl-help "STRUCT [FORM ...]")
 
   (put 'load 'repl-command
@@ -163,22 +182,26 @@
        (lambda ()
 	 (structure-walk (lambda (var value)
 			   (format standard-output "  (%s %S)\n" var value))
-			 (intern-structure (fluid repl-in-struct)))))
+			 (intern-structure
+			  (repl-struct (fluid current-repl))))))
 
   (put 'exports 'repl-command
        (lambda ()
 	 (print-list (structure-interface
-		      (intern-structure (fluid repl-in-struct))))))
+		      (intern-structure
+		       (repl-struct (fluid current-repl)))))))
 
   (put 'imports 'repl-command
        (lambda ()
 	 (print-list (structure-imports
-		      (intern-structure (fluid repl-in-struct))))))
+		      (intern-structure
+		       (repl-struct (fluid current-repl)))))))
 
   (put 'accessible 'repl-command
        (lambda ()
 	 (print-list (structure-accessible
-		      (intern-structure (fluid repl-in-struct))))))
+		      (intern-structure
+		       (repl-struct (fluid current-repl)))))))
 
   (put 'collect 'repl-command garbage-collect)
 
@@ -199,7 +222,7 @@
        (lambda args
 	 (require 'rep.vm.compiler)
 	 (if (null args)
-	     (compile-module (fluid repl-in-struct))
+	     (compile-module (repl-struct (fluid current-repl)))
 	   (mapc compile-module args))))
   (put 'compile 'repl-help "[STRUCT ...]")
 
@@ -209,7 +232,7 @@
 	 (make-structure nil (lambda ()
 			       (%open-structures '(rep.module-system)))
 			 nil name)
-	 (fluid-set repl-in-struct name)))
+	 (repl-set-struct (fluid current-repl) name)))
   (put 'new 'repl-help "STRUCT")
 
   (put 'expand 'repl-command
