@@ -29,11 +29,11 @@
 
   (define type-id (cons))
 
-  (define (printer q stream)
-    (write stream "#<queue>"))
+  (define-datum-printer type-id (lambda (q stream)
+				  (write stream "#<queue>")))
 
   (define (make-queue)
-    (make-datum '() type-id printer))
+    (make-datum '() type-id))
 
   (define (enqueue q x)
     (datum-set q type-id (nconc (datum-ref q type-id) (list x))))

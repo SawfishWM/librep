@@ -52,6 +52,7 @@
 				  record-accessor
 				  record-modifier
 				  record-predicate
+				  record-printer
 				  define-record-type
 				  define-record-discloser)
     (open rep)
@@ -69,8 +70,7 @@
 ;;; record mechanics
 
   (define (make-record rt)
-    (make-datum (make-vector (length (record-type-fields rt)))
-		rt (record-printer rt)))
+    (make-datum (make-vector (length (record-type-fields rt))) rt))
 
   (define (field-index rt field)
     (do ((i 0 (1+ i))
@@ -123,11 +123,11 @@
 ;;; syntax
 
   (defmacro define-record-type (name rt constructor . fields)
-    (let ((names (mapcar car fields))
-	  predicate-defs accessor-defs modifier-defs)
+    (let (names predicate-defs accessor-defs modifier-defs)
       (when (and fields (symbolp (car fields)))
 	(setq predicate-defs `((define ,(car fields) (record-predicate ,rt))))
 	(setq fields (cdr fields)))
+      (setq names (mapcar car fields))
       (mapc (lambda (field)
 	      (when (cadr field)
 		(setq accessor-defs
@@ -144,6 +144,7 @@
 	 (define ,rt (make-record-type ',name ',names))
 	 (define ,(car constructor)
 	   (record-constructor ,rt ',(cdr constructor)))
+	 (define-datum-printer ,rt (record-printer ,rt))
 	 ,@predicate-defs
 	 ,@accessor-defs
 	 ,@modifier-defs))))

@@ -127,8 +127,9 @@
 
 ;;; input
 
-  (define eof-object (make-datum nil 'eof-object
-				 (lambda (x s) (rep#write s "#<scheme-eof>"))))
+  (define eof-object (make-datum nil 'scheme-eof-object))
+  (define-datum-printer 'scheme-eof-object (lambda (x s)
+					     (rep#write s "#<scheme-eof>")))
 
   (define (read &optional port)
     (condition-case nil
