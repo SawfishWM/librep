@@ -529,9 +529,12 @@ rep_event_loop(void)
 	rep_bool refreshp = rep_FALSE;
 	fd_set copy;
 
-	memcpy(&copy, &input_fdset, sizeof(copy));
-	ready = wait_for_input(&copy, rep_input_timeout_secs * 1000);
-	refreshp = handle_input(&copy, ready);
+	if (rep_throw_value == rep_NULL)
+	{
+	    memcpy(&copy, &input_fdset, sizeof(copy));
+	    ready = wait_for_input(&copy, rep_input_timeout_secs * 1000);
+	    refreshp = handle_input(&copy, ready);
+	}
 
 	/* Check for exceptional conditions. */
 	if(rep_throw_value != rep_NULL)
