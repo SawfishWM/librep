@@ -94,7 +94,7 @@
 	  string-equal string-lessp = /= > >= < <= max min null atom
 	  consp listp stringp vectorp sequencep
 	  garbage-collect garbage-threshold idle-garbage-threshold
-	  make-datum datum-ref has-type-p
+	  make-datum datum-ref datum-set has-type-p
 
 	  random translate-string alpha-char-p upper-case-p lower-case-p
 	  digit-char-p alphanumericp space-char-p char-upcase char-downcase
