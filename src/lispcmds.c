@@ -1558,7 +1558,9 @@ path_error:
 	int c;
 
 	rep_PUSHGC(gc_file, file);
+	rep_PUSHGC(gc_stream, name);
 	stream = Fopen_file(name, Qread);
+	rep_POPGC;
 	if(!stream || !rep_FILEP(stream))
 	{
 	    rep_POPGC;
