@@ -107,4 +107,4 @@ realclean : clean
 	rm -f .*.d jade jaded jadeclient makedoc stripproto Makefile
 	rm -f dump.out dumped.s
 
-include $(SRCS:%.c=.%.d)
+include $(SRCS:%.c=.%.d) $(JADE_LIBOBJS:%.o=.%.d)
