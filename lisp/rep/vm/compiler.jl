@@ -433,8 +433,10 @@ that files which shouldn't be compiled aren't."
     (setq command-line-args (cdr command-line-args))
     (compile-lisp-lib dir force)))
 
-;; Call like `rep --batch -l compiler -f compile-batch FILES...'
+;; Call like `rep --batch -l compiler -f compile-batch [--write-docs] FILES...'
 (defun compile-batch ()
+  (when (get-command-line-option "--write-docs")
+    (setq comp-write-docs t))
   (while command-line-args
     (compile-file (car command-line-args))
     (setq command-line-args (cdr command-line-args))))
@@ -516,8 +518,10 @@ that files which shouldn't be compiled aren't."
 	(when (and comp-write-docs (stringp doc))
 	  (add-documentation (nth 1 form) doc t)
 	  (setq form (delq (nth 3 form) form)))
+	(unless (memq (nth 1 form) comp-defvars)
+	  (comp-remember-var (nth 1 form)))
 	(unless (assq (nth 1 form) comp-const-env)
-	  (comp-error "Constant wasn't in environment" (nth 1 form))))
+	  (comp-warning "Constant wasn't in environment" (nth 1 form))))
       form)
      ((eq fun 'defvar)
       (let
@@ -529,7 +533,9 @@ that files which shouldn't be compiled aren't."
 	  (rplaca (nthcdr 2 form) (compile-form (nth 2 form))))
 	(when (and comp-write-docs (stringp doc))
 	  (add-documentation (nth 1 form) doc t)
-	  (setq form (delq (nth 3 form) form))))
+	  (setq form (delq (nth 3 form) form)))
+	(unless (memq (nth 1 form) comp-defvars)
+	  (comp-remember-var (nth 1 form))))
       form)
      ((eq fun 'require)
       (eval form)
