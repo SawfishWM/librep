@@ -1,3 +1,24 @@
+Wed May  6 16:23:46 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* cvs.jl (cvs-keymap): now autoloaded
+
+	* lisp.jl (autoload-variable): new function
+	* find-autoloads.jl: ignores defmacro, but understands defvar
+
+Tue May  5 10:28:10 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* html-style.jl (html-style-header): optional NO-HEADING arg
+	suppresses the initial heading
+
+	* cvs.jl (cvs-option-alist): remove default options, should be
+	up to the user
+
+	* cvs.jl (cvs-update-file-list): split the completion function
+	out into cvs-update-finished, this function takes a single
+	argument, the _value_ of the hook to call. This is required
+	due to the asynchronicity in relation to the caller of
+	cvs-update..
+
 Mon May  4 12:12:22 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* cvs.jl (cvs-update-file-list): call cvs-after-update-hook on

@@ -1,3 +1,19 @@
+Wed May  6 12:49:17 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.c (load_autoload): new parameter IS-VARIABLE for
+	autoloading variables
+	* lispcmds.c (cmd_defvar): set variables that are boundp, but
+	whose value is an autoload definition
+	* keys.c (lookup_binding): works with autoloaded variables
+
+	* unix_client.c (main): call make-window-on-display, not
+	open-window-on-display for the -x and -X options
+
+Tue May  5 10:29:45 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispcmds.c (cmd_call_hook): allow the HOOK argument to be a
+	symbol or a list, not just a symbol
+
 Mon May  4 12:12:53 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* views.c (update_status_buffer): changed the layout of the

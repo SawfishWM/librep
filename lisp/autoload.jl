@@ -157,4 +157,6 @@
 (autoload 'cvs-update "cvs" t)
 (autoload 'cvs-update-parent "cvs" t)
 (autoload 'cvs-update-pwd "cvs" t)
+(autoload-variable 'cvs-keymap "cvs")
+(bind-keys ctrl-x-keymap "c" '(setq next-keymap-path '(cvs-keymap)))
 ;;; ::autoload-end::
