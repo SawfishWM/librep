@@ -38,7 +38,8 @@ librep.dvi : $(SRCS)
 librep.ps : librep.dvi
 	$(DVIPS) -f <librep.dvi >librep.ps
 
-man : librep.info librep.dvi librep.ps
+librep.pdf : $(SRCS)
+	$(TEXI2PDF) -I $(srcdir) $<
 
 install : librep.info installdirs
 	for f in librep.info*; do \
