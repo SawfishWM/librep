@@ -44,7 +44,7 @@
    "member" "memq" "delete" "delq" "delete-if" "delete-if-not" "copy-sequence" "sequencep"
    "functionp" "special-form-p" "subrp" "eql" "lxor" "max" "min" "filter" ; 0x90
    "macrop" "bytecodep" "pushi\t0" "pushi\t1" "pushi\t2" "pushi\t-1" "pushi\t-2" "pushi\t%d"
-   "pushi\t%d" nil nil nil nil nil nil nil	 ; 0xa0
+   "pushi\t%d" "pushi\t%d" nil nil nil nil nil nil	 ; 0xa0
    nil nil nil nil nil nil nil nil
    "bindobj" nil nil nil nil nil nil nil	 ; 0xb0
    nil nil "swap2" "mod" nil nil nil nil
@@ -160,12 +160,12 @@ Disassembly:\n"
 	  (when (>= arg 128)
 	    (setq arg (- (- 256 arg))))
 	  (format stream (aref disassembler-opcodes c) arg))
-	 ((= c op-pushi-pair)
+	 ((or (= c op-pushi-pair-neg) (= c op-pushi-pair-pos))
 	  (setq arg (logior (lsh (aref code-string (1+ i)) 8)
 			    (aref code-string (+ i 2))))
 	  (setq i (+ i 2))
-	  (when (>= arg 32768)
-	    (setq arg (- (- 65536 arg))))
+	  (when (= c op-pushi-pair-neg)
+	    (setq arg (- arg)))
 	  (format stream (aref disassembler-opcodes c) arg))
 	 (t
 	  (if (setq op (aref disassembler-opcodes c))
