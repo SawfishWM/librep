@@ -58,29 +58,33 @@
 	(catch 'return
 	  (condition-case data
 	      (progn
-		(if (string-looking-at "\\s*,\\s*" input)
-		    ;; a `,' introduces a meta command
-		    (let ((stream (make-string-input-stream input (match-end)))
-			  (sexps '()))
-		      (condition-case nil
-			  (while t
-			    (setq sexps (cons (read stream) sexps)))
-			(end-of-stream (setq sexps (nreverse sexps))))
-		      (if (get (car sexps) 'repl-command)
-			  (apply (get (car sexps) 'repl-command) (cdr sexps))
-			(format standard-output
-				"unrecognized command name: %s\n"
-				(car sexps))))
-		  (let ((form (condition-case nil
-				  (read-from-string input)
-				(premature-end-of-stream
-				 (repl-set-pending repl input)
-				 (throw 'return
-					(and input
-					     (not (string= "" input))))))))
-		    (let ((result (repl-eval form)))
-		      (unless (eq result #undefined)
-			(format standard-output "%S\n" result)))))
+		(cond
+		 ((string-looking-at "\\s*,\\s*" input)
+		  ;; a `,' introduces a meta command
+		  (let ((stream (make-string-input-stream input (match-end)))
+			(sexps '()))
+		    (condition-case nil
+			(while t
+			  (setq sexps (cons (read stream) sexps)))
+		      (end-of-stream (setq sexps (nreverse sexps))))
+		    (if (get (car sexps) 'repl-command)
+			(apply (get (car sexps) 'repl-command) (cdr sexps))
+		      (format standard-output
+			      "unrecognized command name: %s\n" (car sexps)))))
+
+		 ;; ignore empty input lines, or lines with comments only
+		 ((string-looking-at "\\s*(;.*)?$" input))
+
+		 (t (let ((form (condition-case nil
+				    (read-from-string input)
+				  (premature-end-of-stream
+				   (repl-set-pending repl input)
+				   (throw 'return
+					  (and input
+					       (not (string= "" input))))))))
+		      (let ((result (repl-eval form)))
+			(unless (eq result #undefined)
+			  (format standard-output "%S\n" result))))))
 		t)
 	    (error
 	     (default-error-handler (car data) (cdr data))

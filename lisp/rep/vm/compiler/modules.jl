@@ -130,6 +130,7 @@
 	  ((and (symbolp var) (fluid current-structure)
 		(structure-bound-p (fluid current-structure) var))
 	   (%structure-ref (fluid current-structure) var))
+	  ((has-local-binding-p var) nil)
 	  (t
 	   (let* ((struct (locate-variable var))
 		  (module (and struct (find-structure struct))))
@@ -178,7 +179,9 @@
 	  prop))))
 
   (defun compiler-macroexpand-1 (form)
-    (when (consp form)
+    (when (and (consp form)
+	       (symbolp (car form))
+	       (not (has-local-binding-p (car form))))
       (let* ((def (assq (car form) (fluid macro-env)))
 	     ;; make #<subr macroexpand> pass us any inner expansions
 	     (macro-environment compiler-macroexpand-1))

@@ -1,3 +1,13 @@
+2001-08-01  John Harper  <jsh@pixelslut.com>
+
+	* rep/vm/compiler/modules.jl (symbol-value-1): return false for
+	variables with local bindings
+
+	(compiler-macroexpand-1): ignore macro calls whose name has a
+	local bindings
+
+	* rep/util/repl.jl (repl-iterate): ignore empty lines
+
 2001-07-31  John Harper  <jsh@pixelslut.com>
 
 	* rep/data/objects.jl (object): reverted last change (factoring
