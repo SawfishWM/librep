@@ -17,7 +17,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with librep; see the file COPYING.	If not, write to
+   along with librep; see the file COPYING.  If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "repint.h"
@@ -52,16 +52,28 @@ search_special_bindings (repv sym)
 
 
 
-DEFUN ("make-fluid", Fmake_fluid, Smake_fluid, (repv value), rep_Subr1)
-{
-    static int counter;
+DEFUN ("make-fluid", Fmake_fluid, Smake_fluid, (repv value), rep_Subr1) /*
+::doc:make-fluid::
+make-fluid [VALUE]
 
-    counter++;
+Create and return an object representing a `fluid' value--an anonymous
+dynamically bound variable.
+
+If VALUE is defined the initial value of the fluid is VALUE, otherwise
+it is the symbol `nil'.
+::end:: */
+{
     return Fcons (Qfluid, value);
 }
 
 /* hardcoded in lispmach.c */
-DEFUN ("fluid", Ffluid, Sfluid, (repv f), rep_Subr1)
+DEFUN ("fluid", Ffluid, Sfluid, (repv f), rep_Subr1) /*
+::doc:fluid::
+fluid FLUID
+
+Return the value of the most recently created binding of the fluid
+variable object FLUID.
+::end:: */
 {
     repv tem;
     rep_DECLARE1(f, FLUIDP);
@@ -73,7 +85,14 @@ DEFUN ("fluid", Ffluid, Sfluid, (repv f), rep_Subr1)
 	return FLUID_GLOBAL_VALUE (f);
 }
 
-DEFUN ("fluid-set", Ffluid_set, Sfluid_set, (repv f, repv v), rep_Subr2)
+/* hardcoded in lispmach.c */
+DEFUN ("fluid-set", Ffluid_set, Sfluid_set, (repv f, repv v), rep_Subr2) /*
+::doc:fluid-set::
+fluid-set FLUID VALUE
+
+Set the value of the most recently created binding of the fluid
+variable object FLUID to VALUE.
+::end:: */
 {
     repv tem;
     rep_DECLARE1(f, FLUIDP);
@@ -87,7 +106,18 @@ DEFUN ("fluid-set", Ffluid_set, Sfluid_set, (repv f, repv v), rep_Subr2)
 }
 
 DEFUN ("with-fluids", Fwith_fluids, Swith_fluids,
-       (repv fluids, repv values, repv thunk), rep_Subr3)
+       (repv fluids, repv values, repv thunk), rep_Subr3) /*
+::doc:with-fluids::
+with-fluids FLUIDS VALUES THUNK
+
+Call THUNK and return the value that it returns with new bindings
+created for each of the fluid variables specified in the list FLUIDS.
+For each member of FLUIDS the corresponding member of the VALUES list
+provides the initial value of the new binding.
+
+If the lists FLUIDS and VALUES are not of the same length, an error is
+signalled.
+::end:: */
 {
     repv ret;
     repv old_bindings;
