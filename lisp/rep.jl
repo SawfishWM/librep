@@ -25,6 +25,7 @@
   (open rep)
 
   (setq *user-structure* 'user)
+  (setq *root-structure* 'user)
 
   (defun rep ()
     (repl 'user))
