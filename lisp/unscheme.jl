@@ -34,7 +34,6 @@
 ;;  (list? #f) => #t
 ;;  (eq? 'FOO 'foo) => #f
 ;;  no separate character type
-;;  cons accessors return #f (nil) on encountering a non-cons cell
 
 ;; and maybe others. But there is a reason for this -- `unscheme' code
 ;; is able to painlessly call rep code, and vice versa, whereas

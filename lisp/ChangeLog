@@ -1,5 +1,21 @@
 2000-08-15  John Harper  <john@dcs.warwick.ac.uk>
 
+	* scheme/data.jl (symbol?, string-ci>?, string-ci>=?): fixed
+	these functions
+
+	* scheme/data.jl: use standard rep cons accessors. R5RS says
+	that ``it is an error to take the c[ad]r of the empty list''.
+	But §1.3.2 notes that detection of ``is an error'' situations
+	is not required
+
+	* rep/vm/compiler/scheme.jl: use standard cons accessors;
+	compile `list-ref' and `list-tail' using `nth' and `nthcdr'
+	instructions
+	* rep/vm/compiler/unscheme.jl: use `list-ref' and `list-tail'
+	inliners from the scheme compiler
+
+	* rep/vm/compiler/rep.jl: added inliner properties for cadddr
+
 	* rep/vm/compiler/unscheme.jl, rep/vm/compiler/scheme.jl: when
 	copying rep-compile-fun properties, also copy
 	rep-compile-opcode if it's present

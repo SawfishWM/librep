@@ -1,5 +1,7 @@
 2000-08-15  John Harper  <john@dcs.warwick.ac.uk>
 
+	* lispmach.c: put cfa in a register variable, may help sparc
+
 	* lispmach.c: minor tweaks, mainly for the sparc
 
 2000-08-13  John Harper  <john@dcs.warwick.ac.uk>
