@@ -503,7 +503,7 @@ Note that each input file will be loaded from the lisp-lib-directory with
 
 (defun dump-output-object (obj)
   (cond ((integerp obj)
-	 (format nil "%d" (logior (lsh obj 2) 2)))
+	 (format nil "%d" (logior (ash obj 2) 2)))
 	(obj
 	 (format nil "rep_VAL(&%s)" obj))
 	(t
@@ -527,7 +527,7 @@ Note that each input file will be loaded from the lisp-lib-directory with
 	       (label (dump-get-label cell)))
 	    (@ "const u_char %s_data[] = %S;\n" label string)
 	    (@ "const const_rep_string %s = {\n" label)
-	    (@ "  0x%x,\n" (logior (lsh (length string) 8) 0x45))
+	    (@ "  0x%x,\n" (logior (ash (length string) 8) 0x45))
 	    (@ "  0,\n")
 	    (@ "  rep_VAL(%s_data)\n" label)
 	    (@ "};\n\n"))) head))
@@ -570,9 +570,9 @@ Note that each input file will be loaded from the lisp-lib-directory with
 	    (@ "/* %s */\n" symbol)
 	    (@ "rep_symbol %s = {\n" label)
 	    (@ "  0x%x,\n" (logior 0x41
-				   (if is-constant (lsh 1 (+ 8 0)) 0)
-				   (if is-defined  (lsh 1 (+ 8 7)) 0)
-				   (if is-special  (lsh 1 (+ 8 4)) 0)))
+				   (if is-constant (ash 1 (+ 8 0)) 0)
+				   (if is-defined  (ash 1 (+ 8 7)) 0)
+				   (if is-special  (ash 1 (+ 8 4)) 0)))
 	    (@ "  0,\n")
 	    (@ "  %s,\n" (dump-output-object name))
 	    (@ "  %s,\n" (dump-output-object value))
@@ -612,7 +612,7 @@ Note that each input file will be loaded from the lisp-lib-directory with
 		(output-struct (length vec))
 		(@ "const struct rep_vector_%d %s = {\n"
 		   (length vec) label)
-		(@ "  0x%x,\n" (logior (lsh (length vec) 8) type-value))
+		(@ "  0x%x,\n" (logior (ash (length vec) 8) type-value))
 		(@ "  0,\n")
 		(@ "  {\n")
 		(while (< i (length vec))
