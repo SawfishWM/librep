@@ -35,16 +35,17 @@
 (defun apropos-function (regexp &optional all-functions)
   (format standard-output "Apropos %s `%s':\n\n"
 	  (if all-functions "function" "command") regexp)
-  (apropos-output (apropos regexp (if all-functions
+  (apropos-output (apropos regexp (if (or all-functions
+					  (not (boundp 'commandp)))
 				      (lambda (s)
 					(and (boundp s)
 					     (functionp (symbol-value s))))
-				    'commandp)) t))
+				    commandp)) t))
 
 ;;;###autoload
 (defun apropos-variable (regexp)
   (format standard-output "Apropos variable `%s':\n" regexp)
-  (apropos-output (apropos regexp 'boundp) nil))
+  (apropos-output (apropos regexp boundp) nil))
 
 (defun describe-function-1 (fun)
   (let*
