@@ -2309,7 +2309,11 @@ BODY is being evaluated.
 	PUSHGC(gcv_throwval, throwval);
 	if(!cmd_progn(VCDR(args)))
 	    res = NULL;
-	throw_value = throwval;
+	/* Only reinstall the old throw if it's actually an error.
+	   Otherwise it could overwrite an error in the CLEANUP-FORMS.
+	   This way the oldest error takes precedence. */
+	if(throwval != 0)
+	    throw_value = throwval;
 	POPGC; POPGC; POPGC;
 	return(res);
     }
