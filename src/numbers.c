@@ -2797,7 +2797,8 @@ in base 10.
 
 /* Random number generation */
 
-#if defined (HAVE_GMP) && defined (HAVE_GMP_RANDINIT)
+/* XXX GMP random number operation is buggy? (gmp 3.1.1) */
+#if 0 && defined (HAVE_GMP) && defined (HAVE_GMP_RANDINIT)
 
 static gmp_randstate_t random_state;
 
