@@ -95,9 +95,11 @@
 	    ;; Not a macro
 	    (setq stack (aref arg 3))
 	  (format stream "[This is a macro definition]\n")
-	  (setq stack (logand (aref arg 3) 0xffff)))))
-     (format stream "[Uses %d code bytes, %d constants, and %d stack slots]\n
-Disassembly:\n" (length code-string) (length consts) stack))
+	  (setq stack (logand (aref arg 3) 0xffff))))))
+    (when (zerop depth)
+      (format stream "[Uses %d code bytes, %d constants, and %d stack slots]\n
+Disassembly:\n"
+	      (length code-string) (length consts) stack))
     (let
 	((i 0)
 	 (indent (make-string depth))
