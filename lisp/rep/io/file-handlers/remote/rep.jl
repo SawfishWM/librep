@@ -32,6 +32,7 @@
 	  rep.system
 	  rep.io.processes
 	  rep.io.files
+	  rep.io.file-handlers
 	  rep.io.file-handlers.remote.utils)
 
   (define-structure-alias remote-rep rep.io.file-handlers.remote.rep)

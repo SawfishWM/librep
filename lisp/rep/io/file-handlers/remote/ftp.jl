@@ -37,6 +37,7 @@
 	  rep.system
 	  rep.io.files
 	  rep.io.processes
+	  rep.io.file-handlers
 	  rep.io.file-handlers.remote.utils
 	  rep.util.date
 	  rep.mail.addr)

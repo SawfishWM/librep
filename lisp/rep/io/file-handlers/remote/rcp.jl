@@ -26,6 +26,7 @@
 	  rep.system
 	  rep.io.processes
 	  rep.io.files
+	  rep.io.file-handlers
 	  rep.io.file-handlers.remote.utils)
 
   ;; Notes:
