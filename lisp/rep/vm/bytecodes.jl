@@ -131,7 +131,7 @@
 (defconst op-put 0x7b)
 (defconst op-errorpro 0x7c)
 (defconst op-signal 0x7d)
-(defconst op-unused2 0x7e)
+(defconst op-quotient 0x7e)
 (defconst op-reverse 0x7f)
 (defconst op-nreverse 0x80)
 (defconst op-assoc 0x81)
@@ -181,9 +181,23 @@
 (defconst op-caddddddr 0xaa)
 (defconst op-cadddddddr 0xab)
 
+(defconst op-floor 0xac)
+(defconst op-ceiling 0xad)
+(defconst op-truncate 0xae)
+(defconst op-round 0xaf)
+
 (defconst op-bindobj 0xb0)
 (defconst op-forbid 0xb1)
 (defconst op-permit 0xb2)
+
+(defconst op-exp 0xb3)
+(defconst op-log 0xb4)
+(defconst op-sin 0xb5)
+(defconst op-cos 0xb6)
+(defconst op-tan 0xb7)
+(defconst op-sqrt 0xb8)
+(defconst op-expt 0xb9)
+
 (defconst op-swap2 0xba)
 (defconst op-mod 0xbb)
 
@@ -238,15 +252,15 @@
    -1  -1  -1  -1  -1  -1  -1  -1	;0x60
    0   0   -1  0   0   0   0   0
    0   0   0   nil -1  -1  -1  0	;0x70
-   0   0   -1  -2  -1  -1  nil 0
+   0   0   -1  -2  -1  -1  -1  0
    0   -1  -1  -1  -1  0   -1  -1	;0x80
    -1  -1  -1  -1  -1  -1  0   0
    0   0   0   -1  -1  -1  -1  -1	;0x90
    0   0   +1  +1  +1  +1  +1  +1
    +1  +1  0   0   0   0   0   0	;0xa0
-   0   0   0   0   nil nil nil nil
-   -1  nil nil nil nil nil nil nil	;0xb0
-   nil nil  0  nil -1  -2   0   0
+   0   0   0   0   0   0   0   0
+   -1  0   0   0   0   0   0   0	;0xb0
+   0   -1  0   -1  -1  nil 0   0
    nil nil nil nil nil nil nil nil	;0xc0
    nil nil nil nil nil nil nil nil
    -1  nil nil nil nil nil nil nil	;0xd0
@@ -281,7 +295,9 @@
 	 op-not op-lor op-land op-num-eq op-num-noteq op-gt op-ge op-lt
 	 op-le op-inc op-dec op-lsh op-boundp op-get op-reverse op-assoc
 	 op-assq op-rassoc op-rassq op-last op-copy-sequence op-lxor
-	 op-max op-min op-mod op-make-closure op-enclose
+	 op-max op-min op-mod op-make-closure op-enclose op-quotient
+	 op-floor op-ceiling op-truncate op-round op-exp op-log
+	 op-sin op-cos op-tan op-sqrt op-expt
 	 comp-varref-free-insns))
 
 ;; list of all conditional jumps
