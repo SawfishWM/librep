@@ -116,6 +116,8 @@ rep_dl_init(void)
     completions = Qnil;
     rep_mark_static (&completions);
     rep_dl_feature = Qreadline;
+#ifdef HAVE_LIBREADLINE
     rl_completion_entry_function = (void *) completion_generator;
+#endif
     return Qt;
 }
