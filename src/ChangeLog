@@ -1,3 +1,12 @@
+2000-06-21  John Harper  <john@dcs.warwick.ac.uk>
+
+	* numbers.c (dup, maybe_demote, promote_dup): inline calls to
+	these functions wherever their arguments are fixnums
+	(promote): declare this function inline
+	(ZEROP): new macro, inlines fixnum comparsion for zero
+
+	[ these changes give 10% speedup on `prime' benchmark ]
+
 2000-06-19  John Harper  <john@dcs.warwick.ac.uk>
 
 	* structures.c (structure_exports_inherited_p): if export_all

@@ -10,6 +10,8 @@ and more long-term ideas are marked -
 Before release
 ==============
 
+ ! 0/N reads as symbol
+
  ! scheme define/lambda doesn't splice begin forms
 
  + do something with the define-value ugliness?
