@@ -106,6 +106,7 @@
 	 (define-scan-body form)
        form))))
 
+;;;###autoload
 (defmacro define (&rest args)
   (let
       ((def (define-parse args)))
