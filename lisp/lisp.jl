@@ -191,15 +191,19 @@ FORMS."
   (list 'if (list 'not condition) (cons 'progn forms)))
 
 (defmacro or args
-  (cons 'cond (mapcar list args)))
+  (if (null args)
+      'nil
+    (cons 'cond (mapcar list args))))
 
 (defmacro and args
-  (let loop ((rest (nreverse args))
-	     (body nil))
-    (cond ((null rest) body)
-	  (t (loop (cdr rest) (if body 
-				  (list 'cond (list (car rest) body))
-				(car rest)))))))
+  (if (null args)
+      't
+    (let loop ((rest (nreverse args))
+	       (body nil))
+      (cond ((null rest) body)
+	    (t (loop (cdr rest) (if body 
+				    (list 'cond (list (car rest) body))
+				  (list 'cond (list (car rest)))))))))))
 
 
 ;; set syntax
