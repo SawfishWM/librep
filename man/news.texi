@@ -4,6 +4,26 @@
 @cindex News
 
 
+@unnumberedsec 0.7.1
+
+@itemize @bullet
+
+@item Added @samp{--with-rep-prefix} option to autoconf AM_PATH_REP
+macro
+
+@item Fixed bug when inserting a new timer before an existing timer
+
+@item Fix the malloc tracking code
+
+@item Fix dlmalloc for FreeBSD
+
+@item Use install when installing, not cp
+
+@item Some fixes for compiling with SUN's C compiler on Solaris
+
+@end itemize
+
+
 @unnumberedsec 0.7
 
 @itemize @bullet

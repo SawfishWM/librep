@@ -9,10 +9,9 @@
 @set UPDATE-MONTH June 1999
 
 @ifinfo
-@noindent
-START-INFO-DIR-ENTRY@*
-* librep: (librep).		A LISP extension language@*
-END-INFO-DIR-ENTRY
+@direntry
+* librep: (librep).		A LISP extension language
+@end direntry
 
 This is Edition @value{EDITION}, last updated @value{UPDATED},
 of @cite{The librep Manual}, for librep, Version @value{VERSION}.
