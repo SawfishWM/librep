@@ -1688,6 +1688,10 @@ DEFUN("/", Fdivide, Sdivide, (repv args), rep_SubrN) /*
 Divides NUMBERS (in left-to-right order).
 ::end:: */
 {
+    if (args == Qnil)
+	return rep_signal_missing_arg (1);
+    else if (!rep_CONSP (rep_CDR (args)))
+	return rep_number_div (rep_MAKE_INT (1), rep_CAR (args));
     return rep_number_foldl (args, rep_number_div);
 }
 
