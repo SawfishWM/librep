@@ -5336,6 +5336,7 @@ it as a string.
 * File Information::            Predicates on files
 * Manipulating Files::          Deleting, renaming and copying files
 * Manipulating Directories::    Accessing directories
+* Manipulating Symlinks::	Handling symbolic links
 * File Handlers::		Extending the file name-space
 * Remote Files::		Accessing remote files
 @end menu
@@ -5756,7 +5757,7 @@ file.
 The arguments are prompted for when this function is called interactively.
 @end deffn
 
-@node Manipulating Directories, File Handlers, Manipulating Files, Files
+@node Manipulating Directories, Manipulating Symlinks, Manipulating Files, Files
 @subsection Manipulating Directories
 @cindex Reading directories
 @cindex Files, manipulating directories
@@ -5782,7 +5783,23 @@ directory @var{directory-name}.
 @end defun
 
 
-@node File Handlers, Remote Files, Manipulating Directories, Files
+@node Manipulating Symlinks, File Handlers, Manipulating Directories, Files
+@subsection Manipulating Symbolic Links
+@cindex Manipulating Symbolic Links
+@cindex Symbolic Links, manipulating
+
+@defun make-symlink name contents
+Create a symbolic link called @var{name}, containing the string
+@var{contents}.
+@end defun
+
+@defun read-symlink name
+Return the string that is the contents of the symbolic link called
+@var{name}. Signals an error if no such link exists.
+@end defun
+
+
+@node File Handlers, Remote Files, Manipulating Symlinks, Files
 @subsection File Handlers
 @cindex File Handlers
 
@@ -5833,7 +5850,8 @@ The list of operations that may be redirected to a file handler is:
 @code{file-directory-p}, @code{file-symlink-p}, @code{file-owner-p},
 @code{file-nlinks}, @code{file-size}, @code{file-modes},
 @code{file-modes-as-string}, @code{set-file-modes},
-@code{file-modtime}, @code{directory-files}.
+@code{file-modtime}, @code{directory-files},
+@code{make-symlink}, @code{read-symlink}.
 
 There are several undefined functions in this list. The
 @code{write-buffer-contents}, @code{read-file-contents}, and
@@ -5895,6 +5913,19 @@ for example @file{/john@@host.com:file} refers to a file called
 @samp{file} owned by the user @samp{john}, on the system
 @samp{host.com}.
 
+If no username is specified explicitly, two variables are used to
+select the user:
+
+@defvar remote-host-user-alist
+An alist mapping host regexps to the default user name to use for
+remote file connections to that host.
+@end defvar
+
+@defvar remote-default-user
+User name to use for remote file connections when otherwise
+unspecified. By default the current user name on the local system.
+@end defvar
+
 Two variables control how individual hosts are matched to methods of
 accessing files.
 
@@ -5922,8 +5953,8 @@ defining the file to be accessed. The other options are as usual.
 Further details can be found in the @file{remote.jl},
 @file{remote-ftp.jl} and @file{remote-rcp.jl} Lisp source files.
 
-The FTP backend is currently the most well-developed, several functions
-and variables may be used to customise its behaviour.
+The @code{ftp} backend is currently the most well-developed, several
+functions and variables may be used to customise its behaviour.
 
 @defun remote-ftp-add-passwd user host passwd
 Add the string @var{passwd} as the password for the FTP session
@@ -5949,15 +5980,20 @@ The string to send as the passwd of an anonymous FTP session. By
 default the current uses email address.
 @end defvar
 
-@defvar remote-ftp-host-user-alist
-An alist mapping host regexps to the default user name to use for FTP
-sessions to that host.
-@end defvar
+There is a problem with the @code{ftp} backend however; due to
+limitations in the FTP protocol, not all @code{librep} file operations
+are supported, with the most obvious exception being the
+@code{make-symlink} function.
 
-@defvar remote-ftp-default-user
-User name to use for FTP sessions when otherwise unspecified. By
-default the current user name on the local system
-@end defvar
+When this is a problem it may be possible to use rep's custom file
+transfer protocol. If it is possible to use @code{rsh} to connect to
+the remote host in question, then the @code{rep} backend may be used.
+
+The @code{rep-remote} program distributed with @code{librep} must exist
+on the remote host, this is executed via @code{rsh} and provides a
+protocol for executing all of @code{librep}'s file operations on that
+host. See the @file{lisp/remote-rep.jl} file in the distribution for
+more details.
 
 
 @node Processes, Regular Expressions, Files, The language
@@ -6175,8 +6211,14 @@ this process object.
 @item pipe
 Use standard Unix pipes to connect, this is the default value of this
 component.
+
+@item socketpair
+Uses a connected pair of sockets.
 @end table
 @end defun
+
+Note that currently only the @code{pipe} connection type allows the
+normal and error output streams of the process to be separated.
 
 
 @node Synchronous Processes, Process I/O, Asynchronous Processes, Processes
@@ -6279,6 +6321,8 @@ Sets the value of the output stream component of the process object
 
 By default the @code{stdout} and @code{stderr} streams are combined,
 use the @code{set-process-error-stream} function to separate them.
+(Note that this currently only works with @code{pipe} connection
+types.)
 
 @defun process-error-stream process
 Returns the value of the error stream component of the process object
@@ -6564,6 +6608,12 @@ Match any alphanumeric or underscore character.
 
 @item \W
 Match any non-(alphanumeric or underscore) character.
+
+@item \d
+Match any numeric character.
+
+@item \D
+Match any non-numeric character.
 
 @item \b
 Match the null string between two adjacent @samp{\w} and @samp{\W}
