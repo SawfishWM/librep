@@ -1,3 +1,11 @@
+2001-09-02  John Harper  <jsh@pixelslut.com>
+
+	* misc.c: a couple of small fixes
+
+	* numbers.c (Flog): now takes an optional BASE parameter - the
+	base of the logarithm to take, instead of defaulting to taking
+	natural logarithms. E.g. (log 4 2) -> 2
+
 2001-08-31  John Harper  <jsh@pixelslut.com>
 
 	* streams.c: signal an error if it's not possible to write as

@@ -313,7 +313,7 @@ Pause for SECONDS (plus the optional MILLISECOND component) length of time.
 ::end:: */
 {
     rep_DECLARE1(secs, rep_NUMERICP);
-    rep_DECLARE1_OPT(msecs, rep_NUMERICP);
+    rep_DECLARE2_OPT(msecs, rep_NUMERICP);
     rep_sleep_for(rep_get_long_int (secs), rep_get_long_int (msecs));
     return Qt;
 }
@@ -332,7 +332,7 @@ immediately, using a null timeout.
 ::end:: */
 {
     rep_DECLARE1_OPT(secs, rep_NUMERICP);
-    rep_DECLARE1_OPT(msecs, rep_NUMERICP);
+    rep_DECLARE2_OPT(msecs, rep_NUMERICP);
     return rep_sit_for(((rep_get_long_int (secs)) * 1000)
 		       + rep_get_long_int (msecs));
 }

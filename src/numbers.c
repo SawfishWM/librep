@@ -2298,22 +2298,39 @@ Return `e' (the base of natural logarithms) raised to the power X.
     return rep_make_float (exp (rep_get_float (arg)), rep_TRUE);
 }
 
-DEFUN("log", Flog, Slog, (repv arg), rep_Subr1) /*
+DEFUN("log", Flog_, Slog, (repv arg, repv base), rep_Subr2) /*
 ::doc:rep.lang.math#log::
-log X
+log X [BASE]
 
-Return the natural logarithm of X. An arithmetic error is signalled if
-X is less than zero.
+Return the logarithm of X in base BASE. An arithmetic error is
+signalled if X is less than zero. If BASE isn't defined, return the
+natural logarithm of X.
 ::end:: */
 {
-    double d;
+    double d, b;
+
     rep_DECLARE1 (arg, rep_NUMERICP);
+    rep_DECLARE2_OPT (base, rep_NUMERICP);
+
     d = rep_get_float (arg);
-    if (d >= 0)
-	return rep_make_float (log (d), rep_TRUE);
+
+    if (base != Qnil)
+    {
+	b = rep_get_float (base);
+	if (d >= 0 && b >= 0)
+	    return rep_make_float (log (d) / log (b), rep_TRUE);
+    }
     else
-	return Fsignal (Qarith_error, rep_LIST_1 (rep_VAL (&domain_error)));
+    {
+	if (d >= 0)
+	    return rep_make_float (log (d), rep_TRUE);
+    }
+
+    return Fsignal (Qarith_error, rep_LIST_1 (rep_VAL (&domain_error)));
 }
+
+/* XXX compat */
+repv Flog (repv x) { return Flog_ (x, Qnil); }
 
 DEFUN("sin", Fsin, Ssin, (repv arg), rep_Subr1) /*
 ::doc:rep.lang.math#sin::
