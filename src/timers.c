@@ -364,7 +364,7 @@ rep_dl_init (void)
 					timer_mark_active, 0, 0, 0, 0, 0, 0);
     pipe (pipe_fds);
     rep_register_input_fd (pipe_fds[0], timer_fd_handler);
-#ifdef HAVE_UNIX
+#ifdef rep_HAVE_UNIX
     rep_unix_set_fd_cloexec (pipe_fds[1]);
 #endif
     sigemptyset (&alrm_sigset);

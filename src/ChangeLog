@@ -1,3 +1,8 @@
+2002-03-01  John Harper  <jsh@pixelslut.com>
+
+	* timers.c: #ifdef rep_HAVE_UNIX not HAVE_UNIX (from Michael
+	Eriksson <Michael.Eriksson@era-t.ericsson.se>)
+
 2002-02-13  John Harper  <jsh@unfactored.org>
 
 	* numbers.c (Frandom): when seeding, factor in the pid of the
