@@ -1,3 +1,8 @@
+2000-09-14  John Harper  <john@dcs.warwick.ac.uk>
+
+	* sockets.c: if [AP]F_LOCAL isn't defined, but [AP]F_UNIX is,
+	use that instead
+
 2000-09-11  John Harper  <john@dcs.warwick.ac.uk>
 
 	* symbols.c (F_define): optional third-arg DOC-STRING, use

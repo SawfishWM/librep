@@ -1,3 +1,9 @@
+2000-09-10  Karl M. Hegbloom  <karlheg@debian.org>
+
+	* man/Makefile.in (librep.pdf): New target
+
+	* Makedefs.in (TEXI2PDF): New variable
+
 2000-09-13  John Harper  <john@dcs.warwick.ac.uk>
 
 	* configure.in: version 0.13pre2
