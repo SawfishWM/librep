@@ -21,7 +21,6 @@
 ;; TODO:
 ;;    - Allow file transfer mode (binary/ascii) to be determined by
 ;;	matching files against regexp(s)
-;;    - Cache more than a single directory listing?
 ;;    - Fix all the kludges marked by XXX
 
 (require 'remote)
@@ -81,6 +80,13 @@ explicitly, or by the remote-ftp-host-user-alist variable.")
   "FTP command format string to produce an `ls -l' format listing of the
 directory substituted for the single %s format specifier.")
 
+(defvar remote-ftp-dircache-expiry-time 360
+  "Number of seconds before a dircache entry is reread.")
+
+(defvar remote-ftp-dircache-max-dirs 5
+  "Maximum number of directories whose contents may be cached at any one
+time.")
+
 (defvar remote-ftp-sessions nil
   "List of FTP structures defining all running FTP sessions.")
 
@@ -98,7 +104,9 @@ directory substituted for the single %s format specifier.")
   "220 |230 |226 |25. |221 |200 |[Hh]ash mark"
   "Regular expression matching ftp \"success\" messages.")
 
-(defvar remote-ftp-bad-msgs "55. |500 |530 |\\?Invalid command"
+(defvar remote-ftp-bad-msgs 
+  (concat "55. |500 |530 |\\?Invalid command"
+	  "|([a-zA-Z0-9.-]+: )?[Uu]nknown host|ftp: ")
   "Regular expression matching ftp \"failure\" messages.")
 
 (defvar remote-ftp-skip-msgs
@@ -109,8 +117,8 @@ directory substituted for the single %s format specifier.")
   "Regular expression matching ftp messages that can be ignored.")
 
 (defvar remote-ftp-reconnect-msgs
-  (concat "ftp: |Not connected|4[25]1 |rcmd: |"
-	  "No control connection|([a-zA-Z0-9.-]+: )?unknown host|"
+  (concat "Not connected|4[25]1 |rcmd: |"
+	  "No control connection|"
 	  "lost connection")
   "Regular expression matching ftp messages that indicate that the current
 FTP process should be abandoned, and a new session started.")
@@ -135,11 +143,10 @@ file types.")
 (defconst remote-ftp-process 2)
 (defconst remote-ftp-status 3)	;success,failure,busy,nil,dying,timed-out
 (defconst remote-ftp-callback 4)
-(defconst remote-ftp-cached-dir 5)
-(defconst remote-ftp-dircache 6)
-(defconst remote-ftp-pending-output 7)
-(defconst remote-ftp-login-data 8)	;PASSWD while logging in
-(defconst remote-ftp-struct-size 9)
+(defconst remote-ftp-dircache 5)
+(defconst remote-ftp-pending-output 6)
+(defconst remote-ftp-login-data 7)	;PASSWD while logging in
+(defconst remote-ftp-struct-size 8)
 
 (defmacro remote-ftp-status-p (session stat)
   `(eq (aref ,session remote-ftp-status) ,stat))
@@ -182,7 +189,11 @@ file types.")
     (or (start-process process)
 	(error "Can't start FTP session"))
     (setq remote-ftp-sessions (cons session remote-ftp-sessions))
-    (remote-ftp-login session)
+    (condition-case data
+	(remote-ftp-login session)
+      (error
+       (remote-ftp-close-session session)
+       (signal (car data) (cdr data))))
     session))
 
 (defun remote-ftp-close-session (session)
@@ -255,8 +266,14 @@ file types.")
 	   (remote-ftp-while session 'dying type)
 	   (remote-ftp-open-session session)
 	   (setq retry t)))))
-    ;; Return t if successful
-    (eq (aref session remote-ftp-status) 'success)))
+    ;; Return t if successful, else signal a file-error
+    (or (eq (aref session remote-ftp-status) 'success)
+	(signal 'file-error
+		(list 'ftp
+		      (format nil "%s@%s"
+			      (aref session remote-ftp-user)
+			      (aref session remote-ftp-host))
+		      (apply 'format nil format args))))))
 
 (defun remote-ftp-output-filter (session output)
   (when remote-ftp-echo-output
@@ -440,6 +457,11 @@ file types.")
 (defconst remote-ftp-file-group 7)
 (defconst remote-ftp-file-struct-size 8)
 
+(defconst remote-ftp-cache-dir 0)
+(defconst remote-ftp-cache-expiry 1)
+(defconst remote-ftp-cache-entries 2)
+(defconst remote-ftp-cache-struct-size 3)
+
 (defun remote-ftp-parse-ls-l (string point)
   (when (string-looking-at remote-ftp-ls-l-regexp string point)
     (let
@@ -489,10 +511,19 @@ file types.")
   (string= (aref session remote-ftp-user)
 	   (aref file remote-ftp-file-user)))
 
+(defun remote-ftp-dir-cached-p (session dir)
+  (setq dir (directory-file-name dir))
+  (catch 'exit
+    (mapc #'(lambda (dir-entry)
+	      (when (string= (aref dir-entry remote-ftp-cache-dir) dir)
+		(throw 'exit dir-entry)))
+	  (aref session remote-ftp-dircache))))
+
 (defun remote-ftp-get-file-details (session filename)
   (let
       ((dir (file-name-directory filename))
-       (base (file-name-nondirectory filename)))
+       (base (file-name-nondirectory filename))
+       entry)
     (when (string= base "")
       ;; hack, hack
       (setq base (file-name-nondirectory dir)
@@ -500,35 +531,60 @@ file types.")
       (when (string= base "")
 	(setq base ".")))
     (setq dir (directory-file-name dir))
-    (unless (and (stringp (aref session remote-ftp-cached-dir))
-		 (string= dir (aref session remote-ftp-cached-dir)))
-      ;; Cache directory DIR
-      (remote-ftp-while session 'busy 'dircache)
-      (aset session remote-ftp-cached-dir 'busy)
-      (aset session remote-ftp-dircache nil)
-      (aset session remote-ftp-callback 'remote-ftp-dircache-callback)
-      (remote-ftp-command session 'dircache remote-ftp-ls-format dir)
-      (aset session remote-ftp-cached-dir dir)
-      (aset session remote-ftp-callback nil))
+    (setq entry (remote-ftp-dir-cached-p session dir))
+    (if (not (and entry (time-later-p (aref entry remote-ftp-cache-expiry)
+				      (current-time))))
+	(progn
+	  ;; Cache directory DIR
+	  (when entry
+	    (aset session remote-ftp-dircache
+		  (delq entry (aref session remote-ftp-dircache)))
+	    (setq entry nil))
+	  (remote-ftp-while session 'busy 'dircache)
+	  (when (>= (length (aref session remote-ftp-dircache))
+		    remote-ftp-dircache-max-dirs)
+	    ;; delete the least-recently-used entry
+	    (setcdr (nthcdr (1- (length (aref session remote-ftp-dircache)))
+			    (aref session remote-ftp-dircache)) nil))
+	  ;; add the new (empty) entry for the directory to be read.
+	  (setq entry
+		(vector dir (fix-time
+			     (cons (car (current-time))
+				   (+ (cdr (current-time))
+				      remote-ftp-dircache-expiry-time))) nil))
+	  (aset session remote-ftp-dircache
+		(cons entry (aref session remote-ftp-dircache)))
+	  ;; construct the callback function to have the new cache entry
+	  ;; as the first argument
+	  (aset session remote-ftp-callback
+		`(lambda (&rest args)
+		   (apply 'remote-ftp-dircache-callback ,entry args)))
+	  (remote-ftp-command session 'dircache remote-ftp-ls-format dir)
+	  (aset session remote-ftp-callback nil))
+      ;; entry is still valid, move it to the front of the list
+      (aset session remote-ftp-dircache
+	    (cons entry (delq entry (aref session remote-ftp-dircache)))))
+    ;; ENTRY now has the valid dircache directory structure
     (catch 'return
       (mapc #'(lambda (f)
 		(when (string= (aref f remote-ftp-file-name) base)
 		  (throw 'return f)))
-	    (aref session remote-ftp-dircache)))))
+	    (aref entry remote-ftp-cache-entries)))))
 
-(defun remote-ftp-dircache-callback (session output point line-end)
+(defun remote-ftp-dircache-callback (cache-entry session output point line-end)
   (let
       ((file-struct (remote-ftp-parse-ls-l output point)))
     (when file-struct
-      (aset session remote-ftp-dircache
-	    (cons file-struct (aref session remote-ftp-dircache))))))
+      (aset cache-entry remote-ftp-cache-entries
+	    (cons file-struct (aref cache-entry remote-ftp-cache-entries))))))
 
 (defun remote-ftp-invalidate-directory (session directory)
-  (when (and (stringp (aref session remote-ftp-cached-dir))
-	     (string= (directory-file-name directory)
-		      (aref session remote-ftp-cached-dir)))
-    (aset session remote-ftp-cached-dir nil)
-    (aset session remote-ftp-dircache nil)))
+  (setq directory (directory-file-name directory))
+  (let
+      ((entry (remote-ftp-dir-cached-p session directory)))
+    (when entry
+      (aset session remote-ftp-dircache
+	    (delq entry (aref session remote-ftp-dircache))))))
 
 
 ;; Password caching
@@ -646,13 +702,14 @@ file types.")
 	 (file-name (nth 2 split-name)))
       (cond
        ((eq op 'directory-files)
-	(remote-ftp-get-file-details
-	 session
-	 ;; XXX this assumes local/remote have same naming structure!
-	 (file-name-as-directory file-name))
-	(mapcar #'(lambda (f)
-		    (aref f remote-ftp-file-name))
-		(aref session remote-ftp-dircache)))
+	(let
+	    ;; XXX this assumes local/remote have same naming structure!
+	    ((dir (file-name-as-directory file-name)))
+	  (remote-ftp-get-file-details session dir)
+	  (mapcar #'(lambda (f)
+		      (aref f remote-ftp-file-name))
+		  (aref (remote-ftp-dir-cached-p session dir)
+			remote-ftp-cache-entries))))
        ((eq op 'delete-file)
 	(remote-ftp-rm session file-name))
        ((eq op 'delete-directory)
