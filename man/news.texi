@@ -4,6 +4,24 @@
 @cindex News
 
 
+@section 0.5
+
+@itemize @bullet
+
+@item New function @code{set-input-handler}, registers an asynchronous
+input handler for a local file
+
+@item Don't abort on receipt of unexpected @code{SIGCHLD} signals
+
+@item Upgrade libtool to version 1.2f
+
+@item The @code{rep} binary by default always loads a script named
+@file{rep}, not named by it's @code{argv[0]} (this breaks under the
+newer libtool)
+
+@end itemize
+
+
 @section 0.4
 
 @itemize @bullet

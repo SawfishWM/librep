@@ -1,3 +1,11 @@
+1999-09-10  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep.c (main): by default, always load a script named `rep',
+	not a script defined by argv[0]
+
+	* unix_main.c (fatal_signal_handler): finally changed message
+	from `jade: ...' to `rep: ...'
+
 1999-09-09  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_processes.c (check_for_zombies): removed the assertion

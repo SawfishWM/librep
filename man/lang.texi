@@ -5652,6 +5652,21 @@ Set the handler-specific data of file object @var{file} to @var{data}.
 This should only be done by the handler owning the file.
 @end defun
 
+It's also possible to register a callback function to be invoked when
+input is available on a file,
+
+@defun set-input-handler local-file function
+Arrange for @var{function} to be called whenever pending input is
+available on @var{local-file}, a file object bound to a file in the
+local file space.
+
+Note that this makes @var{local-file} subsequently do non-blocking
+input.
+
+This function is normally only useful when @var{local-file} represents
+a pipe or socket.
+@end defun
+
 
 @node File Information, Manipulating Files, File Objects, Files
 @subsection File Information
