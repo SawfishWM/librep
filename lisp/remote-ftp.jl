@@ -18,6 +18,15 @@
 ;;; along with Jade; see the file COPYING.  If not, write to
 ;;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
+;; TODO:
+;;    - Make reconnection after server timeout happen transparently.
+;;	Currently an error is signalled, then the _next_ command to
+;;	access the host/user combination reconnects.
+;;    - Allow file transfer mode (binary/ascii) to be determined by
+;;	matching files against regexp(s)
+;;    - Cache more than a single directory listing?
+;;    - Fix all the kludges marked by XXX
+
 (require 'remote)
 (require 'maildefs)			;for user-mail-address
 (provide 'remote-ftp)
@@ -124,7 +133,7 @@ file types.")
 (defconst remote-ftp-host 0)
 (defconst remote-ftp-user 1)
 (defconst remote-ftp-process 2)
-(defconst remote-ftp-status 3)	;success,failure,busy,nil,dying,dead,timed-out
+(defconst remote-ftp-status 3)	;success,failure,busy,nil,dying,timed-out
 (defconst remote-ftp-callback 4)
 (defconst remote-ftp-cached-dir 5)
 (defconst remote-ftp-dircache 6)
@@ -298,10 +307,12 @@ file types.")
     (unless (process-in-use-p process)
       (aset session remote-ftp-process nil)
       (aset session remote-ftp-dircache nil)
+      (aset session remote-ftp-status nil)
       (setq remote-ftp-sessions (delq session remote-ftp-sessions))
       (message (format nil "FTP session %s@%s exited"
 		       (aref session remote-ftp-user)
 		       (aref session remote-ftp-host))))))
+    
 
 (defun remote-ftp-show-multi (string start end)
   (let
@@ -328,6 +339,8 @@ file types.")
   (and (remote-ftp-command session 'login "user %s"
 			   (aref session remote-ftp-user))
        (remote-ftp-command session 'type "type %s" remote-ftp-transfer-type)
+       ;; For testing purposes
+       ;(remote-ftp-command session 'idle "idle 30")
        (and remote-ftp-display-progress
 	    (remote-ftp-command session 'hash "hash"))))
 
