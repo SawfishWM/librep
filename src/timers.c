@@ -133,7 +133,7 @@ insert_timer (Lisp_Timer *t)
 	t->deleted = 0;
 	x = &timer_chain;
 	while (*x != 0
-	       && ((*x)->rel_secs <= t->rel_secs
+	       && ((*x)->rel_secs < t->rel_secs
 		   || ((*x)->rel_secs == t->rel_secs
 		       && (*x)->rel_msecs <= t->rel_msecs)))
 	{
