@@ -19,9 +19,9 @@
 ;;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 ;; Load standard libraries
-(load "lisp")
-(load "backquote")
-(load "tilde")
+(require 'lisp)
+(require 'backquote)
+(require 'tilde)
 
 ;; It's up to the specific system's initialisatio scripts to do the
 ;; rest. Typically this will involve doing a (load-all "autoload.jl")
