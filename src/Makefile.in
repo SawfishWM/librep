@@ -53,7 +53,7 @@ librep.la : $(OBJS) $(LIBOBJS) $(ALLOCA)
 
 rep : $(REP_OBJS) $(EXTRA_LIBOBJS) librep.la
 	$(LIBTOOL) $(CC) -export-dynamic $(CPPFLAGS) $(CFLAGS) -o $@ \
-	  $(REP_OBJS) librep.la $(EXTRA_LIBOBJS) $(LIBS)
+	  $(REP_OBJS) librep.la $(EXTRA_LIBOBJS) $(LIBS) $(GMP_LIBS)
 
 rep-remote : rep-remote.c
 
@@ -96,7 +96,8 @@ uninstall :
 	done
 	
 rep-config : rep-config.sh
-	$(SHELL) $< "${prefix}" "${libdir}" "${version}" "${LIBS}" "${repcommonexecdir}" >$@
+	$(SHELL) $< "${prefix}" "${libdir}" "${version}" \
+	  "${LIBS} ${GMP_LIBS}" "${repcommonexecdir}">$@
 	chmod +x $@
 
 repdoc : repdoc.o $(SDBM_OBJS)

@@ -99,7 +99,12 @@ AC_HEADER_TIME
 AC_CHECK_HEADERS(fcntl.h sys/ioctl.h sys/time.h sys/utsname.h unistd.h siginfo.h memory.h stropts.h termios.h string.h limits.h argz.h locale.h nl_types.h malloc.h sys/param.h)
 
 dnl Check for GNU MP library and header files
-AC_CHECK_LIB(gmp, mpz_init, [], [AC_MSG_ERROR([Can't find libgmp])])
+saved_LIBS=$LIBS
+AC_CHECK_LIB(gmp, mpz_init,
+	     [GMP_LIBS="-lgmp -lm"
+	      AC_SUBST(GMP_LIBS)],
+	     [AC_MSG_ERROR([Can't find libgmp])])
+LIBS=$saved_LIBS
 AC_CHECK_HEADER(gmp.h, [], [AC_MSG_ERROR([Can't find gmp.h])])
 
 dnl Check for Doug Lea's malloc in libc, otherwise compile dlmalloc.c
