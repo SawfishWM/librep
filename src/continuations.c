@@ -173,12 +173,12 @@ struct rep_barrier_struct {
     void (*in)(void *data);
     void (*out)(void *data);
     void *data;
-    u_long id;
     rep_thread *active;
     rep_thread *head, *tail;
     rep_thread *susp_head, *susp_tail;
     short depth;
     int closed : 1;
+    int targeted : 1;		/* may contain continuations */
 };
 
 /* List of all currently active barriers (on the current stack) */
@@ -186,9 +186,6 @@ static rep_barrier *barriers;
 
 /* The outermost active closed barrier (the dynamic root in guile terms?) */
 static rep_barrier *root_barrier;
-
-/* Id to give next created barrier. */
-static u_long last_id;
 
 /* The data saved for a continuation */
 struct rep_continuation_struct {
@@ -215,6 +212,8 @@ struct rep_continuation_struct {
 
 #define rep_CONTIN(v)		((rep_continuation *)rep_PTR(v))
 #define rep_CONTINP(v)		rep_CELL16_TYPEP(v, rep_continuation_type)
+
+#define CF_INVALID		(1 << rep_CELL16_TYPE_BITS)
 
 /* the cell16 typecode allocated for continuation objects */
 static int rep_continuation_type;
@@ -303,11 +302,11 @@ rep_call_with_barrier (repv (*callback)(repv), repv arg,
     repv ret;
     rep_barrier b;
 
+    memset (&b, 0, sizeof (b));
     b.point = (char *) &b;
 #if STACK_DIRECTION < 0
-    b.point -= 1;
-#else
-    b.point += 1;
+    /* ensure all of barrier is saved on the stack */
+    b.point += sizeof (rep_barrier);
 #endif
     b.root = root_barrier;
     b.in = in;
@@ -315,10 +314,6 @@ rep_call_with_barrier (repv (*callback)(repv), repv arg,
     b.data = data;
     b.closed = closed;
     b.depth = barriers ? barriers->depth + 1 : 1;
-    b.id = ++last_id;
-    b.active = 0;
-    b.head = b.tail = 0;
-    b.susp_head = b.susp_tail = 0;
 
     b.next = barriers;
     barriers = &b;
@@ -333,6 +328,17 @@ rep_call_with_barrier (repv (*callback)(repv), repv arg,
 
     DB(("with-barrier[%s]: out %p (%d)\n",
 	closed ? "closed" : "open", &b, b.depth));
+
+    if (closed && b.targeted)
+    {
+	/* Invalidate any continuations that require this barrier */
+	rep_continuation *c;
+	for (c = continuations; c != 0; c = c->next)
+	{
+	    if (c->root == &b)
+		c->car |= CF_INVALID;
+	}
+    }
 
     barriers = b.next;
     root_barrier = b.root;
@@ -370,11 +376,8 @@ common_ancestor (rep_barrier *current, rep_barrier **dest_hist, int dest_depth)
 	int i;
 	for (i = first_dest; i < dest_depth; i++)
 	{
-	    if (dest_hist[i]->point == ptr->point
-		&& dest_hist[i]->id == ptr->id)
-	    {
+	    if (dest_hist[i]->point == ptr->point)
 		return ptr;
-	    }
 	    else if (SP_OLDER_P (dest_hist[i]->point, ptr->point))
 		first_dest = i + 1;
 	}
@@ -414,6 +417,7 @@ static void
 grow_stack_and_invoke (rep_continuation *c, char *water_mark)
 {
     volatile char growth[STACK_GROWTH];
+    rep_barrier tem;
 
     /* if stack isn't large enough, recurse again */
 
@@ -428,13 +432,16 @@ grow_stack_and_invoke (rep_continuation *c, char *water_mark)
     FLUSH_REGISTER_WINDOWS;
 
     /* stack's big enough now, so reload the saved copy somewhere
-       below the current position */
+       below the current position. But preserve the current contents
+       of the continuation's barrier. */
 
+    tem = *c->root;
 #if STACK_DIRECTION < 0
     memcpy (c->stack_top, c->stack_copy, c->stack_size);
 #else
     memcpy (c->stack_bottom, c->stack_copy, c->stack_size);
 #endif
+    *c->root = tem;
 
     longjmp (c->jmpbuf, 1);
 }
@@ -498,10 +505,11 @@ DEFUN("primitive-invoke-continuation", Fprimitive_invoke_continuation,
 {
     repv cont = Fsymbol_value (Qcontinuation, Qnil);
 
-    if (cont == rep_NULL || !rep_CONTINP(cont))
+    if (cont == rep_NULL || !rep_CONTINP(cont)
+	|| (rep_CONTIN(cont)->car & CF_INVALID))
     {
 	return Fsignal (Qerror, rep_LIST_1 (rep_string_dup
-					    ("bad continuation")));
+					    ("invalid continuation")));
     }
 
     primitive_invoke_continuation (rep_CONTIN (cont), ret);
@@ -525,6 +533,9 @@ execution point of the interpreter.
     cont = rep_FUNARG(cont)->env;
     rep_DECLARE(1, cont, rep_CAAR (cont) == Qcontinuation);
     c = rep_CONTIN (rep_CDAR (cont));
+
+    if (c->car & CF_INVALID)
+	return Qnil;
 
     /* copied from above function */
 
@@ -621,6 +632,7 @@ primitive_call_cc (repv (*callback)(rep_continuation *, void *), void *data)
 
 	c->barriers = barriers;
 	c->root = root_barrier;
+	root_barrier->targeted = 1;
 	c->call_stack = rep_call_stack;
 	c->special_bindings = rep_special_bindings;
 	c->gc_roots = rep_gc_root_stack;
