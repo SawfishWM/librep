@@ -4,6 +4,24 @@
 @cindex News
 
 
+@unnumberedsec 0.12.2
+
+@itemize @bullet
+
+@item The tar file-handler now caches the unpacked archive (wins big
+when loading sawfish themes)
+
+@item The @code{gaol} module can now create multiple gaols, each with
+it's own namespace
+
+@item More performance tweaks
+
+@item Miscellaneous bug-fixes (more vm stack smashing, @code{defconst}
+never evaluates its constant)
+
+@end itemize
+
+
 @unnumberedsec 0.12.1
 
 @itemize @bullet

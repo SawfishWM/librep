@@ -1,3 +1,14 @@
+2000-06-22  John Harper  <john@dcs.warwick.ac.uk>
+
+	* version 0.12.2
+
+	* lisp.c (read_symbol): if first character is a non-symbol
+	character signal an error instead of just returning null
+
+	* repint.h (inline_Fcons): only declare this `extern inline' if
+	__OPTIMIZE__ is defined as well as __GNUC__ (GCC only inlines
+	in optimizing compilations)
+
 2000-06-21  John Harper  <john@dcs.warwick.ac.uk>
 
 	* numbers.c (dup, maybe_demote, promote_dup): inline calls to
@@ -14,6 +25,8 @@
 	(F_structure_exports_all): new function
 
 2000-06-18  John Harper  <john@dcs.warwick.ac.uk>
+
+	* version 0.12.1
 
 	* rep.c (usage): added \n\ line terminations, from Sam Falkner
 	<Sam.Falkner@central.sun.com>
