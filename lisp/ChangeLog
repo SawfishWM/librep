@@ -1,3 +1,7 @@
+1999-04-19  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compiler.jl (compile-file): minor fix to error handling
+
 1999-03-30  John Harper  <john@dcs.warwick.ac.uk>
 
 	* remote-ftp.jl (remote-ftp-chmod): make errors give a warning
