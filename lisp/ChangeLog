@@ -1,5 +1,8 @@
 2001-07-17  John Harper  <jsh@pixelslut.com>
 
+	* rep/lang/interpreter.jl (letrec): allow right-hand-sides of
+	letrec bindings to have more than one form
+
 	* rep/io/file-handlers/remote/rep.jl
 	(remote-rep-output-filter): don't print annoying messages about
 	unhandled input

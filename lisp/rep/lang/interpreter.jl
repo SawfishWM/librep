@@ -169,7 +169,7 @@ functions."
 	     (cond ((consp x) (car x))
 		   (t x))) bindings)
    (mapcar (lambda (x)
-	     (cond ((consp x) (cons 'setq x))
+	     (cond ((consp x) (list 'setq (car x) (cons 'progn (cdr x))))
 		   (t (list 'setq x nil)))) bindings)))
 
 (defmacro let-fluids (bindings . body)
