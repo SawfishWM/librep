@@ -1,3 +1,9 @@
+2002-03-30  John Harper  <jsh@unfactored.org>
+
+	* sockets.c: added IS_REGISTERED flag so we never try to call
+	rep_deregister_input_fd () on a fd that isn't actually
+	registered (which rep-gtk doesn't like)
+
 2002-03-01  John Harper  <jsh@pixelslut.com>
 
 	* timers.c: #ifdef rep_HAVE_UNIX not HAVE_UNIX (from Michael

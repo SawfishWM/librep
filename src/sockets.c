@@ -66,7 +66,9 @@ struct rep_socket_struct {
 };
 
 #define IS_ACTIVE		(1 << (rep_CELL16_TYPE_BITS + 0))
+#define IS_REGISTERED		(1 << (rep_CELL16_TYPE_BITS + 1))
 #define SOCKET_IS_ACTIVE(s)	((s)->car & IS_ACTIVE)
+#define SOCKET_IS_REGISTERED(s)	((s)->car & IS_REGISTERED)
 
 #define SOCKETP(x)		rep_CELL16_TYPEP (x, socket_type)
 #define SOCKET(x)		((rep_socket *) rep_PTR (x))
@@ -117,7 +119,9 @@ shutdown_socket (rep_socket *s)
     if (s->sock >= 0)
     {
 	close (s->sock);
-	rep_deregister_input_fd (s->sock);
+
+	if (SOCKET_IS_REGISTERED (s))
+	    rep_deregister_input_fd (s->sock);
     }
 
     DB (("shutdown socket fd %d\n", s->sock));
@@ -196,6 +200,7 @@ make_client_socket (int namespace, int style, void *addr, size_t length)
 	{
 	    rep_unix_set_fd_nonblocking (s->sock);
 	    rep_register_input_fd (s->sock, client_socket_output);
+	    s->car |= IS_REGISTERED;
 	    return s;
 	}
 	shutdown_socket (s);
@@ -230,6 +235,7 @@ make_server_socket (int namespace, int style, void *addr, size_t length)
 	    {
 		rep_unix_set_fd_nonblocking (s->sock);
 		rep_register_input_fd (s->sock, server_socket_output);
+		s->car |= IS_REGISTERED;
 		return s;
 	    }
 	}
@@ -468,6 +474,7 @@ subsequently call `close-socket' on the created client.
 	rep_socket *client = make_socket_ (new, s->namespace, s->style);
 	rep_unix_set_fd_nonblocking (new);
 	rep_register_input_fd (new, client_socket_output);
+	client->car |= IS_REGISTERED;
 	client->stream = stream;
 	client->sentinel = sentinel;
 	return rep_VAL (client);
