@@ -300,6 +300,12 @@
     (fluid-set current-structure (intern-structure (fluid current-module))))
   (put 'in-module 'compiler-decl-fun declare-in-module)
 
+  ;; (declare (language LANG))
+
+  (defun declare-language (form)
+    (fluid-set current-language (cadr form)))
+  (put 'language 'compiler-decl-fun declare-language)
+
 
 ;;; module compilers
 
