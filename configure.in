@@ -96,7 +96,7 @@ dnl Checks for library functions.
 AC_FUNC_ALLOCA
 AC_FUNC_MEMCMP
 AC_FUNC_VPRINTF
-AC_CHECK_FUNCS(getcwd gethostname select socket strcspn strerror strstr strtol psignal strsignal snprintf)
+AC_CHECK_FUNCS(getcwd gethostname select socket strcspn strerror strstr strtol psignal strsignal snprintf grantpt)
 AC_REPLACE_FUNCS(realpath)
 
 dnl Custom tests
@@ -116,36 +116,36 @@ if test "x${GCC}" = "xyes" -a "x$CFLAGS" = "x-g -O2"; then
 fi
 
 dnl Does <unistd.h> declare char **environ?
-AC_MSG_CHECKING([whether unistd.h declares environ])
-AC_TRY_COMPILE([#include <unistd.h>], [char **foo = environ;],
-[AC_MSG_RESULT([yes])],
-[AC_DEFINE(ENVIRON_UNDECLARED) AC_MSG_RESULT([no])])
+AC_CACHE_CHECK([whether unistd.h declares environ], jade_cv_decl_environ,
+ AC_TRY_COMPILE([#include <unistd.h>], [char **foo = environ;],
+  [jade_cv_decl_environ=yes],
+  [jade_cv_decl_environ=no]))
+if test ${jade_cv_decl_environ} = no; then
+  AC_DEFINE(ENVIRON_UNDECLARED)
+fi
 
 dnl Are ptys available, and if so, how?
 AC_MSG_CHECKING([whether /dev/ptmx exists])
 if test -r /dev/ptmx; then
-  dnl ok to assume existence of grantpt and friends?
   AC_MSG_RESULT([yes])
   AC_DEFINE(HAVE_PTYS)
   AC_DEFINE(HAVE_DEV_PTMX)
 else
   AC_MSG_RESULT([no])
-  dnl Look for old-style /dev/ptyXN devices
-  have_ptys=0
-  AC_MSG_CHECKING([whether /dev/ptyXN devices exist])
-  for c in p q r s t u v w x y z a b c d e f g h i j k l m n o; do
-    if test -r "/dev/pty${c}0"; then
-      have_ptys=${c}
-      break
-    fi
-  done
-  if test ${have_ptys} != 0; then
-    AC_MSG_RESULT([yes, first is "/dev/pty${have_ptys}0"])
-    AC_DEFINE(HAVE_PTYS)
-    AC_DEFINE_UNQUOTED(FIRST_PTY_LETTER, '${have_ptys}')
-  else
-    AC_MSG_RESULT([no])
-  fi
+fi
+
+dnl Look for old-style /dev/ptyXN devices
+AC_CACHE_CHECK([whether /dev/ptyXN devices exist], jade_cv_sys_dev_pty,
+ jade_cv_sys_dev_pty=no
+ for c in p q r s t u v w x y z a b c d e f g h i j k l m n o; do
+   if test -r "/dev/pty${c}0"; then
+     jade_cv_sys_dev_pty=${c}
+     break
+   fi
+ done)
+if test ${jade_cv_sys_dev_pty} != no; then
+  AC_DEFINE(HAVE_PTYS)
+  AC_DEFINE_UNQUOTED(FIRST_PTY_LETTER, '${jade_cv_sys_dev_pty}')
 fi
 
 dnl Was X found or not (if not we're pretty much screwed)
@@ -197,3 +197,7 @@ tem=`make --version -f /dev/null 2>&1 | grep GNU`
 if test "x$tem" = "x"; then
   AC_MSG_WARN([You need to use GNU Make when compiling Jade])
 fi
+
+dnl Local variables:
+dnl major-mode: sh-mode
+dnl End:
