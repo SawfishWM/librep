@@ -2149,8 +2149,6 @@ void
 rep_handle_error(repv error, repv data)
 {
     static int mutex;
-    repv errstr;
-
     if (mutex++ == 0)
     {
 	repv fun = Fsymbol_value (Qerror_handler_function, Qt);
@@ -2198,14 +2196,12 @@ where ARGS-EVALLED-P is either `t' or `nil', depending on whether or not
 ARGLIST had been evaluated or not before being put into the stack.
 ::end:: */
 {
-    struct rep_Call *lc;
-    if(rep_NILP(strm)
-       && !(strm = Fsymbol_value(Qstandard_output, Qnil)))
-    {
+    struct rep_Call *lc = rep_call_stack;
+
+    if(rep_NILP(strm) && !(strm = Fsymbol_value(Qstandard_output, Qnil)))
 	return Fsignal(Qbad_arg, rep_list_2(strm, rep_MAKE_INT(1)));
-    }
-    lc = rep_call_stack;
-    while(lc)
+
+    while (lc != 0)
     {
 	rep_stream_putc(strm, '\n');
 	rep_print_val(strm, lc->fun);
@@ -2224,10 +2220,38 @@ DEFUN("debug-frame-environment", Fdebug_frame_environment,
     struct rep_Call *fp = rep_call_stack;
     struct rep_Call *ptr = rep_unbox_pointer (pointer);
     rep_DECLARE(1, pointer, ptr != 0);
-    while (fp != 0 && fp != ptr)
+    while (fp != 0 && fp->next != ptr)
 	fp = fp->next;
     if (fp != 0)
 	return Fcons (fp->saved_env, fp->saved_structure);
+    else
+	return Qnil;
+}
+
+DEFUN ("debug-outer-frame", Fdebug_outer_frame,
+       Sdebug_outer_frame, (repv pointer), rep_Subr1)
+{
+    struct rep_Call *fp = rep_call_stack;
+    struct rep_Call *ptr = rep_unbox_pointer (pointer);
+    rep_DECLARE(1, pointer, ptr != 0);
+    while (fp != 0 && fp != ptr)
+	fp = fp->next;
+    if (fp != 0 && fp->next != 0)
+	return rep_box_pointer (fp->next);
+    else
+	return Qnil;
+}
+
+DEFUN ("debug-inner-frame", Fdebug_inner_frame,
+       Sdebug_inner_frame, (repv pointer), rep_Subr1)
+{
+    struct rep_Call *fp = rep_call_stack;
+    struct rep_Call *ptr = rep_unbox_pointer (pointer);
+    rep_DECLARE(1, pointer, ptr != 0);
+    while (fp != 0 && fp->next != ptr)
+	fp = fp->next;
+    if (fp != 0)
+	return rep_box_pointer (fp);
     else
 	return Qnil;
 }
@@ -2270,6 +2294,8 @@ rep_lisp_init(void)
     rep_ADD_SUBR(Sbacktrace);
     rep_ADD_SUBR(Smax_lisp_depth);
     rep_ADD_SUBR(Sdebug_frame_environment);
+    rep_ADD_SUBR(Sdebug_outer_frame);
+    rep_ADD_SUBR(Sdebug_inner_frame);
 
     /* Stuff for error-handling */
     rep_INTERN(error_message);
