@@ -57,6 +57,9 @@ concurrently.")
 (defvar remote-ftp-display-progress t
   "When non-nil, show progress of FTP transfers.")
 
+(defvar remote-ftp-echo-output nil
+  "When t, echo all output from FTP processes. Use for debugging only.")
+
 (defvar remote-ftp-passwd-alist nil
   "Alist of (USER@HOST . PASSWD) defining all known FTP passwords.")
 
@@ -109,7 +112,7 @@ file types.")
 (defconst remote-ftp-host 0)
 (defconst remote-ftp-user 1)
 (defconst remote-ftp-process 2)
-(defconst remote-ftp-status 3)		;success,failure,busy,nil,dying,dead
+(defconst remote-ftp-status 3)	;success,failure,busy,nil,dying,dead,timed-out
 (defconst remote-ftp-callback 4)
 (defconst remote-ftp-cached-dir 5)
 (defconst remote-ftp-dircache 6)
@@ -195,6 +198,7 @@ file types.")
     (error "FTP session is dying"))
   (while (remote-ftp-status-p session status)
     (and (accept-process-output remote-ftp-timeout)
+	 (aset session remote-ftp-status 'timed-out)
 	 (error "FTP process timed out (%s)" (or type "unknown")))))
 
 (defun remote-ftp-command (session type format &rest args)
@@ -205,9 +209,10 @@ file types.")
   (eq (aref session remote-ftp-status) 'success))
 
 (defun remote-ftp-output-filter (session output)
-;  (let
-;      ((print-escape t))
-;    (format (stderr-file) "FTP output: %S\n" output))
+  (when remote-ftp-echo-output
+    (let
+	((print-escape t))
+      (format (stderr-file) "FTP output: %S\n" output)))
   (when (aref session remote-ftp-pending-output)
     (setq output (concat (aref session remote-ftp-pending-output) output))
     (aset session remote-ftp-pending-output nil))
@@ -471,33 +476,47 @@ file types.")
    ((eq op 'canonical-file-name)
     ;; No feasible way to do this?
     (car args))
-   ((memq op '(read-file-contents insert-file-contents copy-to-local-fs))
+   ((memq op '(read-file-contents insert-file-contents copy-file-to-local-fs))
     ;; Need to get the file to the local fs
     (let
-	((local-name (if (eq op 'copy-to-local-fs)
-			 (car args)
+	((local-name (if (eq op 'copy-file-to-local-fs)
+			 (nth 1 args)
 		       (make-temp-name)))
 	 (session (remote-ftp-open-host (nth 1 split-name) (car split-name))))
       (remote-ftp-get session (nth 2 split-name) local-name)
-      (when (memq op '(read-file-contents insert-file-contents))
+      (unless (eq op 'copy-file-to-local-fs)
 	(unwind-protect
 	    (funcall op local-name)
 	  (delete-file local-name)))
       t))
-   ((memq op '(write-buffer-contents copy-from-local-fs))
+   ((memq op '(write-buffer-contents copy-file-from-local-fs))
     ;; Need to get the file off the local fs
     (let
-	((local-name (if (eq op 'copy-from-local-fs)
+	((local-name (if (eq op 'copy-file-from-local-fs)
 			 (car args)
 		       (make-temp-name)))
 	 (session (remote-ftp-open-host (nth 1 split-name) (car split-name))))
-      (when (eq op 'write-buffer-contents)
+      (unless (eq op 'copy-file-from-local-fs)
 	(apply op local-name (cdr args)))
       (unwind-protect
 	  (remote-ftp-put session local-name (nth 2 split-name))
-	(when (eq op 'write-buffer-contents)
+	(unless (eq op 'copy-file-from-local-fs)
 	  (delete-file local-name)))
       t))
+   ((eq op 'copy-file)
+    ;; Copying on the remote fs.
+    ;; XXX Is there a way to avoid the double transfer?
+    ;; XXX Not for inter-session copies, anyway.
+    (let
+	((local-file (make-temp-name))
+	 (dest-split (remote-split-filename (nth 1 args))))
+      (unwind-protect
+	  (and (remote-ftp-handler split-name 'copy-file-to-local-fs
+				   (list (car args) local-file))
+	       (remote-ftp-handler dest-split 'copy-file-from-local-fs
+				   (list local-file (nth 1 args))))
+	(and (file-exists-p local-file)
+	     (delete-file local-file)))))
    ((eq op 'rename-file)
     (let
 	((session (remote-ftp-open-host (nth 1 split-name) (car split-name)))
