@@ -884,6 +884,18 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		    TOP = (TOP == tmp ? sym_t : sym_nil);
 		break;
 
+	    case OP_MAX:
+		tmp = RET_POP;
+		if(value_cmp(tmp, TOP) > 0)
+		    TOP = tmp;
+		break;
+
+	    case OP_MIN:
+		tmp = RET_POP;
+		if(value_cmp(tmp, TOP) < 0)
+		    TOP = tmp;
+		break;
+
 	    case OP_SET_CURRENT_BUFFER:
 		CALL_2(cmd_set_current_buffer);
 

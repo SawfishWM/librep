@@ -22,7 +22,7 @@
 #define BYTECODES_H
 
 #define BYTECODE_MAJOR_VERSION 2
-#define BYTECODE_MINOR_VERSION 4
+#define BYTECODE_MINOR_VERSION 5
 
 /* Number of bits encoded in each extra opcode forming the argument. */
 #define ARG_SHIFT    8
@@ -159,6 +159,10 @@
 
 /* new 23-8-94 */
 #define OP_LXOR 0x94			/* push (logxor pop[1] pop[2] */
+
+/* new 12-1-98 */
+#define OP_MAX 0x95			/* push (max pop[1] pop[2]) */
+#define OP_MIN 0x96			/* push (min pop[1] pop[2]) */
 
 #define OP_SET_CURRENT_BUFFER 0xb0	/* call-2 set-current-buffer */
 #define OP_BIND_BUFFER 0xb1
