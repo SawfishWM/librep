@@ -141,8 +141,10 @@ clean :
 	rm -f *~ *.o *.lo *.la build.h
 	rm -f repdoc core rep rep-remote srep
 
-realclean : clean
+distclean : clean
 	rm -f .*.d Makefile rep.h dump.out dumped.s rep-config
 	rm -rf .libs .libexec
+
+realclean : distclean
 
 -include $(SRCS:%.c=.%.d) $(DL_SRCS:%.c=.%.d) $(REP_SRCS:%.c=.%.d)

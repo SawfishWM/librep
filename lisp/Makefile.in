@@ -57,7 +57,9 @@ uninstall :
 clean :
 	rm -f `find . \( -name '*.jlc' -o -name '*~' -o -name core \) -print`
 
-realclean : clean
+distclean : clean
 	rm -f Makefile
 
-.PHONY : all lisp install uninstall clean realclean
+realclean : distclean
+
+.PHONY : all lisp install uninstall clean realclean distclean
