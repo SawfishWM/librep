@@ -26,6 +26,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <assert.h>
 
 #ifdef NEED_MEMORY_H
 # include <memory.h>
@@ -2026,41 +2027,37 @@ returned.
     return res;
 }
 
-DEFUN("catch", Fcatch, Scatch, (repv args, repv tail_posn), rep_SF) /*
-::doc:catch::
-catch TAG FORMS...
+DEFUN("call-with-exception-handler", Fcall_with_exception_handler,
+      Scall_with_exception_handler, (repv thunk, repv handler_thunk),
+      rep_Subr2) /*
+::doc:call-with-exception-handler::
+call-with-exception-handler THUNK HANDLER-THUNK
 
-Evaluate FORMS in an implicit progn; non-local exits are allowed with
-`(throw TAG)'. The value of the `catch' form is either the value of the
-progn or the value given to any matching `throw' form.
+Call THUNK and return its value. However if an exception of any form
+occurs, call HANDLER-THUNK with a single argument, the exception data,
+and return its value.
 ::end:: */
     /* Non-local exits don't bother with jmp_buf's and the like, they just
        unwind normally through all levels of recursion with a rep_NULL result.
        This is slow but it's easy to work with.  */
 {
-    if(rep_CONSP(args))
+    rep_GC_root gc_handler;
+    repv ret;
+
+    rep_DECLARE (1, thunk, Ffunctionp (thunk) != Qnil);
+    rep_DECLARE (2, handler_thunk, Ffunctionp (handler_thunk) != Qnil);
+
+    rep_PUSHGC (gc_handler, handler_thunk);
+    ret = rep_call_lisp0 (thunk);
+    rep_POPGC;
+    if (ret == rep_NULL)
     {
-	repv tag, res = rep_NULL;
-	rep_GC_root gc_args, gc_tag;
-	rep_PUSHGC(gc_args, args);
-	tag = rep_eval(rep_CAR(args), Qnil);
-	if(tag)
-	{
-	    rep_PUSHGC(gc_tag, tag);
-	    if(!(res = Fprogn(rep_CDR(args), Qnil)))
-	    {
-		if(rep_throw_value && (rep_CAR(rep_throw_value) == tag))
-		{
-		    res = rep_CDR(rep_throw_value);
-		    rep_throw_value = rep_NULL;
-		}
-	    }
-	    rep_POPGC;
-	}
-	rep_POPGC;
-	return(res);
+	repv data = rep_throw_value;
+	rep_throw_value = rep_NULL;
+	assert (data != rep_NULL);
+	ret = rep_call_lisp1 (handler_thunk, data);
     }
-    return rep_signal_missing_arg(1);
+    return ret;
 }
 
 DEFUN("throw", Fthrow, Sthrow, (repv tag, repv val), rep_Subr2) /*
@@ -2075,42 +2072,6 @@ repv from it. TAG and repv are both evaluated fully.
     if(!rep_throw_value)
 	rep_throw_value = Fcons(tag, val);
     return(rep_NULL);
-}
-
-DEFUN("unwind-protect", Funwind_protect,
-      Sunwind_protect, (repv args, repv tail_posn), rep_SF) /*
-::doc:unwind-protect::
-unwind-protect BODY CLEANUP-FORMS...
-
-Return the result of evaluating BODY. When execution leaves the dynamic
-extent of BODY evaluate `(progn CLEANUP-FORMS)' (even if exiting due to
-an exception within BODY).
-
-Note that when BODY is exited by calling a continuation, it is
-undefined whether or not CLEANUP-FORMS will be evaluated.
-::end:: */
-{
-    if(rep_CONSP(args))
-    {
-	repv res, throwval;
-	rep_GC_root gc_args, gc_res, gc_throwval;
-	rep_PUSHGC(gc_args, args);
-	res = rep_eval(rep_CAR(args), Qnil);
-	rep_PUSHGC(gc_res, res);
-	throwval = rep_throw_value;
-	rep_throw_value = rep_NULL;
-	rep_PUSHGC(gc_throwval, throwval);
-	if(!Fprogn(rep_CDR(args), Qnil))
-	    res = rep_NULL;
-	/* Only reinstall the old throw if it's actually an error and there
-	   was no error in the cleanup forms. This way the newest error
-	   takes precedence. */
-	if(throwval != 0 && rep_throw_value == 0)
-	    rep_throw_value = throwval;
-	rep_POPGC; rep_POPGC; rep_POPGC;
-	return(res);
-    }
-    return rep_signal_missing_arg(1);
 }
 
 DEFSTRING(jl, ".jl");
@@ -2190,9 +2151,8 @@ rep_lispcmds_init(void)
     rep_ADD_SUBR(Ssequencep);
     rep_ADD_SUBR(Ssubr_name);
     rep_ADD_SUBR(Scall_hook);
-    rep_ADD_SUBR(Scatch);
+    rep_ADD_SUBR(Scall_with_exception_handler);
     rep_ADD_SUBR(Sthrow);
-    rep_ADD_SUBR(Sunwind_protect);
 
     rep_INTERN(provide);
 
