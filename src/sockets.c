@@ -24,6 +24,7 @@
 
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <netinet/in.h>
@@ -33,6 +34,13 @@
 
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
+#endif
+
+#if !defined (AF_LOCAL) && defined (AF_UNIX)
+# define AF_LOCAL AF_UNIX
+#endif
+#if !defined (PF_LOCAL) && defined (PF_UNIX)
+# define PF_LOCAL PF_UNIX
 #endif
 
 #ifdef DEBUG
