@@ -173,7 +173,7 @@
        (let ((doc (nth 3 form)))
 	 (when (and *compiler-write-docs* (stringp doc))
 	   (add-documentation (nth 1 form) (fluid current-module) doc)
-	   (setq form (delq (nth 3 form) form)))
+	   (setq form (delq doc form)))
 	 (unless (memq (nth 1 form) (fluid defvars))
 	   (remember-variable (nth 1 form)))
 	 (unless (assq (nth 1 form) (fluid const-env))
@@ -197,9 +197,13 @@
 
       ((%define)
        (let ((sym (nth 1 form))
-	     (value (nth 2 form)))
+	     (value (nth 2 form))
+	     (doc (nth 3 form)))
 	 (unless (memq sym (fluid defines))
 	   (remember-lexical-variable (compiler-constant-value sym)))
+	 (when (and *compiler-write-docs* (stringp doc))
+	   (add-documentation sym (fluid current-module) doc)
+	   (setq form (delq doc form)))
 	 (when (and (listp value) (not (compiler-constant-p value)))
 	   ;; Compile the definition. A good idea?
 	   (rplaca (nthcdr 2 form) (compile-form (nth 2 form))))
