@@ -61,6 +61,7 @@ DEFSYM(lambda, "lambda");
 DEFSYM(macro, "macro");
 DEFSYM(autoload, "autoload");
 DEFSYM(function, "function");
+DEFSYM(structure_ref, "structure-ref");
 
 DEFSYM(standard_input, "standard-input");
 DEFSYM(standard_output, "standard-output");
@@ -163,8 +164,8 @@ The maximum number of list elements to print before abbreviating.
 The number of list levels to descend when printing before abbreviating.
 ::end:: */
 
-DEFSYM(autoload_verbose, "autoload-verbose");
 DEFSYM(load, "load");
+DEFSYM(require, "require");
 
 /* When rep_TRUE Feval() calls the "debug-entry" function */
 rep_bool rep_single_step_flag;
@@ -188,7 +189,7 @@ repv (*rep_bytecode_interpreter)(repv code, repv consts,
 struct rep_Call *rep_call_stack;
 
 /* Prevent infinite recursion */
-int rep_lisp_depth, rep_max_lisp_depth = 500;
+int rep_lisp_depth, rep_max_lisp_depth = 1000;
 
 /* Used to avoid costly interrupt checking too often */
 int rep_test_int_counter = 0;
@@ -200,6 +201,31 @@ int rep_test_int_period = 1000;
    interrupt, it should set `rep_throw_value' to `rep_int_cell' */
 static void default_test_int (void) { }
 void (*rep_test_int_fun)(void) = default_test_int;
+
+/* support for scheme boolean type */
+repv rep_scm_t, rep_scm_f;
+
+
+/* support for scheme boolean values */
+
+DEFUN ("%scheme-bool-printer", F_scheme_bool_printer,
+       S_scheme_bool_printer, (repv obj, repv stream), rep_Subr2)
+{
+    rep_stream_puts (stream, obj == rep_scm_t ? "#t" : "#f", 2, rep_FALSE);
+    return Qnil;
+}
+
+static void
+init_scm_booleans (void)
+{
+    if (rep_scm_t == 0)
+    {
+	rep_scm_t = Fmake_datum (Qnil, rep_void_value,
+				 rep_VAL (&S_scheme_bool_printer));
+	rep_scm_f = Fmake_datum (Qnil, rep_void_value,
+				 rep_VAL (&S_scheme_bool_printer));
+    }
+}
 
 
 /* Reading */
@@ -351,7 +377,7 @@ read_symbol(repv strm, int *c_p)
 	case ' ':  case '\t': case '\n': case '\f':
 	case '(':  case ')':  case '[':  case ']':
 	case '\'': case '"':  case ';':  case ',':
-	case '`':
+	case '`':  case '#':
 	    goto done;
 
 	case '\\':
@@ -846,12 +872,32 @@ rep_readl(repv strm, register int *c_p)
 		}
 		/* fall through */
 
+	    case 't':
+	    case 'f':
+		init_scm_booleans ();
+		form = (*c_p == 't') ? rep_scm_t : rep_scm_f;
+		*c_p = rep_stream_getc (strm);
+		return form;
+
 	    default: error:
 		return Fsignal(Qinvalid_read_syntax, rep_LIST_1(strm));
 	    }
 
 	default:
-	    return read_symbol(strm, c_p);
+	    form = read_symbol(strm, c_p);
+	    if (form && *c_p == '#' && rep_SYMBOLP (form))
+	    {
+		/* foo#bar expands to (structure-ref foo bar)
+		   (this syntax is from Xerox scheme's module system) */
+		repv var;
+		*c_p = rep_stream_getc (strm);
+		var = read_symbol (strm, c_p);
+		if (var != 0)
+		    return rep_list_3 (Qstructure_ref, form, var);
+		else
+		    return var;
+	    }
+	    return form;
 	}
     }
     /* not reached */
@@ -934,27 +980,32 @@ rep_bind_lambda_list(repv lambdaList, repv argList,
     /* Evaluate arguments, and stick them in the evalled_args array */
     if(eval_args)
     {
-	repv old_env = rep_env;
-	rep_GC_root gc_old_env;
+	repv old_env = rep_env, old_struct = rep_structure;
+	rep_GC_root gc_old_env, gc_old_struct;
 	int i;
 	evalled_nargs = rep_list_length(argList);
 	evalled_args = alloca(sizeof(repv) * evalled_nargs);
 	rep_PUSHGCN(gc_evalled_args, evalled_args, 0);
 	if (!eval_in_env)
+	{
 	    rep_env = rep_call_stack->saved_env;
+	    rep_structure = rep_call_stack->saved_structure;
+	}
 	rep_PUSHGC(gc_old_env, old_env);
+	rep_PUSHGC(gc_old_struct, old_struct);
 	for(i = 0; i < evalled_nargs; i++)
 	{
 	    if((evalled_args[i] = Feval(rep_CAR(argList))) == rep_NULL)
 	    {
-		rep_POPGC;
+		rep_POPGC; rep_POPGC;
 		goto error;
 	    }
 	    argList = rep_CDR(argList);
 	    gc_evalled_args.count++;
 	}
 	rep_env = old_env;
-	rep_POPGC;
+	rep_structure = old_struct;
+	rep_POPGC; rep_POPGC;
     }
 
     state = STATE_REQUIRED;
@@ -1107,12 +1158,15 @@ DEFSTRING(invl_autoload, "Can only autoload from symbols");
    This function tries to load FILE, then returns the value of SYMBOL
    if successful, or rep_NULL for some kind of error.
 
+   Alternatively, for `(autoload SYMBOL SYMBOL-2 ...)' tries to intern
+   the structure called SYMBOL-2
+
    IMPORTANT: to ensure security, closure FUNARG must be active when
    this function is called. */
 repv
 rep_load_autoload(repv funarg)
 {
-    repv aload_def, fun, file, load;
+    repv aload_def, fun, file;
 
     if (!rep_FUNARGP(funarg))
     {
@@ -1126,7 +1180,8 @@ rep_load_autoload(repv funarg)
     if (!rep_CONSP(aload_def)
 	|| !rep_SYMBOLP(rep_CAR(aload_def))
 	|| !rep_CONSP(rep_CDR(aload_def))
-	|| !rep_STRINGP(rep_CAR(rep_CDR(aload_def))))
+	|| !(rep_STRINGP(rep_CAR(rep_CDR(aload_def)))
+	     || rep_SYMBOLP(rep_CAR(rep_CDR(aload_def)))))
     {
 	return Fsignal(Qinvalid_autoload,
 		       rep_list_2(fun, rep_VAL(&invl_autoload)));
@@ -1135,71 +1190,79 @@ rep_load_autoload(repv funarg)
     fun = rep_CAR(aload_def);
     file = rep_CAR(rep_CDR(aload_def));
 
-    /* Check if the current environment is allowed to load */
-    load = Fsymbol_value (Qload, Qnil);
-    if (load != rep_NULL)
+    if (rep_STRINGP (file))
     {
-	rep_GC_root gc_fun, gc_funarg;
-	u_char *old_msg;
-	u_long old_msg_len;
-	repv tmp;
+	/* loading a file */
 
-	if (Fsymbol_value (Qbatch_mode, Qt) == Qnil
-	    && Fsymbol_value (Qautoload_verbose, Qt) != Qnil
-	    && rep_message_fun != 0)
+	/* Check if the current environment is allowed to load */
+	repv load = Fsymbol_value (Qload, Qnil);
+	if (load != rep_NULL)
 	{
-	    (*rep_message_fun)(rep_save_message, &old_msg, &old_msg_len);
-	    (*rep_message_fun)(rep_messagef, "Loading %s...", rep_STR(file));
-	    (*rep_message_fun)(rep_redisplay_message);
+	    rep_GC_root gc_fun, gc_funarg;
+	    repv tmp;
+
+	    /* trash the autoload defn, so we don't keep trying to
+	       autoload indefinitely. */
+	    rep_CDR(aload_def) = Qnil;
+
+	    rep_PUSHGC(gc_funarg, funarg);
+	    rep_PUSHGC(gc_fun, fun);
+	    /* call through the value instead of just Fload'ing */
+	    tmp = rep_call_lisp2 (load, file, Qt);
+	    rep_POPGC; rep_POPGC;
+
+	    if (!tmp)
+		return rep_NULL;
+
+	    fun = Fsymbol_value (fun, Qnil);
 	}
-
-	/* trash the autoload defn, so we don't keep trying to
-	   autoload indefinitely. */
-	rep_CDR(aload_def) = Qnil;
-
-	rep_PUSHGC(gc_funarg, funarg);
-	rep_PUSHGC(gc_fun, fun);
-	/* call through the value instead of just Fload'ing */
-	tmp = rep_call_lisp2 (load, file, Qt);
-	rep_POPGC; rep_POPGC;
-
-	if (Fsymbol_value (Qbatch_mode, Qt) == Qnil
-	    && Fsymbol_value (Qautoload_verbose, Qt) != Qnil
-	    && rep_message_fun != 0)
-	{
-	    (*rep_message_fun)(rep_messagef,
-			       "Loading %s...done.", rep_STR(file));
-	    (*rep_message_fun)(rep_redisplay_message);
-	    (*rep_message_fun)(rep_restore_message, old_msg, old_msg_len);
-	}
-
-	if (!tmp)
-	    return rep_NULL;
-
-	fun = Fsymbol_value (fun, Qnil);
-
-	if (fun != rep_NULL)
-	{
-	    /* Magically replace one closure by another without
-	       losing eq-ness */
-	    tmp = fun;
-	    if (rep_CONSP(tmp) && rep_CAR(tmp) == Qmacro)
-		tmp = rep_CDR(tmp);
-	    if (rep_FUNARGP(tmp))
-	    {
-		rep_FUNARG(funarg)->fun = rep_FUNARG(tmp)->fun;
-		rep_FUNARG(funarg)->name = rep_FUNARG(tmp)->name;
-		rep_FUNARG(funarg)->env = rep_FUNARG(tmp)->env;
-		rep_FUNARG(funarg)->special_env = rep_FUNARG(tmp)->special_env;
-		rep_FUNARG(funarg)->fh_env = rep_FUNARG(tmp)->fh_env;
-	    }
-	    else
-		rep_FUNARG(funarg)->fun = Qnil;
-	}
-	return fun;
+	else
+	    fun = rep_NULL;
     }
     else
-	return rep_NULL;
+    {
+	/* a symbol naming a structure to intern */
+
+	/* Check if the current environment is allowed to load */
+	repv load = Fsymbol_value (Qrequire, Qnil);
+	if (load != rep_NULL)
+	{
+	    rep_GC_root gc_fun, gc_funarg;
+	    repv tmp;
+
+	    rep_PUSHGC (gc_funarg, funarg);
+	    rep_PUSHGC (gc_fun, fun);
+	    tmp = rep_call_lisp1 (load, file);
+	    rep_POPGC; rep_POPGC;
+
+	    if (!tmp)
+		return rep_NULL;
+
+	    fun = Fsymbol_value (fun, Qnil);
+	}
+	else
+	    fun = rep_NULL;
+    }
+
+    if (fun != rep_NULL)
+    {
+	/* Magically replace one closure by another without losing eq-ness */
+	repv tmp = fun;
+	if (rep_CONSP(tmp) && rep_CAR(tmp) == Qmacro)
+	    tmp = rep_CDR(tmp);
+	if (rep_FUNARGP(tmp))
+	{
+	    rep_FUNARG(funarg)->fun = rep_FUNARG(tmp)->fun;
+	    rep_FUNARG(funarg)->name = rep_FUNARG(tmp)->name;
+	    rep_FUNARG(funarg)->env = rep_FUNARG(tmp)->env;
+	    rep_FUNARG(funarg)->special_env = rep_FUNARG(tmp)->special_env;
+	    rep_FUNARG(funarg)->fh_env = rep_FUNARG(tmp)->fh_env;
+	    rep_FUNARG(funarg)->structure = rep_FUNARG(tmp)->structure;
+	}
+	else
+	    rep_FUNARG(funarg)->fun = Qnil;
+    }
+    return fun;
 }
 
 DEFSTRING(max_depth, "max-lisp-depth exceeded, possible infinite recursion?");
@@ -1460,63 +1523,68 @@ Calls FUNCTION with arguments ARGS... and returns the result.
 static repv
 eval(repv obj)
 {
-    repv result = rep_NULL;
-
     switch(rep_TYPE(obj))
     {
-	repv funcobj;
+	repv ret;
 
     case rep_Symbol:
-	result = Fsymbol_value(obj, Qnil);
-	break;
+	return Fsymbol_value(obj, Qnil);
 
     case rep_Cons:
+	if (++rep_lisp_depth > rep_max_lisp_depth)
+	{
+	    rep_lisp_depth--;
+	    return Fsignal(Qerror, rep_LIST_1(rep_VAL(&max_depth)));
+	}
 	if (rep_CONSP (rep_CAR (obj)) && rep_CAAR (obj) == Qlambda)
 	{
 	    /* inline lambda; don't need to enclose it.. */
-	    result = rep_eval_lambda (rep_CAR (obj), rep_CDR (obj),
-				      rep_TRUE, rep_TRUE);
-	    break;
-	}
-	funcobj = Feval (rep_CAR(obj));
-	if(funcobj == rep_NULL)
-	    goto end;
-	if(rep_CELL8_TYPEP(funcobj, rep_SF))
-	    result = rep_SFFUN(funcobj)(rep_CDR(obj));
-	else if(rep_CONSP(funcobj) && rep_CAR(funcobj) == Qmacro)
-	{
-	    /* A macro */
-	    repv form;
-	    if(rep_single_step_flag
-	       && (form = Fsymbol_value(Qdebug_macros, Qt))
-	       && rep_NILP(form))
-	    {
-		/* Debugging macros gets tedious; don't
-		   bother when debug-macros is nil. */
-		rep_single_step_flag = rep_FALSE;
-		form = Fmacroexpand(obj, Qnil);
-		rep_single_step_flag = rep_TRUE;
-	    }
-	    else
-		form = Fmacroexpand(obj, Qnil);
-	    if(form != rep_NULL)
-		result = Feval(form);
+	    ret = rep_eval_lambda (rep_CAR (obj), rep_CDR (obj),
+				   rep_TRUE, rep_TRUE);
 	}
 	else
-	    result = rep_funcall(funcobj, rep_CDR(obj), rep_TRUE);
-	break;
+	{
+	    repv funcobj;
+	    rep_GC_root gc_obj;
+	    rep_PUSHGC (gc_obj, obj);
+	    funcobj = Feval (rep_CAR(obj));
+	    rep_POPGC;
+	    if(funcobj == rep_NULL)
+		ret = rep_NULL;
+	    else if(rep_CELL8_TYPEP(funcobj, rep_SF))
+		ret = rep_SFFUN(funcobj)(rep_CDR(obj));
+	    else if(rep_CONSP(funcobj) && rep_CAR(funcobj) == Qmacro)
+	    {
+		/* A macro */
+		repv form;
+		if(rep_single_step_flag
+		   && (form = Fsymbol_value(Qdebug_macros, Qt))
+		   && rep_NILP(form))
+		{
+		    /* Debugging macros gets tedious; don't
+		    bother when debug-macros is nil. */
+		    rep_single_step_flag = rep_FALSE;
+		    form = Fmacroexpand(obj, Qnil);
+		    rep_single_step_flag = rep_TRUE;
+		}
+		else
+		    form = Fmacroexpand(obj, Qnil);
+
+		ret = form ? Feval (form) : rep_NULL;
+	    }
+	    else
+	    {
+		rep_lisp_depth--;
+		return rep_funcall(funcobj, rep_CDR(obj), rep_TRUE);
+	    }
+	}
+	rep_lisp_depth--;
+	return ret;
 
     default:
-	result = obj;
-	break;
+	return obj;
     }
-
-    /* In case I missed a non-local exit somewhere.  */
-    if(rep_throw_value != rep_NULL)
-	result = rep_NULL;
-
-end:
-    return result;
+    /* not reached */
 }
 
 DEFUN("eval", Feval, Seval, (repv obj), rep_Subr1) /*
@@ -2186,9 +2254,10 @@ DEFUN("debug-frame-environment", Fdebug_frame_environment,
 	fp = fp->next;
     if (fp != 0)
     {
-	return rep_list_3 (fp->saved_env,
+	return rep_list_4 (fp->saved_env,
 			   fp->saved_special_env,
-			   fp->saved_fh_env);
+			   fp->saved_fh_env,
+			   fp->saved_structure);
     }
     else
 	return Qnil;
@@ -2211,12 +2280,15 @@ void
 rep_lisp_init(void)
 {
     rep_INTERN(quote); rep_INTERN(lambda); rep_INTERN(macro);
-    rep_INTERN(backquote); rep_INTERN(backquote_unquote); rep_INTERN(backquote_splice);
+    rep_INTERN(backquote); rep_INTERN(backquote_unquote);
+    rep_INTERN(backquote_splice);
     rep_INTERN(autoload); rep_INTERN(function);
+    rep_INTERN(structure_ref);
     rep_INTERN_SPECIAL(standard_input); rep_INTERN_SPECIAL(standard_output);
     rep_INTERN(debug_entry); rep_INTERN(debug_exit); rep_INTERN(debug_error_entry);
     rep_INTERN(amp_optional); rep_INTERN(amp_rest); rep_INTERN(amp_aux);
     rep_mark_static((repv *)&rep_throw_value);
+    rep_ADD_INTERNAL_SUBR (S_scheme_bool_printer);
     rep_ADD_SUBR(Seval);
     rep_ADD_SUBR(Sfuncall);
     rep_ADD_SUBR(Sprogn);
@@ -2271,6 +2343,6 @@ rep_lisp_init(void)
     Fset (Qprint_level, Qnil);
     rep_INTERN(newlines);
 
-    rep_INTERN_SPECIAL(autoload_verbose);
     rep_INTERN(load);
+    rep_INTERN(require);
 }
