@@ -895,7 +895,10 @@ last garbage-collection is greater than `garbage-threshold'.
     while(win != 0)
     {
 	if(win->w_Window)
+	{
 	    MARKVAL(VAL(win));
+	    mark_merged_faces(win);
+	}
 	win = win->w_Next;
     }
 
