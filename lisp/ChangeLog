@@ -3,6 +3,11 @@ src/1999-02-28  John Harper  <john@dcs.warwick.ac.uk>
 	* MAJOR CHANGES: separated all LISP interpreter specific parts
 	into a separate library, librep (Read-Eval-Print)
 
+1999-02-12  John Harper  <john@dcs.warwick.ac.uk>
+
+        * tilde.jl: canonicalise the user-home-directory before
+        comparing it against the original default-directory
+
 1999-02-02  John Harper  <john@dcs.warwick.ac.uk>
 
 	* compiler.jl (comp-push-label-addr): new function, replaces
