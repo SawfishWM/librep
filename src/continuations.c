@@ -219,10 +219,10 @@ struct rep_continuation_struct {
     int lisp_depth;
 };
 
-#define rep_CONTIN(v)		((rep_continuation *)rep_PTR(v))
-#define rep_CONTINP(v)		rep_CELL16_TYPEP(v, rep_continuation_type)
+#define rep_CONTIN(v)	((rep_continuation *)rep_PTR(v))
+#define rep_CONTINP(v)	rep_CELL16_TYPEP(v, rep_continuation_type)
 
-#define CF_INVALID		(1 << rep_CELL16_TYPE_BITS)
+#define CF_INVALID	(1 << rep_CELL16_TYPE_BITS)
 
 /* the cell16 typecode allocated for continuation objects */
 static int rep_continuation_type;
@@ -242,11 +242,12 @@ struct rep_thread_struct {
     struct timeval run_at;
 };
 
-#define THREADP(v)		rep_CELL16_TYPEP(v, rep_thread_type)
-#define THREAD(v)		((rep_thread *) rep_PTR (v))
+#define XTHREADP(v)	rep_CELL16_TYPEP(v, rep_thread_type)
+#define THREADP(v)	(XTHREADP (v) && !(THREAD (v)->car & TF_EXITED))
+#define THREAD(v)	((rep_thread *) rep_PTR (v))
 
-#define TF_EXITED (1 << (rep_CELL16_TYPE_BITS + 0))
-#define TF_SUSPENDED  (1 << (rep_CELL16_TYPE_BITS + 1))
+#define TF_EXITED	(1 << (rep_CELL16_TYPE_BITS + 0))
+#define TF_SUSPENDED	(1 << (rep_CELL16_TYPE_BITS + 1))
 
 static int rep_thread_type;
 static rep_thread *threads;
@@ -339,6 +340,8 @@ rep_call_with_barrier (repv (*callback)(repv), repv arg,
 
     if (closed)
     {
+	rep_thread *ptr;
+
     again:
 	if (rep_throw_value == exit_barrier_cell)
 	{
@@ -349,7 +352,7 @@ rep_call_with_barrier (repv (*callback)(repv), repv arg,
 	    ret = Qnil;
 	}
 
-	if (b.active != 0)
+	if (rep_throw_value == rep_NULL && b.active != 0)
 	{
 	    /* An active thread exited. Calling thread_delete () on the
 	       active thread will call thread_invoke (). That will
@@ -369,6 +372,13 @@ rep_call_with_barrier (repv (*callback)(repv), repv arg,
 		    c->car |= CF_INVALID;
 	    }
 	}
+
+	for (ptr = b.head; ptr != 0; ptr = ptr->next)
+	    ptr->car |= TF_EXITED;
+	for (ptr = b.susp_head; ptr != 0; ptr = ptr->next)
+	    ptr->car |= TF_EXITED;
+	if (b.active != 0)
+	    b.active->car |= TF_EXITED;
     }
 
     DB(("with-barrier[%s]: out %p (%d)\n",
@@ -417,11 +427,13 @@ common_ancestor (rep_barrier *current, rep_barrier **dest_hist, int dest_depth)
     for (ptr = current; ptr != 0; ptr = ptr->next)
     {
 	int i;
+	DB (("ptr: %p\n", ptr->point));
 	for (i = first_dest; i < dest_depth; i++)
 	{
+	    DB (("dest: %p\n", dest_hist[i]->point));
 	    if (dest_hist[i]->point == ptr->point)
 		return ptr;
-	    else if (SP_OLDER_P (dest_hist[i]->point, ptr->point))
+	    else if (SP_NEWER_P (dest_hist[i]->point, ptr->point))
 		first_dest = i + 1;
 	}
 	if (ptr->closed)
@@ -902,6 +914,7 @@ thread_delete (rep_thread *t)
     rep_thread *active = root->head;
 
     unlink_thread (t);
+    t->car |= TF_EXITED;
     if (active == t)
 	thread_invoke (active);
 }
@@ -954,9 +967,18 @@ make_thread (repv thunk, repv name)
     {
 	ret = rep_call_lisp0 (thunk);
 	t->car |= TF_EXITED;
-	thread_delete (t);
-	thread_invoke ();
-	assert (rep_throw_value == exit_barrier_cell);
+	if (ret != rep_NULL)
+	{
+	    thread_delete (t);
+	    thread_invoke ();
+	    assert (rep_throw_value == exit_barrier_cell);
+	}
+	else
+	{
+	    /* exited with a throw, throw out of the dynamic root */
+	    rep_CDR (exit_barrier_cell) = rep_throw_value;
+	    rep_throw_value = exit_barrier_cell;
+	}
 	return 0;
     }
 }
@@ -1213,7 +1235,6 @@ static void
 call_with_inwards (void *data_)
 {
     repv *data = data_;
-    printf ("binding %d\n", data[0]);
     if (data[0] != rep_NULL)
 	data[1] = rep_bind_object (data[0]);
     else
@@ -1224,7 +1245,6 @@ static void
 call_with_outwards (void *data_)
 {
     repv *data = data_;
-    printf ("unbinding %d\n", data[1]);
     if (data[1] != rep_NULL)
     {
 	rep_unbind_object (data[1]);
@@ -1405,7 +1425,7 @@ threadp ARG
 Return `t' if ARG is a thread object.
 ::end:: */
 {
-    return THREADP (arg) ? Qt : Qnil;
+    return XTHREADP (arg) ? Qt : Qnil;
 }
 
 DEFUN("thread-suspended-p", Fthread_suspended_p,
@@ -1418,6 +1438,18 @@ Return `t' if THREAD is currently suspended from running.
 {
     rep_DECLARE1 (th, THREADP);
     return (THREAD (th)->car & TF_SUSPENDED) ? Qt : Qnil;
+}
+
+DEFUN("thread-exited-p", Fthread_exited_p,
+      Sthread_exited_p, (repv th), rep_Subr1) /*
+::doc:thread-exited-p::
+thread-exited-p THREAD
+
+Return `t' if THREAD has exited.
+::end:: */
+{
+    rep_DECLARE1 (th, XTHREADP);
+    return (THREAD (th)->car & TF_EXITED) ? Qt : Qnil;
 }
 
 DEFUN("current-thread", Fcurrent_thread,
@@ -1510,7 +1542,7 @@ thread-name THREAD
 Return the name of the thread THREAD.
 ::end:: */
 {
-    rep_DECLARE1 (th, THREADP);
+    rep_DECLARE1 (th, XTHREADP);
     return THREAD (th)->name;
 }
 
@@ -1543,6 +1575,7 @@ rep_continuations_init (void)
     rep_ADD_SUBR(Sthread_wake);
     rep_ADD_SUBR(Sthreadp);
     rep_ADD_SUBR(Sthread_suspended_p);
+    rep_ADD_SUBR(Sthread_exited_p);
     rep_ADD_SUBR(Scurrent_thread);
     rep_ADD_SUBR(Sall_threads);
     rep_ADD_SUBR(Sthread_queue_length);
