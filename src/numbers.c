@@ -322,7 +322,7 @@ maybe_demote (repv in)
 	{
 	    rep_number_z *z = make_number (rep_NUMBER_BIGNUM);
 	    mpz_init_set (z->z, mpq_numref (rep_NUMBER (in,q)));
-	    in = rep_VAL (in);
+	    in = rep_VAL (z);
 	}
 	else
 	    break;
