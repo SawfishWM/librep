@@ -51,9 +51,9 @@
       ;; that things like "~/foo/../bar" expand to "~/bar"
       (let
 	  ((file-name (car args)))
-	(if (string-looking-at "~[^/]+/?" file-name)
-	    (concat (substring file-name (match-start) (match-end))
-		    (expand-file-name (substring file-name (match-end)) "."))
+	(if (string-looking-at "(~[^/]*/)." file-name)
+	    (concat (substring file-name (match-start 1) (match-end 1))
+		    (expand-file-name (substring file-name (match-end 1)) "."))
 	  file-name)))
      ((memq op '(file-name-nondirectory file-name-directory
 		file-name-as-directory directory-file-name))

@@ -1,5 +1,9 @@
 2001-09-02  John Harper  <jsh@pixelslut.com>
 
+	* rep/io/file-handlers/tilde.jl (tilde-file-handler): fixed
+	last change to this file so that it actually does expand the
+	stuff after the tilde sometimes!
+
 	* rep/vm/compiler/rep.jl (compile-log): new function, handles
 	the new `log' function (which optionally has a BASE parameter).
 	Compiles this into two calls to log and a divide
