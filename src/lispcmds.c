@@ -2080,6 +2080,8 @@ DEFSTRING(jlc, ".jlc");
 void
 rep_lispcmds_init(void)
 {
+    DEFSTRING (common_exec, REP_COMMON_EXEC_DIRECTORY);
+
     rep_ADD_SUBR(Squote);
     rep_ADD_SUBR(Slambda);
     rep_ADD_SUBR(Scar);
@@ -2186,7 +2188,10 @@ rep_lispcmds_init(void)
     if(getenv("REPDOCFILE") != 0)
 	Fset (Qdocumentation_file, rep_string_dup(getenv("REPDOCFILE")));
     else
-	Fset (Qdocumentation_file, rep_string_dup(REP_DOC_FILE));
+    {
+	DEFSTRING (doc_file, REP_DOC_FILE);
+	Fset (Qdocumentation_file, rep_VAL (&doc_file));
+    }
 
     rep_INTERN_SPECIAL(documentation_files);
     Fset (Qdocumentation_files,
@@ -2212,7 +2217,7 @@ rep_lispcmds_init(void)
     }
     Fset (Qdl_load_path,
 	  Fcons (Fsymbol_value (Qexec_directory, Qt),
-		 Fcons (rep_string_dup (REP_COMMON_EXEC_DIRECTORY),
+		 Fcons (rep_VAL (&common_exec),
 			Fnreverse(Fsymbol_value (Qdl_load_path, Qt)))));
 
     rep_INTERN_SPECIAL(after_load_alist);

@@ -1879,9 +1879,10 @@ rep_system (char *command)
     switch (pid)
     {
 	char *argv[4];
+	DEFSTRING (cant_fork, "can't fork ()");
 
     case -1:
-	return Fsignal (Qerror, Fcons (rep_string_dup ("Can't fork"), Qnil));
+	return Fsignal (Qerror, Fcons (rep_VAL (&cant_fork), Qnil));
 
     case 0:
 	child_build_environ ();
@@ -1918,7 +1919,10 @@ rep_system (char *command)
 		break;
 	    case -1:
 		if (errno != EINTR && errno != EAGAIN)
-		    return Fsignal (Qerror, Fcons (rep_string_dup ("Can't waitpid"), Qnil));
+		{
+		    DEFSTRING (cant_waitpid, "can't waitpid ()");
+		    return Fsignal (Qerror, Fcons (rep_VAL (&cant_waitpid), Qnil));
+		}
 		break;
 	    default:
 		return rep_MAKE_INT (status);

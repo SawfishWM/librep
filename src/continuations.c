@@ -519,8 +519,8 @@ primitive_invoke_continuation (rep_continuation *c, repv ret)
     anc = common_ancestor (barriers, dest_hist, depth);
     if (anc == 0)
     {
-	Fsignal (Qerror,
-		 rep_LIST_1 (rep_string_dup ("unreachable continuation")));
+	DEFSTRING (unreachable, "unreachable continuation");
+	Fsignal (Qerror, rep_LIST_1 (rep_VAL (&unreachable)));
 	return;
     }
 
@@ -563,8 +563,8 @@ DEFUN("primitive-invoke-continuation", Fprimitive_invoke_continuation,
     if (cont == rep_NULL || !rep_CONTINP(cont)
 	|| (rep_CONTIN(cont)->car & CF_INVALID))
     {
-	return Fsignal (Qerror, rep_LIST_1 (rep_string_dup
-					    ("invalid continuation")));
+	DEFSTRING (invalid, "invalid continuation");
+	return Fsignal (Qerror, rep_LIST_1 (rep_VAL (&invalid)));
     }
 
     primitive_invoke_continuation (rep_CONTIN (cont), ret);
@@ -623,7 +623,10 @@ primitive_call_cc (repv (*callback)(rep_continuation *, void *), void *data)
     repv ret;
 
     if (root_barrier == 0)
-	return Fsignal (Qerror, rep_LIST_1 (rep_string_dup ("No dynamic root")));
+    {
+	DEFSTRING (no_root, "no dynamic root");
+	return Fsignal (Qerror, rep_LIST_1 (rep_VAL (&no_root)));
+    }
 
     c = rep_ALLOC_CELL (sizeof (rep_continuation));
     rep_data_after_gc += sizeof (rep_continuation);

@@ -2231,6 +2231,8 @@ rep_compare_error(repv error, repv handler)
 void
 rep_handle_error(repv error, repv data)
 {
+    DEFSTRING (some_error, "some kind of error occurred");
+
     static int mutex;
     if (mutex++ == 0)
     {
@@ -2243,7 +2245,7 @@ rep_handle_error(repv error, repv data)
     }
 
     Fbeep();
-    Fwrite (Qt, rep_string_dup ("some kind of error occurred"), Qnil);
+    Fwrite (Qt, rep_VAL (&some_error), Qnil);
 
 out:
     mutex--;
