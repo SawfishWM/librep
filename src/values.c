@@ -360,6 +360,40 @@ rep_ptr_cmp(repv v1, repv v2)
 	return 1;
 }
 
+repv
+rep_box_pointer (void *p)
+{
+    unsigned rep_PTR_SIZED_INT low;
+    low = (unsigned rep_PTR_SIZED_INT)p;
+    if (low <= rep_LISP_MAX_INT)
+	return rep_MAKE_INT (low);
+    else
+    {
+	int i;
+	unsigned rep_PTR_SIZED_INT high = (unsigned rep_PTR_SIZED_INT)p;
+	for (i = rep_PTR_SIZED_INT_BITS / 2; i < rep_PTR_SIZED_INT_BITS; i++)
+	    low &= ~(1 << i);
+	high = high >> (rep_PTR_SIZED_INT_BITS/2);
+	return Fcons (rep_MAKE_INT(high), rep_MAKE_INT(low));
+    }
+}
+
+void *
+rep_unbox_pointer (repv v)
+{
+    if (rep_INTP(v))
+	return (void *) rep_INT(v);
+    else if (rep_CONSP(v))
+    {
+	unsigned rep_PTR_SIZED_INT low, high;
+	low = rep_INT(rep_CDR(v));
+	high = rep_INT(rep_CAR(v));
+	return (void *) (low | high << (rep_PTR_SIZED_INT_BITS/2));
+    }
+    else
+	return 0;
+}
+
 
 /* Cons */
 
