@@ -1,3 +1,7 @@
+2005-04-02  John Harper  <jsh@unfactored.org>
+
+	* ffi.c: support FFI_TYPE_LONGDOUBLE == FFI_TYPE_DOUBLE
+
 2005-02-06  John Harper  <jsh@unfactored.org>
 
 	* lisp.c: backtrace-on-error and debug-on-error ignore
