@@ -110,6 +110,24 @@ rep_compile_regexp(repv re)
     }
 }
 
+/* Remove any cached compilation of STRING from the regexp cache */
+void
+rep_string_modified (repv string)
+{
+    struct cached_regexp **x;
+    for (x = &cached_regexps; *x != 0; x = &((*x)->next))
+    {
+	if ((*x)->regexp == string)
+	{
+	    /* found the string, remove it from the cache */
+	    struct cached_regexp *ptr = *x;
+	    *x = ptr->next;
+	    free (ptr->compiled);
+	    rep_free (ptr);
+	}
+    }
+}
+
 /* Called at GC */
 static void
 mark_cached_regexps(void)
