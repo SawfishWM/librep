@@ -167,7 +167,7 @@
   ;; XXX But I think that's better than (symbol? '()) => #t  :-(
 
   (define (symbol? arg)
-    (cond ((eq arg '()) #f)
+    (cond ((memq arg '(nil #f #t)) #f)
 	  ((symbolp arg) #t)
 	  (t #f)))
     
@@ -202,10 +202,6 @@
   (define negative? (make-predicate negativep))
   (define odd? (make-predicate oddp))
   (define even? (make-predicate evenp))
-
-  (define (/ . args)
-    (cond ((cdr args) (apply rep#/ args))
-	  (t (rep#/ 1 (car args)))))
 
   (define (rationalize x y)
     (error "rationalize is unimplemented"))
