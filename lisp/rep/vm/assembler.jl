@@ -62,11 +62,10 @@
 	  (next-const-id 0))
 
       (define (get-label name)
-	(let ((l (table-ref labels name)))
-	  (unless l
-	    (setq l (make-label name))
-	    (table-set labels name l))
-	  l))
+	(or (table-ref labels name)
+	    (let ((l (make-label name)))
+	      (table-set labels name l)
+	      l)))
 
       (define (get-const-id value)
 	(or (cdr (assoc value constants))
