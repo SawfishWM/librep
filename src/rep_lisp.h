@@ -175,6 +175,14 @@ typedef struct lisp_cons_block {
 /* Get the cdr when GC is in progress. */
 #define VGCDR(v)	(VCDR(v) & ~VALUE_CONS_MARK_BIT)
 
+/* True if cons cell V is mutable (i.e. not read-only). */
+#ifdef DUMPED
+# define CONS_WRITABLE_P(v) (!(VCONS(v) >= &dumped_cons_start \
+			       && VCONS(v) < &dumped_cons_end))
+#else
+# define CONS_WRITABLE_P(v) TRUE
+#endif
+
 
 /* Type data */
 
@@ -192,24 +200,25 @@ typedef struct lisp_cons_block {
 #define V_Int		0x02
 #define V_Vector	0x03
 #define V_String	0x05
-#define V_Void		0x07
-#define V_Process	0x09
-#define V_Var		0x0b
-#define V_SF		0x0d
-#define V_Subr0		0x0f
-#define V_Subr1		0x11
-#define V_Subr2		0x13
-#define V_Subr3		0x15
-#define V_Subr4		0x17
-#define V_Subr5		0x19
-#define V_SubrN		0x1b
-#define V_Buffer	0x1d
-#define V_Window	0x1f
-#define V_View		0x21
-#define V_Mark		0x23
-#define V_File		0x25
-#define V_GlyphTable	0x27
-#define V_Compiled	0x29
+#define V_Compiled	0x07
+#define V_Void		0x09
+#define V_Process	0x0b
+#define V_Var		0x0d
+#define V_SF		0x0f
+#define V_Subr0		0x11
+#define V_Subr1		0x13
+#define V_Subr2		0x15
+#define V_Subr3		0x17
+#define V_Subr4		0x19
+#define V_Subr5		0x1b
+#define V_SubrN		0x1d
+#define V_Buffer	0x1f
+#define V_Window	0x21
+#define V_View		0x23
+#define V_Mark		0x25
+#define V_File		0x27
+#define V_GlyphTable	0x29
+#define V_Cell16	0x3f		/* reserved, not yet used */
 #define V_MAX		0x40		/* nothing from here on */
 
 /* Assuming that V is a cell, return the type code */
@@ -409,7 +418,13 @@ typedef struct lisp_vector {
 
 #define VECTORP(v)	VCELL8_TYPEP(v, V_Vector)
 
-#define VECTOR_WRITABLE_P(v) (!VCELL8_STATIC_P(v))
+#ifdef DUMPED
+# define VECTOR_WRITABLE_P(v)				\
+    (!(VVECT(v) >= (Lisp_Vector *)&dumped_text_start	\
+       && VVECT(v) < (Lisp_Vector *)&dumped_text_end))
+#else
+# define VECTOR_WRITABLE_P(v) TRUE
+#endif
 
 
 /* Compiled Lisp functions; this is a vector. Some of these definitions
@@ -438,8 +453,6 @@ typedef struct lisp_vector {
 
 /* Optional sixth element is interactive specification. */
 #define COMPILED_INTERACTIVE(v) ((VVECT_LEN(v) >= 6) ? VVECTI(v, 5) : sym_nil)
-
-#define COMPILED_WRITABLE_P(v) VECTOR_WRITABLE_P(v)
 
 
 /* Positions */
@@ -754,5 +767,23 @@ struct Lisp_Call {
 /* True when an interrupt has occurred; this means that the function
    should exit as soon as possible, returning LISP_NULL. */
 #define INT_P (throw_value != LISP_NULL)
+
+
+/* Dumped Lisp code */
+
+#ifdef DUMPED
+
+extern PTR_SIZED_INT dumped_text_start, dumped_data_start;
+extern PTR_SIZED_INT dumped_text_end, dumped_data_end;
+
+extern Lisp_String dumped_strings_start, dumped_strings_end;
+extern Lisp_Cons dumped_cons_start, dumped_cons_end;
+extern Lisp_Symbol dumped_symbols_start, dumped_symbols_end;
+extern Lisp_Vector dumped_vectors_start, dumped_vectors_end;
+extern Lisp_Vector dumped_bytecode_start, dumped_bytecode_end;
+
+#define DUMPED_SYM_NIL ((&dumped_symbols_end)-1)	/* trust me */
+
+#endif /* DUMPED */
 
 #endif /* _LISP_H */
