@@ -34,6 +34,8 @@ static DEFSTRING(lisp_lib_dir, LISP_LIB_DIR);
 static DEFSTRING(site_lisp_dir, SITE_LISP_DIR);
 static DEFSTRING(div_zero, "Divide by zero");
 
+DEFSYM(or, "or");
+DEFSYM(and, "and");
 DEFSYM(load_path, "load-path");
 DEFSYM(after_load_alist, "after-load-alist");
 DEFSYM(lisp_lib_dir, "lisp-lib-dir"); /*
@@ -58,21 +60,6 @@ quote ARG
 'ARG
 
 Returns ARG.
-::end:: */
-{
-    if(CONSP(args))
-	return(VCAR(args));
-    return signal_missing_arg(1);
-}
-
-_PR VALUE cmd_function(VALUE);
-DEFUN("function", cmd_function, subr_function, (VALUE args), V_SF, DOC_function) /*
-::doc:function::
-function ARG
-#'ARG
-
-Normally the same as `quote'. When being compiled, if ARG is not a symbol
-it causes ARG to be compiled as a lambda expression.
 ::end:: */
 {
     if(CONSP(args))
@@ -236,16 +223,7 @@ list ARGS...
 Returns a new list with elements ARGS...
 ::end:: */
 {
-    VALUE res = sym_nil;
-    VALUE *ptr = &res;
-    while(CONSP(args))
-    {
-	if(!(*ptr = cmd_cons(VCAR(args), sym_nil)))
-	    return LISP_NULL;
-	ptr = &VCDR(*ptr);
-	args = VCDR(args);
-    }
-    return(res);
+    return args;
 }
 
 _PR VALUE cmd_make_list(VALUE, VALUE);
@@ -258,17 +236,11 @@ INITIAL-VALUE, or nil.
 ::end:: */
 {
     int i;
-    VALUE res = sym_nil;
-    VALUE *last;
+    VALUE list = sym_nil;
     DECLARE1(len, INTP);
-    last = &res;
-    for(i = 0; i < VINT(len); i++)
-    {
-	if(!(*last = cmd_cons(init, sym_nil)))
-	    return LISP_NULL;
-	last = &VCDR(*last);
-    }
-    return(res);
+    for(i = 0; list != LISP_NULL && i < VINT(len); i++)
+	list = cmd_cons(init, list);
+    return(list);
 }
 
 _PR VALUE cmd_append(VALUE);
@@ -385,11 +357,9 @@ reverse order.
     while(CONSP(head))
     {
 	res = cmd_cons(VCAR(head), res);
-	if(res == LISP_NULL)
-	    return(LISP_NULL);
 	head = VCDR(head);
 	TEST_INT;
-	if(INT_P)
+	if(res == LISP_NULL || INT_P)
 	    return(LISP_NULL);
     }
     return(res);
@@ -419,7 +389,8 @@ were. This function is destructive towards it's argument.
 	TEST_INT;
 	if(INT_P)
 	    return(LISP_NULL);
-    } while((head = nxt));
+	head = nxt;
+    } while(head != LISP_NULL);
     return(res);
 }
 
@@ -612,7 +583,7 @@ returns a new list constructed from the results, ie,
 	PUSHGC(gc_res, res);
 	PUSHGC(gc_argv, argv);
 	PUSHGC(gc_list, list);
-	while(res && CONSP(list))
+	while(res != LISP_NULL && CONSP(list))
 	{
 	    if(!(*last = cmd_cons(sym_nil, sym_nil)))
 		return(LISP_NULL);
@@ -626,10 +597,7 @@ returns a new list constructed from the results, ie,
 	    }
 	    TEST_INT;
 	    if(INT_P)
-	    {
 		res = LISP_NULL;
-		break;
-	    }
 	}
 	POPGC; POPGC; POPGC;
     }
@@ -651,7 +619,7 @@ Applies FUNCTION to each element in LIST, discards the results.
 	return(LISP_NULL);
     PUSHGC(gc_argv, argv);
     PUSHGC(gc_list, list);
-    while(res && CONSP(list))
+    while(res != LISP_NULL && CONSP(list))
     {
 	VCAR(VCDR(argv)) = VCAR(list);
 	if(!cmd_funcall(argv))
@@ -2194,96 +2162,47 @@ Returns the name (a string) associated with SUBR.
     }
 }
 
-_PR VALUE cmd_eval_hook(VALUE);
-DEFUN("eval-hook", cmd_eval_hook, subr_eval_hook, (VALUE args), V_SubrN, DOC_eval_hook) /*
-::doc:eval_hook::
-eval-hook HOOK ARGS...
+_PR VALUE cmd_call_hook(VALUE hook, VALUE arg_list, VALUE type);
+DEFUN("call-hook", cmd_call_hook, subr_call_hook, (VALUE hook, VALUE arg_list, VALUE type), V_Subr3, DOC_call_hook) /*
+::doc:call_hook::
+call-hook HOOK-SYMBOL ARG-LIST [TYPE]
 
-Evaluate the hook, HOOK (a symbol), with arguments ARGS
+Call the hook named HOOK-SYMBOL, passing all functions the arguments in the
+list ARG-LIST.
 
-The way hooks work is that the hook-symbol's value is a list of functions
-to call. Each function in turn is called with ARGS until one returns non-nil,
-this non-nil value is then the result of `eval-hook'. If all functions return
-nil then `eval-hook' returns nil.
+TYPE defines how the return values of each function in the hook are
+treated. If TYPE is nil they are ignored, if TYPE is the symbol `and'
+the hook aborts after a function returns nil, if TYPE is `or' the hook
+aborts when a function returns non-nil.
+
+In all cases the value returned by the last-evaluated function is
+returned.
 ::end:: */
 {
-    if(CONSP(args))
+    GC_root gc_hook, gc_arg_list, gc_type;
+    VALUE res = sym_nil;
+    DECLARE1(hook, SYMBOLP);
+    DECLARE2(arg_list, LISTP);
+    hook = cmd_symbol_value(hook, sym_t);
+    if(VOIDP(hook) || NILP(hook))
+	return sym_nil;
+    PUSHGC(gc_hook, hook);
+    PUSHGC(gc_arg_list, arg_list);
+    PUSHGC(gc_type, type);
+    while(CONSP(hook))
     {
-	VALUE hook = VCAR(args);
-	VALUE alist = VCDR(args);
-	VALUE res = sym_nil;
-	GC_root gc_alist, gc_hook;
-	PUSHGC(gc_alist, alist);
-	switch(VTYPE(hook))
-	{
-	case V_StaticString:
-	case V_DynamicString:
-	    if(!(hook = cmd_find_symbol(hook, sym_nil)))
-		goto end;
-	    /* FALL THROUGH */
-	case V_Symbol:
-	    hook = cmd_symbol_value(hook, sym_t);
-	    if(VOIDP(hook))
-		goto end;
-	    break;
-	}
-	PUSHGC(gc_hook, hook);
-	while(res && NILP(res) && CONSP(hook))
-	{
-	    res = funcall(VCAR(hook), alist);
-	    hook = VCDR(hook);
-	    TEST_INT;
-	    if(INT_P)
-		res = LISP_NULL;
-	}
-	POPGC;
-end:
-	POPGC;
-	return(res);
-    }
-    return signal_missing_arg(1);
-}
-
-_PR VALUE cmd_eval_hook2(VALUE hook, VALUE arg);
-DEFUN("eval-hook2", cmd_eval_hook2, subr_eval_hook2, (VALUE hook, VALUE arg), V_Subr2, DOC_eval_hook2) /*
-::doc:eval_hook2::
-eval-hook2 HOOK ARG
-
-Similar to `eval-hook', the only reason this function exists is because it
-is easier to call a 2-argument function from C than an N-argument function.
-::end:: */
-{
-    VALUE res = sym_nil, alist;
-    /* Not possible to use GC_root's since this is often called from C code
-       which may not be protected.  */
-    int oldgci = gc_inhibit;
-    if(!(alist = cmd_cons(arg, sym_nil)))
-	return(LISP_NULL);
-    gc_inhibit = TRUE;
-    switch(VTYPE(hook))
-    {
-    case V_StaticString:
-    case V_DynamicString:
-	if(!(hook = cmd_find_symbol(hook, sym_nil)))
-	    goto end;
-	/* FALL THROUGH */
-    case V_Symbol:
-	hook = cmd_symbol_value(hook, sym_t);
-	if(VOIDP(hook))
-	    goto end;
-	break;
-    }
-    while(res && NILP(res) && CONSP(hook))
-    {
-	res = funcall(VCAR(hook), alist);
+	res = funcall(VCAR(hook), arg_list);
 	hook = VCDR(hook);
 	TEST_INT;
 	if(INT_P)
 	    res = LISP_NULL;
+	if(res == LISP_NULL
+	   || (type == sym_and && NILP(res))
+	   || (type == sym_or && !NILP(res)))
+	    break;
     }
-end:
-    gc_inhibit = oldgci;
-    return(res);
+    POPGC; POPGC; POPGC;
+    return res;
 }
 
 _PR VALUE cmd_catch(VALUE);
@@ -2352,19 +2271,6 @@ VALUE from it. TAG and VALUE are both evaluated fully.
     return(LISP_NULL);
 }
 
-_PR VALUE cmd_return(VALUE);
-DEFUN("return", cmd_return, subr_return, (VALUE arg), V_Subr1, DOC_return) /*
-::doc:return::
-return [VALUE]
-
-Arranges it so that the innermost defun returns VALUE (or nil) as its result.
-::end:: */
-{
-    if(!throw_value)
-	throw_value = cmd_cons(sym_defun, arg);
-    return(LISP_NULL);
-}
-
 _PR VALUE cmd_unwind_protect(VALUE);
 DEFUN("unwind-protect", cmd_unwind_protect, subr_unwind_protect, (VALUE args), V_SF, DOC_unwind_protect) /*
 ::doc:unwind_protect::
@@ -2402,7 +2308,6 @@ void
 lispcmds_init(void)
 {
     ADD_SUBR(subr_quote);
-    ADD_SUBR(subr_function);
     ADD_SUBR(subr_defmacro);
     ADD_SUBR(subr_defun);
     ADD_SUBR(subr_defvar);
@@ -2490,11 +2395,9 @@ lispcmds_init(void)
     ADD_SUBR(subr_subr_documentation);
     ADD_SUBR(subr_sequencep);
     ADD_SUBR(subr_subr_name);
-    ADD_SUBR(subr_eval_hook);
-    ADD_SUBR(subr_eval_hook2);
+    ADD_SUBR(subr_call_hook);
     ADD_SUBR(subr_catch);
     ADD_SUBR(subr_throw);
-    ADD_SUBR(subr_return);
     ADD_SUBR(subr_unwind_protect);
     INTERN(load_path); DOC(load_path);
     VSYM(sym_load_path)->value = list_3(VAL(null_string),
@@ -2504,4 +2407,6 @@ lispcmds_init(void)
     VSYM(sym_after_load_alist)->value = sym_nil;
     INTERN(lisp_lib_dir); DOC(lisp_lib_dir);
     VSYM(sym_lisp_lib_dir)->value = VAL(lisp_lib_dir);
+
+    INTERN(or); INTERN(and);
 }
