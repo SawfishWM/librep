@@ -224,6 +224,8 @@
 
 	 ;; test-scm; scm-test --> deleted
 	 ;; test-scm-f; scm-test --> deleted
+	 ;; [ these are only possible because scm-test is only used
+	 ;;   for `cond' tests, not for its actual value ]
 	 ((and (or (eq (car insn0) (bytecode test-scm))
 		   (eq (car insn0) (bytecode test-scm-f)))
 	       (eq (car insn1) (bytecode scm-test)))
@@ -249,6 +251,13 @@
 	    (rplaca insn1 new)
 	    (del-0)
 	    (setq keep-going t)))
+
+	 ;; pushi-0; {add,sub} --> <deleted>
+	 ((and (eq (car insn0) (bytecode pushi-0))
+	       (or (eq (car insn1) (bytecode add))
+		   (eq (car insn1) (bytecode sub))))
+	  (del-0-1)
+	  (setq keep-going t))
 
 	 ;; jmp X; X: --> X:
 	 ((and (eq (car insn0) (bytecode jmp))
