@@ -39,11 +39,10 @@
 					   compile-top-level-structure
 					   compile-top-level-define-structure
 					   compile-structure-ref
-					   call-with-module-declared
+					   compile-function
 					   compile-module)
   (open rep
 	structure-internals
-	compiler
 	compiler-basic
 	compiler-bindings
 	compiler-const
@@ -62,27 +61,27 @@
   ;; if non-nil, the namespace of the module being compiled in; only
   ;; set when compiling code outside a module definition
   (define current-structure (make-fluid
-			     (%get-structure (fluid current-module))))
+			     (get-structure (fluid current-module))))
 
   (define current-language (make-fluid 'rep))
 
   ;; the names of the currently open and accessed modules
   (define open-modules (make-fluid (and (fluid current-structure)
-					(%structure-imports
+					(structure-imports
 					 (fluid current-structure)))))
   (define accessed-modules (make-fluid (and (fluid current-structure)
-					    (%structure-accessible
+					    (structure-accessible
 					     (fluid current-structure)))))
 
 ;;; functions
 
-  (define (get-structure name)
-    (or (%intern-structure name)
-	(compiler-error "Unable to open module" name)))
+  (define (get-structure name &optional non-fatal)
+    (or (intern-structure name)
+	(if non-fatal nil (compiler-error "Unable to open module" name))))
 
   ;; return t if the module called STRUCT exports a variable called VAR
   (defun module-exports-p (struct var)
-    (and (symbolp var) (%structure-exports-p (get-structure struct) var)))
+    (and (symbolp var) (structure-exports-p (get-structure struct) var)))
 
   ;; return t if ARG is a structure reference form
   (defun structure-ref-p (arg)
@@ -107,7 +106,7 @@
 	  ;; on the current module (i.e. we're compiling code not in
 	  ;; a module definition) try looking in that
 	  (if (and (symbolp var) (fluid current-structure)
-		   (%structure-bound-p (fluid current-structure) var))
+		   (structure-bound-p (fluid current-structure) var))
 	      (fluid current-module)
 	    nil)))))
 
@@ -120,13 +119,13 @@
     (cond ((and (symbolp var) (special-variable-p var))
 	   (symbol-value var))
 	  ((and (symbolp var) (fluid current-structure)
-		(%structure-bound-p (fluid current-structure) var))
+		(structure-bound-p (fluid current-structure) var))
 	   (%structure-ref (fluid current-structure) var))
 	  (t
 	   (let* ((struct (locate-variable var))
 		  (module (and struct (get-structure struct))))
 	     (and module
-		  (%structure-bound-p module (variable-stem var))
+		  (structure-bound-p module (variable-stem var))
 		  (%structure-ref module (variable-stem var)))))))
 
   ;; if possible, return the value of variable VAR, else return nil
@@ -135,7 +134,7 @@
       ;; if the value is an autoload, try to load it
       (if (and (closurep value)
 	       (eq (car (closure-function value)) 'autoload))
-	  (%load-autoload value)
+	  (load-autoload value)
 	value)))
 
   ;; return t if the binding of VAR comes from the rep (built-ins) module
@@ -229,18 +228,18 @@
 
   (defun note-require (feature)
     (unless (memq feature (fluid open-modules))
-      (cond ((%get-structure feature)
+      (cond ((get-structure feature t)
 	     (fluid-set open-modules (cons feature (fluid open-modules))))
 	    ((fluid current-structure)
 	     (unless (eval `(featurep ',feature) (fluid current-structure))
 	       (eval `(require ',feature) (fluid current-structure))
-	       (when (%get-structure feature)
+	       (when (get-structure feature t)
 		 (fluid-set open-modules
 			    (cons feature (fluid open-modules))))))
 	    (t
 	     ;; XXX this doesn't work, no alternative..?
 	     (require feature)
-	     (when (%get-structure feature)
+	     (when (get-structure feature t)
 	       (fluid-set open-modules (cons feature
 					     (fluid open-modules))))))))
 
@@ -248,19 +247,19 @@
   ;; to with interpreted code
   (defun note-macro-def (name body)
     (fluid-set macro-env (cons (cons name
-				     (%make-closure-in-structure
-				      body (%get-structure *root-structure*)))
+				     (make-closure-in-structure
+				      body (get-structure *root-structure*)))
 			       (fluid macro-env))))
 
   (defun call-with-module-declared (struct thunk)
-    (let-fluids ((current-module (%structure-name struct))
+    (let-fluids ((current-module (structure-name struct))
 		 (current-structure struct)
 		 (current-language nil))
       (let-fluids ((open-modules (and (fluid current-structure)
-				      (%structure-imports
+				      (structure-imports
 				       (fluid current-structure))))
 		   (accessed-modules (and (fluid current-structure)
-					  (%structure-accessible
+					  (structure-accessible
 					   (fluid current-structure)))))
 	(find-language-module)
 	(thunk))))
@@ -274,13 +273,13 @@
 	  (mapc (lambda (struct)
 		  (if (get struct 'compiler-module)
 		      (progn
-			(%intern-structure (get struct 'compiler-module))
+			(intern-structure (get struct 'compiler-module))
 			(fluid-set current-language struct)
 			(throw 'out))
-		    (when (%get-structure struct)
+		    (when (get-structure struct t)
 		      (setq tocheck (nconc tocheck
-					   (list (%structure-imports
-						  (%get-structure struct))))))))
+					   (list (structure-imports
+						  (get-structure struct))))))))
 		(car tocheck))
 	  (setq tocheck (cdr tocheck)))
 	(compiler-warning
@@ -294,7 +293,7 @@
 
   (defun declare-in-module (form)
     (fluid-set current-module (cadr form))
-    (fluid-set current-structure (%intern-structure (fluid current-module))))
+    (fluid-set current-structure (intern-structure (fluid current-module))))
   (put 'in-module 'compiler-decl-fun declare-in-module)
 
 
@@ -361,20 +360,6 @@
 	(emit-insn (bytecode call) (if name 4 3))
 	(decrement-stack (if name 4 3)))))
 
-  (defun parse-interface (sig)
-    (cond ((null sig) '())
-
-	  ((eq (car sig) 'export)
-	   (cdr sig))
-
-	  ((eq (car sig) 'compound-interface)
-	   (apply append (mapcar parse-interface (cdr sig))))
-
-	  ((symbolp sig)
-	   (if (boundp sig)
-	       (symbol-value sig)
-	     (compiler-error "Don't know this interface" sig)))))
-
   (defun compile-structure-ref (form)
     (let
 	((struct (nth 1 form))
@@ -392,11 +377,28 @@
 
 ;;; exported top-level functions
 
+  (defun compile-function (function)
+    "Compiles the body of the function FUNCTION."
+    (interactive "aFunction to compile:")
+    (let-fluids ((defuns nil)
+		 (defvars nil)
+		 (defines nil)
+		 (current-fun function)
+		 (output-stream nil))
+      (let
+	  ((body (closure-function function)))
+	(unless (bytecodep body)
+	  (call-with-module-declared
+	   (closure-structure function)
+	   (lambda ()
+	     (set-closure-function function (compile-lambda body function)))))
+	function)))
+
   (defun compile-module (struct)
     "Compiles all function bindings in the module named STRUCT."
     (interactive "SModule name:")
-    (let ((struct (%intern-structure struct)))
+    (let ((struct (intern-structure struct)))
       (when struct
-	(%structure-walk (lambda (var value)
-			   (when (closurep value)
-			     (compile-function value))) struct)))))
+	(structure-walk (lambda (var value)
+			  (when (closurep value)
+			    (compile-function value))) struct)))))

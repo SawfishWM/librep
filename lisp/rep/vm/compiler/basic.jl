@@ -28,10 +28,10 @@
 					 lambda-bindings
 					 compile-form-1
 					 compile-body
-					 compile-lambda)
+					 compile-lambda
+					 compile-form)
   (open rep
 	lisp-doc
-	compiler
 	compiler-utils
 	compiler-bindings
 	compiler-modules
@@ -39,7 +39,17 @@
 	compiler-src
 	compiler-inline
 	compiler-lap
+	compiler-opt
+	compiler-asm
 	bytecodes)
+
+  (defvar *compiler-write-docs* nil
+    "When t all doc-strings are appended to the doc file and replaced with
+their position in that file.")
+
+  (defvar *compiler-no-low-level-optimisations* nil)
+
+  (defvar *compiler-debug* nil)
 
   (define current-file (make-fluid))		;the file being compiled
   (define current-fun (make-fluid))		;the function being compiled
@@ -233,4 +243,51 @@
 	  (make-byte-code-subr (compile-lambda-spec args vars)
 			       (nth 1 form) (nth 2 form) (nth 3 form)
 			       (and (not *compiler-write-docs*) doc)
-			       interactive))))))
+			       interactive)))))
+
+  (defun compile-form (form)
+    "Compile the Lisp form FORM into a byte code form."
+
+    (let-fluids ((constant-alist '())
+		 (constant-index 0)
+		 (current-stack 0)
+		 (max-stack 0)
+		 (current-b-stack 0)
+		 (max-b-stack 0)
+		 (intermediate-code '()))
+
+      ;; Do the high-level compilation
+      (compile-form-1 form t)
+      (emit-insn (bytecode return))
+
+      ;; Now we have a [reversed] list of intermediate code
+      (fluid-set intermediate-code (nreverse (fluid intermediate-code)))
+
+      ;; Unless disabled, run the peephole optimiser
+      (unless *compiler-no-low-level-optimisations*
+	(when *compiler-debug*
+	  (format standard-error "lap-0 code: %S\n\n"
+		  (fluid intermediate-code)))
+	(fluid-set intermediate-code (peephole-optimizer
+				      (fluid intermediate-code))))
+      (when *compiler-debug*
+	(format standard-error "lap-1 code: %S\n\n" (fluid intermediate-code)))
+
+      ;; Then optimise the constant layout
+      (unless *compiler-no-low-level-optimisations*
+	(when *compiler-debug*
+	  (format standard-error
+		  "original-constants: %S\n\n" (fluid constant-alist)))
+	(fluid-set intermediate-code (constant-optimizer
+				      (fluid intermediate-code)))
+	(when *compiler-debug*
+	  (format standard-error
+		  "final-constants: %S\n\n" (fluid constant-alist))))
+
+      ;; Now transform the intermediate code to byte codes
+      (when *compiler-debug*
+	(format standard-error "lap-2 code: %S\n\n" (fluid intermediate-code)))
+      (list 'run-byte-code
+	    (assemble-bytecodes (fluid intermediate-code))
+	    (make-constant-vector)
+	    (+ (fluid max-stack) (ash (fluid max-b-stack) 16))))))

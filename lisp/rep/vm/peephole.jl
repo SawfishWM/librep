@@ -27,7 +27,6 @@
 (define-structure compiler-opt (export peephole-optimizer
 				       constant-optimizer)
   (open rep
-	compiler
 	compiler-lap
 	compiler-const
 	compiler-utils

@@ -24,7 +24,6 @@
 (define-structure compiler-inline (export compile-lambda-inline
 					  compile-tail-call)
   (open rep
-	compiler
 	compiler-utils
 	compiler-basic
 	compiler-modules

@@ -27,7 +27,6 @@
 
   (open rep
 	lisp-doc
-	compiler
 	compiler-modules
 	compiler-utils
 	compiler-basic

@@ -46,7 +46,6 @@
 					 constant-function-value
 					 note-declaration)
   (open rep
-	compiler
 	compiler-modules
 	compiler-bindings
 	compiler-basic
