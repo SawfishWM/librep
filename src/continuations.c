@@ -1526,7 +1526,7 @@ the last form it evaluated, else return DEFAULT-VALUE.
 ::end:: */
 {
     repv self = Fcurrent_thread (Qnil);
-    rep_DECLARE1 (th, XTHREADP);
+    rep_DECLARE (1, th, XTHREADP (th) && th != self);
     if (THREADP (self))
     {
 	rep_GC_root gc_th;
