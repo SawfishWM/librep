@@ -23,7 +23,6 @@
 /* free macros:
 
 	ASSERT (expr)
-	BE_PARANOID
 	BYTECODE_PROFILE
 	THREADED_VM
 	CACHE_TOS

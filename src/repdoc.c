@@ -22,6 +22,7 @@
 #include <string.h>
 #include <gdbm.h>
 #include <fcntl.h>
+#include <stdlib.h>
 
 #ifndef GDBM_NOLOCK
 # define GDBM_NOLOCK 0

@@ -1,3 +1,9 @@
+2001-02-19  John Harper  <jsh@eazel.com>
+
+	* lispmach.h: fixed comment
+
+	* repdoc.c: include <stdlib.h>
+
 2001-02-10  John Harper  <jsh@eazel.com>
 
 	* sockets.c (make_inet_socket): remember to convert the port
