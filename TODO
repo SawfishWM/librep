@@ -39,6 +39,8 @@ Outstanding bugs
 
    3. remove structure field by dotting tail of environment to it?
 
+   4. store special_env field in structure as well?
+
  ! doesn't handle NaN or Inf in floats properly (at all)
 
  ! ((call/cc call/cc) (call/cc call/cc)) can't be interrupted, and it
@@ -74,8 +76,6 @@ Outstanding bugs
 
    need to check for setq's on lexical variables... also need to only
    allow set to modify special variables
-
- + remove op-dset instruction (a bad mistake, unused by current compiler)
 
 
 General programming tasks:

@@ -1,3 +1,16 @@
+2000-04-14  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispmach.c, bytecodes.h: removed OP_DSET bytecode
+
+	* lisp.c (rep_bind_lambda_list): bind parameters in last-first
+	order so that they end up in the environment in first-first
+	order (same as when bound by the compiler)
+
+	* bytecodes.h: bumped major version to 10 to reflect the new
+	order of lexical bindings made by function application
+	(OP_UNQUOTEALL_0, OP_POP_ALL): new instructions
+	* lispmach.c (OP_UNBINDALL_0, OP_POP_ALL): implemented
+
 2000-04-12  John Harper  <john@dcs.warwick.ac.uk>
 
 	* values.c (Fgarbage_collect): return stats if arg is t, not if

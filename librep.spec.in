@@ -64,7 +64,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root)
-%doc NEWS README THANKS etc/TODO
+%doc NEWS README THANKS TODO
 %{_prefix}/bin/rep
 %{_prefix}/bin/rep-remote
 %{_prefix}/lib/librep.so.*

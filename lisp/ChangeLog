@@ -1,3 +1,25 @@
+2000-04-14  John Harper  <john@dcs.warwick.ac.uk>
+
+	* disassembler.jl, bytecode-defs.jl: removed `dset' bytecode
+
+	* compiler-basic.jl (comp-compile-lambda): when noting the
+	parameter bindings, reverse the list
+
+	* bytecode-defs.jl: bumped major version to 10
+	(unbindall-0, pop-all): new instructions
+	* disassembler.jl: updated for new insns
+
+	* scheme-syntax.jl (do): implemented using named let, not
+	while, since the Scheme report requires that each iteration
+	get new bindings for each variable
+
+	* init.jl (do): implemented this iteration syntax from Scheme,
+	expands to a named let
+
+	* compiler-inline.jl (comp-do-tail-call): don't just setq the
+	new values of the variables, create wholly new bindings (in
+	case the previous bindings have been captured by any closures)
+
 2000-04-12  John Harper  <john@dcs.warwick.ac.uk>
 
 	* gaol.jl: updated for new set-file-handler-environment semantics
