@@ -481,7 +481,7 @@ again:
 		if (rep_CONSP(tmp))
 		{
 		    if(was_closed && rep_CAR(tmp) == Qlambda)
-			TOP = rep_eval_lambda(tmp, tmp2, rep_FALSE);
+			TOP = rep_eval_lambda(tmp, tmp2, rep_FALSE, rep_FALSE);
 		    else if(rep_CAR(tmp) == Qautoload)
 		    {
 			/* I can't be bothered to go to all the hassle
@@ -505,7 +505,7 @@ again:
 		    {
 			bindings = (rep_bind_lambda_list
 				    (rep_COMPILED_LAMBDA(tmp),
-				     tmp2, rep_FALSE));
+				     tmp2, rep_FALSE, rep_FALSE));
 			if(bindings != rep_NULL)
 			{
 			    TOP = (rep_bytecode_interpreter
@@ -531,7 +531,7 @@ again:
 
 			bindings = (rep_bind_lambda_list
 				    (rep_COMPILED_LAMBDA(tmp),
-				     tmp2, rep_FALSE));
+				     tmp2, rep_FALSE, rep_FALSE));
 			if(bindings != rep_NULL)
 			{
 			    /* set up parameters */
