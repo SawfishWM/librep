@@ -1,3 +1,17 @@
+1999-04-25  John Harper  <john@dcs.warwick.ac.uk>
+
+	* main.c (rep_kill): kill the dl libraries a bit later down the
+	line
+	* unix_processes.c (rep_proc_kill): disable SIGCHLD _before_
+	killing the processes
+
+1999-04-24  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispmach.c (Fjade_byte_code): yow! if a subr with five
+	parameters has four values applied to it, it was being called
+	_twice_ (a missing break statement). This bug must have existed
+	forever!
+
 1999-03-28  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lispmach.c (Fjade_byte_code): don't test for called function
