@@ -453,6 +453,7 @@ extern repv Finput_stream_p(repv arg);
 extern repv Foutput_stream_p(repv arg);
 
 /* from symbols.c */
+extern repv rep_undefined_value;
 extern repv (*rep_deref_local_symbol_fun)(repv sym);
 extern repv (*rep_set_local_symbol_fun)(repv sym, repv val);
 extern void rep_intern_static(repv *, repv);

@@ -1,3 +1,17 @@
+2001-09-11  John Harper  <jsh@pixelslut.com>
+
+	* rep_subrs.h, repint_subrs.h: made rep_undefined_value public
+	* librep.sym: added rep_undefined_value
+
+	* rep_lisp.h (rep_File): new bit, rep_LFF_SILENT_ERRORS. When
+	set file errors aren't signalled for this file. They're just
+	ignored and sensible values are returned
+
+	* files.c (Fset_file_ignore_errors): new function
+
+	* streams.c (rep_stream_puts, rep_stream_putc): don't signal
+	end-of-stream errors if files have been marked to ignore them
+
 2001-09-02  John Harper  <jsh@pixelslut.com>
 
 	* misc.c: a couple of small fixes

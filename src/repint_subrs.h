@@ -124,7 +124,6 @@ extern void rep_pre_structures_init (void);
 extern void rep_structures_init (void);
 
 /* from symbols.c */
-extern repv rep_undefined_value;
 extern repv rep_keyword_obarray;
 extern int rep_pre_symbols_init(void);
 extern void rep_symbols_init(void);

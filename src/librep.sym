@@ -724,6 +724,7 @@ rep_type_cmp
 rep_unbind_symbols
 rep_unbound_file_error
 rep_unbox_pointer
+rep_undefined_value
 rep_unix_set_fd_blocking
 rep_unix_set_fd_cloexec
 rep_unix_set_fd_nonblocking

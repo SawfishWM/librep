@@ -309,7 +309,11 @@ top:
 bottom:
     if (rc != 1)
     {
-	Fsignal (Qend_of_stream, rep_LIST_1 (stream));
+	if (!rep_FILEP (stream)
+	    || (rep_FILE (stream)->car & rep_LFF_SILENT_ERRORS) == 0)
+	{
+	    Fsignal (Qend_of_stream, rep_LIST_1 (stream));
+	}
 	return 0;
     }
     else
@@ -426,7 +430,11 @@ top:
 bottom:
     if (rc != bufLen)
     {
-	Fsignal (Qend_of_stream, rep_LIST_1 (stream));
+	if (!rep_FILEP (stream)
+	    || (rep_FILE (stream)->car & rep_LFF_SILENT_ERRORS) == 0)
+	{
+	    Fsignal (Qend_of_stream, rep_LIST_1 (stream));
+	}
 	return 0;
     }
     else

@@ -973,7 +973,10 @@ current position will also fail.
 	    if(fseek(rep_FILE(file)->file.fh,
 		     rep_get_long_int(offset), whence) != 0)
 	    {
-		return rep_signal_file_error(rep_LIST_1(file));
+		if (rep_FILE (file)->car & rep_LFF_SILENT_ERRORS)
+		    return Qnil;
+		else
+		    return rep_signal_file_error(rep_LIST_1(file));
 	    }
 	    else
 		return Qt;
@@ -982,6 +985,15 @@ current position will also fail.
     else
 	return rep_call_file_handler(rep_FILE(file)->handler, op_seek_file,
 				     Qseek_file, 3, file, offset, where);
+}
+
+DEFUN("set-file-ignore-errors", Fset_file_ignore_errors,
+      Sset_file_ignore_errors, (repv file, repv status), rep_Subr2)
+{
+    rep_DECLARE1 (file, rep_FILEP);
+    rep_FILE (file)->car &= ~rep_LFF_SILENT_ERRORS;
+    rep_FILE (file)->car |= (status == Qnil) ? 0 : rep_LFF_SILENT_ERRORS;
+    return rep_undefined_value;
 }
 
 
@@ -1669,6 +1681,7 @@ rep_files_init(void)
     rep_ADD_SUBR(Sclose_file);
     rep_ADD_SUBR(Sflush_file);
     rep_ADD_SUBR(Sseek_file);
+    rep_ADD_SUBR(Sset_file_ignore_errors);
 
     rep_ADD_SUBR_INT(Sdelete_file);
     rep_ADD_SUBR_INT(Srename_file);

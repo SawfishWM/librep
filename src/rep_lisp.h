@@ -535,6 +535,7 @@ typedef struct rep_file_struct {
    i.e. this file points to something like stdin. */
 #define rep_LFF_DONT_CLOSE	(1 << (rep_CELL16_TYPE_BITS + 0))
 #define rep_LFF_BOGUS_LINE_NUMBER (1 << (rep_CELL16_TYPE_BITS + 1))
+#define rep_LFF_SILENT_ERRORS	(1 << (rep_CELL16_TYPE_BITS + 2))
 
 #define rep_FILE(v)		((rep_file *)rep_PTR(v))
 #define rep_FILEP(v)		rep_CELL16_TYPEP(v, rep_file_type)
