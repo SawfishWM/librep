@@ -90,7 +90,11 @@
 	    consts (aref arg 2))
       (when (zerop depth)
 	(format stream "Arguments: %S\nInteractive spec: %S\nDoc string: %S\n"
-		(aref arg 0) (aref arg 5) (aref arg 4))
+		(aref arg 0)
+		(and (> (length arg) 5)
+		     (aref arg 5))
+		(and (> (length arg) 4)
+		     (aref arg 4)))
 	(if (zerop (logand (aref arg 3) 0x10000))
 	    ;; Not a macro
 	    (setq stack (aref arg 3))
