@@ -1,3 +1,25 @@
+1998-10-29  John Harper  <john@dcs.warwick.ac.uk>
+
+	* completion.jl (completion-insert): new function to handle
+	inserting from a list of completions at the cursor
+	(complete-from-buffer, show-buffer-completions): new commands
+	* loadkeys.jl (global-keymap): bound complete-from-buffer to
+	M-TAB and show-buffer-completions to M-?
+	* lisp-mode.jl (lisp-complete-sexp): use completion-insert
+
+	* modes.jl (forward-exp, backward-exp): handle negative COUNTs
+
+	* read-mail.jl (rm-fix-status-info): set buffer-status-id in
+	the summary buffer as well (if it exists)
+
+	* completion.jl (completion-abbrev-function): new variable
+	(completion-list): call the above hook on all completions, then
+	only display the abbreviated versions
+
+	* prompt.jl (prompt-abbreviate-filename): new function, put in
+	the completion-abbrev-function when completing in the
+	filesystem
+
 1998-10-28  John Harper  <john@dcs.warwick.ac.uk>
 
 	* buffers.jl (make-backup-file-name): new function, used by
