@@ -1615,9 +1615,9 @@ that files which shouldn't be compiled aren't."
 	  ((cases (caar form))
 	   (forms (cdar form))
 	   (next-label (comp-make-label)))
-	(comp-write-op op-dup)
-	(comp-inc-stack)
 	(cond ((consp cases)
+	       (comp-write-op op-dup)
+	       (comp-inc-stack)
 	       (if (consp (cdr cases))
 		   ;; >1 possible case
 		   (progn
