@@ -34,7 +34,7 @@
 (define-interface rep-interpreter
   (export eval apply lambda max-lisp-depth subr-name special-form-p
 	  macrop functionp bytecodep subrp signal condition-case
-	  macroexpand make-closure closure-function closurep
+	  macroexpand macroexpand-1 make-closure closure-function closurep
 	  set-closure-function closure-structure closure-name closurep
 	  set-special-environment load error declare))
 
