@@ -220,7 +220,7 @@ is returned from the `and' form."
       (cond ((null rest) body)
 	    (t (loop (cdr rest) (if body 
 				    (list 'cond (list (car rest) body))
-				  (car rest))))))))
+				  (list 'cond (list (car rest))))))))))
 
 
 ;; set syntax
