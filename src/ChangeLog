@@ -1,3 +1,8 @@
+2000-03-20  John Harper  <john@dcs.warwick.ac.uk>
+
+	* continuations.c (thread_invoke): calculate rep_sleep_for ()
+	length correctly (was subtracting twice!)
+
 2000-03-19  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lisp.c (rep_bind_lambda_list, rep_eval_lambda): both have an

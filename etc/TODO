@@ -40,6 +40,12 @@ Outstanding bugs
    
    Just call this a [mis-] feature for now..
 
+ ! compiler tail-recursion elimination doesn't figure when the binding
+   has been changed; e.g. (let loop ((foo t)) (setq loop print) (loop foo))
+
+   need to check for setq's on lexical variables... possibly
+   disallow/deprecate `set'ing non-global lexical bindings
+
 
 General programming tasks:
 ==========================
