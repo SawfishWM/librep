@@ -113,6 +113,7 @@ struct dl_lib_info {
     struct dl_lib_info *next;
     repv file_name;
     repv feature_sym;
+    repv structure;
     void *handle;
 };
 
@@ -211,7 +212,6 @@ signal_error (char *msg)
 repv
 rep_open_dl_library(repv file_name)
 {
-    repv result = rep_NULL;
     struct dl_lib_info *x = find_dl(file_name);
     if(x == 0)
     {
@@ -330,11 +330,10 @@ rep_open_dl_library(repv file_name)
 	    x->file_name = file_name;
 	    x->handle = handle;
 	    x->feature_sym = Qnil;
+	    x->structure = Qnil;
 
 	    x->next = dl_list;
 	    dl_list = x;
-
-	    result = Qt;
 
 	    init_func = x_dlsym(handle, "rep_dl_init");
 	    if(init_func != 0)
@@ -359,7 +358,7 @@ rep_open_dl_library(repv file_name)
 		    x->feature_sym = ret;
 		else if (ret && F_structurep (ret) != Qnil)
 		{
-		    result = ret;
+		    x->structure = ret;
 		    ret = F_structure_name (ret);
 		    if (ret && rep_STRINGP (ret))
 			x->feature_sym = Fintern (ret, Qnil);
@@ -383,16 +382,12 @@ rep_open_dl_library(repv file_name)
 		}
 	    }
 
-	    if (x->feature_sym != Qnil
-		/* XXX kludge: only `provide' if this is not a module */
-		&& F_structurep (result) == Qnil)
-	    {
+	    if (x->feature_sym != Qnil)
 		Fprovide (x->feature_sym);
-	    }
 	}
     }
 out:
-    return result;
+    return (x == 0) ? rep_NULL : x->structure;
 }
 
 void
@@ -403,6 +398,7 @@ rep_mark_dl_data(void)
     {
 	rep_MARKVAL(x->file_name);
 	rep_MARKVAL(x->feature_sym);
+	rep_MARKVAL(x->structure);
 	x = x->next;
     }
 }
