@@ -633,7 +633,7 @@ variable will be set (if necessary) not the local value.
 	int spec;
 	rep_GC_root gc_args;
 	repv sym = rep_CAR(args), val;
-	repv tmp = Fdefault_boundp(sym);
+	repv tmp = Fboundp(sym);
 	if(!tmp)
 	    return rep_NULL;
 	rep_PUSHGC(gc_args, args);
@@ -646,9 +646,14 @@ variable will be set (if necessary) not the local value.
 	    /* Variable is bound, see if it's an autoload defn to overwrite. */
 	    repv val = Fsymbol_value (sym, Qt);
 	    if (rep_FUNARGP(val))
+	    {
 		val = rep_FUNARG(val)->fun;
-	    if(rep_CONSP(val) && rep_CAR(val) == Qautoload)
-		tmp = Qnil;
+		if(rep_CONSP(val) && rep_CAR(val) == Qautoload)
+		{
+		    Fmakunbound (sym);
+		    tmp = Qnil;
+		}
+	    }
 	}
 
 	/* Only allowed to defvar in restricted environments
@@ -666,7 +671,10 @@ variable will be set (if necessary) not the local value.
 	{
 	    repv tem = rep_get_initial_special_value (sym);
 	    if (tem)
+	    {
 		val = tem;
+		tmp = Qnil;
+	    }
 	}
 
 	/* Only set the [default] value if its not boundp or
