@@ -41,7 +41,7 @@ install : all installdirs
 	  ( cd $$dir && $(MAKE) $@ ); \
 	done
 	$(INSTALL_DATA) DOC.* $(repdir)/$(version)
-	$(INSTALL_PROGRAM) libtool $(repcommonexecdir)
+	$(INSTALL_SCRIPT) libtool $(repcommonexecdir)
 	$(INSTALL_DATA) rules.mk $(repcommonexecdir)
 	$(INSTALL_DATA) rep.m4 $(aclocaldir)
 

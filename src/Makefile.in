@@ -60,7 +60,7 @@ install : all installdirs
 	$(LIBTOOL) -n --finish ${libdir}
 	$(LIBTOOL) cp rep ${bindir}
 	$(LIBTOOL) cp repdoc ${bindir}
-	$(INSTALL_PROGRAM) rep-config ${bindir}
+	$(INSTALL_SCRIPT) rep-config ${bindir}
 	$(INSTALL_PROGRAM) rep-remote ${bindir}
 	for dl in $(DL_OBJS); do \
 	  $(LIBTOOL) cp $$dl ${repexecdir}; \
