@@ -148,10 +148,10 @@ stream_getc(VALUE stream)
 	break;
 
     case V_Mark:
-	if(!(VMARK(stream)->mk_Flags & MKFF_RESIDENT))
+	if(!MARK_RESIDENT_P(VMARK(stream)))
 	    cmd_signal(sym_invalid_stream, list_2(stream, VAL(&non_resident)));
 	else
-	    c = pos_getc(VMARK(stream)->mk_File.tx, &VMARK(stream)->mk_Pos);
+	    c = pos_getc(VTX(VMARK(stream)->file), &VMARK(stream)->pos);
 	break;
 
     case V_Buffer:
@@ -241,7 +241,7 @@ stream_ungetc(VALUE stream, int c)
 	break;
 
     case V_Mark:
-	POS_UNGETC(VMARK(stream)->mk_Pos, VMARK(stream)->mk_File.tx);
+	POS_UNGETC(VMARK(stream)->pos, VTX(VMARK(stream)->file));
 	rc = TRUE;
 	break;
 
@@ -302,11 +302,11 @@ stream_putc(VALUE stream, int c)
 	break;
 
     case V_Mark:
-	if(!(VMARK(stream)->mk_Flags & MKFF_RESIDENT))
+	if(!MARK_RESIDENT_P(VMARK(stream)))
 	    cmd_signal(sym_invalid_stream,
 		       list_2(stream, VAL(&non_resident)));
 	else
-	    rc = pos_putc(VMARK(stream)->mk_File.tx, &VMARK(stream)->mk_Pos, c);
+	    rc = pos_putc(VTX(VMARK(stream)->file), &VMARK(stream)->pos, c);
 	break;
 
     case V_Buffer:
@@ -430,10 +430,10 @@ stream_puts(VALUE stream, void *data, int bufLen, bool isValString)
 	break;
 
     case V_Mark:
-	if(!(VMARK(stream)->mk_Flags & MKFF_RESIDENT))
+	if(!MARK_RESIDENT_P(VMARK(stream)))
 	    cmd_signal(sym_invalid_stream, list_2(stream, VAL(&non_resident)));
 	else
-	    rc = pos_puts(VMARK(stream)->mk_File.tx, &VMARK(stream)->mk_Pos,
+	    rc = pos_puts(VTX(VMARK(stream)->file), &VMARK(stream)->pos,
 			  buf, bufLen);
 	break;
 

@@ -736,14 +736,14 @@ again:
 
     case V_Mark:
 	GC_SET_CELL(val);
-	if(!(VMARK(val)->mk_Flags & MKFF_RESIDENT))
+	if(!MARK_RESIDENT_P(VMARK(val)))
 	{
 	    /* TXs don't get marked here. They should still be able to
 	       be gc'd if there's marks pointing to them. The marks will
 	       just get made non-resident.  */
-	    MARKVAL(VMARK(val)->mk_File.name);
+	    MARKVAL(VMARK(val)->file);
 	}
-	MARKVAL(VMARK(val)->mk_Pos);
+	MARKVAL(VMARK(val)->pos);
 	break;
 
     case V_String:
