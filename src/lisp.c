@@ -943,6 +943,126 @@ eval_list(repv list)
     return result;
 }
 
+repv
+rep_bind_lambda_list_1 (repv lambdaList, repv *args, int nargs)
+{
+    enum arg_state {
+	STATE_REQUIRED = 1, STATE_OPTIONAL, STATE_REST, STATE_AUX
+    };
+
+    struct binding {
+	struct binding *next;
+	repv sym;
+	repv value;
+    };
+
+    repv boundlist;
+    enum arg_state state;
+    struct binding *frame = 0;
+
+    state = STATE_REQUIRED;
+    while (1)
+    {
+	repv argspec;
+	struct binding *item;
+
+	if (rep_CONSP (lambdaList) && rep_SYMBOLP(rep_CAR (lambdaList)))
+	{
+	    argspec = rep_CAR (lambdaList);
+	    lambdaList = rep_CDR (lambdaList);
+
+	    if (rep_STR (rep_SYM (argspec)->name)[0] == '&')
+	    {
+		if (argspec == Qamp_optional)
+		{
+		    if (state > STATE_OPTIONAL)
+			return Fsignal (Qinvalid_lambda_list,
+					rep_LIST_1 (lambdaList));
+		    state = STATE_OPTIONAL;
+		    continue;
+		}
+		else if (argspec == Qamp_rest)
+		{
+		    if (state > STATE_REST)
+			return Fsignal (Qinvalid_lambda_list,
+					rep_LIST_1 (lambdaList));
+		    state = STATE_REST;
+		    continue;
+		}
+		else if (argspec == Qamp_aux)
+		{
+		    state = STATE_AUX;
+		    continue;
+		}
+	    }
+	}
+	else if (lambdaList != Qnil && rep_SYMBOLP (lambdaList))
+	{
+	    state = STATE_REST;
+	    argspec = lambdaList;
+	    lambdaList = Qnil;
+	}
+	else
+	    break;
+
+	item = alloca (sizeof (struct binding));
+	item->next = frame;
+	frame = item;
+	item->sym = argspec;
+
+	switch (state)
+	{
+	case STATE_REQUIRED:
+	case STATE_OPTIONAL:
+	    if (nargs > 0)
+	    {
+		item->value = *args++;
+		nargs--;
+	    }
+	    else if (state == STATE_OPTIONAL)
+		item->value = Qnil;
+	    else
+		return Fsignal (Qmissing_arg, rep_LIST_1 (argspec));
+	    break;
+
+	case STATE_REST:
+	    {
+		repv list = Qnil;
+		repv *ptr = &list;
+		while (nargs > 0)
+		{
+		    *ptr = Fcons (*args++, Qnil);
+		    ptr = rep_CDRLOC (*ptr);
+		    nargs--;
+		}
+		item->value = list;
+	    }
+	    state = STATE_AUX;
+	    break;
+
+	case STATE_AUX:
+	    item->sym = argspec;
+	    item->value = Qnil;
+	}
+
+	rep_TEST_INT;
+	if (rep_INTERRUPTP)
+	    return rep_NULL;
+    }
+
+    /* Instantiate the bindings in reverse order, so that they
+       end up in the same order that the compiler compiles
+       inline lambdas and tail-recursive function applications */
+    boundlist = Qnil;
+    while (frame != 0)
+    {
+	boundlist = rep_bind_symbol (boundlist, frame->sym, frame->value);
+	frame = frame->next;
+    }
+
+    return boundlist;
+}
+
 /* format of lambda-lists is something like,
 
    [{required-symbols}] [&optional {optional-symbols}] [&rest symbol]
@@ -958,21 +1078,11 @@ repv
 rep_bind_lambda_list(repv lambdaList, repv argList,
 		     rep_bool eval_args, rep_bool eval_in_env)
 {
-    enum arg_state {
-	STATE_REQUIRED = 1, STATE_OPTIONAL, STATE_REST, STATE_AUX
-    };
-
-    struct binding {
-	struct binding *next;
-	repv sym;
-	repv value;
-    };
-
     repv *evalled_args;
     int evalled_nargs;
-    repv boundlist;
-    enum arg_state state;
-    struct binding *frame = 0;
+
+    evalled_nargs = rep_list_length(argList);
+    evalled_args = alloca(sizeof(repv) * evalled_nargs);
 
     /* Evaluate arguments, and stick them in the evalled_args array */
     if(eval_args)
@@ -982,8 +1092,6 @@ rep_bind_lambda_list(repv lambdaList, repv argList,
 	rep_GC_n_roots gc_evalled_args;
 	rep_GC_root gc_old_env, gc_old_struct;
 	int i;
-	evalled_nargs = rep_list_length(argList);
-	evalled_args = alloca(sizeof(repv) * evalled_nargs);
 	rep_PUSHGC(gc_arglist, argList);
 	rep_PUSHGCN(gc_evalled_args, evalled_args, 0);
 	if (!eval_in_env)
@@ -1011,116 +1119,17 @@ rep_bind_lambda_list(repv lambdaList, repv argList,
 	rep_POPGCN;
 	rep_POPGC; rep_POPGC;
     }
-
-    state = STATE_REQUIRED;
-    while (1)
+    else
     {
-	repv argspec;
-	struct binding *item;
-
-	if (rep_CONSP(lambdaList) && rep_SYMBOLP(rep_CAR(lambdaList)))
+	int i;
+	for (i = 0; i < evalled_nargs; i++)
 	{
-	    argspec = rep_CAR(lambdaList);
-	    lambdaList = rep_CDR(lambdaList);
-
-	    if(rep_STR(rep_SYM(argspec)->name)[0] == '&')
-	    {
-		if(argspec == Qamp_optional)
-		{
-		    if(state > STATE_OPTIONAL)
-			return Fsignal(Qinvalid_lambda_list,
-				       rep_LIST_1(lambdaList));
-		    state = STATE_OPTIONAL;
-		    continue;
-		}
-		else if(argspec == Qamp_rest)
-		{
-		    if(state > STATE_REST)
-			return Fsignal(Qinvalid_lambda_list,
-				       rep_LIST_1(lambdaList));
-		    state = STATE_REST;
-		    continue;
-		}
-		else if(argspec == Qamp_aux)
-		{
-		    state = STATE_AUX;
-		    continue;
-		}
-	    }
+	    evalled_args[i] = rep_CAR (argList);
+	    argList = rep_CDR (argList);
 	}
-	else if (lambdaList != Qnil && rep_SYMBOLP(lambdaList))
-	{
-	    state = STATE_REST;
-	    argspec = lambdaList;
-	    lambdaList = Qnil;
-	}
-	else
-	    break;
-
-	item = alloca (sizeof (struct binding));
-	item->next = frame;
-	frame = item;
-	item->sym = argspec;
-
-	switch(state)
-	{
-	case STATE_REQUIRED:
-	case STATE_OPTIONAL:
-	    if(eval_args && evalled_nargs > 0)
-	    {
-		item->value = *evalled_args++;
-		evalled_nargs--;
-	    }
-	    else if(!eval_args && rep_CONSP(argList))
-	    {
-		item->value = rep_CAR(argList);
-		argList = rep_CDR(argList);
-	    }
-	    else if(state == STATE_OPTIONAL)
-		item->value = Qnil;
-	    else
-		return Fsignal(Qmissing_arg, rep_LIST_1(argspec));
-	    break;
-
-	case STATE_REST:
-	    if(eval_args)
-	    {
-		repv list = Qnil;
-		repv *ptr = &list;
-		while(evalled_nargs > 0)
-		{
-		    *ptr = Fcons(*evalled_args++, Qnil);
-		    ptr = &(rep_CDR(*ptr));
-		    evalled_nargs--;
-		}
-		item->value = list;
-	    }
-	    else
-		item->value = Fcopy_sequence (argList);
-	    state = STATE_AUX;
-	    break;
-
-	case STATE_AUX:
-	    item->sym = argspec;
-	    item->value = Qnil;
-	}
-
-	rep_TEST_INT;
-	if(rep_INTERRUPTP)
-	    return rep_NULL;
     }
 
-    /* Instantiate the bindings in reverse order, so that they
-       end up in the same order that the compiler compiles
-       inline lambdas and tail-recursive function applications */
-    boundlist = Qnil;
-    while (frame != 0)
-    {
-	boundlist = rep_bind_symbol (boundlist, frame->sym, frame->value);
-	frame = frame->next;
-    }
-
-    return boundlist;
+    return rep_bind_lambda_list_1 (lambdaList, evalled_args, evalled_nargs);
 }
 
 repv
