@@ -431,7 +431,9 @@ read_symbol(VALUE strm, int *c_p)
 	return cmd_signal(sym_error, LIST_1(VAL(&buf_overflow)));
     }
 done:
-    if(radix > 0)
+    if(radix > 0
+       /* Ensure that we don't accept `0x' as hex zero */
+       && ((radix != 16) || (i > 2)))
     {
 	/* It was a number */
 	value *= sign;
