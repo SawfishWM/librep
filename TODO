@@ -12,6 +12,12 @@ Outstanding bugs
 
  ! (define foo bar "Doc") should do something with "Doc"
 
+ ! can't use `structure' inside define'd functions
+
+   (it introduces progn's into the %meta section)
+
+ ! non-top-level compiled defvar's aren't quite right
+
  ! scheme define/lambda doesn't splice begin forms
 
  ! the scheme module fails some of the guile test.scm cases

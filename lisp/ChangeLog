@@ -1,4 +1,12 @@
+2000-07-19  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compiler-rep.jl (trans-defvar): call make-variable-special on
+	the symbol (but this is still broken..)
+
 2000-07-18  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp-doc.jl (documentation): only try to deref SYMBOL if it's
+	bound (otherwise interpreted code may fall over?)
 
 	* gaol.jl: store all state in gaol, don't keep it locally then
 	rebuild the gaol from that. Deprecated some old functions, new

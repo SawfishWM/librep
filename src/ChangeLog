@@ -1,3 +1,26 @@
+2000-07-20  John Harper  <john@dcs.warwick.ac.uk>
+
+	* Makefile.in: libtool needs to be told what mode to use,
+	because sometimes $(CC) is a wrapper script with a funny name
+	(from David Kaelbling <drk@sgi.com>)
+
+	* lisp.c (rep_call_lisp4): fix stupid typo (from David
+	Kaelbling <drk@sgi.com>)
+
+2000-07-19  John Harper  <john@dcs.warwick.ac.uk>
+
+	* structures.c (F_structure_set): if setting to a void value,
+	remove the binding
+
+2000-07-18  John Harper  <john@dcs.warwick.ac.uk>
+
+	* structures.c: only keep hit/miss info when DEBUG is defined.
+	Also record type of misses: collision, conflict or other
+	(F_structure_set): don't invalidate the binding we modify, it's
+	the _binding_ itself that's cached, not its value
+	(lookup_or_add): removed all cached bindings for the symbol
+	being added
+
 2000-07-17  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lisp.c (rep_load_autoload): removed stuff to autoload modules
