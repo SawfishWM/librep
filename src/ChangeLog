@@ -1,3 +1,19 @@
+1999-12-17  John Harper  <john@dcs.warwick.ac.uk>
+
+	* symbols.c (Fdefine_value): new function, a combination of set
+	and defvar (but doesn't imply dynamic scoping)
+
+	* unix_dl.c (rep_open_dl_library): the .la file may have a line
+	"rep_requires='FEATURES...'" naming other dl objects to load
+	before this one. Treat the returned value of rep_dl_init as a
+	feature if it's a symbol and isn't nil or t. Add the feature by
+	hand, instead of calling provide
+
+	* lispcmds.c (Qfeatures): new symbol, initialised to nil
+
+	* timers.c, repsdbm.c, readline.c, gettext.c: don't use
+	rep_dl_feature anymore, just return the feature symbol
+
 1999-12-16  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_dl.c: check .la files for `rep_open_globally=yes' line,
