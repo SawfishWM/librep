@@ -84,7 +84,7 @@ NAME is true, then it should be the symbol that is associated with VALUE."
       (format standard-output "%s: " type)
       (let ((arg-doc (cond ((eq (car value) 'lambda)
 			    (describe-lambda-list (cadr value)))
-			   ((and (bytecodep value) name (symbolp name))
+			   ((symbolp name)
 			    (or (and structure
 				     (doc-file-ref (doc-file-param-key
 						    name structure)))
