@@ -23,6 +23,12 @@ usage (void)
 	   stderr);
 }
 
+static void
+inner_main (repv arg)
+{
+    rep_load_environment (rep_string_dup ("rep"));
+}
+
 int
 main(int argc, char **argv)
 {
@@ -37,7 +43,7 @@ main(int argc, char **argv)
 	return 0;
     }
 
-    rep_load_environment (rep_string_dup ("rep"));
+    rep_call_with_barrier (inner_main, Qnil, rep_TRUE, 0, 0, 0);
 
     return rep_top_level_exit ();
 }
