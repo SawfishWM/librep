@@ -46,7 +46,7 @@
    "macrop" "bytecodep" "pushi\t0" "pushi\t1" "pushi\t2" "pushi\t-1" "pushi\t-2" "pushi\t%d"
    "pushi\t%d" "pushi\t%d" "caar" "cadr" "cdar" "cddr" "caddr" "cadddr"	 ; 0xa0
    "caddddr" "cadddddr" "caddddddr" "cadddddddr" nil nil nil nil
-   "bindobj" nil nil nil nil nil nil nil	 ; 0xb0
+   "bindobj" "forbid" "permit" nil nil nil nil nil	 ; 0xb0
    nil nil "swap2" "mod" "make-closure" nil "closurep" "bindenv"
    nil nil nil nil nil nil nil nil	 ; 0xc0
    nil nil nil nil nil nil nil nil

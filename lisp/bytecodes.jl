@@ -182,6 +182,8 @@
 (defconst op-cadddddddr 0xab)
 
 (defconst op-bindobj 0xb0)
+(defconst op-forbid 0xb1)
+(defconst op-permit 0xb2)
 (defconst op-swap2 0xba)
 (defconst op-mod 0xbb)
 
