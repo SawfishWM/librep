@@ -1,3 +1,8 @@
+1998-10-28  John Harper  <john@dcs.warwick.ac.uk>
+
+	* buffers.jl (make-backup-file-name): new function, used by
+	backup-file to find the name of the old version
+
 1998-10-26  John Harper  <john@dcs.warwick.ac.uk>
 
 	* dump.jl (dump-output-strings): output a zero in the new

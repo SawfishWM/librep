@@ -151,7 +151,13 @@ X11 tasks:
 ==========
 
  - Scroll bars, menus. Would it be possible to enable use of GTK at
-   compile time? Is it possible to handle multiple displays?
+   compile time? Is it possible to handle multiple displays? I don't
+   think so, but that's not a huge loss..
+
+   What would be truly great would be to code a gtk jade_frame widget
+   that is basically what we have at the moment--the grid of characters
+   with paned views, then write a gtk Lisp binding. This would give
+   total control
 
  - `Fuzzy' colour allocation; if a colour can't be allocated find the
    nearest match 
