@@ -122,27 +122,11 @@ rep_bind_object(repv obj)
 	return Qnil;
 }
 
-static void
-unbind_all (repv stack)
+static inline void
+unbind_n (repv *ptr, int n)
 {
-    while (rep_CONSP (stack))
-    {
-	rep_unbind_object (rep_CAR (stack));
-	stack = rep_CDR (stack);
-    }
-}
-
-static repv
-unbind_all_but_one (repv stack)
-{
-    if (!rep_CONSP(stack))
-	return Qnil;
-    while (rep_CONSP(rep_CDR(stack)))
-    {
-	rep_unbind_object (rep_CAR (stack));
-	stack = rep_CDR (stack);
-    }
-    return stack;
+    while (n-- > 0)
+	rep_unbind_object (ptr[n]);
 }
 
 /* Walk COUNT entries down the environment */
@@ -182,8 +166,20 @@ list_ref (repv list, int elt)
 #define PUSH(v)	    (*(++stackp) = (v))
 #define STK_USE	    (stackp - (stackbase - 1))
 
+#define BIND_USE	(bindp - (bindbase - 1))
+#define BIND_RET_POP	(*bindp--)
+#define BIND_TOP	(*bindp)
+#define BIND_TOP_P	(bindp < bindbase)
+#define BIND_PUSH(x)	(*(++bindp) = (x))
+
 #define FETCH	    (*pc++)
 #define FETCH2(var) ((var) = (FETCH << ARG_SHIFT), (var) += FETCH)
+
+#define SYNC_GC				\
+    do {				\
+	gc_stackbase.count = STK_USE;	\
+	gc_bindbase.count = BIND_USE;	\
+    } while (0)
 
 /* These macros pop as many args as required then call the specified
    function properly. */
@@ -232,14 +228,11 @@ of byte code. See the functions `compile-file', `compile-directory' and
 `compile-lisp-lib' for more details.
 ::end:: */
 {
-    /* This holds a list of sets of bindings, it can also hold the form of
-       an unwind-protect that always gets eval'd (when the car is t).  */
-    repv bindstack;
     register u_char *pc;
-    rep_GC_root gc_code, gc_consts, gc_bindstack;
+    rep_GC_root gc_code, gc_consts;
     /* The `gcv_N' field is only filled in with the stack-size when there's
        a chance of gc.	*/
-    rep_GC_n_roots gc_stackbase;
+    rep_GC_n_roots gc_stackbase, gc_bindbase;
 
     /* this is the number of dynamic `bindings' in effect
        (including non-variable bindings). */
@@ -258,33 +251,43 @@ of byte code. See the functions `compile-file', `compile-directory' and
 again_stack: {
     register repv *stackp;
     repv *stackbase;
+    register repv *bindp;
+    repv *bindbase;
 
 #if defined (__GNUC__)
     /* Using GCC's variable length auto arrays is better for this since
        the stack space is freed when leaving the containing scope */
-    repv stack[rep_INT (stkreq) + 1];
+    repv stack[(rep_INT (stkreq) & 0xffff) + 1];
+    repv bindstack[(rep_INT (stkreq) >> 16) + 1];
 #else
     /* Otherwise just use alloca (). When tail-calling we'll only
        allocate a new stack if the current is too small. */
-    repv *stack = alloca(sizeof(repv) * (rep_INT(stkreq) + 1));
+    repv *stack = alloca(sizeof(repv) * ((rep_INT(stkreq) & 0xffff) + 1));
+    repv *bindstack = alloca(sizeof(repv) * ((rep_INT(stkreq) >> 16) + 1));
 #endif
 
     /* Make sure that even when the stack has no entries, the TOP
        element still != 0 (for the error-detection at label quit:) */
-    stackbase = stack;
-    *stackbase++ = Qt;
+    stack[0] = Qt;
 
     /* Jump to this label when tail-calling with a large enough stack */
 again:
     rep_DECLARE1(code, rep_STRINGP);
     rep_DECLARE2(consts, rep_VECTORP);
 
+    /* Initialize the frame and stack pointers */
+    stackbase = stack + 1;
     stackp = stackbase - 1;
-    bindstack = Fcons (frame, Qnil);
+    bindbase = bindstack;
+    bindp = bindbase - 1;
+
+    /* Push the binding frame of the function arguments */
+    BIND_PUSH (frame);
     impurity = rep_SPEC_BINDINGS (frame);
+
     rep_PUSHGC(gc_code, code);
     rep_PUSHGC(gc_consts, consts);
-    rep_PUSHGC(gc_bindstack, bindstack);
+    rep_PUSHGCN(gc_bindbase, bindbase, BIND_USE);
     rep_PUSHGCN(gc_stackbase, stackbase, STK_USE);
 
     if(rep_data_after_gc >= rep_gc_threshold)
@@ -308,6 +311,11 @@ again:
 	byte_code_usage[insn]++;
 #endif
 
+#ifdef CHECK_STACK_USAGE
+        assert (STK_USE <= (rep_INT(stkreq) & 0xffff));
+        assert (BIND_USE <= (rep_INT(stkreq) >> 16) + 1);
+#endif
+
 	switch(insn)
 	{
 	    int arg;
@@ -324,7 +332,7 @@ again:
 	    lc.args = Qnil;
 	    lc.args_evalled_p = Qt;
 	    rep_PUSH_CALL (lc);
-	    gc_stackbase.count = STK_USE;
+	    SYNC_GC;
 
 	    was_closed = rep_FALSE;
 	    if (rep_FUNARGP(tmp))
@@ -481,7 +489,7 @@ again:
 			    TOP = (rep_bytecode_interpreter
 				   (rep_COMPILED_CODE(tmp),
 				    rep_COMPILED_CONSTANTS(tmp),
-				    rep_MAKE_INT(rep_COMPILED_STACK(tmp)),
+				    rep_COMPILED_STACK(tmp),
 				    bindings));
 			}
 		    }
@@ -504,17 +512,25 @@ again:
 				     tmp2, rep_FALSE, rep_FALSE));
 			if(bindings != rep_NULL)
 			{
+			    int o_req_s, o_req_b;
+			    int n_req_s, n_req_b;
+
 			    /* set up parameters */
 			    code = rep_COMPILED_CODE (tmp);
 			    consts = rep_COMPILED_CONSTANTS (tmp);
 			    frame = bindings;
 
+			    rep_POPGCN; rep_POPGCN; rep_POPGC; rep_POPGC;
+
 			    /* do the goto, after deciding if the
 			       current stack allocation is sufficient. */
-			    rep_POPGCN; rep_POPGC; rep_POPGC; rep_POPGC;
-			    if (rep_COMPILED_STACK (tmp) > rep_INT(stkreq))
+			    n_req_s = rep_INT (rep_COMPILED_STACK (tmp)) & 0xffff;
+			    n_req_b = (rep_INT (rep_COMPILED_STACK (tmp)) >> 16) + 1;
+			    o_req_s = rep_INT(stkreq) & 0xffff;
+			    o_req_b = (rep_INT(stkreq) >> 16) + 1;
+			    if (n_req_s > o_req_s || n_req_b > o_req_b)
 			    {
-				stkreq = rep_MAKE_INT(rep_COMPILED_STACK(tmp));
+				stkreq = rep_COMPILED_STACK(tmp);
 				goto again_stack;
 			    }
 			    else
@@ -591,8 +607,7 @@ again:
 	    tmp = rep_VECT(consts)->array[arg];
 	    tmp2 = RET_POP;
 	    rep_env = Fcons (Fcons (tmp, tmp2), rep_env);
-	    rep_CAR(bindstack) = (rep_CAR(bindstack)
-				  + (1 << rep_VALUE_INT_SHIFT));
+	    BIND_TOP = rep_MARK_LEX_BINDING (BIND_TOP);
 	    goto fetch;
 
 	CASE_OP_ARG(OP_BINDSPEC)
@@ -601,8 +616,7 @@ again:
 	    /* assuming non-restricted environment */
 	    rep_special_bindings = Fcons (Fcons (tmp, tmp2),
 					  rep_special_bindings);
-	    rep_CAR(bindstack) = (rep_CAR(bindstack)
-				  + (1 << (16 + rep_VALUE_INT_SHIFT)));
+	    BIND_TOP = rep_MARK_SPEC_BINDING (BIND_TOP);
 	    impurity++;
 	    goto fetch;
 
@@ -644,13 +658,12 @@ again:
 	    break;
 
 	case OP_INIT_BIND:
-	    bindstack = Fcons(rep_NEW_FRAME, bindstack);
+	    BIND_PUSH (rep_NEW_FRAME);
 	    goto fetch;
 
 	case OP_UNBIND:
-	    gc_stackbase.count = STK_USE;
-	    impurity -= rep_unbind_object(rep_CAR(bindstack));
-	    bindstack = rep_CDR(bindstack);
+	    SYNC_GC;
+	    impurity -= rep_unbind_object(BIND_RET_POP);
 	    break;
 
 	case OP_DUP:
@@ -717,7 +730,7 @@ again:
 	    CALL_1(Flength);
 
 	case OP_EVAL:
-	    gc_stackbase.count = STK_USE;
+	    SYNC_GC;
 	    CALL_1(Feval);
 
 	case OP_ADD:
@@ -967,21 +980,20 @@ again:
 	       This installs an address in the code string as an
 	       error handler. */
 	    tmp = RET_POP;
-	    bindstack = Fcons (Fcons (Qerror,
-				      Fcons (tmp, rep_MAKE_INT(STK_USE))),
-			       bindstack);
+	    BIND_PUSH (Fcons (Qerror, Fcons (tmp, rep_MAKE_INT(STK_USE))));
 	    impurity++;
 	    break;
 
 	case OP_RETURN:
-	    gc_stackbase.count = STK_USE;
-	    unbind_all (bindstack);
+	    SYNC_GC;
+	    unbind_n (bindbase, BIND_USE);
 	    goto quit;
 
 	case OP_UNBINDALL:
-	    gc_stackbase.count = STK_USE;
-	    bindstack = unbind_all_but_one (bindstack);
-	    impurity = rep_SPEC_BINDINGS (rep_CAR(bindstack));
+	    SYNC_GC;
+	    unbind_n (bindbase + 1, BIND_USE - 1);
+	    bindp = bindbase;
+	    impurity = rep_SPEC_BINDINGS (BIND_TOP);
 	    break;
 
 	case OP_BOUNDP:
@@ -1013,25 +1025,26 @@ again:
 	    if(rep_CONSP(TOP) && rep_CAR(TOP) == Qerror
 	       && rep_compare_error(rep_CDR(TOP), tmp))
 	    {
+		repv tobind;
 		/* The handler matches the error. */
 		tmp = rep_CDR(TOP);	/* the error data */
 		tmp2 = stackp[-1];	/* the symbol to bind to */
 		if(rep_SYMBOLP(tmp2) && !rep_NILP(tmp2))
 		{
-		    bindstack = Fcons(rep_bind_symbol(Qnil, tmp2, tmp),
-				      bindstack);
+		    tobind = rep_bind_symbol(Qnil, tmp2, tmp);
 		    if (rep_SYM(tmp2)->car & rep_SF_SPECIAL)
 			impurity++;
 		}
 		else
 		    /* Placeholder to allow simple unbinding */
-		    bindstack = Fcons(Qnil, bindstack);
+		    tobind = Qnil;
+		BIND_PUSH (tobind);
 		TOP = Qnil;
 	    }
 	    break;
 
 	case OP_SIGNAL:
-	    gc_stackbase.count = STK_USE;
+	    SYNC_GC;
 	    CALL_2(Fsignal);
 
 	case OP_QUOTIENT:
@@ -1059,11 +1072,11 @@ again:
 	    CALL_1(Flast);
 
 	case OP_MAPCAR:
-	    gc_stackbase.count = STK_USE;
+	    SYNC_GC;
 	    CALL_2(Fmapcar);
 
 	case OP_MAPC:
-	    gc_stackbase.count = STK_USE;
+	    SYNC_GC;
 	    CALL_2(Fmapc);
 
 	case OP_MEMBER:
@@ -1079,11 +1092,11 @@ again:
 	    CALL_2(Fdelq);
 
 	case OP_DELETE_IF:
-	    gc_stackbase.count = STK_USE;
+	    SYNC_GC;
 	    CALL_2(Fdelete_if);
 
 	case OP_DELETE_IF_NOT:
-	    gc_stackbase.count = STK_USE;
+	    SYNC_GC;
 	    CALL_2(Fdelete_if_not);
 
 	case OP_COPY_SEQUENCE:
@@ -1117,7 +1130,7 @@ again:
 	    break;
 
 	case OP_FILTER:
-	    gc_stackbase.count = STK_USE;
+	    SYNC_GC;
 	    CALL_2(Ffilter);
 
 	case OP_MACROP:
@@ -1234,7 +1247,7 @@ again:
 
 	case OP_BINDOBJ:
 	    tmp = RET_POP;
-	    bindstack = Fcons(rep_bind_object(tmp), bindstack);
+	    BIND_PUSH (rep_bind_object(tmp));
 	    impurity++;
 	    break;
 
@@ -1283,9 +1296,9 @@ again:
 	    CALL_2(Fmake_closure);
 
 	case OP_UNBINDALL_0:
-	    gc_stackbase.count = STK_USE;
-	    unbind_all (bindstack);
-	    bindstack = Qnil;
+	    SYNC_GC;
+	    unbind_n (bindbase, BIND_USE);
+	    bindp = bindbase - 1;
 	    impurity = 0;
 	    break;
 
@@ -1367,7 +1380,7 @@ again:
 		goto error;
 
 	    /* ...or if it's time to gc... */
-	    gc_stackbase.count = STK_USE;
+	    SYNC_GC;
 	    if(rep_data_after_gc >= rep_gc_threshold)
 		Fgarbage_collect(Qt);
 
@@ -1381,10 +1394,6 @@ again:
 	    goto error;
 	}
 
-#ifdef CHECK_STACK_USAGE
-        assert (STK_USE <= rep_INT(stkreq));
-#endif
-
 	/* Check if the instruction raised an exception.
 
 	   Checking for !TOP isn't strictly necessary, but I think
@@ -1395,18 +1404,17 @@ again:
 	{
 	    /* Some form of error occurred. Unwind the binding stack. */
 	error:
-	    while(rep_CONSP(bindstack))
+	    while(!BIND_TOP_P)
 	    {
-		repv item = rep_CAR(bindstack);
+		repv item = BIND_RET_POP;
 		if(!rep_CONSP(item) || rep_CAR(item) != Qerror)
 		{
 		    rep_GC_root gc_throwval;
 		    repv throwval = rep_throw_value;
 		    rep_throw_value = rep_NULL;
 		    rep_PUSHGC(gc_throwval, throwval);
-		    gc_stackbase.count = STK_USE;
+		    SYNC_GC;
 		    impurity -= rep_unbind_object(item);
-		    bindstack = rep_CDR(bindstack);
 		    rep_POPGC;
 		    rep_throw_value = throwval;
 		}
@@ -1428,7 +1436,6 @@ again:
 		    PUSH(rep_throw_value);
 		    rep_throw_value = rep_NULL;
 		    pc = rep_STR(code) + rep_INT(rep_CAR(item));
-		    bindstack = rep_CDR(bindstack);
 		    impurity--;
 		    goto fetch;
 		}
@@ -1436,7 +1443,6 @@ again:
 		{
 		    /* car is an exception handler, but rep_throw_value isn't
 		       set, so there's nothing to handle. Keep unwinding. */
-		    bindstack = rep_CDR(bindstack);
 		    impurity--;
 		}
 	    }
@@ -1447,13 +1453,13 @@ again:
 
 quit:
     /* only use this var to save declaring another */
-    bindstack = TOP;
+    code = TOP;
 
     /* close the stack scope */ }
 
     rep_lisp_depth--;
-    rep_POPGCN; rep_POPGC; rep_POPGC; rep_POPGC;
-    return bindstack;
+    rep_POPGCN; rep_POPGCN; rep_POPGC; rep_POPGC;
+    return code;
 }
 
 DEFUN("validate-byte-code", Fvalidate_byte_code, Svalidate_byte_code, (repv bc_major, repv bc_minor), rep_Subr2) /*
