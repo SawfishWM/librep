@@ -65,8 +65,9 @@ _PR VALUE sym_nil, sym_t;
 DEFSYM(nil, "nil");
 DEFSYM(t, "t");
 
-_PR VALUE sym_variable_documentation;
+_PR VALUE sym_variable_documentation, sym_permanent_local;
 DEFSYM(variable_documentation, "variable-documentation");
+DEFSYM(permanent_local, "permanent-local");
 
 /* This value is stored in the cells of a symbol to denote a void object. */
 _PR VALUE void_value;
@@ -1009,13 +1010,28 @@ DEFUN("kill-all-local-variables", cmd_kill_all_local_variables, subr_kill_all_lo
 ::doc:kill_all_local_variables::
 kill-all-local-variables [BUFFER]
 
-Remove all buffer-local variables from BUFFER.
+Remove all buffer-local variables from BUFFER that are not marked as being
+permanent (i.e. their `permanent-local' property is unset or non-nil.)
 ::end:: */
 {
+    VALUE list;
     if(!BUFFERP(tx))
 	tx = VAL(curr_vw->vw_Tx);
+    list = VTX(tx)->tx_LocalVariables;
     VTX(tx)->tx_LocalVariables = sym_nil;
-    return(tx);
+    while(CONSP(list))
+    {
+	if(NILP(cmd_get(VCAR(VCAR(list)), sym_permanent_local)))
+	    list = VCDR(list);
+	else
+	{
+	    VALUE next = VCDR(list);
+	    VCDR(list) = VTX(tx)->tx_LocalVariables;
+	    VTX(tx)->tx_LocalVariables = list;
+	    list = next;
+	}
+    }
+    return tx;
 }
 
 _PR VALUE cmd_kill_local_variable(VALUE, VALUE);
@@ -1196,6 +1212,7 @@ symbols_init(void)
     VSYM(sym_t)->car |= SF_CONSTANT;
 
     INTERN(variable_documentation);
+    INTERN(permanent_local);
     ADD_SUBR(subr_make_symbol);
     ADD_SUBR(subr_make_obarray);
     ADD_SUBR(subr_find_symbol);
