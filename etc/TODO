@@ -13,11 +13,9 @@ Outstanding bugs
 ================
 
  ! How does the return function work with open-coded functions? Not
-   [This is a test conflict]
    very well probably..
 
  ! Change most uses of make-buffer to use open-buffer, and only
-   [And another one]
    to open the buffer on demand
 
  ! The new number parsing code accepts ``0x'' as a valid zero. This
@@ -35,6 +33,11 @@ Outstanding bugs
  ! In the prompt, case-insensitive completion has a few wrinkles (like
    deleted characters that are the same across all completions but for
    their case)
+
+ ! The fill-area function still screws up the final line of a buffer
+
+ ! Resizing windows via the window-system sometimes doesn't propagate
+   to Jade's perception
 
 
 General programming tasks:
@@ -80,6 +83,12 @@ General programming tasks:
 
  + Make swap-del-bs a runtime option, not compile time
 
+ - Some method of associating ``attributes'' with regions of buffers,
+   these attributes would be things like colour, style (bold,
+   underline..), and general properties (e.g. read-only, keymaps,
+   glyph-tables, etc...). Probably not font-size/family since it's
+   nice to keep the idea of a window as a regular grid of glyphs.
+
  - Remove read-mail-mode's concrete link between folders and
    buffers/files. This would be similar to VM's virtual folder concept.
    The great thing is that most fundamental parts are already (more or
@@ -118,13 +127,11 @@ General programming tasks:
  - Notification of when a file changes externally
 
  - Change RCS mode to do generic version control, with backends for
-   various systems (RCS, CVS, SCCS, PRCS?, ...)
+   various systems (RCS, SCCS, ...)
 
- - Some method of associating ``attributes'' with regions of buffers,
-   these attributes would be things like colour, style (bold,
-   underline..), and general properties (e.g. read-only, keymaps,
-   glyph-tables, etc...). Probably not font-size/family since it's
-   nice to keep the idea of a window as a regular grid of glyphs.
+   Note that CVS has its own mode since it's conceptually different; it
+   deals with groups of files, whereas RCS only worries about files in
+   the singular
 
  - Write a file handler to access remote files. Syntax would be
    something like /[USER@]HOST:FILE-NAME as in Emacs. There are a

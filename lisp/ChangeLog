@@ -1,3 +1,12 @@
+Sun Apr 19 15:30:07 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* cvs.jl, autoload.jl: a rudimentary CVS mode, inspired by
+	pcl-cvs.el. Most important shortcoming is lack of control over
+	which revisions are manipulated
+
+	* dired.jl, summary.jl (dired-mark-if): moved from dired.jl to
+	summary.jl, and renamed as summary-mark-if
+
 Sat Apr 18 00:19:49 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* buffers.jl (revert-buffer): attempt to leave the cursor in
