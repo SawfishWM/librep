@@ -22,7 +22,7 @@
 #define BYTECODES_H
 
 #define BYTECODE_MAJOR_VERSION 3
-#define BYTECODE_MINOR_VERSION 0
+#define BYTECODE_MINOR_VERSION 1
 
 /* Number of bits encoded in each extra opcode forming the argument. */
 #define ARG_SHIFT    8
@@ -139,8 +139,6 @@
 					         stk[0] = nil */
 #define OP_SIGNAL 0x7d			/* call-2 signal */
 #define OP_RETURN 0x7e			/* (throw 'defun pop[0]) */
-
-/* new 12/7/94 */
 #define OP_REVERSE 0x7f			/* call-1 reverse */
 #define OP_NREVERSE 0x80		/* call-1 nreverse */
 #define OP_ASSOC 0x81			/* call-2 assoc */
@@ -162,13 +160,12 @@
 #define OP_SPECIAL_FORM_P 0x91		/* call-1 special-form-p */
 #define OP_SUBRP 0x92			/* call-1 subrp */
 #define OP_EQL 0x93			/* push (eql pop[1] pop[2]) */
-
-/* new 23-8-94 */
 #define OP_LXOR 0x94			/* push (logxor pop[1] pop[2] */
-
-/* new 12-1-98 */
 #define OP_MAX 0x95			/* push (max pop[1] pop[2]) */
 #define OP_MIN 0x96			/* push (min pop[1] pop[2]) */
+#define OP_FILTER 0x97			/* call-2 filter */
+#define OP_MACROP 0x98			/* call-1 macrop */
+#define OP_BYTECODEP 0x99		/* call-1 bytecodep */
 
 #define OP_SET_CURRENT_BUFFER 0xb0	/* call-2 set-current-buffer */
 #define OP_BIND_BUFFER 0xb1
@@ -178,19 +175,19 @@
 #define OP_WINDOWP 0xb5			/* call-1 windowp */
 #define OP_BIND_WINDOW 0xb6
 
-/* new 26-8-97 */
 #define OP_VIEWP 0xb7			/* call-1 viewp */
 #define OP_BIND_VIEW 0xb8
 #define OP_CURRENT_VIEW 0xb9		/* call-1 current-view */
 #define OP_SWAP2 0xba			/* stk[0] = stk[1], stk[1] = stk[2],
 					   stk[2] = stk[0]. */
 
-/* new 21-11-97 */
 #define OP_MOD 0xbb			/* push (mod pop[1] pop[2]) */
 
-/* new 20-12-97 */
 #define OP_POS 0xbc			/* call-2 pos */
 #define OP_POSP 0xbd			/* call-1 posp */
+
+
+/* Jump opcodes */
 
 #define OP_LAST_BEFORE_JMPS 0xf7
 

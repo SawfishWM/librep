@@ -191,7 +191,7 @@ fetch:
     {
 	switch(c)
 	{
-	    short arg;
+	    u_short arg;
 	    VALUE tmp, tmp2;
 
 	CASE_OP_ARG(OP_CALL)
@@ -941,6 +941,15 @@ fetch:
 	    if(value_cmp(tmp, TOP) < 0)
 		TOP = tmp;
 	    break;
+
+	case OP_FILTER:
+	    CALL_2(cmd_filter);
+
+	case OP_MACROP:
+	    CALL_1(cmd_macrop);
+
+	case OP_BYTECODEP:
+	    CALL_1(cmd_bytecodep);
 
 	case OP_SET_CURRENT_BUFFER:
 	    CALL_2(cmd_set_current_buffer);
