@@ -203,13 +203,13 @@ void
 rep_init(char *prog_name, int *argc, char ***argv,
 	 void (*sys_symbols)(void), void (*sys_usage)(void))
 {
-    if(sizeof(rep_PTR_SIZED_INT) != sizeof(void *))
+    if(sizeof(rep_PTR_SIZED_INT) < sizeof(void *))
     {
-	fputs("sizeof(rep_PTR_SIZED_INT) != sizeof(void *); aborting\n",
+	fputs("sizeof(rep_PTR_SIZED_INT) < sizeof(void *); aborting\n",
 	      stderr);
 	exit(10);
     }
-    if(rep_PTR_SIZED_INT_BITS != sizeof(rep_PTR_SIZED_INT) * CHAR_BIT)
+    if(rep_PTR_SIZED_INT_BITS > sizeof(rep_PTR_SIZED_INT) * CHAR_BIT)
     {
 	fputs("rep_PTR_SIZED_INT_BITS incorrectly defined; aborting\n",
 	      stderr);
