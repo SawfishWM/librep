@@ -1,5 +1,8 @@
 2000-07-13  John Harper  <john@dcs.warwick.ac.uk>
 
+	* record-profile.c (test_interrupt): add null statement after
+	`skip:' label to make it ANSI-legal
+
 	* lisp.c (rep_string_print): print to a fixed size local
 	buffer, instead of outputting a character at a time (this
 	avoids unneeded system calls when printing to processes)
