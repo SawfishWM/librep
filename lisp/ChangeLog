@@ -1,3 +1,8 @@
+2001-10-19  John Harper  <jsh@unfactored.org>
+
+	* rep/util/repl.jl: renamed ,dis as ,disassemble (since the
+	unique prefix thing will accept ,dis anyway)
+
 2001-10-11  John Harper  <jsh@unfactored.org>
 
 	* rep/lang/interpreter.jl (default-error-handler): catch and

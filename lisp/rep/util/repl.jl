@@ -301,7 +301,7 @@
   (define-repl-command 'collect garbage-collect)
 
   (define-repl-command
-   'dis
+   'disassemble
    (lambda (arg)
      (require 'rep.vm.disassembler)
      (disassemble (repl-eval arg)))
