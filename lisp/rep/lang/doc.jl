@@ -72,12 +72,8 @@ NAME is true, then it should be the symbol that is associated with VALUE."
       (format standard-output "%s: " type)
       (let ((arg-doc (cond ((eq (car value) 'lambda)
 			    (describe-lambda-list (cadr value)))
-			   ((bytecodep value)
-			    (cond ((listp (aref value 0))
-				   (describe-lambda-list (aref value 0)))
-				  ((and name (symbolp name))
-				   (doc-file-ref
-				    (concat 0 (symbol-name name)))))))))
+			   ((and (bytecodep value) name (symbolp name))
+			    (doc-file-ref (concat 0 (symbol-name name)))))))
 	(format standard-output
 		"\(%s%s\)\n" (or name value) (or arg-doc "")))))
 
