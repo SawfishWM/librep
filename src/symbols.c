@@ -387,6 +387,7 @@ current environment.
     f->env = rep_env;
     f->fenv = rep_fenv;
     f->special_env = rep_special_env;
+    f->fh_env = rep_fh_env;
     f->next = funargs;
     funargs = f;
     return rep_VAL (f);
