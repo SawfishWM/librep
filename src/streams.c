@@ -36,6 +36,8 @@
    Note that when using any of the three BUFFER stream types, the buffer's
    restriction is respected. */
 
+#define _GNU_SOURCE
+
 #include "repint.h"
 
 #include <string.h>

@@ -18,6 +18,8 @@
  * misrepresented as being the original software.
  */
 
+#define _GNU_SOURCE
+
 #define rep_NEED_REGEXP_INTERNALS
 #include "repint.h"
 

@@ -18,6 +18,8 @@
    along with Jade; see the file COPYING.	If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
+#define _GNU_SOURCE
+
 #include "repint.h"
 #include "build.h"
 
@@ -386,18 +388,20 @@ with the current time of day.
     divisor = rep_LISP_MAX_INT / limit;
     do {
 	val = rand();
-#if rep_LISP_INT_BITS > RAND_BITS
+#if rep_LISP_INT_BITS-1 > RAND_BITS
 	val = (val << RAND_BITS) | rand();
-# if rep_LISP_INT_BITS > 2*RAND_BITS
+# if rep_LISP_INT_BITS-1 > 2*RAND_BITS
 	val = (val << RAND_BITS) | rand();
-#  if rep_LISP_INT_BITS > 3*RAND_BITS
+#  if rep_LISP_INT_BITS-1 > 3*RAND_BITS
 	val = (val << RAND_BITS) | rand();
-#   if rep_LISP_INT_BITS > 4*RAND_BITS
+#   if rep_LISP_INT_BITS-1 > 4*RAND_BITS
 	val = (val << RAND_BITS) | rand();
 #   endif
 #  endif
 # endif
 #endif
+	/* Ensure VAL is positive (assumes twos-complement) */
+	val &= ~(~0 << (rep_LISP_INT_BITS-1));
 	val /= divisor;
     } while(val >= limit);
 

@@ -25,6 +25,8 @@
 
 /* Lots of changes for Jade. See the file README.regexp for more details */
 
+#define _GNU_SOURCE
+
 #define rep_NEED_REGEXP_INTERNALS
 #include "repint.h"
 
