@@ -31,6 +31,7 @@
 ;;   (eq? 'FOO 'foo) => #f, guile also fails here
 ;;   `(..) => (backquote ..) not (quasiquote ..)
 ;;   (symbol? '()) => #t, not #f
+;;   no separate character type
 
 ;; to test this, run the repl, then: ",new test" and ",open scheme"
 
