@@ -37,6 +37,7 @@ DEFSTRING(rep_version_string, REP_VERSION);
 DEFSYM(operating_system, "operating-system");
 DEFSYM(process_environment, "process-environment");
 DEFSYM(rep_version, "rep-version");
+DEFSYM(rep_interface_id, "rep-interface-id");
 DEFSYM(rep_build_id, "rep-build-id"); /*
 ::doc:operating-system::
 A symbol defining the type of operating system that Jade is running
@@ -570,6 +571,8 @@ rep_misc_init(void)
 
     rep_INTERN_SPECIAL(rep_version);
     Fset (Qrep_version, rep_VAL(&rep_version_string));
+    rep_INTERN_SPECIAL(rep_interface_id);
+    Fset (Qrep_interface_id, rep_VAL(rep_MAKE_INT(rep_INTERFACE)));
     rep_INTERN_SPECIAL(rep_build_id);
     Fset (Qrep_build_id, rep_VAL(&build_id_string));
 
