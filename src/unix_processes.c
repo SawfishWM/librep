@@ -34,6 +34,7 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/socket.h>
 
 #ifdef NEED_MEMORY_H
 # include <memory.h>
@@ -124,12 +125,16 @@ struct Proc
 /* Connection types */
 DEFSYM(pipe, "pipe");
 DEFSYM(pty, "pty");
+DEFSYM(socketpair, "socketpair");
 
 #define PR_CONN_PTY_P(p) \
     ((p)->pr_ConnType == Qpty)
 
 #define PR_CONN_PIPE_P(p) \
     ((p)->pr_ConnType == Qpipe)
+
+#define PR_CONN_SOCKETPAIR_P(p) \
+    ((p)->pr_ConnType == Qsocketpair)
 
 #define VPROC(v)	((struct Proc *)rep_PTR(v))
 #define PROCESSP(v)	rep_CELL8_TYPEP(v, rep_Process)
@@ -544,6 +549,16 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 		}
 	    }
 	}
+	else if (PR_CONN_SOCKETPAIR_P(pr))
+	{
+	    /* XXX separate stdout from stderr.. */
+	    if (socketpair (AF_UNIX, SOCK_STREAM, 0, stdin_fds) == 0)
+	    {
+		pr->pr_Stdin = stdin_fds[0];
+		pr->pr_Stdout = stdin_fds[0];
+		pr->pr_Stderr = stdin_fds[0];
+	    }
+	}
 	else if(usepty)
 	{
 	    pr->pr_Stdin = get_pty(slavenam);
@@ -631,6 +646,20 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 		    st.c_cc[VEOF]   = '\004';	/* ^d */
 		    tcsetattr(0, TCSANOW, &st);
 		}
+		else if (PR_CONN_SOCKETPAIR_P(pr))
+		{
+		    /* startup for socketpair */
+		    if(setpgid(0, 0) != 0)
+		    {
+			perror("setpgid");
+			exit(255);
+		    }
+		    close (stdin_fds[0]);
+		    dup2 (stdin_fds[1], 0);
+		    dup2 (stdin_fds[1], 1);
+		    dup2 (stdin_fds[1], 2);
+		    close (stdin_fds[1]);
+		}
 		else
 		{
 		    /* startup for pipes */
@@ -663,6 +692,11 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 
 	    case -1:
 		/* Clean up all open files */
+		if (PR_CONN_SOCKETPAIR_P(pr))
+		{
+		    close (stdin_fds[0]);
+		    close (stdin_fds[1]);
+		}
 		if (sync_input != 0 || !usepty)
 		{
 		    /* pipes */
@@ -682,7 +716,11 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 		/* Parent process */
 
 		PR_SET_STATUS(pr, PR_RUNNING);
-		if(!usepty)
+		if (PR_CONN_SOCKETPAIR_P(pr))
+		{
+		    close (stdin_fds[1]);
+		}
+		else if(!usepty)
 		{
 		    close(stdin_fds[0]);
 		    close(stdout_fds[1]);
@@ -1656,6 +1694,8 @@ DEFUN("set-process-error-stream", Fset_process_error_stream, Sset_process_error_
 set-process-error-stream PROCESS STREAM
 
 Set the error-stream of PROCESS to STREAM. nil means discard all output.
+
+Note that this currently only works correctly with pipe connections.
 ::end:: */
 {
     rep_DECLARE1(proc, PROCESSP);
@@ -1730,8 +1770,8 @@ DEFUN("process-connection-type", Fprocess_connection_type, Sprocess_connection_t
 ::doc:Sprocess-connection-type::
 process-connection-type PROCESS
 
-Returns a symbol defining the type of stream (i.e. pipe or pty) used to
-connect PROCESS with its physical process.
+Returns a symbol defining the type of stream (i.e. pipe, pty, or
+socketpair) used to connect PROCESS with its physical process.
 ::end:: */
 {
     repv res;
@@ -1744,12 +1784,17 @@ DEFUN("set-process-connection-type", Fset_process_connection_type, Sset_process_
 ::doc:Sset-process-connection-type::
 set-process-connection-type PROCESS TYPE
 
-Define how PROCESS communicates with it's child process, TYPE can be one of
-the following symbols,
+Define how PROCESS communicates with it's child process, TYPE may be
+one of the following symbols:
+
   pty		Use a pty
-  pipe		Two pipes are used
+  pipe		Three pipes are used
+  socketpair	Use a socketpair
 
 This function can only be used when PROCESS is not in use.
+
+Note that only the `pipe' connection type allows process output and
+process error output to be differentiated.
 ::end:: */
 {
     rep_DECLARE1(proc, PROCESSP);
@@ -1912,6 +1957,7 @@ rep_proc_init(void)
 
     rep_INTERN(pipe);
     rep_INTERN(pty);
+    rep_INTERN(socketpair);
     rep_ADD_SUBR(Smake_process);
     rep_ADD_SUBR(Sstart_process);
     rep_ADD_SUBR(Scall_process);
