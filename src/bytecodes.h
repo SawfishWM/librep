@@ -61,10 +61,6 @@
 /* Push the list formed from the top ARG values on the stack. */
 #define OP_LIST 0x28
 
-/* Lexically bind the value on the top of the stack to the symbol
-   const[ARG]. Pops the value off the stack. */
-#define OP_BIND 0x30
-
 /* Pushes the ARG'th value in the lexical environment */
 #define OP_REFN 0x38
 
@@ -107,7 +103,7 @@
 #define OP_ASET 0x52			/* call-3 aset */
 #define OP_AREF 0x53			/* call-2 aref */
 #define OP_LENGTH 0x54			/* call-1 length */
-#define OP_EVAL 0x55			/* call-1 eval */
+#define OP_BIND 0x55
 #define OP_ADD 0x56			/* push (+ pop[1] pop[2]) */
 #define OP_NEG 0x57			/* push (- pop[1]) */
 #define OP_SUB 0x58			/* push (- pop[1] pop[2]) */
