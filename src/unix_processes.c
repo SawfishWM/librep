@@ -614,45 +614,28 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 	}
 	if(pr->pr_Stdin)
 	{
-	    switch(pr->pr_Pid = fork())
+	    int pty_slave_fd = -1;
+
+	    /* Must set up pty slave before forking, to avoid race
+	       condition if master writes to it first */
+	    if(usepty)
 	    {
-	    case 0:
-		/* Child process */
-
-		child_build_environ ();
-
-		if(usepty)
+		struct termios st;
+		pty_slave_fd = open(slavenam, O_RDWR);
+		if (pty_slave_fd >= 0)
 		{
-		    int slave;
-		    struct termios st;
-		    if(setsid() < 0)
-		    {
-			perror("child: setsid()");
-			_exit(255);
-		    }
-		    if((slave = open(slavenam, O_RDWR)) < 0)
-		    {
-			perror("child: open(slave)");
-			_exit(255);
-		    }
-		    close(pr->pr_Stdin);
 #ifdef HAVE_DEV_PTMX
 # ifdef I_PUSH
 		    /* Push the necessary modules onto the slave to
 		       get terminal semantics. */
-		    ioctl(slave, I_PUSH, "ptem");
-		    ioctl(slave, I_PUSH, "ldterm");
+		    ioctl(pty_slave_fd, I_PUSH, "ptem");
+		    ioctl(pty_slave_fd, I_PUSH, "ldterm");
 # endif
 #endif
-		    dup2(slave, 0);
-		    dup2(slave, 1);
-		    dup2(slave, 2);
-		    if(slave > 2)
-			close(slave);
 #ifdef TIOCSCTTY
-		    ioctl(slave, TIOCSCTTY, 0);
+		    ioctl(pty_slave_fd, TIOCSCTTY, 0);
 #endif
-		    tcgetattr(0, &st);
+		    tcgetattr(pty_slave_fd, &st);
 		    st.c_iflag &= ~(ISTRIP | IGNCR | INLCR | IXOFF);
 		    st.c_iflag |= (ICRNL | IGNPAR | BRKINT | IXON);
 		    st.c_oflag &= ~OPOST;
@@ -670,7 +653,39 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 		    st.c_cc[VERASE] = '\177';	/* ^? */
 		    st.c_cc[VKILL]  = '\025';	/* ^u */
 		    st.c_cc[VEOF]   = '\004';	/* ^d */
-		    tcsetattr(0, TCSANOW, &st);
+		    tcsetattr(pty_slave_fd, TCSANOW, &st);
+		}
+	    }
+
+	    switch(pr->pr_Pid = fork())
+	    {
+	    case 0:
+		/* Child process */
+
+		child_build_environ ();
+
+		if(usepty)
+		{
+		    if(setsid() < 0)
+		    {
+			perror("child: setsid()");
+			_exit(255);
+		    }
+		    if(pty_slave_fd < 0)
+		    {
+			perror("child: open(slave)");
+			_exit(255);
+		    }
+		    close(pr->pr_Stdin);
+
+		    dup2(pty_slave_fd, 0);
+		    dup2(pty_slave_fd, 1);
+		    dup2(pty_slave_fd, 2);
+		    if(pty_slave_fd > 2)
+		    {
+			close(pty_slave_fd);
+			pty_slave_fd = -1;
+		    }
 		}
 		else if (PR_CONN_SOCKETPAIR_P(pr))
 		{
@@ -719,6 +734,8 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 
 	    case -1:
 		/* Clean up all open files */
+		if (pty_slave_fd != -1)
+		    close (pty_slave_fd);
 		if (PR_CONN_SOCKETPAIR_P(pr))
 		{
 		    close (stdin_fds[0]);
@@ -742,6 +759,8 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 	    default:
 		/* Parent process */
 
+		if (pty_slave_fd != -1)
+		    close (pty_slave_fd);
 		PR_SET_STATUS(pr, PR_RUNNING);
 		if (PR_CONN_SOCKETPAIR_P(pr))
 		{
