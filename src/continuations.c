@@ -60,13 +60,15 @@
    implementation. Threads are local to each enclosing closed barrier
    (dynamic root). Each barrier has two thread queues, runnable and
    suspended. Each thread is just a (primitive) continuation, the
-   lexical environment, and a forbid-preemption count.
+   lexical environment, and a forbid-preemption count. The dynamic root
+   acts as a serialization point, it will only be crossed when the last
+   thread has exited or been deleted.
 
    To avoid having to consider preemption throughout the interpreter,
    there are only (currently) two preemption points, in funcall and the
-   bytecode jmp instructions. The rep_test_int_counter is used to
-   decide when to try to preempt the current thread. In non-threaded
-   mode (i.e. thread_invoke () hasn't been called in the current root),
+   bytecode interpreter. The rep_test_int_counter is used to decide
+   when to try to preempt the current thread. In non-threaded mode
+   (i.e. thread_invoke () hasn't been called in the current root),
    these are all no-ops. The rep_TEST_INT_SLOW macro is also allowed to
    preempt.
 
@@ -81,10 +83,14 @@
 	 (format standard-output "thread-%s: %8d\n" id *counter*)
 	 (setq *counter* (1+ *counter*)))))
 
-   (setq thread-1 (make-thread (lambda () (thread-fun 1)) 'thread-1))
-   (setq thread-2 (make-thread (lambda () (thread-fun 2)) 'thread-2))
+   (setq thread-1 (make-thread (lambda () (thread-fun 1)) "thread-1"))
+   (setq thread-2 (make-thread (lambda () (thread-fun 2)) "thread-2"))
 
-   (thread-delete)   */
+   [ the dynamic root is a serialization point, it won't be exited
+     until _all_ threads it contains have exited / been deleted ]
+
+   The lisp debugger runs in it's own dynamic root, so debugging
+   threads works for free!  */
 
 #define _GNU_SOURCE
 #undef DEBUG
@@ -187,6 +193,9 @@ static rep_barrier *barriers;
 /* The outermost active closed barrier (the dynamic root in guile terms?) */
 static rep_barrier *root_barrier;
 
+/* Put in rep_throw_value when the enclosing closed barrier needs to exit */
+static repv exit_barrier_cell;
+
 /* The data saved for a continuation */
 struct rep_continuation_struct {
     repv car;
@@ -225,6 +234,7 @@ struct rep_thread_struct {
     repv car;
     rep_thread *next_alloc;
     rep_thread *next, *pred;
+    repv name;
     rep_continuation *cont;
     repv env, special_env, fh_env;
     repv (*bytecode)(repv, repv, repv, repv);
@@ -266,12 +276,12 @@ static inline char *
 fixup (char *addr, rep_continuation *c)
 {
 #if STACK_DIRECTION < 0
-    if (addr <= c->stack_bottom)
+    if (addr < c->stack_bottom)
 	return (addr - c->stack_top) + c->stack_copy;
     else
 	return addr;
 #else
-    if (addr >= c->stack_bottom)
+    if (addr > c->stack_bottom)
 	return (addr - c->stack_bottom) + c->stack_copy;
     else
 	return addr;
@@ -279,6 +289,8 @@ fixup (char *addr, rep_continuation *c)
 }
 
 #define FIXUP(t,c,addr) ((t) (fixup ((char *) (addr), (c))))
+
+static void thread_delete (rep_thread *t);
 
 
 /* barriers */
@@ -304,9 +316,8 @@ rep_call_with_barrier (repv (*callback)(repv), repv arg,
 
     memset (&b, 0, sizeof (b));
     b.point = (char *) &b;
-#if STACK_DIRECTION < 0
-    /* ensure all of barrier is saved on the stack */
-    b.point += sizeof (rep_barrier);
+#if STACK_DIRECTION > 0
+    b.point += sizeof (rep_barrier);	/* don't want to save barrier */
 #endif
     b.root = root_barrier;
     b.in = in;
@@ -326,23 +337,55 @@ rep_call_with_barrier (repv (*callback)(repv), repv arg,
 
     ret = callback (arg);
 
-    DB(("with-barrier[%s]: out %p (%d)\n",
-	closed ? "closed" : "open", &b, b.depth));
-
-    if (closed && b.targeted)
+    if (closed)
     {
-	/* Invalidate any continuations that require this barrier */
-	rep_continuation *c;
-	for (c = continuations; c != 0; c = c->next)
+    again:
+	if (rep_throw_value == exit_barrier_cell)
 	{
-	    if (c->root == &b)
-		c->car |= CF_INVALID;
+	    DB (("caught barrier exit throw\n"));
+	    rep_throw_value = rep_CDR (exit_barrier_cell);
+	    if (rep_throw_value == Qnil)
+		rep_throw_value = rep_NULL;
+	    ret = Qnil;
+	}
+
+	if (b.active != 0)
+	{
+	    /* An active thread exited. Calling thread_delete () on the
+	       active thread will call thread_invoke (). That will
+	       exit if there are no more runnable threads. */
+	    DB (("deleting active thread %p\n", b.active));
+	    thread_delete (b.active);
+	    goto again;
+	}
+
+	if (b.targeted)
+	{
+	    /* Invalidate any continuations that require this barrier */
+	    rep_continuation *c;
+	    for (c = continuations; c != 0; c = c->next)
+	    {
+		if (c->root == &b)
+		    c->car |= CF_INVALID;
+	    }
 	}
     }
+
+    DB(("with-barrier[%s]: out %p (%d)\n",
+	closed ? "closed" : "open", &b, b.depth));
 
     barriers = b.next;
     root_barrier = b.root;
     return ret;
+}
+
+static rep_barrier *
+get_dynamic_root (int depth)
+{
+    rep_barrier *root = root_barrier;
+    while (depth-- > 0 && root != 0)
+	root = root->root;
+    return root;
 }
 
 /* Record all barriers from continuation C's outermost barrier into the
@@ -417,7 +460,6 @@ static void
 grow_stack_and_invoke (rep_continuation *c, char *water_mark)
 {
     volatile char growth[STACK_GROWTH];
-    rep_barrier tem;
 
     /* if stack isn't large enough, recurse again */
 
@@ -432,16 +474,13 @@ grow_stack_and_invoke (rep_continuation *c, char *water_mark)
     FLUSH_REGISTER_WINDOWS;
 
     /* stack's big enough now, so reload the saved copy somewhere
-       below the current position. But preserve the current contents
-       of the continuation's barrier. */
+       below the current position. */
 
-    tem = *c->root;
 #if STACK_DIRECTION < 0
     memcpy (c->stack_top, c->stack_copy, c->stack_size);
 #else
     memcpy (c->stack_bottom, c->stack_copy, c->stack_size);
 #endif
-    *c->root = tem;
 
     longjmp (c->jmpbuf, 1);
 }
@@ -705,15 +744,43 @@ thread_load_environ (rep_thread *t)
 }
 
 static void
-append_thread (rep_thread *t, rep_barrier *root)
+enqueue_thread (rep_thread *t, rep_barrier *root)
 {
-    assert (!(t->car & TF_SUSPENDED));
-    t->pred = root->tail;
-    if (t->pred != 0)
-	t->pred->next = t;
-    if (root->head == 0)
-	root->head = t;
-    root->tail = t;
+    assert (!(t->car & TF_EXITED));
+    if (!(t->car & TF_SUSPENDED))
+    {
+	t->pred = root->tail;
+	if (t->pred != 0)
+	    t->pred->next = t;
+	if (root->head == 0)
+	    root->head = t;
+	root->tail = t;
+    }
+    else
+    {
+	rep_thread *ptr = root->susp_head;
+	while (ptr != 0 && TV_LATER_P (&t->run_at, &ptr->run_at))
+	    ptr = ptr->next;
+	if (ptr != 0)
+	{
+	    t->pred = ptr->pred;
+	    if (ptr->pred != 0)
+		ptr->pred->next = t;
+	    else
+		root->susp_head = t;
+	    ptr->pred = t;
+	    t->next = ptr;
+	}
+	else
+	{
+	    t->pred = root->susp_tail;
+	    if (t->pred != 0)
+		t->pred->next = t;
+	    if (root->susp_head == 0)
+		root->susp_head = t;
+	    root->susp_tail = t;
+	}
+    }
 }
 
 static void
@@ -741,6 +808,18 @@ unlink_thread (rep_thread *t)
     t->next = t->pred = 0;
 }
 
+static void
+thread_wake (rep_thread *t)
+{
+    rep_barrier *root = t->cont->root;
+    assert (t->car & TF_SUSPENDED);
+    assert (!(t->car & TF_EXITED));
+
+    unlink_thread (t);
+    t->car &= ~TF_SUSPENDED;
+    enqueue_thread (t, root);
+}
+
 static repv
 inner_thread_invoke (rep_continuation *c, void *data)
 {
@@ -756,6 +835,7 @@ inner_thread_invoke (rep_continuation *c, void *data)
 static void
 thread_invoke ()
 {
+again:
     if (root_barrier->head != 0)
     {
 	rep_thread *active = root_barrier->active;
@@ -778,7 +858,41 @@ thread_invoke ()
 	}
     }
     else
-	root_barrier->active = 0;
+    {
+	/* No thread to run. If no suspended threads return from the
+	   root barrier. Else sleep.. */
+	if (root_barrier->susp_head == 0)
+	{
+	    root_barrier->active = 0;
+	    if (rep_throw_value)
+		rep_CDR (exit_barrier_cell) = rep_throw_value;
+	    rep_throw_value = exit_barrier_cell;
+	    DB (("no more threads, throwing to root..\n"));
+	    return;
+	}
+	else
+	{
+	    rep_thread *b = root_barrier->susp_head;
+	    struct timeval now, then;
+	    gettimeofday (&now, 0);
+	    then.tv_sec = b->run_at.tv_sec - now.tv_sec;
+	    then.tv_usec = b->run_at.tv_usec - now.tv_usec;
+	    while (then.tv_usec < 0)
+	    {
+		then.tv_usec += 1000000;
+		then.tv_sec--;
+	    }
+	    DB (("no more threads, sleeping..\n"));
+	    if (TV_LATER_P (&then, &now))
+	    {
+		rep_sleep_for (then.tv_sec - now.tv_sec,
+			       (then.tv_usec - now.tv_usec) / 1000);
+	    }
+	    DB (("..waking thread %p\n", b));
+	    thread_wake (b);
+	    goto again;
+	}
+    }
 }
 
 static void
@@ -797,33 +911,34 @@ inner_make_thread (rep_continuation *c, void *data)
 {
     rep_thread *t = data;
     t->cont = c;
-    append_thread (t, t->cont->root);
+    enqueue_thread (t, t->cont->root);
     return -1;
 }
 
 static rep_thread *
-new_thread (void)
+new_thread (repv name)
 {
     rep_thread *t = rep_ALLOC_CELL (sizeof (rep_thread));
     rep_data_after_gc += sizeof (rep_thread);
     memset (t, 0, sizeof (rep_thread));
     t->car = rep_thread_type;
+    t->name = name;
     t->next_alloc = threads;
     threads = t;
     return t;
 }
 
 static rep_thread *
-make_thread (repv thunk)
+make_thread (repv thunk, repv name)
 {
     repv ret;
-    rep_thread *t = new_thread ();
+    rep_thread *t = new_thread (name);
     thread_save_environ (t);
 
     if (root_barrier->active == 0)
     {
 	/* entering threaded execution. make the default thread */
-	rep_thread *x = new_thread ();
+	rep_thread *x = new_thread (Qnil);
 	thread_save_environ (t);
 	/* this continuation will never get called,
 	   but it simplifies things.. */
@@ -841,8 +956,8 @@ make_thread (repv thunk)
 	t->car |= TF_EXITED;
 	thread_delete (t);
 	thread_invoke ();
-	fprintf (stderr, "last thread died, exiting..\n");
-	exit (0);
+	assert (rep_throw_value == exit_barrier_cell);
+	return 0;
     }
 }
 
@@ -878,7 +993,7 @@ thread_yield (void)
 	{
 	    unlink_thread (ptr);
 	    ptr->car &= ~TF_SUSPENDED;
-	    append_thread (ptr, root_barrier);
+	    enqueue_thread (ptr, root_barrier);
 	}
     }
 
@@ -894,13 +1009,6 @@ thread_suspend (rep_thread *t, u_long msecs)
     assert (!(t->car & TF_EXITED));
 
     unlink_thread (t);
-    t->pred = root->susp_tail;
-    if (root->susp_tail != 0)
-	root->susp_tail->next = t;
-    else
-	root->susp_head = t;
-    root->susp_tail = t;
-    t->next = 0;
     t->car |= TF_SUSPENDED;
     if (msecs == 0)
     {
@@ -918,32 +1026,21 @@ thread_suspend (rep_thread *t, u_long msecs)
 	    t->run_at.tv_usec = t->run_at.tv_usec % 1000000;
 	}
     }
+    enqueue_thread (t, root);
     if (root_barrier->active == t)
 	thread_invoke ();
 }
 
-static void
-thread_wake (rep_thread *t)
-{
-    rep_barrier *root = t->cont->root;
-    assert (t->car & TF_SUSPENDED);
-    assert (!(t->car & TF_EXITED));
-
-    unlink_thread (t);
-    t->car &= ~TF_SUSPENDED;
-    append_thread (t, root);
-}
-
 static inline int
-thread_queue_length (void)
+thread_queue_length (rep_barrier *root)
 {
-    if (root_barrier == 0 || root_barrier->head == 0)
+    if (root->head == 0)
 	return 0;
     else
     {
 	int len = 0;
 	rep_thread *ptr;
-	for (ptr = root_barrier->head->next; ptr != 0; ptr = ptr->next)
+	for (ptr = root->head->next; ptr != 0; ptr = ptr->next)
 	    len++;
 	return len;
     }
@@ -966,7 +1063,7 @@ mark_cont (repv obj)
     rep_MARKVAL (c->special_bindings);
 
     for (barrier = c->barriers;
-	 barrier != 0 && SP_NEWER_P ((char *) barrier, c->stack_bottom);
+	 barrier != 0 && !SP_OLDER_P ((char *) barrier, c->stack_bottom);
 	 barrier = FIXUP(rep_barrier *, c, barrier)->next)
     {
 	rep_barrier *ptr = FIXUP (rep_barrier *, c, barrier);
@@ -978,14 +1075,14 @@ mark_cont (repv obj)
 	rep_MARKVAL (rep_VAL (ptr->active));
     }
     for (roots = c->gc_roots;
-	 roots != 0 && SP_NEWER_P ((char *) roots, c->stack_bottom);
+	 roots != 0 && !SP_OLDER_P ((char *) roots, c->stack_bottom);
 	 roots = FIXUP(rep_GC_root *, c, roots)->next)
     {
 	repv *ptr = FIXUP(rep_GC_root *, c, roots)->ptr;
 	rep_MARKVAL (*FIXUP(repv *, c, ptr));
     }
     for (nroots = c->gc_n_roots;
-	 nroots != 0 && SP_NEWER_P ((char *) roots, c->stack_bottom);
+	 nroots != 0 && !SP_OLDER_P ((char *) roots, c->stack_bottom);
 	 nroots = FIXUP(rep_GC_n_roots *, c, nroots)->next)
     {
 	repv *ptr = FIXUP(repv *, c, FIXUP(rep_GC_n_roots *, c, nroots)->first);
@@ -994,7 +1091,7 @@ mark_cont (repv obj)
 	    rep_MARKVAL (ptr[i]);
     }
     for (calls = c->call_stack;
-	 calls != 0 && SP_NEWER_P ((char *) calls, c->stack_bottom);
+	 calls != 0 && !SP_OLDER_P ((char *) calls, c->stack_bottom);
 	 calls = FIXUP(struct rep_Call *, c, calls)->next)
     {
 	struct rep_Call *lc = FIXUP(struct rep_Call *, c, calls);
@@ -1005,7 +1102,7 @@ mark_cont (repv obj)
 	rep_MARKVAL(lc->saved_fh_env);
     }
     for (matches = c->regexp_data;
-	 matches != 0 && SP_NEWER_P ((char *) matches, c->stack_bottom);
+	 matches != 0 && !SP_OLDER_P ((char *) matches, c->stack_bottom);
 	 matches = FIXUP(struct rep_saved_regexp_data *, c, matches)->next)
     {
 	struct rep_saved_regexp_data *sd
@@ -1074,6 +1171,7 @@ mark_thread (repv obj)
     rep_MARKVAL (THREAD (obj)->env);
     rep_MARKVAL (THREAD (obj)->special_env);
     rep_MARKVAL (THREAD (obj)->fh_env);
+    rep_MARKVAL (THREAD (obj)->name);
 }
 
 static void
@@ -1099,7 +1197,13 @@ sweep_thread (void)
 static void
 print_thread (repv stream, repv obj)
 {
-    rep_stream_puts (stream, "#<thread>", -1, rep_FALSE);
+    rep_stream_puts (stream, "#<thread", -1, rep_FALSE);
+    if (rep_STRINGP (THREAD (obj)->name))
+    {
+	rep_stream_putc (stream, ' ');
+	rep_stream_puts (stream, rep_STR (THREAD (obj)->name), -1, rep_FALSE);
+    }
+    rep_stream_putc (stream, '>');
 }
 
 
@@ -1220,16 +1324,16 @@ The value of this function is the value returned by THUNK.
     return ret;
 }
 
-DEFUN("make-thread", Fmake_thread, Smake_thread, (repv thunk), rep_Subr1) /*
+DEFUN("make-thread", Fmake_thread, Smake_thread, (repv thunk, repv name), rep_Subr2) /*
 ::doc:make-thread::
-make-thread THUNK
+make-thread THUNK [NAME]
 
 Create and return an object representing a new thread of execution. The
 new thread will begin by calling THUNK, a function with zero
 parameters.
 ::end:: */
 {
-    return rep_VAL (make_thread (thunk));
+    return rep_VAL (make_thread (thunk, name));
 }
 
 DEFUN("thread-yield", Fthread_yield, Sthread_yield, (void), rep_Subr0) /*
@@ -1255,7 +1359,7 @@ thread results in undefined behaviour.
 ::end:: */
 {
     if (th == Qnil)
-	th = Fcurrent_thread ();
+	th = Fcurrent_thread (Qnil);
     rep_DECLARE1 (th, THREADP);
     thread_delete (THREAD (th));
     return Qnil;
@@ -1273,7 +1377,7 @@ last runnable thread results in undefined behaviour.
 ::end:: */
 {
     if (th == Qnil)
-	th = Fcurrent_thread ();
+	th = Fcurrent_thread (Qnil);
     rep_DECLARE1 (th, THREADP);
     thread_suspend (THREAD (th), rep_INTP (msecs) ? rep_INT (msecs) : 0);
     return Qnil;
@@ -1288,7 +1392,7 @@ being runnable once more.
 ::end:: */
 {
     if (th == Qnil)
-	th = Fcurrent_thread ();
+	th = Fcurrent_thread (Qnil);
     rep_DECLARE1 (th, THREADP);
     thread_wake (THREAD (th));
     return Qnil;
@@ -1316,28 +1420,61 @@ Return `t' if THREAD is currently suspended from running.
     return (THREAD (th)->car & TF_SUSPENDED) ? Qt : Qnil;
 }
 
-DEFUN("current-thread", Fcurrent_thread, Scurrent_thread, (void), rep_Subr0) /*
+DEFUN("current-thread", Fcurrent_thread,
+      Scurrent_thread, (repv depth_), rep_Subr1) /*
 ::doc:current-thread::
-current-thread
+current-thread [DEPTH]
 
 Return the currently executing thread, or `nil' if threaded execution
 is not currently taking place.
 ::end:: */
 {
-    return ((root_barrier && root_barrier->active)
-	    ? rep_VAL (root_barrier->active) : Qnil);
+    rep_barrier *root = get_dynamic_root (rep_INTP (depth_)
+					  ? rep_INT (depth_) : 0);
+    if (root == 0)
+	return Qnil;
+    else
+	return (root->active) ? rep_VAL (root->active) : Qnil;
+}
+
+DEFUN("all-threads", Fall_threads, Sall_threads, (repv depth_), rep_Subr1) /*
+::doc:all-threads::
+all-threads [DEPTH]
+
+Return a list of all threads.
+::end:: */
+{
+    rep_barrier *root = get_dynamic_root (rep_INTP (depth_)
+					  ? rep_INT (depth_) : 0);
+    if (root == 0)
+	return Qnil;
+    else
+    {
+	repv out = Qnil;
+	rep_thread *ptr;
+	for (ptr = root->susp_tail; ptr != 0; ptr = ptr->pred)
+	    out = Fcons (rep_VAL (ptr), out);
+	for (ptr = root->tail; ptr != 0; ptr = ptr->pred)
+	    out = Fcons (rep_VAL (ptr), out);
+	return out;
+    }
 }
 
 DEFUN("thread-queue-length", Fthread_queue_length,
-      Sthread_queue_length, (void), rep_Subr0) /*
+      Sthread_queue_length, (repv depth_), rep_Subr1) /*
 ::doc:thread-queue-length::
-thread-queue-length
+thread-queue-length [DEPTH]
 
 Returns the number of threads waiting to run in the current execution
 environment (exclusing any currently running threads).
 ::end:: */
 {
-    return rep_MAKE_INT (thread_queue_length ());
+    rep_barrier *root = get_dynamic_root (rep_INTP (depth_)
+					  ? rep_INT (depth_) : 0);
+    if (root == 0)
+	return rep_MAKE_INT (0);
+    else
+	return rep_MAKE_INT (thread_queue_length (root));
 }
 
 DEFUN("thread-forbid", Fthread_forbid, Sthread_forbid, (void), rep_Subr0) /*
@@ -1349,8 +1486,8 @@ preemption of threads is disabled. Returns `t' if preemption is blocked
 as this function returns.
 ::end:: */
 {
-    rep_thread_lock++;
-    return rep_thread_lock > 0 ? Qt : Qnil;
+    rep_FORBID;
+    return rep_PREEMPTABLE_P ? Qnil : Qt;
 }
 
 DEFUN("thread-permit", Fthread_permit, Sthread_permit, (void), rep_Subr0) /*
@@ -1362,8 +1499,19 @@ preemption of threads is disabled. Returns `t' if preemption is blocked
 as this function returns.
 ::end:: */
 {
-    rep_thread_lock--;
-    return rep_thread_lock > 0 ? Qt : Qnil;
+    rep_PERMIT;
+    return rep_PREEMPTABLE_P ? Qnil : Qt;
+}
+
+DEFUN("thread-name", Fthread_name, Sthread_name, (repv th), rep_Subr1) /*
+::doc:thread-name:
+thread-name THREAD
+
+Return the name of the thread THREAD.
+::end:: */
+{
+    rep_DECLARE1 (th, THREADP);
+    return THREAD (th)->name;
 }
 
 
@@ -1396,7 +1544,11 @@ rep_continuations_init (void)
     rep_ADD_SUBR(Sthreadp);
     rep_ADD_SUBR(Sthread_suspended_p);
     rep_ADD_SUBR(Scurrent_thread);
+    rep_ADD_SUBR(Sall_threads);
     rep_ADD_SUBR(Sthread_queue_length);
     rep_ADD_SUBR(Sthread_forbid);
     rep_ADD_SUBR(Sthread_permit);
+    rep_ADD_SUBR(Sthread_name);
+    exit_barrier_cell = Fcons (Qnil, Qnil);
+    rep_mark_static (&exit_barrier_cell);
 }
