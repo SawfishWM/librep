@@ -144,7 +144,7 @@ kill_dl_libraries(void)
 bool
 find_c_symbol(void *ptr, char **symbol_name_p, void **symbol_addr_p)
 {
-    struct dl_info info;
+    Dl_info info;
     if(dladdr(ptr, &info) != 0)
     {
 	*symbol_name_p = (char *)info.dli_sname;
