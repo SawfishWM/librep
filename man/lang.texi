@@ -27,6 +27,9 @@ functions.
 * Modules::                     Static namespaces for variable bindings
 * Threads::			Multi-threaded programs
 
+* Datums::                      Low-level data type definition
+* Queues::                      FIFO queue type
+* Records::                     Defining structured data types
 * Hash Tables::                 Efficient table lookups
 * Guardians::			Protecting objects from GC
 * Streams::                     Data sinks and sources; character streams
@@ -4857,7 +4860,7 @@ the benefits of both lexical (i.e. encapsulation) and dynamic scoping.
 @xref{Fluid Variables}.
 
 
-@node Threads, Hash Tables, Modules, The language
+@node Threads, Datums, Modules, The language
 @section Threads
 @cindex Threads
 
@@ -5060,9 +5063,194 @@ The main advantage is the ease of implementation, especially when
 retrofitting threads into the previously single-threaded interpreter.
 
 
-@node Hash Tables, Guardians, Threads, The language
+@node Datums, Queues, Threads, The language
+@section Datums
+@cindex Datums
+@cindex Data types, datums
+
+@dfn{Datums} are the mechanism by which @code{librep} allows Lisp
+programs to define new data types, such that these types are completely
+distinct from the built-in data types (i.e. they match none of the
+standard type predicates).
+
+They also provide encapsulation, in that the data objects they provide
+are completely opaque, unless a pre-defined value is known (and which
+was quoted when the object was created, and is typically known only by
+the object's creator).
+
+@defun make-datum value key
+Create and return a new datum object. It has the value @var{value}
+associated with it, and has type @var{key}.
+@end defun
+
+@defun datum-ref arg key
+If @var{arg} has type @var{key}, then return the value associated with
+it. Otherwise, an error is signalled.
+@end defun
+
+@defun datum-set arg key value
+If @var{arg} has type @var{key}, then set the value associated with it
+to be @var{value}. Otherwise, an error is signalled.
+@end defun
+
+@defun has-type-p arg key
+Return non-@code{nil} if @var{arg} has type @var{key}.
+@end defun
+
+@defun define-datum-printer key printer
+Associate the function @var{printer} with all datum objects of type
+@var{key}. When any such object is printed, @var{printer} is applied to
+two arguments, the datum and the stream to which it should be printed
+(@pxref{Output Streams}).
+@end defun
+
+
+@node Queues, Records, Datums, The language
+@section Queues
+@cindex Queues
+@cindex Data types, queues
+
+A @dfn{queue} is an ordered set of objects, such that objects enter at
+one end of the queue (the @dfn{tail}), and leave from the other end of
+the queue (the @dfn{head}). The acts of entering and leaving a queue
+are often called @dfn{enqueing} and @dfn{dequeueing}.
+
+@code{librep} provides a straightforward queue implementation,
+implemented by the @code{queues} module (@pxref{Modules}).
+
+@defun make-queue
+Create and return a new queue object. The queue will initially be
+empty.
+@end defun
+
+@defun enqueue q arg
+Add the object @var{ARG} to the tail of the queue @var{q}.
+@end defun
+
+@defun dequeue q
+Remove the object at the head of the queue @var{q}, and return it. If
+@var{q} is empty, an error is signalled.
+@end defun
+
+@defun queue-empty-p q
+Return non-@code{nil} if the queue @var{q} is not empty.
+@end defun
+
+@defun queuep arg
+Return non-@code{nil} if the object @var{arg} is a queue.
+@end defun
+
+@defun queue->list q
+Return a list of objects representing the contents of the queue
+@var{q}, with objects ordered from head to tail. Modifying the list
+structure causes undefined effects to the queue itself.
+@end defun
+
+@defun queue-length q
+Return the number of objects stored in the queue @var{q}.
+@end defun
+
+@defun delete-from-queue q arg
+Removes any occurrences of the object @var{arg} from the queue @var{q}.
+@end defun
+
+
+@node Records, Hash Tables, Queues, The language
+@section Records
+@cindex Records
+@cindex Data types, records
+
+@code{librep} provides a convenient means of defining structured data
+types, these types are known as @dfn{records}. Each record is a
+distinct data type, meaning that there will only be a single
+type-predicate matching objects of any individual record type.
+
+All definitions documented in this section are provided by the
+@code{records} module (@pxref{Modules}).
+
+Record types are defined using the @code{define-record-type} macro,
+this in turn defines a number of functions implementing the type. These
+functions include a constructor, a type predicate, and a user-defined
+set of field-accessor and -modifier functions.
+
+@defmac define-record-type name type (constructor fields@dots{}) [predicate] (field accessor [modifier])@dots{}
+
+This macro creates a new record type called @var{name} and stores an
+opaque object identifying the type in the variable @var{type}.
+
+It then defines a function @var{constructor} with arguments as
+specified by the @var{fields@dots{}}, a predicate function called
+@var{predicate} if @var{predicate} is given.
+
+The fields of the record are defined by the sequence of @var{(field
+accessor [modifier])} forms, each form describes a single field (named
+@var{field}, which may match one of the constructor arguments).
+
+For each field a function @var{accessor} will be defined that when
+applied to an argument of the record type, returns the value stored in
+the associated @var{field}. If the @var{modifier} name is defined a
+function will be defined of that name, that when applied to a record
+and an object, stores the object into the associated field of the
+record.
+@end defmac
+
+Here is an example record definition:
+
+@lisp
+(define-record-type pare :pare
+  (kons x y)                         ; constructor
+  pare?                              ; predicate
+  (x kar set-kar!)                   ; fields w/ optional accessors
+  (y kdr))                           ;and modifiers
+@end lisp
+
+@noindent
+@code{pare} is the name of the type (used when printing), the variable
+@code{:pare} is bound to the record type. Following this definition,
+the record type could be used as follows:
+
+@lisp
+(define x (kons 1 2))
+
+(pare? x)
+    @result{} t
+
+(kar x)
+    @result{} 1
+
+(set-kar! x 42)
+
+(kar x)
+    @result{} 42
+@end lisp
+
+By default record objects print as the name of their type in angle
+brackets, e.g. for the above @code{pare} type, each object would print
+as the string @samp{#<pare>}. This may be redefined using the
+@code{define-record-discloser} function.
+
+@defun define-record-discloser type discloser
+Associate the function @var{discloser} with the record type @var{type}.
+When any record of this type is printed, @var{discloser} is applied to
+the object, it should return the value that will actually be printed.
+@end defun
+
+For the above example, the following could be used:
+
+@lisp
+(define-record-discloser :pare (lambda (x) `(pare ,(kar x) ,(kdr x))))
+
+(define y (kons 'a 'b))
+
+y
+    @result{} (pare a b)
+@end lisp
+
+
+@node Hash Tables, Guardians, Records, The language
 @section Hash Tables
 @cindex Hash tables
+@cindex Data types, hash tables
 
 The @code{tables} feature provides a flexible hash table
 implementation. Each hash table is represented by a lisp object

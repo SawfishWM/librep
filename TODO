@@ -16,7 +16,7 @@ Before release
 
    (recent acm toplas paper by Matthias Blume about this in ML)
 
- + document in manual: records, queues, datums, (declare ..)
+ + document in manual: (declare ..)
 
    also, document `do' and update `while'
 
