@@ -1,3 +1,11 @@
+2001-08-13  John Harper  <jsh@pixelslut.com>
+
+	* rep/threads/message-port.jl (message-fetch): rewrote wait
+	loop so it always tries once after condition-wait failed
+
+	* rep/lang/debugger.jl (print-backtrace): print backtrace in
+	top to bottom order, not bottom to top
+
 2001-08-10  John Harper  <jsh@pixelslut.com>
 
 	* rep/threads/message-port.jl (message-send): remembered to

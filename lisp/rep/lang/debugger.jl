@@ -143,8 +143,8 @@ commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM',
       (setq last-printed-frame frame)))
 
   (defun print-backtrace ()
-    (do ((i 0 (1+ i)))
-	((> i (fluid bottom-frame-id)))
+    (do ((i (fluid bottom-frame-id) (1- i)))
+	((< i 0))
       (print-frame i)))
 
   (defun print-form ()

@@ -60,12 +60,12 @@ current thread for TIMEOUT milliseconds, or indefinitely if TIMEOUT isn't
 defined. Returns the message, or false if no message could be read."
     (obtain-mutex (port-mutex port))
     (unwind-protect
-	(let again ()
+	(let again ((can-wait t))
 	  (if (queue-empty-p (port-queue port))
-	      (and (condition-variable-wait (port-condition port)
-					    (port-mutex port) timeout)
-		   ;; condition changed, try again
-		   (again))
+	      (if can-wait
+		  (again (condition-variable-wait (port-condition port)
+						  (port-mutex port) timeout))
+		nil)
 	    ;; we have a waiting message
 	    (dequeue (port-queue port))))
       (release-mutex (port-mutex port))))
