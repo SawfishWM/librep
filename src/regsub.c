@@ -37,19 +37,21 @@
 #define UCHARAT(p)	((int)*(p)&CHARBITS)
 #endif
 
-#ifdef __STDC__
 #include <string.h>
 void	regerror(char *);
-#endif
 
 /*
  * - regsub - perform substitutions after a regexp match
+ *
+ * data is null if the last match was a string, or the TX if the last
+ * match was on a buffer.
  */
 void
-regsub(prog, source, dest)
+regsub(prog, source, dest, data)
     regexp	   *prog;
     char	   *source;
     char	   *dest;
+    void	   *data;
 {
     register char  *src;
     register char  *dst;
@@ -65,9 +67,19 @@ regsub(prog, source, dest)
 	regerror("damaged regexp fed to regsub");
 	return;
     }
+    if ((prog->lasttype == reg_string && data != 0)
+#ifdef BUILD_JADE
+	|| (prog->lasttype == reg_tx && data == 0)
+#endif
+	)
+    {
+	regerror("Bad type of data to regsub");
+	return;
+    }
     src = source;
     dst = dest;
-    while ((c = *src++) != '\0') {
+    while ((c = *src++) != '\0')
+    {
 	if (c == '&')
 	    no = 0;
 	else if (c == '\\' && '0' <= *src && *src <= '9')
@@ -79,14 +91,42 @@ regsub(prog, source, dest)
 	    if (c == '\\' && (*src == '\\' || *src == '&'))
 		c = *src++;
 	    *dst++ = c;
-	} else if (prog->startp[no] != NULL && prog->endp[no] != NULL) {
-	    len = prog->endp[no] - prog->startp[no];
-	    (void) strncpy(dst, prog->startp[no], len);
-	    dst += len;
-	    if (len != 0 && *(dst - 1) == '\0') {       /* strncpy hit NUL. */
-		regerror("damaged match string");
-		return;
+	} else {
+	    if(prog->lasttype == reg_string)
+	    {
+		if (prog->matches.string.startp[no] != NULL
+		    && prog->matches.string.endp[no] != NULL)
+		{
+		    len = prog->matches.string.endp[no]
+			  - prog->matches.string.startp[no];
+		    (void) strncpy(dst, prog->matches.string.startp[no], len);
+		    dst += len;
+		    if (len != 0 && *(dst - 1) == '\0')
+			/* strncpy hit NUL. */
+			regerror("damaged match string");
+		    return;
+		}
 	    }
+#ifdef BUILD_JADE
+	    else if(prog->lasttype == reg_tx)
+	    {
+		TX *tx = data;
+		if(prog->matches.tx.startp[no].pos_Line != -1
+		   && prog->matches.tx.endp[no].pos_Line != -1)
+		{
+		    if(check_section(tx, &prog->matches.tx.startp[no],
+				     &prog->matches.tx.endp[no]))
+		    {
+			long len = section_length(tx,
+						  &prog->matches.tx.startp[no],
+						  &prog->matches.tx.endp[no]);
+			copy_section(tx, &prog->matches.tx.startp[no],
+				     &prog->matches.tx.endp[no], dst);
+			dst += len;
+		    }
+		}
+	    }
+#endif
 	}
     }
     *dst++ = '\0';
@@ -97,9 +137,10 @@ regsub(prog, source, dest)
  * including terminating '\0'
  */
 int
-regsublen(prog, source)
+regsublen(prog, source, data)
     regexp	   *prog;
     char	   *source;
+    void	   *data;
 {
     register char  *src;
     register char   c;
@@ -114,6 +155,15 @@ regsublen(prog, source)
 	regerror("damaged regexp fed to regsublen");
 	return(0);
     }
+    if ((prog->lasttype == reg_string && data != 0)
+#ifdef BUILD_JADE
+	|| (prog->lasttype == reg_tx && data == 0)
+#endif
+	)
+    {
+	regerror("Bad type of data to regsublen");
+	return (0);
+    }
     src = source;
     while ((c = *src++) != '\0') {
 	if (c == '&')
@@ -127,8 +177,33 @@ regsublen(prog, source)
 	    if (c == '\\' && (*src == '\\' || *src == '&'))
 		c = *src++;
 	    dstlen++;
-	} else if (prog->startp[no] != NULL && prog->endp[no] != NULL) {
-	    dstlen += prog->endp[no] - prog->startp[no];
+	} else {
+	    if(prog->lasttype == reg_string)
+	    {
+		if (prog->matches.string.startp[no] != NULL
+		    && prog->matches.string.endp[no] != NULL)
+		{
+		    dstlen += prog->matches.string.endp[no]
+			      - prog->matches.string.startp[no];
+		}
+	    }
+#ifdef BUILD_JADE
+	    else if(prog->lasttype == reg_tx)
+	    {
+		TX *tx = data;
+		if(prog->matches.tx.startp[no].pos_Line != -1
+		   && prog->matches.tx.endp[no].pos_Line != -1)
+		{
+		    if(check_section(tx, &prog->matches.tx.startp[no],
+				     &prog->matches.tx.endp[no]))
+		    {
+			dstlen += section_length(tx,
+						 &prog->matches.tx.startp[no],
+						 &prog->matches.tx.endp[no]);
+		    }
+		}
+	    }
+#endif
 	}
     }
     return(dstlen);
