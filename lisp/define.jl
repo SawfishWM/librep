@@ -60,9 +60,8 @@
       (cons 'progn (define-scan-body body)))))
 
 (defmacro define-scan-body (body)
-  `(mapcar define-scan-form
-	   (mapcar (lambda (f) 
-		     (macroexpand f macro-environment)) ,body)))
+  `(mapcar (lambda (f)
+	     (define-scan-form (macroexpand f macro-environment))) ,body))
 
 ;; this needs to handle all special forms
 (defun define-scan-form (form)
@@ -84,9 +83,11 @@
 			   (define-scan-body clause)) (cdr form))))
 
     ((case)
-     (cons 'case (mapcar (lambda (clause)
-			   (cons (car clause) (define-scan-body (cdr clause))))
-			 (cdr form))))
+     (list* 'case
+	    (define-scan-form (nth 1 form))
+	    (mapcar (lambda (clause)
+		      (cons (car clause) (define-scan-body (cdr clause))))
+		    (nthcdr 2 form))))
 
     ((condition-case)
      (list* 'condition-case (nth 1 form) (define-scan-body (nthcdr 2 form))))
@@ -113,3 +114,7 @@
     (if (eq (cadr def) 'lambda)
 	(list 'defun (car def) (caddr def) (car (cdddr def)))
       (list 'define-value (list 'quote (car def)) (cdr def)))))
+
+;;;###autoload
+(defmacro with-internal-definitions (&rest body)
+  (define-scan-internals body))
