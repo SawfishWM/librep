@@ -7038,6 +7038,7 @@ comfortably fit elsewhere in this manual.
 * Messages::                    Writing to the console
 * Command Line Options::	Retrieving command line arguments
 * Shell Commands::		Executing shell commands
+* Timers::			Asynchronous timers
 @end menu
 
 
@@ -7289,7 +7290,7 @@ command-line-args
 @end lisp
 
 
-@node Shell Commands, , Command Line Options, Miscellaneous Functions
+@node Shell Commands, Timers, Command Line Options, Miscellaneous Functions
 @subsection Executing Shell Commands
 @cindex Executing shell commands
 @cindex Shell commands, executing
@@ -7319,6 +7320,44 @@ It is possible to interrupt a running shell process in the same way as
 with a normal synchronous process (@pxref{Synchronous Processes}).
 Interrupt the interpreter, it will send progressively harder-to-ignore
 signals to the child each interrupt, until it is eventually terminated.
+
+
+@node Timers, , Shell Commands, Miscellaneous Functions
+@subsection Asynchronous Timers
+@cindex Asynchronous timers
+@cindex Timers, asynchronous
+
+The @code{timers} feature (@pxref{Features}) allows a Lisp program to
+create multiple asynchronous timers, each of which is primed to call a
+specified function after a specified period of time. These functions
+only work when the Lisp event loop is being used (i.e. at least one
+@code{recursive-edit} is currently in progress).
+
+@defun make-timer function &optional seconds milliseconds
+Create and return a new timer object. It will be set to call the Lisp
+function @var{function} after @var{seconds} seconds plus
+@var{milliseconds} milliseconds. @var{function} will be called with a
+single argument, the timer object that has just fired.
+
+If both @var{seconds} and @var{milliseconds} are undefined, or zero,
+the timer will be created but won't call @var{function}.
+
+After the time interval has passed, and @var{function} has been called,
+the timer @emph{will not} be restarted. Use the @code{set-timer}
+function to reset it.
+@end defun
+
+@defun delete-timer timer
+Prevent the timer object @var{timer} from calling the Lisp function
+associated with it. Use the @code{set-timer} function to reset it.
+@end defun
+
+@defun set-timer timer &optional seconds milliseconds
+Reset the timer object @var{timer}. If either/both of @var{seconds} and
+@var{milliseconds} are defined the interval of the timer will be set to
+the specified time period. If neither are defined then the current
+interval of the timer is preserved.
+@end defun
 
 
 @node Debugging, Tips, Miscellaneous Functions, The language
@@ -7659,3 +7698,4 @@ use iteration/mapping instead of recursion. Also the @code{memq} and
 @code{assq} types of functions can be used to search some types of list
 structures very quickly.
 @end itemize
+
