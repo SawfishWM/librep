@@ -33,15 +33,11 @@ usage (void)
 	   stderr);
 }
 
-static repv
-inner_main (repv arg)
-{
-    return rep_load_environment (rep_string_dup ("rep"));
-}
-
 int
 main(int argc, char **argv)
 {
+    DEFSTRING (rep, "rep");
+
     char *prog_name = *argv++;
     argc--;
 
@@ -53,7 +49,8 @@ main(int argc, char **argv)
 	return 0;
     }
 
-    rep_call_with_barrier (inner_main, Qnil, rep_TRUE, 0, 0, 0);
+    rep_call_with_barrier (rep_load_environment, rep_VAL (&rep),
+			   rep_TRUE, 0, 0, 0);
 
     return rep_top_level_exit ();
 }
