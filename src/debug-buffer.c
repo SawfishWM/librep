@@ -27,6 +27,11 @@
 # include <memory.h>
 #endif
 
+#ifdef linux
+  /* dladdr() seems to crash for me at the moment (glibc-2.0.6) */
+# undef DB_RESOLVE_SYMBOLS
+#endif
+
 struct debug_buf {
     struct debug_buf *next;
     char *name;
@@ -127,48 +132,54 @@ void
 db_print_backtrace(void *_db, char *fun)
 {
 #if defined(__GNUC__)
-    void *stack[32];
+
+#define BT_BASE 1
+#define BT_DEPTH 8
+
+    void *stack[BT_BASE+BT_DEPTH];
     int i;
 
-# define STACK_PROBE(i)					\
-    do {						\
-	if(i == 0 || stack[i-1] != 0)			\
-	    stack[i] = __builtin_return_address(i);	\
-	else						\
-	    stack[i] = 0;				\
+    /* It seems that in Linux/egcs-1.1 __builtin_return_address()
+       will segfault when reaching the top of the stack frame.
+       The work-around is to see if we can get the frame address,
+       if so it should be safe to go for the return address. */
+# define STACK_PROBE(i)						\
+    do {							\
+	if(i == BT_BASE || stack[i-1] != 0)			\
+	{							\
+	    void *frame = __builtin_frame_address(i);		\
+	    if(frame != 0)					\
+		stack[i] = __builtin_return_address(i);		\
+	    else						\
+		stack[i] = 0;					\
+	}							\
+	else							\
+	    stack[i] = 0;					\
     } while(0)
 
-    STACK_PROBE(0);  STACK_PROBE(1);  STACK_PROBE(2);  STACK_PROBE(3);
-    STACK_PROBE(4);  STACK_PROBE(5);  STACK_PROBE(6);  STACK_PROBE(7);
-    STACK_PROBE(8);  STACK_PROBE(9);  STACK_PROBE(10); STACK_PROBE(11);
-    STACK_PROBE(12); STACK_PROBE(13); STACK_PROBE(14); STACK_PROBE(15);
-    STACK_PROBE(16); STACK_PROBE(17); STACK_PROBE(18); STACK_PROBE(19);
-    STACK_PROBE(20); STACK_PROBE(21); STACK_PROBE(22); STACK_PROBE(23);
-    STACK_PROBE(24); STACK_PROBE(25); STACK_PROBE(26); STACK_PROBE(27);
-    STACK_PROBE(28); STACK_PROBE(29); STACK_PROBE(30); STACK_PROBE(31);
+    /* Should be from BT_BASE to BT_BASE+BT_DEPTH-1 */
+    STACK_PROBE(1);  STACK_PROBE(2);  STACK_PROBE(3);  STACK_PROBE(4);
+    STACK_PROBE(5);  STACK_PROBE(6);  STACK_PROBE(7);  STACK_PROBE(8);
 
-    db_printf(_db, "\n Backtrace in `%s':\n", fun);
-    for(i = 1; i < 32 && stack[i] != 0; i++)
+    db_printf(_db, "\nBacktrace in `%s':\n", fun);
+    for(i = BT_BASE; i < BT_BASE+BT_DEPTH && stack[i] != 0; i++)
     {
-	if(i % 4 == 0)
-	    db_printf(_db, "\n#%-2d  ", i);
 #ifdef DB_RESOLVE_SYMBOLS
 	if(stack[i] == 0)
-	    db_printf(_db, "(nil)  ");
+	    db_printf(_db, "\t(nil)\n");
 	else
 	{
 	    char *name;
 	    void *addr;
 	    if(find_c_symbol(stack[i], &name, &addr))
-		db_printf(_db, "<%s+%d>  ", name, stack[i] - addr);
+		db_printf(_db, "\t<%s+%d>\n", name, stack[i] - addr);
 	    else
-		db_printf(_db, "0x%08lx  ", stack[i]);
+		db_printf(_db, "\t0x%08lx\n", stack[i]);
 	}
 #else
-	db_printf(_db, "0x%08lx  ", stack[i]);
+	db_printf(_db, "\t0x%08lx\n", stack[i]);
 #endif
     }
-    db_printf(_db, "\n");
 #endif
 }
 
