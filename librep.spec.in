@@ -1,18 +1,14 @@
 
-%define nam	librep
-%define ver	@version@
-%define rel	1
-
+Name: librep
+Version: @version@
+Release: 1
 Summary: embeddable LISP environment
-Name: %{nam}
-Version: %{ver}
-Release: %{rel}
 Copyright: GPL
 Group: Development/Languages
-Source: ftp://ftp.dcs.warwick.ac.uk/people/John.Harper/librep/librep-%{ver}.tar.gz
+Source: ftp://ftp.dcs.warwick.ac.uk/people/John.Harper/librep/librep-%{version}.tar.gz
 URL: http://www.dcs.warwick.ac.uk/~john/sw/librep.html
 Packager: John Harper <john@dcs.warwick.ac.uk>
-Buildroot: /var/tmp/%{nam}-root
+Buildroot: /var/tmp/%{name}-root
 BuildPrereq: gmp-devel gdbm-devel readline-devel
 PreReq: /sbin/install-info
 
@@ -29,7 +25,7 @@ deficiencies, with features from Common Lisp and Scheme.
 %package devel
 Summary: librep include files and link libraries
 Group: Development/Languages
-Requires: %{nam}
+Requires: %{name}
 
 %description devel
 Link libraries and C header files for librep development.
@@ -68,8 +64,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_prefix}/bin/rep
 %{_prefix}/bin/rep-remote
 %{_prefix}/lib/librep.so.*
-%{_prefix}/share/rep/%{ver}
-%{_prefix}/libexec/rep/%{ver}/%{_host}
+%{_prefix}/share/rep/%{version}
+%{_prefix}/libexec/rep/%{version}/%{_host}
 %{_prefix}/info/librep*
 
 %files devel
