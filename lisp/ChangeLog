@@ -1,3 +1,8 @@
+2000-01-30  John Harper  <john@dcs.warwick.ac.uk>
+
+	* threads.jl: first attempt at a (very basic) threading
+	interface
+
 2000-01-26  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lisp-doc.jl (describe-variable): remove reference to

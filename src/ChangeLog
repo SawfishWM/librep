@@ -1,5 +1,8 @@
 2000-01-30  John Harper  <john@dcs.warwick.ac.uk>
 
+	* lispmach.c (Fjade_byte_code): handle calling subrs that are
+	wrapped in closures
+
 	* continuations.c: removed unused STACK_SLOP definition,
 	removed extra call to FLUSH_REGISTER_WINDOWS
 
