@@ -1,3 +1,9 @@
+1999-10-17  John Harper  <john@dcs.warwick.ac.uk>
+
+	* tar-file-handler.jl: read-only access to files stored in tar
+	archives, access files like `foo.tar.gz#tar/bar'; still has
+	some problems, but works well enough
+
 1999-10-13  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep.jl: don't add the current directory to the head of the

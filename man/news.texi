@@ -4,12 +4,23 @@
 @cindex News
 
 
-@unnumberedsec 0.6.3
+@unnumberedsec 0.7
 
 @itemize @bullet
 
+@item Added file handler for read-only access to the contents of tar
+archives, access files like @file{foo.tar.gz#tar/bar}
+
+@item @code{process-id} function now returns pid of lisp interpreter
+when called with zero arguments
+
 @item Added (untested) support for loading dynamic objects via
 @code{shl_load} (HP-UX)
+
+@item Added (untested) support for systems that prefix symbol names in
+dynamic objects with underscores
+
+@item Fix bug when compiling @code{last} function
 
 @end itemize
 
