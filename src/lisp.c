@@ -208,12 +208,16 @@ void (*rep_test_int_fun)(void) = default_test_int;
    to see if it's what it wants. If not, the lookahead is given to
    someone else or unread before exiting... */
 
+static repv readl (repv, register int *);
+
+static rep_bool read_local_file;
+
 /* inline common case of reading from local files; this appears to
    decrease startup time by about 25% */
 static inline int
 fast_getc (repv stream)
 {
-    if (rep_FILEP (stream) && rep_LOCAL_FILE_P (stream))
+    if (read_local_file)
 	return getc (rep_FILE (stream)->file.fh);
     else
 	return rep_stream_getc (stream);
@@ -302,7 +306,7 @@ read_list(repv strm, register int *c_p)
 	    case ' ': case '\t': case '\n': case '\f':
 		if(last)
 		{
-		    repv this = rep_readl(strm, c_p);
+		    repv this = readl(strm, c_p);
 		    if (this != rep_NULL)
 			rep_CDR (last) = this;
 		    else
@@ -346,7 +350,7 @@ read_list(repv strm, register int *c_p)
 		    rep_CDR(last) = this;
 		else
 		    result = this;
-		if(!(rep_CAR(this) = rep_readl(strm, c_p)))
+		if(!(rep_CAR(this) = readl(strm, c_p)))
 		    result = rep_NULL;
 		last = this;
 	    }
@@ -738,8 +742,8 @@ skip_chars (repv stream, const char *str, repv ret, int *ptr)
 /* Using the above readlisp*() functions this classifies each type
    of expression and translates it into a lisp object (repv).
    Returns NULL in case of error. */
-repv
-rep_readl(repv strm, register int *c_p)
+static repv
+readl(repv strm, register int *c_p)
 {
     while(1)
     {
@@ -781,7 +785,7 @@ rep_readl(repv strm, register int *c_p)
 		rep_POPGC;
 		goto eof;
 	    }
-	    rep_CAR(rep_CDR(form)) = rep_readl(strm, c_p);
+	    rep_CAR(rep_CDR(form)) = readl(strm, c_p);
 	    rep_POPGC;
 	    if(rep_CAR(rep_CDR(form)) != rep_NULL)
 		return form;
@@ -807,7 +811,7 @@ rep_readl(repv strm, register int *c_p)
 		    goto eof;
 		}
 	    }
-	    rep_CAR(rep_CDR(form)) = rep_readl(strm, c_p);
+	    rep_CAR(rep_CDR(form)) = readl(strm, c_p);
 	    rep_POPGC;
 	    if(rep_CAR(rep_CDR(form)) != rep_NULL)
 		return form;
@@ -855,7 +859,7 @@ rep_readl(repv strm, register int *c_p)
 		    rep_POPGC;
 		    goto eof;
 		}
-		rep_CAR(rep_CDR(form)) = rep_readl(strm, c_p);
+		rep_CAR(rep_CDR(form)) = readl(strm, c_p);
 		rep_POPGC;
 		if(rep_CAR(rep_CDR(form)) == rep_NULL)
 		    return rep_NULL;
@@ -1015,6 +1019,17 @@ rep_readl(repv strm, register int *c_p)
 
 eof:
     return Fsignal(Qend_of_stream, rep_LIST_1(strm));
+}
+
+repv
+rep_readl (repv stream, int *c_p)
+{
+    repv form;
+    rep_bool old = read_local_file;
+    read_local_file = rep_FILEP (stream) && rep_LOCAL_FILE_P (stream);
+    form = readl (stream, c_p);
+    read_local_file = old;
+    return form;
 }
 
 
