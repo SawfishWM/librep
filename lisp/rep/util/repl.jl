@@ -32,6 +32,7 @@
 
     (open rep
 	  rep.structures
+	  rep.system
 	  rep.regexp
 	  rep.io.readline)
 
