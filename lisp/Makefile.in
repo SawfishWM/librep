@@ -27,7 +27,8 @@ all : lisp
 lisp :
 	$(COMPILE_ENV) $(rep_prog) --batch --no-rc \
 	  -l compiler -f compile-compiler
-	$(COMPILE_ENV) $(rep_prog) --batch --no-rc -f compile-lisp-lib
+	$(COMPILE_ENV) $(rep_prog) --batch --no-rc \
+	  -l compiler -f compile-lisp-lib
 
 install : all installdirs
 	for f in $(INSTALL_FILES); do \
