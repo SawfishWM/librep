@@ -1,3 +1,11 @@
+1999-03-07  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compiler.jl (comp-compile-lambda): only put the doc-string in
+	the bytecode vector if it wasn't written to the db
+
+	* lisp-doc.jl (documentation): only try to get the value of the
+	function or variable if it's actually bound
+
 1999-03-03  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep.jl: print a message if unknown command-line options are

@@ -1,3 +1,19 @@
+1999-03-09  John Harper  <john@dcs.warwick.ac.uk>
+
+	* repsdbm.c: changed all function names from dbm- to sdbm-
+
+	* sdbm_pair.c, sdbm_hash.c, sdbm.h, sdbm.c: replaced dbm_ by
+	sdbm_ and DBM by SDBM to prevent clashing with libc dbm
+
+	* repdoc.c: removed the -a option, never open the db O_TRUNC,
+	replace dbm_ by sdbm_
+
+1999-03-06  John Harper  <john@dcs.warwick.ac.uk>
+
+	* main.c (rep_get_option): accept `--foo=bar' as well as `--foo
+	bar'
+	(Fget_command_line_option): wrapper for rep_get_option
+
 1999-03-02  John Harper  <john@dcs.warwick.ac.uk>
 
 	* main.c (rep_get_option): new function, searches the

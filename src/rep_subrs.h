@@ -289,6 +289,7 @@ extern repv Qexit, Qquit, Qtop_level, Qcommand_line_args;
 extern repv Qbatch_mode, Qinterpreted_mode;
 extern repv Frecursive_edit(void);
 extern repv Frecursion_depth(void);
+extern repv Fget_command_line_option (repv, repv);
 
 /* from message.c */
 enum rep_message {
