@@ -1693,13 +1693,25 @@ DEFUN("accept-process-output", cmd_accept_process_output,
 ::doc:accept_process_output::
 accept-process-output [SECONDS] [MILLISECONDS]
 
-Wait SECONDS plus MILLISECONDS for input from any asynchronous subprocesses.
+Wait SECONDS plus MILLISECONDS for output from any asynchronous subprocesses.
 If any arrives, process it, then return nil. Otherwise return t.
+
+Note that output includes notification of process termination.
 ::end:: */
 {
-    return sys_accept_input((INTP(secs) ? VINT(secs) * 1000 : 0)
-			    + (INTP(msecs) ? VINT(msecs) : 0),
-			    read_from_process);
+    VALUE result = sym_t;
+    if(!got_sigchld)
+    {
+	result = sys_accept_input((INTP(secs) ? VINT(secs) * 1000 : 0)
+				  + (INTP(msecs) ? VINT(msecs) : 0),
+				  read_from_process);
+    }
+    if(got_sigchld)
+    {
+	result = sym_nil;
+	proc_periodically();
+    }
+    return result;
 }
 
 /* Turns on or off restarted system calls */
