@@ -38,12 +38,15 @@ char *alloca ();
 # endif
 #endif
 
-/* Define this to get a list of byte-code/frequency of use */
-#undef BYTE_CODE_HISTOGRAM
-
 #include "repint.h"
 #include "bytecodes.h"
 #include <assert.h>
+
+/* Define this to get a list of byte-code/frequency of use */
+#undef BYTE_CODE_HISTOGRAM
+
+/* Define this to check if the compiler reserves enough stack */
+#undef CHECK_STACK_USAGE
 
 DEFSYM(bytecode_error, "bytecode-error");
 DEFSTRING(err_bytecode_error, "Invalid byte code version");
@@ -142,10 +145,10 @@ rep_bind_object(repv obj)
 #define CASE_OP_ARG(op)							\
 	case op+7:							\
 	    FETCH2(arg); goto rep_CONCAT(op_, op);			\
-	case op: case op+1: case op+2: case op+3: case op+4: case op+5:	\
-	    arg = c - op; goto rep_CONCAT(op_, op);			\
 	case op+6:							\
-	    arg = FETCH;						\
+	    arg = FETCH; goto rep_CONCAT(op_, op);			\
+	case op: case op+1: case op+2: case op+3: case op+4: case op+5:	\
+	    arg = insn - op;						\
 	rep_CONCAT(op_, op):
 
 DEFUN("jade-byte-code", Fjade_byte_code, Sjade_byte_code, (repv code, repv consts, repv stkreq), rep_Subr3) /*
@@ -168,7 +171,6 @@ of byte code. See the functions `compile-file', `compile-directory' and
        an unwind-protect that always gets eval'd (when the car is t).  */
     repv bindstack = Qnil;
     register u_char *pc;
-    u_char c;
     rep_GC_root gc_code, gc_consts, gc_bindstack;
     /* The `gcv_N' field is only filled in with the stack-size when there's
        a chance of gc.	*/
@@ -191,16 +193,23 @@ of byte code. See the functions `compile-file', `compile-directory' and
     rep_PUSHGCN(gc_stackbase, stackbase, 0);
 
     pc = rep_STR(code);
-fetch:
-    while((c = FETCH) != 0)
+
+    while (1)
     {
+	int insn;
+
+    fetch:
+	insn = FETCH;
 #ifdef BYTE_CODE_HISTOGRAM
-	byte_code_usage[c]++;
+	byte_code_usage[insn]++;
 #endif
-	switch(c)
+	switch(insn)
 	{
-	    u_short arg;
+	    int arg;
 	    repv tmp, tmp2;
+
+	case 0:
+	    goto quit;
 
 	CASE_OP_ARG(OP_CALL)
 #ifdef MINSTACK
@@ -982,17 +991,17 @@ fetch:
 	    if (arg < 128)
 		PUSH(rep_MAKE_INT(arg));
 	    else
-		PUSH(rep_MAKE_INT(((short)arg) - 256));
+		PUSH(rep_MAKE_INT(arg - 256));
 	    break;
 
 	case OP_PUSHIWN:
 	    FETCH2(arg);
-	    PUSH(rep_MAKE_INT(-((long)arg)));
+	    PUSH(rep_MAKE_INT(-arg));
 	    break;
 
 	case OP_PUSHIWP:
 	    FETCH2(arg);
-	    PUSH(rep_MAKE_INT((long)arg));
+	    PUSH(rep_MAKE_INT(arg));
 	    break;
 
 	case OP_BINDOBJ:
@@ -1086,7 +1095,9 @@ fetch:
 	default:
 	    Fsignal(Qerror, rep_LIST_1(rep_VAL(&unknown_op)));
 	}
+#ifdef CHECK_STACK_USAGE
         assert (STK_USE <= rep_INT(stkreq));
+#endif
 	if (rep_throw_value || !TOP)
 	{
 	    /* Some form of error occurred. Unbind the binding stack. */
@@ -1133,15 +1144,6 @@ fetch:
 		{
 		    /* car is an exception handler, but rep_throw_value isn't
 		       set, so there's nothing to handle. Keep unwinding. */
-#if 1
-		    fprintf(stderr, "lispmach: ignoring exception handler "
-			    "(%" rep_PTR_SIZED_INT_CONV "d . %"
-			    rep_PTR_SIZED_INT_CONV "d) pc=%d",
-			    rep_INT(rep_CAR(item)),
-			    rep_INT(rep_CDR(item)), pc - rep_STR(code));
-		    Fbacktrace(Fstderr_file());
-		    fputs("\n", stderr);
-#endif
 		    bindstack = rep_CDR(bindstack);
 		}
 	    }
