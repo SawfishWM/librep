@@ -384,6 +384,7 @@
 	 (comp-lexically-pure comp-lexically-pure)
 	 (comp-lambda-name comp-lambda-name))
       (emit-insn (bytecode init-bind))
+      (increment-b-stack)
       (while (consp lst)
 	(cond
 	 ((consp (car lst))
@@ -400,7 +401,8 @@
 	(decrement-stack)
 	(setq lst (cdr lst)))
       (compile-body (nthcdr 2 form) return-follows)
-      (emit-insn (bytecode unbind))))
+      (emit-insn (bytecode unbind))
+      (decrement-b-stack)))
   (put 'let* 'rep-compile-fun compile-let*)
 
   ;; let can be compiled straight from its macro definition
@@ -414,6 +416,7 @@
 	 (comp-lexically-pure comp-lexically-pure)
 	 (comp-lambda-name comp-lambda-name))
       (emit-insn (bytecode init-bind))
+      (increment-b-stack)
       ;; create the bindings, should really be to void values, but use nil..
       (mapc (lambda (cell)
 	      (let
@@ -430,7 +433,8 @@
 		(emit-varset var)
 		(decrement-stack))) bindings)
       (compile-body (nthcdr 2 form) return-follows)
-      (emit-insn (bytecode unbind))))
+      (emit-insn (bytecode unbind))
+      (decrement-b-stack)))
   (put 'letrec 'rep-compile-fun compile-letrec)
 
   (defun compile-cond (form &optional return-follows)
@@ -577,9 +581,11 @@
       (fix-label start-label)
       (push-label-addr catch-label)
       (emit-insn (bytecode binderr))
+      (increment-b-stack)
       (decrement-stack)
       (compile-body (nthcdr 2 form))
       (emit-insn (bytecode unbind))
+      (decrement-b-stack)
       (fix-label end-label)))
   (put 'catch 'rep-compile-fun compile-catch)
 
@@ -616,9 +622,11 @@
       (fix-label start-label)
       (push-label-addr cleanup-label)
       (emit-insn (bytecode binderr))
+      (increment-b-stack)
       (decrement-stack)
       (compile-form-1 (nth 1 form))
       (emit-insn (bytecode unbind))
+      (decrement-b-stack)
       (emit-insn (bytecode nil))
       (decrement-stack)
       (emit-jmp-insn (bytecode jmp) cleanup-label)
@@ -701,6 +709,7 @@
       (compile-constant (nth 1 form))
       (push-label-addr cleanup-label)
       (emit-insn (bytecode binderr))
+      (increment-b-stack)
       (decrement-stack)
       (compile-form-1 (nth 2 form))
 
@@ -710,6 +719,7 @@
       ;;		pop			;pop VAR
       (fix-label end-label)
       (emit-insn (bytecode unbind))
+      (decrement-b-stack)
       (emit-insn (bytecode swap))
       (emit-insn (bytecode pop))
       (decrement-stack)))
@@ -720,9 +730,11 @@
 	((comp-lexically-pure nil))
       (compile-form-1 (nth 1 form))
       (emit-insn (bytecode bindobj))
+      (increment-b-stack)
       (decrement-stack)
       (compile-body (nthcdr 2 form))
-      (emit-insn (bytecode unbind))))
+      (emit-insn (bytecode unbind))
+      (decrement-b-stack)))
   (put 'with-object 'rep-compile-fun compile-with-object)
 
   (defun compile-list (form)

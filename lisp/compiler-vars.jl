@@ -47,6 +47,8 @@ their position in that file.")
   (defvar comp-constant-index 0)	;next free constant index number
   (defvar comp-current-stack 0)		;current stack requirement
   (defvar comp-max-stack 0)		;highest possible stack
+  (defvar comp-current-b-stack 0)	;current binding stack requirement
+  (defvar comp-max-b-stack 0)		;highest possible binding stack
   (defvar comp-intermediate-code nil)	;list of (INSN . [ARG]), (TAG . REFS)
 
   ;; Compilation "environment"

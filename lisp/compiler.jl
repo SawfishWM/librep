@@ -372,6 +372,8 @@ that files which shouldn't be compiled aren't."
        (comp-constant-index 0)
        (comp-current-stack 0)
        (comp-max-stack 0)
+       (comp-current-b-stack 0)
+       (comp-max-b-stack 0)
        comp-output
        (comp-output-pc 0)
        (comp-intermediate-code nil))
@@ -407,4 +409,5 @@ that files which shouldn't be compiled aren't."
     (when comp-debug
       (format standard-error "lap-2 code: %S\n\n" comp-intermediate-code))
     (list 'jade-byte-code (assemble-bytecodes comp-intermediate-code)
-	  (make-constant-vector) comp-max-stack))))
+	  (make-constant-vector)
+	  (+ comp-max-stack (ash comp-max-b-stack 16))))))

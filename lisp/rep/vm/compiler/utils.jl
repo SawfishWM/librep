@@ -32,6 +32,8 @@
 					 test-function-call
 					 increment-stack
 					 decrement-stack
+					 increment-b-stack
+					 decrement-b-stack
 					 get-lambda-vars
 					 compiler-constant-p
 					 compiler-constant-value
@@ -209,6 +211,14 @@
 	  (if n
 	      (list '- 'comp-current-stack n)
 	    (list '1- 'comp-current-stack))))
+
+  (defun increment-b-stack ()
+    (setq comp-current-b-stack (1+ comp-current-b-stack))
+    (when (> comp-current-b-stack comp-max-b-stack)
+      (setq comp-max-b-stack comp-current-b-stack)))
+
+  (defun decrement-b-stack ()
+    (setq comp-current-b-stack (1- comp-current-b-stack)))
 
 
 

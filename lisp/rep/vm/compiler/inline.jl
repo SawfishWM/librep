@@ -149,9 +149,11 @@
       (if bind-stack
 	  (progn
 	    (emit-insn (bytecode init-bind))
+	    (increment-b-stack)
 	    (pop-inline-args bind-stack args-left emit-binding)
 	    (compile-body body return-follows)
-	    (emit-insn (bytecode unbind)))
+	    (emit-insn (bytecode unbind))
+	    (decrement-b-stack))
 	;; Nothing to bind to. Just pop the evaluated args and
 	;; evaluate the body
 	(while (> args-left 0)
