@@ -736,7 +736,7 @@ struct rep_Call {
     /* t if `args' is list of *evalled* arguments.  */
     repv args_evalled_p;
     repv saved_env, saved_fenv;
-    rep_bool saved_special_env;
+    repv saved_special_env;
 };
 
 #define rep_PUSH_CALL(lc)		\
