@@ -202,7 +202,8 @@
     (error "rep-remote session is dying"))
   (while (remote-rep-status-p session status)
     (when (and (process-running-p (aref session remote-rep-process))
-	       (accept-process-output remote-rep-timeout))
+	       (accept-process-output-1 (aref session remote-rep-process)
+					remote-rep-timeout))
       (aset session remote-rep-status 'timed-out)
       (error "rep-remote process timed out (%s)" (or type "unknown")))))
 
@@ -297,8 +298,9 @@
 			 (substring output point))
 		   (setq point (length output)))))
 	      (t
-	       (format standard-error "remote-rep: unhandled output %S\n"
-		       (substring output point))
+	       (unless (string-looking-at "\\s*$" output point)
+		 (format standard-error "remote-rep: unhandled output %S\n"
+			 (substring output point)))
 	       (setq point (length output))))))))
 
 (defun remote-rep-sentinel (process)

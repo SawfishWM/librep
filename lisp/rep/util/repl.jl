@@ -358,4 +358,12 @@ enter a meta-command prefixed by a `,' character.\n\n")
 	 (format standard-output "%S\n\n" (call-in-profiler
 					   (lambda () (repl-eval form))))
 	 (print-profile)))
-  (put 'profile 'repl-help "FORM"))
+  (put 'profile 'repl-help "FORM")
+
+  (put 'check 'repl-command
+       (lambda (#!optional module)
+	 (require 'rep.test.framework)
+	 (if (null module)
+	     (run-all-self-tests)
+	   (run-module-self-tests module))))
+  (put 'check 'repl-help "[STRUCT]"))

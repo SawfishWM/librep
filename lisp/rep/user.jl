@@ -80,6 +80,9 @@
 	(if (file-exists-p arg)
 	    (structure () (open scheme) (load arg '() 1 1))
 	  (structure () (open scheme) (load arg))))
+       ((string= arg "--check")
+	(require 'rep.test.framework)
+	(run-self-tests-and-exit))
        ((string= arg "--help")
 	(format standard-error "\
 usage: %s [OPTIONS...]
@@ -100,6 +103,8 @@ where OPTIONS are any of:
 
     --scheme FILE	load the file of Scheme forms called FILE
     -s FILE		 (implies --batch mode)
+
+    --check		run self tests and exit
 
     --version		print version details
     --no-rc		don't load rc or site-init files

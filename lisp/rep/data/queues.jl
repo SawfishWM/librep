@@ -33,7 +33,8 @@
 	    delete-from-queue)
 
     (open rep
-	  rep.data.datums)
+	  rep.data.datums
+	  rep.test.framework)
 
   (define-structure-alias queues rep.data.queues)
 
@@ -68,4 +69,47 @@
     (length (queue->list q)))
 
   (define (delete-from-queue q x)
-    (datum-set q type-id (delq x (datum-ref q type-id)))))
+    (datum-set q type-id (delq x (datum-ref q type-id))))
+
+;;; tests
+
+  ;;###autoload
+  (define-self-test 'rep.data.queues
+    (lambda ()
+      (let ((queue (make-queue)))
+
+	(test (queuep queue))
+	(test (queue-empty-p queue))
+	(test (null (queue->list queue)))
+	(test (= (queue-length queue) 0))
+
+	(enqueue queue 1)
+	(test (not (queue-empty-p queue)))
+	(test (equal (queue->list queue) '(1)))
+	(test (= (queue-length queue) 1))
+
+	(enqueue queue 2)
+	(test (equal (queue->list queue) '(1 2)))
+	(test (= (queue-length queue) 2))
+
+	(test (= (dequeue queue) 1))
+	(test (equal (queue->list queue) '(2)))
+	(test (= (queue-length queue) 1))
+
+	(enqueue queue 3)
+	(enqueue queue 4)
+	(enqueue queue 5)
+	(test (equal (queue->list queue) '(2 3 4 5)))
+
+	(delete-from-queue queue 2)
+	(test (equal (queue->list queue) '(3 4 5)))
+
+	(delete-from-queue queue 4)
+	(test (equal (queue->list queue) '(3 5)))
+
+	(delete-from-queue queue 5)
+	(test (equal (queue->list queue) '(3)))
+
+	(delete-from-queue queue 3)
+	(test (= (queue-length queue) 0))
+	(test (queue-empty-p queue))))))

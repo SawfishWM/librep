@@ -1,3 +1,24 @@
+2001-03-26  John Harper  <jsh@eazel.com>
+
+	Work to make rep self-testing. The framework and some tests
+	exist, but I still need to add unit tests for many modules:
+
+	* rep/test/framework.jl: self-testing framework. Provides
+	`assert', 'check' and `test' macros, as well as random other
+	stuff for supporting these. 
+
+	* rep/test/data.jl: tests for rep.data module
+
+	* rep/data/queues.jl: added self tests
+
+	* rep/user.jl: added --check option
+	* rep/util/repl.jl: added a `,check' command
+	* Makefile.in: added a `check' target
+
+	* rep/io/file-handlers/remote/rep.jl (remote-rep-while): use
+	accept-process-output-1 instead of accept-process-output
+	(remote-rep-output-filter): ignore blank lines
+
 2001-03-22  John Harper  <jsh@eazel.com>
 
 	* version 0.13.5
