@@ -1,3 +1,16 @@
+1998-10-31  John Harper  <john@dcs.warwick.ac.uk>
+
+	* tex-shell.jl (bibtex-file, tex-kill-job,
+	tex-recenter-output-buffer, tex-print, tex-view,
+	tex-show-print-queue): new commands
+
+	* tex-mode.jl (plain-tex-mode): new function, just so there can
+	be a plain-tex-mode-hook really
+
+	* shell.jl (shell-kill-buffer-hook): new function, takes most
+	of shell-mode-kill, but is put in the kill-buffer-hook so that
+	it actually gets called when the buffer is killed..
+
 1998-10-30  John Harper  <john@dcs.warwick.ac.uk>
 
 	* prompt.jl (prompt-for-lisp): kludge to use lisp-complete-sexp
