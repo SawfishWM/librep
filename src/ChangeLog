@@ -1,5 +1,9 @@
 2000-09-05  John Harper  <john@dcs.warwick.ac.uk>
 
+	* structures.c (rep_structures_init): moved `provide',
+	`require' and `featurep' from rep.structures to
+	rep.module-system
+
 	* Makefile.in: .libexec depends on $(DL_OBJS)
 
 	* lispmach.h: when OPTIMIZE_FOR_SPACE is defined don't bother

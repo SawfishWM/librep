@@ -6108,8 +6108,8 @@ set of field-accessor and -modifier functions.
 This macro creates a new record type storing an opaque object
 identifying the type in the variable named @var{type}.
 
-It then defines a function @var{constructor} with arguments as
-specified by the @var{fields@dots{}}, a predicate function called
+It then defines a function @var{constructor} with parameter list as
+specified by the @var{fields@dots{}}, and a predicate function called
 @var{predicate} if @var{predicate} is given.
 
 The fields of the record are defined by the sequence of
@@ -6123,6 +6123,10 @@ the associated @var{field}. If the @var{modifier} name is defined a
 function will be defined of that name, that when applied to a record
 and an object, stores the object into the associated field of the
 record.
+
+Note that the @var{fields@dots{}} may include all the standard
+lambda-list features (@pxref{Lambda Expressions}), including keyword
+parameters and default values.
 @end defmac
 
 Here is an example record definition:
@@ -6170,11 +6174,25 @@ For the above example, the following could be used:
 @lisp
 (define-record-discloser :pare (lambda (x) `(pare ,(kar x) ,(kdr x))))
 
-(define y (kons 'a 'b))
-
-y
+(kons 'a 'b)
     @result{} (pare a b)
 @end lisp
+
+Constructors for records with large numbers of fields often benefit
+from using keyword parameters. For example the @code{kons} record above
+could be defined as follows (though this would make more sense if it
+had more than two fields):
+
+@example
+(define-record-type :pare
+  (kons #!key (kar 1) (kdr 2))
+  pare?
+  (kar kar set-kar!)
+  (kdr kdr set-kdr!))
+
+(kons #:kar 42) @result{} (pare 42 2)
+(kons #:kdr 42) @result{} (pare 1 42)
+@end example
 
 
 @node Hash Tables, Guardians, Records, The language

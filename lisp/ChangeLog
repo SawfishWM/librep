@@ -1,4 +1,20 @@
+2000-09-06  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep/data/objects.jl (object): added a second method syntax:
+	(METHOD-NAME FUNCTION) (in addition to ((METHOD-NAME .
+	PARAM-LIST) BODY...)). This allows arbitrary functions to be
+	used as method implementations
+
 2000-09-05  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep/module-system.jl: don't explcitly export `provide',
+	`require' and `featurep', this is done from C code now
+
+	* rep/data/records.jl: instead of using a static (higher-order)
+	record-constructor function, create a local function for each
+	record type. This allows the constructor parameter list to
+	include all standard rep lambda-list features (i.e. including
+	keywords and default values, etc..)
 
 	* Makefile.in: lisp depends on ../src/.libexec
 
