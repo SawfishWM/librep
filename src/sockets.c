@@ -536,8 +536,20 @@ returns false.
 	     1, &SOCKET (sock)->sock));
 }
 
+DEFUN ("socketp", Fsocketp, Ssocketp, (repv arg), rep_Subr1) /*
+::doc:rep.io.sockets#socketp::
+socketp ARG
+
+Return true if ARG is an unclosed socket object.
+::end:: */
+{
+    return (SOCKETP (arg) && SOCKET_IS_ACTIVE (SOCKET (arg))) ? Qt : Qnil;
+}
+
 
 /* type hooks */
+
+DEFSTRING (inactive_socket, "Inactive socket");
 
 static int
 socket_putc (repv stream, int c)
@@ -546,13 +558,16 @@ socket_putc (repv stream, int c)
     int actual;
 
     if (!SOCKET_IS_ACTIVE (SOCKET (stream)))
+    {
+	Fsignal (Qerror, rep_list_2 (rep_VAL (&inactive_socket), stream));
 	return 0;
+    }
 
 again:
     actual = write (SOCKET (stream)->sock, &data, 1);
     if (actual < 0 && errno == EINTR)
 	goto again;
-    return actual;
+    return POS (actual);
 }
 
 static int
@@ -562,7 +577,10 @@ socket_puts (repv stream, void *data, int len, rep_bool is_lisp)
     int total = 0;
 
     if (!SOCKET_IS_ACTIVE (SOCKET (stream)))
-	return EOF;
+    {
+	Fsignal (Qerror, rep_list_2 (rep_VAL (&inactive_socket), stream));
+	return 0;
+    }
 
     while (total < len)
     {
@@ -646,6 +664,7 @@ rep_dl_init (void)
     rep_ADD_SUBR (Ssocket_address);
     rep_ADD_SUBR (Ssocket_port);
     rep_ADD_SUBR (Saccept_socket_output_1);
+    rep_ADD_SUBR (Ssocketp);
 
     rep_register_process_input_handler (client_socket_output);
     rep_register_process_input_handler (server_socket_output);
