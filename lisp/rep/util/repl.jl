@@ -80,12 +80,14 @@
 	     (error-handler (car data) (cdr data))))))))
 
   (define (repl &optional initial-structure)
-    (let ((r (make-repl initial-structure)))
+    (let-fluids ((current-repl (make-repl initial-structure)))
       (write standard-output "\nEnter `,help' to list commands.\n")
       (let loop ()
-	(let ((input (readline (format nil (if (repl-pending r) "" "%s> ")
-				       (repl-struct r)))))
-	  (when (and input (repl-iterate r input))
+	(let ((input (readline
+		      (format nil (if (repl-pending (fluid current-repl))
+				      "" "%s> ")
+			      (repl-struct (fluid current-repl))))))
+	  (when (and input (repl-iterate (fluid current-repl) input))
 	    (loop))))))
 
   (define (print-list data &optional map)
