@@ -415,7 +415,7 @@ Set the function value in the closure FUNARG to FUNCTION.
 
 DEFUN("closure-structure", Fclosure_structure,
       Sclosure_structure, (repv funarg), rep_Subr1) /*
-::doc:rep.lang.interpreter#closure-function::
+::doc:rep.structures#closure-function::
 closure-function FUNARG
 
 Return the structure associated with the closure FUNARG.
@@ -458,7 +458,7 @@ Returns t if ARG is a closure
 
 DEFUN("set-special-environment", Fset_special_environment,
       Sset_special_environment, (repv env, repv structure), rep_Subr2) /*
-::doc:rep.lang.interpreter#set-special-environment::
+::doc:rep.structures#set-special-environment::
 set-special-environment ENV STRUCTURE
 ::end:: */
 {
@@ -665,7 +665,7 @@ rep_add_binding_to_env (repv env, repv sym, repv value)
 /* More lisp functions */
 
 DEFUN("defvar", Fdefvar, Sdefvar, (repv args, repv tail_posn), rep_SF) /*
-::doc:rep.lang.symbols#defvar::
+::doc:rep.lang.interpreter#defvar::
 defvar NAME DEFAULT-VALUE [DOC-STRING]
 
 Define a special variable called NAME whose standard value is DEFAULT-
@@ -1088,7 +1088,7 @@ Returns t if ARG is a symbol.
 }
 
 DEFUN("setq", Fsetq, Ssetq, (repv args, repv tail_posn), rep_SF) /*
-::doc:rep.lang.symbols#setq::
+::doc:rep.lang.interpreter#setq::
 setq [SYMBOL FORM] ...
 
 Sets the value of each SYMBOL to the value of its corresponding FORM
@@ -1115,7 +1115,7 @@ end:
 }
 
 DEFUN ("%define", F_define, S_define, (repv form,  repv tail_posn), rep_SF) /*
-::doc:rep.lang.symbols#%define::
+::doc:rep.lang.interpreter#%define::
 %define SYMBOL FORM
 
 Evaluate FORM, then create a top-level binding of SYMBOL whose value is
@@ -1428,7 +1428,6 @@ rep_symbols_init(void)
     rep_ADD_SUBR(Sintern_symbol);
     rep_ADD_SUBR(Sintern);
     rep_ADD_SUBR(Sunintern);
-    rep_ADD_SUBR(Sdefvar);
     rep_ADD_SUBR(Ssymbol_value);
     rep_ADD_SUBR_INT(Sset);
     rep_ADD_SUBR(Ssetplist);
@@ -1440,8 +1439,6 @@ rep_symbols_init(void)
     rep_ADD_SUBR(Ssymbol_plist);
     rep_ADD_SUBR(Sgensym);
     rep_ADD_SUBR(Ssymbolp);
-    rep_ADD_SUBR(Ssetq);
-    rep_ADD_SUBR(S_define);
     rep_ADD_SUBR(Smakunbound);
     rep_ADD_SUBR(Sget);
     rep_ADD_SUBR(Sput);
@@ -1454,13 +1451,19 @@ rep_symbols_init(void)
     rep_pop_structure (tem);
 
     tem = rep_push_structure ("rep.lang.interpreter");
+    rep_ADD_SUBR(Ssetq);
+    rep_ADD_SUBR(S_define);
+    rep_ADD_SUBR(Sdefvar);
     rep_ADD_SUBR(Smake_closure);
     rep_ADD_SUBR(Sclosure_function);
     rep_ADD_SUBR(Sset_closure_function);
-    rep_ADD_SUBR(Sclosure_structure);
-    rep_ADD_SUBR(Sset_closure_structure);
     rep_ADD_SUBR(Sclosure_name);
     rep_ADD_SUBR(Sclosurep);
+    rep_pop_structure (tem);
+
+    tem = rep_push_structure ("rep.structures");
+    rep_ADD_SUBR(Sclosure_structure);
+    rep_ADD_SUBR(Sset_closure_structure);
     rep_ADD_SUBR(Sset_special_environment);
     rep_pop_structure (tem);
 
