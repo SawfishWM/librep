@@ -2493,7 +2493,7 @@ handler.
     rep_DECLARE1(error, rep_SYMBOLP);
 
     on_error = Fsymbol_value (Qbacktrace_on_error, Qt);
-    if (on_error == Qt
+    if ((on_error == Qt && error != Qend_of_stream)
 	|| (rep_CONSP(on_error)
 	    && (tmp = Fmemq (error, on_error)) && tmp != Qnil))
     {
@@ -2504,7 +2504,7 @@ handler.
 
     errlist = Fcons(error, data);
     on_error = Fsymbol_value(Qdebug_on_error, Qt);
-    if(((on_error != rep_NULL && on_error == Qt)
+    if(((on_error != rep_NULL && on_error == Qt && error != Qend_of_stream)
 	|| (rep_CONSP(on_error)
 	    && (tmp = Fmemq(error, on_error)) && !rep_NILP(tmp))))
     {

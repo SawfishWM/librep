@@ -1,3 +1,8 @@
+2005-02-06  John Harper  <jsh@unfactored.org>
+
+	* lisp.c: backtrace-on-error and debug-on-error ignore
+	end-of-stream errors when set to `t'
+
 2005-01-19  John Harper  <jsh@unfactored.org>
 
 	* continuations.c (save_stack): don't use __builtin_frame_address
