@@ -1,3 +1,9 @@
+1999-05-15  John Harper  <john@dcs.warwick.ac.uk>
+
+	* date.jl (date-day-of-week): new function, given
+	date/day/month, gives the day of week
+	(parse-date): accept ISO 8601 calendar format
+
 1999-04-28  John Harper  <john@dcs.warwick.ac.uk>
 
 	* compiler.jl (compile-batch): new function

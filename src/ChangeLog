@@ -1,3 +1,8 @@
+1999-05-15  John Harper  <john@dcs.warwick.ac.uk>
+
+	* added `#define _GNU_SOURCE' at the top of all source files. This
+	seems to be necessary with glibc 2.1
+
 1999-04-25  John Harper  <john@dcs.warwick.ac.uk>
 
 	* main.c (rep_kill): kill the dl libraries a bit later down the
