@@ -51,7 +51,7 @@ char *alloca ();
 #define rep_OBSIZE		509
 
 #define rep_SYMBOLBLK_SIZE	680		/* ~8k */
-#define rep_FUNARGBLK_SIZE	340		/* ~8k */
+#define rep_FUNARGBLK_SIZE	204		/* ~4k */
 
 /* Symbol allocation blocks */
 typedef struct rep_symbol_block_struct {
@@ -406,7 +406,6 @@ current environment.
     f->fun = fun;
     f->name = name;
     f->env = rep_env;
-    f->special_env = rep_special_env;
     f->structure = rep_structure;
     return rep_VAL (f);
 }
@@ -490,16 +489,13 @@ set-variable-environment ENV
 }
 
 DEFUN("set-special-environment", Fset_special_environment,
-      Sset_special_environment, (repv env), rep_Subr1) /*
+      Sset_special_environment, (repv env, repv structure), rep_Subr2) /*
 ::doc:set-special-environment::
-set-special-environment ENV
+set-special-environment ENV STRUCTURE
 ::end:: */
 {
-    if (rep_call_stack != 0)
-    {
-	if (rep_LISTP (env))
-	    rep_call_stack->saved_special_env = Fcons (Qnil, env);
-    }
+    rep_DECLARE2 (structure, rep_STRUCTUREP);
+    rep_STRUCTURE (structure)->special_env = env;
     return Qt;
 }
 
@@ -563,7 +559,7 @@ search_special_bindings (repv sym)
 static inline int
 inlined_search_special_environment (repv sym)
 {
-    register repv env = rep_CDR(rep_special_env);
+    register repv env = rep_SPECIAL_ENV;
     while (rep_CONSP(env) && rep_CAR(env) != sym)
 	env = rep_CDR(env);
 
@@ -716,7 +712,7 @@ variable will be set (if necessary) not the local value.
 	if(rep_NILP(tmp)
 	   || ((rep_SYM(sym)->car & rep_SF_WEAK)
 	       && !(rep_SYM(sym)->car & rep_SF_WEAK_MOD)
-	       && rep_CDR(rep_special_env) == Qt))
+	       && rep_SPECIAL_ENV == Qt))
 	{
 	    F_structure_set (rep_specials_structure, sym, val);
 	}
@@ -729,10 +725,9 @@ variable will be set (if necessary) not the local value.
 	       environment sets it as weak, and adds it to the env */
 
 	    rep_SYM(sym)->car |= rep_SF_WEAK;
-	    rep_CDR(rep_special_env) = Fcons (sym, rep_CDR(rep_special_env));
+	    rep_SPECIAL_ENV = Fcons (sym, rep_SPECIAL_ENV);
 	}
-	else if (rep_CDR(rep_special_env) == Qt
-		 && (rep_SYM(sym)->car & rep_SF_WEAK))
+	else if (rep_SPECIAL_ENV == Qt && (rep_SYM(sym)->car & rep_SF_WEAK))
 	{
 	    /* defvar'ing a weak variable from an unrestricted
 	       environment removes the weak status, but marks
@@ -789,7 +784,7 @@ values look for one of those first.
 	int spec = inlined_search_special_environment (sym);
 	/* modified-weak specials can only be accessed from an
 	   unrestricted environment */
-	if (spec < 0 || !(rep_SYM(sym)->car & rep_SF_WEAK_MOD))
+	if (spec < 0 || (spec > 0 && !(rep_SYM(sym)->car & rep_SF_WEAK_MOD)))
 	{
 	    if(rep_SYM(sym)->car & rep_SF_LOCAL)
 		val = (*rep_deref_local_symbol_fun)(sym);
@@ -837,7 +832,7 @@ SYMBOL in buffers or windows which do not have their own local value.
     if (rep_SYM(sym)->car & rep_SF_SPECIAL)
     {
 	int spec = search_special_environment (sym);
-	if (spec < 0 || !(rep_SYM(sym)->car & rep_SF_WEAK_MOD))
+	if (spec < 0 || (spec > 0 && !(rep_SYM(sym)->car & rep_SF_WEAK_MOD)))
 	{
 	    repv tem = search_special_bindings (sym);
 	    if (tem != Qnil)
@@ -1312,7 +1307,6 @@ rep_symbols_init(void)
     rep_USE_DEFAULT_ENV;
     rep_special_bindings = Qnil;
     rep_mark_static (&rep_env);
-    rep_mark_static (&rep_special_env);
     rep_mark_static (&rep_special_bindings);
 
     F_structure_set (rep_structure, Qnil, Qnil);
