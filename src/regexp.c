@@ -203,14 +203,14 @@ reg(int paren, int *flagp)
     register char  *ret;
     register char  *br;
     register char  *ender;
-    register int    parno;
+    register int    parno = 0;
     int		    flags;
 
     *flagp = HASWIDTH;		/* Tentatively. */
 
     /* Make an OPEN node, if parenthesized. */
     if (paren) {
-	if (regnpar >= NSUBEXP)
+	if (regnpar >= rep_NSUBEXP)
 	    FAIL("too many ()");
 	parno = regnpar;
 	regnpar++;
@@ -809,7 +809,7 @@ regtry(rep_regexp *prog, char *string)
 
     sp = prog->matches.string.startp;
     ep = prog->matches.string.endp;
-    for (i = NSUBEXP; i > 0; i--) {
+    for (i = rep_NSUBEXP; i > 0; i--) {
 	*sp++ = NULL;
 	*ep++ = NULL;
     }
@@ -1359,6 +1359,7 @@ regprop(char *op)
 	break;
     default:
 	rep_regerror("corrupted opcode");
+	p = 0;
 	break;
     }
     if (p != NULL)

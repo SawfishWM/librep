@@ -186,7 +186,7 @@ rep_mark_regexp_data(void)
     if(last_match_type == rep_reg_obj)
     {
 	int i;
-	for(i = 0; i < NSUBEXP; i++)
+	for(i = 0; i < rep_NSUBEXP; i++)
 	{
 	    rep_MARKVAL(last_matches.obj.startp[i]);
 	    rep_MARKVAL(last_matches.obj.endp[i]);
@@ -199,7 +199,7 @@ rep_mark_regexp_data(void)
 	if(sd->type == rep_reg_obj)
 	{
 	    int i;
-	    for(i = 0; i < NSUBEXP; i++)
+	    for(i = 0; i < rep_NSUBEXP; i++)
 	    {
 		rep_MARKVAL(sd->matches.obj.startp[i]);
 		rep_MARKVAL(sd->matches.obj.endp[i]);
@@ -218,7 +218,7 @@ rep_set_string_match(repv obj, repv start, repv end)
     last_match_type = rep_reg_obj;
     last_matches.obj.startp[0] = start;
     last_matches.obj.endp[0] = end;
-    for(i = 1; i < NSUBEXP; i++)
+    for(i = 1; i < rep_NSUBEXP; i++)
     {
 	last_matches.obj.startp[i] = rep_NULL;
 	last_matches.obj.endp[i] = rep_NULL;
@@ -351,7 +351,7 @@ buffer, or an integer if the last match was in a string (i.e. regexp-match).
     if(rep_INTP(exp))
     {
 	i = rep_INT(exp);
-	if((i >= NSUBEXP) || (i < 0))
+	if((i >= rep_NSUBEXP) || (i < 0))
 	    return(rep_signal_arg_error(exp, 1));
     }
     else
@@ -386,7 +386,7 @@ buffer, or an integer if the last match was in a string (i.e. regexp-match).
     if(rep_INTP(exp))
     {
 	i = rep_INT(exp);
-	if((i >= NSUBEXP) || (i < 0))
+	if((i >= rep_NSUBEXP) || (i < 0))
 	    return rep_signal_arg_error(exp, 1);
     }
     else

@@ -8,7 +8,7 @@
 #ifndef REP_REGEXP_H
 #define REP_REGEXP_H
 
-#define NSUBEXP  10
+#define rep_NSUBEXP  10
 
 typedef enum rep_regtype {
     rep_reg_string = 0,
@@ -17,12 +17,12 @@ typedef enum rep_regtype {
 
 typedef union rep_regsubs {
     struct {
-	char *startp[NSUBEXP];
-	char *endp[NSUBEXP];
+	char *startp[rep_NSUBEXP];
+	char *endp[rep_NSUBEXP];
     } string;
     struct {
-	repv startp[NSUBEXP];
-	repv endp[NSUBEXP];
+	repv startp[rep_NSUBEXP];
+	repv endp[rep_NSUBEXP];
     } obj;
 } rep_regsubs;
 

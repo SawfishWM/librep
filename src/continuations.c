@@ -1242,7 +1242,7 @@ mark_cont (repv obj)
 	if(sd->type == rep_reg_obj)
 	{
 	    int i;
-	    for(i = 0; i < NSUBEXP; i++)
+	    for(i = 0; i < rep_NSUBEXP; i++)
 	    {
 		rep_MARKVAL(sd->matches.obj.startp[i]);
 		rep_MARKVAL(sd->matches.obj.endp[i]);
