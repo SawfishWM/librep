@@ -311,57 +311,61 @@ read_symbol(VALUE strm, int *c_p)
 		if(i == 0 && (c == '-' || c == '+'))
 		    /* A leading sign */
 		    sign = (c == '-') ? -1 : 1;
-		else if(radix == -1)
-		{
-		    /* Deduce the base next (or that we're not
-		       looking at a number) */
-		    if(!isdigit(c))
-			radix = 0;
-		    else if(c == '0')
-			radix = 1;	/* octal or hex */
-		    else
-		    {
-			radix = 10;
-			value = c - '0';
-		    }
-		}
-		else if(radix == 1)
-		{
-		    /* We had a leading zero last character. If
-		       this char's an 'x' it's hexadecimal. */
-		    if(toupper(c) == 'X')
-			radix = 16;
-		    else if(isdigit(c))
-		    {
-			radix = 8;
-			value = (value * radix) + (c - '0');
-		    }
-		    else
-			radix = 0;
-		}
 		else
 		{
-		    /* Now we're speculatively reading a number
-		       of base radix. */
-		    if(radix <= 10)
+		    switch(radix)
 		    {
-			if(c >= '0' && c <= ('0' + radix - 1))
-			    value = value * radix + (c - '0');
-			else
+		    case -1:
+			/* Deduce the base next (or that we're not
+			   looking at a number) */
+			if(!isdigit(c))
 			    radix = 0;
-		    }
-		    else
-		    {
-			/* hex */
-			if(isxdigit(c))
+			else if(c == '0')
+			    radix = 1;	/* octal or hex */
+			else
 			{
-			    if(c >= '0' && c <= '9')
-				value = value * 16 + (c - '0');
-			    else
-				value = value * 16 + 10 + (toupper(c) - 'A');
+			    radix = 10;
+			    value = c - '0';
+			}
+			break;
+
+		    case 1:
+			/* We had a leading zero last character. If
+			   this char's an 'x' it's hexadecimal. */
+			if(toupper(c) == 'X')
+			    radix = 16;
+			else if(isdigit(c))
+			{
+			    radix = 8;
+			    value = (value * radix) + (c - '0');
 			}
 			else
 			    radix = 0;
+			break;
+
+		    default:
+			/* Now we're speculatively reading a number
+			   of base radix. */
+			if(radix <= 10)
+			{
+			    if(c >= '0' && c <= ('0' + radix - 1))
+				value = value * radix + (c - '0');
+			    else
+				radix = 0;
+			}
+			else
+			{
+			    /* hex */
+			    if(isxdigit(c))
+			    {
+				value = (value * 16
+					 + ((c >= '0' && c <= '9')
+					    ? c - '0'
+					    : 10 + toupper(c) - 'A'));
+			    }
+			    else
+				radix = 0;
+			}
 		    }
 		}
 	    }
