@@ -1064,21 +1064,6 @@ thread_suspend (rep_thread *t, u_long msecs)
 	thread_invoke ();
 }
 
-static inline int
-thread_queue_length (rep_barrier *root)
-{
-    if (root->head == 0)
-	return 0;
-    else
-    {
-	int len = 0;
-	rep_thread *ptr;
-	for (ptr = root->head->next; ptr != 0; ptr = ptr->next)
-	    len++;
-	return len;
-    }
-}
-
 u_long
 rep_max_sleep_for (void)
 {
@@ -1533,23 +1518,6 @@ Return a list of all threads.
     }
 }
 
-DEFUN("thread-queue-length", Fthread_queue_length,
-      Sthread_queue_length, (repv depth_), rep_Subr1) /*
-::doc:thread-queue-length::
-thread-queue-length [DEPTH]
-
-Returns the number of threads waiting to run in the current execution
-environment (exclusing any currently running threads).
-::end:: */
-{
-    rep_barrier *root = get_dynamic_root (rep_INTP (depth_)
-					  ? rep_INT (depth_) : 0);
-    if (root == 0)
-	return rep_MAKE_INT (0);
-    else
-	return rep_MAKE_INT (thread_queue_length (root));
-}
-
 DEFUN("thread-forbid", Fthread_forbid, Sthread_forbid, (void), rep_Subr0) /*
 ::doc:thread-forbid::
 thread-forbid
@@ -1619,7 +1587,6 @@ rep_continuations_init (void)
     rep_ADD_SUBR(Sthread_exited_p);
     rep_ADD_SUBR(Scurrent_thread);
     rep_ADD_SUBR(Sall_threads);
-    rep_ADD_SUBR(Sthread_queue_length);
     rep_ADD_SUBR(Sthread_forbid);
     rep_ADD_SUBR(Sthread_permit);
     rep_ADD_SUBR(Sthread_name);
