@@ -97,7 +97,6 @@
 
 #define HASH(x,n) (((x) >> 4) % (n))
 
-typedef struct rep_struct_node_struct rep_struct_node;
 struct rep_struct_node_struct {
     rep_struct_node *next;
     repv symbol;
@@ -106,25 +105,8 @@ struct rep_struct_node_struct {
     int is_exported : 1;
 };
 
-/* structure encapsulating a single namespace */
-typedef struct rep_struct_struct rep_struct;
-struct rep_struct_struct {
-    repv car;
-    rep_struct *next;
-    repv name;
-    repv inherited;	/* exported symbols that have no local binding */
-    int total_buckets, total_bindings;
-    rep_struct_node **buckets;
-    repv imports;
-    repv accessible;
-    u_int exclusion : 1;
-};
-
-static int rep_structure_type;
+int rep_structure_type;
 static rep_struct *all_structures;
-
-#define rep_STRUCTUREP(v) rep_CELL16_TYPEP(v, rep_structure_type)
-#define rep_STRUCTURE(v)  ((rep_struct *) rep_PTR(v))
 
 #define rep_INTERFACEP(v) rep_LISTP(v)
 
@@ -298,6 +280,7 @@ structure_mark (repv x)
     rep_MARKVAL (rep_STRUCTURE (x)->inherited);
     rep_MARKVAL (rep_STRUCTURE (x)->imports);
     rep_MARKVAL (rep_STRUCTURE (x)->accessible);
+    rep_MARKVAL (rep_STRUCTURE (x)->special_env);
 }
 
 static void
@@ -582,6 +565,7 @@ BODY-THUNK may be modified by this function!
     s->total_buckets = s->total_bindings = 0;
     s->imports = Qnil;
     s->accessible = Qnil;
+    s->special_env = Qt;
     s->exclusion = 0;
     s->next = all_structures;
     all_structures = s;
