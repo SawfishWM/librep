@@ -45,6 +45,7 @@
 (autoload 'gdb "gdb" t)
 (autoload 'help "help" t)
 (autoload 'describe-mode "help" t)
+(autoload 'substitute-command-keys "help")
 (autoload 'documentation "help")
 (autoload 'document-var "help")
 (autoload 'get-documentation "help")

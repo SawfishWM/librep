@@ -1,5 +1,23 @@
 Sun May 24 13:18:54 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* help.jl (substitute-command-keys): new function, replace
+	strings in mode documentation with keymap descriptions. Mostly
+	compatible with Emacs method of doing this
+	(describe-mode): pass the doc string through the
+	substitute-command-keys function
+
+	* modes.jl (mode-alist): renamed as auto-mode-alist
+	(default-major-mode): new variable, defines the major mode of
+	buffers that otherwise wouldn't have one
+	(get-mode): renamed get-auto-mode
+	(init-mode): renamed normal-mode, simplified the semantics
+
+	* asm-mode.jl, buffer-menu.jl, buffer-summary.jl, c-mode.jl,
+	cvs.jl, debug.jl, dired.jl, gdb.jl, info.jl, lisp-mode.jl,
+	read-mail.jl, send-mail.jl, shell.jl, tex-mode.jl,
+	texinfo-mode.jl, text-mode.jl: rewrote major mode documentation
+	to include keymap formatting directives
+
 	* keymap.jl (map-keymap-recursively): variable controlling
 	whether map-keymap notices sub-keymaps (t by default)
 	(substitute-key-definition): new command, change key bindings
