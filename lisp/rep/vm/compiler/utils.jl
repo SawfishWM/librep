@@ -101,7 +101,12 @@
 
   ;; Note that there's a function or macro NAME with lambda-list ARGS
   ;; in the current file
-  (defun remember-function (name args)
+  (defun remember-function (name args &optional body)
+    (when body
+      (let ((cell (assq name (fluid inline-env))))
+	;; a function previously declared inline
+	(when (and cell (not (cdr cell)))
+	  (rplacd cell (list* 'lambda args body)))))
     (if (assq name (fluid defuns))
 	(compiler-warning "Multiply defined function or macro: %s" name)
       (let
@@ -311,5 +316,15 @@
 	    (if handler
 		(handler clause)
 	      (compiler-warning "unknown declaration" clause)))) form))
+
+(defun declare-inline (form)
+  (mapc (lambda (name)
+	  (when (symbolp name)
+	    (unless (assq name (fluid inline-env))
+	      (fluid-set inline-env (cons (cons name nil)
+					  (fluid inline-env))))))
+	(cdr form)))
+
+(put 'inline 'compiler-decl-fun declare-inline)
 
 )
