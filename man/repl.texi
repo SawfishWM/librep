@@ -166,7 +166,7 @@ perform the evaluation.
 Attempt to unload the modules called @var{struct} @dots{}. As with
 reloading, unloading a module only removes the link between the module
 name and the module body. Only once no more references exist to
-the module bodu will it be freed.
+the module body will it be freed.
 
 @item whereis @var{symbol}
 Scan all loaded modules for those that export a binding of

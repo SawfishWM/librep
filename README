@@ -19,7 +19,7 @@ For more details see:
 To compile this you'll need GNU make, the GNU MP library (see below)
 and GNU dbm installed. Basically, just do:
 
-	$ ./configure --with-readline
+	$ ./configure
 	$ make
 	$ make install
 
@@ -53,16 +53,16 @@ small) a run-time assertion will be triggered when the interpreter
 initialises itself.
 
 Also, if this option is set to anything but int, long, or long long,
-then the src/rep.h file will need to be edited for the constant suffix
-and printf conversion of the chosen type.
+then the src/rep_config.h file will need to be edited for the constant
+suffix and printf conversion of the chosen type.
 
 
 libgmp
 ------
 
 rep uses GNU MP for it's bignum/rational implementation; you can find
-it at any GNU mirror. The most recent version of GMP that rep has been
-tested with at time of writing is version 3.0.1
+it at any GNU mirror. GMP versions 2 and 3 are both known to work
+(though version 3 is recommended)
 
 
 shared libraries
@@ -85,11 +85,43 @@ normal version.
   --without-gmp
 
     Don't use GNU MP for bignums. Use `long long' as biggest integer
-    type (if available, else just `long'). No support for exact
-    rationals, thus (/ 1 2) => 0.5 not 1/2
+    type (if available, else just `long'). Also, there is no support
+    for exact rationals, thus (/ 1 2) => 0.5 not 1/2
 
   --disable-continuations
 
     Don't include support for call/cc or multi-threading. This may be
     useful for machines with non-linear stacks (old crays?)
+
+
+obscure configure options
+-------------------------
+
+  --enable-dballoc
+
+    Trace all memory allocations. Not for general use
+
+  --disable-dbsyms
+
+    When printing C stack backtraces, don't try to output symbolic
+    addresses
+
+  --enable-gprof
+
+    Compile with flags enabling profiling. Also needs --enable-static
+    to be given. Use the `srep' target in the src directory to build a
+    statically linked interpreter (since gprof doesn't profile shared
+    libraries)
+
+  --with-malloc-alignment=BYTES
+
+    The minimum alignment of memory returned from malloc (). Defaults
+    to the machine's word size. It's unlikely this will ever need to be
+    specified explicitly
+
+  --with-stack-direction=DIRECTION
+
+    Direction of stack growth. -1 for downwards (grows from higher
+    addresses to lower addresses), +1 for upwards. If not given, will
+    try to infer this automatically (though it has been known to fail)
 

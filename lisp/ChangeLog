@@ -1,3 +1,33 @@
+2000-09-18  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep/vm/compiler/modules.jl (current-module): this now
+	defaults to *user-structure* not *root-structure*
+
+2000-09-17  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep/lang/doc.jl (describe-value): replaced `Built-in' by
+	`Native' to describe subrs
+
+	* rep/util/repl.jl (,describe): pass structure name to
+	describe-value
+
+	* rep/lang/interpreter.jl (nil, t, defmacro): use third arg of
+	%define to specify documentation of these bindings
+
+	* rep/lang/doc.jl (describe-value): include special-variable
+	and immutable-binding information in the type description.
+	Don't surround the name in parentheses unless we have details
+	of the parameter list
+
+	(documentation): don't use boundp/symbol-value to look for
+	in-core documentation
+
+2000-09-14  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep/util/repl.jl (locate-binding*): only check the current
+	module for a binding when one isn't imported, not the other way
+	around
+
 2000-09-12  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep/vm/compiler/rep.jl: after lifting top-level progn forms,

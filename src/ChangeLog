@@ -1,4 +1,21 @@
+2000-09-18  John Harper  <john@dcs.warwick.ac.uk>
+
+	* main.c (rep_init_from_dump): call setlocal (LC_NUMERIC, "C")
+	so that floating point I/O always uses `.' as fraction
+	separator (e.g. fr locale uses `,')
+
 2000-09-14  John Harper  <john@dcs.warwick.ac.uk>
+
+	* sockets.c (Fsocketp): new function
+	(socket_putc, socket_puts): signal an error for inactive
+	sockets, return 0 if nothing can be written, not -1
+
+	* unix_processes.c, sockets.c (read_from_one_fd,
+	client_socket_output): only ever check errno if actual < 0
+
+	* sockets.c (make_socket): was testing if result of socket ()
+	== 0 not -1 to check for errors
+	(make_local_socket): call Flocal_file_name () on the address
 
 	* sockets.c: if [AP]F_LOCAL isn't defined, but [AP]F_UNIX is,
 	use that instead
