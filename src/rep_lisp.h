@@ -584,7 +584,7 @@ typedef struct rep_funarg_struct {
     do {						\
 	rep_env = rep_FUNARG(f)->env;			\
 	if (!(rep_FUNARG(f)->car & rep_FF_NO_BYTE_CODE)) \
-	    rep_bytecode_interpreter = Fjade_byte_code; \
+	    rep_bytecode_interpreter = rep_apply_bytecode; \
 	else						\
 	    rep_bytecode_interpreter = 0;		\
 	rep_structure = rep_FUNARG(f)->structure;	\
@@ -594,7 +594,7 @@ typedef struct rep_funarg_struct {
     do {					\
 	rep_env = Qnil;				\
 	rep_structure = rep_default_structure;	\
-	rep_bytecode_interpreter = Fjade_byte_code; \
+	rep_bytecode_interpreter = rep_apply_bytecode; \
     } while (0)
 
 
@@ -773,7 +773,7 @@ struct rep_Call {
     repv args_evalled_p;
     repv saved_env;
     repv saved_structure;
-    repv (*saved_bytecode)(repv, repv, repv, repv);
+    repv (*saved_bytecode)(repv, int, repv *);
 };
 
 #define rep_PUSH_CALL(lc)		\

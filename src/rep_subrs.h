@@ -185,8 +185,7 @@ extern repv Qterm_interrupt;
 extern repv Qstack_error;
 extern repv Qprint_escape, Qprint_length, Qprint_level, Qnewlines;
 extern repv rep_env, rep_fenv, rep_special_bindings;
-extern repv (*rep_bytecode_interpreter)(repv code, repv consts,
-					repv stack, repv frame);
+extern repv (*rep_bytecode_interpreter)(repv subr, int nargs, repv *args);
 extern struct rep_Call *rep_call_stack;
 extern int rep_lisp_depth, rep_max_lisp_depth;
 extern int rep_test_int_counter;
@@ -286,8 +285,7 @@ extern repv Funwind_protect(repv);
 /* from lispmach.c */
 extern int rep_unbind_object(repv item);
 extern repv rep_bind_object(repv obj);
-extern repv Qbytecode_error, Qjade_byte_code;
-extern repv Fjade_byte_code(repv code, repv consts, repv stkreq, repv frame);
+extern repv Qbytecode_error;
 extern repv Fvalidate_byte_code(repv bc_major, repv bc_minor);
 extern repv Fmake_byte_code_subr(repv args);
 
@@ -459,6 +457,7 @@ extern repv (*rep_set_local_symbol_fun)(repv sym, repv val);
 extern void rep_intern_static(repv *, repv);
 extern repv rep_bind_symbol(repv, repv, repv);
 extern int rep_unbind_symbols(repv);
+extern repv rep_add_binding_to_env (repv env, repv sym, repv value);
 extern repv rep_obarray;
 extern repv Qnil, Qt;
 extern repv Qvariable_documentation, Qpermanent_local;
@@ -618,6 +617,7 @@ extern repv rep_getpwd(void);
 
 /* from unix_main.c */
 extern u_long rep_time(void);
+extern rep_long_long rep_utime (void);
 extern void (*rep_register_input_fd_fun)(int fd, void (*callback)(int fd));
 extern void (*rep_deregister_input_fd_fun)(int fd);
 extern void rep_sleep_for(long secs, long msecs);

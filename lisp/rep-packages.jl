@@ -163,7 +163,7 @@
 
 (define-interface rep-system
   (export recursive-edit recursion-depth repl get-command-line-option
-	  beep current-time fix-time current-time-string
+	  beep current-time current-utime fix-time current-time-string
 	  time-later-p sleep-for sit-for user-login-name user-full-name
 	  user-home-directory system-name message system pwd-prompt
 	  call-hook add-hook remove-hook

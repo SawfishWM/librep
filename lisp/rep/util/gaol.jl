@@ -148,7 +148,7 @@
 
   (defun gaol-eval (form)
     (gaol-rebuild-environment)
-    (%eval-in-structure form gaol-structure))
+    (eval form gaol-structure))
 
   (defun gaol-load (file &optional no-error no-path-is-ignored no-suffix)
     (gaol-eval `(,load ',file ',no-error t ',no-suffix t))))

@@ -61,6 +61,9 @@ extern rep_bool rep_single_step_flag;
 extern void rep_lispcmds_init(void);
 
 /* from lispmach.c */
+extern repv Qrun_byte_code;
+extern repv Frun_byte_code(repv code, repv consts, repv stkreq);
+extern repv rep_apply_bytecode (repv subr, int nargs, repv *args);
 extern void rep_lispmach_init(void);
 extern void rep_lispmach_kill(void);
 
@@ -92,6 +95,7 @@ extern void rep_streams_init(void);
 
 /* from structures.c */
 extern repv rep_default_structure, rep_specials_structure;
+extern rep_struct_node *rep_search_imports (rep_struct *s, repv var);
 extern repv F_make_structure (repv, repv, repv, repv);
 extern repv F_structure_ref (repv, repv);
 extern repv F_structure_set (repv, repv, repv);

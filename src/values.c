@@ -49,8 +49,6 @@ char *alloca ();
 
 /* #define GC_MONITOR_STK */
 
-/* #define DEBUG_GC */
-
 #define rep_CONSBLK_SIZE	510		/* ~4k */
 #define rep_STRINGBLK_SIZE	510		/* ~4k */
 
@@ -75,10 +73,6 @@ typedef struct rep_string_block_struct {
     } next;
     rep_string data[rep_STRINGBLK_SIZE];
 } rep_string_block;
-
-#ifdef DEBUG_GC
-static int debug_gc = 0;
-#endif
 
 /* Dumped data */
 rep_cons *rep_dumped_cons_start, *rep_dumped_cons_end;
@@ -974,15 +968,6 @@ last garbage-collection is greater than `garbage-threshold'.
 
     rep_in_gc = rep_TRUE;
 
-#ifdef DEBUG_GC
-    if (debug_gc)
-    {
-	repv stream = Fstderr_file ();
-	rep_stream_puts (stream, "\n ** garbage collection:", -1, rep_FALSE);
-	Fbacktrace (stream);
-    }
-#endif
-
     rep_macros_before_gc ();
 
     /* mark static objects */
@@ -1053,14 +1038,6 @@ last garbage-collection is greater than `garbage-threshold'.
 #ifdef GC_MONITOR_STK
     fprintf(stderr, "gc: stack usage = %d\n",
 	    ((int)&dummy) - (int)gc_stack_high_tide);
-#endif
-
-#ifdef DEBUG_GC
-    if (debug_gc)
-    {
-	repv stream = Fstderr_file ();
-	rep_stream_putc (stream, '\n');
-    }
 #endif
 
     Fcall_hook (Qafter_gc_hook, Qnil, Qnil);

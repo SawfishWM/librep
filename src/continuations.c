@@ -238,7 +238,7 @@ struct rep_thread_struct {
     repv name;
     rep_continuation *cont;
     repv env, structure;
-    repv (*bytecode)(repv, repv, repv, repv);
+    repv (*bytecode)(repv, int, repv *);
     int lock;
     struct timeval run_at;
 };
@@ -720,8 +720,9 @@ inner_call_cc (rep_continuation *c, void *data)
 {
     repv proxy;
     proxy = Fmake_closure (rep_VAL(&Sprimitive_invoke_continuation), Qnil);
-    rep_FUNARG(proxy)->env = Fcons (Fcons (Qcontinuation, rep_VAL(c)),
-				    rep_FUNARG(proxy)->env);
+    rep_FUNARG(proxy)->env
+	= rep_add_binding_to_env (rep_FUNARG(proxy)->env,
+				  Qcontinuation, rep_VAL(c));
     return rep_call_lisp1 ((repv) data, proxy);
 }
 

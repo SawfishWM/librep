@@ -77,7 +77,7 @@
 	(setq arg (car command-line-args))
 	(setq command-line-args (cdr command-line-args))
 	(setq batch-mode t)
-	(structure () (open scheme) (load arg)))
+	(eval `(structure () (open scheme) (load ,arg))))
        ((member arg '("--quit" "-q"))
 	(throw 'quit 0))
        (t

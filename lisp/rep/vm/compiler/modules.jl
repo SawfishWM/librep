@@ -233,10 +233,8 @@
       (cond ((%get-structure feature)
 	     (fluid-set open-modules (cons feature (fluid open-modules))))
 	    ((fluid current-structure)
-	     (unless (%eval-in-structure
-		      `(featurep ',feature) (fluid current-structure))
-	       (%eval-in-structure
-		`(require ',feature) (fluid current-structure))
+	     (unless (eval `(featurep ',feature) (fluid current-structure))
+	       (eval `(require ',feature) (fluid current-structure))
 	       (when (%get-structure feature)
 		 (fluid-set open-modules
 			    (cons feature (fluid open-modules))))))
