@@ -48,7 +48,8 @@ _PR VALUE find_member_by_index(VALUE, int);
 _PR VALUE move_down_list(VALUE, int);
 _PR int list_length(VALUE);
 _PR VALUE copy_list(VALUE);
-_PR VALUE handle_var_int(VALUE, long *);
+_PR VALUE handle_var_int(VALUE, int *);
+_PR VALUE handle_var_long_int(VALUE, long *);
 
 _PR void handle_error(VALUE, VALUE);
 _PR VALUE signal_arg_error(VALUE, int);
@@ -58,16 +59,22 @@ _PR VALUE mem_error(void);
 _PR void lisp_init(void);
 
 _PR VALUE sym_debug_entry, sym_debug_exit, sym_debug_error_entry;
-VALUE sym_debug_entry, sym_debug_exit, sym_debug_error_entry;
+DEFSYM(debug_entry, "debug-entry");
+DEFSYM(debug_exit, "debug-exit");
+DEFSYM(debug_error_entry, "debug-error-entry");
 
 _PR VALUE sym_quote, sym_lambda, sym_macro, sym_autoload, sym_function;
-VALUE sym_quote, sym_lambda, sym_macro, sym_autoload, sym_function;
+DEFSYM(quote, "quote"); DEFSYM(lambda, "lambda"); DEFSYM(macro, "macro");
+DEFSYM(autoload, "autoload"); DEFSYM(function, "function");
 
 _PR VALUE sym_standard_input, sym_standard_output, sym_defun;
-VALUE sym_standard_input, sym_standard_output, sym_defun;
+DEFSYM(standard_input, "standard-input");
+DEFSYM(standard_output, "standard-output");
+DEFSYM(defun, "defun");
 
 _PR VALUE sym_amp_optional, sym_amp_rest, sym_amp_aux;
-VALUE sym_amp_optional, sym_amp_rest, sym_amp_aux;
+DEFSYM(amp_optional, "&optional");
+DEFSYM(amp_rest, "&rest"); DEFSYM(amp_aux, "&aux");
 
 /* When a `throw' happens a function stuffs a cons-cell in here with,
    (TAG . VALUE).
@@ -90,25 +97,71 @@ _PR VALUE sym_invalid_stream, sym_setting_constant, sym_process_error;
 _PR VALUE sym_invalid_area, sym_no_memory, sym_user_interrupt, sym_arith_error;
 _PR VALUE sym_window_error, sym_invalid_pos, sym_term_interrupt;
 
-VALUE sym_error, sym_error_message, sym_invalid_function,
-    sym_void_function, sym_void_value, sym_bad_arg, sym_invalid_read_syntax,
-    sym_end_of_stream, sym_invalid_lambda_list, sym_missing_arg,
-    sym_invalid_macro, sym_invalid_autoload, sym_no_catcher,
-    sym_buffer_read_only, sym_bad_event_desc, sym_file_error,
-    sym_invalid_stream, sym_setting_constant, sym_process_error,
-    sym_invalid_area, sym_no_memory, sym_user_interrupt, sym_arith_error,
-    sym_window_error, sym_invalid_pos, sym_term_interrupt;
+DEFSYM(error, "error");
+static DEFSTRING(err_error, "Error");
+DEFSYM(error_message, "error-message");
+DEFSYM(invalid_function, "invalid-function");
+static DEFSTRING(err_invalid_function, "Invalid function");
+DEFSYM(void_function, "void-function");
+static DEFSTRING(err_void_function, "Function value is void");
+DEFSYM(void_value, "void-value");
+static DEFSTRING(err_void_value, "Symbol value is void");
+DEFSYM(bad_arg, "bad-arg");
+static DEFSTRING(err_bad_arg, "Bad argument");
+DEFSYM(invalid_read_syntax, "invalid-read-syntax");
+static DEFSTRING(err_invalid_read_syntax, "Invalid read syntax");
+DEFSYM(end_of_stream, "end-of-stream");
+static DEFSTRING(err_end_of_stream, "Premature end of stream");
+DEFSYM(invalid_lambda_list, "invalid-lambda-list");
+static DEFSTRING(err_invalid_lambda_list, "Invalid lambda list");
+DEFSYM(missing_arg, "missing-arg");
+static DEFSTRING(err_missing_arg, "Required argument missing");
+DEFSYM(invalid_macro, "invalid-macro");
+static DEFSTRING(err_invalid_macro, "Invalid macro definition");
+DEFSYM(invalid_autoload, "invalid-autoload");
+static DEFSTRING(err_invalid_autoload, "Invalid autoload definition");
+DEFSYM(no_catcher, "no-catcher");
+static DEFSTRING(err_no_catcher, "No catcher for throw");
+DEFSYM(buffer_read_only, "buffer-read-only");
+static DEFSTRING(err_buffer_read_only, "Buffer is read-only");
+DEFSYM(bad_event_desc, "bad-event-desc");
+static DEFSTRING(err_bad_event_desc, "Invalid event description");
+DEFSYM(file_error, "file-error");
+static DEFSTRING(err_file_error, "File error");
+DEFSYM(invalid_stream, "invalid-stream");
+static DEFSTRING(err_invalid_stream, "Invalid stream");
+DEFSYM(setting_constant, "setting-constant");
+static DEFSTRING(err_setting_constant, "Attempt to set value of constant");
+DEFSYM(process_error, "process-error");
+static DEFSTRING(err_process_error, "Process error");
+DEFSYM(invalid_area, "invalid-area");
+static DEFSTRING(err_invalid_area, "Invalid area");
+DEFSYM(no_memory, "no-memory");
+static DEFSTRING(err_no_memory, "No free memory");
+DEFSYM(user_interrupt, "user-interrupt");
+static DEFSTRING(err_user_interrupt, "User interrupt!");
+DEFSYM(arith_error, "arith-error");
+static DEFSTRING(err_arith_error, "Arithmetic error");
+DEFSYM(window_error, "window-error");
+static DEFSTRING(err_window_error, "Window error");
+DEFSYM(invalid_pos, "invalid-pos");
+static DEFSTRING(err_invalid_pos, "Invalid position");
+DEFSYM(term_interrupt, "term-interrupt");
 
 #ifdef MINSTACK
 _PR VALUE sym_stack_error;
-VALUE sym_stack_error;
+DEFSYM(stack_error, "stack-error");
+static DEFSTRING(err_stack_error, "Out of stack space");
 #endif
 
 _PR VALUE debug_on_error, sym_error_info;
-VALUE debug_on_error, sym_error_info;
+VALUE debug_on_error;
+DEFSYM(error_info, "error-info");
 
 _PR VALUE sym_print_escape_newlines, sym_print_length, sym_print_level;
-VALUE sym_print_escape_newlines, sym_print_length, sym_print_level; /*
+DEFSYM(print_escape_newlines, "print-escape-newlines");
+DEFSYM(print_length, "print-length");
+DEFSYM(print_level, "print-level"); /*
 ::doc:print_escape_newlines::
 When non-nil `print' escapes newline, form-feed, and tab characters.
 ::end::
@@ -125,10 +178,13 @@ The number of list levels to descend when printing before abbreviating.
 _PR bool single_step_flag;
 bool single_step_flag;
 
-_PR struct LispCall *lisp_call_stack;
-struct LispCall *lisp_call_stack;
+_PR struct Lisp_Call *lisp_call_stack;
+struct Lisp_Call *lisp_call_stack;
 
-static long lisp_depth, max_lisp_depth = 500;
+static int lisp_depth, max_lisp_depth = 500;
+
+_PR char doc_file[];
+DEFSTRING(doc_file, DOC_FILE);
 
 /*
  * All of the read-related functions are now stream based. This will
@@ -144,7 +200,7 @@ static VALUE
 read_list(VALUE strm, register int *c_p)
 {
     VALUE result = sym_nil;
-    VALUE last = NULL;
+    VALUE last = LISP_NULL;
     *c_p = stream_getc(strm);
     while(1)
     {
@@ -174,12 +230,12 @@ read_list(VALUE strm, register int *c_p)
 	    if(last)
 	    {
 		if(!(VCDR(last) = readl(strm, c_p)))
-		    return(NULL);
+		    return LISP_NULL;
 	    }
 	    else
 	    {
-		return(cmd_signal(sym_invalid_read_syntax,
-				  LIST_1(MKSTR("Nothing to dot second element of cons-cell to"))));
+		static DEFSTRING(nodot, "Nothing to dot second element of cons-cell to");
+		return(cmd_signal(sym_invalid_read_syntax, LIST_1(VAL(nodot))));
 	    }
 
 	case ')':
@@ -195,7 +251,7 @@ read_list(VALUE strm, register int *c_p)
 		else
 		    result = this;
 		if(!(VCAR(this) = readl(strm, c_p)))
-		    return(NULL);
+		    return LISP_NULL;
 		last = this;
 	    }
 	}
@@ -270,15 +326,15 @@ read_symbol(VALUE strm, int *c_p)
     if(i >= SYM_BUF_LEN)
     {
 	/* Guess I'd better fix this! */
-	return(cmd_signal(sym_error,
-			  LIST_1(MKSTR("Internal buffer overrun"))));
+	static DEFSTRING(bufov, "Internal buffer overflow");
+	return(cmd_signal(sym_error, LIST_1(VAL(bufov))));
     }
 done:
     buf[i] = 0;
     if(couldbenum && ((i > 1) || isdigit(*buf)))
     {
 	char *dummy;
-	result = make_number(strtol(buf, &dummy, 0));
+	result = MAKE_INT(strtol(buf, &dummy, 0));
     }
     else
     {
@@ -289,7 +345,7 @@ done:
 	    if((name = string_dup(buf)) && (result = cmd_make_symbol(name)))
 		result = cmd_intern_symbol(result, sym_nil);
 	    else
-		result = NULL;
+		result = LISP_NULL;
 	}
     }
     *c_p = c;
@@ -315,7 +371,7 @@ read_vector(VALUE strm, int *c_p)
 	    for(i = 0; i < len; i++)
 	    {
 		VALUE nxt = VCDR(cur);
-		VVECT(result)->vc_Array[i] =  VCAR(cur);
+		VVECT(result)->array[i] =  VCAR(cur);
 #if 1
 		/* I think it's okay to put the cons cells back onto their
 		   freelist. There can't be any references to them??  */
@@ -325,10 +381,10 @@ read_vector(VALUE strm, int *c_p)
 	    }
 	}
 	else
-	    result = NULL;
+	    result = LISP_NULL;
     }
     else
-	result = NULL;
+	result = LISP_NULL;
     return(result);
 }
 
@@ -441,7 +497,7 @@ readl(VALUE strm, register int *c_p)
 		    goto eof;
 		else if((VCAR(VCDR(form)) = readl(strm, c_p)))
 		    return(form);
-		return(NULL);
+		return LISP_NULL;
 	    }
 
 	case '[':
@@ -461,11 +517,11 @@ readl(VALUE strm, register int *c_p)
 		    if((*c_p = stream_getc(strm)) == EOF)
 			goto eof;
 		    else
-			return(make_number(stream_read_esc(strm, c_p)));
+			return(MAKE_INT(stream_read_esc(strm, c_p)));
 		    break;
 		default:
 		    *c_p = stream_getc(strm);
-		    return(make_number(c));
+		    return(MAKE_INT(c));
 		}
 	    }
 
@@ -480,7 +536,7 @@ readl(VALUE strm, register int *c_p)
 		if((*c_p = stream_getc(strm)) == EOF)
 		    goto eof;
 		if(!(VCAR(VCDR(form)) = readl(strm, c_p)))
-		    return(NULL);
+		    return LISP_NULL;
 		return(form);
 	    default:
 		return(cmd_signal(sym_invalid_read_syntax, LIST_1(strm)));
@@ -504,20 +560,20 @@ eval_list(VALUE list)
 {
     VALUE result = sym_nil;
     VALUE *last = &result;
-    GCVAL gcv_result, gcv_list;
-    PUSHGC(gcv_result, result);
-    PUSHGC(gcv_list, list);
+    GC_root gc_result, gc_list;
+    PUSHGC(gc_result, result);
+    PUSHGC(gc_list, list);
     while(CONSP(list))
     {
 	VALUE tmp;
 	if(!(tmp = cmd_eval(VCAR(list))))
 	{
-	    result = NULL;
+	    result = LISP_NULL;
 	    break;
 	}
 	if(!(*last = cmd_cons(tmp, sym_nil)))
 	{
-	    result = NULL;
+	    result = LISP_NULL;
 	    break;
 	}
 	list = VCDR(list);
@@ -525,7 +581,7 @@ eval_list(VALUE list)
 	TEST_INT;
 	if(INT_P)
 	{
-	    result = NULL;
+	    result = LISP_NULL;
 	    break;
 	}
     }
@@ -553,14 +609,14 @@ bindlambdalist(VALUE lambdaList, VALUE argList, int evalArgs)
     VALUE boundlist = sym_nil;
     if(CONSP(lambdaList))
     {
-	GCVAL gcv_boundlist;
+	GC_root gc_boundlist;
 	char state = STATE_REQUIRED;
-	PUSHGC(gcv_boundlist, boundlist);
+	PUSHGC(gc_boundlist, boundlist);
 	while(CONSP(lambdaList) && SYMBOLP(VCAR(lambdaList)))
 	{
 	    VALUE argobj;
 	    VALUE argspec = VCAR(lambdaList);
-	    if(VSTR(VSYM(argspec)->sym_Name)[0] == '&')
+	    if(VSTR(VSYM(argspec)->name)[0] == '&')
 	    {
 		if(argspec == sym_amp_optional)
 		{
@@ -642,31 +698,31 @@ bindlambdalist(VALUE lambdaList, VALUE argList, int evalArgs)
 error:
     POPGC;
     unbind_symbols(boundlist);
-    return(NULL);
+    return LISP_NULL;
 }
 
 VALUE
 eval_lambda(VALUE lambdaExp, VALUE argList, bool evalArgs)
 {
-    VALUE result = NULL;
+    VALUE result = LISP_NULL;
     if(CONSP(VCDR(lambdaExp)))
     {
 	VALUE boundlist;
-	GCVAL gcv_lambdaExp, gcv_argList;
-	PUSHGC(gcv_lambdaExp, lambdaExp);
-	PUSHGC(gcv_argList, argList);
+	GC_root gc_lambdaExp, gc_argList;
+	PUSHGC(gc_lambdaExp, lambdaExp);
+	PUSHGC(gc_argList, argList);
 	lambdaExp = VCDR(lambdaExp);
 	boundlist = bindlambdalist(VCAR(lambdaExp), argList, evalArgs);
 	if(boundlist)
 	{
-	    GCVAL gcv_boundlist;
-	    PUSHGC(gcv_boundlist, boundlist);
+	    GC_root gc_boundlist;
+	    PUSHGC(gc_boundlist, boundlist);
 	    result = cmd_progn(VCDR(lambdaExp));
 	    POPGC;
 	    unbind_symbols(boundlist);
 	}
 	else
-	    result = NULL;
+	    result = LISP_NULL;
 	POPGC; POPGC;
     }
     return(result);
@@ -682,9 +738,8 @@ load_autoload(VALUE fun, VALUE aload_def)
     {
 	/* Unless the function we're calling is a symbol don't bother.
 	   (Because it wouldn't be possible to find the new definition.)  */
-	return(cmd_signal(sym_invalid_autoload,
-			  list_2(fun,
-				 MKSTR("Can only autoload from symbols"))));
+	static DEFSTRING(invl, "Can only autoload from symbols");
+	return(cmd_signal(sym_invalid_autoload, list_2(fun, VAL(invl))));
     }
     else
     {
@@ -694,7 +749,7 @@ load_autoload(VALUE fun, VALUE aload_def)
 	    /* trash the autoload defn, this way I make sure
 	       that we don't keep trying to autoload a function
 	       indefinitely.  */
-	    GCVAL gcv_fun;
+	    GC_root gc_fun;
 	    VALUE tmp;
 	    u_char *old_msg;
 	    u_long old_msg_len;
@@ -703,7 +758,7 @@ load_autoload(VALUE fun, VALUE aload_def)
 	    refresh_message(curr_win);
 	    cmd_flush_output();
 
-	    PUSHGC(gcv_fun, fun);
+	    PUSHGC(gc_fun, fun);
 	    VCAR(aload_def) = sym_nil;
 	    tmp = cmd_load(VCAR(autoload), sym_t, sym_nil, sym_nil);
 	    POPGC;
@@ -723,8 +778,8 @@ load_autoload(VALUE fun, VALUE aload_def)
 static VALUE
 eval(VALUE obj)
 {
-    VALUE result = NULL;
-    GCVAL gcv_obj;
+    VALUE result = LISP_NULL;
+    GC_root gc_obj;
 #ifdef MINSTACK
     if(STK_SIZE <= MINSTACK)
     {
@@ -734,7 +789,8 @@ eval(VALUE obj)
 #endif
     if(++lisp_depth > max_lisp_depth)
     {
-	cmd_signal(sym_error, LIST_1(MKSTR("max-lisp-depth exceeded, possible infite recursion?")));
+	static DEFSTRING(max_depth, "max-lisp-depth exceeded, possible infinite recursion?");
+	cmd_signal(sym_error, LIST_1(VAL(max_depth)));
     }
     else if(obj)
     {
@@ -752,7 +808,7 @@ again:
 	    arglist = VCDR(obj);
 	    if(SYMBOLP(funcobj))
 	    {
-		if(VSYM(funcobj)->sym_Flags & SF_DEBUG)
+		if(VSYM(funcobj)->flags & SF_DEBUG)
 		    single_step_flag = TRUE;
 		funcobj = cmd_symbol_function(funcobj, sym_nil);
 		if(!funcobj)
@@ -761,14 +817,14 @@ again:
 	    switch(type = VTYPE(funcobj))
 	    {
 		VALUE alist, car, args[5];
-		GCVALN gcvn_args;
+		GC_n_roots gc_args;
 		int i, nargs;
 	    case V_Subr0:
 		result = VSUBR0FUN(funcobj)();
 		break;
 
 	    case V_SubrN:
-		PUSHGC(gcv_obj, obj);
+		PUSHGC(gc_obj, obj);
 		alist = eval_list(arglist);
 		if(alist)
 		    result = VSUBRNFUN(funcobj)(alist);
@@ -799,8 +855,8 @@ again:
 		nargs = 5;
 		args[0] = args[1] = args[2] = args[3] = args[4] = sym_nil;
 do_subr:
-		PUSHGCN(gcvn_args, args, nargs);
-		PUSHGC(gcv_obj, obj);
+		PUSHGCN(gc_args, args, nargs);
+		PUSHGC(gc_obj, obj);
 		for(i = 0; i < nargs; i++)
 		{
 		    if(CONSP(arglist))
@@ -846,19 +902,19 @@ do_subr:
 		car = VCAR(funcobj);
 		if(car == sym_lambda)
 		{
-		    struct LispCall lc;
-		    lc.lc_Next = lisp_call_stack;
-		    lc.lc_Fun = VCAR(obj);
-		    lc.lc_Args = arglist;
-		    lc.lc_ArgsEvalledP = sym_nil;
+		    struct Lisp_Call lc;
+		    lc.next = lisp_call_stack;
+		    lc.fun = VCAR(obj);
+		    lc.args = arglist;
+		    lc.args_evalled_p = sym_nil;
 		    lisp_call_stack = &lc;
 		    if(!(result = eval_lambda(funcobj, arglist, TRUE))
 		       && throw_value && (VCAR(throw_value) == sym_defun))
 		    {
 			result = VCDR(throw_value);
-			throw_value = NULL;
+			throw_value = LISP_NULL;
 		    }
-		    lisp_call_stack = lc.lc_Next;
+		    lisp_call_stack = lc.next;
 		}
 		else if(car == sym_macro)
 		{
@@ -874,12 +930,12 @@ do_subr:
 		}
 		else if(car == sym_autoload)
 		{
-		    PUSHGC(gcv_obj, obj);
+		    PUSHGC(gc_obj, obj);
 		    result = load_autoload(VCAR(obj), funcobj);
 		    POPGC;
 		    if(result)
 		    {
-			result = NULL;
+			result = LISP_NULL;
 			goto again;
 		    }
 		}
@@ -894,7 +950,7 @@ do_subr:
 	    break;
 
 	case V_Var:
-	    if(!(result = VVARFUN(obj)(NULL)))
+	    if(!(result = VVARFUN(obj)(LISP_NULL)))
 		cmd_signal(sym_void_value, LIST_1(obj));
 	    break;
 
@@ -904,10 +960,13 @@ do_subr:
 	}
     }
     else
-	cmd_signal(sym_error, LIST_1(MKSTR("Void object to `eval'")));
+    {
+	static DEFSTRING(void_obj, "Void object to `eval'");
+	cmd_signal(sym_error, LIST_1(VAL(void_obj)));
+    }
     /* In case I missed a non-local exit somewhere.  */
     if(result && throw_value)
-	result = NULL;
+	result = LISP_NULL;
 end:
     lisp_depth--;
     return(result);
@@ -927,12 +986,12 @@ Evaluates FORM and returns its value.
 
     TEST_INT;
     if(INT_P || !curr_vw)
-	return(NULL);
+	return LISP_NULL;
 
     if((data_after_gc >= gc_threshold) && !gc_inhibit)
     {
-	GCVAL gcv_obj;
-	PUSHGC(gcv_obj, obj);
+	GC_root gc_obj;
+	PUSHGC(gc_obj, obj);
 	cmd_garbage_collect(sym_t);
 	POPGC;
     }
@@ -941,19 +1000,19 @@ Evaluates FORM and returns its value.
 	return(eval(obj));
 
     DbDepth++;
-    result = NULL;
-    if(VSYM(sym_debug_entry)->sym_Function)
+    result = LISP_NULL;
+    if(VSYM(sym_debug_entry)->function)
     {
 	VALUE dbres;
-	VALUE dbargs = cmd_cons(obj, cmd_cons(make_number(DbDepth), sym_nil));
+	VALUE dbargs = cmd_cons(obj, cmd_cons(MAKE_INT(DbDepth), sym_nil));
 	if(dbargs)
 	{
-	    GCVAL gcv_dbargs;
-	    PUSHGC(gcv_dbargs, dbargs);
+	    GC_root gc_dbargs;
+	    PUSHGC(gc_dbargs, dbargs);
 	    single_step_flag = FALSE;
 	    if((dbres = funcall(sym_debug_entry, dbargs)) && CONSP(dbres))
 	    {
-		switch(VNUM(VCAR(dbres)))
+		switch(VINT(VCAR(dbres)))
 		{
 		case 1:
 		    /* single step cdr and following stuff  */
@@ -979,11 +1038,11 @@ Evaluates FORM and returns its value.
 		}
 		if(result)
 		{
-		    if(VSYM(sym_debug_exit)->sym_Function)
+		    if(VSYM(sym_debug_exit)->function)
 		    {
 			VCAR(dbargs) = result;
 			if(!(dbres = funcall(sym_debug_exit, dbargs)))
-			    result = NULL;
+			    result = LISP_NULL;
 		    }
 		}
 	    }
@@ -992,9 +1051,10 @@ Evaluates FORM and returns its value.
     }
     else
     {
-	cmd_signal(sym_error, LIST_1(MKSTR("No debugger installed")));
+	static DEFSTRING(no_debug, "No debugger installed");
+	cmd_signal(sym_error, LIST_1(VAL(no_debug)));
 	newssflag = FALSE;
-	result = NULL;
+	result = LISP_NULL;
     }
     DbDepth--;
     single_step_flag = newssflag;
@@ -1005,12 +1065,12 @@ VALUE
 funcall(VALUE fun, VALUE arglist)
 {
     int type;
-    VALUE result = NULL, origfun = fun;
-    GCVAL gcv_origfun, gcv_arglist;
+    VALUE result = LISP_NULL, origfun = fun;
+    GC_root gc_origfun, gc_arglist;
 
     TEST_INT;
     if(INT_P || !curr_vw)
-	return(NULL);
+	return LISP_NULL;
 
 #ifdef MINSTACK
     if(STK_SIZE <= MINSTACK)
@@ -1022,14 +1082,15 @@ funcall(VALUE fun, VALUE arglist)
 
     if(++lisp_depth > max_lisp_depth)
     {
+	static DEFSTRING(max_depth, "max-lisp-depth exceeded, possible infite recursion?");
 	lisp_depth--;
-	return(cmd_signal(sym_error, LIST_1(MKSTR("max-lisp-depth exceeded, possible infite recursion?"))));
+	return(cmd_signal(sym_error, LIST_1(VAL(max_depth))));
     }
 
     if((data_after_gc >= gc_threshold) && !gc_inhibit)
     {
-	PUSHGC(gcv_origfun, origfun);
-	PUSHGC(gcv_arglist, arglist);
+	PUSHGC(gc_origfun, origfun);
+	PUSHGC(gc_arglist, arglist);
 	cmd_garbage_collect(sym_t);
 	POPGC; POPGC;
     }
@@ -1037,7 +1098,7 @@ funcall(VALUE fun, VALUE arglist)
 again:
     if(SYMBOLP(fun))
     {
-	if(VSYM(fun)->sym_Flags & SF_DEBUG)
+	if(VSYM(fun)->flags & SF_DEBUG)
 	    single_step_flag = TRUE;
 	fun = cmd_symbol_function(fun, sym_nil);
 	if(!fun)
@@ -1114,24 +1175,24 @@ do_subr:
 	car = VCAR(fun);
 	if(car == sym_lambda)
 	{
-	    struct LispCall lc;
-	    lc.lc_Next = lisp_call_stack;
-	    lc.lc_Fun = origfun;
-	    lc.lc_Args = arglist;
-	    lc.lc_ArgsEvalledP = sym_t;
+	    struct Lisp_Call lc;
+	    lc.next = lisp_call_stack;
+	    lc.fun = origfun;
+	    lc.args = arglist;
+	    lc.args_evalled_p = sym_t;
 	    lisp_call_stack = &lc;
 	    if(!(result = eval_lambda(fun, arglist, FALSE))
 	       && throw_value && (VCAR(throw_value) == sym_defun))
 	    {
 		result = VCDR(throw_value);
-		throw_value = NULL;
+		throw_value = LISP_NULL;
 	    }
-	    lisp_call_stack = lc.lc_Next;
+	    lisp_call_stack = lc.next;
 	}
 	else if(car == sym_autoload)
 	{
-	    PUSHGC(gcv_origfun, origfun);
-	    PUSHGC(gcv_arglist, arglist);
+	    PUSHGC(gc_origfun, origfun);
+	    PUSHGC(gc_arglist, arglist);
 	    car = load_autoload(origfun, fun);
 	    POPGC; POPGC;
 	    if(car)
@@ -1148,7 +1209,7 @@ do_subr:
     }
     /* In case I missed a non-local exit somewhere.  */
     if(result && throw_value)
-	result = NULL;
+	result = LISP_NULL;
 end:
     lisp_depth--;
     return(result);
@@ -1163,7 +1224,7 @@ Calls FUNCTION with arguments ARGS... and returns its result.
 ::end:: */
 {
     if(!CONSP(args))
-	return(cmd_signal(sym_bad_arg, list_2(sym_nil, make_number(1))));
+	return(cmd_signal(sym_bad_arg, list_2(sym_nil, MAKE_INT(1))));
     return(funcall(VCAR(args), VCDR(args)));
 }
 
@@ -1177,8 +1238,8 @@ one.
 ::end:: */
 {
     VALUE result = sym_nil;
-    GCVAL gcv_args;
-    PUSHGC(gcv_args, args);
+    GC_root gc_args;
+    PUSHGC(gc_args, args);
     while(CONSP(args))
     {
 	result = cmd_eval(VCAR(args));
@@ -1197,20 +1258,20 @@ VALUE
 eval_string(u_char *str, bool isValString)
 {
     VALUE res = sym_nil;
-    VALUE stream = cmd_cons(make_number(0), sym_nil);
+    VALUE stream = cmd_cons(MAKE_INT(0), sym_nil);
     if(stream)
     {
 	VALUE obj;
 	int c;
-	GCVAL gcv_stream;
+	GC_root gc_stream;
 	if(isValString)
 	    VCDR(stream) = VAL(STRING_HDR(str));
 	else
 	{
 	    if(!(VCDR(stream) = string_dup(str)))
-		return(NULL);
+		return LISP_NULL;
 	}
-	PUSHGC(gcv_stream, stream);
+	PUSHGC(gc_stream, stream);
 	obj = sym_nil;
 	c = stream_getc(stream);
 	while(res && (c != EOF) && (obj = readl(stream, &c)))
@@ -1218,7 +1279,7 @@ eval_string(u_char *str, bool isValString)
 	    res = cmd_eval(obj);
 	    TEST_INT;
 	    if(INT_P)
-		res = NULL;
+		res = LISP_NULL;
 	}
 	POPGC;
     }
@@ -1255,14 +1316,14 @@ lisp_prin(VALUE strm, VALUE obj)
 	int print_length;
 	VALUE tem;
 
-    case V_Number:
-	sprintf(tbuf, "%ld", VNUM(obj));
+    case V_Int:
+	sprintf(tbuf, "%ld", VINT(obj));
 	stream_puts(strm, tbuf, -1, FALSE);
 	break;
 
     case V_Cons:
 	tem = cmd_symbol_value(sym_print_level, sym_t);
-	if(tem && NUMBERP(tem) && print_level >= VNUM(tem))
+	if(tem && INTP(tem) && print_level >= VINT(tem))
 	{
 	    stream_puts(strm, "...", 3, FALSE);
 	    return;
@@ -1273,7 +1334,7 @@ lisp_prin(VALUE strm, VALUE obj)
 	print_length = 0;
 	while(CONSP(VCDR(obj)))
 	{
-	    if(tem && NUMBERP(tem) && print_length >= VNUM(tem))
+	    if(tem && INTP(tem) && print_length >= VINT(tem))
 	    {
 		stream_puts(strm, "...", 3, FALSE);
 		goto cons_out;
@@ -1286,7 +1347,7 @@ lisp_prin(VALUE strm, VALUE obj)
 		goto cons_out;
 	    print_length++;
 	}
-	if(tem && NUMBERP(tem) && print_length >= VNUM(tem))
+	if(tem && INTP(tem) && print_length >= VINT(tem))
 	    stream_puts(strm, "...", 3, FALSE);
 	else
 	{
@@ -1304,13 +1365,13 @@ lisp_prin(VALUE strm, VALUE obj)
 
     case V_Vector:
 	stream_putc(strm, '\[');
-	for(j = 0; j < VVECT(obj)->vc_Size; j++)
+	for(j = 0; j < VVECT(obj)->size; j++)
 	{
-	    if(VVECT(obj)->vc_Array[j])
-		print_val(strm, VVECT(obj)->vc_Array[j]);
+	    if(VVECT(obj)->array[j])
+		print_val(strm, VVECT(obj)->array[j]);
 	    else
 		stream_puts(strm, "#<void>", -1, FALSE);
-	    if(j != (VVECT(obj)->vc_Size - 1))
+	    if(j != (VVECT(obj)->size - 1))
 		stream_putc(strm, ' ');
 	}
 	stream_putc(strm, ']');
@@ -1323,17 +1384,17 @@ lisp_prin(VALUE strm, VALUE obj)
     case V_Subr4:
     case V_Subr5:
     case V_SubrN:
-	sprintf(tbuf, "#<subr %s>", VSTR(VXSUBR(obj)->subr_Name));
+	sprintf(tbuf, "#<subr %s>", VSTR(VXSUBR(obj)->name));
 	stream_puts(strm, tbuf, -1, FALSE);
 	break;
 
     case V_SF:
-	sprintf(tbuf, "#<special-form %s>", VSTR(VXSUBR(obj)->subr_Name));
+	sprintf(tbuf, "#<special-form %s>", VSTR(VXSUBR(obj)->name));
 	stream_puts(strm, tbuf, -1, FALSE);
 	break;
 
     case V_Var:
-	sprintf(tbuf, "#<var %s>", VSTR(VXSUBR(obj)->subr_Name));
+	sprintf(tbuf, "#<var %s>", VSTR(VXSUBR(obj)->name));
 	stream_puts(strm, tbuf, -1, FALSE);
 	break;
 
@@ -1364,7 +1425,7 @@ string_print(VALUE strm, VALUE obj)
     int len = STRING_LEN(obj);
     u_char *s = VSTR(obj);
     u_char c;
-    VALUE escape_newlines = NULL;
+    VALUE escape_newlines = LISP_NULL;
     stream_putc(strm, '\"');
     while(len-- > 0)
     {
@@ -1422,7 +1483,7 @@ move_down_list(VALUE list, int nodes)
 	list = VCDR(list);
 	TEST_INT;
 	if(INT_P)
-	    return(NULL);
+	    return LISP_NULL;
     }
     return(list);
 }
@@ -1450,30 +1511,44 @@ copy_list(VALUE list)
     while(CONSP(list))
     {
 	if(!(*last = cmd_cons(VCAR(list), sym_nil)))
-	    return(NULL);
+	    return LISP_NULL;
 	list = VCDR(list);
 	last = &VCDR(*last);
 	TEST_INT;
 	if(INT_P)
-	    return(NULL);
+	    return LISP_NULL;
     }
     *last = list;
     return(result);
 }
 
-/*
- * Used for easy handling of `var' objects
- */
+/* Used for easy handling of `var' objects */
 VALUE
-handle_var_int(VALUE val, long *data)
+handle_var_int(VALUE val, int *data)
 {
     if(val)
     {
-	if(NUMBERP(val))
-	    *data = VNUM(val);
-	return(NULL);
+	if(INTP(val))
+	    *data = VINT(val);
+	return LISP_NULL;
     }
-    return(make_number(*data));
+    else
+	return MAKE_INT(*data);
+}
+
+/* Similar, but for variables containing greater than 24 bits of data,
+   passed around as a cons cell containing two integers */
+VALUE
+handle_var_long_int(VALUE val, long *data)
+{
+    if(val)
+    {
+	if(LONG_INTP(val))
+	    *data = VLONG_INT(val);
+	return LISP_NULL;
+    }
+    else
+	return MAKE_LONG_INT(*data);
 }
 
 _PR VALUE cmd_break(void);
@@ -1514,10 +1589,10 @@ specified it is an alist of `(MACRO-NAME . DEFINITION)'.
 ::end:: */
 {
     VALUE car;
-    GCVAL gcv_form, gcv_env, gcv_car;
-    PUSHGC(gcv_form, form);
-    PUSHGC(gcv_env, env);
-    PUSHGC(gcv_car, car);
+    GC_root gc_form, gc_env, gc_car;
+    PUSHGC(gc_form, form);
+    PUSHGC(gc_env, env);
+    PUSHGC(gc_car, car);
 top:
     if(CONSP(form))
     {
@@ -1560,8 +1635,8 @@ get-doc-string INDEX
 Returns the document-string number INDEX.
 ::end:: */
 {
-    DECLARE1(idx, NUMBERP);
-    return(cmd_read_file_from_to(MKSTR(DOC_FILE), idx, make_number((int)'\f')));
+    DECLARE1(idx, INTP);
+    return(cmd_read_file_from_to(VAL(doc_file), idx, MAKE_INT((int)'\f')));
 }
 
 _PR VALUE cmd_add_doc_string(VALUE str);
@@ -1574,23 +1649,23 @@ it's first character (a number).
 ::end:: */
 {
     FILE *docs;
+    static DEFSTRING(no_open, "Can't open doc-file");
     DECLARE1(str, STRINGP);
     docs = fopen(DOC_FILE, "a");
     if(docs)
     {
 	int len = STRING_LEN(str);
-	VALUE idx = make_number(ftell(docs));
+	VALUE idx = MAKE_INT(ftell(docs));
 	if(fwrite(VSTR(str), 1, len, docs) != len)
 	{
-	    return(cmd_signal(sym_file_error,
-			      LIST_1(MKSTR("Can't append to doc-file"))));
+	    static DEFSTRING(no_append, "Can't append to doc-file");
+	    return(cmd_signal(sym_file_error, LIST_1(VAL(no_append))));
 	}
 	putc('\f', docs);
 	fclose(docs);
 	return(idx);
     }
-    return(cmd_signal(sym_file_error,
-		      list_2(MKSTR("Can't open doc-file"), MKSTR(DOC_FILE))));
+    return(cmd_signal(sym_file_error, list_2(VAL(no_open), VAL(doc_file))));
 }
 
 _PR VALUE var_debug_on_error(VALUE val);
@@ -1623,7 +1698,7 @@ be made available to any error-handler or printed by the default error
     VALUE tmp, errlist;
     /* Can only have one error at once.	 */
     if(throw_value)
-	return(NULL);
+	return LISP_NULL;
     DECLARE1(error, SYMBOLP);
 
     errlist = cmd_cons(error, data);
@@ -1631,15 +1706,15 @@ be made available to any error-handler or printed by the default error
     if(((debug_on_error == sym_t)
 	|| (CONSP(debug_on_error) && (tmp = cmd_memq(error, debug_on_error))
 	    && !NILP(tmp)))
-       && VSYM(sym_debug_error_entry)->sym_Function)
+       && VSYM(sym_debug_error_entry)->function)
     {
 	/* Enter debugger. */
 	VALUE old_debug_on_error = debug_on_error;
-	GCVAL gcv_odoe;
+	GC_root gc_odoe;
 	bool oldssflag = single_step_flag;
 	debug_on_error = sym_nil;
 	single_step_flag = FALSE;
-	PUSHGC(gcv_odoe, old_debug_on_error);
+	PUSHGC(gc_odoe, old_debug_on_error);
 	tmp = funcall(sym_debug_error_entry, cmd_cons(errlist, sym_nil));
 	POPGC;
 	debug_on_error = old_debug_on_error;
@@ -1649,7 +1724,7 @@ be made available to any error-handler or printed by the default error
 	    single_step_flag = oldssflag;
     }
     throw_value = cmd_cons(sym_error, errlist);
-    return(NULL);
+    return LISP_NULL;
 }
 
 _PR VALUE cmd_error_protect(VALUE args);
@@ -1667,10 +1742,10 @@ the `signal' which caused the error).
 ::end:: */
 {
     VALUE res;
-    GCVAL gcv_args;
+    GC_root gc_args;
     if(!CONSP(args))
-	return(cmd_signal(sym_bad_arg, list_2(sym_nil, make_number(1))));
-    PUSHGC(gcv_args, args);
+	return(cmd_signal(sym_bad_arg, list_2(sym_nil, MAKE_INT(1))));
+    PUSHGC(gc_args, args);
     if(!(res = cmd_eval(VCAR(args))) && throw_value
        && (VCAR(throw_value) == sym_error))
     {
@@ -1682,10 +1757,10 @@ the `signal' which caused the error).
 	    if((VCAR(handler) == errorsym) || (VCAR(handler) == sym_error))
 	    {
 		VALUE bindlist = sym_nil;
-		GCVAL gcv_bindlist;
+		GC_root gc_bindlist;
 		bindlist = bind_symbol(sym_nil, sym_error_info, VCDR(throw_value));
-		throw_value = NULL;
-		PUSHGC(gcv_bindlist, bindlist);
+		throw_value = LISP_NULL;
+		PUSHGC(gc_bindlist, bindlist);
 		res = cmd_progn(VCDR(handler));
 		POPGC;
 		unbind_symbols(bindlist);
@@ -1695,7 +1770,7 @@ the `signal' which caused the error).
 	    TEST_INT;
 	    if(INT_P)
 	    {
-		res = NULL;
+		res = LISP_NULL;
 		break;
 	    }
 	}
@@ -1708,28 +1783,36 @@ void
 handle_error(VALUE error, VALUE data)
 {
     VALUE errstr;
+    static DEFSTRING(unknown, "Unknown error");
     cursor(curr_vw, CURS_OFF);
     cmd_beep();
     if(!(errstr = cmd_get(error, sym_error_message)) || !STRINGP(errstr))
-	errstr = MKSTR("Unknown error");
+	errstr = VAL(unknown);
     switch(list_length(data))
     {
+	static DEFSTRING(one_fmt, "%s");
+	static DEFSTRING(two_fmt, "%s: %s");
+	static DEFSTRING(three_fmt, "%s: %s, %s");
+	static DEFSTRING(four_fmt, "%s: %s, %s, %s");
+	static DEFSTRING(n_fmt, "%s: ...");
+
     case 0:
-	cmd_format(list_3(sym_t, MKSTR("%s"), errstr));
+	cmd_format(list_3(sym_t, VAL(one_fmt), errstr));
 	break;
     case 1:
-	cmd_format(list_4(sym_t, MKSTR("%s: %s"), errstr, VCAR(data)));
+	cmd_format(list_4(sym_t, VAL(two_fmt), errstr, VCAR(data)));
 	break;
     case 2:
-	cmd_format(list_5(sym_t, MKSTR("%s: %s, %s"), errstr,
+	cmd_format(list_5(sym_t, VAL(three_fmt), errstr,
 			  VCAR(data), VCAR(VCDR(data))));
 	break;
     case 3:
-	cmd_format(cmd_cons(sym_t, list_5(MKSTR("%s: %s, %s, %s"), errstr,
-			  VCAR(data), VCAR(VCDR(data)), VCAR(VCDR(VCDR(data))))));
+	cmd_format(cmd_cons(sym_t, list_5(VAL(four_fmt), errstr,
+					  VCAR(data), VCAR(VCDR(data)),
+					  VCAR(VCDR(VCDR(data))))));
 	break;
     default:
-	cmd_format(list_3(sym_t, MKSTR("%s: ..."), errstr));
+	cmd_format(list_3(sym_t, VAL(n_fmt), errstr));
     }
     refresh_world();
     cursor(curr_vw, CURS_ON);
@@ -1738,13 +1821,13 @@ handle_error(VALUE error, VALUE data)
 VALUE
 signal_arg_error(VALUE obj, int argNum)
 {
-    return(cmd_signal(sym_bad_arg, list_2(obj, make_number(argNum))));
+    return(cmd_signal(sym_bad_arg, list_2(obj, MAKE_INT(argNum))));
 }
 
 VALUE
 signal_missing_arg(int argnum)
 {
-    return cmd_signal(sym_missing_arg, LIST_1(make_number(argnum)));
+    return cmd_signal(sym_missing_arg, LIST_1(MAKE_INT(argnum)));
 }
 
 VALUE
@@ -1766,22 +1849,22 @@ where ARGS-EVALLED-P is either `t' or `nil', depending on whether or not
 ARGLIST had been evaluated or not before being put into the stack.
 ::end:: */
 {
-    struct LispCall *lc;
+    struct Lisp_Call *lc;
     if(NILP(strm)
        && !(strm = cmd_symbol_value(sym_standard_output, sym_nil)))
     {
-	return(cmd_signal(sym_bad_arg, list_2(strm, make_number(1))));
+	return(cmd_signal(sym_bad_arg, list_2(strm, MAKE_INT(1))));
     }
     lc = lisp_call_stack;
     while(lc)
     {
 	stream_putc(strm, '\n');
-	print_val(strm, lc->lc_Fun);
+	print_val(strm, lc->fun);
 	stream_putc(strm, ' ');
-	print_val(strm, lc->lc_Args);
+	print_val(strm, lc->args);
 	stream_putc(strm, ' ');
-	print_val(strm, lc->lc_ArgsEvalledP);
-	lc = lc->lc_Next;
+	print_val(strm, lc->args_evalled_p);
+	lc = lc->next;
     }
     return(sym_t);
 }
@@ -1800,26 +1883,17 @@ too small (you get errors in normal use) set it to something larger.
 void
 lisp_init(void)
 {
-    INTERN(sym_quote, "quote");
-    INTERN(sym_lambda, "lambda");
-    INTERN(sym_macro, "macro");
-    INTERN(sym_autoload, "autoload");
-    INTERN(sym_function, "function");
-    INTERN(sym_standard_input, "standard-input");
-    INTERN(sym_standard_output, "standard-output");
-    INTERN(sym_defun, "defun");
-    INTERN(sym_debug_entry, "debug-entry");
-    INTERN(sym_debug_exit, "debug-exit");
-    INTERN(sym_debug_error_entry, "debug-error-entry");
-    INTERN(sym_amp_optional, "&optional");
-    INTERN(sym_amp_rest, "&rest");
-    INTERN(sym_amp_aux, "&aux");
+    INTERN(quote); INTERN(lambda); INTERN(macro); INTERN(defun);
+    INTERN(autoload); INTERN(function);
+    INTERN(standard_input); INTERN(standard_output);
+    INTERN(debug_entry); INTERN(debug_exit); INTERN(debug_error_entry);
+    INTERN(amp_optional); INTERN(amp_rest); INTERN(amp_aux);
     mark_static(&throw_value);
     ADD_SUBR(subr_eval);
     ADD_SUBR(subr_funcall);
     ADD_SUBR(subr_progn);
     ADD_SUBR(subr_break);
-    ADD_SUBR(subr_step);
+    ADD_SUBR_INT(subr_step);
     ADD_SUBR(subr_macroexpand);
     ADD_SUBR(subr_get_doc_string);
     ADD_SUBR(subr_add_doc_string);
@@ -1831,75 +1905,49 @@ lisp_init(void)
 
     /* Stuff for error-handling */
     debug_on_error = sym_nil;
-    INTERN(sym_error_message, "error-message");
-    INTERN(sym_error, "error");
-    cmd_put(sym_error, sym_error_message, MKSTR("Error"));
-    INTERN(sym_invalid_function, "invalid-function");
-    cmd_put(sym_invalid_function, sym_error_message, MKSTR("Invalid function"));
-    INTERN(sym_void_function, "void-function");
-    cmd_put(sym_void_function, sym_error_message, MKSTR("Function value is void"));
-    INTERN(sym_void_value, "void-value");
-    cmd_put(sym_void_value, sym_error_message, MKSTR("Value as variable is void"));
-    INTERN(sym_bad_arg, "bad-arg");
-    cmd_put(sym_bad_arg, sym_error_message, MKSTR("Bad argument"));
-    INTERN(sym_invalid_read_syntax, "invalid-read-syntax");
-    cmd_put(sym_invalid_read_syntax, sym_error_message, MKSTR("Invalid read syntax"));
-    INTERN(sym_end_of_stream, "end-of-stream");
-    cmd_put(sym_end_of_stream, sym_error_message, MKSTR("Premature end of stream"));
-    INTERN(sym_invalid_lambda_list, "invalid-lambda-list");
-    cmd_put(sym_invalid_lambda_list, sym_error_message, MKSTR("Invalid lambda-list"));
-    INTERN(sym_missing_arg, "missing-arg");
-    cmd_put(sym_missing_arg, sym_error_message, MKSTR("Required argument missing"));
-    INTERN(sym_invalid_macro, "invalid-macro");
-    cmd_put(sym_invalid_macro, sym_error_message, MKSTR("Invalid macro definition"));
-    INTERN(sym_invalid_autoload, "invalid-autoload");
-    cmd_put(sym_invalid_autoload, sym_error_message, MKSTR("Invalid autoload definition"));
-    INTERN(sym_no_catcher, "no-catcher");
-    cmd_put(sym_no_catcher, sym_error_message, MKSTR("No catch'er for throw"));
-    INTERN(sym_buffer_read_only, "buffer-read-only");
-    cmd_put(sym_buffer_read_only, sym_error_message, MKSTR("Buffer is read-only"));
-    INTERN(sym_bad_event_desc, "bad_event_desc");
-    cmd_put(sym_bad_event_desc, sym_error_message, MKSTR("Invalid event description"));
-    INTERN(sym_file_error, "file-error");
-    cmd_put(sym_file_error, sym_error_message, MKSTR("File error"));
-    INTERN(sym_invalid_stream, "invalid-stream");
-    cmd_put(sym_invalid_stream, sym_error_message, MKSTR("Invalid stream"));
-    INTERN(sym_setting_constant, "setting-constant");
-    cmd_put(sym_setting_constant, sym_error_message, MKSTR("Attempt to set value of constant"));
-    INTERN(sym_process_error, "process-error");
-    cmd_put(sym_process_error, sym_error_message, MKSTR("Process error"));
-    INTERN(sym_invalid_area, "invalid-area");
-    cmd_put(sym_invalid_area, sym_error_message, MKSTR("Invalid area"));
+    INTERN(error_message);
+    INTERN(error); ERROR(error);
+    INTERN(invalid_function); ERROR(invalid_function);
+    INTERN(void_function); ERROR(void_function);
+    INTERN(void_value); ERROR(void_value);
+    INTERN(bad_arg); ERROR(bad_arg);
+    INTERN(invalid_read_syntax); ERROR(invalid_read_syntax);
+    INTERN(end_of_stream); ERROR(end_of_stream);
+    INTERN(invalid_lambda_list); ERROR(invalid_lambda_list);
+    INTERN(missing_arg); ERROR(missing_arg);
+    INTERN(invalid_macro); ERROR(invalid_macro);
+    INTERN(invalid_autoload); ERROR(invalid_autoload);
+    INTERN(no_catcher); ERROR(no_catcher);
+    INTERN(buffer_read_only); ERROR(buffer_read_only);
+    INTERN(bad_event_desc); ERROR(bad_event_desc);
+    INTERN(file_error); ERROR(file_error);
+    INTERN(invalid_stream); ERROR(invalid_stream);
+    INTERN(setting_constant); ERROR(setting_constant);
+    INTERN(process_error); ERROR(process_error);
+    INTERN(invalid_area); ERROR(invalid_area);
 #ifdef MINSTACK
-    INTERN(sym_stack_error, "stack-error");
-    cmd_put(sym_stack_error, sym_error_message, MKSTR("Stack overflow"));
+    INTERN(stack_error); ERROR(stack_error);
 #endif
-    INTERN(sym_no_memory, "no-memory");
-    cmd_put(sym_no_memory, sym_error_message, MKSTR("No free memory"));
-    INTERN(sym_user_interrupt, "user-interrupt");
-    cmd_put(sym_user_interrupt, sym_error_message, MKSTR("User interrupt!"));
-    INTERN(sym_arith_error, "arith-error");
-    cmd_put(sym_arith_error, sym_error_message, MKSTR("Arithmetic error"));
-    INTERN(sym_window_error, "window-error");
-    cmd_put(sym_window_error, sym_error_message, MKSTR("Window error"));
-    INTERN(sym_invalid_pos, "invalid-pos");
-    cmd_put(sym_invalid_pos, sym_error_message, MKSTR("Invalid position"));
-    INTERN(sym_term_interrupt, "term-interrupt");
-    INTERN(sym_error_info, "error-info");
+    INTERN(no_memory); ERROR(no_memory);
+    INTERN(user_interrupt); ERROR(user_interrupt);
+    INTERN(arith_error); ERROR(arith_error);
+    INTERN(window_error); ERROR(window_error);
+    INTERN(invalid_pos); ERROR(invalid_pos);
+    INTERN(term_interrupt);
+    INTERN(error_info);
 
     int_cell = cmd_cons(sym_user_interrupt, sym_nil);
     mark_static(&int_cell);
     term_cell = cmd_cons(sym_term_interrupt, sym_nil);
     mark_static(&term_cell);
 
-    INTERN(sym_print_escape_newlines, "print-escape-newlines");
-    INTERN(sym_print_length, "print-length");
-    INTERN(sym_print_level, "print-level");
-    DOC_VAR(sym_print_escape_newlines, DOC_print_escape_newlines);
-    DOC_VAR(sym_print_length, DOC_print_length);
-    DOC_VAR(sym_print_level, DOC_print_level);
-    VSYM(sym_print_escape_newlines)->sym_Value = sym_nil;
-    VSYM(sym_print_length)->sym_Value = sym_nil;
-    VSYM(sym_print_level)->sym_Value = sym_nil;
+    INTERN(print_escape_newlines); 
+    INTERN(print_length);
+    INTERN(print_level);
+    DOC(print_escape_newlines);
+    DOC(print_length);
+    DOC(print_level);
+    VSYM(sym_print_escape_newlines)->value = sym_nil;
+    VSYM(sym_print_length)->value = sym_nil;
+    VSYM(sym_print_level)->value = sym_nil;
 }
-
