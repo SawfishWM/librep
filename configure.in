@@ -1,0 +1,149 @@
+dnl  Process this file with autoconf to produce a configure script.
+dnl  Copyright (C) 1998 John Harper <john@dcs.warwick.ac.uk>
+dnl  $Id$
+dnl
+dnl  This file is part of Jade.
+dnl
+dnl  Jade is free software; you can redistribute it and/or modify it
+dnl  under the terms of the GNU General Public License as published by
+dnl  the Free Software Foundation; either version 2, or (at your option)
+dnl  any later version.
+dnl
+dnl  Jade is distributed in the hope that it will be useful, but
+dnl  WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+dnl  GNU General Public License for more details.
+dnl
+dnl  You should have received a copy of the GNU General Public License
+dnl  along with Jade; see the file COPYING.  If not, write to
+dnl  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
+
+AC_INIT(src/jade.h)
+AC_CONFIG_HEADER(config.h)
+
+version="4.0"
+jadedir='${datadir}/jade'
+lispdir='${jadedir}/${version}/lisp'
+
+output_files="man/Makefile jade/Makefile:src/Makefile.in\
+ lib/Makefile:lib-src/Makefile.in lisp/Makefile Makefile"
+
+enable_dumped=0
+dumped_lisp_files="lisp windows buffers modes edit prompt replace isearch\
+ lisp-mode c-mode xc text-mode fill"
+
+AC_ARG_ENABLE(swap-del-bs,
+[  --enable-swap-del-bs	  Swap the meaning of Delete and Backspace
+			  event specifiers.],
+[AC_DEFINE(SWAP_DELETE_KEYS)])
+AC_ARG_ENABLE(dumped,
+[  --enable-dumped	  Dump LISP files into the jaded binary],
+[enable_dumped=1])
+
+dnl Checks for programs.
+AC_PROG_CC
+AC_PROG_CPP
+AC_PROG_INSTALL
+AC_PROG_LN_S
+AC_PROG_MAKE_SET
+AC_PROG_GCC_TRADITIONAL
+
+dnl Checks for libraries.
+AC_CHECK_LIB(nsl, xdr_void)
+AC_CHECK_LIB(socket, bind)
+
+dnl Checks for header files.
+AC_PATH_XTRA
+AC_HEADER_DIRENT
+AC_HEADER_STDC
+AC_HEADER_SYS_WAIT
+AC_HEADER_TIME
+AC_CHECK_HEADERS(fcntl.h sys/ioctl.h sys/time.h sys/utsname.h unistd.h siginfo.h memory.h stropts.h termios.h)
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+AC_C_INLINE
+AC_TYPE_PID_T
+AC_TYPE_SIZE_T
+AC_TYPE_SIGNAL
+
+dnl Checks for library functions.
+AC_FUNC_ALLOCA
+AC_FUNC_MEMCMP
+AC_FUNC_VPRINTF
+AC_CHECK_FUNCS(getcwd gethostname select socket strcspn strerror strstr strtol psignal strsignal)
+
+dnl Custom tests
+
+dnl Does <unistd.h> declare char **environ?
+AC_MSG_CHECKING([whether unistd.h declares environ])
+AC_EGREP_HEADER(environ, unistd.h,
+[AC_MSG_RESULT([yes])],
+[AC_DEFINE(ENVIRON_UNDECLARED) AC_MSG_RESULT([no])])
+
+dnl Are ptys available, and if so, how?
+AC_MSG_CHECKING([whether /dev/ptmx exists])
+if `test -r /dev/ptmx`; then
+  dnl ok to assume existence of grantpt and friends?
+  AC_MSG_RESULT([yes])
+  AC_DEFINE(HAVE_PTYS)
+  AC_DEFINE(HAVE_DEV_PTMX)
+else
+  AC_MSG_RESULT([no])
+  dnl Look for old-style /dev/ptyXN devices
+  have_ptys=0
+  AC_MSG_CHECKING([whether /dev/ptyXN devices exist])
+  for c in a b c d e f g h i j k l m n o p q r s t u v w x y z; do
+    if `test -r "/dev/pty${c}0"`; then
+      have_ptys=${c}
+      break
+    fi
+  done
+  if `test ${have_ptys} != 0`; then
+    AC_MSG_RESULT([yes, first is "/dev/pty${have_ptys}0"])
+    AC_DEFINE(HAVE_PTYS)
+    AC_DEFINE_UNQUOTED(FIRST_PTY_LETTER, '${have_ptys}')
+  else
+    AC_MSG_RESULT([no])
+  fi
+fi
+
+dnl Was X found or not (if not we're pretty much screwed)
+if `test "${no_x}" != "yes"`; then
+  HAVE_X11=1
+  AC_DEFINE(HAVE_X11)
+else
+  HAVE_X11=0
+  AC_MSG_ERROR([You need X11 to run Jade])
+fi
+
+dnl If GCC was found we can probably use __asm__ statements to inline
+dnl LISP string constants
+if `test "${GCC}" = "yes"`; then 
+  AC_DEFINE(INLINE_STATIC_STRINGS)
+  dump_flags="--enable-inline-strings"
+else
+  dump_flags="--disable-inline-strings"
+fi
+
+dnl If making a jaded binary, add its Makefile to the list of outputs
+if `test "${enable_dumped}" = "1"`; then
+  output_files="${output_files} jaded/Makefile:src/Makefile.in"
+fi
+
+dnl Assumption for now
+HAVE_UNIX=1
+AC_DEFINE(HAVE_UNIX)
+
+dnl Nonstandard exported symbols
+AC_SUBST(version)
+AC_SUBST(jadedir)
+AC_SUBST(lispdir)
+AC_SUBST(enable_dumped)
+AC_SUBST(dumped_lisp_files)
+AC_SUBST(dump_flags)
+AC_SUBST(HAVE_UNIX)
+AC_SUBST(HAVE_X11)
+
+dnl Build all files
+AC_OUTPUT(${output_files})
