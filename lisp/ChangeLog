@@ -1,3 +1,24 @@
+2000-08-03  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep/i18n/xgettext.jl: yanked the useful bits of
+	src/rep-xgettext.jl into a library module to enable customized
+	xgettext scripts to be written
+
+	* rep/vm/assembler.jl: a higher-level assembler
+
+	* rep/vm/disassembler.jl: split into two functions
+
+	* rep/vm/bytecodes.jl, rep/vm/bytecode-defs.jl (bytecode-ref):
+	new function
+
+2000-08-02  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep/module-system.jl (define-structures): new macro, for
+	defining >1 structure from the same set of definitions
+
+	* rep/vm/compiler/modules.jl (module-exports-p): handle
+	first-class structures in imports list
+
 2000-08-01  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep/io/file-handlers/tar.jl,

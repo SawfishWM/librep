@@ -1,3 +1,8 @@
+2000-08-03  John Harper  <john@dcs.warwick.ac.uk>
+
+	* configure.in, config.h.in: check for strtoq () as well as
+	strtoll ()
+
 2000-08-01  John Harper  <john@dcs.warwick.ac.uk>
 
 	* intl/intl-compat.c, intl/Makefile.in: removed my edits, intl/

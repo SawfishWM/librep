@@ -4150,15 +4150,38 @@ Here is an example module definition, defining a module named
 
 @lisp
 (define-structure test (export foo bar)
-
     (open rep)
-
-  (defun foo (x)
-    (* x 42))
-
-  (defun bar (x y)
-    (+ (foo x) (1+ y))))
+  (define (foo x) (* x 42))
+  (define (bar x y) (+ (foo x) (1+ y))))
 @end lisp
+
+It is also possible to export multiple views of a single underlying set
+of bindings, by using the @code{define-structures} form to create a
+number of modules.
+
+@defmac define-structures ((name interface) @dots{}) config body @dots{}
+Create a module for each @code{(@var{name} @var{interface})} pair. The
+module is called @var{name} and exports the interface defined by
+@var{interface}.
+
+The @var{config} and @var{body @dots{}} forms are as in
+@code{define-structure}.
+
+Here is a trivial example:
+
+@lisp
+(define-structures ((foo (export foo both))
+                    (bar (export bar both)))
+    (open rep)
+  (define both 1)
+  (define foo 2)
+  (define bar 3))
+@end lisp
+
+@noindent
+the underlying environment has three bindings. Each created module
+exports two of these.
+@end defmac
 
 
 @node Module Loading, Modules and Special Variables, Module Definition, Modules

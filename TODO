@@ -10,6 +10,10 @@ and more long-term ideas are marked -
 Outstanding bugs
 ================
 
+ ! `(one #| ... |# )' doesn't read properly
+
+ ! disable all gdbm file locking?
+
  ! (define foo bar "Doc") should do something with "Doc"
 
  ! non-top-level compiled defvar's aren't quite right

@@ -1,4 +1,26 @@
+2000-08-03  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep-xgettext.jl: use rep.i18n.gettext module, removed
+	--only-commands option
+
+	* numbers.c: use strtoq () if strtoll () isn't available
+
+2000-08-02  John Harper  <john@dcs.warwick.ac.uk>
+
+	* structures.c (lookup_recursively, Fopen_structures): allow
+	structures to be in `imports' list, not just names of
+	structures. This allows anonymous structures to be imported
+
 2000-08-01  John Harper  <john@dcs.warwick.ac.uk>
+
+	* continuations.c (primitive_call_cc): added an arg, the
+	continuation to overwrite with the current state
+	(thread_invoke): pass the current continuation in to
+	primitive_call_cc for updating, instead of allocating a new one
+
+	[ this drastically reduces thread-switch time when the current
+	stack copy is suitable to be overwritten. Current thread switch
+	latency seems to be ~7.5us on my 300MHz PII ]
 
 	* lispmach.c: fixed top-of-stack caching bugs
 
