@@ -330,7 +330,7 @@ unix_set_fd_nonblocking(int fd)
 void
 unix_set_fd_blocking(int fd)
 {
-     int flags = fcntl(fd, F_GETFL, 0);
+    int flags = fcntl(fd, F_GETFL, 0);
     if(flags != -1)
 	fcntl(fd, F_SETFL, flags & ~O_NONBLOCK);
 }
