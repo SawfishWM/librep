@@ -681,6 +681,16 @@ again:
 	rep_GC_SET_CELL(val);
 	break;
 
+    case rep_Funarg:
+	rep_GC_SET_CELL(val);
+	rep_MARKVAL(rep_FUNARG(val)->env);
+	rep_MARKVAL(rep_FUNARG(val)->fenv);
+	rep_MARKVAL(rep_FUNARG(val)->special_env);
+	val = rep_FUNARG(val)->fun;
+	if (val && !rep_GC_MARKEDP(val))
+	    goto again;
+	break;
+
     case rep_Var:
     case rep_Subr0:
     case rep_Subr1:
@@ -787,6 +797,9 @@ last garbage-collection is greater than `garbage-threshold'.
     {
 	rep_MARKVAL(lc->fun);
 	rep_MARKVAL(lc->args);
+	rep_MARKVAL(lc->saved_env);
+	rep_MARKVAL(lc->saved_fenv);
+	rep_MARKVAL(lc->saved_special_env);
 	/* don't bother marking `args_evalled_p' it's always `nil' or `t'  */
 	lc = lc->next;
     }
