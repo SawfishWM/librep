@@ -171,10 +171,10 @@ values.o	: $(HDRS)
 views.o		: $(HDRS)
 windows.o	: $(HDRS)
 
-regerror.c	: $(HDRS) regprog.h regmagic.h
-regexp.c	: $(HDRS) regprog.h regmagic.h
-regsub.c	: $(HDRS) regprog.h regmagic.h
-regjade.c	: $(HDRS) regprog.h regmagic.h
+regerror.o	: $(HDRS) regprog.h regmagic.h
+regexp.o	: $(HDRS) regprog.h regmagic.h
+regsub.o	: $(HDRS) regprog.h regmagic.h
+regjade.o	: $(HDRS) regprog.h regmagic.h
 
 ifneq ($(HAVE_X11), 0)
  x11_keys.o	: $(HDRS)
