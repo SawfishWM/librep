@@ -1,3 +1,15 @@
+1998-07-08  John Harper  <john@dcs.warwick.ac.uk>
+
+	* sh-mode.jl (sh-get-basic-indent): skip blank lines
+
+	* read-mail.jl (rm-append-inbox): be sure to return zero if no
+	new messages exist, but no errors occurred (not nil as before)
+	(rm-get-mail-for-box): be sure to return the number of
+	messages, also make sure that all inboxes are used
+
+	* maildefs.jl (mail-find-inboxes): expand inbox names relative
+	to mail-folder-dir if they're not absolute
+
 1998-07-07  John Harper  <john@dcs.warwick.ac.uk>
 
 	* edit.jl (insert-block): renamed as yank-block; now sets
