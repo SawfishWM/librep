@@ -130,6 +130,7 @@
 		 '() (lambda () (%open-structures '(%gaol-structure))))))
       (set-file-handler-environment file-handler-env gaol)
       (set-special-environment gaol-safe-specials gaol)
+      (%structure-install-vm gaol nil)
       gaol))
 
   (define default-gaol (let (gaol)
