@@ -12,10 +12,14 @@ functions.
 @menu
 * Intro::                       Introduction and Lisp conventions
 
+Fundamental data types.
+
 * Data Types::                  Data types and values in Lisp
 * Numbers::                     Numeric representations and functions
 * Sequences::                   Ordered sequences of data values
 * Symbols::                     Symbols are uniquely named objects
+
+The core language.
 
 * Evaluation::                  Evaluating expressions
 * Variables::                   Symbols represent named variables
@@ -28,6 +32,8 @@ functions.
 * Loading::                     Programs are stored in files
 * Compiled Lisp::               Making programs run faster
 
+Data structures and I/O.
+
 * Datums::                      Low-level data type definition
 * Queues::                      FIFO queue type
 * Records::                     Defining structured data types
@@ -38,6 +44,8 @@ functions.
 * Files::                       Manipulating files in the filing system
 * Processes::                   launch and control subprocesses when
                                  running under Unix
+
+Miscellaneous features.
 
 * Regular Expressions::         Matching regular expressions
 * Time and Date::               Manipulating time and date
