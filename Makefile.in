@@ -37,7 +37,7 @@ sharedstatedir=@sharedstatedir@
 
 jadedir=@jadedir@
 lispdir=@lispdir@
-enable_dumped=@enable_dumped@
+enable_dumped=@opt_enable_dumped@
 
 INSTALL=@INSTALL@
 INSTALL_DATA=@INSTALL_DATA@
