@@ -1081,8 +1081,8 @@ rep_funcall(repv fun, repv arglist, rep_bool eval_args)
     int type;
     repv result = rep_NULL;
     struct rep_Call lc;
-    rep_bool was_closed = rep_FALSE;
-    rep_GC_root gc_fun, gc_args;
+    repv closure = rep_NULL;
+    rep_GC_root gc_fun, gc_args, gc_closure;
 
     rep_TEST_INT;
     if(rep_INTERRUPTP)
@@ -1104,6 +1104,7 @@ rep_funcall(repv fun, repv arglist, rep_bool eval_args)
 
     rep_PUSHGC (gc_fun, fun);
     rep_PUSHGC (gc_args, arglist);
+    rep_PUSHGC (gc_closure, closure);
 
     rep_MAY_YIELD;
 
@@ -1118,9 +1119,8 @@ rep_funcall(repv fun, repv arglist, rep_bool eval_args)
 again:
     if (rep_FUNARGP(fun))
     {
-	rep_USE_FUNARG(fun);
+	closure = fun;
 	fun = rep_FUNARG(fun)->fun;
-	was_closed = rep_TRUE;
     }
     switch(type = rep_TYPE(fun))
     {
@@ -1135,10 +1135,14 @@ again:
 	    if(arglist == rep_NULL)
 		goto end;
 	}
+	if (closure)
+	    rep_USE_FUNARG(closure);
 	result = rep_SUBRNFUN(fun)(arglist);
 	break;
 
     case rep_Subr0:
+	if (closure)
+	    rep_USE_FUNARG(closure);
 	result = rep_SUBR0FUN(fun)();
 	break;
 
@@ -1192,6 +1196,8 @@ again:
 	}
 	if(eval_args)
 	    rep_POPGCN;
+	if (closure)
+	    rep_USE_FUNARG(closure);
 	switch(type)
 	{
 	case rep_Subr1:
@@ -1216,13 +1222,14 @@ again:
     case rep_Cons:
 	car = rep_CAR(fun);
 	/* don't allow unclosed lambdas for security reasons */
-	if(was_closed && car == Qlambda)
+	if(closure && car == Qlambda)
 	{
 	    /* rep_eval_lambda() expanded inline. */
 	    if(rep_CONSP(rep_CDR(fun)))
 	    {
 		repv boundlist;
 		fun = rep_CDR(fun);
+		rep_USE_FUNARG(closure);
 		boundlist = rep_bind_lambda_list(rep_CAR(fun),
 						 arglist, eval_args);
 		if(boundlist != rep_NULL)
@@ -1248,10 +1255,9 @@ again:
 	    if(result != rep_NULL)
 		result = Feval(result);
 	}
-	else if(was_closed && car == Qautoload)
+	else if(closure && car == Qautoload)
 	{
-	    /* lc.fun contains the original closure */
-	    fun = rep_load_autoload(lc.fun);
+	    fun = rep_load_autoload(closure);
 	    if(fun)
 	    {
 		lc.fun = fun;
@@ -1264,12 +1270,13 @@ again:
 
     case rep_Compiled:
 	/* don't allow unclosed bytecode for security reasons */
-	if (was_closed)
+	if (closure)
 	{
 	    repv boundlist;
 	    if (rep_bytecode_interpreter == 0)
 		goto invalid;
 
+	    rep_USE_FUNARG(closure);
 	    boundlist = rep_bind_lambda_list(rep_COMPILED_LAMBDA(fun),
 					     arglist, eval_args);
 	    if(boundlist != rep_NULL)
@@ -1296,7 +1303,7 @@ again:
 
 end:
     rep_POP_CALL(lc);
-    rep_POPGC; rep_POPGC;
+    rep_POPGC; rep_POPGC; rep_POPGC;
     rep_lisp_depth--;
     return result;
 }
