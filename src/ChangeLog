@@ -1,3 +1,7 @@
+2000-01-09  John Harper  <john@dcs.warwick.ac.uk>
+
+	* version 0.10
+
 2000-01-08  John Harper  <john@dcs.warwick.ac.uk>
 
 	* Makefile.in: only include ../intl objects in libgettext.la if

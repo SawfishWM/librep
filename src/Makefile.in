@@ -42,7 +42,7 @@ REP_OBJS =	$(REP_SRCS:.c=.o)
 
 INTL_OBJS_yes=../intl/*.lo
 INTL_OBJS_no=
-INT_OBJS=$(INTL_OBJS_@USE_INCLUDED_LIBINTL@)
+INTL_OBJS=$(INTL_OBJS_@USE_INCLUDED_LIBINTL@)
 
 all : libxsdbm.la librep.la $(DL_OBJS) rep rep-config rep-remote rep-xgettext
 

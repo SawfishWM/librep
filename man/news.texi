@@ -3,6 +3,48 @@
 @chapter News
 @cindex News
 
+@unnumberedsec 0.10
+
+@itemize @bullet
+
+@item Updated support for dumping (freezing) lisp definitions to handle
+lisp-1 nature with closures. Also now generates C code instead of
+assembler for portability; creates a plugin that may be loaded through
+the REP_DUMP_FILE environment variable
+
+@item Plugin @file{.la} files may now contain rep-specific settings:
+@samp{rep_open_globally=yes} and
+@samp{rep_requires='@var{FEATURES}@dots{}'}
+
+@item New function @code{define-value}. A combination of @code{set} and
+@code{defvar}, but without implying dynamic scope
+
+@item @code{load} scans @var{after-load-alist} for plugins as well as
+lisp libraries
+
+@item @code{(if t)} now evaluates to @code{nil} not @code{t}
+
+@item Fix regexp bug in matching simple non-greedy operators (Matt
+Krai)
+
+@item Borrowed guile's bouncing parentheses for readline (Ceri Storey)
+
+@item New C functions @code{rep_load_environment} and
+@code{rep_top_level_exit}
+
+@item @code{defvar} allows symbols to be redefined in protected
+environments if they haven't also been defined by unprotected
+environments
+
+@item Detect GCC's with broken @code{__builtin_return_address}
+functions (George Lebl)
+
+@item Try to use libc @code{gettext} implementation, but only if it
+looks like it's the GNU implementation
+
+@end itemize
+
+
 @unnumberedsec 0.9
 
 @itemize @bullet

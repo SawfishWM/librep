@@ -1,3 +1,7 @@
+src/2000-01-09  John Harper  <john@dcs.warwick.ac.uk>
+
+	* version 0.10
+
 2000-01-03  John Harper  <john@dcs.warwick.ac.uk>
 
 	* compiler.jl (comp-compile-defun, comp-compile-defmacro):
