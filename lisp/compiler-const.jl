@@ -49,7 +49,7 @@
       (emit-insn (bytecode nil)))
      ((eq form t)
       (emit-insn (bytecode t)))
-     ((and (integerp form) (<= form 65535) (>= form -65535))
+     ((and (fixnump form) (<= form 65535) (>= form -65535))
       ;; use one of the pushi instructions
       (cond ((zerop form)
 	     (emit-insn (bytecode pushi-0)))
