@@ -1256,8 +1256,12 @@ Returns the value of SYMBOL's property PROPERTY. See `put'.
     plist = rep_SYM(sym)->prop_list;
     while(rep_CONSP(plist) && rep_CONSP(rep_CDR(plist)))
     {
-	if(rep_CAR(plist) == prop)
+	if(rep_CAR(plist) == prop
+	   || (!rep_SYMBOLP(prop)
+	       && rep_value_cmp (rep_CAR(plist), prop) == 0))
+	{
 	    return(rep_CAR(rep_CDR(plist)));
+	}
 	plist = rep_CDR(rep_CDR(plist));
     }
     return(Qnil);
@@ -1281,7 +1285,9 @@ retrieved with the `get' function.
     plist = rep_SYM(sym)->prop_list;
     while(rep_CONSP(plist) && rep_CONSP(rep_CDR(plist)))
     {
-	if(rep_CAR(plist) == prop)
+	if(rep_CAR(plist) == prop
+	   || (!rep_SYMBOLP(prop)
+	       && rep_value_cmp (rep_CAR(plist), prop) == 0))
 	{
 	    if(!rep_CONS_WRITABLE_P(rep_CDR(plist)))
 	    {
