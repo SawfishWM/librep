@@ -142,7 +142,7 @@ extern repv Qregexp_error;
 extern repv Fstring_match(repv re, repv str, repv start, repv nocasep);
 extern repv Fstring_looking_at(repv re, repv string,
 				repv start, repv nocasep);
-extern repv Fexpand_last_match(repv template);
+extern repv Fexpand_last_match(repv template_);
 extern repv Fmatch_start(repv exp);
 extern repv Fmatch_end(repv exp);
 extern repv Fquote_regexp(repv str);
@@ -602,7 +602,7 @@ extern repv rep_file_name_directory(repv file);
 extern repv rep_file_name_as_directory(repv file);
 extern repv rep_directory_file_name(repv file);
 extern repv rep_delete_file(repv file);
-extern repv rep_rename_file(repv old, repv new);
+extern repv rep_rename_file(repv old, repv new_);
 extern repv rep_make_directory(repv dir);
 extern repv rep_delete_directory(repv dir);
 extern repv rep_copy_file(repv src, repv dst);
