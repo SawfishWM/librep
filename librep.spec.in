@@ -79,6 +79,7 @@ fi
 %{_includedir}/rep_*.h
 %{_libexecdir}/rep/%{_target_platform}/libtool
 %{_libexecdir}/rep/%{_target_platform}/rules.mk
+%{_libexecdir}/rep/%{_target_platform}/install-aliases
 %{_datadir}/aclocal/rep.m4
 
 %changelog
