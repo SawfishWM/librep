@@ -26,8 +26,6 @@ Outstanding bugs
 
  ! the scheme module fails some of the guile test.scm cases
 
- ! can't do numerator/denominator of flonums
-
  ! the first level lookup of foo#bar isn't cached
 
  ! interfaces aren't re-parsed when modules are reloaded

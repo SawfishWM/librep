@@ -43,6 +43,7 @@ char *alloca ();
 #include <stdlib.h>
 #include <assert.h>
 #include <math.h>
+#include <float.h>
 #include <ctype.h>
 #include <limits.h>
 #include <errno.h>
@@ -2596,25 +2597,38 @@ accuracy.
 	return arg;
     else
     {
-	/* XXX is there a way to decide if it's rationalizable? */
-	double d = floor (rep_get_float (arg));
-	if (d >= rep_LISP_MIN_INT && d <= rep_LISP_MAX_INT)
-	    return rep_MAKE_INT ((long) d);
-	else
+	double x;
+	repv y;
+	int expt;
+	rep_number_z *z;
+
+	/* X/Y always equals the input value. Tactic is to iteratively
+	   multiply both X and Y by 2 until X is an integer. We bound
+	   the number of iterations to the size of the mantissa
+	   by starting with the normalized value... */
+
+	x = frexp (rep_get_float (arg), &expt);
+	y = Fexpt (rep_MAKE_INT (2), rep_make_long_int (-expt));
+
+	while (x - floor (x) > DBL_EPSILON)
 	{
-	    rep_number_z *z = make_number (rep_NUMBER_BIGNUM);
-#ifdef HAVE_GMP
-	    mpz_init_set_d (z->z, d);
-#else
-	    if (d >= BIGNUM_MAX)
-		z->z = BIGNUM_MAX;
-	    else if (d <= BIGNUM_MIN)
-		z->z = BIGNUM_MIN;
-	    else
-		z->z = (rep_long_long) d;
-#endif
-	    return rep_VAL (z);
+	    x = x * 2.0;
+	    y = rep_number_mul (y, rep_MAKE_INT (2));
 	}
+
+	z = make_number (rep_NUMBER_BIGNUM);
+#ifdef HAVE_GMP
+	mpz_init_set_d (z->z, x);
+#else
+	if (x >= BIGNUM_MAX)
+	    z->z = BIGNUM_MAX;
+	else if (x <= BIGNUM_MIN)
+	    z->z = BIGNUM_MIN;
+	else
+	    z->z = (rep_long_long) x;
+#endif
+
+	return rep_number_div (rep_VAL (z), y);
     }
 }
 
@@ -2625,15 +2639,24 @@ numerator X
 Return the numerator of rational number X.
 ::end:: */
 {
+    rep_bool inexact = rep_FALSE;
     rep_DECLARE1(x, rep_NUMERICP);
     if (rep_INTP (x) || rep_NUMBER_BIGNUM_P (x))
 	return x;
+    else if (rep_NUMBER_FLOAT_P (x))
+    {
+	x = Finexact_to_exact (x);
+	inexact = rep_TRUE;
+    }
 #ifdef HAVE_GMP
-    else if (rep_NUMBER_RATIONAL_P (x))
+    if (rep_NUMBER_RATIONAL_P (x))
     {
 	rep_number_z *z = make_number (rep_NUMBER_BIGNUM);
 	mpz_init_set (z->z, mpq_numref (rep_NUMBER(x,q)));
-	return maybe_demote (rep_VAL (z));
+	if (!inexact)
+	    return maybe_demote (rep_VAL (z));
+	else
+	    return rep_make_float (mpz_get_d (z->z), rep_TRUE);
     }
 #endif
     else
@@ -2647,15 +2670,24 @@ denominator X
 Return the denominator of rational number X.
 ::end:: */
 {
+    rep_bool inexact = rep_FALSE;
     rep_DECLARE1(x, rep_NUMERICP);
     if (rep_INTP (x) || rep_NUMBER_BIGNUM_P (x))
 	return rep_MAKE_INT (1);
+    else if (rep_NUMBER_FLOAT_P (x))
+    {
+	x = Finexact_to_exact (x);
+	inexact = rep_TRUE;
+    }
 #ifdef HAVE_GMP
-    else if (rep_NUMBER_RATIONAL_P (x))
+    if (rep_NUMBER_RATIONAL_P (x))
     {
 	rep_number_z *z = make_number (rep_NUMBER_BIGNUM);
 	mpz_init_set (z->z, mpq_denref (rep_NUMBER(x,q)));
-	return maybe_demote (rep_VAL (z));
+	if (!inexact)
+	    return maybe_demote (rep_VAL (z));
+	else
+	    return rep_make_float (mpz_get_d (z->z), rep_TRUE);
     }
 #endif
     else
