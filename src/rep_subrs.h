@@ -187,7 +187,6 @@ extern repv Qterm_interrupt;
 extern repv Qstack_error;
 extern repv Qprint_escape, Qprint_length, Qprint_level, Qnewlines;
 extern repv rep_env, rep_fenv, rep_special_bindings;
-extern repv (*rep_bytecode_interpreter)(repv subr, int nargs, repv *args);
 extern struct rep_Call *rep_call_stack;
 extern int rep_lisp_depth, rep_max_lisp_depth;
 extern int rep_test_int_counter;

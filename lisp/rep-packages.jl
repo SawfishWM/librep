@@ -87,7 +87,7 @@
 	  %get-structure %name-structure %intern-structure
 	  %open-structures %access-structures %current-structure %structurep
 	  %make-closure-in-structure %structure-walk %structure-exports-all
-	  %load-autoload))
+	  %structure-install-vm %load-autoload))
 
 (define-interface rep-data
   (export cons car cdr list list* make-list append nconc rplaca rplacd
