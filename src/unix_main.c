@@ -391,8 +391,17 @@ wait_for_input(fd_set *inputs, u_long timeout_msecs)
 	struct timeval timeout;
 	u_long this_timeout_msecs = MIN (timeout_msecs,
 					 rep_input_timeout_secs * 1000);
-	timeout.tv_sec = this_timeout_msecs / 1000;
-	timeout.tv_usec = (this_timeout_msecs % 1000) * 1000;
+	rep_bool threaded = rep_INT (Fthread_queue_length ()) == 0;
+	if (threaded)
+	{
+	    timeout.tv_sec = this_timeout_msecs / 1000;
+	    timeout.tv_usec = (this_timeout_msecs % 1000) * 1000;
+	}
+	else
+	{
+	    timeout.tv_sec = 0;
+	    timeout.tv_usec = 0;
+	}
 	memcpy (&copy, inputs, sizeof (copy));
 
 	/* Dont test for interrupts before the first call to select() */
@@ -410,6 +419,12 @@ wait_for_input(fd_set *inputs, u_long timeout_msecs)
 	ready = select(FD_SETSIZE, &copy, NULL, NULL, &timeout);
 	rep_sig_restart(SIGALRM, rep_TRUE);
 	rep_sig_restart(SIGCHLD, rep_TRUE);
+
+	if (ready == 0 && threaded)
+	{
+	    this_timeout_msecs = MIN (this_timeout_msecs, 100);
+	    Fthread_suspend (Qnil, rep_MAKE_INT (this_timeout_msecs));
+	}
 
 	timeout_msecs -= this_timeout_msecs;
     } while (ready == 0 && timeout_msecs > 0);
