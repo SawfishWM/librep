@@ -198,17 +198,23 @@ of byte code. See the functions `compile-file', `compile-directory' and
     {
 	int insn;
 
+	/* Some instructions jump straight back to this label after
+	   completion; this is only allowed if it's impossible for
+	   the instruction to have raised an exception. */
     fetch:
 	insn = FETCH;
+
 #ifdef BYTE_CODE_HISTOGRAM
 	byte_code_usage[insn]++;
 #endif
+
 	switch(insn)
 	{
 	    int arg;
 	    repv tmp, tmp2;
 
 	case 0:
+	    /* Terminating NUL character acts as return instruction */
 	    goto quit;
 
 	CASE_OP_ARG(OP_CALL)
@@ -401,7 +407,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 
 	CASE_OP_ARG(OP_PUSH)
 	    PUSH(rep_VECT(consts)->array[arg]);
-	    break;
+	    goto fetch;
 
 	CASE_OP_ARG(OP_REFQ)
 	    /* try to optimise the common case of normal shallow binding */
@@ -415,7 +421,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 			&& !rep_CELL8_TYPEP(sym->value, rep_Var))
 		    {
 			PUSH(sym->value);
-			break;
+			goto fetch;
 		    }
 		}
 	    }
@@ -434,21 +440,20 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		    if (!rep_CELL8_TYPEP(sym->value, rep_Var))
 		    {
 			sym->value = RET_POP;
-			break;
+			goto fetch;
 		    }
 		}
 	    }
 	    /* fall back to common method */
-	    if (Fset(rep_VECT(consts)->array[arg], RET_POP) != rep_NULL)
-		break;
-	    goto error;
+	    Fset(rep_VECT(consts)->array[arg], RET_POP);
+	    break;
 
 	CASE_OP_ARG(OP_LIST)
 	    tmp = Qnil;
 	    while(arg--)
 		tmp = Fcons(RET_POP, tmp);
 	    PUSH(tmp);
-	    break;
+	    goto fetch;
 
 	CASE_OP_ARG(OP_BIND)
 	    tmp = rep_VECT(consts)->array[arg];
@@ -476,7 +481,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 
 	case OP_INIT_BIND:
 	    bindstack = Fcons(Qnil, bindstack);
-	    break;
+	    goto fetch;
 
 	case OP_UNBIND:
 	    gc_stackbase.count = STK_USE;
@@ -487,25 +492,25 @@ of byte code. See the functions `compile-file', `compile-directory' and
 	case OP_DUP:
 	    tmp = TOP;
 	    PUSH(tmp);
-	    break;
+	    goto fetch;
 
 	case OP_SWAP:
 	    tmp = TOP;
 	    TOP = stackp[-1];
 	    stackp[-1] = tmp;
-	    break;
+	    goto fetch;
 
 	case OP_POP:
 	    POP;
-	    break;
+	    goto fetch;
 
 	case OP_NIL:
 	    PUSH(Qnil);
-	    break;
+	    goto fetch;
 
 	case OP_T:
 	    PUSH(Qt);
-	    break;
+	    goto fetch;
 
 	case OP_CONS:
 	    CALL_2(Fcons);
@@ -516,7 +521,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		TOP = rep_CAR(tmp);
 	    else
 		TOP = Qnil;
-	    break;
+	    goto fetch;
 
 	case OP_CDR:
 	    tmp = TOP;
@@ -524,7 +529,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		TOP = rep_CDR(tmp);
 	    else
 		TOP = Qnil;
-	    break;
+	    goto fetch;
 
 	case OP_RPLACA:
 	    CALL_2(Frplaca);
@@ -625,7 +630,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		TOP = Qt;
 	    else
 		TOP = Qnil;
-	    break;
+	    goto fetch;
 
 	case OP_LOR:
 	    tmp = RET_POP;
@@ -680,7 +685,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		TOP = Qt;
 	    else
 		TOP = Qnil;
-	    break;
+	    goto fetch;
 
 	case OP_NUM_EQ:
 	    CALL_2(Fnum_eq);
@@ -749,49 +754,49 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		TOP = Qt;
 	    else
 		TOP = Qnil;
-	    break;
+	    goto fetch;
 
 	case OP_ATOM:
 	    if(!rep_CONSP(TOP))
 		TOP = Qt;
 	    else
 		TOP = Qnil;
-	    break;
+	    goto fetch;
 
 	case OP_CONSP:
 	    if(rep_CONSP(TOP))
 		TOP = Qt;
 	    else
 		TOP = Qnil;
-	    break;
+	    goto fetch;
 
 	case OP_LISTP:
 	    if(rep_CONSP(TOP) || rep_NILP(TOP))
 		TOP = Qt;
 	    else
 		TOP = Qnil;
-	    break;
+	    goto fetch;
 
 	case OP_NUMBERP:
 	    if(rep_INTP(TOP))
 		TOP = Qt;
 	    else
 		TOP = Qnil;
-	    break;
+	    goto fetch;
 
 	case OP_STRINGP:
 	    if(rep_STRINGP(TOP))
 		TOP = Qt;
 	    else
 		TOP = Qnil;
-	    break;
+	    goto fetch;
 
 	case OP_VECTORP:
 	    if(rep_VECTORP(TOP))
 		TOP = Qt;
 	    else
 		TOP = Qnil;
-	    break;
+	    goto fetch;
 
 	case OP_CATCH:
 	    /* This takes two arguments, TAG and THROW-repv.
@@ -834,7 +839,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		TOP = Qt;
 	    else
 		TOP = Qnil;
-	    break;
+	    goto fetch;
 
 	case OP_GET:
 	    CALL_2(Fget);
@@ -942,7 +947,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		TOP = (rep_INT(TOP) == rep_INT(tmp) ? Qt : Qnil);
 	    else
 		TOP = (TOP == tmp ? Qt : Qnil);
-	    break;
+	    goto fetch;
 
 	case OP_MAX:
 	    tmp = RET_POP;
@@ -968,23 +973,23 @@ of byte code. See the functions `compile-file', `compile-directory' and
 
 	case OP_PUSHI0:
 	    PUSH(rep_MAKE_INT(0));
-	    break;
+	    goto fetch;
 
 	case OP_PUSHI1:
 	    PUSH(rep_MAKE_INT(1));
-	    break;
+	    goto fetch;
 
 	case OP_PUSHI2:
 	    PUSH(rep_MAKE_INT(2));
-	    break;
+	    goto fetch;
 
 	case OP_PUSHIM1:
 	    PUSH(rep_MAKE_INT(-1));
-	    break;
+	    goto fetch;
 
 	case OP_PUSHIM2:
 	    PUSH(rep_MAKE_INT(-2));
-	    break;
+	    goto fetch;
 
 	case OP_PUSHI:
 	    arg = FETCH;
@@ -992,17 +997,17 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		PUSH(rep_MAKE_INT(arg));
 	    else
 		PUSH(rep_MAKE_INT(arg - 256));
-	    break;
+	    goto fetch;
 
 	case OP_PUSHIWN:
 	    FETCH2(arg);
 	    PUSH(rep_MAKE_INT(-arg));
-	    break;
+	    goto fetch;
 
 	case OP_PUSHIWP:
 	    FETCH2(arg);
 	    PUSH(rep_MAKE_INT(arg));
-	    break;
+	    goto fetch;
 
 	case OP_BINDOBJ:
 	    tmp = RET_POP;
@@ -1014,7 +1019,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 	    TOP = stackp[-1];
 	    stackp[-1] = stackp[-2];
 	    stackp[-2] = tmp;
-	    break;
+	    goto fetch;
 
 	case OP_MOD:
 	    CALL_2(Fmod);
@@ -1095,12 +1100,20 @@ of byte code. See the functions `compile-file', `compile-directory' and
 	default:
 	    Fsignal(Qerror, rep_LIST_1(rep_VAL(&unknown_op)));
 	}
+
 #ifdef CHECK_STACK_USAGE
         assert (STK_USE <= rep_INT(stkreq));
 #endif
+
+	/* Check if the instruction raised an exception.
+
+	   Checking for !TOP isn't strictly necessary, but I think
+	   there may still be some broken functions that return
+	   rep_NULL without setting rep_throw_value.. */
+
 	if (rep_throw_value || !TOP)
 	{
-	    /* Some form of error occurred. Unbind the binding stack. */
+	    /* Some form of error occurred. Unwind the binding stack. */
 	error:
 	    while(rep_CONSP(bindstack))
 	    {
@@ -1128,10 +1141,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 
 		       The handler can then use the EJMP instruction
 		       to pass control back to the error: label, or
-		       simply continue execution as normal.
-
-		       Note how we remove the bindstack entry before
-		       jumping :-) */
+		       simply continue execution as normal. */
 
 		    stackp = (stackbase - 1) + rep_INT(rep_CDR(item));
 		    PUSH(rep_throw_value);
