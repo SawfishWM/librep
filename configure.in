@@ -77,7 +77,7 @@ AC_CHECK_HEADER(dlfcn.h,
  dnl Flags given to compiler when linking main program
  DL_LDFLAGS=""
  dnl Specific system checks
- case ${host_type} in
+ case ${host} in
    *-linux-*)
      dnl Need -rdynamic to ensure the jade binary exports all symbols
      DL_LDFLAGS="${DL_LDFLAGS} -rdynamic" ;;
