@@ -21,8 +21,8 @@
 #ifndef BYTECODES_H
 #define BYTECODES_H
 
-#define BYTECODE_MAJOR_VERSION 9
-#define BYTECODE_MINOR_VERSION 1
+#define BYTECODE_MAJOR_VERSION 10
+#define BYTECODE_MINOR_VERSION 0
 
 /* Number of bits encoded in each extra opcode forming the argument. */
 #define ARG_SHIFT    8
@@ -227,8 +227,10 @@
 #define OP_MOD 0xbb			/* push (mod pop[1] pop[2]) */
 
 #define OP_MAKE_CLOSURE 0xbc		/* push (make-closure pop[1] pop[2]) */
+#define OP_UNBINDALL_0 0xbd
 #define OP_CLOSUREP 0xbe		/* push (closurep pop[1]) */
 #define OP_BINDENV 0xbf
+#define OP_POP_ALL 0xc0
 
 
 /* Jump opcodes */
