@@ -72,7 +72,7 @@
 				(car sexps))))
 		  (let ((form (condition-case nil
 				  (read-from-string input)
-				(end-of-stream
+				(premature-end-of-stream
 				 (repl-set-pending repl input)
 				 (throw 'return
 					(and input
