@@ -1,4 +1,22 @@
+2000-07-11  John Harper  <john@dcs.warwick.ac.uk>
+
+	* repgdbm.c (Fgdbm_open): check for defined (GDBM_NOLOCK)
+	before using it
+
+2000-07-06  John Harper  <john@dcs.warwick.ac.uk>
+
+	* tuples.c (rep_sweep_tuples): performance tweaks
+
 2000-07-10  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_processes.c, lispcmds.c, lisp.c, continuations.c: use
+	static DEFSTRINGs instead of heap-allocating static C strings
+
+	* numbers.c (rep_get_longlong_int): remember to mpz_clear ()
+	the temporary bignum before exiting (prevents space leak)
+
+	* rep.c: removed inner_main, make rep_call_with_barrier call
+	rep_load_environment directly
 
 	* Makefile.in: include LDFLAGS in the --libs data when creating
 	rep-config

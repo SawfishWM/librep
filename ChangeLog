@@ -1,5 +1,8 @@
 2000-07-10  John Harper  <john@dcs.warwick.ac.uk>
 
+	* configure.in: just use ${host_cpu} when checking for known
+	stack growth directions
+
 	* librep.spec.in: replaced `/usr/info' by `%{_infodir}'
 
 2000-07-06  John Harper  <john@dcs.warwick.ac.uk>
