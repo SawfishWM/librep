@@ -1,3 +1,8 @@
+1999-08-30  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_main.c (usr_signal_handler): now invoked by USR2 as well
+	as USR1. USR2 prints all debug buffers to stderr
+
 1999-08-29  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_processes.c, unix_main.c, test-dl.c, repsdbm.c,
