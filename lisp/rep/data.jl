@@ -129,8 +129,10 @@ exist that have not already been returned."
 (autoload 'string-downcase "rep/data/string-util")
 (autoload 'capitalize-string "rep/data/string-util")
 (autoload 'mapconcat "rep/data/string-util")
+(autoload 'string-replace "rep/data/string-util")
 (autoload 'sort "rep/data/sort")
 
 (export-bindings '(string-upper-case-p string-lower-case-p string-capitalized-p
 		   string-upcase string-downcase capitalize-string
-		   mapconcat sort upcase-table downcase-table flatten-table))
+		   mapconcat string-replace sort upcase-table
+		   downcase-table flatten-table))
