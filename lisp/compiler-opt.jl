@@ -230,6 +230,26 @@
 	  (del-0-1)
 	  (setq keep-going t))
 
+	 ;; pushi-1; sub --> dec
+	 ;; pushi-minus-1; sub --> inc
+	 ;; pushi-1; add --> inc
+	 ;; pushi-minus-1; add --> dec
+	 ;; [ XXX these and more should be handled at a higher level ]
+	 ((and (or (eq (car insn0) (bytecode pushi-1))
+		   (eq (car insn0) (bytecode pushi-minus-1)))
+	       (or (eq (car insn1) (bytecode sub))
+		   (eq (car insn1) (bytecode add))))
+	  (let ((new (if (eq (car insn0) (bytecode pushi-1))
+			 (if (eq (car insn1) (bytecode sub))
+			     (bytecode dec)
+			   (bytecode inc))
+		       (if (eq (car insn1) (bytecode sub))
+			   (bytecode inc)
+			 (bytecode sub)))))
+	    (rplaca insn1 new)
+	    (del-0)
+	    (setq keep-going t)))
+
 	 ;; jmp X; X: --> X:
 	 ((and (eq (car insn0) (bytecode jmp))
 	       (eq (cdr insn0) insn1))
