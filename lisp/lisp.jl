@@ -167,6 +167,17 @@ See also `setq'. Returns the value of the last FORM."
 ;; XXX interpreter somewhat..? :-(
 
 
+;; Misc syntax
+
+(defmacro prog2 args
+  "prog2 FORM1 FORM2 [FORMS...]
+
+Evaluate FORM1 discarding its result, then evaluate FORM2 followed by
+`(progn FORMS...)'. Returns the result of evaluating FORM2."
+
+  (list 'progn (car args) (cons 'prog1 (cdr args))))
+
+
 ;; Function to allow easy creation of autoload stubs
 
 (defun autoload (symbol file &rest extra)
@@ -218,22 +229,20 @@ match the FILE argument to `load'."
 (defun load-all (file)
   "Try to load files called FILE (or FILE.jl, etc) from all directories in the
 LISP load path (except the current directory)."
-  (letrec
-      ((loop (lambda (dirs)
-	       ;; Normally the last entry in load-path is `.' We don't
-	       ;; want to use that. But can't just check if each item
-	       ;; is the current directory since sometimes rep is run
-	       ;; with REPLISPDIR=.
-	       (when dirs
-		 (when (or (cdr dirs) (not (member (car dirs) '("." ""))))
-		   (let
-		       ((full-name (expand-file-name file (car dirs))))
-		     (when (or (file-exists-p full-name)
-			       (file-exists-p (concat full-name ".jl"))
-			       (file-exists-p (concat full-name ".jlc")))
-		       (load full-name nil t))))
-		 (loop (cdr dirs))))))
-    (loop load-path)))
+  (let loop ((dirs load-path))
+    ;; Normally the last entry in load-path is `.' We don't
+    ;; want to use that. But can't just check if each item
+    ;; is the current directory since sometimes rep is run
+    ;; with REPLISPDIR=.
+    (when dirs
+      (when (or (cdr dirs) (not (member (car dirs) '("." ""))))
+	(let
+	    ((full-name (expand-file-name file (car dirs))))
+	  (when (or (file-exists-p full-name)
+		    (file-exists-p (concat full-name ".jl"))
+		    (file-exists-p (concat full-name ".jlc")))
+	    (load full-name nil t))))
+      (loop (cdr dirs)))))
 
 (defmacro eval-when-compile (form)
   "FORM is evaluated at compile-time *only*. The evaluated value is inserted
