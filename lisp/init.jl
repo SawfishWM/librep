@@ -87,8 +87,7 @@ are hard-coded into the byte-code."
   "Defines a function that will be compiled inline to any functions that
 call it. Otherwise exactly the same as defun."
   ;; These actions are also hard-coded into dump.jl
-  `(prog1 (defun ,symbol ,@body)
-     (put ',symbol 'compile-inline ',(cons 'lambda body))))
+  `(defun ,symbol ,@body))
 
 (defmacro function (arg)
   "#'ARG
@@ -496,7 +495,7 @@ When read, the syntax `FOO#BAR' expands to `(structure-ref FOO BAR)'."
 progn or the value given to any matching `throw' form."
   `(call-with-catch ,tag (lambda () ,@body)))
 
-(defun throw (tag value)
+(defun throw (tag &optional value)
   "Performs a non-local exit to the `catch' form waiting for TAG and return
 VALUE from it."
   (raise-exception (cons tag value)))
