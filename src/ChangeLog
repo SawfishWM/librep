@@ -1,3 +1,9 @@
+Thu Jun 18 23:50:37 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_main.c (handle_input, cmd_sit_for, sys_accept_output):
+	stop prematurely if a Lisp error is detected
+	* unix_processes.c (proc_notification): stop on a Lisp error
+
 Tue Jun 16 12:00:24 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_processes.c (run_process): another attempt at fixing the
