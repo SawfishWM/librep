@@ -78,6 +78,13 @@ by loading FILE."
   (unless (boundp symbol)
     (define-value symbol (make-closure (list* 'autoload symbol file extra)))))
 
+(defun autoload-macro (symbol file &rest extra)
+  "Tell the evaluator that the value of the macro SYMBOL will be initialised
+by loading FILE."
+  (unless (boundp symbol)
+    (define-value symbol (cons 'macro (make-closure
+				       (list* 'autoload symbol file extra))))))
+
 
 ;; Hook manipulation
 
