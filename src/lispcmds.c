@@ -1978,14 +1978,14 @@ returned.
 }
 
 DEFUN("call-with-exception-handler", Fcall_with_exception_handler,
-      Scall_with_exception_handler, (repv thunk, repv handler_thunk),
+      Scall_with_exception_handler, (repv thunk, repv handler),
       rep_Subr2) /*
 ::doc:rep.lang.interpreter#call-with-exception-handler::
-call-with-exception-handler THUNK HANDLER-THUNK
+call-with-exception-handler THUNK HANDLER
 
 Call THUNK and return its value. However if an exception of any form
-occurs, call HANDLER-THUNK with a single argument, the exception data,
-and return its value.
+occurs, call HANDLER with a single argument, the exception data, and
+return its value.
 ::end:: */
     /* Non-local exits don't bother with jmp_buf's and the like, they just
        unwind normally through all levels of recursion with a rep_NULL result.
@@ -1995,9 +1995,9 @@ and return its value.
     repv ret;
 
     rep_DECLARE (1, thunk, Ffunctionp (thunk) != Qnil);
-    rep_DECLARE (2, handler_thunk, Ffunctionp (handler_thunk) != Qnil);
+    rep_DECLARE (2, handler, Ffunctionp (handler) != Qnil);
 
-    rep_PUSHGC (gc_handler, handler_thunk);
+    rep_PUSHGC (gc_handler, handler);
     ret = rep_call_lisp0 (thunk);
     rep_POPGC;
     if (ret == rep_NULL)
@@ -2005,7 +2005,7 @@ and return its value.
 	repv data = rep_throw_value;
 	rep_throw_value = rep_NULL;
 	assert (data != rep_NULL);
-	ret = rep_call_lisp1 (handler_thunk, data);
+	ret = rep_call_lisp1 (handler, data);
     }
     return ret;
 }
