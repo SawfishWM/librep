@@ -619,14 +619,20 @@ variable will be set (if necessary) not the local value.
 	}
 
 	/* Only allowed to defvar in restricted environments
-	   if the symbol hasn't yet been defvar'd */
+	   if the symbol hasn't yet been defvar'd or it's weak */
 	spec = search_special_environment (sym);
-	if (spec == 0 && (rep_SYM(sym)->car & rep_SF_DEFVAR))
+	if (spec == 0 && (rep_SYM(sym)->car & rep_SF_DEFVAR)
+	    && !(rep_SYM(sym)->car & rep_SF_WEAK))
+	{
 	    return Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
+	}
 
 	/* Only set the [default] value if its not boundp or
-	   the definition is weak */
-	if(rep_NILP(tmp) || (rep_SYM(sym)->car & rep_SF_WEAK))
+	   the definition is weak and we're currently unrestricted */
+	if(rep_NILP(tmp)
+	   || ((rep_SYM(sym)->car & rep_SF_WEAK)
+	       && !(rep_SYM(sym)->car & rep_SF_WEAK_MOD)
+	       && rep_CDR(rep_special_env) == Qt))
 	{
 	    if(rep_CELL8_TYPEP(rep_SYM(sym)->value, rep_Var))
 		rep_VARFUN(rep_SYM(sym)->value)(val);
