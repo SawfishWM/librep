@@ -80,6 +80,34 @@
 	(if (file-exists-p arg)
 	    (structure () (open scheme) (load arg 'nil 't 't))
 	  (structure () (open scheme) (load arg))))
+       ((string= arg "--help")
+	(format standard-error "\
+usage: %s [OPTIONS...]
+
+where OPTIONS are any of:
+
+    FILE		load the Lisp file FILE (from the cwd if possible,
+			 implies --batch mode)
+
+    --batch		batch mode: process options and exit
+    --interp		interpreted mode: don't load compile Lisp files
+
+    --call FUNCTION	call the Lisp function FUNCTION
+    --f FUNCTION
+
+    --load FILE		load the file of Lisp forms called FILE
+    -l FILE
+
+    --scheme FILE	load the file of Scheme forms called FILE
+    -s FILE		 (implies --batch mode)
+
+    --version		print version details
+    --no-rc		don't load rc or site-init files
+    --quit, -q		terminate the interpreter process\n" program-name)
+	(throw 'quit 0))
+       ((string= arg "--version")
+	(format standard-output "rep version %s\n" rep-version)
+	(throw 'quit 0))
        ((member arg '("--quit" "-q"))
 	(throw 'quit 0))
        (t
