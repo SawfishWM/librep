@@ -105,14 +105,19 @@
 ;;;
 ;;; TODO
 ;;; ====
-;;; Obviously, optimisation of output code. This can be done in two
+
+;;; Obviously, more optimisation of output code. This isdone in two
 ;;; stages, (1) source code transformations, (2) optimisation of
 ;;; intermediate form (basically bytecode, but as a list of operations
 ;;; and symbolic labels, i.e. the basic blocks)
 ;;;
-;;; Optimisation would probably be a lot more profitable if variables
-;;; were lexically scoped, perhaps I should get this working first.
-;;; It shouldn't break anything much, since the compiler will give
+;;; Both (1) and (2) are already being done, but there's probably
+;;; scope for being more aggressive, especially at the source code
+;;; (parse tree) level.
+;;;
+;;; Optimisation would be a lot more profitable if variables were
+;;; lexically scoped, perhaps I should switch to lexical scoping. It
+;;; shouldn't break anything much, since the compiler will give
 ;;; warnings if any funky dynamic-scope tricks are used without the
 ;;; symbols being defvar'd (and therefore declared special/dynamic)
 ;;;
@@ -130,6 +135,9 @@ their position in that file.")
 
 (defvar comp-max-inline-depth 8
   "The maximum nesting of open-coded function applications.")
+
+(defvar comp-no-low-level-optimisations nil)
+(defvar comp-debug nil)
 
 (defvar comp-constant-functions
   '(+ - * / % mod max min 1+ 1- car cdr assoc assq rassoc rassq nth nthcdr
@@ -150,6 +158,7 @@ value when given the same inputs. Used when constant folding.")
 (defvar comp-max-stack 0)		;highest possible stack
 (defvar comp-output nil)		;list of (BYTE . INDEX)
 (defvar comp-output-pc 0)		;INDEX of next byte
+(defvar comp-intermediate-code nil)	;list of (INSN . [ARG]), (TAG . REFS)
 
 ;; Compilation "environment"
 (defvar comp-macro-env			;alist of (NAME . MACRO-DEF)
@@ -362,6 +371,7 @@ is one of these that form is compiled.")
 	      t)))
       (when (file-exists-p temp-file)
 	(delete-file temp-file)))))
+
 ;;;###autoload
 (defun compile-directory (dir-name &optional force-p exclude-list)
   "Compiles all jade-lisp files in the directory DIRECTORY-NAME whose object
@@ -418,11 +428,13 @@ that files which shouldn't be compiled aren't."
 ;; it's out of date
 (defun compile-compiler ()
   (let
-      ((comp-write-docs t)
-       (file (expand-file-name "compiler.jl" lisp-lib-directory)))
-    (when (or (not (file-exists-p (concat file ?c)))
-	      (file-newer-than-file-p file (concat file ?c)))
-      (compile-file file))))
+      ((comp-write-docs t))
+    (mapc #'(lambda (file)
+	      (setq file (expand-file-name file lisp-lib-directory))
+	      (when (or (not (file-exists-p (concat file ?c)))
+			(file-newer-than-file-p file (concat file ?c)))
+		(compile-file file)))
+	  '("compiler.jl" "compiler-opt.jl"))))
 
 ;;;###autoload
 (defun compile-function (function)
@@ -519,7 +531,10 @@ that files which shouldn't be compiled aren't."
        (comp-current-stack 0)
        (comp-max-stack 0)
        comp-output
-       (comp-output-pc 0))
+       (comp-output-pc 0)
+       (comp-intermediate-code nil))
+
+    ;; Do the high-level compilation
     (if comp-current-file
 	(comp-compile-form form)
       ;; Setup comp-defuns and comp-defvars if compile-file hasn't already
@@ -528,6 +543,35 @@ that files which shouldn't be compiled aren't."
 	   (comp-defvars '())
 	   (comp-output-stream nil))
 	(comp-compile-form form)))
+
+    ;; Now we have a [reversed] list of intermediate code
+    (setq comp-intermediate-code (nreverse comp-intermediate-code))
+
+    ;; Unless disabled, run the peephole optimiser
+    (unless comp-no-low-level-optimisations
+      (require 'compiler-opt)
+      (when comp-debug
+	(format standard-error "lap-0 code: %S\n\n" comp-intermediate-code))
+      (setq comp-intermediate-code (comp-peephole-opt comp-intermediate-code)))
+    (when comp-debug
+      (format standard-error "lap-1 code: %S\n\n" comp-intermediate-code))
+
+    ;; Then optimise the constant layout
+    (unless comp-no-low-level-optimisations
+      (require 'compiler-opt)
+      (when comp-debug
+	(format standard-error
+		"original-constants: %S\n\n" comp-constant-alist))
+      (setq comp-intermediate-code
+	    (comp-optimise-constants comp-intermediate-code))
+      (when comp-debug
+	(format standard-error
+		"final-constants: %S\n\n" comp-constant-alist)))
+
+    ;; Now transform the intermediate code to byte codes
+    (comp-assemble-bytecodes)
+    (when comp-debug
+      (format standard-error "lap-2 code: %S\n\n" comp-intermediate-code))
     (when comp-output
       (list 'jade-byte-code (comp-make-code-string) (comp-make-const-vec)
 	    comp-max-stack))))
@@ -661,7 +705,7 @@ that files which shouldn't be compiled aren't."
     (comp-write-op op-nil))
    ((eq form t)
     (comp-write-op op-t))
-   ((and (integerp form) (<= form 32767) (>= form -32768))
+   ((and (integerp form) (<= form 65535) (>= form -65535))
     ;; use one of the pushi instructions
     (cond ((zerop form)
 	   (comp-write-op op-pushi-0))
@@ -674,12 +718,11 @@ that files which shouldn't be compiled aren't."
 	  ((= form -2)
 	   (comp-write-op op-pushi-minus-2))
 	  ((and (<= form 127) (>= form -128))
-	   (comp-write-op op-pushi)
-	   (comp-byte-out (logand form 255)))
+	   (comp-write-op op-pushi (logand form 255)))
+	  ((and (< form 0) (>= form -65535))
+	   (comp-write-op op-pushi-pair-neg (- form)))
 	  (t
-	   (comp-write-op op-pushi-pair)
-	   (comp-byte-out (lsh form -8))
-	   (comp-byte-out (logand form 255)))))
+	   (comp-write-op op-pushi-pair-pos form))))
    (t
     (comp-write-op op-push (comp-add-constant form))))
   (comp-inc-stack))
@@ -779,70 +822,92 @@ that files which shouldn't be compiled aren't."
 
 ;; Output one byte
 (defsubst comp-byte-out (byte)
-  (setq comp-output (cons (cons byte comp-output-pc) comp-output)
-	comp-output-pc (1+ comp-output-pc)))
+  (setq comp-output (cons (cons byte comp-output-pc) comp-output))
+  (setq comp-output-pc (1+ comp-output-pc)))
 
+(defun comp-insn-out (insn)
+  (let
+      ((opcode (car insn))
+       (arg (cdr insn)))
+    (cond
+     ((eq opcode 'label)
+      ;; backpatch already output instructions referrring to this label
+      (mapc #'(lambda (addr)
+		(setq comp-output (cons (cons (lsh comp-output-pc -8) addr)
+					comp-output))
+		(setq comp-output (cons (cons (logand comp-output-pc 255)
+					      (1+ addr)) comp-output)))
+	    arg)
+      ;; set the address of the label
+      (rplacd insn comp-output-pc))
+     ((>= opcode op-last-with-args)
+      ;; ``normal'' one-byte insn encoding
+      (comp-byte-out opcode)
+      (when arg
+	(when (and (eq (car arg) 'label) (numberp (cdr arg)))
+	  ;; label whose address is already known
+	  (setq arg (cdr arg)))
+	(cond ((eq (car arg) 'label)
+	       ;; label whose address isn't yet known
+	       ;; add the address for backpatching
+	       (rplacd arg (cons comp-output-pc (cdr arg)))
+	       ;; step over waiting slot
+	       (setq comp-output-pc (+ comp-output-pc 2)))
+	      ((memq opcode comp-two-byte-insns)
+	       (if (< arg 256)
+		   (comp-byte-out arg)
+		 (error "Argument overflow in two-byte insn: %d" opcode)))
+	      ((memq opcode comp-three-byte-insns)
+	       (if (< arg 65536)
+		   (progn
+		     (comp-byte-out (lsh arg -8))
+		     (comp-byte-out (logand arg 255)))
+		 (error "Argument overflow in three-byte insn: %d" opcode)))
+	      (t
+	       (error "Spurious argument given to insn: %d" opcode)))))
+     (t
+      ;; insn with encoded argument
+      (cond ((<= arg comp-max-1-byte-arg)
+	     (comp-byte-out (+ opcode arg)))
+	    ((<= arg comp-max-2-byte-arg)
+	     (comp-byte-out (+ opcode 6))
+	     (comp-byte-out arg))
+	    ((<= arg comp-max-3-byte-arg)
+	     (comp-byte-out (+ opcode 7))
+	     (comp-byte-out (lsh arg -8))
+	     (comp-byte-out (logand arg 255)))
+	    (t
+	     (error "Argument overflow in insn: %d" opcode)))))))
+
+(defun comp-assemble-bytecodes ()
+  (mapc 'comp-insn-out comp-intermediate-code))
+    
+
+;; Managing the intermediate codes
+  
 ;; Output one opcode and its optional argument
-(defun comp-write-op (opcode &optional arg)
-  (cond
-   ((null arg)
-    (comp-byte-out opcode))
-   ((<= arg comp-max-1-byte-arg)
-    (comp-byte-out (+ opcode arg)))
-   ((<= arg comp-max-2-byte-arg)
-    ;; 2-byte instruction
-    (comp-byte-out (+ opcode 6))
-    (comp-byte-out arg))
-   ((<= arg comp-max-3-byte-arg)
-    ;; 3-byte instruction
-    (comp-byte-out (+ opcode 7))
-    (comp-byte-out (lsh arg -8))
-    (comp-byte-out (logand arg 0xff)))
-   (t
-    (comp-error "Opcode overflow!"))))
+(defmacro comp-write-op (opcode &optional arg)
+  `(setq comp-intermediate-code (cons (cons ,opcode ,arg)
+				      comp-intermediate-code)))
 
 ;; Create a new label
 (defmacro comp-make-label ()
-  ;; a label is, (PC-OF-LABEL . (LIST-OF-REFERENCES))
-  '(cons nil nil))
+  ;; a label is either (label . nil) or (label . (CODE-REFS...))
+  ;; or (label BYTE-ADDRESS)
+  `(cons 'label nil))
 
 ;; Arrange for the address of LABEL to be pushed onto the stack
-(defun comp-push-label-addr (label)
-  (if (car label)
-      ;; Address is already known
-      (comp-compile-constant (car label))
-    ;; Unknown address, so add to list for back-patcher
-    (comp-byte-out op-pushi-pair)
-    (rplacd label (cons comp-output-pc (cdr label)))
-    (comp-inc-stack)))
+(defmacro comp-push-label-addr (label)
+  `(progn
+     (comp-write-op op-pushi-pair-pos ,label)
+     (comp-inc-stack)))
 
-;; Output a branch instruction to the label LABEL, if LABEL has not been
-;; located yet this branch is recorded for later backpatching.
 (defun comp-compile-jmp (opcode label)
-  (comp-byte-out opcode)
-  (cond
-    ((numberp (car label))
-      ;; we know the final offset of this label so use it
-      (comp-byte-out (lsh (car label) -8))
-      (comp-byte-out (logand (car label) 0xff)))
-    (t
-      ;; offset unknown, show we need it patched in later
-      (rplacd label (cons comp-output-pc (cdr label)))
-      (setq comp-output-pc (+ comp-output-pc 2)))))
+  (comp-write-op opcode label))
 
-;; Set the address of the label LABEL, any references to it are patched
-;; with its address.
-(defun comp-set-label (label)
-  (when (> comp-output-pc comp-max-3-byte-arg)
-    (comp-error "Jump destination overflow!"))
-  (rplaca label comp-output-pc)
-  (setq label (cdr label))
-  (while (consp label)
-    (setq comp-output (cons (cons (lsh comp-output-pc -8) (car label))
-			    (cons (cons (logand comp-output-pc 0xff)
-					(1+ (car label)))
-				  comp-output))
-	  label (cdr label))))
+;; Set the address of the label LABEL to the current pc
+(defmacro comp-set-label (label)
+  `(setq comp-intermediate-code (cons ,label comp-intermediate-code)))
 
 
 ;; Constant folding
@@ -910,6 +975,16 @@ that files which shouldn't be compiled aren't."
     (setq form (cdr form))
     (while form
       (setq list (cons `(set-default ',(car form) ,(nth 1 form)) list)
+	    form (nthcdr 2 form)))
+    (cons 'progn (nreverse list))))
+
+(put 'setq 'compile-transform 'comp-trans-setq)
+(defun comp-trans-setq (form)
+  (let
+      (list)
+    (setq form (cdr form))
+    (while form
+      (setq list (cons `(set ',(car form) ,(nth 1 form)) list)
 	    form (nthcdr 2 form)))
     (cons 'progn (nreverse list))))
 
@@ -1020,17 +1095,27 @@ that files which shouldn't be compiled aren't."
   (comp-write-op op-pop)
   (comp-dec-stack))
 
-(put 'setq 'compile-fun 'comp-compile-setq)
-(defun comp-compile-setq (form)
-  (setq form (cdr form))
-  (while (and (consp form) (consp (cdr form)))
-    (comp-compile-form (car (cdr form)))
-    (comp-test-varref (car form))
-    (comp-write-op op-setq (comp-add-constant (car form)))
-    (when (consp (nthcdr 2 form))
-      (comp-write-op op-pop)
-      (comp-dec-stack))
-    (setq form (nthcdr 2 form))))
+(put 'set 'compile-fun 'comp-compile-set)
+(put 'fset 'compile-fun 'comp-compile-set)
+(defun comp-compile-set (form)
+  (let
+      ((fun (car form))
+       (sym (nth 1 form))
+       (val (nth 2 form)))
+    (if (and (eq fun 'set) (comp-constant-p sym))
+	;; use setq
+	(progn
+	  (setq sym (comp-constant-value sym))
+	  (comp-test-varref sym)
+	  (comp-compile-form val)
+	  (comp-write-op op-dup)
+	  (comp-inc-stack)
+	  (comp-write-op op-setq (comp-add-constant sym))
+	  (comp-dec-stack))
+      (comp-compile-form sym)
+      (comp-compile-form val)
+      (comp-write-op (if (eq fun 'set) op-set op-fset))
+      (comp-dec-stack))))
 
 ;; This compiles an inline lambda, i.e. FUN is something like
 ;; (lambda (LAMBDA-LIST...) BODY...)
@@ -1513,7 +1598,7 @@ that files which shouldn't be compiled aren't."
 (defun comp-compile-0-args (form)
   (when (cdr form)
     (comp-warning "All parameters to %s ignored" (car form)))
-  (comp-write-op (get (car form) 'compile-opcode) 0)
+  (comp-write-op (get (car form) 'compile-opcode))
   (comp-inc-stack))
 
 ;; Instruction taking 1 arg on the stack
@@ -1521,7 +1606,7 @@ that files which shouldn't be compiled aren't."
   (when (nthcdr 2 form)
     (comp-warning "More than one parameter to %s; rest ignored" (car form)))
   (comp-compile-form (nth 1 form))
-  (comp-write-op (get (car form) 'compile-opcode) 0))
+  (comp-write-op (get (car form) 'compile-opcode)))
 
 ;; Instruction taking 2 args on the stack
 (defun comp-compile-2-args (form)
@@ -1529,7 +1614,7 @@ that files which shouldn't be compiled aren't."
     (comp-warning "More than two parameters to %s; rest ignored" (car form)))
   (comp-compile-form (nth 1 form))
   (comp-compile-form (nth 2 form))
-  (comp-write-op (get (car form) 'compile-opcode) 0)
+  (comp-write-op (get (car form) 'compile-opcode))
   (comp-dec-stack))
 
 ;; Instruction taking 3 args on the stack
@@ -1539,7 +1624,7 @@ that files which shouldn't be compiled aren't."
   (comp-compile-form (nth 1 form))
   (comp-compile-form (nth 2 form))
   (comp-compile-form (nth 3 form))
-  (comp-write-op (get (car form) 'compile-opcode) 0)
+  (comp-write-op (get (car form) 'compile-opcode))
   (comp-dec-stack 2))
 
 ;; Compile a form `(OP ARG1 ARG2 ARG3 ...)' into as many two argument
@@ -1614,10 +1699,6 @@ that files which shouldn't be compiled aren't."
 ;; speed
 
 (progn
-  (put 'set 'compile-fun 'comp-compile-2-args)
-  (put 'set 'compile-opcode op-set)
-  (put 'fset 'compile-fun 'comp-compile-2-args)
-  (put 'fset 'compile-opcode op-fset)
   (put 'cons 'compile-fun 'comp-compile-2-args)
   (put 'cons 'compile-opcode op-cons)
   (put 'car 'compile-fun 'comp-compile-1-args)
