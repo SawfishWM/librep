@@ -28,8 +28,9 @@
 #endif
 
 _PR void lispcmds_init(void);
+_PR VALUE sym_or, sym_and;
+_PR VALUE sym_load_path, sym_after_load_alist, sym_lisp_lib_dir;
 
-_PR VALUE sym_load_path;
 DEFSTRING(lisp_lib_dir, LISP_LIB_DIR);
 DEFSTRING(site_lisp_dir, SITE_LISP_DIR);
 DEFSTRING(div_zero, "Divide by zero");
