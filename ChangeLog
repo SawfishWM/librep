@@ -1,3 +1,8 @@
+2000-08-29    <john@dcs.warwick.ac.uk>
+
+	* librep.spec.in: librep-devel requires exactly @version@ of
+	librep package
+
 2000-08-17  John Harper  <john@dcs.warwick.ac.uk>
 
 	* configure.in: add -Wpointer-arith when gcc, only add
