@@ -1,4 +1,4 @@
-;; threads.jl -- first attempt at cooperative multi-threading
+;; threads.jl -- some thread utilities
 ;; Copyright (C) 2000 John Harper <john@dcs.warwick.ac.uk>
 
 ;; $Id$
@@ -21,66 +21,10 @@
 
 (provide 'threads)
 
-;; Commentary:
-
-;; This module uses rep's continuations to provide a simple threading
-;; mechanism. It really is _very_ simple, probably needs more work to
-;; allow useful work to be done
-
-;; Here's an example using them:
-
-;; (require 'threads)
-;;
-;; (defun thread-fun (id)
-;;   (let
-;;       ((index 0))
-;;     (while t
-;;       (format standard-output "thread-%s: %8d\n" id index)
-;;       (setq index (1+ index))
-;;       (thread-yield))))
-;;
-;; (setq thread-1 (make-thread (lambda () (thread-fun 1)) 'thread-1))
-;; (setq thread-2 (make-thread (lambda () (thread-fun 2)) 'thread-2))
-;;
-;; (thread-invoke)
-
-
-;; mutexes
-
-;; Each mutex is (mutex [OWNING-THREAD [BLOCKED-THREADS...]])
-
-(defun make-mutex ()
-  "Create and return a mutex object. No thread will own the new mutex."
-  (list 'mutex))
-
-(defun mutexp (arg)
-  "Return `t' if ARG is a mutex object."
-  (eq (car arg) 'mutex))
-
-(defun obtain-mutex (mtx)
-  "Obtain the mutex MTX for the current thread. Will suspend the current
-thread until the mutex is available."
-  (if (null (cdr mtx))
-      (rplacd mtx (list current-thread))
-    (rplacd mtx (nconc (rplacd mtx) (list current-thread)))
-    (thread-suspend (current-thread))))
-
-(defun maybe-obtain-mutex (mtx)
-  "Attempt to obtain mutex MTX for the current thread without blocking.
-Returns `t' if able to obtain the mutex, `nil' otherwise."
-  (if (cdr mtx)
-      nil
-    (obtain-mutex mtx)
-    t))
-
-(defun release-mutex (mtx)
-  "Release the mutex object MTX (which should have previously been obtained
-by the current thread). Returns `t' if the mutex has no new owner."
-  (or (eq (cdr mtx) (current-thread))
-      (error "Not owner of mutex: %S" mtx))
-  (rplacd mtx (cddr mtx))
-  (if (cdr mtx)
-      (progn
-	(thread-wake (cadr mtx))
-	nil)
-    t))
+(defmacro with-threads-blocked (&rest forms)
+  "Evaluate `(progn FORMS)' with thread preemption disabled."
+  `(unwind-protect
+       (progn
+	 (thread-forbid)
+	 ,@forms)
+     (thread-permit)))
