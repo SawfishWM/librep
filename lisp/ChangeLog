@@ -1,3 +1,7 @@
+2000-03-24  John Harper  <john@dcs.warwick.ac.uk>
+
+	* remote-ftp.jl: some lisp-1 fixes
+
 2000-03-21  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lisp.jl (call-with-current-continuation): just define-value

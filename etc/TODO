@@ -43,8 +43,8 @@ Outstanding bugs
  ! compiler tail-recursion elimination doesn't figure when the binding
    has been changed; e.g. (let loop ((foo t)) (setq loop print) (loop foo))
 
-   need to check for setq's on lexical variables... possibly
-   disallow/deprecate `set'ing non-global lexical bindings
+   need to check for setq's on lexical variables... also need to only
+   allow set/define-value to modify special variables
 
 
 General programming tasks:
