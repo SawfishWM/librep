@@ -30,65 +30,77 @@
     condition-case cons consp const-variable-p copy-sequence
     copy-stream current-time current-time-string default-boundp
     default-value defconst defmacro defsubst defun defvar delete
-    delete-if delete-if-not delq digit-char-p documentation elt eq eql
-    equal error eval eval-when-compile expand-last-match fboundp
-    featurep filter fix-time flet fmakunbound format fset funcall
-    function functionp garbage-collect gensym get
+    delete-if delete-if-not delete-timer delq digit-char-p
+    documentation elt eq eql equal error eval eval-when-compile
+    expand-last-match fboundp featurep filter fix-time flet fmakunbound
+    format fset funcall function functionp garbage-collect gensym get
     get-output-stream-string getenv identity if integerp interactive
     last length let let* list list* logand logior lognot logxor
-    lower-case-p lsh macroexpand macrolet macrop make-list make-string
-    make-string-input-stream make-string-output-stream make-symbol
-    make-vector makunbound mapc mapcar match-end match-start max member
-    memq message min mod nconc nop not nreverse nth nthcdr null numberp
-    or prin1 prin1-to-string princ print prog1 prog2 progn put quote
-    quote-regexp random rassoc rassq read read-char read-chars
-    read-from-string read-line reverse rplaca rplacd sequencep set
-    set-default setcar setcdr setplist setq setq-default signal sit-for
-    sleep-for sort space-char-p special-form-p special-variable-p
-    streamp string-equal-p string-head-eq string-less-p
-    string-looking-at string-match string< string= stringp subr-name
-    subrp substring symbol-function symbol-name symbol-plist
-    symbol-value symbolp system-name throw time-later-p
-    translate-string unless unwind-protect upper-case-p user-full-name
-    user-login-name vector vectorp when while with-object write zerop))
+    lower-case-p lsh macroexpand macrolet macrop make-closure make-list
+    make-string make-string-input-stream make-string-output-stream
+    make-symbol make-vector makunbound mapc mapcar match-end
+    match-start max member memq message min mod nconc nop not nreverse
+    nth nthcdr null numberp or prin1 prin1-to-string princ print prog1
+    prog2 progn put quote quote-regexp random rassoc rassq read
+    read-char read-chars read-from-string read-line reverse rplaca
+    rplacd sequencep set set-default set-timer setcar setcdr setplist
+    setq setq-default signal sit-for sleep-for sort space-char-p
+    special-form-p special-variable-p streamp string-equal-p
+    string-head-eq string-less-p string-looking-at string-match string<
+    string= stringp subr-name subrp substring symbol-function
+    symbol-name symbol-plist symbol-value symbolp system-name throw
+    time-later-p translate-string unless unwind-protect upper-case-p
+    user-full-name user-login-name vector vectorp when while
+    with-object write zerop))
 
 (defvar gaol-redefined-functions
-  '((require . gaol:require)))
+  '((require . gaol:require)
+    (make-timer . gaol:make-timer)))
 
 (defvar gaol-safe-specials
-  '(nil t batch-mode downcase-table features flatten-table
+  '(nil t batch-mode downcase-table features file-handler-alist flatten-table
     operating-system rep-version upcase-table load-filename))
 
-(defvar gaol-safe-features nil)
+(defvar gaol-safe-features '(timers))
+
+(defvar gaol-safe-file-handlers '(tilde-file-handler))
 
 
 ;; building the actual environments
 
 (defvar gaol-function-env nil)
+(defvar gaol-fenv-built nil)
 
 (defun gaol-rebuild-environment ()
-  (setq gaol-function-env (nconc (mapcar #'(lambda (sym)
-					     (cons sym (symbol-function sym)))
-					 gaol-safe-functions)
-				 (mapcar #'(lambda (cell)
-					     (cons (car cell)
-						   (symbol-function
-						    (cdr cell))))
-					 gaol-redefined-functions))))
+  (let
+      ((env (nconc (mapcar #'(lambda (sym)
+			       (cons sym (and (fboundp sym)
+					      (symbol-function sym))))
+			   gaol-safe-functions)
+		   (mapcar #'(lambda (cell)
+			       (cons (car cell)
+				     (symbol-function
+				      (cdr cell))))
+			   gaol-redefined-functions))))
+    (if gaol-function-env
+	(progn
+	  ;; affect existing environments
+	  (rplaca gaol-function-env (car env))
+	  (rplacd gaol-function-env (cdr env)))
+      (setq gaol-function-env env))
+    (setq gaol-fenv-built t)))
 
 
 ;; public environment mutators
 
 ;;;###autoload
 (defun gaol-add-function (fun)
-  (setq gaol-function-env nil)
-  ;; use nconc to affect existing environments
+  (setq gaol-fenv-built nil)
   (setq gaol-safe-functions (nconc gaol-safe-functions (list fun))))
 
 ;;;###autoload
 (defun gaol-replace-function (fun def)
-  (setq gaol-function-env nil)
-  ;; use nconc to affect existing environments
+  (setq gaol-fenv-built nil)
   (setq gaol-redefined-functions (nconc gaol-redefined-functions
 					(list (cons fun def)))))
 
@@ -107,7 +119,7 @@
 ;; create a piece of code that when evaluate will evaluate FORM in
 ;; a secure environment
 (defun gaol-trampoline (form)
-  (unless gaol-function-env
+  (unless gaol-fenv-built
     (gaol-rebuild-environment))
   `(save-environment
     (set-variable-environment nil)
@@ -127,4 +139,11 @@
 (defun gaol:require (feature)
   (unless (memq feature gaol-safe-features)
     (error "Gaolled code trying to require %s" feature))
-  (require feature))
+  (require feature)
+  (gaol-rebuild-environment))
+
+(defun gaol:make-timer (fun &optional secs msecs)
+  (unless (closurep fun)
+    (error "Restricted code can only pass closures to make-timer"))
+  (require 'timers)
+  (make-timer fun secs msecs))
