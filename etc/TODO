@@ -27,6 +27,8 @@ Outstanding bugs
 
  ! it's impossible for scripts to present their own --help option
 
+ ! non-fixnum numbers can't be dumped
+
 
 General programming tasks:
 ==========================

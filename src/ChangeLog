@@ -1,5 +1,7 @@
 2000-03-01  John Harper  <john@dcs.warwick.ac.uk>
 
+	* misc.c (Fsystem): given an interactive decl
+
 	* repgdbm.c: new file, binding for GDBM. Mostly compatible with
 	sdbm binding
 

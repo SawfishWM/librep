@@ -1,5 +1,8 @@
 2000-03-01  John Harper  <john@dcs.warwick.ac.uk>
 
+	* dump.jl: dump strings correctly again (still doesn't handle
+	non-fixnum numbers though)
+
 	* lisp-doc.jl: use GDBM instead of SDBM (no data size limits)
 
 2000-02-29  John Harper  <john@dcs.warwick.ac.uk>

@@ -23,7 +23,7 @@ top_builddir=.
 ALL_SUBDIRS = intl src lisp man
 INSTALL_SUBDIRS = src lisp man
 
-all : build.h rules.mk DOC.dir
+all : build.h rules.mk DOC
 	set -e; for dir in $(ALL_SUBDIRS); do \
 	  [ -d $$dir ] && ( cd $$dir && $(MAKE) $@ ); \
 	done
@@ -41,8 +41,7 @@ install : all installdirs
 	set -e; for dir in $(INSTALL_SUBDIRS); do \
 	  ( cd $$dir && $(MAKE) $@ ); \
 	done
-	$(INSTALL_DATA) DOC.pag $(DESTDIR)$(repdir)/$(version)
-	$(INSTALL_DATA) DOC.dir $(DESTDIR)$(repdir)/$(version)
+	$(INSTALL_DATA) DOC $(DESTDIR)$(repdir)/$(version)
 	$(INSTALL_SCRIPT) libtool $(DESTDIR)$(repcommonexecdir)
 	$(INSTALL_DATA) rules.mk $(DESTDIR)$(repcommonexecdir)
 	@echo "---------------------------------------------------------"
@@ -65,7 +64,7 @@ uninstall :
 	rm -f $(DESTDIR)$(repcommonexecdir)/libtool
 	rm -f $(DESTDIR)$(aclocaldir)/rep.m4
 
-DOC.dir : repdoc
+DOC : repdoc
 	src/repdoc DOC `find . -name '*.c' -print`
 
 repdoc :
@@ -84,14 +83,14 @@ clean :
 	-set -e; for dir in $(ALL_SUBDIRS); do \
 	  [ -d $$dir ] && ( cd $$dir && $(MAKE) $@ ); \
 	done
-	rm -f *~ NEWS DOC.* TAGS build.h
+	rm -f *~ NEWS DOC TAGS build.h
 
 realclean :
 	-set -e; for dir in $(ALL_SUBDIRS); do \
 	  [ -d $$dir ] && ( cd $$dir && $(MAKE) $@ ); \
 	done
 	rm -f config.cache config.h config.log config.status Makefile libtool
-	rm -f *~ NEWS DOC.* TAGS build.h rules.mk librep.spec
+	rm -f *~ NEWS DOC TAGS build.h rules.mk librep.spec
 
 TAGS :
 	etags --language=c `find . -name '*.[ch]' -print` \

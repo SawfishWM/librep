@@ -531,6 +531,7 @@ extern int rep_value_cmp(repv, repv);
 extern void rep_princ_val(repv, repv);
 extern void rep_print_val(repv, repv);
 extern repv rep_null_string(void);
+extern repv rep_box_string (char *ptr, long len);
 extern repv rep_make_string(long);
 extern repv rep_string_dupn(const u_char *, long);
 extern repv rep_string_dup(const u_char *);
