@@ -1,3 +1,16 @@
+1998-08-30  John Harper  <john@dcs.warwick.ac.uk>
+
+	* glyphs.c (make_window_glyphs): reload the glyph-table each
+	time the current extent changes
+
+1998-08-29  John Harper  <john@dcs.warwick.ac.uk>
+
+	* views.c (cmd_set_status_message): deleted this function
+	* edit.h (VW): deleted vw_StatusOverride field
+
+	* extent.c (cmd_extent_get, cmd_extent_put, cmd_extent_set):
+	moved the EXTENT argument to be first instead of last
+
 1998-08-28  John Harper  <john@dcs.warwick.ac.uk>
 
 	* main.c (on_idle): only call idle-hook once per idle period

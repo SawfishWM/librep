@@ -1,3 +1,37 @@
+1998-08-31  John Harper  <john@dcs.warwick.ac.uk>
+
+	* diff.jl: new file, visual diff mode. Commands `diff',
+	`diff-buffers', `diff-backup' and `diff-auto-save'.
+
+	* replace.jl (query-replace, replace-all): put quotes around
+	the search string when prompting for its replacement
+
+	* help.jl (describe-function): run substitute-command-keys over
+	the documentation string
+
+1998-08-30  John Harper  <john@dcs.warwick.ac.uk>
+
+	* info.jl (info-find-node): fix bug with files without indirect
+	lists being reloaded all the time
+
+	* prompt.jl (prompt): set the glyph-table of the title extent
+	to the current glyph table (in case a different table is used
+	for the prompt)
+
+1998-08-29  John Harper  <john@dcs.warwick.ac.uk>
+
+	* prompt.jl (prompt-start-of-line): new command, bound to `C-a'
+	in prompts
+
+	* windows.jl (enlarge-view): fix bug of not being able to
+	enlarge minibuffer (unless more than two views are present)
+
+	* prompt.jl: don't use set-status-message to display title.
+	Instead insert the title at the beginning of the prompt,
+	covered by a read-only extent (with prompt-title-face).
+	Also enlarge the minibuffer to two lines temporarily if it's a
+	single line (to avoid being clobbered by messages)
+
 1998-08-28  John Harper  <john@dcs.warwick.ac.uk>
 
 	* yacc-mode.jl: new major mode, uses indented-text for yacc

@@ -214,4 +214,9 @@
 (autoload 'dict-lookup "dict" t)
 (autoload 'minor-major-mode "minor-major" t)
 (autoload 'yacc-mode "yacc-mode" t)
+(autoload 'diff "diff" t)
+(autoload 'diff-backup "diff" t)
+(autoload 'diff-auto-save "diff" t)
+(autoload 'diff-buffers "diff" t)
+(autoload 'diff-display "diff")
 ;;; ::autoload-end::

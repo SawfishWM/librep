@@ -6,7 +6,7 @@ TODO list for Jade
 Bugs are marked !, things that should be done soon are marked +,
 and more long-term ideas are marked -
 
-Last modified: August 11, 1998
+Last modified: August 30, 1998
 
 
 Outstanding bugs
@@ -35,8 +35,24 @@ Outstanding bugs
    close-file on them (this could be construed a ``feature'' rather
    than a bug?)
 
- ! changing glyph-tables via extents doesn't work; it should (though it
-   will be difficult)
+ ! changing glyph-tables via extents only half works---the
+   make_window_glyphs function reloads the glyph table from each newly
+   entered extent, but the uncached_string_glyph_length and char_col
+   functions don't. Fixing this might mean changing the extent cache
+   architecture
+
+ ! revert-buffer'ing a Dired buffer doesn't work---it loads the
+   directory contents into the buffer as _binary_ data!
+
+ ! reconnection to timed out FTP sessions isn't transparent
+
+ ! {x,y}-scroll-step-ratio should be made into normal variables
+
+ ! cursor doesn't change to a box when out of focus
+
+ ! It's relatively easy to blow the stack when regexp matching. Try
+   searching for `/\*(.|\n)*\*/' in a C file with reasonable large
+   comments.
 
 
 General programming tasks:
@@ -66,10 +82,6 @@ General programming tasks:
 
  + Clean up the mail-dir interface. Maybe turn it into a fully-fledged
    address book
-
- + Allow customisation of status line
-
- + Bind right mouse button to extend block
 
  + Make swap-del-bs a runtime option, not compile time
 
