@@ -1,5 +1,7 @@
 2001-06-26  John Harper  <jsh@pixelslut.com>
 
+	* rep/net/rpc.jl (call-with-rpc-servant): new function
+
 	* rep/net/rpc.jl: misc changes. Added support for global
 	servant ids (prefixed with ip address and port number)
 

@@ -79,6 +79,7 @@
 	    deregister-rpc-server
 	    make-rpc-servant
 	    destroy-rpc-servant
+	    call-with-rpc-servant
 	    make-rpc-proxy
 	    servant-id->global-id
 	    global-id->rpc-proxy)
@@ -237,6 +238,12 @@
 
   (define (destroy-rpc-servant id)
     (table-unset servant-table id))
+
+  (define (call-with-rpc-servant impl callback)
+    (let ((id (make-rpc-servant impl)))
+      (unwind-protect
+	  (callback id)
+	(destroy-rpc-servant id))))
 
 ;;; proxies
 
