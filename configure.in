@@ -222,10 +222,16 @@ if test ${jade_cv_sys_dev_pty} != no; then
 fi
 
 dnl Try to find the aclocal directory for installation
+aclocaldir=none
+AC_ARG_WITH(aclocaldir,
+  [  --with-aclocaldir=DIR   Directory in which to install autoconf macros],
+  aclocaldir=$withval)
 AC_MSG_CHECKING([for aclocal directory])
-aclocaldir="`aclocal --print-ac-dir`"
-if test "x${aclocaldir}" = "x"; then
-  aclocaldir='${datadir}/aclocal'
+if test "$aclocaldir" = none; then
+  aclocaldir="`aclocal --print-ac-dir`"
+  if test "x${aclocaldir}" = "x"; then
+    aclocaldir='${datadir}/aclocal'
+  fi
 fi
 AC_MSG_RESULT([${aclocaldir}])
 AC_SUBST(aclocaldir)
