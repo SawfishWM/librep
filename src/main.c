@@ -169,7 +169,7 @@ inner_main(int argc, char **argv)
     main_init();
     misc_init();
     movement_init();
-    refresh_init();
+    redisplay_init();
     streams_init();
     undo_init();
     views_init();
@@ -187,7 +187,6 @@ inner_main(int argc, char **argv)
 	   && (res = cmd_load(arg, sym_nil, sym_nil, sym_nil)))
 	{
 	    rc = 0;
-	    cursor(curr_vw, CURS_ON);
 	    res = event_loop();
 	}
 	else if(throw_value && VCAR(throw_value) == sym_quit)
@@ -302,12 +301,7 @@ recursive-edit
 Enter a new recursive-edit.
 ::end:: */
 {
-    VALUE res;
-    cursor(curr_vw, CURS_ON);
-    res = event_loop();
-    if(curr_vw)
-	cursor(curr_vw, CURS_OFF);
-    return(res);
+    return event_loop();
 }
 
 _PR VALUE cmd_recursion_depth(void);
@@ -319,7 +313,7 @@ Returns the number of recursive-edit's deep we are, zero signifies the
 original level.
 ::end:: */
 {
-    return(MAKE_INT(recurse_depth));
+    return MAKE_INT(recurse_depth);
 }
 
 void
