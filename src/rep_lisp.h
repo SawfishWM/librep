@@ -43,13 +43,13 @@
 /* Lisp values. */
 
 /* A `repv' is a lisp value, perhaps a pointer to an object, but not a real
-   pointer; it's lowest three bits define its type. */
+   pointer; it's two lowest bits define its type. */
 typedef unsigned rep_PTR_SIZED_INT repv;
 
-/* The value of this definition must be known by the preprocessor. */
+/* The number of bits in the lisp value type. */
 #define rep_VALUE_BITS rep_PTR_SIZED_INT_BITS
 
-/* Get the integer constant X in the value type */
+/* Get the integer constant X in the lisp value type */
 #define rep_VALUE_CONST(x) rep_CONCAT(x, rep_PTR_SIZED_INT_SUFFIX)
 
 
@@ -59,28 +59,39 @@ typedef unsigned rep_PTR_SIZED_INT repv;
    except during GC. If bit one is set the object is a 30-bit signed
    integer, with the data bits stored in the pointer as bits 2->31.
 
-   If bit one is clear the repv is a pointer to a "cell", all objects
-   apart from integers are represented by various types of cells.
-   Every cell has a repv as its first element, the lowest bits of this
-   repv define the actual type of the cell.
+   Otherwise (i.e. bit 1 of the pointer is clear), the value is a
+   pointer to a "cell"; all objects other than integers are represented
+   by various types of cells. Every cell has a repv as its first
+   element (called the car), the lowest bits of this define the actual
+   type of the cell.
 
-   If bit zero is unset, the cell is a cons, a pair of two values the
-   car and the cdr (the GC mark bit of the cons is bit zero of the cdr).
+   If bit zero of the car is unset, the cell is a cons, a pair of two
+   values the car and the cdr (the GC mark bit of the cons is bit zero
+   of the cdr).
 
-   If bit zero is set the cell more type information is stored in bits
-   1->6, with bit 7 the mark bit.
+   If bit zero of the car is set, then further type information is
+   stored in bits 1->5 of the car, with bit 5 used to denote statically
+   allocated objects and bit 7 the mark bit.
 
-   XXX Note that some assumptions are made about data object alignment.
-   XXX All Lisp cells _must_ be aligned to four-byte boundaries. If
-   XXX using GNU CC, we'll use the alignment attribute. Otherwise
-   XXX the rep_ALIGN macro needs setting.. */
+   So there are 2^4 possible types of cells. This isn't enough, so bit
+   6 of the car is used to denote a ``cell16'' type -- a cell in which
+   bits 8->15 give the actual type. These cell16 types are allocated
+   dynamically.
+
+   Note that some assumptions are made about data object alignment. All
+   Lisp cells _must_ be aligned to four-byte boundaries. If using GNU
+   CC, we'll use the alignment attribute. Otherwise the rep_ALIGN macro
+   needs setting.. */
 
 #define rep_VALUE_CONS_MARK_BIT	1
 #define rep_VALUE_IS_INT	2
 #define rep_VALUE_INT_SHIFT	2
 #define rep_CELL_ALIGNMENT	4
 
+/* Is repv V a cell type? */
 #define rep_CELLP(v)		(((v) & rep_VALUE_IS_INT) == 0)
+
+/* Is repv V an integer? */
 #define rep_INTP(v)		(!rep_CELLP(v))
 
 /* Convert a repv into a signed integer. */
@@ -129,11 +140,13 @@ typedef unsigned rep_PTR_SIZED_INT repv;
 # ifdef __GNUC__
 #  define rep_ALIGN(d,x) d __attribute__ ((aligned (x)))
 # else
-#  warning "You should really define the rep_lisp.h:rep_ALIGN macro!"
+#  warning "You may need to define the rep_lisp.h:rep_ALIGN macro!"
 #  define rep_ALIGN(d,x)
 # endif
 #endif
 
+/* Align the variable or struct member D to the necessary cell alignment.
+   This is used like: ``rep_ALIGN_CELL(rep_cell foo) = ...'' */
 #define rep_ALIGN_CELL(d) rep_ALIGN(d, rep_CELL_ALIGNMENT)
 
 
@@ -147,10 +160,10 @@ typedef struct {
     /* Data follows, in real objects. */
 } rep_cell;
 
-/* If bit zero is set in the car of a cell, bits 1->4 of the car
-   are type data, bit 5 denotes a cell16 type, bit 6 is set if the object
-   is allocated staticaly, bit 7 is the GC mark bit. This means a maximum
-   of 2^3, i.e. 16, cell8 types.
+/* If bit zero is set in the car of a cell, bits 1->4 of the car are
+   type data, bit 5 denotes a cell16 type, bit 6 is set if the object
+   is allocated statically, bit 7 is the GC mark bit. This means a
+   maximum of 2^3, i.e. 16, cell8 types.
 
    cell16 types have eight extra type bits, bits 8->15, this gives 256
    dynamically allocated type codes: [256 k + 0x21 | k <- [0..255]]. */
@@ -171,19 +184,26 @@ typedef struct {
 /* Build a repv out of a pointer to a Lisp_Normal object */
 #define rep_VAL(x)		((repv)(x))
 
+/* Is V a cons? */
 #define rep_CELL_CONS_P(v)	(!(rep_PTR(v)->car & rep_CELL_IS_8))
 
+/* Is V statically allocated? */
 #define rep_CELL_STATIC_P(v)	(rep_PTR(v)->car & rep_CELL_STATIC_BIT)
 
+/* Is V not an integer or cons? */
 #define rep_CELL8_TYPE(v) 	(rep_PTR(v)->car & rep_CELL8_TYPE_MASK)
 
+/* Get the actual cell8 type of V to T */
 #define rep_SET_CELL8_TYPE(v, t) \
    (rep_PTR(v)->car = (rep_PTR(v)->car & rep_CELL8_TYPE_MASK) | (t))
 
+/* Is V of cell16 type? */
 #define rep_CELL16P(v)		(rep_PTR(v)->car & rep_CELL_IS_16)
 
+/* Get the actual cell16 type of V */
 #define rep_CELL16_TYPE(v)	(rep_PTR(v)->car & rep_CELL16_TYPE_MASK)
 
+/* Set the actual cell16 type of V to T */
 #define rep_SET_CELL16_TYPE(v, t) \
    (rep_PTR(v)->car = (rep_PTR(v)->car & rep_CELL16_TYPE_MASK) | (t))
 
@@ -273,18 +293,14 @@ typedef struct rep_type_struct {
     void (*unbind)(repv obj);
 } rep_type;
 
-/* Each type of Lisp object has a type code associated with it. For
-   normal objects, this code is stored in the `type' field.
+/* Each type of Lisp object has a type code associated with it.
 
-   Note that changing the order of this structure at all, must be
-   complemented by changing values.c:data_types.
-
-   Also note how non-cons cells are given odd values, so that the
+   Note how non-cons cells are given odd values, so that the
    rep_CELL_IS_8 bit doesn't have to be masked out. */
 
-#define rep_Cons	0x00
+#define rep_Cons	0x00		/* made up */
 #define rep_Symbol	0x01
-#define rep_Int		0x02
+#define rep_Int		0x02		/* made up */
 #define rep_Vector	0x03
 #define rep_String	0x05
 #define rep_Compiled	0x07
@@ -330,6 +346,12 @@ typedef struct rep_string_struct {
        (thats about 16.7MB) */
     repv car;
     struct rep_string_struct *next;
+
+    /* This is inefficient since the data for dynamically allocated
+       strings always follows immediately. But there's no way to do the
+       same for statically allocated strings. [I used to use some
+       assembler magic for this purpose, but it's less than portable] */
+
     u_char *data;
 
     /* in a dynamically allocated string, data follows */
@@ -350,7 +372,7 @@ typedef struct rep_string_struct {
 
 #define rep_MAKE_STRING_CAR(len) (((len) << rep_STRING_LEN_SHIFT) | rep_String)
 
-/* True if this string may be written to; generally rep_StaticString types
+/* True if this string may be written to; generally static strings
    are made from C string-constants and usually in read-only storage. */
 #define rep_STRING_WRITABLE_P(s) (!rep_CELL_STATIC_P(s))
 
@@ -432,7 +454,7 @@ typedef struct rep_vector_struct {
 #define rep_VECTORP(v)		rep_CELL8_TYPEP(v, rep_Vector)
 
 #ifdef rep_DUMPED
-# define rep_VECTOR_WRITABLE_P(v)					\
+# define rep_VECTOR_WRITABLE_P(v)				\
     (!(rep_VECT(v) >= (rep_vector *)&rep_dumped_text_start	\
        && rep_VECT(v) < (rep_vector *)&rep_dumped_text_end))
 #else
@@ -455,7 +477,7 @@ typedef struct rep_vector_struct {
 /* Third is constant vector */
 #define rep_COMPILED_CONSTANTS(v) rep_VECTI(v, 2)
 
-/* Fourth is an integer, low 16 bits is stack usage bit 16=macrop */
+/* Fourth is an integer, low 16 bits is stack usage, bit 16=macrop */
 #define rep_COMPILED_STACK(v)	(rep_INT(rep_VECTI(v, 3)) & 0x0ffff)
 #define rep_COMPILED_MACRO_P(v)	(rep_INT(rep_VECTI(v, 3)) & 0x10000)
 
@@ -509,6 +531,11 @@ typedef struct rep_file_struct {
 
 /* Built-in subroutines */
 
+/* Calling conventions are straightforward, returned value is result
+   of function. But returning rep_NULL signifies some kind of abnormal
+   exit (i.e. an error or throw, or ..?), should be treated as
+   rep_INTERRUPTP defined below is */
+
 /* C subroutine, can take from zero to five arguments.  */
 typedef struct {
     repv car;
@@ -528,7 +555,7 @@ typedef struct {
     repv car;
     repv (*fun)();
     repv name;
-    repv int_spec;			/* put this in plist? (jade only) */
+    repv int_spec;			/* put this in plist? */
 } rep_xsubr;
 
 #define rep_XSUBR(v)	((rep_xsubr *) rep_PTR(v))
@@ -590,10 +617,12 @@ typedef struct {
 
 /* Garbage collection definitions */
 
+/* gc macros for cell8/16 values */
 #define rep_GC_CELL_MARKEDP(v)	(rep_PTR(v)->car & rep_CELL_MARK_BIT)
 #define rep_GC_SET_CELL(v)	(rep_PTR(v)->car |= rep_CELL_MARK_BIT)
 #define rep_GC_CLR_CELL(v)	(rep_PTR(v)->car &= ~rep_CELL_MARK_BIT)
 
+/* gc macros for cons values */
 #define rep_GC_CONS_MARKEDP(v)	(rep_CDR(v) & rep_VALUE_CONS_MARK_BIT)
 #define rep_GC_SET_CONS(v)	(rep_CDR(v) |= rep_VALUE_CONS_MARK_BIT)
 #define rep_GC_CLR_CONS(v)	(rep_CDR(v) &= ~rep_VALUE_CONS_MARK_BIT)
@@ -639,15 +668,17 @@ typedef struct rep_gc_n_roots {
     struct rep_gc_n_roots *next;
 } rep_GC_n_roots;
 
-#define rep_POPGC (rep_gc_root_stack = rep_gc_root_stack->next)
+/* Push a root to VAL using ROOT as storage (ROOT is rep_GC_root type) */
 #define rep_PUSHGC(root, val)			\
     do {					\
 	(root).ptr = &(val);			\
 	(root).next = rep_gc_root_stack;	\
 	rep_gc_root_stack = &(root);		\
     } while(0)
+#define rep_POPGC (rep_gc_root_stack = rep_gc_root_stack->next)
 
-#define rep_POPGCN (rep_gc_n_roots_stack = rep_gc_n_roots_stack->next)
+/* Push a root to N values starting at PTR using ROOT as storage
+   (ROOT is rep_GC_n_roots type) */
 #define rep_PUSHGCN(root, ptr, n)		\
     do {					\
 	(root).first = (ptr);			\
@@ -655,11 +686,12 @@ typedef struct rep_gc_n_roots {
 	(root).next = rep_gc_n_roots_stack;	\
 	rep_gc_n_roots_stack = &(root);		\
     } while(0)
+#define rep_POPGCN (rep_gc_n_roots_stack = rep_gc_n_roots_stack->next)
 
 
 /* More other stuff */
 
-/* Keeps a backtrace of all lisp functions called. NOT primitives. */
+/* Keeps a backtrace of all lisp functions called. */
 struct rep_Call {
     struct rep_Call *next;
     repv fun;
