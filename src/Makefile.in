@@ -104,7 +104,7 @@ uninstall :
 	
 rep-config : rep-config.sh
 	$(SHELL) $< "${prefix}" "${libdir}" "${version}" \
-	  "${LIBS} ${GMP_LIBS}" "${repcommonexecdir}">$@
+	  "${LDFLAGS} ${LIBS} ${GMP_LIBS}" "${repcommonexecdir}">$@
 	chmod +x $@
 
 repdoc : repdoc.o
