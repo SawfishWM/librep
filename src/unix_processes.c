@@ -440,9 +440,12 @@ kill_process(struct Proc *pr)
 static int
 get_pty(char *slavenam)
 {
-#ifdef HAVE_PTYS
-# ifdef HAVE_DEV_PTMX
-    int master = open("/dev/ptmx", O_RDWR);
+#if defined(HAVE_PTYS)
+    char c;
+    int master;
+
+# if defined(HAVE_DEV_PTMX) && defined(HAVE_GRANTPT)
+    master = open("/dev/ptmx", O_RDWR);
     if(master >= 0)
     {
 	char *tem;
@@ -456,18 +459,19 @@ get_pty(char *slavenam)
 	}
 	close(master);
     }
-# else
+# endif
+
+# if defined(FIRST_PTY_LETTER)
     /* Assume /dev/ptyXNN and /dev/ttyXN naming system.
        The FIRST_PTY_LETTER gives the first X to try. We try in the 
        sequence FIRST_PTY_LETTER, .., 'z', 'a', .., FIRST_PTY_LETTER.
        Is this worthwhile, or just over-zealous? */
-    char c = FIRST_PTY_LETTER;
+    c = FIRST_PTY_LETTER;
     do {
 	int i;
 	for(i = 0; i < 16; i++)
 	{
 	    struct stat statb;
-	    int master;
 	    sprintf(slavenam, "/dev/pty%c%x", c, i);
 	    if(stat(slavenam, &statb) < 0)
 		goto none;
@@ -483,7 +487,7 @@ get_pty(char *slavenam)
 	    c = 'a';
     } while(c != FIRST_PTY_LETTER);
 none:
-# endif /* !HAVE_DEV_PTMX */
+# endif /* FIRST_PTY_LETTER */
 #endif /* HAVE_PTYS */
 
     /* Couldn't find a pty. Signal an error. */
