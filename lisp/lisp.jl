@@ -63,6 +63,26 @@ FORMS."
   (list 'cond (cons condition nil) (cons 't forms)))
 
 
+;; Features
+
+(defvar features nil
+  "List of features currently loaded by the interpreter.")
+
+(defun featurep (feature)
+  "Return non-nil if FEATURE (a symbol) has been loaded."
+  (memq feature features))
+
+(defun provide (feature)
+  "Mark that FEATURE (a symbol) has been loaded."
+  (setq features (cons feature features)))
+
+(defun require (feature)
+  "If FEATURE (a symbol) hasn't been loaded yet, load it."
+  (unless (featurep feature)
+    (load (symbol-name feature)))
+  feature)
+
+
 ;; Function to allow easy creation of autoload stubs
 
 (when (boundp 'dumped-lisp-libraries)
@@ -192,12 +212,6 @@ string INPUT."
 (defun nop ()
   "A do-nothing command."
   (interactive))
-
-(defmacro function (arg)
-  "Normally the same as `quote'. When being compiled, if ARG is not a symbol
-it causes ARG to be compiled as a lambda expression. This macro is also
-available as the reader shortcut #', i.e. #'foo == (function foo)."
-  (list 'quote arg))
 
 (defun file-name= (name1 name2)
   "Returns t when NAME1 and NAME2 both name the same file."
