@@ -50,7 +50,7 @@ static struct debug_buf *db_chain;
 void *
 db_alloc(char *name, int size)
 {
-    struct debug_buf *db = malloc(DB_SIZE(size));
+    struct debug_buf *db = sys_alloc(DB_SIZE(size));
     if(db == NULL)
     {
 	perror("create_debug_buf");
@@ -80,7 +80,7 @@ db_free(void *_db)
 	}
 	x = &((*x)->next);
     }
-    free(db);
+    sys_free(db);
 }
 
 void
@@ -151,7 +151,7 @@ db_kill(void)
     while(db != NULL)
     {
 	struct debug_buf *next = db->next;
-	free(db);
+	sys_free(db);
 	db = next;
     }
 }
