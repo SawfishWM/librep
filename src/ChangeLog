@@ -1,5 +1,11 @@
 1998-08-26  John Harper  <john@dcs.warwick.ac.uk>
 
+	* extent.c (cmd_extent_start, cmd_extent_end): new functions
+	(cmd_extent_put, cmd_extent_get): special property
+	`local-variables' linked to the `locals' field
+	(cmd_delete_extent): remove the option of deleting individual
+	fragments; this shouldn't be visible
+
 	* extent.c (find_extent): record cache miss statistics
 
 	* x11_windows.c (sys_set_font): for the specified font, try to
