@@ -1175,10 +1175,12 @@ pre_symbols_init(void)
 void
 symbols_init(void)
 {
-    /* fiddly details of initialising the first symbol */
+    /* Fiddly details of initialising the first symbol. We initialise
+       all fields in case it was dumped. */
     sym_nil = cmd_intern(VAL(&str_nil), obarray);
     mark_static(&sym_nil);
     VSYM(sym_nil)->value = sym_nil;
+    VSYM(sym_nil)->function = void_value;
     VSYM(sym_nil)->prop_list = sym_nil;
     VSYM(sym_nil)->car |= SF_CONSTANT;
 
