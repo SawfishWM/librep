@@ -657,6 +657,9 @@ number_cmp (repv v1, repv v2)
 repv
 rep_parse_number (char *buf, u_int len, u_int radix, int sign, u_int type)
 {
+    if (len == 0)
+	goto error;
+
     switch (type)
     {
 	rep_number_z *z;
@@ -706,12 +709,21 @@ rep_parse_number (char *buf, u_int len, u_int radix, int sign, u_int type)
 	    {
 		/* optimize most common case */
 		while ((c = *buf++) != 0)
+		{
+		    if (c < '0' || c > '9')
+			goto error;
 		    value = value * 10 + (c - '0');
+		}
 	    }
 	    else
 	    {
 		while ((c = *buf++) != 0)
-		    value = value * radix + map[toupper(c) - '0'];
+		{
+		    int d = toupper (c) - '0';
+		    if (d < 0 || d >= radix)
+			goto error;
+		    value = value * radix + map[d];
+		}
 	    }
 	    return ((sign > 0)
 		    ? rep_MAKE_INT (value)
@@ -868,6 +880,29 @@ rep_number_foldl (repv args, repv (*op)(repv, repv))
 	{
 	    repv arg = rep_CAR (args);
 	    if (!rep_NUMERICP (arg))
+		return rep_signal_arg_error (arg, i);
+	    sum = op (sum, arg);
+	    args = rep_CDR (args);
+	    i++;
+	}
+	return sum;
+    }
+    return (rep_CONSP(args) ? rep_signal_arg_error (rep_CAR (args), 1)
+	    : rep_signal_missing_arg (1));
+}
+
+repv
+rep_integer_foldl (repv args, repv (*op)(repv, repv))
+{
+    if (rep_CONSP (args) && rep_INTEGERP (rep_CAR (args)))
+    {
+	repv sum = rep_CAR (args);
+	int i = 2;
+	args = rep_CDR (args);
+	while (rep_CONSP (args))
+	{
+	    repv arg = rep_CAR (args);
+	    if (!rep_INTEGERP (arg))
 		return rep_signal_arg_error (arg, i);
 	    sum = op (sum, arg);
 	    args = rep_CDR (args);
@@ -1200,6 +1235,28 @@ rep_number_min (repv x, repv y)
     else
 	min = (rep_value_cmp(x, y) <= 0) ? x : y;
     return min;
+}
+
+repv
+rep_integer_gcd (repv x, repv y)
+{
+    repv out = promote_dup (&x, &y);
+    if (rep_INTP (x))
+    {
+	/* Euclid's algorithm */
+	long m = rep_INT (x), n = rep_INT (y);
+	m = ABS (m); n = ABS (n);
+	while(m != 0)
+	{
+	    long t = n % m;
+	    n = m;
+	    m = t;
+	}
+	out = rep_MAKE_INT (n);
+    }
+    else
+	mpz_gcd (rep_NUMBER(out,z), rep_NUMBER(x,z), rep_NUMBER(y,z));
+    return out;
 }
 
 DEFUN("+", Fplus, Splus, (repv args), rep_SubrN) /*
@@ -1874,32 +1931,23 @@ signalled (mathematically should return a complex number).
     return out;
 }
 
-DEFUN("gcd", Fgcd, Sgcd, (repv x, repv y), rep_Subr2) /*
+DEFUN("gcd", Fgcd, Sgcd, (repv args), rep_SubrN) /*
 ::doc:gcd::
-gcd X Y
+gcd ...
 
-Return the greatest common divisor of the integers X and Y.
+Return the greatest common divisor of the integer arguments. The result
+is always non-negative. Returns 0 with arguments.
 ::end:: */
 {
-    repv out;
-    rep_DECLARE1 (x, rep_INTEGERP);
-    rep_DECLARE1 (y, rep_INTEGERP);
-    out = promote_dup (&x, &y);
-    if (rep_INTP (x))
+    if (args == Qnil)
+	return rep_MAKE_INT (0);
+    else if (rep_CONSP (args) && rep_CDR (args) == Qnil)
     {
-	/* Euclid's algorithm */
-	long m = rep_INT (x), n = rep_INT (y);
-	while(m != 0)
-	{
-	    long t = n % m;
-	    n = m;
-	    m = t;
-	}
-	out = rep_MAKE_INT (n);
+	rep_DECLARE1 (rep_CAR (args), rep_INTEGERP);
+	return rep_integer_gcd (rep_CAR (args), rep_CAR (args));
     }
     else
-	mpz_gcd (rep_NUMBER(out,z), rep_NUMBER(x,z), rep_NUMBER(y,z));
-    return out;
+	return rep_integer_foldl (args, rep_integer_gcd);
 }
 
 DEFUN("numberp", Fnumberp, Snumberp, (repv arg), rep_Subr1) /*
