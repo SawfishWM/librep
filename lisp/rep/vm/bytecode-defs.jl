@@ -36,7 +36,7 @@
 
   ;; Instruction set version
   (defconst bytecode-major 10)
-  (defconst bytecode-minor 0)
+  (defconst bytecode-minor 1)
 
   ;; macro to get a named bytecode
   (defmacro bytecode (name)
@@ -179,6 +179,7 @@
       (truncate . #xae)
       (round . #xaf)
 
+      (apply . #xb0)
       (forbid . #xb1)
       (permit . #xb2)
 
