@@ -34,7 +34,6 @@
 	compiler-const
 	compiler-inline
 	compiler-lap
-	compiler-vars
 	compiler-bindings
 	compiler-rep
 	bytecodes)

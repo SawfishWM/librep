@@ -29,7 +29,8 @@
   (open rep
 	compiler
 	compiler-lap
-	compiler-vars
+	compiler-const
+	compiler-utils
 	bytecodes)
 
 
@@ -99,7 +100,7 @@
 
 ;; run the optimiser over CODE-STRING, modifying and returning it
 ;; this assumes it's being called from somewhere inside the compiler;
-;; it may modify comp-max-stack
+;; it may modify (fluid max-stack)
 (defun peephole-optimizer (code-string)
   (let
       ((keep-going t)
@@ -510,7 +511,7 @@
 	  (setq tem (cdr tem)))))
       (shift))
 
-    (setq comp-max-stack (+ comp-max-stack extra-stack))
+    (fluid-set max-stack (+ (fluid max-stack) extra-stack))
     ;; drop the extra cons we added
     (cdr code-string)))
 
@@ -522,10 +523,10 @@
 ;; indices. This will probably decrease the overall code size (using
 ;; 1-byte instructions instead of 2-byte, or 2 instead of 3)
 
-;; modifies the comp-constant-alist variable, returns the new code string
+;; modifies the constant-alist fluid, returns the new code string
 (defun constant-optimizer (code-string)
   (let
-      ((comp-constant-usage (make-vector comp-constant-index 0)))
+      ((comp-constant-usage (make-vector (fluid constant-index) 0)))
     ;; first count how many times each constant is used
     (mapc (lambda (insn)
 	    (when (memq (car insn) byte-insns-with-constants)
@@ -533,18 +534,18 @@
 		    (1+ (aref comp-constant-usage (cdr insn))))))
 	  code-string)
     ;; now sort by usage, minimum to maximum
-    (setq comp-constant-alist
-	  (sort comp-constant-alist
-		(lambda (x y)
-		  (< (aref comp-constant-usage (cdr x))
-		     (aref comp-constant-usage (cdr y))))))
+    (fluid-set constant-alist
+	       (sort (fluid constant-alist)
+		     (lambda (x y)
+		       (< (aref comp-constant-usage (cdr x))
+			  (aref comp-constant-usage (cdr y))))))
     ;; delete any unused constants at the head of the list
-    (while (and comp-constant-alist
+    (while (and (fluid constant-alist)
 		(zerop (aref comp-constant-usage
-			     (cdr (car comp-constant-alist)))))
-      (setq comp-constant-alist (cdr comp-constant-alist)))
+			     (cdr (car (fluid constant-alist))))))
+      (fluid-set constant-alist (cdr (fluid constant-alist))))
     ;; reverse the list to get most-used-first
-    (setq comp-constant-alist (nreverse comp-constant-alist))
+    (fluid-set constant-alist (nreverse (fluid constant-alist)))
     ;; then assign new indices, based on current list position
     ;; reuse comp-constant-usage to map from old to new positions
     (let
@@ -552,7 +553,7 @@
       (mapc (lambda (c)
 	      (aset comp-constant-usage (cdr c) i)
 	      (rplacd c i)
-	      (setq i (1+ i))) comp-constant-alist))
+	      (setq i (1+ i))) (fluid constant-alist)))
     ;; now update the code string
     (mapc (lambda (insn)
 	    (when (memq (car insn) byte-insns-with-constants)

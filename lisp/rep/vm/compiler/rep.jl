@@ -32,7 +32,6 @@
 	compiler-const
 	compiler-inline
 	compiler-lap
-	compiler-vars
 	compiler-bindings
 	bytecodes)
 
@@ -91,17 +90,17 @@
        (note-macro-def (nth 1 form) (cons 'lambda (nthcdr 2 form))))
 
       ((defsubst)
-       (setq comp-inline-env (cons (cons (nth 1 form)
+       (fluid-set inline-env (cons (cons (nth 1 form)
 					 (cons 'lambda (nthcdr 2 form)))
-				   comp-inline-env)))
+				   (fluid inline-env))))
 
       ((defvar)
        (remember-variable (nth 1 form)))
 
       ((defconst)
        (remember-variable (nth 1 form))
-       (setq comp-const-env (cons (cons (nth 1 form) (nth 2 form))
-				  comp-const-env)))
+       (fluid-set const-env (cons (cons (nth 1 form) (nth 2 form))
+				  (fluid const-env))))
 
       ((define-value)
        (let
@@ -148,28 +147,28 @@
   (defun compile-top-level-form (form)
     (case (car form)
       ((defun)
-       (let
-	   ((tmp (assq (nth 1 form) comp-macro-env))
-	    (comp-current-fun (nth 1 form)))
-	 (when tmp
-	   (rplaca tmp nil)
-	   (rplacd tmp nil))
-	 (list 'defun (nth 1 form)
-	       (compile-lambda (cons 'lambda (nthcdr 2 form)) (nth 1 form)))))
+       (let ((tmp (assq (nth 1 form) (fluid macro-env))))
+	 (fluid-let ((current-fun (nth 1 form)))
+	   (when tmp
+	     (rplaca tmp nil)
+	     (rplacd tmp nil))
+	   (list 'defun (nth 1 form)
+		 (compile-lambda (cons 'lambda (nthcdr 2 form))
+				 (nth 1 form))))))
 
       ((defmacro)
        (let
 	   ((code (compile-lambda (cons 'lambda (nthcdr 2 form)) (nth 1 form)))
-	    (tmp (assq (nth 1 form) comp-macro-env))
-	    (comp-current-fun (nth 1 form)))
-	 (if tmp
-	     (rplacd tmp (make-closure code))
-	   (compiler-error
-	    "Compiled macro wasn't in environment" (nth 1 form)))
-	 (list 'defmacro (nth 1 form) code)))
+	    (tmp (assq (nth 1 form) (fluid macro-env))))
+	 (fluid-let ((current-fun (nth 1 form)))
+	   (if tmp
+	       (rplacd tmp (make-closure code))
+	     (compiler-error
+	      "Compiled macro wasn't in environment" (nth 1 form)))
+	   (list 'defmacro (nth 1 form) code))))
 
       ((defsubst)
-       (when comp-write-docs
+       (when *compiler-write-docs*
 	 (cond
 	  ((stringp (nth 3 form))
 	   (add-documentation (nth 1 form) (nth 3 form))
@@ -177,7 +176,7 @@
 	  ((stringp (nth 4 form))
 	   (add-documentation (nth 1 form) (nth 4 form))
 	   (setq form (delq (nth 4 form) form)))))
-       (unless (assq (nth 1 form) comp-inline-env)
+       (unless (assq (nth 1 form) (fluid inline-env))
 	 (compiler-error "Inline function wasn't in environment" (nth 1 form)))
        form)
 
@@ -185,12 +184,12 @@
        (let
 	   ((value (eval (nth 2 form)))
 	    (doc (nth 3 form)))
-	 (when (and comp-write-docs (stringp doc))
+	 (when (and *compiler-write-docs* (stringp doc))
 	   (add-documentation (nth 1 form) doc)
 	   (setq form (delq (nth 3 form) form)))
-	 (unless (memq (nth 1 form) comp-defvars)
+	 (unless (memq (nth 1 form) (fluid defvars))
 	   (remember-variable (nth 1 form)))
-	 (unless (assq (nth 1 form) comp-const-env)
+	 (unless (assq (nth 1 form) (fluid const-env))
 	   (compiler-warning "Constant wasn't in environment" (nth 1 form))))
        form)
 
@@ -202,10 +201,10 @@
 		    (not (compiler-constant-p value)))
 	   ;; Compile the definition. A good idea?
 	   (rplaca (nthcdr 2 form) (compile-form (nth 2 form))))
-	 (when (and comp-write-docs (stringp doc))
+	 (when (and *compiler-write-docs* (stringp doc))
 	   (add-documentation (nth 1 form) doc)
 	   (setq form (delq (nth 3 form) form)))
-	 (unless (memq (nth 1 form) comp-defvars)
+	 (unless (memq (nth 1 form) (fluid defvars))
 	   (remember-variable (nth 1 form))))
        form)
 
@@ -215,7 +214,7 @@
 	    (value (nth 2 form)))
 	 (when (compiler-constant-p sym)
 	   (setq sym (compiler-constant-value sym))
-	   (unless (memq sym comp-defines)
+	   (unless (memq sym (fluid defines))
 	     (remember-lexical-variable (compiler-constant-value sym))))
 	 (when (and (listp value) (not (compiler-constant-p value)))
 	   ;; Compile the definition. A good idea?
@@ -378,31 +377,31 @@
   ;; compile let* specially to coalesce all bindings into a single frame
   (defun compile-let* (form &optional return-follows)
     (let
-	((lst (car (cdr form)))
-	 (comp-spec-bindings comp-spec-bindings)
-	 (comp-lex-bindings comp-lex-bindings)
-	 (comp-lexically-pure comp-lexically-pure)
-	 (comp-lambda-name comp-lambda-name))
-      (emit-insn (bytecode init-bind))
-      (increment-b-stack)
-      (while (consp lst)
-	(cond
-	 ((consp (car lst))
-	  (let
-	      ((tmp (car lst)))
-	    (compile-body (cdr tmp))
-	    (test-variable-bind (car tmp))
-	    (emit-binding (car tmp))))
-	 (t
-	  (emit-insn (bytecode nil))
-	  (increment-stack)
-	  (test-variable-bind (car lst))
-	  (emit-binding (car lst))))
-	(decrement-stack)
-	(setq lst (cdr lst)))
-      (compile-body (nthcdr 2 form) return-follows)
-      (emit-insn (bytecode unbind))
-      (decrement-b-stack)))
+	((lst (car (cdr form))))
+      (fluid-let ((spec-bindings (fluid spec-bindings))
+		  (lex-bindings (fluid lex-bindings))
+		  (lexically-pure (fluid lexically-pure))
+		  (lambda-name (fluid lambda-name)))
+	(emit-insn (bytecode init-bind))
+	(increment-b-stack)
+	(while (consp lst)
+	  (cond
+	   ((consp (car lst))
+	    (let
+		((tmp (car lst)))
+	      (compile-body (cdr tmp))
+	      (test-variable-bind (car tmp))
+	      (emit-binding (car tmp))))
+	   (t
+	    (emit-insn (bytecode nil))
+	    (increment-stack)
+	    (test-variable-bind (car lst))
+	    (emit-binding (car lst))))
+	  (decrement-stack)
+	  (setq lst (cdr lst)))
+	(compile-body (nthcdr 2 form) return-follows)
+	(emit-insn (bytecode unbind))
+	(decrement-b-stack))))
   (put 'let* 'rep-compile-fun compile-let*)
 
   ;; let can be compiled straight from its macro definition
@@ -410,32 +409,51 @@
   ;; compile letrec specially to handle tail recursion elimination
   (defun compile-letrec (form &optional return-follows)
     (let
-	((bindings (car (cdr form)))
-	 (comp-spec-bindings comp-spec-bindings)
-	 (comp-lex-bindings comp-lex-bindings)
-	 (comp-lexically-pure comp-lexically-pure)
-	 (comp-lambda-name comp-lambda-name))
-      (emit-insn (bytecode init-bind))
-      (increment-b-stack)
-      ;; create the bindings, should really be to void values, but use nil..
-      (mapc (lambda (cell)
-	      (let
-		  ((var (or (car cell) cell)))
-		(test-variable-bind var)
-		(compile-constant nil)
-		(emit-binding var)
-		(decrement-stack))) bindings)
-      ;; then set them to their values
-      (mapc (lambda (cell)
-	      (let
-		  ((var (or (car cell) cell)))
-		(compile-body (cdr cell) nil var)
-		(emit-varset var)
-		(decrement-stack))) bindings)
-      (compile-body (nthcdr 2 form) return-follows)
-      (emit-insn (bytecode unbind))
-      (decrement-b-stack)))
+	((bindings (car (cdr form))))
+      (fluid-let ((spec-bindings (fluid spec-bindings))
+		  (lex-bindings (fluid lex-bindings))
+		  (lexically-pure (fluid lexically-pure))
+		  (lambda-name (fluid lambda-name)))
+	(emit-insn (bytecode init-bind))
+	(increment-b-stack)
+	;; create the bindings, should really be to void values, but use nil..
+	(mapc (lambda (cell)
+		(let
+		    ((var (or (car cell) cell)))
+		  (test-variable-bind var)
+		  (compile-constant nil)
+		  (emit-binding var)
+		  (decrement-stack))) bindings)
+	;; then set them to their values
+	(mapc (lambda (cell)
+		(let
+		    ((var (or (car cell) cell)))
+		  (compile-body (cdr cell) nil var)
+		  (emit-varset var)
+		  (decrement-stack))) bindings)
+	(compile-body (nthcdr 2 form) return-follows)
+	(emit-insn (bytecode unbind))
+	(decrement-b-stack))))
   (put 'letrec 'rep-compile-fun compile-letrec)
+
+  (defun compile-fluid-let (form)
+    (let ((bindings (cadr form))
+	  (body (cddr form)))
+      (fluid-let ((lexically-pure nil))
+	;; compile each fluid, value pair onto the stack
+	(mapc (lambda (cell)
+		(compile-form-1 (car cell))
+		(compile-body (cdr cell))) bindings)
+	(emit-insn (bytecode init-bind))
+	(increment-b-stack)
+	(mapc (lambda (unused)
+		(emit-insn (bytecode fluid-bind))
+		(decrement-stack 2)) bindings)
+	(compile-body body)
+	(emit-insn (bytecode unbind))
+	(decrement-b-stack))))
+; XXX disabled since it seems to cause segmentation faults..?
+;  (put 'fluid-let 'rep-compile-fun compile-fluid-let)
 
   (defun compile-cond (form &optional return-follows)
     (let
@@ -556,8 +574,9 @@
     (let
 	((catch-label (make-label))
 	 (start-label (make-label))
-	 (end-label (make-label))
-	 (comp-lexically-pure nil))
+	 (end-label (make-label)))
+    (fluid-let ((lexically-pure nil))
+
       ;;		jmp start
       (emit-jmp-insn (bytecode jmp) start-label)
 
@@ -586,15 +605,15 @@
       (compile-body (nthcdr 2 form))
       (emit-insn (bytecode unbind))
       (decrement-b-stack)
-      (fix-label end-label)))
+      (fix-label end-label))))
   (put 'catch 'rep-compile-fun compile-catch)
 
   (defun compile-unwind-pro (form)
     (let
 	((cleanup-label (make-label))
 	 (start-label (make-label))
-	 (end-label (make-label))
-	 (comp-lexically-pure nil))
+	 (end-label (make-label)))
+    (fluid-let ((lexically-pure nil))
 
       ;;		jmp start
       (emit-jmp-insn (bytecode jmp) start-label)
@@ -632,7 +651,7 @@
       (emit-jmp-insn (bytecode jmp) cleanup-label)
 
       ;; end:
-      (fix-label end-label)))
+      (fix-label end-label))))
   (put 'unwind-protect 'rep-compile-fun compile-unwind-pro)
 
   (defun compile-condition-case (form)
@@ -640,8 +659,8 @@
 	((cleanup-label (make-label))
 	 (start-label (make-label))
 	 (end-label (make-label))
-	 (handlers (nthcdr 3 form))
-	 (comp-lexically-pure nil))
+	 (handlers (nthcdr 3 form)))
+    (fluid-let ((lexically-pure nil))
 
       ;;		jmp start
       ;; cleanup:
@@ -650,10 +669,9 @@
 
       (increment-stack 2)		;reach here with two items on stack
       (if (consp handlers)
-	  (let
-	      ((comp-spec-bindings comp-spec-bindings)
-	       (comp-lex-bindings comp-lex-bindings)
-	       (comp-lambda-name comp-lambda-name))
+	  (fluid-let ((spec-bindings (fluid spec-bindings))
+		      (lex-bindings (fluid lex-bindings))
+		      (lambda-name (fluid lambda-name)))
 	    (when (nth 1 form)
 	      (test-variable-bind (nth 1 form))
 	      (note-binding (nth 1 form)))
@@ -722,12 +740,11 @@
       (decrement-b-stack)
       (emit-insn (bytecode swap))
       (emit-insn (bytecode pop))
-      (decrement-stack)))
+      (decrement-stack))))
   (put 'condition-case 'rep-compile-fun compile-condition-case)
 
   (defun compile-with-object (form)
-    (let
-	((comp-lexically-pure nil))
+    (fluid-let ((lexically-pure nil))
       (compile-form-1 (nth 1 form))
       (emit-insn (bytecode bindobj))
       (increment-b-stack)
@@ -1050,6 +1067,10 @@
     (put 'thread-forbid 'rep-compile-opcode (bytecode forbid))
     (put 'thread-permit 'rep-compile-fun compile-0-args)
     (put 'thread-permit 'rep-compile-opcode (bytecode permit))
+    (put 'fluid 'rep-compile-fun compile-1-args)
+    (put 'fluid 'rep-compile-opcode (bytecode fluid-ref))
+    (put 'fluid-set 'rep-compile-fun compile-2-args)
+    (put 'fluid-set 'rep-compile-opcode (bytecode fluid-set))
 
     (put 'caar 'rep-compile-fun compile-1-args)
     (put 'caar 'rep-compile-opcode (bytecode caar))

@@ -21,7 +21,12 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure compiler-forms (export compile-form-1
+(define-structure compiler-forms (export current-file
+					 current-fun
+					 lambda-name
+					 lambda-args
+					 lambda-bindings
+					 compile-form-1
 					 compile-body
 					 compile-lambda)
   (open rep
@@ -34,8 +39,14 @@
 	compiler-src
 	compiler-inline
 	compiler-lap
-	compiler-vars
 	bytecodes)
+
+  (define current-file (make-fluid))		;the file being compiled
+  (define current-fun (make-fluid))		;the function being compiled
+
+  (define lambda-name (make-fluid))		;name of current lambda exp
+  (define lambda-args (make-fluid))		;arg spec of current lambda
+  (define lambda-bindings (make-fluid))	;value of c-l-b at top of lambda
 
   ;; Compile one form so that its value ends up on the stack when interpreted
   (defun compile-form-1 (form &optional return-follows)
@@ -53,7 +64,7 @@
 	  (val)
 	(test-variable-ref form)
 	(cond
-	 ((setq val (assq form comp-const-env))
+	 ((setq val (assq form (fluid const-env)))
 	  ;; A constant from this file
 	  (compile-constant (cdr val)))
 	 ((compiler-binding-immutable-p form)
@@ -109,18 +120,18 @@
 		;; An inline lambda expression
 		(compile-lambda-inline (car form) (cdr form)
 				       nil return-follows))
-	       ((and (symbolp fun) (assq fun comp-inline-env))
+	       ((and (symbolp fun) (assq fun (fluid inline-env)))
 		;; A call to a function that should be open-coded
-		(compile-lambda-inline (cdr (assq fun comp-inline-env))
+		(compile-lambda-inline (cdr (assq fun (fluid inline-env)))
 				       (cdr form) nil return-follows))
 	       (t
 		;; Assume a normal function call
 		(if (and return-follows
-			 comp-lexically-pure
-			 (eq fun comp-lambda-name)
+			 (fluid lexically-pure)
+			 (eq fun (fluid lambda-name))
 			 (not (binding-modified-p fun)))
 		    (progn
-		      (compile-tail-call comp-lambda-args (cdr form))
+		      (compile-tail-call (fluid lambda-args) (cdr form))
 		      ;; fake it, the next caller will pop the (non-existant)
 		      ;; return value
 		      (increment-stack))
@@ -177,21 +188,21 @@
 	;; See if it might be a good idea to compile the interactive decl
 	(when (consp interactive)
 	  (setq interactive (compile-form interactive))))
-      (when (and comp-write-docs doc name)
+      (when (and *compiler-write-docs* doc name)
 	(add-documentation name doc))
       (let
 	  ((vars (get-lambda-vars args)))
 	(mapc test-variable-bind vars)
-	(when (setq form (let
-			     ((comp-spec-bindings comp-spec-bindings)
-			      (comp-lex-bindings comp-lex-bindings)
-			      (comp-lexically-pure t)
-			      (comp-lambda-name name)
-			      (comp-lambda-args args)
-			      comp-lambda-bindings)
+	(when (setq form (fluid-let
+			     ((spec-bindings (fluid spec-bindings))
+			      (lex-bindings (fluid lex-bindings))
+			      (lexically-pure t)
+			      (lambda-name name)
+			      (lambda-args args)
+			      (lambda-bindings nil))
 			   (note-bindings (reverse vars))
-			   (setq comp-lambda-bindings comp-lex-bindings)
+			   (fluid-set lambda-bindings (fluid lex-bindings))
 			   (compile-form (cons (or sequencer 'progn) body))))
 	  (make-byte-code-subr args (nth 1 form) (nth 2 form) (nth 3 form)
-			       (and (not comp-write-docs) doc)
+			       (and (not *compiler-write-docs*) doc)
 			       interactive))))))

@@ -23,19 +23,23 @@
 
 (define-structure compiler-const (export make-constant-vector
 					 compile-constant
-					 add-constant)
+					 add-constant
+					 constant-alist
+					 constant-index)
   (open rep
 	compiler-lap
 	compiler-utils
-	compiler-vars
 	bytecodes)
+
+  (define constant-alist (make-fluid '()))	;list of (VALUE . INDEX)
+  (define constant-index (make-fluid 0))	;next free constant id
 
   ;; Turn the alist of constants into a vector
   (defun make-constant-vector ()
     (let
-	((vec (make-vector comp-constant-index)))
+	((vec (make-vector (fluid constant-index))))
       (mapc (lambda (cell)
-	      (aset vec (cdr cell) (car cell))) comp-constant-alist)
+	      (aset vec (cdr cell) (car cell))) (fluid constant-alist))
       vec))
 
   ;; Push a constant onto the stack
@@ -70,9 +74,9 @@
   ;; Put a constant into the alist of constants, returning its index number.
   ;; It won't be added twice if it's already there.
   (defun add-constant (const)
-    (or (cdr (assoc const comp-constant-alist))
+    (or (cdr (assoc const (fluid constant-alist)))
 	(progn
-	  (setq comp-constant-alist (cons (cons const comp-constant-index)
-					  comp-constant-alist)
-		comp-constant-index (1+ comp-constant-index))
-	  (1- comp-constant-index)))))
+	  (fluid-set constant-alist (cons (cons const (fluid constant-index))
+					  (fluid constant-alist)))
+	  (fluid-set constant-index (1+ (fluid constant-index)))
+	  (1- (fluid constant-index))))))

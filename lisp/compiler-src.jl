@@ -27,14 +27,14 @@
 	compiler-utils
 	compiler-modules
 	compiler-lap
-	compiler-vars
+	compiler-bindings
 	bytecodes)
 
 ;;; Constant folding
 
   (defun foldablep (name)
-    (unless (or (memq name comp-spec-bindings)
-		(assq name comp-lex-bindings))
+    (unless (or (memq name (fluid spec-bindings))
+		(assq name (fluid lex-bindings)))
       (let
 	  ((fun (get-procedure-handler name 'compiler-foldablep)))
 	(and fun (fun name)))))

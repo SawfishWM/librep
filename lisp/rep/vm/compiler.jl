@@ -33,11 +33,11 @@
 	compiler-utils
 	compiler-basic
 	compiler-modules
-	compiler-vars
 	compiler-asm
 	compiler-lap
 	compiler-opt
 	compiler-const
+	compiler-bindings
 	compiler-rep
 	bytecodes)
 
@@ -53,7 +53,6 @@
 			     compiler-rep
 			     compiler-src
 			     compiler-utils
-			     compiler-vars
 			     sort))
 
   ;; regexp matching library files not to compile
@@ -62,6 +61,17 @@
   ;; map languages to compiler modules
   (put 'rep 'compiler-module 'compiler-rep)
   (put 'scheme 'compiler-module 'compiler-scheme)
+
+;;; Special variables
+
+  (defvar *compiler-write-docs* nil
+    "When t all doc-strings are appended to the doc file and replaced with
+their position in that file.")
+
+  (defvar *compiler-no-low-level-optimisations* nil)
+
+  (defvar *compiler-debug* nil)
+
 
 
 #| Notes:
@@ -209,11 +219,11 @@ we would like. This is due to the view of folded functions as
 `(concat FILE-NAME ?c)' (ie, `foo.jl' => `foo.jlc')."
   (interactive "fLisp file to compile:")
   (let
-      ((comp-current-file file-name)
-       (comp-spec-bindings nil)
-       (comp-lex-bindings nil)
-       (temp-file (make-temp-name))
+      ((temp-file (make-temp-name))
        src-file dst-file body header form)
+    (fluid-let ((current-file file-name)
+		(spec-bindings nil)
+		(lex-bindings nil))
     (unwind-protect
 	(progn
 	  (message (concat "Compiling " file-name "...") t)
@@ -279,7 +289,7 @@ we would like. This is due to the view of folded functions as
 		(set-file-modes real-name (file-modes file-name)))
 	      t)))
       (when (file-exists-p temp-file)
-	(delete-file temp-file)))))
+	(delete-file temp-file))))))
 
 (defun compile-directory (dir-name &optional force-p exclude-re)
   "Compiles all jade-lisp files in the directory DIRECTORY-NAME whose object
@@ -308,7 +318,7 @@ This makes sure that all doc strings are written to their special file and
 that files which shouldn't be compiled aren't."
   (interactive "\nP")
   (let
-      ((comp-write-docs t))
+      ((*compiler-write-docs* t))
     (compile-directory (or directory lisp-lib-directory)
 		       force-p lib-exclude-re)))
 
@@ -325,7 +335,7 @@ that files which shouldn't be compiled aren't."
 ;; Call like `rep --batch -l compiler -f compile-batch [--write-docs] FILES...'
 (defun compile-batch ()
   (when (get-command-line-option "--write-docs")
-    (setq comp-write-docs t))
+    (setq *compiler-write-docs* t))
   (while command-line-args
     (compile-file (car command-line-args))
     (setq command-line-args (cdr command-line-args))))
@@ -334,7 +344,7 @@ that files which shouldn't be compiled aren't."
 ;; it's out of date
 (defun compile-compiler ()
   (let
-      ((comp-write-docs t))
+      ((*compiler-write-docs* t))
     (mapc (lambda (package)
 	    (let
 		((file (expand-file-name (concat (symbol-name package) ".jl")
@@ -347,67 +357,64 @@ that files which shouldn't be compiled aren't."
 (defun compile-function (function)
   "Compiles the body of the function FUNCTION."
   (interactive "aFunction to compile:")
-  (let*
-      ((fbody (if (symbolp function)
-		  (symbol-value function)
-		function))
-       (body (if (closurep fbody) (closure-function fbody) fbody))
-       (comp-current-fun function)
-       (comp-defuns nil)
-       (comp-defvars nil)
-       (comp-defines nil)
-       (comp-output-stream nil))
+  (fluid-let ((defuns nil)
+	      (defvars nil)
+	      (defines nil)
+	      (current-fun function)
+	      (output-stream nil))
+  (let* ((fbody (if (symbolp function)
+		    (symbol-value function)
+		  function))
+	 (body (if (closurep fbody) (closure-function fbody) fbody)))
     (when (assq 'jade-byte-code body)
       (compiler-error "Function already compiled" function))
     (setq body (compile-lambda body function))
     (if (closurep fbody)
 	(set-closure-function fbody body)
       (set function body))
-    function))
+    function)))
     
 (defun compile-form (form)
   "Compile the Lisp form FORM into a byte code form."
-  (let
-      (comp-constant-alist
-       (comp-constant-index 0)
-       (comp-current-stack 0)
-       (comp-max-stack 0)
-       (comp-current-b-stack 0)
-       (comp-max-b-stack 0)
-       comp-output
-       (comp-output-pc 0)
-       (comp-intermediate-code nil))
+
+  (fluid-let ((constant-alist '())
+	      (constant-index 0)
+	      (current-stack 0)
+	      (max-stack 0)
+	      (current-b-stack 0)
+	      (max-b-stack 0)
+	      (intermediate-code '()))
 
     ;; Do the high-level compilation
     (compile-form-1 form t)
     (emit-insn (bytecode return))
 
     ;; Now we have a [reversed] list of intermediate code
-    (setq comp-intermediate-code (nreverse comp-intermediate-code))
+    (fluid-set intermediate-code (nreverse (fluid intermediate-code)))
 
     ;; Unless disabled, run the peephole optimiser
-    (unless comp-no-low-level-optimisations
-      (when comp-debug
-	(format standard-error "lap-0 code: %S\n\n" comp-intermediate-code))
-      (setq comp-intermediate-code (peephole-optimizer
-				    comp-intermediate-code)))
-    (when comp-debug
-      (format standard-error "lap-1 code: %S\n\n" comp-intermediate-code))
+    (unless *compiler-no-low-level-optimisations*
+      (when *compiler-debug*
+	(format standard-error "lap-0 code: %S\n\n" (fluid intermediate-code)))
+      (fluid-set intermediate-code (peephole-optimizer
+				    (fluid intermediate-code))))
+    (when *compiler-debug*
+      (format standard-error "lap-1 code: %S\n\n" (fluid intermediate-code)))
 
     ;; Then optimise the constant layout
-    (unless comp-no-low-level-optimisations
-      (when comp-debug
+    (unless *compiler-no-low-level-optimisations*
+      (when *compiler-debug*
 	(format standard-error
-		"original-constants: %S\n\n" comp-constant-alist))
-      (setq comp-intermediate-code
-	    (constant-optimizer comp-intermediate-code))
-      (when comp-debug
+		"original-constants: %S\n\n" (fluid constant-alist)))
+      (fluid-set intermediate-code (constant-optimizer
+				    (fluid intermediate-code)))
+      (when *compiler-debug*
 	(format standard-error
-		"final-constants: %S\n\n" comp-constant-alist)))
+		"final-constants: %S\n\n" (fluid constant-alist))))
 
     ;; Now transform the intermediate code to byte codes
-    (when comp-debug
-      (format standard-error "lap-2 code: %S\n\n" comp-intermediate-code))
-    (list 'jade-byte-code (assemble-bytecodes comp-intermediate-code)
+    (when *compiler-debug*
+      (format standard-error "lap-2 code: %S\n\n" (fluid intermediate-code)))
+    (list 'jade-byte-code (assemble-bytecodes (fluid intermediate-code))
 	  (make-constant-vector)
-	  (+ comp-max-stack (ash comp-max-b-stack 16))))))
+	  (+ (fluid max-stack) (ash (fluid max-b-stack) 16))))))

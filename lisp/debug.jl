@@ -29,30 +29,30 @@
 
 ;;; the form stopped on
 
-  (defvar debug-obj nil)
-  (defvar debug-depth nil)
-  (defvar debug-frame-pointer nil)
+  (define obj (make-fluid))
+  (define depth (make-fluid))
+  (define frame-pointer (make-fluid))
 
-  (defvar debug-last nil)
+  (define last (make-fluid))
 
 ;;; the debugger repl
 
   (defun debug-rep ()
     (let
 	((print-escape t))
-      (format standard-error "<%d> %S\n" debug-depth debug-obj)
+      (format standard-error "<%d> %S\n" (fluid depth) (fluid obj))
       (while t
 	(let
 	    ((input (readline "rep-db? "))
 	     next-last)
 	  (cond ((string-match "^\\s*n" input)
-		 (setq debug-last do-next)
+		 (fluid-set last do-next)
 		 (do-next))
 		((string-match "^\\s*s" input)
-		 (setq debug-last do-step)
+		 (fluid-set last do-step)
 		 (do-step))
 		((string-match "^\\s*c" input)
-		 (setq debug-last do-continue)
+		 (fluid-set last do-continue)
 		 (do-continue))
 		((string-match "^\\s*r\\w*\\s+" input)
 		 (do-set-result
@@ -64,27 +64,27 @@
 		((string-match "^\\s*b" input)
 		 (do-backtrace 0))
 		((string-match "^\\s*f" input)
-		 (format standard-error "<%d> %S\n" debug-depth debug-obj))
+		 (format standard-error "<%d> %S\n" (fluid depth) (fluid obj)))
 		((string-match "^\\s*l" input)
 		 (print-locals))
 		((string-match "^\\s*$" input)
-		 (if debug-last
+		 (if (fluid last)
 		     (progn
-		       (debug-last)
-		       (setq next-last debug-last))
+		       ((fluid last))
+		       (setq next-last (fluid last)))
 		   (write standard-error "Nothing to repeat\n")))
 		(t
 		 (write standard-error "\
 commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM',
           `p[rint] FORM', `b[acktrace]', `f[orm], `l[ocals]''\n")))
-	  (setq debug-last next-last)))))
+	  (fluid-set last next-last)))))
 
 ;;; local functions
 
   (defun print-locals ()
     (let
 	;; (ENV SPECIAL-ENV FH-ENV STRUCTURE)
-	((data (debug-frame-environment debug-frame-pointer)))
+	((data (debug-frame-environment (fluid frame-pointer))))
       (when data
 	(mapc (lambda (cell)
 		(format standard-error "%16s %S\n" (car cell) (cdr cell)))
@@ -93,7 +93,7 @@ commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM',
   (defun eval-in-frame (form)
     (let
 	;; (ENV SPECIAL-ENV FH-ENV STRUCTURE)
-	((data (debug-frame-environment debug-frame-pointer)))
+	((data (debug-frame-environment (fluid frame-pointer))))
       (when data
 	(eval `(save-environment
 		(set-special-environment ',(nth 1 data))
@@ -103,7 +103,10 @@ commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM',
 
   (defun entry (debug-obj debug-depth debug-frame-pointer)
     (catch 'debug
-      (debug-rep)))
+      (fluid-let ((obj debug-obj)
+		  (depth debug-depth)
+		  (frame-pointer debug-frame-pointer))
+	(debug-rep))))
 
   (defun exit (debug-val debug-depth debug-frame-pointer)
     (format standard-error "<%d> => %S\n" debug-depth debug-val))
@@ -114,32 +117,21 @@ commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM',
 		(car error-list)) (cdr error-list))
     (backtrace 1)
     (catch 'debug
-      (debug-rep)
-      nil))
+      (fluid-let ((frame-pointer debug-frame-pointer))
+	(debug-rep)
+	nil)))
 
   (defun do-step ()
-    (if (boundp 'debug-obj)
-	(throw 'debug (cons 1 debug-obj))
-      (beep)))
+    (throw 'debug (cons 1 (fluid obj))))
 
   (defun do-set-result (value)
-    (if (boundp 'debug-obj)
-	(throw 'debug (cons 4 value))
-      (beep)))
+    (throw 'debug (cons 4 value)))
 
   (defun do-next ()
-    (if (boundp 'debug-obj)
-	(throw 'debug (cons 2 debug-obj))
-      (beep)))
+    (throw 'debug (cons 2 (fluid obj))))
 
   (defun do-continue ()
-    (cond
-     ((boundp 'debug-obj)
-      (throw 'debug (cons 3 debug-obj)))
-     ((boundp 'error-list)
-      (throw 'debug))
-     (t
-      (beep))))
+    (throw 'debug (cons 3 (fluid obj))))
 
   ;; DEPTH is the number of stack frames to discard
   (defun do-backtrace (depth)

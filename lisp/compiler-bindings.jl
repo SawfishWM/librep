@@ -21,7 +21,9 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure compiler-bindings (export spec-bound-p
+(define-structure compiler-bindings (export spec-bindings lex-bindings
+					    lexically-pure
+					    spec-bound-p
 					    note-binding
 					    note-bindings
 					    binding-lexical-addr
@@ -35,23 +37,27 @@
   (open rep
 	compiler-utils
 	compiler-lap
-	compiler-vars
+	compiler-basic
 	compiler-const
 	bytecodes)
 
-  (defmacro spec-bound-p (var)
-    (list 'or (list 'memq var 'comp-defvars) (list 'special-variable-p var)))
+  (define spec-bindings (make-fluid '()))	;list of bound variables
+  (define lex-bindings (make-fluid '()))	;alist of bound variables
+  (define lexically-pure (make-fluid t))	;any dynamic state?
+
+  (defun spec-bound-p (var)
+    (or (memq var (fluid defvars)) (special-variable-p var)))
 
   ;; note that the outermost binding of symbol VAR has state TAG
   (defun tag-binding (var tag)
-    (let ((cell (assq var comp-lex-bindings)))
+    (let ((cell (assq var (fluid lex-bindings))))
       (when cell
 	(unless (memq tag (cdr cell))
 	  (rplacd cell (cons tag (cdr cell)))))))
 
   ;; return t if outermost binding of symbol VAR has state TAG
   (defun binding-tagged-p (var tag)
-    (let ((cell (assq var comp-lex-bindings)))
+    (let ((cell (assq var (fluid lex-bindings))))
       (and cell (memq tag (cdr cell)))))
 
   ;; note that symbol VAR has been bound
@@ -59,12 +65,12 @@
     (if (spec-bound-p var)
 	(progn
 	  ;; specially bound (dynamic scope)
-	  (setq comp-spec-bindings (cons var comp-spec-bindings))
-	  (setq comp-lexically-pure nil))
+	  (fluid-set spec-bindings (cons var (fluid spec-bindings)))
+	  (fluid-set lexically-pure nil))
       ;; assume it's lexically bound otherwise
-      (setq comp-lex-bindings (cons (list var) comp-lex-bindings)))
-    (when (eq var comp-lambda-name)
-      (setq comp-lambda-name nil)))
+      (fluid-set lex-bindings (cons (list var) (fluid lex-bindings))))
+    (when (eq var (fluid lambda-name))
+      (fluid-set lambda-name nil)))
 
   (defmacro note-bindings (vars)
     (list 'mapc 'note-binding vars))
@@ -86,7 +92,7 @@
   ;; note that all current lexical bindings have been captured
   (defun note-closure-made ()
     (mapc (lambda (cell)
-	    (note-binding-captured (car cell))) comp-lex-bindings))
+	    (note-binding-captured (car cell))) (fluid lex-bindings)))
 
   (defun binding-lexical-addr (var)
     (if (spec-bound-p var)
@@ -97,7 +103,7 @@
 	  (mapc (lambda (x)
 		  (when (eq (car x) var)
 		    (throw 'out i))
-		  (setq i (1+ i))) comp-lex-bindings)
+		  (setq i (1+ i))) (fluid lex-bindings))
 	  nil))))
 
   (defun emit-binding (var)

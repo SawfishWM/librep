@@ -21,7 +21,8 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure compiler-lap (export emit-insn
+(define-structure compiler-lap (export intermediate-code
+				       emit-insn
 				       make-label
 				       push-label-addr
 				       emit-jmp-insn
@@ -29,13 +30,15 @@
 				       get-start-label)
   (open rep
 	compiler-utils
-	compiler-vars
 	bytecodes)
+
+  ;; list of (INSN . [ARG]), (TAG . REFS)
+  (define intermediate-code (make-fluid '()))
 
   ;; Output one opcode and its optional argument
   (defmacro emit-insn (opcode &optional arg)
-    `(setq comp-intermediate-code (cons (cons ,opcode ,arg)
-					comp-intermediate-code)))
+    `(fluid-set intermediate-code (cons (cons ,opcode ,arg)
+					(fluid intermediate-code))))
 
   ;; Create a new label
   (defmacro make-label ()
@@ -54,14 +57,14 @@
 
   ;; Set the address of the label LABEL to the current pc
   (defmacro fix-label (label)
-    `(setq comp-intermediate-code (cons ,label comp-intermediate-code)))
+    `(fluid-set intermediate-code (cons ,label (fluid intermediate-code))))
 
   ;; return the label marking the start of the bytecode sequence
   (defun get-start-label ()
     (let
-	((label (last comp-intermediate-code)))
+	((label (last (fluid intermediate-code))))
       (unless (eq (car label) 'label)
       (setq label (make-label))
-	(setq comp-intermediate-code (nconc comp-intermediate-code
+	(fluid-set intermediate-code (nconc (fluid intermediate-code)
 					    (list label))))
       label)))

@@ -28,11 +28,13 @@
 	compiler
 	compiler-utils
 	compiler-basic
-	compiler-vars
 	compiler-modules
 	compiler-lap
 	compiler-bindings
 	bytecodes)
+
+  (define inline-depth (make-fluid 0))		;depth of lambda-inlining
+  (defconst max-inline-depth 8)
 
   (defun push-inline-args (lambda-list args &optional pushed-args-already tester)
     (let
@@ -119,49 +121,50 @@
   (defun compile-lambda-inline (fun args &optional pushed-args-already
 				return-follows)
     (setq fun (compiler-macroexpand fun))
-    (when (>= (setq comp-inline-depth (1+ comp-inline-depth))
-	      comp-max-inline-depth)
-      (setq comp-inline-depth 0)
+    (when (>= (fluid-set inline-depth (1+ (fluid inline-depth)))
+	      max-inline-depth)
+      (fluid-set inline-depth 0)
       (compiler-error (format nil "Won't inline more than %d nested functions"
-			      comp-max-inline-depth)))
+			      max-inline-depth)))
     (let*
 	((lambda-list (nth 1 fun))
 	 (body (nthcdr 2 fun))
 	 (out (push-inline-args
 	       lambda-list args pushed-args-already test-variable-bind))
 	 (args-left (car out))
-	 (bind-stack (cdr out))
-	 (comp-spec-bindings comp-spec-bindings)
-	 (comp-lex-bindings comp-lex-bindings)
-	 (comp-lexically-pure comp-lexically-pure)
-	 (comp-lambda-name comp-lambda-name))
+	 (bind-stack (cdr out)))
 
-      ;; Set up the body for compiling, skip any interactive form or
-      ;; doc string
-      (while (and (consp body) (or (stringp (car body))
-				   (and (consp (car body))
-					(eq (car (car body)) 'interactive))))
-	(setq body (cdr body)))
+      (fluid-let ((spec-bindings (fluid spec-bindings))
+		  (lex-bindings (fluid lex-bindings))
+		  (lexically-pure (fluid lexically-pure))
+		  (lambda-name (fluid lambda-name)))
+
+	;; Set up the body for compiling, skip any interactive form or
+	;; doc string
+	(while (and (consp body) (or (stringp (car body))
+				     (and (consp (car body))
+					  (eq (car (car body)) 'interactive))))
+	  (setq body (cdr body)))
     
-      ;; Now we have a list of things to bind to, in the same order
-      ;; as the stack of evaluated arguments. The list has items
-      ;; SYMBOL, (SYMBOL . ARGS-TO-BIND), or (SYMBOL . nil)
-      (if bind-stack
-	  (progn
-	    (emit-insn (bytecode init-bind))
-	    (increment-b-stack)
-	    (pop-inline-args bind-stack args-left emit-binding)
-	    (compile-body body return-follows)
-	    (emit-insn (bytecode unbind))
-	    (decrement-b-stack))
-	;; Nothing to bind to. Just pop the evaluated args and
-	;; evaluate the body
-	(while (> args-left 0)
-	  (emit-insn (bytecode pop))
-	  (decrement-stack)
-	  (setq args-left (1- args-left)))
-	(compile-body body return-follows)))
-    (setq comp-inline-depth (1- comp-inline-depth)))
+	;; Now we have a list of things to bind to, in the same order
+	;; as the stack of evaluated arguments. The list has items
+	;; SYMBOL, (SYMBOL . ARGS-TO-BIND), or (SYMBOL . nil)
+	(if bind-stack
+	    (progn
+	      (emit-insn (bytecode init-bind))
+	      (increment-b-stack)
+	      (pop-inline-args bind-stack args-left emit-binding)
+	      (compile-body body return-follows)
+	      (emit-insn (bytecode unbind))
+	      (decrement-b-stack))
+	  ;; Nothing to bind to. Just pop the evaluated args and
+	  ;; evaluate the body
+	  (while (> args-left 0)
+	    (emit-insn (bytecode pop))
+	    (decrement-stack)
+	    (setq args-left (1- args-left)))
+	  (compile-body body return-follows)))
+      (fluid-set inline-depth (1- (fluid inline-depth)))))
   
   ;; The defsubst form stores the defun in the compile-inline property
   ;; of all defsubst declared functions
@@ -172,27 +175,27 @@
     (let*
 	((out (push-inline-args arg-spec args nil test-variable-ref))
 	 (args-left (car out))
-	 (bind-stack (cdr out))
-	 (comp-spec-bindings comp-spec-bindings)
-	 (comp-lex-bindings comp-lex-bindings)
-	 (comp-lexically-pure comp-lexically-pure)
-	 (comp-lambda-name comp-lambda-name))
-      (if (catch 'foo
-	    (mapc (lambda (var)
-		    (when (binding-captured-p var)
-		      (throw 'foo t)))
-		  (get-lambda-vars arg-spec))
-	    nil)
-	  ;; some of the parameter bindings have been captured,
-	  ;; so rebind all of them
-	  (progn
-	    (emit-insn (bytecode unbindall-0))
-	    (emit-insn (bytecode init-bind))
-	    (pop-inline-args bind-stack args-left emit-binding)
-	    (when (> comp-current-stack 0)
-	      (emit-insn (bytecode pop-all))))
-	;; none of the bindings are captured, so just modify them
-	(pop-inline-args bind-stack args-left emit-varset)
-	(unless (eq comp-lambda-bindings comp-lex-bindings)
-	  (emit-insn (bytecode unbindall))))
-      (emit-insn (bytecode jmp) (get-start-label)))))
+	 (bind-stack (cdr out)))
+      (fluid-let ((spec-bindings (fluid spec-bindings))
+		  (lex-bindings (fluid lex-bindings))
+		  (lexically-pure (fluid lexically-pure))
+		  (lambda-name (fluid lambda-name)))
+	(if (catch 'foo
+	      (mapc (lambda (var)
+		      (when (binding-captured-p var)
+			(throw 'foo t)))
+		    (get-lambda-vars arg-spec))
+	      nil)
+	    ;; some of the parameter bindings have been captured,
+	    ;; so rebind all of them
+	    (progn
+	      (emit-insn (bytecode unbindall-0))
+	      (emit-insn (bytecode init-bind))
+	      (pop-inline-args bind-stack args-left emit-binding)
+	      (when (> (fluid current-stack) 0)
+		(emit-insn (bytecode pop-all))))
+	  ;; none of the bindings are captured, so just modify them
+	  (pop-inline-args bind-stack args-left emit-varset)
+	  (unless (eq (fluid lambda-bindings) (fluid lex-bindings))
+	    (emit-insn (bytecode unbindall))))
+	(emit-insn (bytecode jmp) (get-start-label))))))

@@ -21,7 +21,12 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure compiler-utils (export compiler-message
+(define-structure compiler-utils (export current-stack max-stack
+					 current-b-stack max-b-stack
+					 const-env inline-env
+					 defuns defvars defines
+					 output-stream
+					 compiler-message
 					 compiler-error
 					 compiler-warning
 					 remember-function
@@ -43,34 +48,49 @@
   (open rep
 	compiler
 	compiler-modules
-	compiler-vars
+	compiler-bindings
+	compiler-basic
 	bytecodes)
+
+  (define current-stack (make-fluid 0))		;current stack requirement
+  (define max-stack (make-fluid 0))		;highest possible stack
+  (define current-b-stack (make-fluid 0))	;current binding stack req.
+  (define max-b-stack (make-fluid 0))		;highest possible binding stack
+
+  (define const-env (make-fluid '()))		;alist of (NAME . CONST-DEF)
+  (define inline-env (make-fluid '()))		;alist of (NAME . FUN-VALUE)
+  (define defuns (make-fluid '()))		;alist of (NAME REQ OPT RESTP)
+					; for all functions/macros in the file
+  (define defvars (make-fluid '()))		;all vars declared at top-level
+  (define defines (make-fluid '()))		;all lex. vars. at top-level
+
+  (defvar output-stream (make-fluid))	;stream for compiler output
 
 
 ;;; Message output
 
   (defun compiler-message (fmt &rest args)
-    (when (null comp-output-stream)
+    (when (null (fluid output-stream))
       (if (or batch-mode (not (featurep 'jade)))
-	  (setq comp-output-stream (stdout-file))
-	(setq comp-output-stream (open-buffer "*compilation-output*"))))
+	  (fluid-set output-stream (stdout-file))
+	(fluid-set output-stream (open-buffer "*compilation-output*"))))
     (when (and (featurep 'jade)
-	       (bufferp comp-output-stream)
-	       (not (eq (current-buffer) comp-output-stream)))
-      (goto-buffer comp-output-stream)
+	       (bufferp (fluid output-stream))
+	       (not (eq (current-buffer) (fluid output-stream))))
+      (goto-buffer (fluid output-stream))
       (goto (end-of-buffer)))
-    (when comp-current-fun
-      (format comp-output-stream "%s: " comp-current-fun))
-    (apply format comp-output-stream fmt args))
+    (when (fluid current-fun)
+      (format (fluid output-stream) "%s: " (fluid current-fun)))
+    (apply format (fluid output-stream) fmt args))
 
   (put 'compile-error 'error-message "Compilation mishap")
   (defun compiler-error (text &rest data)
-    (signal 'compile-error (cons (format nil "%s: %s" comp-current-fun text)
+    (signal 'compile-error (cons (format nil "%s: %s" (fluid current-fun) text)
 				 data)))
 
   (defun compiler-warning (fmt &rest args)
     (apply compiler-message fmt args)
-    (write comp-output-stream "\n"))
+    (write (fluid output-stream) "\n"))
 
 
 ;;; Code to handle warning tests
@@ -78,7 +98,7 @@
   ;; Note that there's a function or macro NAME with lambda-list ARGS
   ;; in the current file
   (defun remember-function (name args)
-    (if (assq name comp-defuns)
+    (if (assq name (fluid defuns))
 	(compiler-warning "Multiply defined function or macro: %s" name)
       (let
 	  ((required 0)
@@ -103,35 +123,35 @@
 		  (setq args nil)))
 	      (set state (1+ (symbol-value state)))))
 	  (setq args (cdr args)))
-	(setq comp-defuns (cons (list name required optional rest)
-				comp-defuns)))))
+	(fluid-set defuns (cons (list name required optional rest)
+				(fluid defuns))))))
 
   ;; Similar for variables
   (defun remember-variable (name)
-    (cond ((memq name comp-defines)
+    (cond ((memq name (fluid defines))
 	   (compiler-error
 	    "Variable %s was previously declared lexically" name))
-	  ((memq name comp-defvars)
+	  ((memq name (fluid defvars))
 	   (compiler-warning "Multiply defined variable: %s" name))
 	  (t
-	   (setq comp-defvars (cons name comp-defvars)))))
+	   (fluid-set defvars (cons name (fluid defvars))))))
 
   (defun remember-lexical-variable (name)
-    (cond ((memq name comp-defvars)
+    (cond ((memq name (fluid defvars))
 	   (compiler-error "Variable %s was previously declared special" name))
-	  ((memq name comp-defines)
+	  ((memq name (fluid defines))
 	   (compiler-warning "Multiply defined lexical variable: %s" name))
 	  (t
-	   (setq comp-defines (cons name comp-defines)))))
+	   (fluid-set defines (cons name (fluid defines))))))
 
   ;; Test that a reference to variable NAME appears valid
   (defun test-variable-ref (name)
     (when (and (symbolp name)
-	       (null (memq name comp-defvars))
-	       (null (memq name comp-defines))
-	       (null (memq name comp-spec-bindings))
-	       (null (assq name comp-lex-bindings))
-	       (null (assq name comp-defuns))
+	       (null (memq name (fluid defvars)))
+	       (null (memq name (fluid defines)))
+	       (null (memq name (fluid spec-bindings)))
+	       (null (assq name (fluid lex-bindings)))
+	       (null (assq name (fluid defuns)))
 	       (not (special-variable-p name))
 	       (not (boundp name))
 	       (not (locate-variable name)))
@@ -139,12 +159,12 @@
 
   ;; Test that binding to variable NAME appears valid
   (defun test-variable-bind (name)
-    (cond ((assq name comp-defuns)
+    (cond ((assq name (fluid defuns))
 	   (compiler-warning "Binding to %s shadows function" name))
-	  ;((memq name comp-defvars)
+	  ;((memq name (fluid defvars))
 	  ; (compiler-warning "Binding to %s shadows special variable" name))
-	  ((or (memq name comp-spec-bindings)
-	       (assq name comp-lex-bindings))
+	  ((or (memq name (fluid spec-bindings))
+	       (assq name (fluid lex-bindings)))
 	   (compiler-warning "Binding to %s shadows earlier binding" name))
 	  ((and (boundp name) (functionp (symbol-value name)))
 	   (compiler-warning "Binding to %s shadows pre-defined value" name))))
@@ -155,10 +175,10 @@
     (when (symbolp name)
       (catch 'return
 	(let
-	    ((decl (assq name comp-defuns)))
+	    ((decl (assq name (fluid defuns))))
 	  (when (and (null decl) (or (boundp name)
-				     (assq name comp-inline-env)))
-	    (setq decl (or (cdr (assq name comp-inline-env))
+				     (assq name (fluid inline-env))))
+	    (setq decl (or (cdr (assq name (fluid inline-env)))
 			   (symbol-value name)))
 	    (when (or (subrp decl)
 		      (and (closurep decl)
@@ -171,12 +191,12 @@
 	    (if (bytecodep decl)
 		(remember-function name (aref decl 0))
 	      (remember-function name (nth 1 decl)))
-	    (setq decl (assq name comp-defuns)))
+	    (setq decl (assq name (fluid defuns))))
 	  (if (null decl)
-	      (unless (or (memq name comp-spec-bindings)
-			  (assq name comp-lex-bindings)
-			  (memq name comp-defvars)
-			  (memq name comp-defines)
+	      (unless (or (memq name (fluid spec-bindings))
+			  (assq name (fluid lex-bindings))
+			  (memq name (fluid defvars))
+			  (memq name (fluid defines))
 			  (locate-variable name))
 		(compiler-warning "Call to undeclared function: %s" name))
 	    (let
@@ -198,27 +218,27 @@
   ;; Increment the current stack size, setting the maximum stack size if
   ;; necessary
   (defmacro increment-stack (&optional n)
-    (list 'when (list '> (list 'setq 'comp-current-stack
+    (list 'when (list '> (list 'fluid-set 'current-stack
 			       (if n
-				   (list '+ 'comp-current-stack n)
-				 (list '1+ 'comp-current-stack)))
-			 'comp-max-stack)
-	  '(setq comp-max-stack comp-current-stack)))
+				   (list '+ '(fluid current-stack) n)
+				 (list '1+ '(fluid current-stack))))
+			 '(fluid max-stack))
+	  '(fluid-set max-stack (fluid current-stack))))
 
   ;; Decrement the current stack usage
   (defmacro decrement-stack (&optional n)
-    (list 'setq 'comp-current-stack 
+    (list 'fluid-set 'current-stack 
 	  (if n
-	      (list '- 'comp-current-stack n)
-	    (list '1- 'comp-current-stack))))
+	      (list '- '(fluid current-stack) n)
+	    (list '1- '(fluid current-stack)))))
 
   (defun increment-b-stack ()
-    (setq comp-current-b-stack (1+ comp-current-b-stack))
-    (when (> comp-current-b-stack comp-max-b-stack)
-      (setq comp-max-b-stack comp-current-b-stack)))
+    (fluid-set current-b-stack (1+ (fluid current-b-stack)))
+    (when (> (fluid current-b-stack) (fluid max-b-stack))
+      (fluid-set max-b-stack (fluid current-b-stack))))
 
   (defun decrement-b-stack ()
-    (setq comp-current-b-stack (1- comp-current-b-stack)))
+    (fluid-set current-b-stack (1- (fluid current-b-stack))))
 
 
 
@@ -247,7 +267,7 @@
    ((consp form)
     (and (eq (car form) 'quote) (compiler-binding-from-rep-p 'quote)))
    ((symbolp form)
-    (or (assq form comp-const-env)
+    (or (assq form (fluid const-env))
 	(compiler-binding-immutable-p form)))
    ;; What other constant forms have I missed..?
    (t
@@ -267,7 +287,7 @@
    ((symbolp form)
     (if (compiler-binding-immutable-p form)
 	(compiler-symbol-value form)
-      (cdr (assq form comp-const-env))))))
+      (cdr (assq form (fluid const-env)))))))
 
 (defun constant-function-p (form)
   (setq form (compiler-macroexpand form))

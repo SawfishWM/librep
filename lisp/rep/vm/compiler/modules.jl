@@ -21,7 +21,8 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure compiler-modules (export variable-ref-p
+(define-structure compiler-modules (export macro-env
+					   variable-ref-p
 					   locate-variable
 					   compiler-symbol-value
 					   compiler-binding-from-rep-p
@@ -42,24 +43,28 @@
 	compiler-const
 	compiler-utils
 	compiler-lap
-	compiler-vars
 	bytecodes)
+
+  (define macro-env (make-fluid '()))		;alist of (NAME . MACRO-DEF)
+  (define default-macro-env (make-fluid '()))
 
 ;;; module environment of form being compiled
 
   ;; the name of the module being compiled in
-  (defvar comp-current-module *root-structure*)
+  (define current-module (make-fluid *root-structure*))
 
   ;; if non-nil, the namespace of the module being compiled in; only
   ;; set when compiling code outside a module definition
-  (defvar comp-current-structure (%get-structure comp-current-module))
+  (define current-structure (make-fluid
+			     (%get-structure (fluid current-module))))
 
   ;; the names of the currently open and accessed modules
-  (defvar comp-open-modules (and comp-current-structure
-				 (%structure-imports comp-current-structure)))
-  (defvar comp-accessed-modules (and comp-current-structure
-				     (%structure-accessible
-				      comp-current-structure)))
+  (define open-modules (make-fluid (and (fluid current-structure)
+					(%structure-imports
+					 (fluid current-structure)))))
+  (define accessed-modules (make-fluid (and (fluid current-structure)
+					    (%structure-accessible
+					     (fluid current-structure)))))
 
 ;;; functions
 
@@ -81,7 +86,7 @@
   (defun locate-variable (var)
     (if (structure-ref-p var)
 	(nth 1 var)
-      (let loop ((rest comp-open-modules))
+      (let loop ((rest (fluid open-modules)))
 	(if rest
 	    (if (module-exports-p (car rest) var)
 		(car rest)
@@ -89,17 +94,17 @@
 	  ;; it's not exported by any opened modules, if we have a handle
 	  ;; on the current module (i.e. we're compiling code not in
 	  ;; a module definition) try looking in that
-	  (if (and (symbolp var) comp-current-structure
-		   (%structure-bound-p comp-current-structure var))
-	      comp-current-module
+	  (if (and (symbolp var) (fluid current-structure)
+		   (%structure-bound-p (fluid current-structure) var))
+	      (fluid current-module)
 	    nil)))))
 
   (defun symbol-value-1 (var)
     (cond ((and (symbolp var) (special-variable-p var))
 	   (symbol-value var))
-	  ((and (symbolp var) comp-current-structure
-		(%structure-bound-p comp-current-structure var))
-	   (%structure-ref comp-current-structure var))
+	  ((and (symbolp var) (fluid current-structure)
+		(%structure-bound-p (fluid current-structure) var))
+	   (%structure-ref (fluid current-structure) var))
 	  (t
 	   (let ((struct (locate-variable var)))
 	     (and struct (%structure-ref (%intern-structure struct)
@@ -120,15 +125,15 @@
   (defun compiler-binding-from-rep-p (var)
     (if (structure-ref-p var)
 	(eq (nth 1 var) 'rep)
-      (and (not (or (memq var comp-spec-bindings)
-		    (assq var comp-lex-bindings)))
+      (and (not (or (memq var (fluid spec-bindings))
+		    (assq var (fluid lex-bindings))))
 	   (eq (locate-variable var) 'rep))))
 
   ;; return t if the binding of VAR is a known constant
   ;; (not including those in comp-constant-env)
   (defun compiler-binding-immutable-p (var)
-    (and (not (or (memq var comp-spec-bindings)
-		  (assq var comp-lex-bindings)))
+    (and (not (or (memq var (fluid spec-bindings))
+		  (assq var (fluid lex-bindings))))
 	 (let
 	     ((struct (locate-variable var)))
 	   (and struct (binding-immutable-p
@@ -138,8 +143,8 @@
 			(%intern-structure struct))))))
 
   (defun get-procedure-handler (name prop-name)
-    (unless (or (memq name comp-spec-bindings)
-		(assq name comp-lex-bindings))
+    (unless (or (memq name (fluid spec-bindings))
+		(assq name (fluid lex-bindings)))
       (let*
 	  ((struct (locate-variable name))
 	   (prop (and struct (get struct prop-name))))
@@ -151,7 +156,7 @@
 
   (defun compiler-macroexpand-1 (form)
     (when (consp form)
-      (let* ((def (assq (car form) comp-macro-env))
+      (let* ((def (assq (car form) (fluid macro-env)))
 	     ;; make #<subr macroexpand> pass us any inner expansions
 	     (macro-environment compiler-macroexpand))
 	(if def
@@ -172,30 +177,31 @@
 
   ;; if OPENED or ACCESSED are `t', the current values are used
   (defun compile-module-body (body name opened accessed)
+    (fluid-let ((macro-env (fluid default-macro-env))
+		(current-module (or name (fluid current-module)))
+		(current-structure (if name nil (fluid current-structure)))
+		(open-modules (if (eq opened t)
+				  (fluid open-modules)
+				opened))
+		(accessed-modules (if (eq accessed t)
+				      (fluid accessed-modules)
+				    accessed))
+		(const-env nil)
+		(inline-env nil)
+		(defuns nil)
+		(defvars (fluid defvars))
+		(defines nil)
+		(lexically-pure t)
+		(output-stream nil))
     (let
-	((comp-current-module (or name comp-current-module))
-	 (comp-current-structure (if name nil comp-current-structure))
-	 (comp-open-modules (if (eq opened t)
-				comp-open-modules
-			      opened))
-	 (comp-accessed-modules (if (eq accessed t)
-				    comp-accessed-modules
-				  accessed))
-	 (comp-macro-env comp-default-macro-env)
-	 (comp-const-env nil)
-	 (comp-inline-env nil)
-	 (comp-defuns nil)
-	 (comp-defvars comp-defvars)
-	 (comp-defines nil)
-	 (comp-lexically-pure t)
-	 (comp-output-stream nil)
-	 pass-1 pass-2
+	(pass-1 pass-2
 	 next-body)
 
       ;; find language pass-1 and pass-2 compilers; scan all opened
       ;; modules, then scan any they import, ..
       (catch 'out
-	(let ((tocheck (list (list comp-current-module) comp-open-modules)))
+	(let ((tocheck (list (list (fluid current-module))
+			     (fluid open-modules))))
 	  (while tocheck
 	    (mapc (lambda (struct)
 		    (if (get struct 'compiler-module)
@@ -211,7 +217,7 @@
 		  (car tocheck))
 	    (setq tocheck (cdr tocheck)))
 	  (compiler-warning
-	   "unknown language dialect for module" comp-current-module)))
+	   "unknown language dialect for module" (fluid current-module))))
 
       ;; pass 1. remember definitions in the body for pass 2
       (when pass-1
@@ -228,32 +234,34 @@
 	(setq next-body nil))
 
       ;; return the compiled representation of the body
-      body))
+      body)))
 
   (defun note-require (feature)
-    (unless (memq feature comp-open-modules)
+    (unless (memq feature (fluid open-modules))
       (cond ((%get-structure feature)
-	     (setq comp-open-modules (cons feature comp-open-modules)))
-	    (comp-current-structure
+	     (fluid-set open-modules (cons feature (fluid open-modules))))
+	    ((fluid current-structure)
 	     (unless (%eval-in-structure
-		      `(featurep ',feature) comp-current-structure)
+		      `(featurep ',feature) (fluid current-structure))
 	       (%eval-in-structure
-		`(require ',feature) comp-current-structure)
+		`(require ',feature) (fluid current-structure))
 	       (when (%get-structure feature)
-		 (setq comp-open-modules (cons feature comp-open-modules)))))
+		 (fluid-set open-modules
+			    (cons feature (fluid open-modules))))))
 	    (t
 	     ;; XXX this doesn't work, no alternative..?
 	     (require feature)
 	     (when (%get-structure feature)
-	       (setq comp-open-modules (cons feature comp-open-modules)))))))
+	       (fluid-set open-modules (cons feature
+					     (fluid open-modules))))))))
 
   ;; XXX enclose macro defs in the *root-structure*, this is different
   ;; to with interpreted code
   (defun note-macro-def (name body)
-    (setq comp-macro-env (cons (cons name
+    (fluid-set macro-env (cons (cons name
 				     (%make-closure-in-structure
 				      body (%get-structure *root-structure*)))
-			       comp-macro-env)))
+			       (fluid macro-env))))
 
 
 ;;; declarations
@@ -261,8 +269,8 @@
   ;; (declare (in-module STRUCT))
 
   (defun declare-in-module (form)
-    (setq comp-current-module (cadr form))
-    (setq comp-current-structure (%get-structure comp-current-module)))
+    (fluid-set current-module (cadr form))
+    (fluid-set current-structure (%get-structure (fluid current-module))))
   (put 'in-module 'compiler-decl-fun declare-in-module)
 
 
@@ -335,7 +343,7 @@
     (let
 	((struct (nth 1 form))
 	 (var (nth 2 form)))
-      (or (memq struct comp-accessed-modules)
+      (or (memq struct (fluid accessed-modules))
 	  (compiler-error "Referencing non-accessible structure" struct))
       (or (module-exports-p struct var)
 	  (compiler-error "Referencing non-exported variable" struct var))
