@@ -1,3 +1,8 @@
+1999-10-24  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispcmds.c (Fload): remember to call Fclose_file on any
+	opened streams
+
 1999-10-23  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lispmach.c: some more small optimisations

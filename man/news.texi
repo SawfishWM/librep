@@ -22,6 +22,8 @@ dynamic objects with underscores
 
 @item Fix bug when compiling @code{last} function
 
+@item Fix bug of not closing files in the @code{load} function
+
 @end itemize
 
 
