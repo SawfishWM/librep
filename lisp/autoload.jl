@@ -154,4 +154,7 @@
 (autoload 'pwd-prompt "pwd-prompt")
 (autoload 'telnet "telnet" t)
 (autoload 'rlogin "telnet" t)
+(autoload 'cvs-update "cvs" t)
+(autoload 'cvs-update-parent "cvs" t)
+(autoload 'cvs-update-pwd "cvs" t)
 ;;; ::autoload-end::
