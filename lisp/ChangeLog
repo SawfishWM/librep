@@ -1,5 +1,16 @@
 Sun May 31 12:06:02 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* read-mail.jl: more work. pretty much works. getting new mail
+	doesn't though..
+	* rm-misc.jl, rm-output.jl, rm-summary.jl, rm-thread.jl:
+	updated for new read-mail. Mostly untested
+
+	* rm-restrict.jl: allow rules to be defined interactively
+
+	* prompt.jl (prompt-validate-symbol): fixed
+
+	* lisp.jl (identity): new function
+
 	* read-mail.jl: massive changes, there is now a layer between
 	mailbox files and messages: folders. Each folder can contain
 	multiple mailboxes and be restricted to only contain messages

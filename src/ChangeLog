@@ -1,3 +1,8 @@
+Sun May 31 19:13:39 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* views.c (cmd_viewp): new function
+	* windows.c (cmd_windowp): new function
+
 Thu May 28 18:07:09 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lisp.h (MAKE_TIME, GET_TIME, TIMEP): new way of storing
