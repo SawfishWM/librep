@@ -1,3 +1,10 @@
+Sat May 30 12:28:09 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* buffers.jl (find-file-read-only): added DONT-ACTIVATE option,
+	like find-file has
+
+	* rm-restrict.jl (rm-filter-by-rule): function to apply a rule
+
 Fri May 29 15:17:38 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* html-style.jl (html-style-default, html-style-current,
