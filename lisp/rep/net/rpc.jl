@@ -112,6 +112,11 @@
 	  rep.data.tables
 	  rep.data.records)
 
+  (define (debug fmt . args)
+    (when nil
+      (let ((print-escape t))
+	(apply format standard-error fmt args))))
+
   (define-record-type :socket-data
     (make-socket-data closable)
     ;; no predicate
@@ -191,7 +196,7 @@ server sockets."
 
   (define (rpc-output-handler socket output)
     "The function used to handle any OUTPUT from SOCKET."
-    ;;(format standard-error "Read: %S\n" output)
+    (debug "Read: %S\n" output)
     (let ((sock-data (socket-data socket)))
       (when (socket-pending-data sock-data)
 	(setq output (concat (socket-pending-data sock-data) output))
@@ -208,7 +213,7 @@ server sockets."
 	      ((invalid-read-syntax)
 	       (error "Can't parse rpc message: %S" (substring output point))))
 
-	    ;;(format standard-error "Parsed: %S\n" form)
+	    (debug "Parsed: %S\n" form)
 	    (case (car form)
 	      ((#t #f)
 	       ;; Response
@@ -234,7 +239,7 @@ server sockets."
 				(lambda (data)
 				  (cons '#f data)))))
 		   (when send-result
-		     ;;(format standard-error "Wrote: %S\n" result)
+		     (debug "Wrote: %S\n" result)
 		     (write socket (prin1-to-string result)))))))
 	    (setq point (car stream))))
 	(when (< point (length output))
@@ -246,7 +251,7 @@ server sockets."
     (let ((old-vector (socket-result-pending (socket-data socket)))
 	  (result '()))
       (define (result-callback value)
-	;;(format standard-error "Result: %S\n" value)
+	(debug "Result: %S\n" value)
 	(setq result value))
       (socket-result-pending-set! (socket-data socket) result-callback)
       (unwind-protect
@@ -322,7 +327,7 @@ becomes invalid."
 	      ((async)
 	       ;; async request - no result required
 	       (let ((socket (server-socket server port)))
-		 ;;(format standard-error "Wrote: %S\n" (cons servant-id (cddr args)))
+		 (debug "Wrote: %S\n" (cons servant-id (cddr args)))
 		 (write socket (prin1-to-string
 				;; cheap hack, vectors mean async
 				(apply vector (cons servant-id
@@ -330,7 +335,7 @@ becomes invalid."
 
 	  ;; otherwise, just forward to the server
 	  (let ((socket (server-socket server port)))
-	    ;;(format standard-error "Wrote: %S\n" (cons servant-id args))
+	    (debug "Wrote: %S\n" (cons servant-id args))
 	    (write socket (prin1-to-string (cons servant-id args)))
 	    (wait-for-reponse socket))))))
 
