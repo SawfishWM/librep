@@ -182,7 +182,6 @@
 	  (bytecode setq)
 	  (bytecode refg)
 	  (bytecode setg)
-	  (bytecode bind)
 	  (bytecode bindspec)))
 
   ;; list of all varref instructions
