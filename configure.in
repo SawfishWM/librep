@@ -87,9 +87,9 @@ if test "${enable_shared}" != "yes"; then
 fi
 
 dnl Checks for libraries.
-AC_CHECK_LIB(nsl, xdr_void)
-AC_CHECK_LIB(socket, bind)
-AC_CHECK_LIB(dl, dlopen)
+AC_CHECK_FUNC(gethostent, , AC_CHECK_LIB(nsl, gethostent))
+AC_CHECK_FUNC(setsockopt, , AC_CHECK_LIB(socket, setsockopt))
+AC_CHECK_FUNC(dlopen, , AC_CHECK_LIB(dl, dlopen))
 
 dnl Checks for header files.
 AC_HEADER_DIRENT
@@ -99,22 +99,32 @@ AC_HEADER_TIME
 AC_CHECK_HEADERS(fcntl.h sys/ioctl.h sys/time.h sys/utsname.h unistd.h siginfo.h memory.h stropts.h termios.h string.h limits.h argz.h locale.h nl_types.h malloc.h sys/param.h)
 
 dnl Check for GNU MP library and header files
-saved_LIBS=$LIBS
-AC_CHECK_LIB(gmp, mpz_init,
-	     [GMP_LIBS="-lgmp -lm"
-	      AC_SUBST(GMP_LIBS)],
-	     [AC_MSG_ERROR([Can't find libgmp])])
-LIBS=$saved_LIBS
-AC_CHECK_HEADER(gmp.h, [], [AC_MSG_ERROR([Can't find gmp.h])])
+AC_ARG_WITH(gmp,
+[  --with-gmp=DIR          path to GMP],[
+  if test "$withval" != "no"; then
+    CPPFLAGS="${CPPFLAGS} -I$withval/include"
+    LDFLAGS="${LDFLAGS} -L$withval/lib"
+  fi
+])
+AC_CHECK_HEADER(gmp.h,
+    AC_CHECK_LIB(gmp, mpz_init, GMP_LIBS="-lgmp -lm",
+	AC_MSG_ERROR(Cannot find GMP library)),
+    AC_MSG_ERROR(Cannot find GMP header))
+AC_SUBST(GMP_LIBS)
 
 dnl Check for GNU DBM library and header files
-saved_LIBS=$LIBS
-AC_CHECK_LIB(gdbm, gdbm_open,
-	     [GDBM_LIBS="-lgdbm"
-	      AC_SUBST(GDBM_LIBS)],
-	     [AC_MSG_ERROR([Can't find libgdbm])])
-LIBS=$saved_LIBS
-AC_CHECK_HEADER(gdbm.h, [], [AC_MSG_ERROR([Can't find gdbm.h])])
+AC_ARG_WITH(gdbm,
+[  --with-gdbm=DIR         path to GDBM],[
+  if test "$withval" != "no"; then
+    CPPFLAGS="${CPPFLAGS} -I$withval/include"
+    LDFLAGS="${LDFLAGS} -L$withval/lib"
+  fi
+])
+AC_CHECK_HEADER(gdbm.h,
+    AC_CHECK_LIB(gdbm, gdbm_open, GDBM_LIBS="-lgdbm",
+	AC_MSG_ERROR(Cannot find GDBM library)),
+    AC_MSG_ERROR(Cannot find GDBM header))
+AC_SUBST(GDBM_LIBS)
 
 dnl Check for Doug Lea's malloc in libc, otherwise compile dlmalloc.c
 doug_lea_malloc=yes
@@ -160,7 +170,8 @@ dnl Check for dynamic loading
 AC_CHECK_HEADER(dlfcn.h, [AC_DEFINE(HAVE_DLFCN_H)])
 AC_CHECK_HEADER(dl.h, [AC_DEFINE(HAVE_DL_H)])
 dl_ok=no
-AC_CHECK_FUNC(dlopen, [AC_DEFINE(HAVE_DLOPEN) dl_ok=dl])
+AC_CHECK_FUNC(dlopen, [AC_DEFINE(HAVE_DLOPEN) dl_ok=dl],
+    AC_CHECK_LIB(dl, dlopen, [AC_DEFINE(HAVE_DLOPEN) dl_ok=dl]))
 AC_CHECK_FUNC(shl_load, [AC_DEFINE(HAVE_SHL_LOAD) dl_ok=shl])
 
 if test $dl_ok = dl; then
