@@ -871,7 +871,7 @@ rep_parse_number (char *buf, u_int len, u_int radix, int sign, u_int type)
 	}
 	if (bits < rep_LISP_INT_BITS)
 	{
-	    static const signed char map[] = {
+	    static const signed int map[] = {
 		 0,  1,  2,  3,  4,  5,  6,  7,		/* 0x30 -> 0x37 */
 		 8,  9, -1, -1, -1, -1, -1, -1,
 		-1, 10, 11, 12, 13, 14, 15, 16,		/* 0x40 -> 0x48 */
@@ -879,6 +879,7 @@ rep_parse_number (char *buf, u_int len, u_int radix, int sign, u_int type)
 		25, 26, 27, 28, 29, 30, 31, 32,		/* 0x50 -> 0x58 */
 		33, 34, 35, 36
 	    };
+#define MAP_SIZE 0x2c
 	    long value = 0;
 	    char c;
 	    if (radix == 10)
@@ -899,12 +900,13 @@ rep_parse_number (char *buf, u_int len, u_int radix, int sign, u_int type)
 		    int d;
 		    c = *buf++;
 		    d = toupper (c) - '0';
-		    if (d < 0 || d >= sizeof (map))
+		    if (d < 0 || d >= MAP_SIZE)
 			goto error;
-		    value = value * radix + map[d];
+		    d = map [d];
+		    if (d < 0 || d >= radix)
+			goto error;
+		    value = value * radix + d;
 		}
-		if (value < 0)
-		    goto error;
 	    }
 	    return ((sign > 0)
 		    ? rep_MAKE_INT (value)
