@@ -1,3 +1,10 @@
+2001-07-15  John Harper  <jsh@pixelslut.com>
+
+	* rep/user.jl: catch errors signalled during command line
+	option processing, pass them to the default error handler and
+	quit. This avoids the horrible `error -> (void-value foo)'
+	style error messages
+
 2001-07-02  John Harper  <jsh@pixelslut.com>
 
 	* version 0.14

@@ -62,29 +62,30 @@
 			 (load name))
 			(t (require (intern name))))))
        arg)
-    (while (setq arg (car command-line-args))
-      (setq command-line-args (cdr command-line-args))
-      (cond
-       ((member arg '("--call" "-f"))
-	(setq arg (car command-line-args))
-	(setq command-line-args (cdr command-line-args))
-	((symbol-value (read-from-string arg))))
-       ((member arg '("--load" "-l"))
-	(setq arg (car command-line-args))
-	(setq command-line-args (cdr command-line-args))
-	(do-load arg))
-       ((member arg '("-s" "--scheme"))
-	(setq arg (car command-line-args))
-	(setq command-line-args (cdr command-line-args))
-	(setq batch-mode t)
-	(if (file-exists-p arg)
-	    (structure () (open scheme) (load arg '() 1 1))
-	  (structure () (open scheme) (load arg))))
-       ((string= arg "--check")
-	(require 'rep.test.framework)
-	(run-self-tests-and-exit))
-       ((string= arg "--help")
-	(format standard-error "\
+    (condition-case error-data
+	(while (setq arg (car command-line-args))
+	  (setq command-line-args (cdr command-line-args))
+	  (cond
+	   ((member arg '("--call" "-f"))
+	    (setq arg (car command-line-args))
+	    (setq command-line-args (cdr command-line-args))
+	    ((symbol-value (read-from-string arg))))
+	   ((member arg '("--load" "-l"))
+	    (setq arg (car command-line-args))
+	    (setq command-line-args (cdr command-line-args))
+	    (do-load arg))
+	   ((member arg '("-s" "--scheme"))
+	    (setq arg (car command-line-args))
+	    (setq command-line-args (cdr command-line-args))
+	    (setq batch-mode t)
+	    (if (file-exists-p arg)
+		(structure () (open scheme) (load arg '() 1 1))
+	      (structure () (open scheme) (load arg))))
+	   ((string= arg "--check")
+	    (require 'rep.test.framework)
+	    (run-self-tests-and-exit))
+	   ((string= arg "--help")
+	    (format standard-error "\
 usage: %s [OPTIONS...]
 
 where OPTIONS are any of:
@@ -109,15 +110,18 @@ where OPTIONS are any of:
     --version		print version details
     --no-rc		don't load rc or site-init files
     --quit, -q		terminate the interpreter process\n" program-name)
-	(throw 'quit 0))
-       ((string= arg "--version")
-	(format standard-output "rep version %s\n" rep-version)
-	(throw 'quit 0))
-       ((member arg '("--quit" "-q"))
-	(throw 'quit 0))
-       (t
-	(setq batch-mode t)
-	(do-load arg)))))
+	    (throw 'quit 0))
+	   ((string= arg "--version")
+	    (format standard-output "rep version %s\n" rep-version)
+	    (throw 'quit 0))
+	   ((member arg '("--quit" "-q"))
+	    (throw 'quit 0))
+	   (t
+	    (setq batch-mode t)
+	    (do-load arg))))
+      (error
+       (error-handler-function (car error-data) (cdr error-data))
+       (throw 'quit 1))))
 
   (unless batch-mode
     (format standard-output "rep %s, Copyright (C) 1999-2000 John Harper
