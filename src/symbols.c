@@ -61,6 +61,9 @@ typedef struct rep_symbol_block_struct {
 /* Main storage of symbols.  */
 repv rep_obarray;
 
+/* Plist storage */
+static repv plist_structure;
+
 static rep_funarg *funargs;
 
 DEFSYM(nil, "nil");
@@ -119,7 +122,6 @@ function definition are both void and it has a nil property-list.
 	rep_SYM(sym)->next = rep_NULL;
 	rep_SYM(sym)->car = rep_Symbol;
 	rep_SYM(sym)->name = name;
-	rep_SYM(sym)->prop_list = Qnil;
 	rep_used_symbols++;
 	rep_data_after_gc += sizeof(rep_symbol);
     }
@@ -908,7 +910,7 @@ Sets the property list of SYMBOL to PROP-LIST, returns PROP-LIST.
     if (spec == 0)
 	return Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
 
-    rep_SYM(sym)->prop_list = prop;
+    F_structure_set (plist_structure, sym, prop);
     return prop;
 }
 
@@ -961,12 +963,14 @@ Returns the property-list of SYMBOL.
 ::end:: */
 {
     int spec;
+    repv plist;
     rep_DECLARE1(sym, rep_SYMBOLP);
     spec = search_special_environment (sym);
     if (spec == 0)
 	return Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
 
-    return rep_SYM(sym)->prop_list;
+    plist = F_structure_ref (plist_structure, sym);
+    return rep_VOIDP (plist) ? Qnil : plist;
 }
 
 DEFUN("gensym", Fgensym, Sgensym, (void), rep_Subr0) /*
@@ -1049,7 +1053,9 @@ Returns the value of SYMBOL's property PROPERTY. See `put'.
 {
     repv plist;
     rep_DECLARE1(sym, rep_SYMBOLP);
-    plist = rep_SYM(sym)->prop_list;
+    plist = F_structure_ref (plist_structure, sym);
+    if (rep_VOIDP (plist))
+	return Qnil;
     while(rep_CONSP(plist) && rep_CONSP(rep_CDR(plist)))
     {
 	if(rep_CAR(plist) == prop
@@ -1071,14 +1077,17 @@ Sets the value of SYMBOL's property PROPERTY to repv, this value can be
 retrieved with the `get' function.
 ::end:: */
 {
-    repv plist;
+    repv plist, old;
     int spec;
     rep_DECLARE1(sym, rep_SYMBOLP);
     spec = search_special_environment (sym);
     if (spec == 0)
 	return Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
 
-    plist = rep_SYM(sym)->prop_list;
+    old = F_structure_ref (plist_structure, sym);
+    if (rep_VOIDP (old))
+	old = Qnil;
+    plist = old;
     while(rep_CONSP(plist) && rep_CONSP(rep_CDR(plist)))
     {
 	if(rep_CAR(plist) == prop
@@ -1096,13 +1105,8 @@ retrieved with the `get' function.
 	}
 	plist = rep_CDR(rep_CDR(plist));
     }
-    plist = Fcons(prop, Fcons(val, rep_SYM(sym)->prop_list));
-    if(plist)
-    {
-	rep_SYM(sym)->prop_list = plist;
-	return val;
-    }
-    return rep_NULL;
+    F_structure_set (plist_structure, sym, Fcons (prop, Fcons (val, old)));
+    return val;
 }
 
 DEFUN("apropos", Fapropos, Sapropos, (repv re, repv pred, repv ob), rep_Subr3) /*
@@ -1244,7 +1248,6 @@ rep_symbols_init(void)
        all fields in case it was dumped. */
     Qnil = Fintern(rep_VAL(&str_nil), rep_obarray);
     rep_mark_static(&Qnil);
-    rep_SYM(Qnil)->prop_list = Qnil;
     rep_INTERN(t);
 
     rep_pre_structures_init ();
@@ -1259,6 +1262,9 @@ rep_symbols_init(void)
     F_structure_set (rep_structure, Qt, Qt);
     Fmake_binding_immutable (Qnil);
     Fmake_binding_immutable (Qt);
+
+    plist_structure = F_make_structure (Qnil, Qnil, Qnil, Qnil);
+    rep_mark_static (&plist_structure);
 
     rep_INTERN(documentation);
     rep_INTERN(permanent_local);
