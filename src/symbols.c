@@ -1114,31 +1114,43 @@ end:
     return(res);
 }
 
-DEFUN ("%define", F_define, S_define, (repv form,  repv tail_posn), rep_SF) /*
+DEFUN ("%define", F_define, S_define, (repv args,  repv tail_posn), rep_SF) /*
 ::doc:rep.lang.interpreter#%define::
-%define SYMBOL FORM
+%define SYMBOL FORM [DOC-STRING]
 
 Evaluate FORM, then create a top-level binding of SYMBOL whose value is
 the result of the evaluation. If such a binding already exists, it will
 be overwritten.
 ::end:: */
 {
-    repv var, value;
-    rep_GC_root gc_var;
+    repv var, value, doc = Qnil;
+    rep_GC_root gc_var, gc_doc;
 
-    if (!rep_CONSP (form))
-	return rep_signal_missing_arg (1);
-    else if (!rep_CONSP (rep_CDR (form)))
-	return rep_signal_missing_arg (2);
+    if (!rep_assign_args (args, 2, 3, &var, &value, &doc))
+	return rep_NULL;
 
-    var = rep_CAR (form);
     rep_PUSHGC (gc_var, var);
-    value = Feval (rep_CADR (form));
-    rep_POPGC;
+    rep_PUSHGC (gc_doc, doc);
+    value = Feval (value);
+    rep_POPGC; rep_POPGC;
     if (value == rep_NULL)
 	return rep_NULL;
 
-    return Fstructure_define (rep_structure, var, value);
+    value = Fstructure_define (rep_structure, var, value);
+    if (value != rep_NULL)
+    {
+	if (doc != Qnil)
+	{
+	    repv prop = rep_documentation_property (rep_structure);
+	    if (prop != Qnil)
+	    {
+		if (Fput (var, prop, doc) == rep_NULL)
+		    value = rep_NULL;
+	    }
+	}
+    }
+
+    return value;
 }
 
 DEFUN("makunbound", Fmakunbound, Smakunbound, (repv sym), rep_Subr1) /*
