@@ -59,6 +59,8 @@ extern rep_regexp *rep_regcomp(char *);
 extern int rep_regexec2(rep_regexp *, char *, int);
 extern int rep_regmatch_string(rep_regexp *, char *, int);
 
+extern int rep_regexp_max_depth;
+
 
 /* Only include the internal stuff if it's explicitly requested, since
    it comtaminates the namespace.. */

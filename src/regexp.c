@@ -661,6 +661,9 @@ static char    *regbol;		/* Beginning of input, for ^ check. */
 static char   **regstartp;	/* Pointer to startp array. */
 static char   **regendp;	/* Ditto for endp. */
 static char	regnocase;	/* Ignore case when string-matching. */
+static int	regnest;	/* depth of recursion */
+
+int rep_regexp_max_depth = 2048;
 
 /*
  * Forwards.
@@ -806,6 +809,7 @@ regtry(rep_regexp *prog, char *string)
     reginput = string;
     regstartp = prog->matches.string.startp;
     regendp = prog->matches.string.endp;
+    regnest = 0;
 
     sp = prog->matches.string.startp;
     ep = prog->matches.string.endp;
@@ -822,6 +826,17 @@ regtry(rep_regexp *prog, char *string)
 	return (0);
 }
 
+/* get around the insane number of return statements in regmatch () */
+static inline int
+nested_regmatch (char *prog)
+{
+    int ret;
+    regnest++;
+    ret = regmatch (prog);
+    regnest--;
+    return ret;
+}
+
 /*
  * - regmatch - main matching routine
  *
@@ -836,6 +851,13 @@ regmatch(char *prog)
 {
     register char  *scan;	/* Current node. */
     char	   *next;	/* Next node. */
+
+    if (regnest >= rep_regexp_max_depth)
+    {
+	/* recursion overload, bail out */
+	rep_regerror ("stack overflow");
+	return 0;
+    }
 
     scan = prog;
 #ifdef DEBUG
@@ -917,7 +939,7 @@ regmatch(char *prog)
 		no = OP(scan) - OPEN;
 		save = reginput;
 
-		if (regmatch(next)) {
+		if (nested_regmatch(next)) {
 		    /*
 		     * Don't set startp if some later invocation of the same
 		     * parentheses already has.
@@ -944,7 +966,7 @@ regmatch(char *prog)
 		no = OP(scan) - CLOSE;
 		save = reginput;
 
-		if (regmatch(next)) {
+		if (nested_regmatch(next)) {
 		    /*
 		     * Don't set endp if some later invocation of the same
 		     * parentheses already has.
@@ -964,7 +986,7 @@ regmatch(char *prog)
 		else {
 		    do {
 			save = reginput;
-			if (regmatch(OPERAND(scan)))
+			if (nested_regmatch(OPERAND(scan)))
 			    return (1);
 			reginput = save;
 			scan = regnext(scan);
@@ -998,7 +1020,7 @@ regmatch(char *prog)
 		    if (nextch == '\0'
 			|| (regnocase ? toupper(*reginput)
 			    : *reginput) == nextch)
-			if (regmatch(next))
+			if (nested_regmatch(next))
 			    return (1);
 		    /* Couldn't or didn't -- back up. */
 		    no--;
@@ -1032,7 +1054,7 @@ regmatch(char *prog)
 		    if (nextch == '\0'
 			|| (regnocase ? toupper(*reginput)
 			    : *reginput) == nextch)
-			if (regmatch(next))
+			if (nested_regmatch(next))
 			    return (1);
 		    /* Couldn't or didn't -- move up. */
 		    no++;
