@@ -241,6 +241,9 @@ struct rep_thread_struct {
     repv (*bytecode)(repv, int, repv *);
     int lock;
     struct timeval run_at;
+    rep_bool (*poll)(rep_thread *t, repv arg);
+    repv poll_arg;
+    repv exit_val;
 };
 
 #define XTHREADP(v)	rep_CELL16_TYPEP(v, rep_thread_type)
@@ -838,6 +841,23 @@ thread_wake (rep_thread *t)
     enqueue_thread (t, root);
 }
 
+static rep_bool
+poll_threads (rep_barrier *root)
+{
+    rep_bool woke_any = rep_FALSE;
+    rep_thread *t, *next;
+    for (t = root->susp_head; t != 0; t = next)
+    {
+	next = t->next;
+	if (t->poll && t->poll (t, t->poll_arg))
+	{
+	    thread_wake (t);
+	    woke_any = rep_TRUE;
+	}
+    }
+    return woke_any;
+}
+
 static repv
 inner_thread_invoke (rep_continuation *c, void *data)
 {
@@ -890,6 +910,11 @@ again:
 	    rep_throw_value = exit_barrier_cell;
 	    DB (("no more threads, throwing to root..\n"));
 	    return;
+	}
+	else if (poll_threads (root_barrier))
+	{
+	    /* something woke */
+	    goto again;
 	}
 	else
 	{
@@ -945,6 +970,9 @@ new_thread (repv name)
     memset (t, 0, sizeof (rep_thread));
     t->car = rep_thread_type;
     t->name = name;
+    t->poll = 0;
+    t->poll_arg = Qnil;
+    t->exit_val = rep_NULL;
     t->next_alloc = threads;
     threads = t;
     return t;
@@ -986,6 +1014,7 @@ make_thread (repv thunk, repv name)
 	t->car |= TF_EXITED;
 	if (ret != rep_NULL)
 	{
+	    t->exit_val = ret;
 	    thread_delete (t);
 	    thread_invoke ();
 	    assert (rep_throw_value == exit_barrier_cell);
@@ -1026,17 +1055,17 @@ thread_yield (void)
 	root_barrier->tail = old;
     }
 
-    /* check suspend queue for threads whose time is up */
+    /* check suspend queue for threads that need waking */
+
     if (root_barrier->susp_head != 0)
 	gettimeofday (&now, 0);
     for (ptr = root_barrier->susp_head; ptr != 0; ptr = next)
     {
 	next = ptr->next;
-	if (TV_LATER_P (&now, &ptr->run_at))
+	if (TV_LATER_P (&now, &ptr->run_at)
+	    || (ptr->poll && ptr->poll (ptr, ptr->poll_arg)))
 	{
-	    unlink_thread (ptr);
-	    ptr->car &= ~TF_SUSPENDED;
-	    enqueue_thread (ptr, root_barrier);
+	    thread_wake (ptr);
 	}
     }
 
@@ -1050,7 +1079,8 @@ thread_yield (void)
 }
 
 static void
-thread_suspend (rep_thread *t, u_long msecs)
+thread_suspend (rep_thread *t, u_long msecs,
+		rep_bool (*poll)(rep_thread *t, repv arg), repv poll_arg)
 {
     rep_barrier *root = t->cont->root;
     assert (!(t->car & TF_SUSPENDED));
@@ -1076,6 +1106,8 @@ thread_suspend (rep_thread *t, u_long msecs)
 	    t->run_at.tv_usec = t->run_at.tv_usec % 1000000;
 	}
     }
+    t->poll = poll;
+    t->poll_arg = poll_arg;
     enqueue_thread (t, root);
     if (root_barrier->active == t)
 	thread_invoke ();
@@ -1099,6 +1131,7 @@ rep_max_sleep_for (void)
     else if (root->susp_head != 0)
     {
 	/* other threads sleeping, how long until the first wakes? */
+	/* XXX ignores polling */
 	struct timeval now;
 	long msecs;
 	gettimeofday (&now, 0);
@@ -1238,6 +1271,8 @@ mark_thread (repv obj)
     rep_MARKVAL (THREAD (obj)->env);
     rep_MARKVAL (THREAD (obj)->structure);
     rep_MARKVAL (THREAD (obj)->name);
+    rep_MARKVAL (THREAD (obj)->poll_arg);
+    rep_MARKVAL (THREAD (obj)->exit_val);
 }
 
 static void
@@ -1469,8 +1504,41 @@ runnable threads, then sleep until the next thread becomes runnable.
     if (th == Qnil)
 	th = Fcurrent_thread (Qnil);
     rep_DECLARE1 (th, THREADP);
-    thread_suspend (THREAD (th), rep_INTP (msecs) ? rep_INT (msecs) : 0);
+    thread_suspend (THREAD (th), rep_INTP (msecs) ? rep_INT (msecs) : 0,
+		    0, Qnil);
     return Qnil;
+}
+
+static rep_bool
+thread_join_poller (rep_thread *t, repv arg)
+{
+    return (THREAD (arg)->car & TF_EXITED) ? rep_TRUE : rep_FALSE;
+}
+
+DEFUN("thread-join", Fthread_join,
+      Sthread_join, (repv th, repv msecs, repv def), rep_Subr3) /*
+::doc:thread-join::
+thread-join THREAD [MSECS] [DEFAULT-VALUE]
+
+Suspend the current thread until THREAD has exited, or MSECS
+milliseconds have passed. If THREAD exits normally, return the value of
+the last form it evaluated, else return DEFAULT-VALUE.
+::end:: */
+{
+    repv self = Fcurrent_thread (Qnil);
+    rep_DECLARE1 (th, XTHREADP);
+    if (THREADP (self))
+    {
+	rep_GC_root gc_th;
+	rep_PUSHGC (gc_th, th);
+	thread_suspend (THREAD (self),
+			rep_INTP (msecs) ? rep_INT (msecs) : 0,
+			thread_join_poller, th);
+	rep_POPGC;
+	if ((THREAD (th)->car & TF_EXITED) && THREAD (th)->exit_val)
+	    return THREAD (th)->exit_val;
+    }
+    return def;
 }
 
 DEFUN("thread-wake", Fthread_wake, Sthread_wake, (repv th), rep_Subr1) /*
@@ -1625,6 +1693,7 @@ rep_continuations_init (void)
     rep_ADD_SUBR(Sthread_yield);
     rep_ADD_SUBR(Sthread_delete);
     rep_ADD_SUBR(Sthread_suspend);
+    rep_ADD_SUBR(Sthread_join);
     rep_ADD_SUBR(Sthread_wake);
     rep_ADD_SUBR(Sthreadp);
     rep_ADD_SUBR(Sthread_suspended_p);
