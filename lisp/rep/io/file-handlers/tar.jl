@@ -33,6 +33,8 @@
 
 ;; It needs to use GNU tar (for the compression options)
 
+(declare (unsafe-for-call/cc))
+
 (define-structure rep.io.file-handlers.tar ()
 
     (open rep

@@ -21,6 +21,8 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
+(declare (unsafe-for-call/cc))
+
 (define-structure rep.vm.compiler
 
     (export compile-file
@@ -216,7 +218,8 @@ we would like. This is due to the view of folded functions as
   (interactive "fLisp file to compile:")
   (let ((temp-file (make-temp-name))
 	src-file dst-file body header)
-    (let-fluids ((current-file file-name))
+    (let-fluids ((current-file file-name)
+		 (unsafe-for-call/cc nil))
       (call-with-frame
        (lambda ()
 	 (unwind-protect

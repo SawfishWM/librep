@@ -38,6 +38,8 @@
 
 ;;; Code:
 
+(declare (unsafe-for-call/cc))
+
 (define-structure rep.lang.backquote
 
     (export backquote)

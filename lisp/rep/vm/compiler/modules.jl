@@ -21,6 +21,8 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
+(declare (unsafe-for-call/cc))
+
 (define-structure rep.vm.compiler.modules
 
     (export macro-env
@@ -357,6 +359,7 @@
 	(when name
 	  (compile-constant name))
 	(emit-insn `(call ,(if name 4 3)))
+	(note-function-call-made)
 	(decrement-stack (if name 4 3)))))
 
   (defun compile-structure-ref (form)

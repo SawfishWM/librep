@@ -18,6 +18,8 @@
 ;;; along with librep; see the file COPYING.  If not, write to
 ;;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
+(declare (unsafe-for-call/cc))
+
 (define-structure rep.io.file-handlers.remote.rep
 
     (export remote-rep-add-passwd

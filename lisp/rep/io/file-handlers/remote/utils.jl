@@ -67,10 +67,9 @@ explicitly, or by the remote-ftp-host-user-alist variable.")
     (remote-fh-guardian fh))
 
   (defun remote-after-gc ()
-    (let
-	(fh)
-      (while (setq fh (remote-fh-guardian))
-	(when (file-binding fh)
-	  (close-file fh)))))
+    (do ((fh (remote-fh-guardian) (remote-fh-guardian)))
+	((not fh))
+      (when (file-binding fh)
+	(close-file fh))))
 
   (add-hook 'after-gc-hook remote-after-gc))

@@ -23,6 +23,8 @@
 ;;	matching files against regexp(s)
 ;;    - Fix all the kludges marked by XXX
 
+(declare (unsafe-for-call/cc))
+
 (define-structure rep.io.file-handlers.remote.ftp
 
     (export remote-ftp-close-host
