@@ -23,6 +23,10 @@
 
 #include <stdarg.h>
 
+/* from continuations.c */
+extern int rep_continuation_type;
+extern repv Fcall_cc (repv fun);
+
 /* from debug-buffer.c */
 extern void *rep_db_alloc(char *name, int size);
 extern void rep_db_free(void *db);
@@ -149,6 +153,7 @@ extern repv rep_env, rep_fenv, rep_special_env;
 extern repv (*rep_bytecode_interpreter)(repv code, repv consts,
 					repv stack, repv frame);
 extern struct rep_Call *rep_call_stack;
+extern int rep_lisp_depth, rep_max_lisp_depth;
 extern int rep_test_int_counter;
 extern int rep_test_int_period;
 extern void (*rep_test_int_fun)(void);

@@ -1,3 +1,19 @@
+2000-01-28  John Harper  <john@dcs.warwick.ac.uk>
+
+	* continuations.c: support for `call/cc' (also has the alias
+	call-with-current-continuation). Only tested on sparc so far,
+	may need tweaking for other architectures. Doesn't attempt to
+	save or restore dynamic bindings
+
+	* main.c (rep_init_from_dump): init continuations, and save
+	initial stack pointer
+
+	* find.c (saved_regexp_data): made global, and added rep_ prefix
+	* files.c, repint.h: moved file-ops enum decl and blocked_ops
+	structure decl to repint.h, since continuations need access	
+	* lisp.c (lisp_depth, max_lisp_depth): added rep_ prefix and
+	made global
+
 2000-01-27  John Harper  <john@dcs.warwick.ac.uk>
 
 	* symbols.c (Fget, Fput): properties don't have to be symbols

@@ -21,11 +21,17 @@
 #ifndef REPINT_SUBRS_H
 #define REPINT_SUBRS_H
 
+/* from continuations.c */
+extern char *rep_stack_bottom;
+extern void rep_continuations_init (void);
+extern void rep_continuations_kill (void);
+
 /* from files.c */
 extern void rep_files_init(void);
 extern void rep_files_kill(void);
 
 /* from find.c */
+extern struct rep_saved_regexp_data *rep_saved_matches;
 extern void rep_mark_regexp_data(void);
 extern void rep_find_init(void);
 extern void rep_find_kill(void);
