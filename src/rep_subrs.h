@@ -596,35 +596,6 @@ extern void *rep_find_dl_symbol (repv feature, char *symbol);
 /* from unix_files.c */
 extern repv rep_lookup_errno(void);
 extern u_long rep_file_length(repv file);
-extern repv rep_file_name_absolute_p(repv file);
-extern repv rep_expand_file_name(repv file);
-extern repv rep_canonical_file_name(repv file);
-extern repv rep_file_name_nondirectory(repv file);
-extern repv rep_file_name_directory(repv file);
-extern repv rep_file_name_as_directory(repv file);
-extern repv rep_directory_file_name(repv file);
-extern repv rep_delete_file(repv file);
-extern repv rep_rename_file(repv old, repv new_);
-extern repv rep_make_directory(repv dir);
-extern repv rep_delete_directory(repv dir);
-extern repv rep_copy_file(repv src, repv dst);
-extern repv rep_file_readable_p(repv file);
-extern repv rep_file_writable_p(repv file);
-extern repv rep_file_exists_p(repv file);
-extern repv rep_file_regular_p(repv file);
-extern repv rep_file_directory_p(repv file);
-extern repv rep_file_symlink_p(repv file);
-extern repv rep_file_owner_p(repv file);
-extern repv rep_file_nlinks(repv file);
-extern repv rep_file_size(repv file);
-extern repv rep_file_modes(repv file);
-extern repv rep_set_file_modes(repv file, repv modes);
-extern repv rep_file_modes_as_string(repv file);
-extern repv rep_file_modtime(repv file);
-extern repv rep_directory_files(repv dir_name);
-extern repv rep_read_symlink (repv file);
-extern repv rep_make_symlink (repv file, repv contents);
-extern repv rep_getpwd(void);
 
 /* from unix_main.c */
 extern u_long rep_time(void);
