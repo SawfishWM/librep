@@ -488,7 +488,6 @@ Note that each input file will be loaded from the lisp-lib-directory with
 (defun dump-output-structs ()
   (@ "\ntypedef struct {\n")
   (@ "  repv car;\n")
-  (@ "  repv next;\n")
   (@ "  repv data;\n")
   (@ "} const_rep_string;\n")
   (@ "\ntypedef struct {\n")
@@ -528,7 +527,6 @@ Note that each input file will be loaded from the lisp-lib-directory with
 	    (@ "const u_char %s_data[] = %S;\n" label string)
 	    (@ "const const_rep_string %s = {\n" label)
 	    (@ "  0x%x,\n" (logior (ash (length string) 8) 0x45))
-	    (@ "  0,\n")
 	    (@ "  rep_VAL(%s_data)\n" label)
 	    (@ "};\n\n"))) head))
     
