@@ -591,7 +591,7 @@ typedef struct rep_funarg_struct {
 
 #define rep_USE_DEFAULT_ENV			\
     do {					\
-	rep_env = Qt;				\
+	rep_env = Qnil;				\
 	rep_structure = rep_default_structure;	\
 	rep_bytecode_interpreter = Fjade_byte_code; \
     } while (0)
