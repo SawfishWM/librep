@@ -107,9 +107,10 @@
 (put 'unload 'repl-help "STRUCT ...")
 
 (put 'load-file 'repl-command
-     (lambda (file . args)
-       (repl-eval `(,load ,file ,@args))))
-(put 'load-file 'repl-help "\"FILENAME\"")
+     (lambda files
+       (mapc (lambda (f)
+	       (repl-eval `(,load ,f))))))
+(put 'load-file 'repl-help "\"FILENAME\" ...")
 
 (put 'open 'repl-command
      (lambda structs
