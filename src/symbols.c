@@ -933,12 +933,14 @@ retrieved with the `get' function.
     {
 	if(VCAR(plist) == prop)
 	{
-	    if(CONS_WRITABLE_P(VCDR(plist)))
-		VCAR(VCDR(plist)) = val;
-	    else
-		/* Can't write into a dumped cell */
-		VCDR(plist) = cmd_cons(val, VCDR(VCDR(plist)));
-	    return(val);
+	    if(!CONS_WRITABLE_P(VCDR(plist)))
+	    {
+		/* Can't write into a dumped cell; need to cons
+		   onto the head. */
+		break;
+	    }
+	    VCAR(VCDR(plist)) = val;
+	    return val;
 	}
 	plist = VCDR(VCDR(plist));
     }
@@ -946,7 +948,7 @@ retrieved with the `get' function.
     if(plist)
     {
 	VSYM(sym)->prop_list = plist;
-	return(val);
+	return val;
     }
     return LISP_NULL;
 }
