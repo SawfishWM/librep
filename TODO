@@ -10,7 +10,7 @@ and more long-term ideas are marked -
 Outstanding bugs
 ================
 
- ! interactive decls in define-declared functions don't work when compiled
+ ! (read-from-string "((a)") doesn't terminate?
 
  ! scheme define/lambda doesn't splice begin forms
 

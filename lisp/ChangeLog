@@ -1,3 +1,8 @@
+2000-06-29  John Harper  <john@dcs.warwick.ac.uk>
+
+	* define.jl (define-scan-form): fix bug when extracting doc
+	strings and interactive decls
+
 2000-06-27  John Harper  <john@dcs.warwick.ac.uk>
 
 	* profiler.jl: front-end for a basic profiler
