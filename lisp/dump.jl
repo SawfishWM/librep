@@ -20,7 +20,7 @@
 
 (provide 'dump)
 
-;;;;Commentary
+;;; Commentary:
 
 ;;; Lisp modules generally consist almost wholly of constant
 ;;; definitions, that is, definitions whose effect can be known upon
@@ -46,8 +46,14 @@
 ;;; little modification needed to the Lisp system itself.
 
 ;;; Currently, the following forms are recognised as [possibly] containing
-;;; static definitions: defun, defmacro, defvar, defconst,
+;;; static definitions: defun, defsubst, defmacro, defvar, defconst,
 ;;; make-variable-buffer-local, put.
+
+;;; Note that the structure of the main Lisp data types (integers, cons
+;;; cells, symbols and vectors) is _hard_coded_ at the end of this file.
+
+
+;; Configuration
 
 (defvar dump-verbosely t
   "When t output the reference graph as text to a file dump-verbosely-file
@@ -133,7 +139,7 @@ the lisp-lib-dir with .jlc as its suffix."
        output-stream input-stream
        file-full-name
        (list-head file-list))
-    (when (setq output-stream (open-file output-file "w"))
+    (when (setq output-stream (open-file output-file 'write))
       (unwind-protect
 	  (progn
 	    (dump-output-comment
@@ -148,10 +154,10 @@ the lisp-lib-dir with .jlc as its suffix."
 	    ;; generated symbols
 	    (dump-add-constant nil)
 	    (while (consp list-head)
-	      (setq file-full-name (file-name-concat lisp-lib-dir
-						     (concat (car list-head)
-							     ".jlc")))
-	      (unless (setq input-stream (open-file file-full-name "r"))
+	      (setq file-full-name (expand-file-name
+				    (concat (car list-head) ".jlc")
+				    lisp-lib-dir))
+	      (unless (setq input-stream (open-file file-full-name 'read))
 		(error "Dump: can't open %s" file-full-name))
 	      (unwind-protect
 		  (let
@@ -165,9 +171,9 @@ the lisp-lib-dir with .jlc as its suffix."
 		    (setq dump-non-constant-forms
 			  (nreverse dump-non-constant-forms))
 		    (dump-output-non-consts file-full-name
-					    (file-name-concat
-					     lisp-lib-dir
-					     (concat (car list-head) ".jld"))))
+					    (expand-file-name
+					     (concat (car list-head) ".jld")
+					     lisp-lib-dir)))
 		(close-file input-stream))
 	      (setq list-head (cdr list-head)))
 	    ;; Set the variable dumped-lisp-libraries to the list of
@@ -197,7 +203,7 @@ the lisp-lib-dir with .jlc as its suffix."
 ;; name of the file they came from
 (defun dump-output-non-consts (input-file file-name)
   (let
-      ((file (open-file file-name "w")))
+      ((file (open-file file-name 'write)))
     (when file
       (unwind-protect
 	  (progn
@@ -212,7 +218,7 @@ the lisp-lib-dir with .jlc as its suffix."
 ;; definitions came from the list of files INPUT-FILES
 (defun dump-output-readably (input-files)
   (let
-      ((file (open-file dump-verbosely-file "w"))
+      ((file (open-file dump-verbosely-file 'write))
        (print-escape t))
     (when file
       (unwind-protect
