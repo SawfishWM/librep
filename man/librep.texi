@@ -244,11 +244,11 @@ the form @samp{(load "@var{script}")}.
 Terminate the Lisp process and exit.
 @end table
 
-@vindex command-line-arguments
+@vindex command-line-args
 If @var{script} is given, it names the Lisp file to load, equivalent to
 the @samp{-l} option, except that @samp{--batch-mode} is implied. Any
 @var{script-options} will be made available to the script (in the
-@code{command-line-arguments} variable).
+@code{command-line-args} variable).
 
 After any arguments have been processed a banner message will be
 displayed before entering an interactive read-eval-print loop, unless

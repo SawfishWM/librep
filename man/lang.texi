@@ -8186,10 +8186,10 @@ applicable).
 @cindex Arguments, command line
 
 As noted earlier any unused command line arguments are made available
-to scripts through the @code{command-line-arguments} variable
+to scripts through the @code{command-line-args} variable
 (@pxref{Invocation}).
 
-@defvar command-line-arguments
+@defvar command-line-args
 The list of unused command line arguments, in their original order.
 @end defvar
 
