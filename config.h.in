@@ -228,6 +228,9 @@
 /* Define if you have the gettimeofday function.  */
 #undef HAVE_GETTIMEOFDAY
 
+/* Define if you have the strtoll function. */
+#undef HAVE_STRTOLL
+
 /* Define if you have the <dirent.h> header file.  */
 #undef HAVE_DIRENT_H
 
@@ -315,5 +318,11 @@
 /* Define the sizes of long and long long */
 #undef SIZEOF_LONG
 #undef SIZEOF_LONG_LONG
+
+/* Define this if GMP is to be used. */
+#undef HAVE_GMP
+
+/* Define if continuations / threading support should be built */
+#undef WITH_CONTINUATIONS
 
 #endif /* CONFIG_H */
