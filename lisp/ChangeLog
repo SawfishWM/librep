@@ -1,3 +1,9 @@
+1999-12-10  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.jl (in-hook-p): new function
+	(add-hook): if variable is unbound, make it special before
+	setting it
+
 1999-12-07  John Harper  <john@dcs.warwick.ac.uk>
 
 	* disassembler.jl, compiler.jl, bytecodes.jl (op-enclose): new
