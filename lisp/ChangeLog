@@ -1,5 +1,9 @@
 2000-06-01  John Harper  <john@dcs.warwick.ac.uk>
 
+	* rep-repl.jl (rl-completion-generator): new function,
+	generates completions for readline (from Ceri Storey
+	<cez@phi.uklinux.net>)
+
 	* compiler-basic.jl (compile-form-1): don't call
 	test-function-call if the form has a special handler
 
