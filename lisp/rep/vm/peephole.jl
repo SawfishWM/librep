@@ -245,7 +245,7 @@
 			   (bytecode inc))
 		       (if (eq (car insn1) (bytecode sub))
 			   (bytecode inc)
-			 (bytecode sub)))))
+			 (bytecode dec)))))
 	    (rplaca insn1 new)
 	    (del-0)
 	    (setq keep-going t)))
