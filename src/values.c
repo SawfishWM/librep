@@ -107,6 +107,8 @@ Lisp_Type_Data data_types[V_MAX] = {
     DT_NULL,
     { ptr_cmp, glyphtable_prin, glyphtable_prin,
       glyphtable_sweep, "glyph-table" },
+    DT_NULL,
+    { vector_cmp, lisp_prin, lisp_prin, NULL, "byte-code" },
 };
 
 
@@ -176,7 +178,7 @@ make_string(int len)
     str = sm_alloc(&lisp_strmem, memlen);
     if(str != NULL)
     {
-	str->car = MAKE_STRING_CAR(len - 1, 0);
+	str->car = MAKE_STRING_CAR(len - 1);
 	data_after_gc += memlen;
 	return VAL(str);
     }
@@ -272,7 +274,7 @@ set_string_len(VALUE str, long len)
 {
     if(STRING_WRITABLE_P(str))
     {
-	VSTRING(str)->car = MAKE_STRING_CAR(len, 0);
+	VSTRING(str)->car = MAKE_STRING_CAR(len);
 	return TRUE;
     }
     else
@@ -634,7 +636,7 @@ again:
     /* So we know that it's a cell8 object */
     switch(VCELL8_TYPE(val))
     {
-    case V_Vector:
+    case V_Vector: case V_Compiled:
 	{
 	    int i, len = VVECT_LEN(val);
 	    GC_SET_CELL(val);
