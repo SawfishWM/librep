@@ -183,6 +183,9 @@
 /* Define if you have realpath() */
 #undef HAVE_REALPATH
 
+/* Define if you have the gettext function */
+#undef HAVE_GETTEXT
+
 /* Define if you have the <dirent.h> header file.  */
 #undef HAVE_DIRENT_H
 
@@ -219,6 +222,9 @@
 /* Define if you have the <termios.h> header file.  */
 #undef HAVE_TERMIOS_H
 
+/* Define if you have the <libintl.h> header file.  */
+#undef HAVE_LIBINTL_H
+
 /* Define if you have the nsl library (-lnsl).  */
 #undef HAVE_LIBNSL
 
@@ -227,6 +233,9 @@
 
 /* Define if you have the socket library (-lsocket).  */
 #undef HAVE_LIBSOCKET
+
+/* Define if you have the intl library (-lintl).  */
+#undef HAVE_LIBINTL
 
 /* Define if using Doug Lea's malloc */
 #undef DOUG_LEA_MALLOC

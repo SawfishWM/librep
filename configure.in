@@ -84,12 +84,17 @@ AC_CHECK_LIB(nsl, xdr_void)
 AC_CHECK_LIB(socket, bind)
 AC_CHECK_LIB(dl, dlopen)
 
+AC_CHECK_LIB(intl, gettext, [
+  AC_DEFINE(HAVE_LIBINTL)
+  GETTEXT_LIBS=-lintl])
+AC_SUBST(GETTEXT_LIBS)
+
 dnl Checks for header files.
 AC_HEADER_DIRENT
 AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
-AC_CHECK_HEADERS(fcntl.h sys/ioctl.h sys/time.h sys/utsname.h unistd.h siginfo.h memory.h stropts.h termios.h)
+AC_CHECK_HEADERS(fcntl.h sys/ioctl.h sys/time.h sys/utsname.h unistd.h siginfo.h memory.h stropts.h termios.h libintl.h)
 
 dnl Check for Doug Lea's malloc in libc, otherwise compile dlmalloc.c
 doug_lea_malloc=yes
@@ -157,6 +162,12 @@ AC_FUNC_MEMCMP
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS(getcwd gethostname select socket strcspn strerror strstr stpcpy strtol psignal strsignal snprintf grantpt lrand48 getpagesize setitimer dladdr dlerror)
 AC_REPLACE_FUNCS(realpath)
+
+dnl Check for gettext ()
+saved_LIBS="$LIBS"
+LIBS="$LIBS $GETTEXT_LIBS"
+AC_CHECK_FUNCS(gettext)
+LIBS="$saved_LIBS"
 
 dnl Custom tests
 
