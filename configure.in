@@ -99,6 +99,7 @@ AC_HEADER_TIME
 AC_CHECK_HEADERS(fcntl.h sys/ioctl.h sys/time.h sys/utsname.h unistd.h siginfo.h memory.h stropts.h termios.h string.h limits.h argz.h locale.h nl_types.h malloc.h sys/param.h)
 
 dnl Check for GNU MP library and header files
+GMP_LIBS="-lm"
 AC_ARG_WITH(gmp,
  [  --with-gmp		  Use GMP for bignum/rational numbers
   --without-gmp		  Don't use GMP], [], [with_gmp=maybe])
