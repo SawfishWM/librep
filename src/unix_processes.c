@@ -1886,7 +1886,8 @@ rep_system (char *command)
 	argv[2] = command;
 	argv[3] = 0;
 	execve ("/bin/sh", argv, environ);
-	return Fsignal (Qerror, Fcons (rep_string_dup ("Can't exec /bin/sh"), Qnil));
+	perror ("exec /bin/sh");
+	exit (255);
 
     default:
 	do {
