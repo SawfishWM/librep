@@ -22,26 +22,34 @@
 
 (load "lisp")
 (load "backquote")
+(load "tilde")
 (load "loadkeys")
 (load "windows")
 (load "buffers")
-(load "autoload.jl")	; don't want any compiled version
 (load "modes")
 (load "edit")
 (load "rcs-hooks")
 (load "dired-hooks")
 
-(load "site-init" t)
+;; Install all autoload hooks. This is done last so that it works
+;; when dumped. We load autoload.jl to ensure that we don't get a
+;; compiled (and possibly out of date) version
+(load "autoload.jl")
 
-;; Now try to interpret the user's startup file
-(or
-  (load (file-name-concat (user-home-directory) ".jaderc") t t)
-  (load "default" t))
-
-;; If we're on an Amiga and the variable `amiga-no-menus' isn't set load
-;; some menus.
-(when (and (amiga-p) (not (boundp 'amiga-no-menus)))
-  (load "loadmenus"))
+;; Load site specific initialisation. Errors here are trapped since
+;; they're probably not going to leave the editor in an unusable state
+(condition-case error-data
+    (progn
+      ;; First the site-wide stuff, the t means don't complain
+      ;; if it doesn't exist
+      (load "site-init" t)
+      ;; Now try to interpret the user's startup file, or failing that
+      ;; the default.jl file providing site-wide user options
+      (or
+       (load (concat (user-home-directory) ".jaderc") t t)
+       (load "default" t)))
+  (error
+   (format (stderr-file) "error in local config--> %S\n" error-data)))
 
 ;; Set up the first window as command shell type thing
 (set-buffer-special default-buffer t)
