@@ -524,8 +524,25 @@ typedef struct {
 typedef struct lisp_file {
     VALUE car;				/* single flag at bit 8 */
     struct lisp_file *next;
+
+    /* Name as user sees it */
     VALUE name;
-    FILE *file;
+
+    /* Function to call to handle file operations,
+       or t for file in local fs */
+    VALUE handler;
+
+    /* Data for handler's use; for local files, this is the
+       name of the file opened in the local fs. */
+    VALUE handler_data;
+
+    /* For local files, a buffer file handle; for others some sort
+       of stream. */
+    union {
+	FILE *fh;
+	VALUE stream;
+    } file;
+
 } Lisp_File;
 
 /* When this bit is set in flags, the file handle is never fclose()'d,
@@ -534,6 +551,8 @@ typedef struct lisp_file {
 
 #define VFILE(v)	((Lisp_File *)VPTR(v))
 #define FILEP(v)	VCELL8_TYPEP(v, V_File)
+
+#define LOCAL_FILE_P(v)	(VFILE(v)->handler == sym_t)
 
 
 /* Built-in subroutines */
@@ -720,21 +739,20 @@ struct Lisp_Call {
 
 /* Declare a symbol stored in variable sym_X. */
 #define DEFSYM(x, name) \
-    VALUE CONCAT(sym_, x); DEFSTRING(CONCAT(str_, x), name)
+    VALUE sym_ ## x; DEFSTRING(str_ ## x, name)
 
 /* Intern a symbol stored in sym_X, whose name (a lisp string) is stored
    in str_X (i.e. declared with DEFSYM) */
-#define INTERN(x) intern_static(&CONCAT(sym_, x), VAL(&CONCAT(str_, x)))
+#define INTERN(x) intern_static(& sym_ ## x, VAL(& str_ ## x))
 
 /* Add an error string called err_X for symbol stored in sym_X */
 #define ERROR(x) \
-    cmd_put(CONCAT(sym_, x), sym_error_message, VAL(&CONCAT(err_, x)))
+    cmd_put(sym_ ## x, sym_error_message, VAL(& err_ ## x))
 
 /* Add a documentation string for the variable stored in sym_X, pointing at
    index DOC_X */
-#define DOC(x)	 						\
-    cmd_put(CONCAT(sym_, x), sym_variable_documentation,	\
-	    MAKE_INT(CONCAT(DOC_, x)))
+#define DOC(x) \
+    cmd_put(sym_ ## x, sym_variable_documentation, MAKE_INT(DOC_ ## x))
 
 
 /* Macros for ensuring an object is of a certain type i.e. to ensure
