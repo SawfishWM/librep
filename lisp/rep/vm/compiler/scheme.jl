@@ -242,7 +242,7 @@
 	      (put cell 'scheme-compile-fun (get cell 'rep-compile-fun))
 	    (put (car cell) 'scheme-compile-fun
 		 (get (cdr cell) 'rep-compile-fun))))
-	'(list cons
+	'(list cons apply
 	  (set-car! . rplaca)
 	  (set-cdr! . rplacd)
 	  (string-set! . aset)

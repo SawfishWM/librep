@@ -80,7 +80,7 @@
 	      (put cell 'unscheme-compile-fun (get cell 'rep-compile-fun))
 	    (put (car cell) 'unscheme-compile-fun
 		 (get (cdr cell) 'rep-compile-fun))))
-	'(list cons car cdr
+	'(list cons car cdr apply
 	  caar cadr cdar cddr caddr
 	  (set-car! . rplaca)
 	  (set-cdr! . rplacd)
