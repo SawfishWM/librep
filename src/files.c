@@ -1124,7 +1124,7 @@ copy-file SOURCE DESTINATION
 Create a new copy of the file called SOURCE, as the file called DESTINATION.
 ::end:: */
 {
-    VALUE src_handler, dst_handler;
+    VALUE src_handler, dst_handler, res;
     GC_root gc_src, gc_dst;
 
     PUSHGC(gc_src, src);
@@ -1139,26 +1139,42 @@ Create a new copy of the file called SOURCE, as the file called DESTINATION.
     {
 	if(NILP(src_handler))
 	    /* Both names on local fs. */
-	    return sys_copy_file(src, dst);
+	    res = sys_copy_file(src, dst);
 	else
-	    return call_handler(src_handler, op_copy_file,
+	    res = call_handler(src_handler, op_copy_file,
 				sym_copy_file, 2, src, dst);
+    }
+    else if(NILP(src_handler))
+    {
+	/* Copying from local to remote */
+	res = call_handler(dst_handler, op_copy_file_from_local_fs,
+			   sym_copy_file_from_local_fs, 2, src, dst);
+    }
+    else if(NILP(dst_handler))
+    {
+	/* Copying from remote to local */
+	res = call_handler(src_handler, op_copy_file_to_local_fs,
+			   sym_copy_file_to_local_fs, 2, src, dst);
     }
     else
     {
-	/* Copy via local fs. */
-	VALUE temp = cmd_make_temp_name(), res;
-	if(!temp)
-	    return temp;
-	res = call_handler(src_handler, op_copy_file_to_local_fs,
-			   sym_copy_file_to_local_fs, 2, src, temp);
-	if(!res)
-	    return res;
-	res = call_handler(dst_handler, op_copy_file_from_local_fs,
-			   sym_copy_file_from_local_fs, 2, temp, dst);
-	remove(VSTR(temp));
-	return res;
+	/* Copy from remote-1 to remote-2 via local fs. */
+	VALUE temp = cmd_make_temp_name();
+	if(temp)
+	{
+	    res = call_handler(src_handler, op_copy_file_to_local_fs,
+			       sym_copy_file_to_local_fs, 2, src, temp);
+	    if(res)
+	    {
+		res = call_handler(dst_handler, op_copy_file_from_local_fs,
+				   sym_copy_file_from_local_fs, 2, temp, dst);
+	    }
+	    remove(VSTR(temp));
+	}
+	else
+	    res = LISP_NULL;
     }
+    return res;
 }
     
 
