@@ -72,7 +72,14 @@
 
 ;;; pass 1 support
 
-  (defun pass-1 (form)
+  (defun pass-1 (forms)
+    (let loop ((rest forms)
+	       (out '()))
+      (if (null rest)
+	  (nreverse out)
+	(loop (cdr rest) (cons (do-pass-1 (car rest)) out)))))
+
+  (defun do-pass-1 (form)
     (unless (or (eq (car form) 'define) (memq (car form) top-level-compiled))
       (setq form (compiler-macroexpand
 		  form (lambda (in out)
@@ -88,7 +95,7 @@
 	       (t (compiler-error "Invalid define statement" form)))))
 
       ((begin)
-       (setq form (cons 'begin (mapcar pass-1 (cdr form))))))
+       (setq form (cons 'begin (mapcar do-pass-1 (cdr form))))))
 
     form)
 
@@ -97,11 +104,18 @@
 
 ;;; pass 2 support
 
-  (defun pass-2 (form)
+  (defun pass-2 (forms)
+    (let loop ((rest forms)
+	       (out '()))
+      (if (null rest)
+	  (nreverse out)
+	(loop (cdr rest) (cons (do-pass-2 (car rest)) out)))))
+
+  (defun do-pass-2 (form)
     (cond ((eq (car form) 'define)
 	   (setq form (compile-define form)))
 	  ((eq (car form) 'begin)
-	   (cons 'begin (mapcar pass-2 (cdr form))))
+	   (cons 'begin (mapcar do-pass-2 (cdr form))))
 	  ((memq (car form) top-level-compiled)
 	   (setq form (compile-form form))))
     form)
@@ -125,12 +139,9 @@
 ;;; source code transformations
 
   ;; tells the constant-folder which functions can be removed
-;  (defun foldablep (name)
-;    (memq name constant-functions))
-;  (put 'scheme 'compiler-foldablep foldablep)
-
-  ;; XXX the above doesn't work, the functions will be called from
-  ;; XXX the wrong structure
+  (defun foldablep (name)
+    (memq name constant-functions))
+  (put 'scheme 'compiler-foldablep foldablep)
 
 
 ;;; special compilers
@@ -142,7 +153,6 @@
 
   (put 'quote 'scheme-compile-fun (get 'quote 'rep-compile-fun))
   (put '%lambda 'scheme-compile-fun (get 'lambda 'rep-compile-fun))
-  (put '%while 'scheme-compile-fun (get 'while 'rep-compile-fun))
   (put '%progn 'scheme-compile-fun (get 'progn 'rep-compile-fun))
 
   (defun compile-set! (form)
