@@ -32,9 +32,6 @@
 /* Site scripts directory */
 #define SITE_LISP_DIR_SUFFIX "/site-lisp/"
 
-/* Binaries directory */
-#define EXEC_DIR QUOTE(JADE_EXEC_DIR) "/" HOST_TYPE
-
 /* file containing doc-strings */
 #define DOC_FILE_SUFFIX "/" VERSID "/DOC"
 
