@@ -1,3 +1,9 @@
+1998-10-01  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rcs.jl (rcs-process, rcs-output-buffer): deleted these
+	variables, all processes and buffers are created on demand (to
+	help garbage collection)
+
 1998-09-30  John Harper  <john@dcs.warwick.ac.uk>
 
 	* html-style.jl: require maildefs (for user-mail-address)
