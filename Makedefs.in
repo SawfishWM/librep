@@ -47,6 +47,7 @@ repdocfile=@repdocfile@
 
 CC=@CC@
 LIBTOOL=@LIBTOOL@
+MAKEDEP=@MAKEDEP@
 CPPFLAGS=-DHAVE_CONFIG_H -I. -I$(top_srcdir)/src -I.. @CPPFLAGS@
 CFLAGS=@CFLAGS@
 DL_CFLAGS=@DL_CFLAGS@
@@ -86,10 +87,10 @@ HAVE_UNIX=@HAVE_UNIX@
 # Rule for dlopen'able C objects
 lib%.la : %.c
 	$(LIBTOOL) $(CC) -c $(CPPFLAGS) $(CFLAGS) $<
-	$(LIBTOOL) gcc -export-dynamic $(CPPFLAGS) $(CFLAGS) -o $@ $*.lo \
-	  -rpath $(repexecdir)
+	$(LIBTOOL) gcc -export-dynamic -module $(CPPFLAGS) $(CFLAGS) \
+	  -o $@ $*.lo -rpath $(repexecdir)
 
 # Build dependancy files from C source files.
 .%.d : %.c
-	$(SHELL) -ec '$(CC) -MM -MG $(CPPFLAGS) $< \
+	$(SHELL) -ec '$(MAKEDEP) $(CPPFLAGS) $< \
 	| sed '\''s/$*\.o/& $*.lo .$*\.d/g'\'' > $@'
