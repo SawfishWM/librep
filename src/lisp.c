@@ -118,11 +118,6 @@ DEFSYM(arith_error, "arith-error");
 DEFSTRING(err_arith_error, "Arithmetic error");
 DEFSYM(term_interrupt, "term-interrupt");
 
-#ifdef MINSTACK
-DEFSYM(stack_error, "stack-error");
-DEFSTRING(err_stack_error, "Out of stack space");
-#endif
-
 DEFSYM(debug_on_error, "debug-on-error");
 DEFSYM(backtrace_on_error, "backtrace-on-error");
 DEFSYM(debug_macros, "debug-macros");
@@ -209,14 +204,22 @@ void (*rep_test_int_fun)(void) = default_test_int;
 
 /* Reading */
 
-/* All of the read-related functions are now stream based. This will
-   probably add some (much?) overhead but I think it's worth it?
+/* The `c' variable which keeps coming up is the lookahead character,
+   since each reader function normally has to look at the next character
+   to see if it's what it wants. If not, the lookahead is given to
+   someone else or unread before exiting... */
 
-   The `c' variable which keeps coming up is the lookahead character,
-   since each read*() routine normally has to look at the next character
-   to see if it's what it wants. If not, this char is given to someone
-   else... */
-
+/* inline common case of reading from local files; this appears to
+   decrease startup time by about 25% */
+static inline int
+fast_getc (repv stream)
+{
+    if (rep_FILEP (stream) && rep_LOCAL_FILE_P (stream))
+	return getc (rep_FILE (stream)->file.fh);
+    else
+	return rep_stream_getc (stream);
+}
+ 
 DEFSTRING(nodot, "Nothing to dot second element of cons-cell to");
 
 static repv
@@ -239,15 +242,15 @@ read_list(repv strm, register int *c_p)
 	case '\t':
 	case '\n':
 	case '\f':
-	    *c_p = rep_stream_getc(strm);
+	    *c_p = fast_getc(strm);
 	    continue;
 
 	case ';':
 	    {
 		register int c;
-		while((c = rep_stream_getc(strm)) != EOF && c != '\n' && c != '\f')
+		while((c = fast_getc(strm)) != EOF && c != '\n' && c != '\f')
 		    ;
-		*c_p = rep_stream_getc(strm);
+		*c_p = fast_getc(strm);
 		continue;
 	    }
 
@@ -475,7 +478,7 @@ read_symbol(repv strm, int *c_p)
 	    }
 	    buf[i++] = c;
 	}
-	c = rep_stream_getc(strm);
+	c = fast_getc(strm);
     }
 done:
     buf[i] = 0;
@@ -585,7 +588,7 @@ read_str(repv strm, int *c_p)
 	    else
 	    {
 		*cur++ = c;
-		c = rep_stream_getc(strm);
+		c = fast_getc(strm);
 	    }
 	}
 	if(c == EOF)
@@ -607,13 +610,6 @@ read_str(repv strm, int *c_p)
 repv
 rep_readl(repv strm, register int *c_p)
 {
-#ifdef MINSTACK
-    if(STK_SIZE <= MINSTACK)
-    {
-	STK_WARN("read");
-	return Fsignal(Qstack_error, Qnil);
-    }
-#endif
     while(1)
     {
 	switch(*c_p)
@@ -628,13 +624,13 @@ rep_readl(repv strm, register int *c_p)
 	case '\t':
 	case '\n':
 	case '\f':
-	    *c_p = rep_stream_getc(strm);
+	    *c_p = fast_getc(strm);
 	    continue;
 
 	case ';':
 	    {
 		register int c;
-		while((c = rep_stream_getc(strm)) != EOF && c != '\n' && c != '\f')
+		while((c = fast_getc(strm)) != EOF && c != '\n' && c != '\f')
 		    ;
 		*c_p = rep_stream_getc(strm);
 		continue;
@@ -761,7 +757,7 @@ rep_readl(repv strm, register int *c_p)
 		{
 		    register int c;
 		read_comment:
-		    while ((c = rep_stream_getc (strm)) != EOF)
+		    while ((c = fast_getc (strm)) != EOF)
 		    {
 		    comment_again:
 			if (c == comment_terminator)
@@ -823,7 +819,7 @@ rep_readl(repv strm, register int *c_p)
 			    char *ptr = char_names[i].name + 2;
 			    while (1)
 			    {
-				c = rep_stream_getc (strm);
+				c = fast_getc (strm);
 				if (*ptr == 0)
 				{
 				    *c_p = c;
@@ -1237,14 +1233,6 @@ rep_funcall(repv fun, repv arglist, rep_bool eval_args)
     if(rep_INTERRUPTP)
 	return rep_NULL;
 
-#ifdef MINSTACK
-    if(STK_SIZE <= MINSTACK)
-    {
-	STK_WARN("rep_funcall");
-	return Fsignal(Qstack_error, Qnil);
-    }
-#endif
-
     if(++rep_lisp_depth > rep_max_lisp_depth)
     {
 	rep_lisp_depth--;
@@ -1473,14 +1461,6 @@ static repv
 eval(repv obj)
 {
     repv result = rep_NULL;
-
-#ifdef MINSTACK
-    if(STK_SIZE <= MINSTACK)
-    {
-	STK_WARN("eval");
-	return Fsignal(Qstack_error, Qnil);
-    }
-#endif
 
     switch(rep_TYPE(obj))
     {
@@ -2265,9 +2245,6 @@ rep_lisp_init(void)
     rep_INTERN(invalid_stream); rep_ERROR(invalid_stream);
     rep_INTERN(setting_constant); rep_ERROR(setting_constant);
     rep_INTERN(process_error); rep_ERROR(process_error);
-#ifdef MINSTACK
-    rep_INTERN(stack_error); rep_ERROR(stack_error);
-#endif
     rep_INTERN(no_memory); rep_ERROR(no_memory);
     rep_INTERN(user_interrupt); rep_ERROR(user_interrupt);
     rep_INTERN(arith_error); rep_ERROR(arith_error);
