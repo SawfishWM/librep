@@ -21,23 +21,59 @@
 #include "jade.h"
 #include "jade_protos.h"
 
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <sys/fcntl.h>
-#include <sys/time.h>
-#include <sys/stat.h>
-#include <sys/ioctl.h>
+/* Note that I have no idea how portable this code will be. It has
+   been tested under Solaris and Linux, but beyond that, I really don't
+   have the experience... */
+
 #include <stdio.h>
-#include <signal.h>
-#include <errno.h>
-#include <unistd.h>
-#include <termios.h>
-#include <fcntl.h>
+#include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <signal.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #ifdef NEED_MEMORY_H
 # include <memory.h>
+#endif
+
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
+
+#ifdef HAVE_FCNTL_H
+# include <fcntl.h>
+#else
+# include <sys/fcntl.h>
+#endif
+
+#ifdef HAVE_SYS_TIME_H
+# include <sys/time.h>
+#endif
+
+#if HAVE_SYS_WAIT_H
+# include <sys/wait.h>
+#endif
+#ifndef WEXITSTATUS
+# define WEXITSTATUS(stat_val) ((unsigned)(stat_val) >> 8)
+#endif
+#ifndef WIFEXITED
+# define WIFEXITED(stat_val) (((stat_val) & 255) == 0)
+#endif
+
+#ifdef HAVE_SYS_IOCTL_H
+# include <sys/ioctl.h>
+#endif
+
+#ifdef HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
+#ifdef HAVE_DEV_PTMX
+# ifdef HAVE_STROPTS_H
+#  include <stropts.h>
+# endif
 #endif
 
 static struct sigaction chld_sigact;
@@ -129,7 +165,7 @@ DEFSTRING(dev_null, "/dev/null");
 
 
 
-static void
+static RETSIGTYPE
 sigchld_handler(int sig)
 {
     got_sigchld = TRUE;
@@ -205,6 +241,7 @@ check_for_zombies(void)
 		if(PR_ACTIVE_P(pr) && (pr->pr_Pid == pid))
 		{
 		    /* Got it. */
+#ifdef WIFSTOPPED
 		    if(WIFSTOPPED(status))
 		    {
 			/* Process is suspended. */
@@ -212,6 +249,7 @@ check_for_zombies(void)
 			queue_notify(pr);
 		    }
 		    else
+#endif
 		    {
 			/* Process is dead. */
 			pr->pr_ExitStatus = status;
@@ -380,9 +418,30 @@ kill_process(struct Proc *pr)
     FREE_OBJECT(pr);
 }
 
+/* Return the file descriptor (or -1 if an error) of the first available
+   pty master. SLAVENAM will contain the name of the associated slave. */
 static int
 get_pty(char *slavenam)
 {
+#ifdef HAVE_PTYS
+# ifdef HAVE_DEV_PTMX
+    int master = open("/dev/ptmx", O_RDWR);
+    if(master >= 0)
+    {
+	char *tem;
+	grantpt(master);
+	unlockpt(master);
+	tem = ptsname(master);
+	if(tem != 0)
+	{
+	    strcpy(slavenam, tem);
+	    return master;
+	}
+	close(master);
+    }
+# else
+    /* Assume /dev/ptyXNN and /dev/ttyXN naming system.
+       The FIRST_PTY_LETTER gives the first X to try. */
     char c;
     int i, master;
     struct stat statb;
@@ -397,14 +456,17 @@ get_pty(char *slavenam)
 	    {
 		slavenam[sizeof("/dev/")-1] = 't';
 		if(access(slavenam, R_OK | W_OK) == 0)
-		    return(master);
+		    return master;
 		close(master);
 	    }
 	}
     }
 none:
+# endif
+#endif
+    /* Couldn't find a pty. Signal an error. */
     cmd_signal(sym_process_error, LIST_1(VAL(&no_pty)));
-    return(-1);
+    return -1;
 }
 
 /* does the dirty stuff of getting the process running. if SYNC_INPUT
@@ -485,6 +547,14 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 			exit(255);
 		    }
 		    close(pr->pr_Stdin);
+#ifdef HAVE_DEV_PTMX
+# ifdef I_PUSH
+		    /* Push the necessary modules onto the slave to
+		       get terminal semantics. */
+		    ioctl(slave, I_PUSH, "ptem");
+		    ioctl(slave, I_PUSH, "ldterm");
+# endif
+#endif
 		    dup2(slave, 0);
 		    dup2(slave, 1);
 		    dup2(slave, 2);
