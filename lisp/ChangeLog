@@ -1,5 +1,10 @@
 Thu Jun  4 14:53:30 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* sh-mode.jl: new major mode, for bourne shell files
+
+	* modes.jl (interpreter-mode-regexp, interpreter-mode-alist,
+	normal-mode): choose modes by #! string
+
 	* cvs.jl (cvs-find-file, cvs-find-file-other-view): now handle
 	more than one selected file
 

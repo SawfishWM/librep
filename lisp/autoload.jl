@@ -175,4 +175,5 @@
 (autoload 'rm-filter-by-rule "rm-restrict")
 (autoload 'rm-prompt-for-rule "rm-restrict")
 (autoload 'rm-defrule "rm-restrict" t)
+(autoload 'sh-mode "sh-mode" t)
 ;;; ::autoload-end::
