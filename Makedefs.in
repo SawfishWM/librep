@@ -91,7 +91,7 @@ COMPILE_ENV = REPLISPDIR=$(top_builddir)/lisp REPDOCFILE=$(top_builddir)/DOC
 # Rule for dlopen'able C objects
 lib%.la : %.c
 	$(LIBTOOL) $(CC) -c $(CPPFLAGS) $(CFLAGS) $<
-	$(LIBTOOL) gcc -module $(CPPFLAGS) $(CFLAGS) \
+	$(LIBTOOL) $(CC) -module $(CPPFLAGS) $(CFLAGS) \
 	  -o $@ $*.lo -rpath $(repexecdir)
 
 # Build dependancy files from C source files.
