@@ -199,7 +199,6 @@ extern repv Fprogn(repv, repv);
 extern repv Fbreak(void);
 extern repv Fstep(repv);
 extern repv Fsignal(repv error, repv data);
-extern repv Fcondition_case(repv args, repv);
 extern repv Fbacktrace(repv strm);
 extern repv Vmax_lisp_depth(repv val);
 
@@ -278,9 +277,7 @@ extern repv Fsequencep(repv arg);
 extern repv FSdocumentation(repv subr, repv useVar);
 extern repv FSname(repv subr, repv useVar);
 extern repv Fcall_hook(repv hook, repv arg_list, repv type);
-extern repv Fcatch(repv, repv);
 extern repv Fthrow(repv, repv);
-extern repv Funwind_protect(repv, repv);
 
 /* from lispmach.c */
 extern repv Qbytecode_error;

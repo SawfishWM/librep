@@ -61,6 +61,7 @@ extern repv rep_call_lispn (repv fun, int argc, repv *argv);
 
 /* from lispcmds.c */
 extern rep_xsubr Slambda;
+extern repv Fcall_with_exception_handler (repv, repv);
 extern void rep_lispcmds_init(void);
 
 /* from lispmach.c */

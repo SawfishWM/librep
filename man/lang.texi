@@ -4634,7 +4634,7 @@ Note that catch tags are @emph{dynamically} scoped, the thrower does
 not have to be within the same lexical scope (this means that you can
 @code{throw} through functions).
 
-@defspec catch tag body-forms@dots{}
+@defmac catch tag body-forms@dots{}
 This special form defines a catch tag which will be accessible while the
 @var{body-forms} are evaluated.
 
@@ -4645,7 +4645,7 @@ if a @code{throw} happened, the value specified in the @var{throw}
 form.
 
 Before exiting, the tag installed by this form is removed.
-@end defspec
+@end defmac
 
 @defun throw tag &optional catch-value
 This function transfers the point of control to the catch form with a
@@ -4712,14 +4712,14 @@ It is sometimes necessary ensure that a certain form is @emph{always}
 evaluated, even when a non-local exit would normally bypass that form.
 The @code{unwind-protect} special form is used in this case.
 
-@defspec unwind-protect body-form cleanup-forms@dots{}
+@defmac unwind-protect body-form cleanup-forms@dots{}
 The @var{body-form} is evaluated, if it exits normally the @var{cleanup-forms}
 are evaluated sequentially then the value which the @var{body-form}
 returned becomes the value of the @code{unwind-protect} form. If the
 @var{body-form} exits abnormally though (i.e. a non-local exit happened)
 the @var{cleanup-forms} are evaluated anyway and the non-local exit
 continues.
-@end defspec
+@end defmac
 
 One use of this is to ensure that an opened file is always closed, for
 example,
@@ -4784,7 +4784,7 @@ continues.
 When you expect an error to occur and need to be able to regain control
 afterwards the @code{condition-case} special form may be used.
 
-@defspec condition-case symbol body-form error-handlers@dots{}
+@defmac condition-case symbol body-form error-handlers@dots{}
 @code{condition-case} evaluates the @var{body-form} with the
 @var{error-handlers} in place. If an error occurs and one of the
 handles matches the error, then it is evaluated with the value of
@@ -4813,7 +4813,7 @@ The special value, the symbol @code{error}, in the car of one of the
    (setq x z)))         ;Default handler
     @result{} (file-error "File not found" "/tmp/foo")
 @end lisp
-@end defspec
+@end defmac
 
 
 @node Continuations, , Non-Local Exits, Control Structures
