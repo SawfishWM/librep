@@ -6,12 +6,12 @@ name=${REPNAME:-rep}
 if [ "x$1" != "x-g" ]; then
   REP_DL_LOAD_PATH=${top}/src/.libexec \
       REPLISPDIR=${top}/lisp \
-      REPDOCFILE=${top}/DOC \
+      REPDOCFILE=${top}/doc-strings \
       ${top}/src/${name} $*
 else
   shift
   REP_DL_LOAD_PATH=${top}/src/.libexec \
       REPLISPDIR=${top}/lisp \
-      REPDOCFILE=${top}/DOC \
+      REPDOCFILE=${top}/doc-strings \
       ${top}/libtool gdb ${top}/src/${name} $*  
 fi

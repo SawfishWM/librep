@@ -56,12 +56,26 @@ repdir='${datadir}/rep'
 replispdir='${repdir}/${version}/lisp'
 repexecdir='${libexecdir}/rep/${version}/${host_type}'
 repcommonexecdir='${libexecdir}/rep/${host_type}'
-repdocfile='${repexecdir}/DOC'
+repdocfile='${repexecdir}/doc-strings'
 
 emacssitelispdir='${datadir}/emacs/site-lisp'
 
+dnl make sure we can find libraries and headers under $prefix
+case "$prefix" in
+  /|/usr|/usr/local)
+    ;;
+  *)
+    LDFLAGS="${LDFLAGS} -L$prefix/lib"
+    CPPFLAGS="${CPPFLAGS} -I$prefix/include"
+    ;;
+esac
+
 EXTRA_LIBOBJS=""
 AC_SUBST(EXTRA_LIBOBJS)
+
+AC_SUBST(LDFLAGS)
+AC_SUBST(CPPFLAGS)
+AC_SUBST(CFLAGS)
 
 dnl Checks for programs.
 AC_PROG_CC
@@ -162,13 +176,13 @@ AC_ARG_WITH(readline,
   --without-readline      Don't use readline], [], [with_readline=maybe])
 
 if test "$with_readline" != "no"; then
+  dnl Save in case test with directory specified fails
+  _cppflags=${CPPFLAGS}
+  _ldflags=${LDFLAGS}
+
   AC_ARG_WITH(readline-prefix,
   [  --with-readline-prefix=DIR path to readline],
   [ if test "$withval" != "no" -a "$withval" != "yes"; then
-    # Save in case test with directory specified fails
-    _cppflags=${CPPFLAGS}
-    _ldflags=${LDFLAGS}
-
     CPPFLAGS="${CPPFLAGS} -I$withval/include"
     LDFLAGS="${LDFLAGS} -L$withval/lib"
   fi ])
@@ -207,13 +221,12 @@ AC_ARG_WITH(ffi,
   --without-ffi           Don't use ffi], [], [with_ffi=maybe])
 
 if test "$with_ffi" != "no"; then
+  dnl Save in case test with directory specified fails
+  _cppflags=${CPPFLAGS}
+  _ldflags=${LDFLAGS}
   AC_ARG_WITH(ffi-prefix,
   [  --with-ffi-prefix=DIR   path to ffi],
   [ if test "$withval" != "no" -a "$withval" != "yes"; then
-    # Save in case test with directory specified fails
-    _cppflags=${CPPFLAGS}
-    _ldflags=${LDFLAGS}
-
     CPPFLAGS="${CPPFLAGS} -I$withval/include"
     LDFLAGS="${LDFLAGS} -L$withval/lib"
   fi ])
@@ -342,6 +355,10 @@ if test "x${GCC}" = "xyes" -a "x$CFLAGS" = "x-g -O2"; then
       dnl Turn off implicit-int warnings since the X11 includes
       dnl on Solaris generate a lot of these
       CFLAGS="${CFLAGS} -Wno-implicit-int"
+      ;;
+    *-apple-darwin)
+      dnl use -no-cpp-precomp with apple cc
+      CFLAGS="${CFLAGS} -no-cpp-precomp"
       ;;
   esac
 fi
