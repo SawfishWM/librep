@@ -6196,8 +6196,8 @@ Hash tables may be created by using the @code{make-table} and
 @defun make-table hash-fun compare-fun
 Create and return a new hash table. When storing and referencing keys
 it will use the function @var{hash-fun} to map keys to hash codes
-(integers), and the predicate function @var{compare-fun} to compare two
-keys (should return true if the keys are considered equal).
+(positive fixnums), and the predicate function @var{compare-fun} to
+compare two keys (should return true if the keys are considered equal).
 @end defun
 
 @defun make-weak-table hash-fun compare-fun
