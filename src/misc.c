@@ -217,6 +217,52 @@ Returns the directory part of FILE-NAME.
     return(string_dupn(VSTR(file), len));
 }
 
+_PR VALUE cmd_file_name_as_directory(VALUE file);
+DEFUN("file-name-as-directory", cmd_file_name_as_directory,
+      subr_file_name_as_directory, (VALUE file), V_Subr1,
+      DOC_file_name_as_directory) /*
+::doc:file_name_as_directory::
+file-name-as-directory FILE-NAME
+
+Return FILE-NAME such that it can be used as the name of a directory.
+::end:: */
+{
+    int len;
+    DECLARE1(file, STRINGP);
+    len = STRING_LEN(file);
+    if(file_part(VSTR(file)) == VSTR(file) + len)
+    {
+	/* It must be a directory */
+	return file;
+    }
+    else
+    {
+	/* Do whatever is necessary */
+	return file_name_as_directory(file);
+    }
+}
+
+_PR VALUE cmd_directory_file_name(VALUE file);
+DEFUN("directory-file-name", cmd_directory_file_name, subr_directory_file_name,
+      (VALUE file), V_Subr1, DOC_directory_file_name) /*
+::doc:directory_file_name::
+directory-file-name DIRECTORY-NAME
+
+Return a string naming the file representing the directory DIRECTORY-NAME.
+::end:: */
+{
+    int len;
+    len = STRING_LEN(file);
+    DECLARE1(file, STRINGP);
+    if(file_part(VSTR(file)) != VSTR(file) + len)
+    {
+	/* There's a file part. Just return the initial string? */
+	return file;
+    }
+    else
+	return directory_file_name(file);
+}
+
 _PR VALUE cmd_balance_brackets(VALUE open, VALUE close, VALUE string);
 DEFUN("balance-brackets", cmd_balance_brackets, subr_balance_brackets, (VALUE open, VALUE close, VALUE string), V_Subr3, DOC_balance_brackets) /*
 ::doc:balance_brackets::
@@ -361,20 +407,38 @@ containing two numbers, the low 24 bits, and the higher bits.
     return(MAKE_LONG_INT(sys_time()));
 }
 
-_PR VALUE cmd_current_time_string(void);
-DEFUN("current-time-string", cmd_current_time_string, subr_current_time_string, (void), V_Subr0, DOC_current_time_string) /*
+_PR VALUE cmd_current_time_string(VALUE time, VALUE format);
+DEFUN("current-time-string", cmd_current_time_string,
+      subr_current_time_string, (VALUE time, VALUE format), V_Subr2,
+      DOC_current_time_string) /*
 ::doc:current_time_string::
-current-time-string
+current-time-string [TIME] [FORMAT]
 
-Returns a human-readable string defining the current date and time.
+Returns a human-readable string defining the current date and time, or if
+specified, that defining TIME.
+
+If defined, FORMAT is a string defining how to create the string. It has
+the same conventions as the argument to the C library's cftime function.
 ::end:: */
 {
-    char *str;
-    time_t tim;
-    time(&tim);
-    str = ctime(&tim);
-    if(str)
-	return(string_dupn(str, strlen(str) - 1));
+    time_t timestamp;
+    if(LONG_INTP(time))
+	timestamp = VLONG_INT(time);
+    else
+	timestamp = sys_time();
+    if(STRINGP(format))
+    {
+	char buf[256];
+	int len = cftime(buf, VSTR(format), &timestamp);
+	if(len > 0)
+	    return string_dupn(buf, len);
+    }
+    else
+    {
+	char *str = ctime(&timestamp);
+	if(str)
+	    return(string_dupn(str, strlen(str) - 1));
+    }
     return LISP_NULL;
 }
 
@@ -460,6 +524,8 @@ misc_init(void)
     ADD_SUBR_INT(subr_beep);
     ADD_SUBR(subr_file_name_nondirectory);
     ADD_SUBR(subr_file_name_directory);
+    ADD_SUBR(subr_file_name_as_directory);
+    ADD_SUBR(subr_directory_file_name);
     ADD_SUBR(subr_balance_brackets);
     ADD_SUBR(subr_amiga_p);
     ADD_SUBR(subr_x11_p);
