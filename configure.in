@@ -295,10 +295,16 @@ fi
 AC_SUBST(MAKEDEP)
 
 dnl If using GCC and it doesn't look as though the cflags have been
-dnl set explicitly, add some warning options. Turn off implicit-int
-dnl warnings since the X11 includes on Solaris generate a lot of these
+dnl set explicitly, add some warning options.
 if test "x${GCC}" = "xyes" -a "x$CFLAGS" = "x-g -O2"; then
-  CFLAGS="${CFLAGS} -Wall -Wmissing-prototypes -Wno-implicit-int"
+  CFLAGS="${CFLAGS} -Wall -Wpointer-arith -Wmissing-prototypes"
+  case ${host} in
+    *-sun-solaris*)
+      dnl Turn off implicit-int warnings since the X11 includes
+      dnl on Solaris generate a lot of these
+      CFLAGS="${CFLAGS} -Wno-implicit-int"
+      ;;
+  esac
 fi
 
 AC_ARG_WITH(extra-cflags,
