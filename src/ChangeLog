@@ -1,5 +1,15 @@
 1998-08-27  John Harper  <john@dcs.warwick.ac.uk>
 
+	* views.c (update-status-buffer): can now be customized through
+	the mode-line-format variable, I copied most of Emacs syntax..
+
+	* edit.h (tx_ModeName, tx_MinorModeNameList,
+	tx_MinorModeNameString): deleted these elements
+	* buffers.c (var_mode_name, var_minor_mode_names): deleted
+
+	* extent.c (cmd_buffer_symbol_value): only search if
+	SF_BUFFER_LOCAL is set
+
 	* faces.c (cmd_set_face_attribute): if setting the background
 	or foreground attributes, and the value is a string, call
 	get-color with that string

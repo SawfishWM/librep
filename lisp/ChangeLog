@@ -1,5 +1,18 @@
 1998-08-27  John Harper  <john@dcs.warwick.ac.uk>
 
+	* buffer-summary.jl: don't print the minor-modes
+
+	* modes.jl (mode-name, minor-mode-alist, mode-line-format): new
+	variables
+	(minor-mode-list, add-minor-mode, remove-minor-mode,
+	minor-mode-installed-p): deleted
+
+	* cvs.jl, edit.jl, fill.jl, rcs.jl: new method of putting minor
+	mode names in mode-line
+
+	* read-mail.jl: put message flags in mode-name, needs more work
+	* rm-summary.jl: change mode-line message
+
 	* rm-summary.jl (rm-summarize): set y-scroll-step-ratio to two
 	in each summary buffer (scroll by half the window)
 
