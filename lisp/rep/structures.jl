@@ -29,7 +29,7 @@
 (make-structure nil nil nil '%interfaces)
 
 (defun make-interface (name sig)
-  (structure-set (get-structure '%interfaces) name sig))
+  (structure-define (get-structure '%interfaces) name sig))
 
 (defun parse-interface (sig)
   (cond ((null sig) '())

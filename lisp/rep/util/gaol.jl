@@ -53,7 +53,7 @@
       complete-string concat cond condition-case
       call-with-error-handlers cons consp copy-sequence copy-stream
       current-time current-time-string default-boundp default-value
-      defconst define define-value defmacro defsubst defun defvar
+      defconst %define define define-value defmacro defsubst defun defvar
       delete delete-if delete-if-not delq digit-char-p
       elt eq eql equal error eval eval-when-compile
       expand-last-match featurep filter fix-time
@@ -122,8 +122,8 @@
       (name-structure gaol-structure '%gaol)
       (structure-exports-all gaol-structure t)
       (mapc (lambda (var)
-	      (structure-set gaol-structure var
-			     (%structure-ref (current-structure) var)))
+	      (structure-define gaol-structure var
+				(%structure-ref (current-structure) var)))
 	    gaol-safe-functions)
       (setq file-handler-env (mapcar (lambda (sym)
 				       (cons sym t))
@@ -149,7 +149,7 @@
 
   (define (gaol-define var value)
     (build-structure)
-    (structure-set gaol-structure var value))
+    (structure-define gaol-structure var value))
 
   (define (gaol-define-special var)
     (build-structure)

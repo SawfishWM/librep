@@ -52,7 +52,7 @@
 	 (%structure-ref table var)))
 
   (define (symbol-table-set table var value)
-    (structure-set table var value))
+    (structure-define table var value))
 
   (define (symbol-table-boundp table var)
     (structure-bound-p table var))

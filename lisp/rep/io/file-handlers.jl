@@ -36,7 +36,7 @@
   (define-file-handler symbol (make-autoload symbol file)))
 
 (defun define-file-handler (name proc)
-  (structure-set (current-structure) name proc))
+  (structure-define (current-structure) name proc))
 
 ;; replicated in files.c
 (defun file-handler-ref (name)
