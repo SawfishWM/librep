@@ -213,12 +213,13 @@ top:
 int
 rep_stream_putc(repv stream, int c)
 {
-    int rc = 0;
-    if(rep_NILP(stream)
-       && !(stream = Fsymbol_value(Qstandard_output, Qnil)))
-	return(rc);
+    int rc = -1;
+
+    if (stream == Qnil && !(stream = Fsymbol_value (Qstandard_output, Qnil)))
+	goto bottom;
+
 top:
-    switch(rep_TYPE(stream))
+    switch (rep_TYPE (stream))
     {
 	repv args, res, new;
 	int len;
@@ -226,25 +227,26 @@ top:
 	rep_type *t;
 
     case rep_Cons:
-	args = rep_CAR(stream);
-	if(rep_STRINGP(args) && rep_STRING_WRITABLE_P(args) && rep_INTP(rep_CDR(stream)))
+	args = rep_CAR (stream);
+	if (rep_STRINGP (args)
+	    && rep_STRING_WRITABLE_P(args) && rep_INTP (rep_CDR (stream)))
 	{
-	    int actuallen = rep_INT(rep_CDR(stream));
-	    len = rep_STRING_LEN(args);
-	    if(len + 1 >= actuallen)
+	    int actuallen = rep_INT (rep_CDR (stream));
+	    len = rep_STRING_LEN (args);
+	    if (len + 1 >= actuallen)
 	    {
 		int newlen = actuallen < 16 ? 32 : actuallen * 2;
-		new = rep_make_string(newlen + 1);
-		if(!new)
+		new = rep_make_string (newlen + 1);
+		if (new == rep_NULL)
 		    break;
-		memcpy(rep_STR(new), rep_STR(args), len);
-		rep_CAR(stream) = new;
-		rep_CDR(stream) = rep_MAKE_INT(newlen);
+		memcpy (rep_STR (new), rep_STR (args), len);
+		rep_CAR (stream) = new;
+		rep_CDR(stream) = rep_MAKE_INT (newlen);
 		args = new;
 	    }
-	    rep_STR(args)[len] = (u_char)c;
-	    rep_STR(args)[len+1] = 0;
-	    rep_set_string_len(args, len + 1);
+	    rep_STR (args)[len] = (u_char) c;
+	    rep_STR (args)[len+1] = 0;
+	    rep_set_string_len (args, len + 1);
 	    rc = 1;
 	    break;
 	}
@@ -252,159 +254,183 @@ top:
 	    goto function;
 	else
 	{
-	    t = rep_get_data_type(rep_TYPE(rep_CAR(stream)));
+	    t = rep_get_data_type (rep_TYPE (rep_CAR (stream)));
 	    if (t->putc != 0)
-		rc = (t->putc)(stream, c);
+		rc = (t->putc) (stream, c);
 	    else
-		Fsignal(Qinvalid_stream, rep_LIST_1(stream));
+		Fsignal (Qinvalid_stream, rep_LIST_1 (stream));
 	}
 	break;
 
     case rep_Symbol:
-	if(stream == Qt)
+	if (stream == Qt)
 	{
-	    tmps[0] = (u_char)c;
+	    tmps[0] = (u_char) c;
 	    tmps[1] = 0;
 	    if (rep_message_fun != 0)
-		(*rep_message_fun)(rep_append_message, tmps, 1);
+		(*rep_message_fun) (rep_append_message, tmps, 1);
 	    rc = 1;
 	}
 	break;
 
     case rep_Funarg:
     function:
-	if((res = rep_call_lisp1(stream, rep_MAKE_INT(c))) && !rep_NILP(res))
+	res = rep_call_lisp1 (stream, rep_MAKE_INT (c));
+	if(res != rep_NULL)
 	    rc = 1;
 	break;
 
     default:
-	if (rep_FILEP(stream))
+	if (rep_FILEP (stream))
 	{
-	    if(rep_NILP(rep_FILE(stream)->name))
-		return rep_unbound_file_error(stream);
-	    else if(rep_LOCAL_FILE_P(stream))
+	    if (rep_NILP (rep_FILE (stream)->name))
+		return rep_unbound_file_error (stream);
+	    else if (rep_LOCAL_FILE_P (stream))
 	    {
-		if(putc(c, rep_FILE(stream)->file.fh) != EOF)
+		if (putc (c, rep_FILE(stream)->file.fh) != EOF)
 		    rc = 1;
 	    }
 	    else
 	    {
-		stream = rep_FILE(stream)->file.stream;
+		stream = rep_FILE (stream)->file.stream;
 		goto top;
 	    }
-	    break;
 	}
-	t = rep_get_data_type(rep_TYPE(stream));
-	if (t->putc != 0)
-	    rc = (t->putc)(stream, c);
 	else
-	    Fsignal(Qinvalid_stream, rep_LIST_1(stream));
+	{
+	    t = rep_get_data_type (rep_TYPE (stream));
+	    if (t->putc != 0)
+		rc = (t->putc) (stream, c);
+	    else
+		Fsignal (Qinvalid_stream, rep_LIST_1 (stream));
+	}
     }
-    return(rc);
+
+bottom:
+    if (rc != 1)
+    {
+	Fsignal (Qend_of_stream, rep_LIST_1 (stream));
+	return 0;
+    }
+    else
+	return 1;
 }
 
 int
 rep_stream_puts(repv stream, void *data, int bufLen, rep_bool isValString)
 {
     u_char *buf;
-    int rc = 0;
-    if(rep_NILP(stream)
-       && !(stream = Fsymbol_value(Qstandard_output, Qnil)))
-	return(rc);
+    int rc = -1;
 
-    buf = isValString ? rep_STR(data) : data;
-    if(bufLen == -1)
-	bufLen = isValString ? rep_STRING_LEN(rep_VAL(data)) : strlen(buf);
+    if(stream == Qnil && !(stream = Fsymbol_value (Qstandard_output, Qnil)))
+	goto bottom;
+
+    buf = isValString ? rep_STR (data) : data;
+    if (bufLen == -1)
+	bufLen = isValString ? rep_STRING_LEN (rep_VAL (data)) : strlen (buf);
+
 top:
-    switch(rep_TYPE(stream))
+    switch (rep_TYPE (stream))
     {
 	repv args, res, new;
 	int len, newlen;
 	rep_type *t;
 
     case rep_Cons:
-	args = rep_CAR(stream);
-	if(rep_STRINGP(args) && rep_STRING_WRITABLE_P(args) && rep_INTP(rep_CDR(stream)))
+	args = rep_CAR (stream);
+	if (rep_STRINGP (args)
+	    && rep_STRING_WRITABLE_P (args) && rep_INTP (rep_CDR (stream)))
 	{
-	    int actuallen = rep_INT(rep_CDR(stream));
-	    len = rep_STRING_LEN(args);
+	    int actuallen = rep_INT (rep_CDR (stream));
+	    len = rep_STRING_LEN (args);
 	    newlen = len + bufLen + 1;
-	    if(actuallen <= newlen)
+	    if (actuallen <= newlen)
 	    {
-		register int tmp = actuallen < 16 ? 32 : actuallen * 2;
-		if(tmp > newlen)
+		int tmp = actuallen < 16 ? 32 : actuallen * 2;
+		if (tmp > newlen)
 		    newlen = tmp;
-		new = rep_make_string(newlen + 1);
-		if(!new)
+		new = rep_make_string (newlen + 1);
+		if (new == rep_NULL)
 		    break;
-		memcpy(rep_STR(new), rep_STR(args), len);
-		rep_CAR(stream) = new;
-		rep_CDR(stream) = rep_MAKE_INT(newlen);
+		memcpy (rep_STR (new), rep_STR (args), len);
+		rep_CAR (stream) = new;
+		rep_CDR (stream) = rep_MAKE_INT (newlen);
 		args = new;
 	    }
-	    memcpy(rep_STR(args) + len, buf, bufLen);
-	    rep_STR(args)[len + bufLen] = 0;
-	    rep_set_string_len(args, len + bufLen);
+	    memcpy (rep_STR (args) + len, buf, bufLen);
+	    rep_STR (args)[len + bufLen] = 0;
+	    rep_set_string_len (args, len + bufLen);
 	    rc = bufLen;
 	    break;
 	}
-	else if(args == Qlambda)
+	else if (args == Qlambda)
 	    goto function;
 	else
 	{
-	    t = rep_get_data_type(rep_TYPE(rep_CAR(stream)));
+	    t = rep_get_data_type (rep_TYPE (rep_CAR (stream)));
 	    if (t->puts != 0)
-		rc = (t->puts)(stream, data, bufLen, isValString);
+		rc = (t->puts) (stream, data, bufLen, isValString);
 	    else
-		Fsignal(Qinvalid_stream, rep_LIST_1(stream));
+		Fsignal (Qinvalid_stream, rep_LIST_1(stream));
 	}
 	break;
 
     case rep_Symbol:
-	if(stream == Qt)
+	if (stream == Qt)
 	{
 	    if (rep_message_fun != 0)
-		(*rep_message_fun)(rep_append_message, buf, bufLen);
+		(*rep_message_fun) (rep_append_message, buf, bufLen);
 	    rc = bufLen;
 	}
 	break;
 
     case rep_Funarg:
     function:
-	if(isValString)
-	    args = rep_VAL(data);
+	if (isValString)
+	    args = rep_VAL (data);
 	else
-	    args = rep_string_dupn(buf, bufLen);
-	if((res = rep_call_lisp1(stream, args)) && !rep_NILP(res))
+	    args = rep_string_dupn (buf, bufLen);
+	res = rep_call_lisp1(stream, args);
+	if (res != rep_NULL)
 	{
-	    if(rep_INTP(res))
-		rc = rep_INT(res);
-	    else
-		rc = bufLen;
+	    /* Output filters don't bother to return anything sane,
+	       so lets just assume they always handle everything..
+
+	       I should really spec these things fully.. */
+
+	    rc = bufLen;
 	}
 	break;
 
     default:
 	if (rep_FILEP(stream))
 	{
-	    if(rep_NILP(rep_FILE(stream)->name))
-		return rep_unbound_file_error(stream);
-	    else if(rep_LOCAL_FILE_P(stream))
-		rc = fwrite(buf, 1, bufLen, rep_FILE(stream)->file.fh);
+	    if (rep_NILP (rep_FILE (stream)->name))
+		return rep_unbound_file_error (stream);
+	    else if (rep_LOCAL_FILE_P (stream))
+		rc = fwrite (buf, 1, bufLen, rep_FILE (stream)->file.fh);
 	    else
 	    {
-		stream = rep_FILE(stream)->file.stream;
+		stream = rep_FILE (stream)->file.stream;
 		goto top;
 	    }
 	    break;
 	}
-	t = rep_get_data_type(rep_TYPE(stream));
+	t = rep_get_data_type (rep_TYPE(stream));
 	if (t->puts != 0)
-	    rc = (t->puts)(stream, data, bufLen, isValString);
+	    rc = (t->puts) (stream, data, bufLen, isValString);
 	else
-	    Fsignal(Qinvalid_stream, rep_LIST_1(stream));
+	    Fsignal (Qinvalid_stream, rep_LIST_1 (stream));
     }
-    return rc;
+
+bottom:
+    if (rc != bufLen)
+    {
+	Fsignal (Qend_of_stream, rep_LIST_1 (stream));
+	return 0;
+    }
+    else
+	return bufLen;
 }
 
 /* Read an escape sequence from STREAM. C_P should contain the first
@@ -421,10 +447,10 @@ top:
      x12 hex character code
    Otherwise the character is returned as-is.  */
 int
-rep_stream_read_esc(repv stream, int *c_p)
+rep_stream_read_esc (repv stream, int *c_p)
 {
     u_char c;
-    switch(*c_p)
+    switch (*c_p)
     {
     case 'n':
 	c = '\n';
@@ -445,7 +471,7 @@ rep_stream_read_esc(repv stream, int *c_p)
 	c = '\a';
 	break;
     case '^':
-	c = toupper(rep_stream_getc(stream)) ^ 0x40;
+	c = toupper (rep_stream_getc (stream)) ^ 0x40;
 	break;
     case '0':
     case '1':
@@ -456,37 +482,37 @@ rep_stream_read_esc(repv stream, int *c_p)
     case '6':
     case '7':
 	c = *c_p - '0';
-	*c_p = rep_stream_getc(stream);
-	if((*c_p >= '0') && (*c_p <= '7'))
+	*c_p = rep_stream_getc (stream);
+	if ((*c_p >= '0') && (*c_p <= '7'))
 	{
 	    c = (c * 8) + (*c_p - '0');
-	    *c_p = rep_stream_getc(stream);
-	    if((*c_p >= '0') && (*c_p <= '7'))
+	    *c_p = rep_stream_getc (stream);
+	    if ((*c_p >= '0') && (*c_p <= '7'))
 	    {
 		c = (c * 8) + (*c_p - '0');
 		break;
 	    }
 	    else
-		return(c);
+		return c;
 	}
 	else
-	    return(c);
+	    return c;
     case 'x':
 	c = 0;
-	while(1)
+	while (1)
 	{
-	    *c_p = rep_stream_getc(stream);
-	    if(!isxdigit(*c_p))
-		return(c);
-	    if((*c_p >= '0') && (*c_p <= '9'))
+	    *c_p = rep_stream_getc (stream);
+	    if (!isxdigit (*c_p))
+		return c;
+	    if ((*c_p >= '0') && (*c_p <= '9'))
 		c = (c * 16) + (*c_p - '0');
 	    else
-		c = (c * 16) + (toupper(*c_p) - 'A') + 10;
+		c = (c * 16) + (toupper (*c_p) - 'A') + 10;
 	}
     default:
 	c = *c_p;
     }
-    *c_p = rep_stream_getc(stream);
+    *c_p = rep_stream_getc (stream);
     return(c);
 }
 
@@ -500,42 +526,46 @@ a string LENGTH can define how many characters to write.
 ::end:: */
 {
     int actual;
-    switch(rep_TYPE(data))
+    switch (rep_TYPE (data))
     {
 	rep_bool vstring;
 	void *arg;
+
     case rep_Int:
-	actual = rep_stream_putc(stream, rep_INT(data));
+	actual = rep_stream_putc (stream, rep_INT(data));
 	break;
+
     case rep_String:
-	if(rep_INTP(len))
+	if (rep_INTP (len))
 	{
-	    actual = rep_INT(len);
-	    if(actual > rep_STRING_LEN(data))
-		return(rep_signal_arg_error(len, 3));
-	    if(actual == rep_STRING_LEN(data))
+	    actual = rep_INT (len);
+	    if (actual > rep_STRING_LEN (data))
+		return rep_signal_arg_error(len, 3);
+	    if (actual == rep_STRING_LEN (data))
 	    {
-		arg = rep_PTR(data);
+		arg = rep_PTR (data);
 		vstring = rep_TRUE;
 	    }
 	    else
 	    {
-		arg = rep_STR(data);
+		arg = rep_STR (data);
 		vstring = rep_FALSE;
 	    }
 	}
 	else
 	{
-	    actual = rep_STRING_LEN(data);
+	    actual = rep_STRING_LEN (data);
 	    vstring = rep_TRUE;
-	    arg = rep_PTR(data);
+	    arg = rep_PTR (data);
 	}
-	actual = rep_stream_puts(stream, arg, actual, vstring);
+	actual = rep_stream_puts (stream, arg, actual, vstring);
 	break;
+
     default:
-	return(rep_signal_arg_error(data, 2));
+	return rep_signal_arg_error (data, 2);
     }
-    return(rep_MAKE_INT(actual));
+
+    return !rep_INTERRUPTP ? rep_MAKE_INT (actual) : rep_NULL;
 }
 
 DEFUN("read-char", Fread_char, Sread_char, (repv stream), rep_Subr1) /*
@@ -546,10 +576,11 @@ Reads the next character from the input-stream STREAM, if no more characters
 are available returns nil.
 ::end:: */
 {
-    int rc;
-    if((rc = rep_stream_getc(stream)) != EOF)
-	return(rep_MAKE_INT(rc));
-    return(Qnil);
+    int rc = rep_stream_getc (stream);
+    if(rc != EOF)
+	return rep_MAKE_INT (rc);
+    else
+	return Qnil;
 }
 
 DEFUN("peek-char", Fpeek_char, Speek_char, (repv stream), rep_Subr1) /*
@@ -584,13 +615,13 @@ that point. If no characters are read, nil will be returned.
 {
     u_char *buf;
     int len;
-    rep_DECLARE2(count, rep_INTP);
-    buf = alloca (rep_INT(count));
-    if(rep_FILEP(stream) && rep_LOCAL_FILE_P(stream))
+    rep_DECLARE2 (count, rep_INTP);
+    buf = alloca (rep_INT (count));
+    if (rep_FILEP (stream) && rep_LOCAL_FILE_P (stream))
     {
 	/* Special case for local file streams. */
-	len = fread (buf, sizeof (u_char), rep_INT(count),
-		     rep_FILE(stream)->file.fh);
+	len = fread (buf, sizeof (u_char), rep_INT (count),
+		     rep_FILE (stream)->file.fh);
 
 	/* XXX one possibility is to scan for newlines in the buffer.. */
 	rep_FILE (stream)->car |= rep_LFF_BOGUS_LINE_NUMBER;
@@ -599,8 +630,7 @@ that point. If no characters are read, nil will be returned.
     {
 	int c;
 	len = 0;
-	while (len < rep_INT(count)
-	       && (c = rep_stream_getc (stream)) != EOF)
+	while (len < rep_INT(count) && (c = rep_stream_getc (stream)) != EOF)
 	{
 	    buf[len++] = c;
 	}
@@ -619,11 +649,11 @@ Read one line of text from STREAM.
 ::end:: */
 {
     u_char buf[400];
-    if(rep_FILEP(stream) && rep_LOCAL_FILE_P(stream))
+    if (rep_FILEP(stream) && rep_LOCAL_FILE_P (stream))
     {
 	/* Special case for file streams. We can read a line in one go.	 */
-	if(fgets(buf, 400, rep_FILE(stream)->file.fh))
-	    return rep_string_dup(buf);
+	if (fgets (buf, sizeof (buf), rep_FILE (stream)->file.fh))
+	    return rep_string_dup (buf);
 	else
 	    return Qnil;
     }
@@ -631,15 +661,16 @@ Read one line of text from STREAM.
     {
 	u_char *bufp = buf;
 	int len = 0, c;
-	while((c = rep_stream_getc(stream)) != EOF)
+	while ((c = rep_stream_getc (stream)) != EOF)
 	{
-	    *bufp++ = (u_char)c;
-	    if((++len >= 399) || (c == '\n'))
+	    *bufp++ = (u_char) c;
+	    len++;
+	    if ((len >= sizeof (buf) - 1) || (c == '\n'))
 		break;
 	}
-	if(len == 0)
-	    return(Qnil);
-	return(rep_string_dupn(buf, len));
+	if (len == 0)
+	    return Qnil;
+	return rep_string_dupn (buf, len);
     }
 }
 
@@ -654,27 +685,26 @@ read. Returns the number of characters copied.
     int len = 0, c;
     u_char buf[BUFSIZ+1];
     int i = 0;
-    while((c = rep_stream_getc(source)) != EOF)
+    while ((c = rep_stream_getc (source)) != EOF)
     {
-	if(i == BUFSIZ)
+	if (i == BUFSIZ)
 	{
 	    buf[i] = 0;
-	    if(rep_stream_puts(dest, buf, BUFSIZ, rep_FALSE) == EOF)
-		break;
-	    i = 0;
+	    rep_stream_puts (dest, buf, BUFSIZ, rep_FALSE);
 	    rep_TEST_INT;
-	    if(rep_INTERRUPTP)
+	    if (rep_INTERRUPTP)
 		return rep_NULL;
+	    i = 0;
 	}
 	buf[i++] = c;
 	len++;
     }
-    if(i != 0)
+    if (i != 0)
     {
 	buf[i] = 0;
-	rep_stream_puts(dest, buf, i, rep_FALSE);
+	rep_stream_puts (dest, buf, i, rep_FALSE);
     }
-    return rep_MAKE_INT(len);
+    return !rep_INTERRUPTP ? rep_MAKE_INT (len) : rep_NULL;
 }
 
 DEFUN("read", Fread, Sread, (repv stream), rep_Subr1) /*
@@ -687,21 +717,20 @@ variable `standard-input' if STREAM is unspecified) and return it.
 {
     repv res;
     int c;
-    if(rep_NILP(stream)
-       && !(stream = Fsymbol_value(Qstandard_input, Qnil)))
+    if(stream == Qnil && !(stream = Fsymbol_value (Qstandard_input, Qnil)))
     {
-	rep_signal_arg_error(stream, 1);
+	rep_signal_arg_error (stream, 1);
 	return rep_NULL;
     }
-    c = rep_stream_getc(stream);
-    if(c == EOF)
-	res = Fsignal(Qend_of_stream, rep_LIST_1(stream));
+    c = rep_stream_getc (stream);
+    if (c == EOF)
+	res = Fsignal (Qend_of_stream, rep_LIST_1(stream));
     else
-	res = rep_readl(stream, &c);
+	res = rep_readl (stream, &c);
     /* If an error occurred leave stream where it is.  */
-    if(res && c != EOF)
-	rep_stream_ungetc(stream, c);
-    return(res);
+    if (res && c != EOF)
+	rep_stream_ungetc (stream, c);
+    return res;
 }
 
 DEFUN("print", Fprint, Sprint, (repv obj, repv stream), rep_Subr2) /*
@@ -713,15 +742,14 @@ STREAM (or the contents of the variable `standard-output') in a form suitable
 for `read'.
 ::end:: */
 {
-    if(rep_NILP(stream)
-       && !(stream = Fsymbol_value(Qstandard_output, Qnil)))
+    if(stream == Qnil && !(stream = Fsymbol_value (Qstandard_output, Qnil)))
     {
-	rep_signal_arg_error(stream, 1);
+	rep_signal_arg_error (stream, 1);
 	return rep_NULL;
     }
-    rep_stream_putc(stream, '\n');
-    rep_print_val(stream, obj);
-    return(obj);
+    rep_stream_putc (stream, '\n');
+    rep_print_val (stream, obj);
+    return !rep_INTERRUPTP ? obj : rep_NULL;
 }
 
 DEFUN("prin1", Fprin1, Sprin1, (repv obj, repv stream), rep_Subr2) /*
@@ -732,14 +760,13 @@ Prints a text representation of OBJECT to STREAM (or the contents of the
 variable `standard-output') in a form suitable for `read'.
 ::end:: */
 {
-    if(rep_NILP(stream)
-       && !(stream = Fsymbol_value(Qstandard_output, Qnil)))
+    if(stream == Qnil && !(stream = Fsymbol_value (Qstandard_output, Qnil)))
     {
-	rep_signal_arg_error(stream, 1);
+	rep_signal_arg_error (stream, 1);
 	return rep_NULL;
     }
-    rep_print_val(stream, obj);
-    return(obj);
+    rep_print_val (stream, obj);
+    return !rep_INTERRUPTP ? obj : rep_NULL;
 }
 
 DEFUN("princ", Fprinc, Sprinc, (repv obj, repv stream), rep_Subr2) /*
@@ -751,14 +778,13 @@ variable standard-output), no strange characters are quoted and no quotes
 are printed around strings.
 ::end:: */
 {
-    if(rep_NILP(stream)
-       && !(stream = Fsymbol_value(Qstandard_output, Qnil)))
+    if(stream == Qnil && !(stream = Fsymbol_value (Qstandard_output, Qnil)))
     {
-	rep_signal_arg_error(stream, 1);
+	rep_signal_arg_error (stream, 1);
 	return rep_NULL;
     }
-    rep_princ_val(stream, obj);
-    return(obj);
+    rep_princ_val (stream, obj);
+    return !rep_INTERRUPTP ? obj : rep_NULL;
 }
 
 DEFUN("format", Fformat, Sformat, (repv args), rep_SubrN) /*
@@ -809,40 +835,40 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 ::end:: */
 {
     u_char *fmt, *last_fmt;
-    rep_bool mk_str;
+    rep_bool make_string;
     repv stream, format, extra_formats = rep_NULL;
     rep_GC_root gc_stream, gc_format, gc_args, gc_extra_formats;
     u_char c;
     int this_arg = 0;
 
-    if(!rep_CONSP(args))
-	return rep_signal_missing_arg(1);
-    stream = rep_CAR(args);
-    args = rep_CDR(args);
-    if(rep_NILP(stream))
+    if (!rep_CONSP (args))
+	return rep_signal_missing_arg (1);
+    stream = rep_CAR (args);
+    args = rep_CDR (args);
+    if (stream == Qnil)
     {
-	stream = Fcons(rep_string_dupn("", 0), rep_MAKE_INT(0));
-	mk_str = rep_TRUE;
+	stream = Fcons (rep_string_dupn ("", 0), rep_MAKE_INT (0));
+	make_string = rep_TRUE;
     }
     else
-	mk_str = rep_FALSE;
+	make_string = rep_FALSE;
 
-    if(!rep_CONSP(args))
-	return rep_signal_missing_arg(2);
-    format = rep_CAR(args);
-    args = rep_CDR(args);
-    rep_DECLARE2(format, rep_STRINGP);
-    fmt = rep_STR(format);
+    if (!rep_CONSP (args))
+	return rep_signal_missing_arg (2);
+    format = rep_CAR (args);
+    args = rep_CDR (args);
+    rep_DECLARE2 (format, rep_STRINGP);
+    fmt = rep_STR (format);
 
-    rep_PUSHGC(gc_stream, stream);
-    rep_PUSHGC(gc_format, format);
-    rep_PUSHGC(gc_args, args);
-    rep_PUSHGC(gc_extra_formats, extra_formats);
+    rep_PUSHGC (gc_stream, stream);
+    rep_PUSHGC (gc_format, format);
+    rep_PUSHGC (gc_args, args);
+    rep_PUSHGC (gc_extra_formats, extra_formats);
 
     last_fmt = fmt;
-    while((c = *fmt++))
+    while ((c = *fmt++) && !rep_INTERRUPTP)
     {
-	if(c == '%')
+	if (c == '%')
 	{
 	    rep_bool left_justify = rep_FALSE, truncate_field = rep_FALSE;
 	    rep_bool pad_zeros = rep_FALSE;
@@ -850,8 +876,13 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 	    int field_width = 0, precision = 0;
 	    char *tem;
 
-	    if(last_fmt != fmt - 1)
-		rep_stream_puts(stream, last_fmt, fmt - last_fmt - 1, rep_FALSE);
+	    if (last_fmt != fmt - 1)
+	    {
+		rep_stream_puts (stream, last_fmt,
+				 fmt - last_fmt - 1, rep_FALSE);
+		if (rep_INTERRUPTP)
+		    goto exit;
+	    }
 
 	    /* Parse the `n$' prefix */
 	    tem = fmt;
@@ -882,9 +913,9 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 	parse_flags:
 	    /* Then scan for flags */
 	    c = *fmt++;
-	    while(1)
+	    while (1)
 	    {
-		switch(c)
+		switch (c)
 		{
 		case '-':
 		    left_justify = rep_TRUE; break;
@@ -907,7 +938,7 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 
 	    /* Now look for the field width */
 	parse_field_width:
-	    while(isdigit(c))
+	    while(isdigit (c))
 	    {
 		field_width = field_width * 10 + (c - '0');
 		c = *fmt++;
@@ -928,20 +959,17 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 
 	    /* Finally, the format specifier */
 	    if(c == '%')
-		rep_stream_putc(stream, '%');
+		rep_stream_putc (stream, '%');
 	    else
 	    {
 		repv fun;
-		repv val = Fnth (rep_MAKE_INT(this_arg), args);
+		repv val = Fnth (rep_MAKE_INT (this_arg), args);
 		rep_bool free_str = rep_FALSE;
 
 		if (val == rep_NULL)
-		{
-		    stream = rep_NULL;
 		    goto exit;
-		}
 
-		switch(c)
+		switch (c)
 		{
 		    int radix, len, actual_len;
 		    u_char buf[256], fmt[32], *ptr;
@@ -973,7 +1001,7 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 		    if (!rep_STRINGP (val)
 			|| (left_justify && field_width == 0))
 		    {
-			rep_princ_val(stream, val);
+			rep_princ_val (stream, val);
 			break;
 		    }
 		    ptr = rep_STR (val);
@@ -988,30 +1016,30 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 			else
 			    leading_char = 0;
 		    }
-		    if(field_width == 0 || actual_len >= field_width)
+		    if (field_width == 0 || actual_len >= field_width)
 		    {
 			if (leading_char)
 			    rep_stream_putc (stream, leading_char);
-			rep_stream_puts(stream, ptr, truncate_field
-					? (field_width - (leading_char != 0))
-					: len, rep_FALSE);
+			rep_stream_puts (stream, ptr, truncate_field
+					 ? (field_width - (leading_char != 0))
+					 : len, rep_FALSE);
 		    }
 		    else
 		    {
-			int slen = MIN(field_width - actual_len, sizeof(buf));
-			memset(buf, !pad_zeros ? ' ' : '0', slen);
-			if(left_justify)
+			int slen = MIN (field_width - actual_len, sizeof (buf));
+			memset (buf, !pad_zeros ? ' ' : '0', slen);
+			if (left_justify)
 			{
 			    if (leading_char)
 				rep_stream_putc (stream, leading_char);
-			    rep_stream_puts(stream, ptr, len, rep_FALSE);
+			    rep_stream_puts (stream, ptr, len, rep_FALSE);
 			}
-			rep_stream_puts(stream, buf, slen, rep_FALSE);
-			if(!left_justify)
+			rep_stream_puts (stream, buf, slen, rep_FALSE);
+			if (!left_justify)
 			{
 			    if (leading_char)
 				rep_stream_putc (stream, leading_char);
-			    rep_stream_puts(stream, ptr, len, rep_FALSE);
+			    rep_stream_puts (stream, ptr, len, rep_FALSE);
 			}
 		    }
 		    if (free_str)
@@ -1019,7 +1047,7 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 		    break;
 
 		case 'S':
-		    rep_print_val(stream, val);
+		    rep_print_val (stream, val);
 		    break;
 
 		case 0:
@@ -1027,25 +1055,22 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 		    goto end_of_input;
 
 		default:
-		    if(extra_formats == rep_NULL)
+		    if (extra_formats == rep_NULL)
 		    {
 			extra_formats
-			    = Fsymbol_value(Qformat_hooks_alist, Qt);
+			    = Fsymbol_value (Qformat_hooks_alist, Qt);
 		    }
-		    if(rep_CONSP(extra_formats)
-		       && (fun = Fassq(rep_MAKE_INT(c), extra_formats))
-		       && rep_CONSP(fun))
+		    if (rep_CONSP (extra_formats)
+			&& (fun = Fassq (rep_MAKE_INT (c), extra_formats))
+			&& rep_CONSP (fun))
 		    {
-			val = rep_call_lisp1(rep_CDR(fun), val);
-			if(val == rep_NULL)
-			{
-			    stream = rep_NULL;
+			val = rep_call_lisp1 (rep_CDR (fun), val);
+			if (val == rep_NULL)
 			    goto exit;
-			}
 			else
 			{
-			    if(rep_NILP(val))
-				val = rep_null_string();
+			    if (val == Qnil)
+				val = rep_null_string ();
 			    goto unquoted;
 			}
 		    }
@@ -1057,22 +1082,23 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
     }
 
 end_of_input:
-    if(last_fmt != fmt - 1)
-	rep_stream_puts(stream, last_fmt, fmt - last_fmt - 1, rep_FALSE);
-    if(mk_str)
+    if (last_fmt != fmt - 1)
+	rep_stream_puts (stream, last_fmt, fmt - last_fmt - 1, rep_FALSE);
+    if (make_string)
     {
-	if(rep_STRING_LEN(rep_CAR(stream)) != rep_INT(rep_CDR(stream)))
+	if (rep_STRING_LEN (rep_CAR (stream)) != rep_INT (rep_CDR (stream)))
 	{
 	    /* Truncate the stream to it's actual length. */
-	    stream = Fcopy_sequence(rep_CAR(stream));
+	    stream = Fcopy_sequence (rep_CAR (stream));
 	}
 	else
-	    stream = rep_CAR(stream);
+	    stream = rep_CAR (stream);
     }
 
 exit:
     rep_POPGC; rep_POPGC; rep_POPGC; rep_POPGC;
-    return(stream);
+
+    return !rep_INTERRUPTP ? stream : rep_NULL;
 }
 
 DEFUN("make-string-input-stream", Fmake_string_input_stream, Smake_string_input_stream, (repv string, repv start), rep_Subr2) /*
@@ -1083,8 +1109,8 @@ Returns a input stream, it will supply, in order, the characters in STRING,
 starting from START (or the beginning of the string).
 ::end:: */
 {
-    rep_DECLARE1(string, rep_STRINGP);
-    return(Fcons(rep_INTP(start) ? start : rep_MAKE_INT(0), string));
+    rep_DECLARE1 (string, rep_STRINGP);
+    return (Fcons (rep_INTP (start) ? start : rep_MAKE_INT (0), string));
 }
 
 DEFUN("make-string-output-stream", Fmake_string_output_stream, Smake_string_output_stream, (void), rep_Subr0) /*
@@ -1095,7 +1121,7 @@ Returns an output stream which will accumulate the characters written to
 it for the use of the `get-output-stream-string' function.
 ::end:: */
 {
-    return(Fcons(rep_string_dupn("", 0), rep_MAKE_INT(0)));
+    return (Fcons (rep_string_dupn ("", 0), rep_MAKE_INT (0)));
 }
 
 DEFUN("get-output-stream-string", Fget_output_stream_string, Sget_output_stream_string, (repv strm), rep_Subr1) /*
@@ -1109,19 +1135,26 @@ return the new characters.
 ::end:: */
 {
     repv string;
-    if(!rep_CONSP(strm) || !rep_STRINGP(rep_CAR(strm)) || !rep_INTP(rep_CDR(strm)))
-	return(rep_signal_arg_error(strm, 1));
-    if(rep_STRING_LEN(rep_CAR(strm)) != rep_INT(rep_CDR(strm)))
+    if (!rep_CONSP (strm)
+	|| !rep_STRINGP (rep_CAR(strm))
+	|| !rep_INTP (rep_CDR(strm)))
+    {
+	return rep_signal_arg_error (strm, 1);
+    }
+
+    if (rep_STRING_LEN (rep_CAR (strm)) != rep_INT (rep_CDR (strm)))
     {
 	/* Truncate the string to it's actual length. */
-	string = Fcopy_sequence(rep_CAR(strm));
+	string = Fcopy_sequence (rep_CAR (strm));
     }
     else
-	string = rep_CAR(strm);
+	string = rep_CAR (strm);
+
     /* Reset the stream. */
-    rep_CAR(strm) = rep_string_dupn("", 0);
-    rep_CDR(strm) = rep_MAKE_INT(0);
-    return(string);
+    rep_CAR (strm) = rep_string_dupn ("", 0);
+    rep_CDR (strm) = rep_MAKE_INT (0);
+
+    return string;
 }
 
 DEFUN("input-stream-p", Finput_stream_p,
@@ -1133,7 +1166,7 @@ Returns t if ARG is an input stream.
 ::end:: */
 {
     repv res = Qnil;
-    switch(rep_TYPE(arg))
+    switch (rep_TYPE (arg))
     {
 	repv car, cdr;
 	rep_type *t;
@@ -1143,29 +1176,29 @@ Returns t if ARG is an input stream.
 	break;
 
     case rep_Cons:
-	car = rep_CAR(arg);
-	cdr = rep_CDR(arg);
-	if(rep_INTP(car) && rep_STRINGP(cdr))
+	car = rep_CAR (arg);
+	cdr = rep_CDR (arg);
+	if (rep_INTP (car) && rep_STRINGP (cdr))
 	    res = Qt;
 	else
 	{
-	    t = rep_get_data_type(rep_TYPE(car));
+	    t = rep_get_data_type (rep_TYPE (car));
 	    if (t->getc && t->ungetc)
 		res = Qt;
 	}
 	break;
 
     default:
-	if (rep_FILEP(arg))
+	if (rep_FILEP (arg))
 	    res = Qt;			/* XXX broken */
 	else
 	{
-	    t = rep_get_data_type(rep_TYPE(arg));
+	    t = rep_get_data_type (rep_TYPE (arg));
 	    if (t->getc && t->ungetc)
 		res = Qt;
 	}
     }
-    return(res);
+    return res;
 }
 
 DEFUN("output-stream-p", Foutput_stream_p,
@@ -1177,7 +1210,7 @@ Returns t if ARG is an output stream.
 ::end:: */
 {
     repv res = Qnil;
-    switch(rep_TYPE(arg))
+    switch (rep_TYPE (arg))
     {
 	repv car, cdr;
 	rep_type *t;
@@ -1192,33 +1225,33 @@ Returns t if ARG is an output stream.
 	break;
 
     case rep_Cons:
-	car = rep_CAR(arg);
-	cdr = rep_CDR(arg);
-	if(rep_INTP(cdr) && rep_STRINGP(car))
+	car = rep_CAR (arg);
+	cdr = rep_CDR (arg);
+	if (rep_INTP (cdr) && rep_STRINGP (car))
 	    res = Qt;
 	else
 	{
-	    t = rep_get_data_type(rep_TYPE(car));
+	    t = rep_get_data_type (rep_TYPE (car));
 	    if (t->putc && t->puts)
 		res = Qt;
 	}
 	break;
 
     default:
-	if (rep_FILEP(arg))
+	if (rep_FILEP (arg))
 	    res = Qt;			/* XXX broken */
 	else
 	{
-	    t = rep_get_data_type(rep_TYPE(arg));
+	    t = rep_get_data_type (rep_TYPE (arg));
 	    if (t->putc && t->puts)
 		res = Qt;
 	}
     }
-    return(res);
+    return res;
 }
 
 void
-rep_streams_init(void)
+rep_streams_init (void)
 {
     repv tem = rep_push_structure ("rep.io.streams");
     rep_INTERN_SPECIAL(format_hooks_alist);

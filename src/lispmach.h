@@ -2057,7 +2057,7 @@ again: {
 	BEGIN_INSN (OP_KEYWORD_ARG)
 	    int i;
 	    POP1 (tmp);
-	    for (i = argptr; i < argc - 1; i += 2)
+	    for (i = argptr; i < argc - 1; i++)
 	    {
 		if (argv[i] == tmp)
 		{

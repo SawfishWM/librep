@@ -72,13 +72,11 @@ rep_scan_weak_refs (void)
 	    WEAK_NEXT (ref) = weak_refs;
 	    weak_refs = ref;
 
-	    if (rep_CELLP (WEAK_REF (ref)))
+	    if (rep_CELLP (WEAK_REF (ref))
+		&& !rep_GC_MARKEDP (WEAK_REF (ref)))
 	    {
-		if (!rep_GC_MARKEDP (WEAK_REF (ref)))
-		{
-		    /* but the object it points to was */
-		    WEAK_REF (ref) = Qnil;
-		}
+		/* but the object it points to was */
+		WEAK_REF (ref) = Qnil;
 	    }
 	}
 	ref = next;

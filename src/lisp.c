@@ -1277,7 +1277,7 @@ bind_lambda_list_1 (repv lambdaList, repv *args, int nargs)
 	    key = Fmake_keyword (VAR (nvars, VAR_SYM));
 	    VAR (nvars, VAR_VALUE) = def;
 	    VAR (nvars, VAR_EVALP) = Qt;
-	    for (i = 0; i < nargs - 1; i += 2)
+	    for (i = 0; i < nargs - 1; i++)
 	    {
 		if (args[i] == key && args[i+1] != rep_NULL)
 		{
@@ -1695,7 +1695,18 @@ again:
     if(rep_throw_value != rep_NULL)
 	result = rep_NULL;
 
-    assert (result != rep_NULL || rep_throw_value != rep_NULL);
+    if ((result == rep_NULL && rep_throw_value == rep_NULL)
+	|| (result != rep_NULL && rep_throw_value != rep_NULL))
+    {
+	fprintf (stderr, "rep: function returned both exception and value, or neither!\n");
+	if (lc.fun && Fsubrp (lc.fun) != Qnil
+	    && rep_STRINGP (rep_XSUBR (lc.fun)->name))
+	{
+	    fprintf (stderr, "rep: culprit is subr %s\n",
+		     rep_STR (rep_XSUBR (lc.fun)->name));
+	}
+    }
+
     rep_POP_CALL(lc);
     rep_POPGC; rep_POPGC; rep_POPGC;
     rep_lisp_depth--;
@@ -2194,15 +2205,22 @@ rep_lisp_prin(repv strm, repv obj)
 	break;
 
     case rep_Funarg:
+	rep_stream_puts (strm, "#<closure ", -1, rep_FALSE);
 	if (rep_STRINGP(rep_FUNARG(obj)->name))
 	{
-	    rep_stream_puts (strm, "#<closure ", -1, rep_FALSE);
 	    rep_stream_puts (strm, rep_STR(rep_FUNARG(obj)->name),
 			     -1, rep_FALSE);
-	    rep_stream_putc (strm, '>');
 	}
 	else
-	    rep_stream_puts(strm, "#<closure>", -1, rep_FALSE);
+	{
+#ifdef HAVE_SNPRINTF
+	    snprintf (tbuf, sizeof(tbuf), "%" rep_PTR_SIZED_INT_CONV "x", obj);
+#else
+	    sprintf (tbuf, "%" rep_PTR_SIZED_INT_CONV "x", obj);
+#endif
+	    rep_stream_puts (strm, tbuf, -1, rep_FALSE);
+	}
+	rep_stream_putc (strm, '>');
 	break;
 
     case rep_Void:

@@ -127,6 +127,14 @@ shutdown_socket (rep_socket *s)
 }
 
 static void
+shutdown_socket_and_call_sentinel (rep_socket *s)
+{
+    shutdown_socket (s);
+    if (s->sentinel != Qnil)
+	rep_call_lisp1 (s->sentinel, rep_VAL (s));
+}
+
+static void
 delete_socket (rep_socket *s)
 {
     if (SOCKET_IS_ACTIVE (s))
@@ -173,9 +181,7 @@ client_socket_output (int fd)
     {
 	/* assume EOF  */
 
-	shutdown_socket (s);
-	if (s->sentinel != Qnil)
-	    rep_call_lisp1 (s->sentinel, rep_VAL (s));
+	shutdown_socket_and_call_sentinel (s);
     }
 }
 
@@ -642,57 +648,53 @@ poll_for_input (int fd)
 
 /* Returns the number of bytes actually written. */
 static u_int
-blocking_write (int fd, u_char *data, u_int bytes)
+blocking_write (rep_socket *s, u_char *data, u_int bytes)
 {
     u_int done = 0;
 
+    if (!SOCKET_IS_ACTIVE (s))
+    {
+	Fsignal (Qfile_error, rep_list_2 (rep_VAL (&inactive_socket),
+					  rep_VAL (s)));
+	return -1;
+    }
+
     do {
-	int actual = write (fd, data + done, bytes - done);
+	int actual = write (s->sock, data + done, bytes - done);
 	if (actual < 0)
 	{
 	    if (errno == EAGAIN || errno == EWOULDBLOCK)
 	    {
-		if (!poll_for_input (fd))
-		    goto out;
+		if (!poll_for_input (s->sock))
+		    goto error;
 	    }
 	    else if (errno != EINTR)
-		goto out;
+		goto error;
 	}
 	else
 	    done += actual;
     } while (done < bytes);
 
-out:
     return done;
+
+error:
+    rep_signal_file_error (rep_VAL (s));
+    shutdown_socket_and_call_sentinel (s);
+    return -1;
 }
 
 static int
 socket_putc (repv stream, int c)
 {
     char data = c;
-
-    if (!SOCKET_IS_ACTIVE (SOCKET (stream)))
-    {
-	Fsignal (Qerror, rep_list_2 (rep_VAL (&inactive_socket), stream));
-	return 0;
-    }
-
-    return blocking_write (SOCKET (stream)->sock, &data, 1);
+    return blocking_write (SOCKET (stream), &data, 1);
 }
 
 static int
 socket_puts (repv stream, void *data, int len, rep_bool is_lisp)
 {
     u_char *buf = is_lisp ? rep_STR(data) : data;
-    int total = 0;
-
-    if (!SOCKET_IS_ACTIVE (SOCKET (stream)))
-    {
-	Fsignal (Qerror, rep_list_2 (rep_VAL (&inactive_socket), stream));
-	return 0;
-    }
-
-    return blocking_write (SOCKET (stream)->sock, buf + total, len - total);
+    return blocking_write (SOCKET (stream), buf, len);
 }
 
 static void

@@ -393,13 +393,20 @@ write_to_process(repv pr, u_char *buf, int bufLen)
 	}
 	else
 	{
-	    /* This will block */
-	    act = write(VPROC(pr)->pr_Stdin, buf, bufLen);
-	    if(act < 0)
-	    {
-		rep_signal_file_error(pr);
-		act = 0;
-	    }
+	    do {
+		/* This will block */
+		int this = write(VPROC(pr)->pr_Stdin, buf + act, bufLen - act);
+		if (this < 0)
+		{
+		    if (errno != EINTR)
+		    {
+			rep_signal_file_error(pr);
+			break;
+		    }
+		}
+		else
+		    act += this;
+	    } while (act < bufLen);
 	}
     }
     else

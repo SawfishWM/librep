@@ -1,3 +1,29 @@
+2001-08-31  John Harper  <jsh@pixelslut.com>
+
+	* streams.c: signal an error if it's not possible to write as
+	many bytes as asked for. Writing is always assumed to block,
+	and no one actually checks the return values of the various
+	output functions, so this is best..
+
+	* sockets.c (blocking_write): if an error occurs, shutdown the
+	socket and call the sentinel
+
+	* unix_processes.c (write_to_process): loop if write () handles
+	fewer characters than we need
+
+	* weak-refs.c (rep_scan_weak_refs): trivial change
+
+	* lisp.c (lisp_prin): print address of closures, helps
+	debugging
+
+	* lisp.c (apply): don't assert that either an exception or a
+	value is returned from every function, instead just print
+	annoying warning messages when this happens
+
+	* lispmach.h, lisp.c: when searching for keyword arguments,
+	don't check every other argument, check every argument (there's
+	no way of knowing how keywords will be aligned)
+
 2001-08-23  John Harper  <jsh@pixelslut.com>
 
 	* weak-refs.c: new file, provide simple weak-reference cells
