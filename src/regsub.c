@@ -47,8 +47,9 @@ void	regerror(char *);
  * match was on a buffer.
  */
 void
-regsub(prog, source, dest, data)
-    regexp	   *prog;
+regsub(lasttype, matches, source, dest, data)
+    int		    lasttype;
+    regsubs	   *matches;
     char	   *source;
     char	   *dest;
     void	   *data;
@@ -59,23 +60,18 @@ regsub(prog, source, dest, data)
     register int    no;
     register int    len;
 
-    if (prog == NULL || source == NULL || dest == NULL) {
+    if (matches == NULL || source == NULL || dest == NULL) {
 	regerror("NULL parm to regsub");
 	return;
     }
-    if (UCHARAT(prog->program) != MAGIC) {
-	regerror("damaged regexp fed to regsub");
-	return;
-    }
-    if ((prog->lasttype == reg_string && data != 0)
 #ifdef BUILD_JADE
-	|| (prog->lasttype == reg_tx && data == 0)
-#endif
-	)
+    if ((lasttype == reg_string && !STRINGP(VAL(data)))
+	|| (lasttype == reg_tx && !BUFFERP(VAL(data))))
     {
 	regerror("Bad type of data to regsub");
 	return;
     }
+#endif
     src = source;
     dst = dest;
     while ((c = *src++) != '\0')
@@ -92,14 +88,14 @@ regsub(prog, source, dest, data)
 		c = *src++;
 	    *dst++ = c;
 	} else {
-	    if(prog->lasttype == reg_string)
+	    if(lasttype == reg_string)
 	    {
-		if (prog->matches.string.startp[no] != NULL
-		    && prog->matches.string.endp[no] != NULL)
+		if (matches->string.startp[no] != NULL
+		    && matches->string.endp[no] != NULL)
 		{
-		    len = prog->matches.string.endp[no]
-			  - prog->matches.string.startp[no];
-		    (void) strncpy(dst, prog->matches.string.startp[no], len);
+		    len = matches->string.endp[no]
+			  - matches->string.startp[no];
+		    (void) strncpy(dst, matches->string.startp[no], len);
 		    dst += len;
 		    if (len != 0 && *(dst - 1) == '\0')
 		    {
@@ -110,20 +106,18 @@ regsub(prog, source, dest, data)
 		}
 	    }
 #ifdef BUILD_JADE
-	    else if(prog->lasttype == reg_tx)
+	    else if(lasttype == reg_tx)
 	    {
 		TX *tx = data;
-		if(prog->matches.tx.startp[no].pos_Line != -1
-		   && prog->matches.tx.endp[no].pos_Line != -1)
+		if(matches->tx.startp[no] != NULL)
 		{
-		    if(check_section(tx, &prog->matches.tx.startp[no],
-				     &prog->matches.tx.endp[no]))
+		    if(check_section(tx, &matches->tx.startp[no],
+				     &matches->tx.endp[no]))
 		    {
-			long len = section_length(tx,
-						  &prog->matches.tx.startp[no],
-						  &prog->matches.tx.endp[no]);
-			copy_section(tx, &prog->matches.tx.startp[no],
-				     &prog->matches.tx.endp[no], dst);
+			long len = section_length(tx, matches->tx.startp[no],
+						  matches->tx.endp[no]);
+			copy_section(tx, matches->tx.startp[no],
+				     matches->tx.endp[no], dst);
 			dst += len;
 		    }
 		}
@@ -139,8 +133,9 @@ regsub(prog, source, dest, data)
  * including terminating '\0'
  */
 int
-regsublen(prog, source, data)
-    regexp	   *prog;
+regsublen(lasttype, matches, source, data)
+    int		    lasttype;
+    regsubs	   *matches;
     char	   *source;
     void	   *data;
 {
@@ -149,23 +144,18 @@ regsublen(prog, source, data)
     register int    no;
     register int    dstlen = 1;
 
-    if (prog == NULL || source == NULL) {
+    if (matches == NULL || source == NULL) {
 	regerror("NULL parm to regsublen");
 	return(0);
     }
-    if (UCHARAT(prog->program) != MAGIC) {
-	regerror("damaged regexp fed to regsublen");
-	return(0);
-    }
-    if ((prog->lasttype == reg_string && data != 0)
 #ifdef BUILD_JADE
-	|| (prog->lasttype == reg_tx && data == 0)
-#endif
-	)
+    if ((lasttype == reg_string && !STRINGP(VAL(data)))
+	|| (lasttype == reg_tx && !BUFFERP(VAL(data))))
     {
 	regerror("Bad type of data to regsublen");
 	return (0);
     }
+#endif
     src = source;
     while ((c = *src++) != '\0') {
 	if (c == '&')
@@ -180,28 +170,26 @@ regsublen(prog, source, data)
 		c = *src++;
 	    dstlen++;
 	} else {
-	    if(prog->lasttype == reg_string)
+	    if(lasttype == reg_string)
 	    {
-		if (prog->matches.string.startp[no] != NULL
-		    && prog->matches.string.endp[no] != NULL)
+		if (matches->string.startp[no] != NULL
+		    && matches->string.endp[no] != NULL)
 		{
-		    dstlen += prog->matches.string.endp[no]
-			      - prog->matches.string.startp[no];
+		    dstlen += matches->string.endp[no]
+			      - matches->string.startp[no];
 		}
 	    }
 #ifdef BUILD_JADE
-	    else if(prog->lasttype == reg_tx)
+	    else if(lasttype == reg_tx)
 	    {
 		TX *tx = data;
-		if(prog->matches.tx.startp[no].pos_Line != -1
-		   && prog->matches.tx.endp[no].pos_Line != -1)
+		if(matches->tx.startp[no] != NULL)
 		{
-		    if(check_section(tx, &prog->matches.tx.startp[no],
-				     &prog->matches.tx.endp[no]))
+		    if(check_section(tx, &matches->tx.startp[no],
+				     &matches->tx.endp[no]))
 		    {
-			dstlen += section_length(tx,
-						 &prog->matches.tx.startp[no],
-						 &prog->matches.tx.endp[no]);
+			dstlen += section_length(tx, matches->tx.startp[no],
+						 matches->tx.endp[no]);
 		    }
 		}
 	    }

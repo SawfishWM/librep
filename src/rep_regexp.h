@@ -26,8 +26,8 @@ typedef union regsubs {
     } string;
 #ifdef BUILD_JADE
     struct {
-	POS startp[NSUBEXP];
-	POS endp[NSUBEXP];
+	VALUE startp[NSUBEXP];
+	VALUE endp[NSUBEXP];
     } tx;
 #endif
 } regsubs;
@@ -54,14 +54,14 @@ typedef struct regexp {
 
 extern regexp *regcomp(char *);
 extern int regexec2(regexp *, char *, int);
-extern void regsub(regexp *, char *, char *, void *);
-extern int regsublen(regexp *, char *, void *);
+extern void regsub(int, regsubs *, char *, char *, void *);
+extern int regsublen(int, regsubs *, char *, void *);
 extern void regerror(char *);
 
 #ifdef BUILD_JADE
-extern int regexec_tx(regexp *prog, TX *tx, POS *start, int eflags);
-extern int regexec_reverse_tx(regexp *prog, TX *tx, POS *start, int eflags);
-extern int regmatch_tx(regexp *prog, TX *tx, POS *start, int eflags);
+extern int regexec_tx(regexp *prog, TX *tx, VALUE start, int eflags);
+extern int regexec_reverse_tx(regexp *prog, TX *tx, VALUE start, int eflags);
+extern int regmatch_tx(regexp *prog, TX *tx, VALUE start, int eflags);
 #endif
 
 /* My Amiga's C library calls str[n]casecmp() str[n]icmp()  */
