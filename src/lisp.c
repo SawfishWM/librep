@@ -1257,6 +1257,7 @@ again:
 	}
 	else if(closure && car == Qautoload)
 	{
+	    rep_USE_FUNARG(closure);
 	    fun = rep_load_autoload(closure);
 	    if(fun)
 	    {
