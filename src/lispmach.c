@@ -657,7 +657,6 @@ again:
 	    break;
 
 	case OP_SET:
-	case OP_DSET:			/* XXX deprecated */
 	    CALL_2(Fset);
 
 	case OP_ENCLOSE:
