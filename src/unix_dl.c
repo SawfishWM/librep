@@ -32,7 +32,9 @@
 #  if defined (DL_LAZY)
 #   define RTLD_LAZY DL_LAZY
 #  else
-#   define RTLD_LAZY 0
+    /* from gmodule-dl.c ``The Perl sources say, RTLD_LAZY needs to be
+       defined as (1), at least for Solaris 1.'' */
+#   define RTLD_LAZY 1
 #  endif
 # endif
 # if ! defined (RTLD_NOW)
