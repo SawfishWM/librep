@@ -848,6 +848,9 @@ static void
 thread_invoke (void)
 {
 again:
+    if (root_barrier == 0)
+	return;
+
     if (root_barrier->head != 0)
     {
 	rep_thread *active = root_barrier->active;
@@ -945,9 +948,13 @@ static rep_thread *
 make_thread (repv thunk, repv name)
 {
     repv ret;
-    rep_thread *t = new_thread (name);
     rep_GC_root gc_thunk;
+    rep_thread *t;
 
+    if (root_barrier == 0)
+	return 0;
+
+    t = new_thread (name);
     thread_save_environ (t);
 
     if (root_barrier->active == 0)
@@ -992,8 +999,12 @@ thread_yield (void)
 {
     struct timeval now;
     rep_thread *ptr, *next;
-    rep_thread *old_head = root_barrier->head;
+    rep_thread *old_head;
 
+    if (root_barrier == 0)
+	return rep_FALSE;
+
+    old_head = root_barrier->head;
     rep_pending_thread_yield = rep_FALSE;
     if (root_barrier->head && root_barrier->head->next)
     {
@@ -1070,8 +1081,9 @@ rep_max_sleep_for (void)
     rep_barrier *root = root_barrier;
     if (root->active == 0)
     {
-	/* not using threads, sleep as long as you like.. */
-	return ULONG_MAX;
+	/* not using threads, sleep as long as you like..
+	   XXX grr.. using ULONG_MAX doesn't work on solaris*/
+	return UINT_MAX;
     }
     else if (root->head != 0 && root->head->next != 0)
     {
@@ -1091,7 +1103,7 @@ rep_max_sleep_for (void)
     else
     {
 	/* whatever.. */
-	return ULONG_MAX;
+	return UINT_MAX;
     }
 }
 
