@@ -4,6 +4,21 @@
 @cindex News
 
 
+@section 0.6
+
+@itemize @bullet
+
+@item Add @code{unsetenv} function
+
+@item @code{system} now uses @code{process-environment}
+
+@item Workaround compiler bug with GCC 2.95 on sparc
+
+@item Fix build problem where libsdbm.la can't be located
+
+@end itemize
+
+
 @section 0.5
 
 @itemize @bullet
