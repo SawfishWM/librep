@@ -1,3 +1,8 @@
+1999-07-09  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep-remote.c (do_get, do_put): don't assume an error if
+	reading doesn't get as much as we asked for
+
 1999-07-07  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep-remote.c (do_readlink): don't assume the output of
