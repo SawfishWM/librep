@@ -217,7 +217,7 @@
        (lambda args
 	 (require 'rep.vm.compiler)
 	 (mapc (lambda (arg)
-		 (compile-function (repl-eval arg))) args)))
+		 (compile-function (repl-eval arg) arg)) args)))
   (put 'compile-proc 'repl-help "PROCEDURE ...")
 
   (put 'compile 'repl-command
