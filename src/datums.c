@@ -102,8 +102,8 @@ make-datum VALUE ID PRINTER
 
 Create and return a new data object of type ID (an arbitrary value), it
 will have object VALUE associated with it. When printed, the function
-PRINTER will be called with two arguments, the stream to print to and
-the data object itself.
+PRINTER will be called with two arguments, the data object itself and
+the stream to print to.
 ::end:: */
 {
     datum *d = rep_ALLOC_CELL (sizeof (datum));
