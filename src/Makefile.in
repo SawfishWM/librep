@@ -25,7 +25,7 @@
 #define CONCAT(a,b) __CONCAT(a,b)
 #define __CONCAT(a,b) a ## b
 
-COMMON_SRCS =	buffers.c commands.c edit.c editcommands.c editrect.c \
+COMMON_SRCS =	buffers.c commands.c debug-buffer.c edit.c editcommands.c \
 		find.c glyphs.c housekeeping.c io.c keys.c lisp.c \
 		lispcmds.c lispmach.c main.c misc.c movement.c refresh.c \
 		render.c streams.c stringmem.c symbols.c undo.c values.c \
