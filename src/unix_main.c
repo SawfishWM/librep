@@ -261,9 +261,6 @@ static fd_set input_fdset;
    -- Is this really such a good idea, it's a lot of wasted space.. */
 static void (*input_actions[FD_SETSIZE])(int);
 
-/* The length of time since the last input. */
-static long idle_period;
-
 void
 sys_register_input_fd(int fd, void (*callback)(int fd))
 {
@@ -343,6 +340,7 @@ wait_for_input(fd_set *inputs, u_long timeout_msecs)
 static bool
 handle_input(fd_set *inputs, int ready)
 {
+    static long idle_period;
     bool refreshp = FALSE;
 
     if(ready > 0)
