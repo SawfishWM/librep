@@ -24,6 +24,7 @@
 	    gaol-define-file-handler
 	    gaol-define-vm
 	    make-gaol
+	    define-gaol-structure
 	    gaol-eval
 	    gaol-load
 	    gaol-open
@@ -142,6 +143,8 @@
       (structure-install-vm gaol byte-code-interpreter)
       (call-hook '*make-gaol-hook* (list gaol))
       gaol))
+
+  (define (define-gaol-structure name gaol) (name-structure gaol name))
 
   (define default-gaol (let (gaol)
 			 (lambda ()
