@@ -272,7 +272,6 @@
 	    (setq keep-going t)))
 
 	 ;; <varref-and-error-free-op>; unbind ---> unbind; op
-	 ;; [ I'm not sure if this helps at all..? ]
 	 ((and (eq (car insn1) op-unbind)
 	       (memq (car insn0) comp-varref-free-insns))
 	  (let
@@ -284,7 +283,7 @@
 	    (rplacd insn1 arg)
 	    (setq keep-going t)))
 
-	 ;; {bind,bindspec} X; unbind --> pop; unbind
+	 ;; <varbind> X; unbind --> pop; unbind
 	 ((and (memq (car insn0) comp-varbind-insns)
 	       (eq (car insn1) op-unbind))
 	  (rplaca insn0 op-pop)
