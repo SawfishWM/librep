@@ -1,3 +1,8 @@
+2000-02-08  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.c (rep_funcall): remember to switch environment before
+	loading autoload cells
+
 2000-02-07  John Harper  <john@dcs.warwick.ac.uk>
 
 	* continuations.c (unlink_thread): unlink from the actual

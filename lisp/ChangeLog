@@ -1,3 +1,8 @@
+2000-02-08  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compiler-opt.jl (comp-peephole-opt): fix typo in `jt X; nil
+	--> jpt X' pattern
+
 2000-02-06  John Harper  <john@dcs.warwick.ac.uk>
 
 	* mutex.jl: new file, moved the mutexes from threads.jl

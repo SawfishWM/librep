@@ -26,6 +26,16 @@ Outstanding bugs
 General programming tasks:
 ==========================
 
+ - do JIT compilation of bytecode where profitable
+
+   Someone mentioned a GNU VCODE-like system on comp.compilers, maybe
+   this would provide the basis for JIT compilation to native machine
+   code?
+
+   Only do this for _heavily_ used bytecode subrs. Measure this by
+   adding an extra vector slot, and counting the number of vm
+   iterations
+
  - allow modules to run with customized environments, but for the
    compiler to detect and handle this correctly
 
