@@ -107,10 +107,9 @@
 	  nil))))
 
   (defun emit-binding (var)
-    (emit-insn (if (spec-bound-p var)
-		   (bytecode bindspec)
-		 (bytecode bind))
-	       (add-constant var))
+    (if (spec-bound-p var)
+	(emit-insn (bytecode bindspec) (add-constant var))
+      (emit-insn (bytecode bind)))
     (note-binding var))
 
   (defun emit-varset (sym)
