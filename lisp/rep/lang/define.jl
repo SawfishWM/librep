@@ -109,7 +109,7 @@
     ((catch unwind-protect progn)
      (cons (car form) (define-scan-body (cdr form))))
 
-    ((quote)
+    ((quote structure-ref)
      form)
 
     ((lambda)
