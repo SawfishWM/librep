@@ -1,0 +1,85 @@
+-*- indented-text -*-
+
+Proposed module hierarchy
+=========================
+
+  rep
+    lang
+      interpreter
+      debug
+      symbols
+      math
+      profiler
+      backquote
+      debugger
+
+    vm
+      bytecodes
+      disassembler
+      interpreter
+      compiler
+
+    io
+      streams
+      files
+      processes
+      file-handlers
+      readline
+      timers
+      db
+        gdbm
+        sdbm
+
+    data
+      datums
+      tables
+      ring
+      queues
+      records
+      symbol-table
+
+    threads
+    regexp
+    system
+    module-system
+    structures
+    ...
+
+    i18n
+      gettext
+
+  file-handlers
+  scheme
+  mail
+  www
+
+  gui
+    gtk
+      [gdk]
+      gtk
+      libglade
+      gdk-pixbuf
+
+    gnome
+      lib
+      ui
+      canvas
+      canvas-pixbuf
+      libglade
+
+  corba
+    orbit
+
+  sawfish
+    wm
+    ui
+
+
+Notes
+=====
+
+ - Everything under `rep.' is reserved for rep distribution
+
+ - opening `rep' gets the old default environment (less thread support)
+
+ - use aliases (w/ symlinks in fs) to preserve compatibility where possible

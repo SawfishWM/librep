@@ -1,3 +1,12 @@
+2000-07-23  John Harper  <john@dcs.warwick.ac.uk>
+
+	* librep.spec.in: added rep_INSTALL_ALIASES
+
+	* configure.in: version 0.13-pre, bumped libcurrent and libage
+
+	* install-aliases: script to extract and create aliases from
+	source files (C or Lisp). Installed into $(repcommonexecdir)
+
 2000-07-20  John Harper  <john@dcs.warwick.ac.uk>
 
 	* configure.in: version 0.12.4, bumped ${librevision}

@@ -12,10 +12,6 @@ Outstanding bugs
 
  ! (define foo bar "Doc") should do something with "Doc"
 
- ! can't use `structure' inside define'd functions
-
-   (it introduces progn's into the %meta section)
-
  ! non-top-level compiled defvar's aren't quite right
 
  ! scheme define/lambda doesn't splice begin forms
@@ -26,9 +22,7 @@ Outstanding bugs
 
  ! can't do numerator/denominator of flonums
 
- ! ref cache can thrash when switching structures quickly
-
-   also, the first level lookup of foo#bar isn't cached
+ ! the first level lookup of foo#bar isn't cached
 
  ! interfaces aren't re-parsed when modules are reloaded
 
@@ -46,8 +40,6 @@ Outstanding bugs
    e.g. if same (eq) expression is expanded in different structures
 
    OTOH, there is little or no chance of this ever happening
-
- ! no way to export variables from C code
 
  ! doesn't handle NaN or Inf in floats properly (at all)
 
@@ -89,11 +81,11 @@ Outstanding bugs
 
  + document in manual: current-utime, new read syntaxes
 
- + make public when libversion changes: rep_call_lispn, rep_foldl
-
 
 General programming tasks:
 ==========================
+
+ + should index doc strings by MODULE.FUNCTION not just FUNCTION
 
  + %make-structure shouldn't map names to structures itself
 
@@ -107,10 +99,6 @@ General programming tasks:
 
  - move the gtk-independent parts of the rep-gtk glue generator and
    support code to librep
-
- - decide whether to have hierarchical modules
-
-   (recent acm toplas paper by Matthias Blume about this in ML)
 
  - add defadvice (port from elisp? other implementations?)
 
@@ -151,7 +139,7 @@ General programming tasks:
 
    The current (July 2000) list of special forms is:
 
-   case cond defvar lambda progn quote setq
+   cond defvar lambda progn quote setq
 
  - subrs can't be called tail recursively (e.g. call/cc apply ..?)
 

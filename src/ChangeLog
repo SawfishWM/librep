@@ -1,3 +1,42 @@
+2000-07-23  John Harper  <john@dcs.warwick.ac.uk>
+
+	* fake-libexec: script to fake the module hierarchy for
+	uninstalled shared objects
+
+	* values.c, unix_processes.c, unix_main.c, unix_dl.c, timers.c,
+	tables.c, symbols.c, structures.c, streams.c, repsdbm.c,
+	repint_subrs.h, repint.h, repgdbm.c, rep_subrs.h, rep.c,
+	record-profile.c, readline.c, numbers.c, misc.c, main.c,
+	macros.c, lispmach.c, lispcmds.c, lisp.c, gettext.c, fluids.c,
+	find.c, files.c, datums.c, continuations.c: changed the module
+	layout that's used when adding subroutines
+
+	[ previous names are given aliases to preserve compatibility ]
+
+	* files.c (file_handler_ref): new function, looks for symbol in
+	rep.io.file-handlers module
+
+	* unix_dl.c: don't handle `rep_dl_feature' or `rep_dl_subrs'
+	anymore, just print a message to the effect that they're being
+	ignored
+
+	* structures.c (Fexport_bindings): new function
+
+	* structures.c: changed to using a 4-way set-associative cache
+	instead of direct-mapped. Avoids almost all conflict misses
+	induced by the larger number of modules. Also halved the number
+	of sets (so the overall size doubles)
+
+	* repint.h, structures.c: divide by 8 instead of 16 when
+	hashing symbol addresses
+
+	* rep.c: load `rep/user' instead of `rep'
+
+	* numbers.c: on AIX use LONGLONG_INT instead of LONG_LONG_INT
+	(adapted from Dan McNichol <mcnichol@austin.ibm.com>)
+
+	* lispcmds.c (Fcase): deleted, now a macro
+
 2000-07-21  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_files.c (rep_structure_file): new function, do the

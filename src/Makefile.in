@@ -40,6 +40,10 @@ DL_SRCS = repsdbm.c timers.c gettext.c readline.c tables.c repgdbm.c \
 	  record-profile.c
 DL_OBJS = sdbm.la timers.la gettext.la readline.la tables.la gdbm.la \
 	  record-profile.la
+DL_DSTS = rep/io/db/sdbm.la rep/io/timers.la rep/i18n/gettext.la \
+	  rep/io/readline.la rep/data/tables.la rep/io/db/gdbm.la \
+	  rep/lang/record-profile.la
+DL_DIRS = rep rep/io rep/io/db rep/i18n rep/data rep/lang
 
 REP_SRCS =	rep.c
 REP_OBJS =	$(REP_SRCS:.c=.o)
@@ -64,9 +68,10 @@ srep : $(REP_OBJS) $(EXTRA_LIBOBJS) librep.la
 
 rep-remote : rep-remote.c
 
-rep-xgettext : rep-xgettext.jl rep
-	$(COMPILE_ENV) $(rep_prog) --batch -l compiler -f compile-batch $< \
-	  && mv $<c $@ && chmod +x $@
+rep-xgettext : rep-xgettext.jl rep .libexec
+	$(COMPILE_ENV) $(rep_prog) --batch -l rep.vm.compiler \
+	  -f compile-batch $< \
+	&& mv $<c $@ && chmod +x $@
 
 install : all installdirs
 	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) librep.la $(DESTDIR)${libdir}
@@ -76,17 +81,20 @@ install : all installdirs
 	$(INSTALL_SCRIPT) -m 755 rep-config $(DESTDIR)${bindir}
 	$(INSTALL_SCRIPT) -m 755 rep-xgettext $(DESTDIR)${bindir}
 	$(INSTALL_PROGRAM) -m 755 rep-remote $(DESTDIR)${bindir}
-	for dl in $(DL_OBJS); do \
-	  $(LIBTOOL) --mode=install $(INSTALL_PROGRAM) $$dl $(DESTDIR)${repexecdir}; \
-	done
-	printf "\nrep_open_globally=yes\n" >>$(DESTDIR)${repexecdir}/gettext.la
+	$(foreach x,$(DL_DSTS),\
+	  $(LIBTOOL) --mode=install $(INSTALL_PROGRAM) \
+	  $(notdir $(x)) $(DESTDIR)$(repexecdir)/$(dir $(x));)
+	printf "\nrep_open_globally=yes\n" \
+	  >>$(DESTDIR)${repexecdir}/rep/i18n/gettext.la
 	for i in $(INSTALL_HDRS); do \
 	  $(INSTALL_DATA) $(srcdir)/$$i $(DESTDIR)$(includedir); \
 	done
+	$(SHELL) $(top_srcdir)/install-aliases -c . $(DESTDIR)$(repexecdir)
 
 installdirs : mkinstalldirs
 	$(SHELL) $< $(DESTDIR)$(libdir) $(DESTDIR)$(bindir) \
-	  $(DESTDIR)$(repexecdir) $(DESTDIR)$(includedir)
+	  $(foreach x,$(DL_DIRS),$(DESTDIR)$(repexecdir)/$(x)) \
+	  $(DESTDIR)$(includedir)
 
 uninstall :
 	$(LIBTOOL) rm $(DESTDIR)${libdir}/librep.la
@@ -95,7 +103,7 @@ uninstall :
 	rm -f $(DESTDIR)${bindir}/rep-config
 	rm -f $(DESTDIR)${bindir}/rep-xgettext
 	rm -f $(DESTDIR)${bindir}/rep-remote
-	for dl in $(DL_OBJS); do \
+	for dl in $(DL_DSTS); do \
 	  $(LIBTOOL) rm $(DESTDIR)${repexecdir}/$$dl; \
 	done
 	for i in $(INSTALL_HDRS); do \
@@ -126,12 +134,15 @@ readline.la : readline.lo
 	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -avoid-version -module -o $@ \
 	 $^ $(READLINE_LIBS) -rpath $(repexecdir)
 
+.libexec :
+	$(SHELL) $(srcdir)/fake-libexec
+
 clean :
 	rm -f *~ *.o *.lo *.la build.h
 	rm -f repdoc core rep rep-remote srep
 
 realclean : clean
 	rm -f .*.d Makefile rep.h dump.out dumped.s rep-config
-	rm -rf .libs
+	rm -rf .libs .libexec
 
 -include $(SRCS:%.c=.%.d) $(DL_SRCS:%.c=.%.d) $(REP_SRCS:%.c=.%.d)

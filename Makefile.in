@@ -46,6 +46,7 @@ install : all installdirs
 	$(INSTALL_DATA) DOC $(DESTDIR)$(repexecdir)
 	$(INSTALL_SCRIPT) libtool $(DESTDIR)$(repcommonexecdir)
 	$(INSTALL_DATA) rules.mk $(DESTDIR)$(repcommonexecdir)
+	$(INSTALL_SCRIPT) install-aliases $(DESTDIR)$(repcommonexecdir)
 	@echo "---------------------------------------------------------"
 	@echo "Trying to install rep.m4 in $(DESTDIR)$(aclocaldir);"
 	@echo "if this fails, install it manually in a suitable location"
@@ -63,6 +64,7 @@ uninstall :
 	done
 	rm -rf $(DESTDIR)$(repdir)/$(version)
 	rm -f $(DESTDIR)$(repcommonexecdir)/rules.mk
+	rm -f $(DESTDIR)$(repcommonexecdir)/install-aliases
 	rm -f $(DESTDIR)$(repcommonexecdir)/libtool
 	rm -f $(DESTDIR)$(aclocaldir)/rep.m4
 

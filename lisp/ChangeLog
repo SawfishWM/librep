@@ -1,3 +1,76 @@
+2000-07-23  John Harper  <john@dcs.warwick.ac.uk>
+
+	Wholesale reorganization of the lisp code, to support the new
+	hierarchical module layout. Various other changes to support
+	this. Also changed `case' to be a macro.
+
+	* rep/user.jl: new location of user-startup code
+
+	* rep/www/quote-url.jl, rep/www/fetch-url.jl: a couple of
+	modules for doing www/url stuff
+
+	* rep/vm/compiler/no-lang.jl: new compiler language module,
+	supports the module configuration language, and nothing else
+
+	* rep/util/autoloader.jl: new file, for doing generic
+	autoloading of modules that provide arbitrary features
+
+	* rep/data/objects.jl: new file, a macro for basic
+	message-passing objects, with single inheritance of methods
+
+	* rep/data/symbol-table.jl, rep/data/string-util.jl,
+	rep/data/sort.jl, rep/data/ring.jl, rep/data/records.jl,
+	rep/data/queues.jl: 
+	* rep/io/file-handlers/tilde.jl, rep/io/file-handlers/tar.jl,
+	rep/io/file-handlers/remote.jl: 
+	* rep/io/file-handlers/remote/utils.jl,
+	rep/io/file-handlers/remote/rep.jl,
+	rep/io/file-handlers/remote/rcp.jl,
+	rep/io/file-handlers/remote/ftp.jl: 
+	* rep/lang/profiler.jl, rep/lang/doc.jl, rep/lang/define.jl,
+	rep/lang/debugger.jl, rep/lang/backquote.jl: 
+	* rep/mail/addr.jl: 
+	* rep/system/pwd-prompt.jl, rep/system/environ.jl: 
+	* rep/threads/utils.jl, rep/threads/mutex.jl: 
+	* rep/util/repl.jl, rep/util/memoize.jl, rep/util/gaol.jl,
+	rep/util/date.jl: 
+	* rep/vm/disassembler.jl, rep/vm/compiler.jl,
+	rep/vm/bytecodes.jl, rep/vm/bytecode-defs.jl: 
+	* rep/vm/compiler/utils.jl, rep/vm/compiler/src.jl,
+	rep/vm/compiler/scheme.jl, rep/vm/compiler/rep.jl,
+	rep/vm/compiler/opt.jl, rep/vm/compiler/modules.jl,
+	rep/vm/compiler/lap.jl, rep/vm/compiler/inline.jl,
+	rep/vm/compiler/const.jl, rep/vm/compiler/bindings.jl,
+	rep/vm/compiler/basic.jl, rep/vm/compiler/asm.jl: 
+	* rep/www/cgi-get.jl: 
+	* scheme/utils.jl, scheme/syntax.jl, scheme/syntax-funs.jl,
+	scheme/misc.jl, scheme/data.jl: 
+
+	New locations for these old files. Many have aliases so the old
+	names still work
+
+	* rep.jl, rep/system.jl, rep/structures.jl, rep/lang.jl,
+	rep/lang/interpreter.jl, rep/lang/math.jl,
+	rep/module-system.jl, rep/data.jl, rep/io/streams.jl,
+	rep/io/files.jl, rep/io/file-handlers.jl: bootstrap code for
+	the various modules in the new configuration
+
+	* tilde.jl, threads.jl, tar-file-handler.jl, symbol-table.jl,
+	string-util.jl, sort.jl, scheme-utils.jl, scheme-syntax.jl,
+	scheme-syntax-funs.jl, scheme-misc.jl, scheme-data.jl, ring.jl,
+	rep-repl.jl, rep-packages.jl, rep-autoload.jl, remote.jl,
+	remote-utils.jl, remote-rep.jl, remote-rcp.jl, remote-ftp.jl,
+	records.jl, queues.jl, pwd-prompt.jl, profiler.jl, mutex.jl,
+	memoize.jl, mailaddr.jl, lisp-doc.jl, init.jl, gaol.jl,
+	environ.jl, disassembler.jl, define.jl, debug.jl, date.jl,
+	compiler.jl, compiler-utils.jl, compiler-src.jl,
+	compiler-scheme.jl, compiler-rep.jl, compiler-opt.jl,
+	compiler-modules.jl, compiler-lap.jl, compiler-inline.jl,
+	compiler-const.jl, compiler-bindings.jl, compiler-basic.jl,
+	compiler-asm.jl, cgi-get.jl, bytecodes.jl, bytecode-defs.jl,
+	backquote.jl, autoload.jl: deleted or moved to a deeper
+	position
+
 2000-07-21  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep-repl.jl, rep-packages.jl, init.jl, gaol.jl,

@@ -77,7 +77,7 @@ HAVE_UNIX=@HAVE_UNIX@
 
 rep_prog = $(top_builddir)/libtool --mode=execute $(top_builddir)/src/rep
 COMPILE_ENV = REPLISPDIR=$(top_builddir)/lisp \
-	      REPEXECDIR=$(top_builddir)/src/.libs \
+	      REPEXECDIR=$(top_builddir)/src/.libexec \
 	      REPDOCFILE=$(top_builddir)/DOC
 
 # Rule for ``normal'' C objects
