@@ -647,11 +647,10 @@ Assign the name NAME (a symbol) to structure object STRUCTURE.
 ::end:: */
 {
     rep_DECLARE1 (structure, rep_STRUCTUREP);
-    rep_DECLARE2 (name, rep_SYMBOLP);
-
     if (name != Qnil)
     {
-	Fstructure_set (rep_structures_structure, name, structure);
+	rep_DECLARE2 (name, rep_SYMBOLP);
+	Fstructure_define (rep_structures_structure, name, structure);
 
 	/* XXX I'm not sure about this..? */
 	if (rep_STRUCTURE (structure)->name == Qnil)
@@ -660,8 +659,8 @@ Assign the name NAME (a symbol) to structure object STRUCTURE.
     else if (rep_STRUCTURE (structure)->name != Qnil)
     {
 	/* remove the name->structure relation */
-	Fstructure_set (rep_structures_structure,
-			rep_STRUCTURE (structure)->name, Qnil);
+	Fstructure_define (rep_structures_structure,
+			   rep_STRUCTURE (structure)->name, Qnil);
     }
     cache_flush ();
     return name;
@@ -809,8 +808,50 @@ DEFUN ("structure-set", Fstructure_set, Sstructure_set,
 structure-set STRUCTURE VAR VALUE
 
 Set the value of the binding of symbol VAR in structure object
-STRUCTURE to VALUE. If no such binding exists, one will be created.
-(Bindings of opened structures are never changed.)
+STRUCTURE to VALUE. If no such binding exists, an error is signalled.
+::end:: */
+{
+    rep_struct *s;
+    rep_struct_node *n;
+
+    rep_DECLARE1 (structure, rep_STRUCTUREP);
+    rep_DECLARE2 (var, rep_SYMBOLP);
+
+    s = rep_STRUCTURE (structure);
+
+    if (!rep_VOIDP (value))
+    {
+	if (!(s->car & rep_STF_SET_BINDS))
+	    n = lookup (s, var);
+	else
+	    n = lookup_or_add (s, var);
+	if (n != 0)
+	{
+	    if (!n->is_constant)
+	    {
+		n->binding = value;
+		return value;
+	    }
+	    else
+		return Fsignal (Qsetting_constant, rep_LIST_1 (var));
+	}
+	else
+	    return Fsignal(Qvoid_value, rep_LIST_1(var));
+    }
+    else
+    {
+	remove_binding (s, var);
+	return Qnil;
+    }
+}
+
+DEFUN ("structure-define", Fstructure_define, Sstructure_define,
+       (repv structure, repv var, repv value), rep_Subr3) /*
+::doc:structure-define::
+structure-define STRUCTURE VAR VALUE
+
+Set the value of the binding of symbol VAR in structure object
+STRUCTURE to VALUE. If no such binding exists, one is created.
 ::end:: */
 {
     rep_struct *s;
@@ -1272,6 +1313,8 @@ constant.
     else
 	structure = rep_structure;
     n = lookup (rep_STRUCTURE (structure), var);
+    if (n == 0)
+	n = rep_search_imports (rep_STRUCTURE (structure), var);
     return (n != 0 && n->is_constant) ? Qt : Qnil;
 }
 
@@ -1329,7 +1372,7 @@ structure.
     tem = Fmemq (feature, value);
     if (tem && tem == Qnil)
 	value = Fcons (feature, value);
-    Fstructure_set (rep_structure, Qfeatures, value);
+    Fstructure_define (rep_structure, Qfeatures, value);
     return feature;
 }
 
@@ -1465,21 +1508,39 @@ rep_add_subr(rep_xsubr *subr, rep_bool export)
     return sym;
 }
 
-void
-rep_structure_exports_all (repv s, rep_bool status)
-{
-    if (status)
-	rep_STRUCTURE (s)->car |= rep_STF_EXPORT_ALL;
-    else
-	rep_STRUCTURE (s)->car &= ~rep_STF_EXPORT_ALL;
-}
-
 DEFUN("structure-exports-all", Fstructure_exports_all,
       Sstructure_exports_all, (repv s, repv status), rep_Subr2)
 {
     rep_DECLARE1 (s, rep_STRUCTUREP);
-    rep_structure_exports_all (s, status != Qnil);
+    if (status)
+	rep_STRUCTURE (s)->car |= rep_STF_EXPORT_ALL;
+    else
+	rep_STRUCTURE (s)->car &= ~rep_STF_EXPORT_ALL;
     return s;
+}
+
+
+DEFUN("structure-set-binds", Fstructure_set_binds,
+      Sstructure_set_binds, (repv s, repv status), rep_Subr2)
+{
+    rep_DECLARE1 (s, rep_STRUCTUREP);
+    if (status)
+	rep_STRUCTURE (s)->car |= rep_STF_SET_BINDS;
+    else
+	rep_STRUCTURE (s)->car &= ~rep_STF_SET_BINDS;
+    return s;
+}
+
+void
+rep_structure_exports_all (repv s, rep_bool status)
+{
+    Fstructure_exports_all (s, status ? Qt : Qnil);
+}
+
+void
+rep_structure_set_binds (repv s, rep_bool status)
+{
+    Fstructure_set_binds (s, status ? Qt : Qnil);
 }
 
 static repv
@@ -1530,7 +1591,7 @@ rep_get_initial_special_value (repv sym)
 	    repv old = F_structure_ref (s, sym);
 	    if (!rep_VOIDP (old))
 	    {
-		Fstructure_set (s, sym, rep_void_value);
+		Fstructure_define (s, sym, rep_void_value);
 		cache_invalidate_symbol (sym);
 		return old;
 	    }
@@ -1565,6 +1626,7 @@ rep_structures_init (void)
     rep_ADD_SUBR (S_structure_ref);
     rep_ADD_SUBR (Sstructure_bound_p);
     rep_ADD_SUBR (Sstructure_set);
+    rep_ADD_SUBR (Sstructure_define);
     rep_ADD_SUBR (Sexternal_structure_ref);
     rep_ADD_SUBR (Sstructure_name);
     rep_ADD_SUBR (Sstructure_interface);
@@ -1592,6 +1654,7 @@ rep_structures_init (void)
     rep_ADD_SUBR (Sprovide);
     rep_ADD_SUBR_INT (Srequire);
     rep_ADD_SUBR (Sstructure_exports_all);
+    rep_ADD_SUBR (Sstructure_set_binds);
     rep_ADD_SUBR (Sstructure_install_vm);
 
     rep_pop_structure (tem);
