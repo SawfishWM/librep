@@ -377,6 +377,21 @@ one if FILE has only one name. Doesn't count symbolic links.
     return(sym_nil);
 }
 
+_PR VALUE cmd_file_size(VALUE file);
+DEFUN("file-size", cmd_file_size, subr_file_size, (VALUE file), V_Subr1, DOC_file_size) /*
+::doc:file_size::
+file-size FILE
+
+Returns the size of the file named by the string FILE in bytes.
+::end:: */
+{
+    struct stat statb;
+    DECLARE1(file, STRINGP);
+    if(!stat(VSTR(file), &statb))
+	return(make_number(statb.st_size));
+    return(sym_nil);
+}
+
 _PR VALUE cmd_file_modes(VALUE file);
 DEFUN("file-modes", cmd_file_modes, subr_file_modes, (VALUE file), V_Subr1, DOC_file_modes) /*
 ::doc:file_modes::
@@ -741,6 +756,7 @@ sys_misc_init(void)
     ADD_SUBR(subr_file_symlink_p);
     ADD_SUBR(subr_file_owner_p);
     ADD_SUBR(subr_file_nlinks);
+    ADD_SUBR(subr_file_size);
     ADD_SUBR(subr_file_modes);
     ADD_SUBR(subr_set_file_modes);
     ADD_SUBR(subr_file_modtime);
