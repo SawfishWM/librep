@@ -2651,10 +2651,10 @@ Return the numerator of rational number X.
     rep_DECLARE1(arg, rep_NUMERICP);
 
 #ifdef HAVE_GMP
-    if (rep_NUMBER_RATIONAL_P (x))
+    if (rep_NUMBER_RATIONAL_P (arg))
     {
 	rep_number_z *z = make_number (rep_NUMBER_BIGNUM);
-	mpz_init_set (z->z, mpq_numref (rep_NUMBER(x,q)));
+	mpz_init_set (z->z, mpq_numref (rep_NUMBER(arg,q)));
 	return maybe_demote (rep_VAL (z));
     }
 #endif
@@ -2680,10 +2680,10 @@ Return the denominator of rational number X.
     rep_DECLARE1(arg, rep_NUMERICP);
 
 #ifdef HAVE_GMP
-    if (rep_NUMBER_RATIONAL_P (x))
+    if (rep_NUMBER_RATIONAL_P (arg))
     {
 	rep_number_z *z = make_number (rep_NUMBER_BIGNUM);
-	mpz_init_set (z->z, mpq_denref (rep_NUMBER(x,q)));
+	mpz_init_set (z->z, mpq_denref (rep_NUMBER(arg,q)));
 	return maybe_demote (rep_VAL (z));
     }
 #endif
