@@ -192,8 +192,8 @@ struct rep_barrier_struct {
     rep_thread *head, *tail;
     rep_thread *susp_head, *susp_tail;
     short depth;
-    int closed : 1;
-    int targeted : 1;		/* may contain continuations */
+    u_int closed : 1;
+    u_int targeted : 1;		/* may contain continuations */
 };
 
 /* List of all currently active barriers (on the current stack) */
