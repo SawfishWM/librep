@@ -455,7 +455,12 @@ that files which shouldn't be compiled aren't."
       form)
      ((eq fun 'defvar)
       (let
-	  ((doc (nth 3 form)))
+	  ((value (nth 2 form))
+	   (doc (nth 3 form)))
+	(when (and (listp value)
+		   (not (comp-constant-p value)))
+	  ;; Compile the definition. A good idea?
+	  (rplaca (nthcdr 2 form) (compile-form (nth 2 form))))
 	(when (and comp-write-docs (stringp doc))
 	  (rplaca (nthcdr 3 form) (add-documentation doc))))
       form)
