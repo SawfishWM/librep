@@ -24,8 +24,6 @@
 
 #include <string.h>
 
-#define INIT_SCR "init"
-
 _PR int main(int, char **);
 _PR int inner_main(int, char **);
 _PR bool on_idle(long since_last_event);
@@ -44,7 +42,10 @@ DEFSYM(quit, "quit");
 DEFSYM(top_level, "top-level");
 DEFSYM(command_line_args, "command-line-args");
 
-static u_char *init_script = INIT_SCR;
+#ifndef INIT_SCRIPT
+# define INIT_SCRIPT "init"
+#endif
+static u_char *init_script = INIT_SCRIPT;
 
 static void
 usage(void)
@@ -79,14 +80,14 @@ get_main_options(int *argc_p, char ***argv_p)
 	else if(!strcmp("-v", *argv))
 	{
 	    fputs(VERSSTRING "\n", stdout);
-	    return(FALSE);
+	    return FALSE;
 	}
 	else if(!strcmp("-log-msgs", *argv))
 	    log_messages = TRUE;
 	else if(!strcmp("-?", *argv) || !strcmp("-help", *argv))
 	{
 	    usage();
-	    return(FALSE);
+	    return FALSE;
 	}
 	else
 	    break;
@@ -107,7 +108,7 @@ get_main_options(int *argc_p, char ***argv_p)
     VSYM(sym_command_line_args)->value = head;
     *argc_p = argc;
     *argv_p = argv;
-    return(TRUE);
+    return TRUE;
 }
 
 int
@@ -122,11 +123,12 @@ main(int argc, char **argv)
 	return 100;
     }
 
-    if(!initmem())
-	return(10);
+    if(!sys_memory_init())
+	return 10;
     sm_init(&main_strmem);
 
     pre_values_init();
+    pre_sys_init();
     if(pre_symbols_init())
     {
 #ifdef DUMPED
@@ -143,8 +145,9 @@ main(int argc, char **argv)
     values_kill();
 
     sm_kill(&main_strmem);
-    killmem();
-    return(rc);
+    sys_memory_kill();
+
+    return rc;
 }
 
 /* This function is called from sys_init(), it completes the initialisation
@@ -164,13 +167,13 @@ inner_main(int argc, char **argv)
     edit_init();
     find_init();
     glyphs_init();
-    io_init();
     keys_init();
     main_init();
     misc_init();
     movement_init();
     redisplay_init();
     streams_init();
+    files_init();
     undo_init();
     views_init();
     windows_init();
@@ -187,7 +190,7 @@ inner_main(int argc, char **argv)
 	   && (res = cmd_load(arg, sym_nil, sym_nil, sym_nil)))
 	{
 	    rc = 0;
-	    res = event_loop();
+	    res = sys_event_loop();
 	}
 	else if(throw_value && VCAR(throw_value) == sym_quit)
 	{
@@ -197,7 +200,24 @@ inner_main(int argc, char **argv)
 		rc = 0;
 	}
 	else
-	    fputs("jade: error in initialisation script\n", stderr);
+	{
+	    /* If quitting due to an error, print the error cell if
+	       at all possible. */
+	    VALUE stream;
+	    VALUE old_tv = throw_value;
+	    throw_value = LISP_NULL;
+	    if(old_tv && VCAR(old_tv) == sym_error
+	       && (stream = cmd_stderr_file())
+	       && FILEP(stream))
+	    {
+		fputs("error--> ", stderr);
+		cmd_prin1(VCDR(old_tv), stream);
+		fputc('\n', stderr);
+	    }
+	    else
+		fputs("jade: error in initialisation script\n", stderr);
+	    throw_value = old_tv;
+	}
 #ifdef HAVE_SUBPROCESSES
         proc_kill();
 #endif
@@ -207,10 +227,10 @@ inner_main(int argc, char **argv)
 	buffers_kill();
 	find_kill();
 	glyphs_kill();
-	streams_kill();
+	files_kill();
     }
     db_kill();
-    return(rc);
+    return rc;
 }
 
 /* This function gets called when we have idle time available. The
@@ -301,7 +321,7 @@ recursive-edit
 Enter a new recursive-edit.
 ::end:: */
 {
-    return event_loop();
+    return sys_event_loop();
 }
 
 _PR VALUE cmd_recursion_depth(void);
