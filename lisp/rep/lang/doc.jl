@@ -83,7 +83,10 @@ NAME is non-nil, then it should be the symbol that is associated with VALUE."
     (require 'gdbm)
     (catch 'done
       (mapc (lambda (file)
-	      (let ((db (gdbm-open file 'read)))
+	      ;; turn off read-locking -- DOC files are normally
+	      ;; created before being installed, and reportedly
+	      ;; AFS often prevents normal users gaining locks
+	      (let ((db (gdbm-open file 'read nil '(no-lock))))
 		(when db
 		  (unwind-protect
 		      (let ((value (gdbm-fetch db key)))
