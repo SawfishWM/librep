@@ -74,7 +74,7 @@
      "make-closure" "unbindall-0" "closurep" "pop-all"
      "fluid-set" "fluid-bind" "memql" "num-eq"
      "test-scm" "test-scm-f" "%define" "spec-bind"	; #xc0
-     "set" "required-arg" "optional-arg" "rest-arg" nil nil nil nil
+     "set" "required-arg" "optional-arg" "rest-arg" "not-zero-p" nil nil nil
      nil nil nil nil nil nil nil nil	; #xd0
      nil nil nil nil nil nil nil nil
      nil nil nil nil nil nil nil nil	; #xe0

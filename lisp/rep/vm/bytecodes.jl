@@ -29,7 +29,7 @@
 	    byte-insn-stack-delta byte-constant-insns
 	    byte-varref-free-insns byte-side-effect-free-insns
 	    byte-conditional-jmp-insns byte-jmp-insns
-	    byte-insns-with-constants byte-varref-insns
+	    byte-opcodes-with-constants byte-varref-insns
 	    byte-varset-insns byte-varbind-insns
 	    byte-nth-insns byte-nthcdr-insns)
 
@@ -53,168 +53,59 @@
 	  (bytecode jnp)
 	  (bytecode jtp)))
 
-  ;; list of instructions pushing a single constant onto the stack
-  (define byte-constant-insns
-    (list (bytecode push)
-	  (bytecode nil)
-	  (bytecode t)
-	  (bytecode pushi-0)
-	  (bytecode pushi-1)
-	  (bytecode pushi-2)
-	  (bytecode pushi-minus-1)
-	  (bytecode pushi-minus-2)
-	  (bytecode pushi)
-	  (bytecode pushi-pair-neg)
-	  (bytecode pushi-pair-pos)))
-
   ;; list of instructions that are both side-effect free and don't
   ;; reference any variables. Also none of these may ever raise exceptions
   (define byte-varref-free-insns
-    (list* (bytecode dup)
-	   (bytecode cons)
-	   (bytecode car)
-	   (bytecode cdr)
-	   (bytecode eq)
-	   (bytecode equal)
-	   (bytecode zerop)
-	   (bytecode null)
-	   (bytecode atom)
-	   (bytecode consp)
-	   (bytecode listp)
-	   (bytecode numberp)
-	   (bytecode stringp)
-	   (bytecode vectorp)
-	   (bytecode symbolp)
-	   (bytecode sequencep)
-	   (bytecode functionp)
-	   (bytecode special-form-p)
-	   (bytecode subrp)
-	   (bytecode eql)
-	   (bytecode macrop)
-	   (bytecode bytecodep)
-	   (bytecode caar)
-	   (bytecode cadr)
-	   (bytecode cdar)
-	   (bytecode cadddr)
-	   (bytecode caddddr)
-	   (bytecode cadddddr)
-	   (bytecode caddddddr)
-	   (bytecode cadddddddr)
-	   (bytecode scm-test)
-	   (bytecode test-scm)
-	   (bytecode test-scm-f)
-	   byte-constant-insns))
+    '(dup push cons car cdr eq equal zerop not-zero-p null atom consp
+      listp numberp stringp vectorp symbolp sequencep functionp
+      special-form-p subrp eql macrop bytecodep caar cadr cdar
+      cadddr caddddr cadddddr caddddddr cadddddddr scm-test
+      test-scm test-scm-f))
+
 
   ;; list of instructions that can be safely deleted if their result
   ;; isn't actually required
   (define byte-side-effect-free-insns
-    (list* (bytecode refq)
-	   (bytecode refn)
-	   (bytecode slot-ref)
-	   (bytecode refg)
-	   (bytecode ref)
-	   (bytecode nth)
-	   (bytecode nthcdr)
-	   (bytecode aref)
-	   (bytecode length)
-	   (bytecode add)
-	   (bytecode neg)
-	   (bytecode sub)
-	   (bytecode mul)
-	   (bytecode div)
-	   (bytecode rem)
-	   (bytecode lnot)
-	   (bytecode not)
-	   (bytecode lor)
-	   (bytecode land)
-	   (bytecode gt)
-	   (bytecode ge)
-	   (bytecode lt)
-	   (bytecode le)
-	   (bytecode inc)
-	   (bytecode dec)
-	   (bytecode ash)
-	   (bytecode boundp)
-	   (bytecode get)
-	   (bytecode reverse)
-	   (bytecode assoc)
-	   (bytecode assq)
-	   (bytecode rassoc)
-	   (bytecode rassq)
-	   (bytecode last)
-	   (bytecode copy-sequence)
-	   (bytecode lxor)
-	   (bytecode max)
-	   (bytecode min)
-	   (bytecode mod)
-	   (bytecode make-closure)
-	   (bytecode enclose)
-	   (bytecode quotient)
-	   (bytecode floor)
-	   (bytecode ceiling)
-	   (bytecode truncate)
-	   (bytecode round)
-	   (bytecode exp)
-	   (bytecode log)
-	   (bytecode sin)
-	   (bytecode cos)
-	   (bytecode tan)
-	   (bytecode sqrt)
-	   (bytecode expt)
-	   (bytecode structure-ref)
-	   byte-varref-free-insns))
+    (append '(refn refg slot-ref ref nth nthcdr aref length add neg
+	      sub mul div rem lnot not lor land gt ge lt le inc dec ash
+	      boundp get reverse assoc assq rassoc rassq last copy-sequence
+	      lxor max min mod make-closure enclose quotient floor ceiling
+	      truncate round exp log sin cos tan sqrt expt structure-ref)
+           byte-varref-free-insns))
 
   ;; list of all conditional jumps
-  (define byte-conditional-jmp-insns
-    (list (bytecode jpn)
-	  (bytecode jpt)
-	  (bytecode jn)
-	  (bytecode jt)
-	  (bytecode jnp)
-	  (bytecode jtp)))
+  (define byte-conditional-jmp-insns '(jpn jpt jn jt jnp jtp))
 
   ;; list of all jump instructions
-  (define byte-jmp-insns
-    (list* (bytecode jmp)
-	   byte-conditional-jmp-insns))
+  (define byte-jmp-insns (list* 'jmp 'ejmp byte-conditional-jmp-insns))
+
+  ;; list of all varref instructions
+  (define byte-varref-insns '(refn refg slot-ref))
+
+  ;; list of all varset instructions
+  (define byte-varset-insns '(setn setg slot-set))
+
+  ;; list of all varbind instructions
+  (define byte-varbind-insns '(bind))
+
+  (define byte-nth-insns '((0 . car)
+                          (1 . cadr)
+                          (2 . caddr)
+                          (3 . cadddr)
+                          (4 . caddddr)
+                          (5 . cadddddr)
+                          (6 . caddddddr)
+                          (7 . cadddddddr)))
+
+  (define byte-nthcdr-insns '((0 . ())
+                             (1 . cdr)
+                             (2 . cddr)))
 
   ;; list of instructions that reference the vector of constants
-  (define byte-insns-with-constants
+  (define byte-opcodes-with-constants
     (list (bytecode push)
 	  (bytecode refq)
 	  (bytecode setq)
 	  (bytecode refg)
 	  (bytecode setg)
-	  (bytecode bindspec)))
-
-  ;; list of all varref instructions
-  (define byte-varref-insns
-    (list (bytecode refq)
-	  (bytecode refn)
-	  (bytecode refg)
-	  (bytecode slot-ref)))
-
-  ;; list of all varset instructions
-  (define byte-varset-insns
-    (list (bytecode setq)
-	  (bytecode setn)
-	  (bytecode setg)
-	  (bytecode slot-set)))
-
-  ;; list of all varbind instructions
-  (define byte-varbind-insns
-    (list (bytecode bind)
-	  (bytecode bindspec)))
-      
-  (define byte-nth-insns (list (cons 0 (bytecode car))
-			       (cons 1 (bytecode cadr))
-			       (cons 2 (bytecode caddr))
-			       (cons 3 (bytecode cadddr))
-			       (cons 4 (bytecode caddddr))
-			       (cons 5 (bytecode cadddddr))
-			       (cons 6 (bytecode caddddddr))
-			       (cons 7 (bytecode cadddddddr))))
-
-  (define byte-nthcdr-insns (list (cons 0 nil)
-				  (cons 1 (bytecode cdr))
-				  (cons 2 (bytecode cddr)))))
+	  (bytecode bindspec))))

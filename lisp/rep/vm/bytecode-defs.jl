@@ -212,6 +212,8 @@
       (optional-arg . #xca)
       (rest-arg . #xcb)
 
+      (not-zero-p . #xcc)
+
       (last-before-jmps . #xf7)
 
 ;;; All jmps take two-byte arguments
