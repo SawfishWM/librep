@@ -57,6 +57,7 @@ sdbm-open PATH ACCESS-TYPE [MODE]
     dbm = rep_ALLOC_CELL (sizeof (rep_dbm));
     if (dbm == 0)
 	return rep_mem_error();
+    rep_data_after_gc += sizeof (rep_dbm);
     dbm->car = dbm_type;
     dbm->path = file;
     dbm->access = flags;

@@ -1036,6 +1036,7 @@ If the DIR parameter is nil it will be inherited from the
     if(pr != rep_NULL)
     {
 	rep_GC_root gc_pr;
+	rep_data_after_gc += sizeof (struct Proc);
 	VPROC(pr)->pr_Car = rep_Process;
 	VPROC(pr)->pr_Next = process_chain;
 	process_chain = VPROC(pr);

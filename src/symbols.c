@@ -382,6 +382,7 @@ current environment.
 ::end:: */
 {
     rep_funarg *f = rep_ALLOC_CELL (sizeof (rep_funarg));
+    rep_data_after_gc += sizeof (rep_funarg);
     f->car = rep_Funarg;
     f->fun = fun;
     f->name = name;

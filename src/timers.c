@@ -231,6 +231,7 @@ to re-enable it.
 ::end:: */
 {
     Lisp_Timer *t = rep_ALLOC_CELL (sizeof (Lisp_Timer));
+    rep_data_after_gc += sizeof (Lisp_Timer);
     t->car = timer_type;
     t->function = fun;
     t->secs = rep_INTP(secs) ? rep_INT(secs) : 0;
