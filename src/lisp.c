@@ -183,6 +183,9 @@ repv rep_env;
    at least one cons cell, which is skipped. */
 repv rep_special_env;
 
+/* The bytecode interpreter to use. A three-arg subr or a null pointer */
+repv (*rep_bytecode_interpreter)(repv code, repv consts, repv stack);
+
 /* The lisp-call backtrace; also used for saving and restoring
    the current environment */
 struct rep_Call *rep_call_stack;
@@ -1253,7 +1256,7 @@ again:
 	{
 	    repv boundlist;
 
-	    if (search_environment (Qjade_byte_code) == Qnil)
+	    if (rep_bytecode_interpreter == 0)
 		goto invalid;
 
 	    boundlist = rep_bind_lambda_list(rep_COMPILED_LAMBDA(fun),
@@ -1262,9 +1265,10 @@ again:
 	    {
 		rep_GC_root gc_boundlist;
 		rep_PUSHGC(gc_boundlist, boundlist);
-		result = Fjade_byte_code(rep_COMPILED_CODE(fun),
-					 rep_COMPILED_CONSTANTS(fun),
-					 rep_MAKE_INT(rep_COMPILED_STACK(fun)));
+		result = (rep_bytecode_interpreter
+			  (rep_COMPILED_CODE(fun),
+			   rep_COMPILED_CONSTANTS(fun),
+			   rep_MAKE_INT(rep_COMPILED_STACK(fun))));
 		rep_POPGC;
 		rep_unbind_symbols(boundlist);
 	    }
