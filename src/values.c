@@ -34,7 +34,7 @@
 _PR int value_cmp(VALUE, VALUE);
 _PR void princ_val(VALUE, VALUE);
 _PR void print_val(VALUE, VALUE);
-_PR int nil_cmp(VALUE, VALUE);
+_PR int type_cmp(VALUE, VALUE);
 _PR VALUE make_string(int);
 _PR VALUE string_dupn(const u_char *, int);
 _PR VALUE string_dup(const u_char *);
@@ -70,7 +70,7 @@ Lisp_Type_Data data_types[V_MAX] = {
     { vector_cmp, lisp_prin, lisp_prin, vector_sweep, "vector" },
     { number_cmp, lisp_prin, lisp_prin, NULL, "number" },
     { symbol_cmp, symbol_princ, symbol_print, symbol_sweep, "symbol" },
-    { nil_cmp, lisp_prin, lisp_prin, NULL, "void" },
+    { type_cmp, lisp_prin, lisp_prin, NULL, "void" },
     { ptr_cmp, lisp_prin, lisp_prin, NULL, "var" },
     { ptr_cmp, lisp_prin, lisp_prin, NULL, "subr-0" },
     { ptr_cmp, lisp_prin, lisp_prin, NULL, "subr-1" },
@@ -85,7 +85,7 @@ Lisp_Type_Data data_types[V_MAX] = {
     { ptr_cmp, view_prin, view_prin, view_sweep, "view" },
     { mark_cmp, mark_prin, mark_prin, mark_sweep, "mark" },
     { file_cmp, file_prin, file_prin, file_sweep, "file" },
-    { nil_cmp, lisp_prin, lisp_prin, NULL, "process" },
+    { type_cmp, lisp_prin, lisp_prin, NULL, "process" },
     { ptr_cmp, glyphtable_prin, glyphtable_prin,
       glyphtable_sweep, "glyph-table" },
 };
@@ -93,38 +93,38 @@ Lisp_Type_Data data_types[V_MAX] = {
 
 /* General object handling */
 
+/* Returns zero if V1 == V2, less than zero if V1 < V2, and greater than
+   zero otherwise. */
 int
 value_cmp(VALUE v1, VALUE v2)
 {
-    if(v1 && v2)
+    if(v1 != LISP_NULL && v2 != LISP_NULL)
     {
 	/* If the two objects are the same object then they must be
 	   equivalent :-) */
-	return(v1 == v2 ? 0 : VALUE_CMP(v1, v2));
+	return (v1 == v2) ? 0 : VALUE_CMP(v1, v2);
     }
-    return(1);
+    return 1;
 }
 
 void
 princ_val(VALUE strm, VALUE val)
 {
-    if(val)
+    if(val != LISP_NULL)
 	PRINC_VAL(strm, val);
 }
 
 void
 print_val(VALUE strm, VALUE val)
 {
-    if(val)
+    if(val != LISP_NULL)
 	PRINT_VAL(strm, val);
 }
 
 int
-nil_cmp(VALUE val1, VALUE val2)
+type_cmp(VALUE val1, VALUE val2)
 {
-    if(VTYPE(val1) == VTYPE(val2))
-	return(0);
-    return(1);
+    return !(VTYPE(val1) == VTYPE(val2));
 }
 
 
@@ -142,12 +142,12 @@ make_string(int len)
     Lisp_DynamicString *str;
     int memlen = DSTR_SIZE(len);
     str = sm_alloc(&lisp_strmem, memlen);
-    if(str)
+    if(str != NULL)
     {
 	str->length = len - 1;
 	str->data[0] = V_DynamicString;
 	data_after_gc += memlen;
-	return(VAL(&str->data[0]));
+	return VAL(&str->data[0]);
     }
     return LISP_NULL;
 }
@@ -156,26 +156,27 @@ VALUE
 string_dupn(const u_char *src, int slen)
 {
     Lisp_String *dst = VSTRING(make_string(slen + 1));
-    if(dst)
+    if(dst != NULL)
     {
 	memcpy(dst->data + 1, src, slen);
 	dst->data[slen+1] = 0;
     }
-    return(VAL(dst));
+    return VAL(dst);
 }
 
 VALUE
-string_dup(const u_char * src)
+string_dup(const u_char *src)
 {
-    return(string_dupn(src, strlen(src)));
+    return string_dupn(src, strlen(src));
 }
 
 int
 string_cmp(VALUE v1, VALUE v2)
 {
     if(STRINGP(v1) && STRINGP(v2))
-	return(strcmp(VSTR(v1), VSTR(v2)));
-    return(1);
+	return strcmp(VSTR(v1), VSTR(v2));
+    else
+	return 1;
 }
 
 static void
@@ -241,9 +242,10 @@ set_string_len(VALUE str, long len)
     if(VNORMAL_TYPEP(str, V_DynamicString))
     {
 	DSTRING_HDR(str)->length = len;
-	return(TRUE);
+	return TRUE;
     }
-    return(FALSE);
+    else
+	return FALSE;
 }
 
 
@@ -253,16 +255,18 @@ int
 number_cmp(VALUE v1, VALUE v2)
 {
     if(VTYPE(v1) == VTYPE(v2))
-	return(VINT(v1) - VINT(v2));
-    return(1);
+	return VINT(v1) - VINT(v2);
+    else
+	return 1;
 }
 
 int
 ptr_cmp(VALUE v1, VALUE v2)
 {
     if(VTYPE(v1) == VTYPE(v2))
-	return(!(VPTR(v1) == VPTR(v2)));
-    return(1);
+	return !(VPTR(v1) == VPTR(v2));
+    else
+	return 1;
 }
 
 
@@ -282,7 +286,7 @@ Returns a new cons-cell with car CAR-VALUE and cdr CDR-VALUE.
 {
     Lisp_Cons *cn;
     cn = cons_freelist;
-    if(!cn)
+    if(cn == NULL)
     {
 	Lisp_Cons_Block *cb;
 #if MALLOC_ALIGNMENT >= CONS_ALIGNMENT
@@ -290,7 +294,7 @@ Returns a new cons-cell with car CAR-VALUE and cdr CDR-VALUE.
 #else
 	cb = mymalloc(sizeof(Lisp_Cons_Block) + CONS_ALIGNMENT - 1);
 #endif
-	if(cb)
+	if(cb != NULL)
 	{
 	    int i;
 #if MALLOC_ALIGNMENT >= CONS_ALIGNMENT
@@ -309,6 +313,8 @@ Returns a new cons-cell with car CAR-VALUE and cdr CDR-VALUE.
 	    cb->cons[i].cdr = 0;
 	    cons_freelist = cb->cons;
 	}
+	else
+	    return mem_error();
 	cn = cons_freelist;
     }
     cons_freelist = VCONS(cn->cdr);
@@ -334,7 +340,7 @@ cons_sweep(void)
     cons_block_chain = NULL;
     cons_freelist = NULL;
     used_cons = 0;
-    while(cb)
+    while(cb != NULL)
     {
 	Lisp_Cons_Block *nxt = cb->next;
 	Lisp_Cons *newfree = NULL, *newfreetail = NULL, *this;
@@ -362,7 +368,7 @@ cons_sweep(void)
 	}
 	else
 	{
-	    if(newfreetail)
+	    if(newfreetail != NULL)
 	    {
 		/* Link this mini-freelist onto the main one.  */
 		newfreetail->cdr = CONS_VAL(cons_freelist);
@@ -387,37 +393,37 @@ cons_cmp(VALUE v1, VALUE v2)
 	if(!rc)
 	    rc = value_cmp(VCDR(v1), VCDR(v2));
     }
-    return(rc);
+    return rc;
 }
 
 VALUE
 list_1(VALUE v1)
 {
-    return(LIST_1(v1));
+    return LIST_1(v1);
 }
 
 VALUE
 list_2(VALUE v1, VALUE v2)
 {
-    return(LIST_2(v1, v2));
+    return LIST_2(v1, v2);
 }
 
 VALUE
 list_3(VALUE v1, VALUE v2, VALUE v3)
 {
-    return(LIST_3(v1, v2, v3));
+    return LIST_3(v1, v2, v3);
 }
 
 VALUE
 list_4(VALUE v1, VALUE v2, VALUE v3, VALUE v4)
 {
-    return(LIST_4(v1, v2, v3, v4));
+    return LIST_4(v1, v2, v3, v4);
 }
 
 VALUE
 list_5(VALUE v1, VALUE v2, VALUE v3, VALUE v4, VALUE v5)
 {
-    return(LIST_5(v1, v2, v3, v4, v5));
+    return LIST_5(v1, v2, v3, v4, v5);
 }
 
 
@@ -431,7 +437,7 @@ make_vector(int size)
 {
     int len = VECT_SIZE(size);
     Lisp_Vector *v = ALLOC_OBJECT(len);
-    if(v)
+    if(v != NULL)
     {
 	v->type = V_Vector;
 	v->next = vector_chain;
@@ -440,7 +446,7 @@ make_vector(int size)
 	used_vector_slots += size;
 	data_after_gc += len;
     }
-    return(VAL(v));
+    return VAL(v);
 }
 
 static void
@@ -449,7 +455,7 @@ vector_sweep(void)
     Lisp_Vector *this = vector_chain;
     vector_chain = NULL;
     used_vector_slots = 0;
-    while(this)
+    while(this != NULL)
     {
 	Lisp_Vector *nxt = this->next;
 	if(!GC_NORMAL_MARKEDP(VAL(this)))
@@ -472,10 +478,10 @@ vector_cmp(VALUE v1, VALUE v2)
     if((VTYPE(v1) == VTYPE(v2)) && (VVECT(v1)->size == VVECT(v2)->size))
     {
 	int i;
-	for(i = rc = 0; (i < VVECT(v1)->size) && (!rc); i++)
+	for(i = rc = 0; (i < VVECT(v1)->size) && (rc == 0); i++)
 	    rc = value_cmp(VVECT(v1)->array[i], VVECT(v2)->array[i]);
     }
-    return(rc);
+    return rc;
 }
 
 
@@ -868,13 +874,13 @@ values_kill(void)
 {
     Lisp_Cons_Block *cb = cons_block_chain;
     Lisp_Vector *v = vector_chain;
-    while(cb)
+    while(cb != NULL)
     {
 	Lisp_Cons_Block *nxt = cb->next;
 	myfree(cb->alloc_address);
 	cb = nxt;
     }
-    while(v)
+    while(v != NULL)
     {
 	Lisp_Vector *nxt = v->next;
 	FREE_OBJECT(v);
