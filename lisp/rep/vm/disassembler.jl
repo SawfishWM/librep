@@ -43,8 +43,8 @@
    "nreverse" "assoc" "assq" "rassoc" "rassq" "last" "mapcar" "mapc" ; 0x80
    "member" "memq" "delete" "delq" "delete-if" "delete-if-not" "copy-sequence" "sequencep"
    "functionp" "special-form-p" "subrp" "eql" "lxor" "max" "min" "filter" ; 0x90
-   "macrop" "bytecodep" nil nil nil nil nil nil
-   nil nil nil nil nil nil nil nil	 ; 0xa0
+   "macrop" "bytecodep" "pushi\t0" "pushi\t1" "pushi\t2" "pushi\t-1" "pushi\t-2" "pushi\t%d"
+   "pushi\t%d" nil nil nil nil nil nil nil	 ; 0xa0
    nil nil nil nil nil nil nil nil
    "set-current-buffer" "bind-buffer" "current-buffer" "bufferp" "markp" "windowp" "bind-window" "viewp"
    "bind-view" "current-view" "swap2" "mod" "pos" "posp" nil nil
@@ -151,6 +151,19 @@ Disassembly:\n"
 		op c
 		i (+ i 2))
 	  (format stream (aref disassembler-opcodes op) arg))
+	 ((= c op-pushi)
+	  (setq arg (aref code-string (1+ i)))
+	  (setq i (1+ i))
+	  (when (>= arg 128)
+	    (setq arg (- (- 256 arg))))
+	  (format stream (aref disassembler-opcodes c) arg))
+	 ((= c op-pushi-pair)
+	  (setq arg (logior (lsh (aref code-string (1+ i)) 8)
+			    (aref code-string (+ i 2))))
+	  (setq i (+ i 2))
+	  (when (>= arg 32768)
+	    (setq arg (- (- 65536 arg))))
+	  (format stream (aref disassembler-opcodes c) arg))
 	 (t
 	  (if (setq op (aref disassembler-opcodes c))
 	      (write stream op)
