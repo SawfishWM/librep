@@ -252,8 +252,40 @@ Returns a new list with elements ARGS...
 	    return LISP_NULL;
 	ptr = &VCDR(*ptr);
 	args = VCDR(args);
+	TEST_INT;
+	if(INT_P)
+	    return LISP_NULL;
     }
-    return(res);
+    return res;
+}
+
+_PR VALUE cmd_list_star(VALUE);
+DEFUN("list*", cmd_list_star, subr_list_star, (VALUE args), V_SubrN, DOC_list_star) /*
+::doc:list_star::
+list* ARG1 ARG2 ... ARGN
+
+Returns a new list (ARG1 ARG2 ... ARGN-1 . ARGN). That is, the same as from
+`list' but the last argument is dotted to the last but one argument.
+::end:: */
+{
+    VALUE res = sym_nil;
+    VALUE *ptr = &res;
+    while(CONSP(args))
+    {
+	if(CONSP(VCDR(args)))
+	{
+	    if(!(*ptr = cmd_cons(VCAR(args), sym_nil)))
+		return LISP_NULL;
+	}
+	else
+	    *ptr = VCAR(args);
+	ptr = &VCDR(*ptr);
+	args = VCDR(args);
+	TEST_INT;
+	if(INT_P)
+	    return LISP_NULL;
+    }
+    return res;
 }
 
 _PR VALUE cmd_make_list(VALUE, VALUE);
@@ -1974,7 +2006,7 @@ atom ARG
 Returns t if ARG is not a cons-cell.
 ::end:: */
 {
-    return CONSP(arg) ? sym_t : sym_nil;
+    return CONSP(arg) ? sym_nil : sym_t;
 }
 
 _PR VALUE cmd_consp(VALUE);
@@ -2089,6 +2121,24 @@ symbol `lambda'
     }
 }
 
+_PR VALUE cmd_macrop(VALUE);
+DEFUN("macrop", cmd_macrop, subr_macrop, (VALUE arg), V_Subr1, DOC_macrop) /*
+::doc:macrop::
+macrop ARG
+
+Returns t if ARG is a macro.
+::end:: */
+{
+    if(SYMBOLP(arg)
+       && (arg = VSYM(arg)->function) == LISP_NULL)
+	return sym_nil;
+    if((CONSP(arg) && VCAR(arg) == sym_macro)
+       || (COMPILEDP(arg) && COMPILED_MACRO_P(arg)))
+	return sym_t;
+    else
+	return sym_nil;
+}
+	
 _PR VALUE cmd_special_form_p(VALUE);
 DEFUN("special-form-p", cmd_special_form_p, subr_special_form_p, (VALUE arg), V_Subr1, DOC_special_form_p) /*
 ::doc:special_form_p::
@@ -2126,7 +2176,6 @@ Returns t if arg is a primitive function.
     case V_SubrN:
     case V_SF:
     case V_Var:
-    case V_Compiled:
 	return(sym_t);
     default:
 	return(sym_nil);
@@ -2380,6 +2429,7 @@ lispcmds_init(void)
     ADD_SUBR(subr_car);
     ADD_SUBR(subr_cdr);
     ADD_SUBR(subr_list);
+    ADD_SUBR(subr_list_star);
     ADD_SUBR(subr_make_list);
     ADD_SUBR(subr_append);
     ADD_SUBR(subr_nconc);
@@ -2456,6 +2506,7 @@ lispcmds_init(void)
     ADD_SUBR(subr_vectorp);
     ADD_SUBR(subr_bytecodep);
     ADD_SUBR(subr_functionp);
+    ADD_SUBR(subr_macrop);
     ADD_SUBR(subr_special_form_p);
     ADD_SUBR(subr_subrp);
     ADD_SUBR(subr_subr_documentation);
