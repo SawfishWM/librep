@@ -70,7 +70,8 @@ unbind_one_level(VALUE bind_stack)
 	else if(VIEWP(item))
 	{
 	    /* Reinstall VIEW */
-	    if(VVIEW(item)->vw_Win)
+	    if(VVIEW(item)->vw_Win
+	       && VVIEW(item)->vw_Win->w_Window != WINDOW_NIL)
 	    {
 		curr_vw = VVIEW(item);
 		curr_win = curr_vw->vw_Win;
