@@ -21,25 +21,33 @@
 
 (declare (in-module rep.data))
 
+(open-structures '(rep.lang.math))
+
 ;;;###autoload
 (defun string-upper-case-p (x)
-  "Return t if string X is upper case (contains no lower case characters)."
-  (letrec
-      ((iter (lambda (point)
-	       (cond ((>= point (length x)) t)
-		     ((lower-case-p (aref x point)) nil)
-		     (t (iter (1+ point)))))))
-    (iter 0)))
+  "Return t if string X is upper case (contains no lower case characters and
+at least one upper-case character)."
+  (let iter ((point 0)
+	     (seen-upper nil))
+    (if (>= point (length x))
+	seen-upper
+      (let ((char (aref x point)))
+	(if (lower-case-p char)
+	    nil
+	  (iter (1+ point) (or seen-upper (upper-case-p char))))))))
 
 ;;;###autoload
 (defun string-lower-case-p (x)
-  "Return t if string X is lower case (contains no upper case characters)."
-  (letrec
-      ((iter (lambda (point)
-	       (cond ((>= point (length x)) t)
-		     ((upper-case-p (aref x point)) nil)
-		     (t (iter (1+ point)))))))
-    (iter 0)))
+  "Return t if string X is lower case (contains no upper case characters and
+at least one lower-case character)."
+  (let iter ((point 0)
+	     (seen-lower nil))
+    (if (>= point (length x))
+	seen-lower
+      (let ((char (aref x point)))
+	(if (upper-case-p char)
+	    nil
+	  (iter (1+ point) (or seen-lower (lower-case-p char))))))))
 
 ;;;###autoload
 (defun string-capitalized-p (x)

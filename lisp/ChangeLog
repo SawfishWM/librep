@@ -1,3 +1,9 @@
+2001-02-12  John Harper  <jsh@eazel.com>
+
+	* rep/data/string-util.jl (string-upper-case-p,
+	string-lower-case-p): only return t if the string contains at
+	least one upper/lower case character
+
 2001-01-27  John Harper  <jsh@eazel.com>
 
 	* rep/i18n/xgettext.jl (scan): fixed typo when scanning
