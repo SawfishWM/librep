@@ -1179,7 +1179,7 @@ that files which shouldn't be compiled aren't."
 		(comp-dec-stack))
 	    (if (eq condition (car subl))
 		(comp-write-op op-t)
-	      (comp-compile-constant (car subl))
+	      (comp-compile-form (car subl))
 	      (comp-dec-stack)))
 	  (when (consp (cdr form))
 	    (comp-warning "Unreachable conditions after t in cond statement")
