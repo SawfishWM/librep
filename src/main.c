@@ -209,12 +209,6 @@ rep_init(char *prog_name, int *argc, char ***argv,
 	      stderr);
 	exit(10);
     }
-    if(rep_PTR_SIZED_INT_BITS > sizeof(rep_PTR_SIZED_INT) * CHAR_BIT)
-    {
-	fputs("rep_PTR_SIZED_INT_BITS incorrectly defined; aborting\n",
-	      stderr);
-	exit(10);
-    }
 
     if(!sys_memory_init())
 	exit(10);
