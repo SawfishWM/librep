@@ -35,6 +35,7 @@ _PR int value_cmp(VALUE, VALUE);
 _PR void princ_val(VALUE, VALUE);
 _PR void print_val(VALUE, VALUE);
 _PR int type_cmp(VALUE, VALUE);
+_PR VALUE null_string(void);
 _PR VALUE make_string(int);
 _PR VALUE string_dupn(const u_char *, int);
 _PR VALUE string_dup(const u_char *);
@@ -63,29 +64,47 @@ _PR void values_init (void);
 _PR void values_init2(void);
 _PR void values_kill (void);
 
+#define DT_NULL { 0, 0, 0, 0, 0 }
 Lisp_Type_Data data_types[V_MAX] = {
     { cons_cmp, lisp_prin, lisp_prin, cons_sweep, "cons" },
-    { string_cmp, string_princ, string_print, NULL, "string" },
-    { string_cmp, string_princ, string_print, string_sweep, "string" },
-    { vector_cmp, lisp_prin, lisp_prin, vector_sweep, "vector" },
-    { number_cmp, lisp_prin, lisp_prin, NULL, "number" },
     { symbol_cmp, symbol_princ, symbol_print, symbol_sweep, "symbol" },
+    { number_cmp, lisp_prin, lisp_prin, NULL, "number" },
+    { vector_cmp, lisp_prin, lisp_prin, vector_sweep, "vector" },
+    DT_NULL,
+    { string_cmp, string_princ, string_print, string_sweep, "string" },
+    DT_NULL,
     { type_cmp, lisp_prin, lisp_prin, NULL, "void" },
-    { ptr_cmp, lisp_prin, lisp_prin, NULL, "var" },
-    { ptr_cmp, lisp_prin, lisp_prin, NULL, "subr-0" },
-    { ptr_cmp, lisp_prin, lisp_prin, NULL, "subr-1" },
-    { ptr_cmp, lisp_prin, lisp_prin, NULL, "subr-2" },
-    { ptr_cmp, lisp_prin, lisp_prin, NULL, "subr-3" },
-    { ptr_cmp, lisp_prin, lisp_prin, NULL, "subr-4" },
-    { ptr_cmp, lisp_prin, lisp_prin, NULL, "subr-5" },
-    { ptr_cmp, lisp_prin, lisp_prin, NULL, "subr-n" },
-    { ptr_cmp, lisp_prin, lisp_prin, NULL, "special-form" },
-    { ptr_cmp, buffer_prin, buffer_prin, buffer_sweep, "buffer" },
-    { ptr_cmp, window_prin, window_prin, window_sweep, "window" },
-    { ptr_cmp, view_prin, view_prin, view_sweep, "view" },
-    { mark_cmp, mark_prin, mark_prin, mark_sweep, "mark" },
-    { file_cmp, file_prin, file_prin, file_sweep, "file" },
+    DT_NULL,
     { type_cmp, lisp_prin, lisp_prin, NULL, "process" },
+    DT_NULL,
+    { ptr_cmp, lisp_prin, lisp_prin, NULL, "var" },
+    DT_NULL,
+    { ptr_cmp, lisp_prin, lisp_prin, NULL, "special-form" },
+    DT_NULL,
+    { ptr_cmp, lisp_prin, lisp_prin, NULL, "subr-0" },
+    DT_NULL,
+    { ptr_cmp, lisp_prin, lisp_prin, NULL, "subr-1" },
+    DT_NULL,
+    { ptr_cmp, lisp_prin, lisp_prin, NULL, "subr-2" },
+    DT_NULL,
+    { ptr_cmp, lisp_prin, lisp_prin, NULL, "subr-3" },
+    DT_NULL,
+    { ptr_cmp, lisp_prin, lisp_prin, NULL, "subr-4" },
+    DT_NULL,
+    { ptr_cmp, lisp_prin, lisp_prin, NULL, "subr-5" },
+    DT_NULL,
+    { ptr_cmp, lisp_prin, lisp_prin, NULL, "subr-n" },
+    DT_NULL,
+    { ptr_cmp, buffer_prin, buffer_prin, buffer_sweep, "buffer" },
+    DT_NULL,
+    { ptr_cmp, window_prin, window_prin, window_sweep, "window" },
+    DT_NULL,
+    { ptr_cmp, view_prin, view_prin, view_sweep, "view" },
+    DT_NULL,
+    { mark_cmp, mark_prin, mark_prin, mark_sweep, "mark" },
+    DT_NULL,
+    { file_cmp, file_prin, file_prin, file_sweep, "file" },
+    DT_NULL,
     { ptr_cmp, glyphtable_prin, glyphtable_prin,
       glyphtable_sweep, "glyph-table" },
 };
@@ -131,23 +150,35 @@ type_cmp(VALUE val1, VALUE val2)
 /* Strings */
 
 static StrMem lisp_strmem;
-_PR char null_string[];
-DEFSTRING(null_string, "");
+
+DEFSTRING(null_string_const, "");
+
+VALUE
+null_string(void)
+{
+    return VAL(&null_string_const);
+}
+
+DEFSTRING(string_overflow, "String too long");
 
 /* Return a string object with room for exactly LEN characters. No extra
    byte is allocated for a zero terminator; do this manually if required. */
 VALUE
 make_string(int len)
 {
-    Lisp_DynamicString *str;
-    int memlen = DSTR_SIZE(len);
+    Lisp_String *str;
+    int memlen;
+
+    if(len > LISP_MAX_STRING)
+	return cmd_signal(sym_error, LIST_1(VAL(&string_overflow)));
+
+    memlen = DSTRING_SIZE(len);
     str = sm_alloc(&lisp_strmem, memlen);
     if(str != NULL)
     {
-	str->length = len - 1;
-	str->data[0] = V_DynamicString;
+	str->car = MAKE_STRING_CAR(len - 1, 0);
 	data_after_gc += memlen;
-	return VAL(&str->data[0]);
+	return VAL(str);
     }
     return LISP_NULL;
 }
@@ -158,8 +189,8 @@ string_dupn(const u_char *src, int slen)
     Lisp_String *dst = VSTRING(make_string(slen + 1));
     if(dst != NULL)
     {
-	memcpy(dst->data + 1, src, slen);
-	dst->data[slen+1] = 0;
+	memcpy(VSTR(dst), src, slen);
+	VSTR(dst)[slen] = 0;
     }
     return VAL(dst);
 }
@@ -192,6 +223,7 @@ string_sweep(void)
 	int chnksiz = MCHNK_SIZE((bucket + 1) * GRAIN);
 	int numchnks = lisp_strmem.sm_ChunksPerBlock[bucket];
 	*freelist = NULL;
+	lisp_strmem.sm_MemBuckets[bucket].mbu_FreeCount = 0;
 	while((nxt = (MemBlock *)mbl->mbl_Node.mln_Succ))
 	{
 	    MemChunk *mc = mbl->mbl_Chunks;
@@ -200,14 +232,14 @@ string_sweep(void)
 	    {
 		if(mc->mc_BlkType != MBT_FREE)
 		{
-		    register Lisp_DynamicString *ds
-		        = (Lisp_DynamicString *)mc->mc_Mem.mem;
-		    if(ds->data[0] & GC_NORMAL_MARK_BIT)
-			ds->data[0] &= ~GC_NORMAL_MARK_BIT;
+		    register Lisp_String *ds = (Lisp_String *)mc->mc_Mem.mem;
+		    if(GC_CELL_MARKEDP(VAL(ds)))
+			GC_CLR_CELL(VAL(ds));
 		    else
 		    {
 			mc->mc_BlkType = MBT_FREE;
 			mc->mc_Mem.nextfree = *freelist;
+			lisp_strmem.sm_MemBuckets[bucket].mbu_FreeCount++;
 			*freelist = mc;
 		    }
 		}
@@ -221,13 +253,12 @@ string_sweep(void)
     while(mlc)
     {
 	MemChunk *nxtmlc = mlc->mc_Header.next;
-	register Lisp_DynamicString *ds
-	    = (Lisp_DynamicString *)mlc->mc_Mem.mem;
-	if(ds->data[0] == V_DynamicString)
+	register Lisp_String *ds = (Lisp_String *)mlc->mc_Mem.mem;
+	if(!GC_CELL_MARKEDP(VAL(ds)))
 	    myfree(mlc);
 	else
 	{
-	    ds->data[0] = V_DynamicString;
+	    GC_CLR_CELL(VAL(ds));
 	    mlc->mc_Header.next = lisp_strmem.sm_MallocChain;
 	    lisp_strmem.sm_MallocChain = mlc;
 	}
@@ -239,9 +270,9 @@ string_sweep(void)
 bool
 set_string_len(VALUE str, long len)
 {
-    if(VNORMAL_TYPEP(str, V_DynamicString))
+    if(STRING_WRITABLE_P(str))
     {
-	DSTRING_HDR(str)->length = len;
+	VSTRING(str)->car = MAKE_STRING_CAR(len, 0);
 	return TRUE;
     }
     else
@@ -439,10 +470,9 @@ make_vector(int size)
     Lisp_Vector *v = ALLOC_OBJECT(len);
     if(v != NULL)
     {
-	v->type = V_Vector;
+	VSET_VECT_LEN(VAL(v), size);
 	v->next = vector_chain;
 	vector_chain = v;
-	v->size = size;
 	used_vector_slots += size;
 	data_after_gc += len;
     }
@@ -458,14 +488,14 @@ vector_sweep(void)
     while(this != NULL)
     {
 	Lisp_Vector *nxt = this->next;
-	if(!GC_NORMAL_MARKEDP(VAL(this)))
+	if(!GC_CELL_MARKEDP(VAL(this)))
 	    FREE_OBJECT(this);
 	else
 	{
 	    this->next = vector_chain;
 	    vector_chain = this;
-	    used_vector_slots += this->size;
-	    GC_CLR_NORMAL(VAL(this));
+	    used_vector_slots += VVECT_LEN(this);
+	    GC_CLR_CELL(VAL(this));
 	}
 	this = nxt;
     }
@@ -475,11 +505,12 @@ int
 vector_cmp(VALUE v1, VALUE v2)
 {
     int rc = 1;
-    if((VTYPE(v1) == VTYPE(v2)) && (VVECT(v1)->size == VVECT(v2)->size))
+    if((VTYPE(v1) == VTYPE(v2)) && (VVECT_LEN(v1) == VVECT_LEN(v2)))
     {
 	int i;
-	for(i = rc = 0; (i < VVECT(v1)->size) && (rc == 0); i++)
-	    rc = value_cmp(VVECT(v1)->array[i], VVECT(v2)->array[i]);
+	int len = VVECT_LEN(v1);
+	for(i = rc = 0; (i < len) && (rc == 0); i++)
+	    rc = value_cmp(VVECTI(v1, i), VVECTI(v2, i));
     }
     return rc;
 }
@@ -579,53 +610,52 @@ mark_value(register VALUE val)
 #endif
 
 again:
-    if(!NORMALP(val))
-    {
-	/* Either a cons cell or a number. We can ignore numbers, so */
-	if(INTP(val))
-	    return;
+    if(INTP(val))
+	return;
 
-	/* Must be a cons. Attempts to walk though whole lists at a time
+    if(CONSP(val))
+    {
+	/* A cons. Attempts to walk though whole lists at a time
 	   (since Lisp lists mainly link from the cdr).  */
 	GC_SET_CONS(val);
-	if(NILP(VCDR(val)))
+	if(NILP(VGCDR(val)))
 	    /* End of a list. We can safely mark the car non-recursively.  */
-	    val = GCREF(VCAR(val));
+	    val = VCAR(val);
 	else
 	{
-	    MARKVAL(GCREF(VCAR(val)));
-	    val = VCDR(val);
+	    MARKVAL(VCAR(val));
+	    val = VGCDR(val);
 	}
-	if(val && !GC_MARKEDP(val))
+	if(val && !INTP(val) && !GC_MARKEDP(val))
 	    goto again;
 	return;
     }
 
-    /* So we know that it's a normal object */
-    switch(VNORMAL_TYPE(val))
+    /* So we know that it's a cell8 object */
+    switch(VCELL8_TYPE(val))
     {
     case V_Vector:
 	{
-	    register int i;
-	    GC_SET_NORMAL(val);
-	    for(i = 0; i < VVECT(val)->size; i++)
-		MARKVAL(VVECT(val)->array[i]);
+	    int i, len = VVECT_LEN(val);
+	    GC_SET_CELL(val);
+	    for(i = 0; i < len; i++)
+		MARKVAL(VVECTI(val, i));
 	}
 	break;
 
     case V_Symbol:
-	GC_SET_NORMAL(val);
+	GC_SET_CELL(val);
 	MARKVAL(VSYM(val)->name);
 	MARKVAL(VSYM(val)->value);
 	MARKVAL(VSYM(val)->function);
 	MARKVAL(VSYM(val)->prop_list);
 	val = VSYM(val)->next;
-	if(val && !GC_MARKEDP(val))
+	if(val && !INTP(val) && !GC_MARKEDP(val))
 	    goto again;
 	break;
 
     case V_Buffer:
-	GC_SET_NORMAL(val);
+	GC_SET_CELL(val);
 	MARKVAL(VTX(val)->tx_FileName);
 	MARKVAL(VTX(val)->tx_BufferName);
 	MARKVAL(VTX(val)->tx_ModeName);
@@ -642,23 +672,23 @@ again:
 	MARKVAL(VTX(val)->tx_SavedBlockPos[0]);
 	MARKVAL(VTX(val)->tx_SavedBlockPos[1]);
 	val = VTX(val)->tx_LocalVariables;
-	if(!GC_MARKEDP(val) && !NILP(val))
+	if(val && !INTP(val) && !GC_MARKEDP(val) && !NILP(val))
 	    goto again;
 	break;
 
     case V_Window:
-	GC_SET_NORMAL(val);
+	GC_SET_CELL(val);
 	MARKVAL(VWIN(val)->w_FontName);
 #ifdef HAVE_AMIGA
 	MARKVAL(VWIN(val)->w_WindowSys.ws_ScreenName);
 #endif
 	val = VAL(VWIN(val)->w_ViewList);
-	if(val != 0 && !GC_MARKEDP(val) && !NILP(val))
+	if(val != 0 && !INTP(val) && !GC_MARKEDP(val) && !NILP(val))
 	    goto again;
 	break;
 
     case V_View:
-	GC_SET_NORMAL(val);
+	GC_SET_CELL(val);
 	MARKVAL(VAL(VVIEW(val)->vw_Tx));
 	MARKVAL(VVIEW(val)->vw_BufferList);
 	MARKVAL(VVIEW(val)->vw_CursorPos);
@@ -670,25 +700,25 @@ again:
 	MARKVAL(VVIEW(val)->vw_LastBlockS);
 	MARKVAL(VVIEW(val)->vw_LastBlockE);
 	val = VAL(VVIEW(val)->vw_NextView);
-	if(val != 0 && !GC_MARKEDP(val) && !NILP(val))
+	if(val != 0 && !INTP(val) && !GC_MARKEDP(val) && !NILP(val))
 	    goto again;
 	break;
 
     case V_File:
-	GC_SET_NORMAL(val);
+	GC_SET_CELL(val);
 	MARKVAL(VFILE(val)->name);
 	break;
 
     case V_Process:
-	GC_SET_NORMAL(val);
+	GC_SET_CELL(val);
 #ifdef HAVE_SUBPROCESSES
 	proc_mark(val);
 #endif
 	break;
 
     case V_Mark:
-	GC_SET_NORMAL(val);
-	if(!VMARK(val)->mk_Resident)
+	GC_SET_CELL(val);
+	if(!(VMARK(val)->mk_Flags & MKFF_RESIDENT))
 	{
 	    /* TXs don't get marked here. They should still be able to
 	       be gc'd if there's marks pointing to them. The marks will
@@ -698,12 +728,14 @@ again:
 	MARKVAL(VMARK(val)->mk_Pos);
 	break;
 
-    case V_DynamicString:
+    case V_String:
+	if(!STRING_WRITABLE_P(val))
+	    break;
+	/* FALL THROUGH */
     case V_GlyphTable:
-	GC_SET_NORMAL(val);
+	GC_SET_CELL(val);
 	break;
 
-    case V_StaticString:
     case V_Var:
     case V_Subr0:
     case V_Subr1:
@@ -736,6 +768,11 @@ collection is triggered when the editor is idle.
     return handle_var_int(val, &idle_gc_threshold);
 }
 
+#ifndef NO_GC_MSG
+DEFSTRING(gc_start, "Garbage collecting...");
+DEFSTRING(gc_done, "Garbage collecting...done.");
+#endif
+
 _PR VALUE cmd_garbage_collect(VALUE noStats);
 DEFUN_INT("garbage-collect", cmd_garbage_collect, subr_garbage_collect, (VALUE noStats), V_Subr1, DOC_garbage_collect, "") /*
 ::doc:garbage_collect::
@@ -746,10 +783,6 @@ list. This is done automatically when the amount of storage used since the
 last garbage-collection is greater than `garbage-threshold'.
 ::end:: */
 {
-#ifndef NO_GC_MSG
-    static DEFSTRING(gc_start, "Garbage collecting...");
-    static DEFSTRING(gc_done, "Garbage collecting...done.");
-#endif
     int i;
     GC_root *gc_root;
     GC_n_roots *gc_n_roots;
@@ -772,7 +805,7 @@ last garbage-collection is greater than `garbage-threshold'.
     old_log_msgs = log_messages;
     log_messages = FALSE;
     save_message(curr_win, &old_msg, &old_msg_len);
-    cmd_message(VAL(gc_start), sym_t);
+    cmd_message(VAL(&gc_start), sym_t);
 #endif
 
     /* gc the undo lists */
@@ -827,7 +860,7 @@ last garbage-collection is greater than `garbage-threshold'.
     sm_flush(&main_strmem);
 
 #ifndef NO_GC_MSG
-    cmd_message(VAL(gc_done), sym_t);
+    cmd_message(VAL(&gc_done), sym_t);
     restore_message(curr_win, old_msg, old_msg_len);
     log_messages = old_log_msgs;
 #endif

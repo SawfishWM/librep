@@ -331,7 +331,7 @@ static VALUE last_match_data;
 static regsubs last_matches;
 
 static DEFSYM(regexp_error, "regexp-error");
-static DEFSTRING(err_regexp_error, "Regexp error");
+DEFSTRING(err_regexp_error, "Regexp error");
 
 static regexp *
 compile_regexp(VALUE re)
@@ -901,11 +901,10 @@ error:
 void
 regerror(char *err)
 {
-    static DEFSTRING(regexp_str, "Regular expression");
 #if 0
     message(err);
 #else
-    cmd_signal(sym_regexp_error, list_2(VAL(regexp_str), string_dup(err)));
+    cmd_signal(sym_regexp_error, LIST_1(string_dup(err)));
 #endif
 }
 

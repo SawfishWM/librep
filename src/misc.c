@@ -32,6 +32,10 @@ _PR VALUE concat2(u_char *, u_char *);
 _PR VALUE concat3(u_char *, u_char *, u_char *);
 _PR void misc_init(void);
 
+DEFSTRING(vers_string, VERSSTRING);
+DEFSTRING(build_string, VERSSTRING ", built " BUILD_DATE
+	  " on " BUILD_HOST ", by " BUILD_USER ".");
+
 #ifndef HAVE_STPCPY
 /*
  * copy src to dst, returning pointer to terminating '\0' of dst.
@@ -101,7 +105,7 @@ a file name. Add's `/' characters between each PART if necessary.
 	}
 	return(string_dup(buf));
     }
-    return VAL(null_string);
+    return null_string();
 }
 
 _PR VALUE cmd_file_name_equal(VALUE file1, VALUE file2);
@@ -276,6 +280,8 @@ t if running under some flavour of unix.
 #endif
 }
 
+DEFSTRING(no_temp, "Can't create temporary file name");
+
 _PR VALUE cmd_tmp_file_name(void);
 DEFUN("tmp-file-name", cmd_tmp_file_name, subr_tmp_file_name, (void), V_Subr0, DOC_tmp_file_name) /*
 ::doc:tmp_file_name::
@@ -288,10 +294,7 @@ Returns the name of a unique file.
     if(tmpnam(buf))
 	return string_dup(buf);
     else
-    {
-	static DEFSTRING(no_temp, "Can't create temporary file name");
-	return signal_file_error(VAL(no_temp));
-    }
+	return signal_file_error(VAL(&no_temp));
 }
 
 _PR VALUE cmd_make_completion_string(VALUE existing, VALUE arg_list);
@@ -414,8 +417,7 @@ version-string
 Return a string identifying the current version of Jade.
 ::end:: */
 {
-    static DEFSTRING(vers_string, VERSSTRING);
-    return VAL(vers_string);
+    return VAL(&vers_string);
 }
 
 _PR VALUE cmd_version_and_build_string(void);
@@ -427,9 +429,7 @@ Returns a string describing the current version of Jade, as well as where
 and when it was built.
 ::end:: */
 {
-    static DEFSTRING(build_string, VERSSTRING ", built " BUILD_DATE
-		     " on " BUILD_HOST ", by " BUILD_USER ".");
-    return VAL(build_string);
+    return VAL(&build_string);
 }
 
 _PR VALUE cmd_getenv(VALUE name);

@@ -214,7 +214,7 @@ Attempts to delete the file called FILE-NAME.
 }
 
 _PR VALUE cmd_rename_file(VALUE src, VALUE dst);
-DEFUN_INT("rename-file", cmd_rename_file, subr_rename_file, (VALUE src, VALUE dst), V_Subr2, DOC_rename_file, "fRename file:\nFRename file `%s' as:") /*
+DEFUN_INT("rename-file", cmd_rename_file, subr_rename_file, (VALUE src, VALUE dst), V_Subr2, DOC_rename_file, "fRename file:" DS_NL "FRename file `%s' as:") /*
 ::doc:rename_file::
 rename-file SRC DEST
 
@@ -230,7 +230,7 @@ if a file DEST already exists.
 }
 
 _PR VALUE cmd_copy_file(VALUE src, VALUE dst);
-DEFUN_INT("copy-file", cmd_copy_file, subr_copy_file, (VALUE src, VALUE dst), V_Subr2, DOC_copy_file, "fCopy file:\nFCopy file `%s' to:") /*
+DEFUN_INT("copy-file", cmd_copy_file, subr_copy_file, (VALUE src, VALUE dst), V_Subr2, DOC_copy_file, "fCopy file:" DS_NL "FCopy file `%s' to:") /*
 ::doc:copy_file::
 copy-file SRC DEST
 
@@ -596,6 +596,8 @@ On the Amiga this is taken from the environment variable `REALNAME'.
     return(user_full_name);
 }
 
+DEFSTRING(no_home, "Can't find your home directory");
+
 _PR VALUE cmd_user_home_directory(void);
 DEFUN("user-home-directory", cmd_user_home_directory, subr_user_home_directory, (void), V_Subr0, DOC_user_home_directory) /*
 ::doc:user_home_directory::
@@ -623,10 +625,7 @@ on AmigaDOS or look in the /etc/passwd file if on Unix.
 	    struct passwd *pwd;
 	    pwd = getpwuid(geteuid());
 	    if(!pwd || !pwd->pw_dir)
-	    {
-		static DEFSTRING(no_home, "Can't find your home directory");
-		return(cmd_signal(sym_error, LIST_1(VAL(no_home))));
-	    }
+		return(cmd_signal(sym_error, LIST_1(VAL(&no_home))));
 	    src = pwd->pw_dir;
 	}
 	len = strlen(src);
@@ -758,6 +757,8 @@ the environment.
     }
 }
 
+DEFSTRING(cant_expand, "Can't expand");
+
 VALUE
 sys_expand_file_name(VALUE namev)
 {
@@ -769,7 +770,6 @@ sys_expand_file_name(VALUE namev)
 	    return LISP_NULL;
 	switch(name[1])
 	{
-	    static DEFSTRING(no_expand, "Can't expand");
 	case 0:
 	    return(home);
 	case '/':
@@ -781,7 +781,7 @@ sys_expand_file_name(VALUE namev)
 		return(string_dup(buf));
 	    }
 	default:
-	    return(cmd_signal(sym_file_error, list_2(VAL(no_expand), namev)));
+	    return(cmd_signal(sym_file_error, list_2(VAL(&cant_expand), namev)));
 	}
     }
     return(namev);

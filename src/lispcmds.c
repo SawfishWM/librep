@@ -30,9 +30,10 @@
 _PR void lispcmds_init(void);
 
 _PR VALUE sym_load_path;
-static DEFSTRING(lisp_lib_dir, LISP_LIB_DIR);
-static DEFSTRING(site_lisp_dir, SITE_LISP_DIR);
-static DEFSTRING(div_zero, "Divide by zero");
+DEFSTRING(lisp_lib_dir, LISP_LIB_DIR);
+DEFSTRING(site_lisp_dir, SITE_LISP_DIR);
+DEFSTRING(div_zero, "Divide by zero");
+DEFSTRING(doc_file, DOC_FILE);
 
 DEFSYM(or, "or");
 DEFSYM(and, "and");
@@ -158,6 +159,8 @@ variable will be set (if necessary) not the local value.
 	return signal_missing_arg(CONSP(args) ? 2 : 1);
 }
 
+DEFSTRING(const_bound, "Constant already bound");
+
 _PR VALUE cmd_defconst(VALUE);
 DEFUN("defconst", cmd_defconst, subr_defconst, (VALUE args), V_SF, DOC_defconst) /*
 ::doc:defconst::
@@ -176,8 +179,7 @@ the compiler source (`lisp/compiler.jl').
 	VALUE tmp = cmd_default_boundp(VCAR(args));
 	if(tmp && !NILP(tmp))
 	{
-	    static DEFSTRING(const_bound, "Constant already bound");
-	    return(cmd_signal(sym_error, list_2(VAL(const_bound),
+	    return(cmd_signal(sym_error, list_2(VAL(&const_bound),
 						VCAR(args))));
 	}
 	tmp = cmd_defvar(args);
@@ -813,7 +815,7 @@ Returns a new vector with ARGS... as its elements.
 	int i = 0;
 	while(CONSP(args))
 	{
-	    VVECT(res)->array[i] = VCAR(args);
+	    VVECTI(res, i) = VCAR(args);
 	    args = VCDR(args);
 	    i++;
 	    TEST_INT;
@@ -842,7 +844,7 @@ will be set to that value, else they will all be nil.
     {
 	int i;
 	for(i = 0; i < len; i++)
-	    VVECT(res)->array[i] = init;
+	    VVECTI(res, i) = init;
     }
     return(res);
 }
@@ -869,26 +871,27 @@ can only contain characters (ie, integers).
 ::end:: */
 {
     DECLARE2(index, INTP);
-    switch(VTYPE(array))
+    if(STRINGP(array))
     {
-    case V_DynamicString:
+	if(!STRING_WRITABLE_P(array))
+	    return signal_arg_error(array, 1);
 	if(VINT(index) < STRING_LEN(array))
 	{
 	    DECLARE3(new, INTP);
 	    VSTR(array)[VINT(index)] = (u_char)VINT(new);
 	    return(new);
 	}
-	break;
-    case V_Vector:
-	if(VINT(index) < VVECT(array)->size)
+    }
+    else if(VECTORP(array))
+    {
+	if(VINT(index) < VVECT_LEN(array))
 	{
-	    VVECT(array)->array[VINT(index)] = new;
+	    VVECTI(array, VINT(index)) = new;
 	    return(new);
 	}
-	break;
-    default:
-	return(signal_arg_error(array, 1));
     }
+    else
+	return(signal_arg_error(array, 1));
     return(signal_arg_error(index, 2));
 }
 
@@ -902,21 +905,19 @@ can be a vector or a string. INDEX starts at zero.
 ::end:: */
 {
     DECLARE2(index, INTP);
-    switch(VTYPE(array))
+    if(STRINGP(array))
     {
-    case V_StaticString:
-    case V_DynamicString:
 	if(VINT(index) < STRING_LEN(array))
 	    return(MAKE_INT(VSTR(array)[VINT(index)]));
-	break;
-    case V_Vector:
-	if(VINT(index) < VVECT(array)->size)
-	    return(VVECT(array)->array[VINT(index)]);
-	break;
-    default:
-	return(cmd_signal(sym_bad_arg, list_2(array, MAKE_INT(1))));
     }
-    return(sym_nil);
+    else if(VECTORP(array))
+    {
+	if(VINT(index) < VVECT_LEN(array))
+	    return(VVECTI(array, VINT(index)));
+    }
+    else
+	return(cmd_signal(sym_bad_arg, list_2(array, MAKE_INT(1))));
+    return(signal_arg_error(index, 2));
 }
 
 _PR VALUE cmd_make_string(VALUE, VALUE);
@@ -981,8 +982,7 @@ a character or a list or vector of characters.
 	    switch(VTYPE(arg))
 	    {
 		int slen, j;
-	    case V_StaticString:
-	    case V_DynamicString:
+	    case V_String:
 		slen = STRING_LEN(arg);
 		if(!extend_concat(&buf, &buflen, i, slen))
 		    goto error;
@@ -1015,16 +1015,19 @@ a character or a list or vector of characters.
 		}
 		break;
 	    case V_Vector:
-		for(j = 0; j < VVECT(arg)->size; j++)
 		{
-		    if(INTP(VVECT(arg)->array[j]))
+		    int len = VVECT_LEN(arg);
+		    for(j = 0; j < len; j++)
 		    {
-			if(!extend_concat(&buf, &buflen, i, 1))
-			    goto error;
-			buf[i++] = VINT(VVECT(arg)->array[j]);
+			if(INTP(VVECTI(arg, j)))
+			{
+			    if(!extend_concat(&buf, &buflen, i, 1))
+				goto error;
+			    buf[i++] = VINT(VVECTI(arg, j));
+			}
 		    }
+		    break;
 		}
-		break;
 	    default:
 		res = signal_arg_error(arg, argnum);
 		goto error;
@@ -1051,12 +1054,11 @@ Returns the number of elements in SEQUENCE (a string, list or vector).
     switch(VTYPE(sequence))
     {
 	int i;
-    case V_StaticString:
-    case V_DynamicString:
+    case V_String:
 	return(MAKE_INT(STRING_LEN(sequence)));
 	break;
     case V_Vector:
-	return(MAKE_INT(VVECT(sequence)->size));
+	return(MAKE_INT(VVECT_LEN(sequence)));
 	break;
     case V_Cons:
 	i = 0;
@@ -1111,16 +1113,15 @@ Returns a new sequence whose elements are eq to those in SEQUENCE.
 	}
 	break;
     case V_Vector:
-	res = make_vector(VVECT(seq)->size);
+	res = make_vector(VVECT_LEN(seq));
 	if(res)
 	{
-	    int i;
-	    for(i = 0; i < VVECT(seq)->size; i++)
+	    int i, len = VVECT_LEN(seq);
+	    for(i = 0; i < len; i++)
 		VVECTI(res, i) = VVECTI(seq, i);
 	}
 	break;
-    case V_DynamicString:
-    case V_StaticString:
+    case V_String:
 	res = string_dupn(VSTR(seq), STRING_LEN(seq));
 	break;
     default:
@@ -1312,6 +1313,9 @@ ie,
     return signal_missing_arg(1);
 }
 
+DEFSTRING(r_str, "r");
+DEFSTRING(no_load_file, "Can't open lisp-file");
+
 _PR VALUE cmd_load(VALUE file, VALUE noerr_p, VALUE nopath_p, VALUE nosuf_p);
 DEFUN_INT("load", cmd_load, subr_load, (VALUE file, VALUE noerr_p, VALUE nopath_p, VALUE nosuf_p), V_Subr4, DOC_load, "fLisp file to load:") /*
 ::doc:load::
@@ -1333,7 +1337,6 @@ loaded and a warning is displayed.
 ::end:: */
 {
     VALUE name = LISP_NULL, stream, path;
-    static DEFSTRING(r_str, "r");
     DECLARE1(file, STRINGP);
     if(NILP(nopath_p))
     {
@@ -1342,7 +1345,7 @@ loaded and a warning is displayed.
 	    return(LISP_NULL);
     }
     else
-	path = cmd_cons(VAL(null_string), sym_nil);
+	path = cmd_cons(null_string(), sym_nil);
     while(!name && CONSP(path))
     {
 	u_char *dir = STRINGP(VCAR(path)) ? VSTR(VCAR(path)) : (u_char *)"";
@@ -1376,14 +1379,12 @@ loaded and a warning is displayed.
     if(!name)
     {
 	if(NILP(noerr_p))
-	{
-	    static DEFSTRING(no_file, "Can't open lisp-file");
-	    return(cmd_signal(sym_file_error, list_2(VAL(no_file), file)));
-	}
+	    return(cmd_signal(sym_file_error,
+			      list_2(VAL(&no_load_file), file)));
 	else
 	    return(sym_nil);
     }
-    if((stream = cmd_open(name, VAL(r_str), sym_nil)) && FILEP(stream))
+    if((stream = cmd_open(name, VAL(&r_str), sym_nil)) && FILEP(stream))
     {
 	VALUE obj;
 	int c;
@@ -1509,7 +1510,7 @@ Divides NUMBERS (in left-to-right order), ie,
 	    if(!INTP(VCAR(args)))
 	       return signal_arg_error(VCAR(args), i);
 	    if(VINT(VCAR(args)) == 0)
-		return cmd_signal(sym_arith_error, LIST_1(VAL(div_zero)));
+		return cmd_signal(sym_arith_error, LIST_1(VAL(&div_zero)));
 	    sum = sum / VINT(VCAR(args));
 	    args = VCDR(args);
 	    i++;
@@ -1534,7 +1535,7 @@ Returns the integer remainder after dividing DIVIDEND by DIVISOR.
     DECLARE1(n1, INTP);
     DECLARE2(n2, INTP);
     if(VINT(n2) == 0)
-	return cmd_signal(sym_arith_error, LIST_1(VAL(div_zero)));
+	return cmd_signal(sym_arith_error, LIST_1(VAL(&div_zero)));
     return MAKE_INT(VINT(n1) % VINT(n2));
 }
 
@@ -1557,7 +1558,7 @@ and that floating point division is used.
     DECLARE1(n1, INTP);
     DECLARE2(n2, INTP);
     if(VINT(n2) == 0)
-	return cmd_signal(sym_arith_error, LIST_1(VAL(div_zero)));
+	return cmd_signal(sym_arith_error, LIST_1(VAL(&div_zero)));
 
     /* This code from GNU Emacs */
     tem = VINT(n1) % VINT(n2);
@@ -2124,8 +2125,7 @@ Returns the doc-string associated with SUBR.
     case V_SubrN:
     case V_SF:
     case V_Var:
-	return(cmd_read_file_from_to(VAL(doc_file),
-				     MAKE_INT(VSUBR(subr)->doc_index),
+	return(cmd_read_file_from_to(VAL(&doc_file), VSUBR(subr)->doc_index,
 				     MAKE_INT((int)'\f')));
     default:
 	return(sym_nil);
@@ -2408,13 +2408,13 @@ lispcmds_init(void)
     ADD_SUBR(subr_throw);
     ADD_SUBR(subr_unwind_protect);
     INTERN(load_path); DOC(load_path);
-    VSYM(sym_load_path)->value = list_3(VAL(null_string),
-					VAL(site_lisp_dir),
-					VAL(lisp_lib_dir));
+    VSYM(sym_load_path)->value = list_3(null_string(),
+					VAL(&site_lisp_dir),
+					VAL(&lisp_lib_dir));
     INTERN(after_load_alist); DOC(after_load_alist);
     VSYM(sym_after_load_alist)->value = sym_nil;
     INTERN(lisp_lib_dir); DOC(lisp_lib_dir);
-    VSYM(sym_lisp_lib_dir)->value = VAL(lisp_lib_dir);
+    VSYM(sym_lisp_lib_dir)->value = VAL(&lisp_lib_dir);
 
     INTERN(or); INTERN(and);
 }

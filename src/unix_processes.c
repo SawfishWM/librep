@@ -45,8 +45,7 @@ static sigset_t chld_sigset;
 
 struct Proc
 {
-    u_char	pr_Type;
-    char	pr_Status;	/* PR_?? value */
+    VALUE	pr_Car;		/* status in high bits */
     struct Proc *pr_Next;
     /* Chain of all processes waiting to be notified of a change of state. */
     struct Proc *pr_NotifyNext;
@@ -65,10 +64,19 @@ struct Proc
     VALUE	pr_ConnType;
 };
 
-/* <= 0 means process not running, > 0 means could be running...  */
-#define PR_STOPPED  2		/* waiting to be continued */
-#define PR_RUNNING  1		/* running merrily */
-#define PR_DEAD	    0		/* nothing happening on this obj */
+/* Status is two bits above the type code (presently 8->9) */
+#define PR_ACTIVE  (1 << (CELL8_TYPE_BITS + 0))	/* active, may be stopped */
+#define PR_STOPPED (2 << (CELL8_TYPE_BITS + 1))	/* stopped */
+#define PR_DEAD    0
+#define PR_RUNNING PR_ACTIVE
+
+#define PR_ACTIVE_P(p)  ((p)->pr_Car & PR_ACTIVE)
+#define PR_STOPPED_P(p) ((p)->pr_Car & PR_STOPPED)
+#define PR_RUNNING_P(p) (PR_ACTIVE_P(p) && !PR_STOPPED_P(p))
+#define PR_DEAD_P(p)    !PR_ACTIVE_P(p)
+
+#define PR_SET_STATUS(p,s) \
+    ((p)->pr_Car = (((p)->pr_Car & ~(PR_ACTIVE | PR_STOPPED)) | (s)))
 
 /* Connection types, pty-echo is a pty with the ECHO bit set in c_lflag */
 static DEFSYM(pipe, "pipe");
@@ -107,6 +115,16 @@ _PR void proc_prin(VALUE, VALUE);
 _PR void sigchld_restart(bool);
 _PR void proc_init(void);
 _PR void proc_kill(void);
+
+DEFSTRING(not_running, "Not running");
+DEFSTRING(not_stopped, "Not stopped");
+DEFSTRING(no_link, "No link to input");
+DEFSTRING(in_use, "Process in use");
+DEFSTRING(no_pty, "Can't find unused pty");
+DEFSTRING(already_running, "Already running");
+DEFSTRING(no_prog, "No program");
+DEFSTRING(cant_start, "Can't start");
+DEFSTRING(dev_null, "/dev/null");
 
 
 
@@ -185,13 +203,13 @@ check_for_zombies(void)
 	    /* Got a process id, find its process structure. */
 	    for(pr = process_chain; pr != 0; pr = pr->pr_Next)
 	    {
-		if((pr->pr_Status > 0) && (pr->pr_Pid == pid))
+		if(PR_ACTIVE_P(pr) && (pr->pr_Pid == pid))
 		{
 		    /* Got it. */
 		    if(WIFSTOPPED(status))
 		    {
 			/* Process is suspended. */
-			pr->pr_Status = PR_STOPPED;
+			PR_SET_STATUS(pr, PR_ACTIVE | PR_STOPPED);
 			queue_notify(pr);
 		    }
 		    else
@@ -200,7 +218,7 @@ check_for_zombies(void)
 			pr->pr_ExitStatus = status;
 			process_run_count--;
 			close_proc_files(pr);
-			pr->pr_Status = PR_DEAD;
+			PR_SET_STATUS(pr, PR_DEAD);
 			queue_notify(pr);
 		    }
 		    break;
@@ -282,8 +300,7 @@ read_from_process(int fd)
     pr = process_chain;
     while(pr)
     {
-	if(pr->pr_Status != PR_DEAD
-	   && (pr->pr_Stdout == fd || pr->pr_Stderr == fd))
+	if(PR_ACTIVE_P(pr) && (pr->pr_Stdout == fd || pr->pr_Stderr == fd))
 	{
 	    read_from_one_fd(pr, fd, TRUE);
 	}
@@ -294,16 +311,14 @@ read_from_process(int fd)
 int
 write_to_process(VALUE pr, u_char *buf, int bufLen)
 {
-    static DEFSTRING(not_running, "Not running");
     int act = 0;
     if(!PROCESSP(pr))
 	return(0);
-    if(VPROC(pr)->pr_Status > 0)
+    if(PR_ACTIVE_P(VPROC(pr)))
     {
 	if(VPROC(pr)->pr_Stdin == 0)
 	{
-	    static DEFSTRING(no_link, "No link to input");
-	    cmd_signal(sym_process_error, list_2(pr, VAL(no_link)));
+	    cmd_signal(sym_process_error, list_2(pr, VAL(&no_link)));
 	}
 	else
 	{
@@ -317,7 +332,7 @@ write_to_process(VALUE pr, u_char *buf, int bufLen)
 	}
     }
     else
-	cmd_signal(sym_process_error, list_2(pr, VAL(not_running)));
+	cmd_signal(sym_process_error, list_2(pr, VAL(&not_running)));
     return(act);
 }
 
@@ -332,14 +347,14 @@ signal_process(struct Proc *pr, int sig, bool do_grp)
 	    pid_t gid = tcgetpgrp(pr->pr_Stdin);
 	    if(gid != -1)
 		kill(-gid, sig);
-	    else if(pr->pr_Status != PR_DEAD)
+	    else if(PR_ACTIVE_P(pr))
 		kill(-pr->pr_Pid, sig);
 	    else
 		rc = FALSE;
 	}
 	else
 	{
-	    if(pr->pr_Status > 0)
+	    if(PR_ACTIVE_P(pr))
 		kill(-pr->pr_Pid, sig);
 	    else
 		rc = FALSE;
@@ -347,7 +362,7 @@ signal_process(struct Proc *pr, int sig, bool do_grp)
     }
     else
     {
-	if(pr->pr_Status > 0)
+	if(PR_ACTIVE_P(pr))
 	    kill(pr->pr_Pid, sig);
 	else
 	    rc = FALSE;
@@ -360,16 +375,13 @@ signal_process(struct Proc *pr, int sig, bool do_grp)
 static void
 kill_process(struct Proc *pr)
 {
-    if(pr->pr_Status != PR_DEAD)
+    if(PR_ACTIVE_P(pr))
     {
-	if(pr->pr_Status == PR_RUNNING)
-	{
-	    /* is this too heavy-handed?? */
-	    if(!signal_process(pr, SIGKILL, TRUE))
-		kill(-pr->pr_Pid, SIGKILL);
-	    waitpid(pr->pr_Pid, &pr->pr_ExitStatus, 0);
-	    process_run_count--;
-	}
+	/* is this too heavy-handed?? */
+	if(!signal_process(pr, SIGKILL, TRUE))
+	    kill(-pr->pr_Pid, SIGKILL);
+	waitpid(pr->pr_Pid, &pr->pr_ExitStatus, 0);
+	process_run_count--;
 	close_proc_files(pr);
     }
     FREE_OBJECT(pr);
@@ -378,7 +390,6 @@ kill_process(struct Proc *pr)
 static int
 get_pty(char *slavenam)
 {
-    static DEFSTRING(no_pty, "Can't find unused pty");
     char c;
     int i, master;
     struct stat statb;
@@ -399,7 +410,7 @@ get_pty(char *slavenam)
 	}
     }
 none:
-    cmd_signal(sym_process_error, LIST_1(VAL(no_pty)));
+    cmd_signal(sym_process_error, LIST_1(VAL(&no_pty)));
     return(-1);
 }
 
@@ -411,7 +422,7 @@ static bool
 run_process(struct Proc *pr, char **argv, u_char *sync_input)
 {
     bool rc = FALSE;
-    if(pr->pr_Status == PR_DEAD)
+    if(PR_DEAD_P(pr))
     {
 	bool usepty = PR_CONN_PTY_P(pr);
 	char slavenam[32];
@@ -540,7 +551,7 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 		perror("fork()");
 		break;
 	    default:
-		pr->pr_Status = PR_RUNNING;
+		PR_SET_STATUS(pr, PR_RUNNING);
 		if(!usepty)
 		{
 		    close(stdin_fds[0]);
@@ -664,7 +675,7 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 		    close(pr->pr_Stderr);
 		    pr->pr_Stdout = 0;
 		    pr->pr_Stderr = 0;
-		    pr->pr_Status = PR_DEAD;
+		    PR_SET_STATUS(pr, PR_DEAD);
 		    queue_notify(pr);
 		}
 		rc = TRUE;
@@ -674,8 +685,7 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
     }
     else
     {
-	static DEFSTRING(running, "Already running");
-	cmd_signal(sym_process_error, list_2(VAL(pr), VAL(running)));
+	cmd_signal(sym_process_error, list_2(VAL(pr), VAL(&already_running)));
     }
     return(rc);
 }
@@ -702,7 +712,7 @@ proc_sweep(void)
     notify_chain = NULL;
     while(pr)
     {
-	if(GC_NORMAL_MARKEDP(VAL(pr)))
+	if(GC_CELL_MARKEDP(VAL(pr)))
 	{
 	    pr->pr_NotifyNext = notify_chain;
 	    notify_chain = pr;
@@ -716,11 +726,11 @@ proc_sweep(void)
     while(pr)
     {
 	struct Proc *nxt = pr->pr_Next;
-	if(!GC_NORMAL_MARKEDP(VAL(pr)))
+	if(!GC_CELL_MARKEDP(VAL(pr)))
 	    kill_process(pr);
 	else
 	{
-	    GC_CLR_NORMAL(VAL(pr));
+	    GC_CLR_CELL(VAL(pr));
 	    pr->pr_Next = process_chain;
 	    process_chain = pr;
 	}
@@ -734,23 +744,23 @@ proc_prin(VALUE strm, VALUE obj)
     struct Proc *pr = VPROC(obj);
     u_char buf[40];
     stream_puts(strm, "#<process", -1, FALSE);
-    switch(pr->pr_Status)
+    if(PR_RUNNING_P(pr))
     {
-    case PR_RUNNING:
 	stream_puts(strm, " running: ", -1, FALSE);
-	stream_puts(strm, VSTR(pr->pr_Prog), -1, TRUE);
-	break;
-    case PR_STOPPED:
+	stream_puts(strm, VPTR(pr->pr_Prog), -1, TRUE);
+    }
+    else if(PR_STOPPED_P(pr))
+    {
 	stream_puts(strm, " stopped: ", -1, FALSE);
-	stream_puts(strm, VSTR(pr->pr_Prog), -1, TRUE);
-	break;
-    case PR_DEAD:
+	stream_puts(strm, VPTR(pr->pr_Prog), -1, TRUE);
+    }
+    else
+    {
 	if(pr->pr_ExitStatus != -1)
 	{
 	    sprintf(buf, " exited: 0x%x", pr->pr_ExitStatus);
 	    stream_puts(strm, buf, -1, FALSE);
 	}
-	break;
     }
     stream_putc(strm, '>');
 }
@@ -774,11 +784,11 @@ actual running process.
     struct Proc *pr = ALLOC_OBJECT(sizeof(struct Proc));
     if(pr)
     {
-	pr->pr_Type = V_Process;
+	pr->pr_Car = V_Process;
 	pr->pr_Next = process_chain;
 	process_chain = pr;
 	pr->pr_NotifyNext = NULL;
-	pr->pr_Status = PR_DEAD;
+	PR_SET_STATUS(pr, PR_DEAD);
 	pr->pr_Pid = 0;
 	pr->pr_Stdin = pr->pr_Stdout = 0;
 	pr->pr_ExitStatus = -1;
@@ -836,8 +846,7 @@ set in the PROCESS prior to calling this function.
     }
     if(!STRINGP(pr->pr_Prog))
     {
-	static DEFSTRING(no_prog, "No program");
-	res = cmd_signal(sym_process_error, list_2(VAL(no_prog), VAL(pr)));
+	res = cmd_signal(sym_process_error, list_2(VAL(&no_prog), VAL(pr)));
     }
     else
     {
@@ -861,8 +870,7 @@ set in the PROCESS prior to calling this function.
 		res = VAL(pr);
 	    else
 	    {
-		static DEFSTRING(cant_start, "Can't start");
-		res = cmd_signal(sym_process_error, list_2(VAL(cant_start),
+		res = cmd_signal(sym_process_error, list_2(VAL(&cant_start),
 							   VAL(pr)));
 	    }
 	    str_free(argv);
@@ -891,8 +899,7 @@ set in the PROCESS prior to calling this function.
 ::end:: */
 {
     struct Proc *pr = NULL;
-    static DEFSTRING(dev_null, "/dev/null");
-    VALUE res = sym_nil, infile = VAL(dev_null);
+    VALUE res = sym_nil, infile = VAL(&dev_null);
     if(CONSP(arg_list))
     {
 	if(PROCESSP(VCAR(arg_list)))
@@ -922,8 +929,7 @@ set in the PROCESS prior to calling this function.
     }
     if(!STRINGP(pr->pr_Prog))
     {
-	static DEFSTRING(no_prog, "No program");
-	res = cmd_signal(sym_process_error, LIST_2(VAL(no_prog), VAL(pr)));
+	res = cmd_signal(sym_process_error, LIST_2(VAL(&no_prog), VAL(pr)));
     }
     else if(!file_exists(VSTR(infile)))
 	res = signal_file_error(infile);
@@ -949,8 +955,7 @@ set in the PROCESS prior to calling this function.
 		res = MAKE_INT(pr->pr_ExitStatus);
 	    else
 	    {
-		static DEFSTRING(cant_run, "Can't run");
-		res = cmd_signal(sym_process_error, list_2(VAL(cant_run),
+		res = cmd_signal(sym_process_error, list_2(VAL(&cant_start),
 							   VAL(pr)));
 	    }
 	    str_free(argv);
@@ -1043,15 +1048,14 @@ do_signal_command(VALUE proc, int signal, VALUE signal_group)
 {
     VALUE res = sym_nil;
     DECLARE1(proc, PROCESSP);
-    if(VPROC(proc)->pr_Status > 0)
+    if(PR_ACTIVE_P(VPROC(proc)))
     {
 	if(signal_process(VPROC(proc), signal, !NILP(signal_group)))
 	    res = sym_t;
     }
     else
     {
-	static DEFSTRING(not_running, "Not running");
-	res = cmd_signal(sym_process_error, list_2(proc, VAL(not_running)));
+	res = cmd_signal(sym_process_error, list_2(proc, VAL(&not_running)));
     }
     return res;
 }
@@ -1104,19 +1108,18 @@ PROCESS.
 {
     VALUE res = sym_t;
     DECLARE1(proc, PROCESSP);
-    if(VPROC(proc)->pr_Status == PR_STOPPED)
+    if(PR_STOPPED_P(VPROC(proc)))
     {
 	if(signal_process(VPROC(proc), SIGCONT, !NILP(grp)))
 	{
-	    VPROC(proc)->pr_Status = PR_RUNNING;
+	    PR_SET_STATUS(VPROC(proc), PR_RUNNING);
 	    res = sym_t;
 	    queue_notify(VPROC(proc));
 	}
     }
     else
     {
-	static DEFSTRING(not_stopped, "Not stopped");
-	res = cmd_signal(sym_process_error, list_2(proc, VAL(not_stopped)));
+	res = cmd_signal(sym_process_error, list_2(proc, VAL(&not_stopped)));
     }
     return(res);
 }
@@ -1132,7 +1135,7 @@ process-object PROCESS. If PROCESS is currently running, return nil.
 {
     VALUE res = sym_nil;
     DECLARE1(proc, PROCESSP);
-    if(VPROC(proc)->pr_Status <= 0)
+    if(PR_DEAD_P(VPROC(proc)))
     {
 	if(VPROC(proc)->pr_ExitStatus != -1)
 	    res = MAKE_INT(VPROC(proc)->pr_ExitStatus);
@@ -1153,7 +1156,8 @@ Returns the return-value of the last process to be run on PROCESS, or nil if:
 {
     VALUE res = sym_nil;
     DECLARE1(proc, PROCESSP);
-    if((VPROC(proc)->pr_Status <= 0) && (VPROC(proc)->pr_ExitStatus != -1))
+    if((PR_DEAD_P(VPROC(proc)))
+       && (VPROC(proc)->pr_ExitStatus != -1))
 	res = MAKE_INT(WEXITSTATUS(VPROC(proc)->pr_ExitStatus));
     return(res);
 }
@@ -1163,13 +1167,13 @@ DEFUN("process-id", cmd_process_id, subr_process_id, (VALUE proc), V_Subr1, DOC_
 ::doc:process_id::
 process-id PROCESS
 
-If PROCESS is running, return the process-identifier associated with it
-(ie, its pid).
+If PROCESS is running or stopped, return the process-identifier associated
+with it (ie, its pid).
 ::end:: */
 {
     VALUE res = sym_nil;
     DECLARE1(proc, PROCESSP);
-    if(VPROC(proc)->pr_Status > 0)
+    if(PR_ACTIVE_P(VPROC(proc)))
 	res = MAKE_INT(VPROC(proc)->pr_Pid);
     return(res);
 }
@@ -1184,7 +1188,7 @@ Return t if PROCESS is running.
 {
     VALUE res;
     DECLARE1(proc, PROCESSP);
-    if(VPROC(proc)->pr_Status == PR_RUNNING)
+    if(PR_RUNNING_P(VPROC(proc)))
 	res = sym_t;
     else
 	res = sym_nil;
@@ -1201,7 +1205,7 @@ Return t if PROCESS has been stopped.
 {
     VALUE res;
     DECLARE1(proc, PROCESSP);
-    if(VPROC(proc)->pr_Status == PR_STOPPED)
+    if(PR_STOPPED_P(VPROC(proc)))
 	res = sym_t;
     else
 	res = sym_nil;
@@ -1214,13 +1218,12 @@ DEFUN("process-in-use-p", cmd_process_in_use_p, subr_process_in_use_p, (VALUE pr
 process-in-use-p PROCESS
 
 Similar to `process-running-p' except that this returns t even when the
-process has stopped, or has exited but the pty connected to `PROCESS' is still
-in use.
+process has stopped.
 ::end:: */
 {
     VALUE res;
     DECLARE1(proc, PROCESSP);
-    if(VPROC(proc)->pr_Status != PR_DEAD)
+    if(PR_ACTIVE_P(VPROC(proc)))
 	res = sym_t;
     else
 	res = sym_nil;
@@ -1437,11 +1440,8 @@ This function can only be used when PROCESS is not in use.
 ::end:: */
 {
     DECLARE1(proc, PROCESSP);
-    if(VPROC(proc)->pr_Status != PR_DEAD)
-    {
-	static DEFSTRING(in_use, "Process in use");
-	type = cmd_signal(sym_process_error, list_2(VAL(in_use), proc));
-    }
+    if(PR_ACTIVE_P(VPROC(proc)))
+	type = cmd_signal(sym_process_error, list_2(VAL(&in_use), proc));
     else
 	VPROC(proc)->pr_ConnType = type;
     return(type);

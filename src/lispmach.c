@@ -29,7 +29,8 @@
 _PR void lispmach_init(void);
 
 static DEFSYM(bytecode_error, "bytecode-error");
-static DEFSTRING(err_bytecode_error, "Invalid byte code version");
+DEFSTRING(err_bytecode_error, "Invalid byte code version");
+DEFSTRING(unknown_op, "Unknown lisp opcode");
 
 /* Unbind one level of the BIND-STACK and return the new head of the stack.
    Each item in the BIND-STACK may be one of:
@@ -138,7 +139,6 @@ of byte code. See the functions `compile-file', `compile-directory' and
 `compile-lisp-lib' for more details.
 ::end:: */
 {
-    static DEFSTRING(unknown_op, "Unknown lisp opcode");
     VALUE *stackbase;
     register VALUE *stackp;
     /* This holds a list of sets of bindings, it can also hold the form of
@@ -207,7 +207,7 @@ fetch:
 		tmp = TOP;
 		if(SYMBOLP(tmp))
 		{
-		    if(VSYM(tmp)->flags & SF_DEBUG)
+		    if(VSYM(tmp)->car & SF_DEBUG)
 			single_step_flag = TRUE;
 		    if(!(tmp = cmd_symbol_function(tmp, sym_nil)))
 			goto error;
@@ -1076,7 +1076,7 @@ fetch:
 		break;
 
 	    default:
-		cmd_signal(sym_error, LIST_1(VAL(unknown_op)));
+		cmd_signal(sym_error, LIST_1(VAL(&unknown_op)));
 	    error:
 		while(CONSP(bindstack))
 		{
