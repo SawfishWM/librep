@@ -702,7 +702,7 @@ variable will be set (if necessary) not the local value.
 	       && !(rep_SYM(sym)->car & rep_SF_WEAK_MOD)
 	       && rep_SPECIAL_ENV == Qt))
 	{
-	    F_structure_set (rep_specials_structure, sym, val);
+	    Fstructure_set (rep_specials_structure, sym, val);
 	}
 
 	rep_SYM(sym)->car |= rep_SF_SPECIAL | rep_SF_DEFVAR;
@@ -875,7 +875,7 @@ SYMBOL the buffer-local value in the current buffer is set. Returns repv.
 	    if (tem != Qnil)
 		rep_CDR (tem) = val;
 	    else
-		val = F_structure_set (rep_specials_structure, sym, val);
+		val = Fstructure_set (rep_specials_structure, sym, val);
 	}
 	else
 	    val = Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
@@ -887,7 +887,7 @@ SYMBOL the buffer-local value in the current buffer is set. Returns repv.
 	if (tem != Qnil)
 	    rep_CDR(tem) = val;
 	else
-	    val = F_structure_set (rep_structure, sym, val);
+	    val = Fstructure_set (rep_structure, sym, val);
     }
     return val;
 }
@@ -915,13 +915,13 @@ Sets the default value of SYMBOL to VALUE, then returns VALUE.
 	    if (tem != Qnil)
 		rep_CDR (tem) = val;
 	    else
-		val = F_structure_set (rep_specials_structure, sym, val);
+		val = Fstructure_set (rep_specials_structure, sym, val);
 	}
 	else
 	    return Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
     }
     else
-	F_structure_set (rep_structure, sym, val);
+	Fstructure_set (rep_structure, sym, val);
     return val;
 }
 
@@ -938,7 +938,7 @@ Sets the property list of SYMBOL to PROP-LIST, returns PROP-LIST.
     if (spec == 0)
 	return Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
 
-    F_structure_set (plist_structure, sym, prop);
+    Fstructure_set (plist_structure, sym, prop);
     return prop;
 }
 
@@ -973,7 +973,7 @@ Returns t if SYMBOL has a default value.
 	}
     }
     else
-	return F_structure_bound_p (rep_structure, sym);
+	return Fstructure_bound_p (rep_structure, sym);
 }
 
 DEFUN("boundp", Fboundp, Sboundp, (repv sym), rep_Subr1) /*
@@ -1137,7 +1137,7 @@ retrieved with the `get' function.
 	}
 	plist = rep_CDR(rep_CDR(plist));
     }
-    F_structure_set (plist_structure, sym, Fcons (prop, Fcons (val, old)));
+    Fstructure_set (plist_structure, sym, Fcons (prop, Fcons (val, old)));
     return val;
 }
 
@@ -1205,7 +1205,7 @@ DEFUN("make-variable-special", Fmake_variable_special,
     {
 	repv tem = rep_get_initial_special_value (sym);
 	if (tem)
-	    F_structure_set (rep_specials_structure, sym, tem);
+	    Fstructure_set (rep_specials_structure, sym, tem);
     }
     rep_SYM(sym)->car |= rep_SF_SPECIAL;
     return sym;
@@ -1295,12 +1295,12 @@ rep_symbols_init(void)
     rep_mark_static (&rep_env);
     rep_mark_static (&rep_special_bindings);
 
-    F_structure_set (rep_structure, Qnil, Qnil);
-    F_structure_set (rep_structure, Qt, Qt);
+    Fstructure_set (rep_structure, Qnil, Qnil);
+    Fstructure_set (rep_structure, Qt, Qt);
     Fmake_binding_immutable (Qnil);
     Fmake_binding_immutable (Qt);
 
-    plist_structure = F_make_structure (Qnil, Qnil, Qnil, Qnil);
+    plist_structure = Fmake_structure (Qnil, Qnil, Qnil, Qnil);
     rep_mark_static (&plist_structure);
 
     rep_INTERN(documentation);

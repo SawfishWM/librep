@@ -193,7 +193,7 @@ load_requires (char *ptr)
     {
 	char *end = ptr + strcspn (ptr, " \t");
 	repv sym = Fintern (rep_string_dupn (ptr, end - ptr), Qnil);
-	if (F_intern_structure (sym) == rep_NULL)
+	if (Fintern_structure (sym) == rep_NULL)
 	    return rep_FALSE;
 	ptr = end + strspn (end, " \t");
     }
@@ -359,7 +359,7 @@ rep_open_dl_library(repv file_name)
 		else if (ret && rep_STRUCTUREP (ret))
 		{
 		    x->structure = ret;
-		    ret = F_structure_name (ret);
+		    ret = rep_STRUCTURE (ret)->name;
 		    if (ret && rep_SYMBOLP (ret))
 			x->feature_sym = ret;
 		}

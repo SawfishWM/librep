@@ -1329,8 +1329,8 @@ rep_load_autoload(repv funarg)
     return fun;
 }
 
-DEFUN ("%load-autoload", F_load_autoload,
-       S_load_autoload, (repv def), rep_Subr1)
+DEFUN ("load-autoload", Fload_autoload,
+       Sload_autoload, (repv def), rep_Subr1)
 {
     rep_DECLARE1 (def, rep_FUNARGP);
     rep_USE_FUNARG(def);
@@ -2361,7 +2361,7 @@ rep_lisp_init(void)
     rep_INTERN_SPECIAL(debug_error_entry);
     rep_INTERN(amp_optional); rep_INTERN(amp_rest);
     rep_mark_static((repv *)&rep_throw_value);
-    rep_ADD_SUBR(S_load_autoload);
+    rep_ADD_SUBR(Sload_autoload);
     rep_ADD_SUBR(Sfuncall);
     rep_ADD_SUBR(Sprogn);
     rep_ADD_SUBR(Sbreak);

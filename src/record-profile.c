@@ -146,7 +146,7 @@ test_interrupt (void)
 		if (c == rep_call_stack)
 		    rep_CAR (tem) = rep_MAKE_INT (rep_INT (rep_CAR (tem)) + 1);
 		rep_CDR (tem) = rep_MAKE_INT (rep_INT (rep_CDR (tem)) + 1);
-		F_structure_set (profile_table, name, tem);
+		Fstructure_set (profile_table, name, tem);
 
 		seen[seen_i++] = name;
 	    }
@@ -162,7 +162,7 @@ test_interrupt (void)
 
 DEFUN ("start-profiler", Fstart_profiler, Sstart_profiler, (void), rep_Subr0)
 {
-    profile_table = F_make_structure (Qnil, Qnil, Qnil, Qnil);
+    profile_table = Fmake_structure (Qnil, Qnil, Qnil, Qnil);
     profiling = rep_TRUE;
     set_timer ();
     return Qt;

@@ -2238,6 +2238,6 @@ rep_lispcmds_init(void)
     rep_INTERN_SPECIAL(load_filename);
 
     rep_INTERN (_load_suffixes);
-    F_structure_set (rep_structure, Q_load_suffixes, Fcons (rep_VAL (&jl),
-							    rep_VAL (&jlc)));
+    Fstructure_set (rep_structure, Q_load_suffixes, Fcons (rep_VAL (&jl),
+							   rep_VAL (&jlc)));
 }

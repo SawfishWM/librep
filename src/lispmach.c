@@ -940,7 +940,7 @@ again:
 
 	BEGIN_INSN_WITH_ARG (OP_SETG)
 	    tmp = rep_VECT(consts)->array[arg];
-	    F_structure_set (rep_structure, tmp, RET_POP);
+	    Fstructure_set (rep_structure, tmp, RET_POP);
 	    SAFE_NEXT;
 	END_INSN
 
@@ -1170,7 +1170,7 @@ again:
 	END_INSN
 
 	BEGIN_INSN (OP_STRUCT_REF)
-	    CALL_2 (F_external_structure_ref);
+	    CALL_2 (Fexternal_structure_ref);
 	END_INSN
 
 	BEGIN_INSN (OP_SCM_TEST)
