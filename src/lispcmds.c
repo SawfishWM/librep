@@ -1649,7 +1649,7 @@ research:
 	    repv tem;
 	    static char *suffixes[3] = { ".jl", ".jlc" };
 	    int i = 1;
-	    if (Fsymbol_value (Qinterpreted_mode, Qt) != Qnil)
+	    if (!trying_dl && Fsymbol_value (Qinterpreted_mode, Qt) != Qnil)
 		i = 0;
 	    for(; i >= 0; i--)
 	    {
