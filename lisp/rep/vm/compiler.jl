@@ -31,15 +31,9 @@
 				   compile-form
 				   compile-module)
   (open rep
-	compiler-utils
 	compiler-basic
-	compiler-modules
-	compiler-asm
-	compiler-lap
-	compiler-opt
-	compiler-const
 	compiler-bindings
-	compiler-rep
+	compiler-modules
 	bytecodes)
 
   (define compiler-sources '(compiler
@@ -62,17 +56,6 @@
   ;; map languages to compiler modules
   (put 'rep 'compiler-module 'compiler-rep)
   (put 'scheme 'compiler-module 'compiler-scheme)
-
-;;; Special variables
-
-  (defvar *compiler-write-docs* nil
-    "When t all doc-strings are appended to the doc file and replaced with
-their position in that file.")
-
-  (defvar *compiler-no-low-level-optimisations* nil)
-
-  (defvar *compiler-debug* nil)
-
 
 
 #| Notes:
@@ -293,22 +276,24 @@ we would like. This is due to the view of folded functions as
 	(delete-file temp-file))))))
 
 (defun compile-directory (dir-name &optional force-p exclude-re)
-  "Compiles all jade-lisp files in the directory DIRECTORY-NAME whose object
-files are either older than their source file or don't exist. If FORCE-P
-is non-nil every lisp file is recompiled.
+  "Compiles all Lisp files in the directory DIRECTORY-NAME whose object
+files are either older than their source file or don't exist. If
+FORCE-P is non-nil every lisp file is recompiled. Any subdirectories of
+DIR-NAME are recursed into.
 
 EXCLUDE-RE may be a regexp matching files which shouldn't be compiled."
   (interactive "DDirectory of Lisp files to compile:\nP")
   (mapc (lambda (file)
-	  (when (and (string-match "\\.jl$" file)
-		     (or (null exclude-re)
-			 (not (string-match exclude-re file))))
-	    (let*
-		((fullname (expand-file-name file dir-name))
-		 (cfullname (concat fullname ?c)))
-	      (when (or (not (file-exists-p cfullname))
-			(file-newer-than-file-p fullname cfullname))
-		(compile-file fullname)))))
+	  (cond ((and exclude-re (string-match exclude-re file)))
+		((eq (aref file 0) #\.))
+		((file-directory-p file)
+		 (compile-directory file force-p exclude-re))
+		((string-match "\\.jl$" file)
+		 (let* ((fullname (expand-file-name file dir-name))
+			(cfullname (concat fullname ?c)))
+		   (when (or (not (file-exists-p cfullname))
+			     (file-newer-than-file-p fullname cfullname))
+		     (compile-file fullname))))))
 	(directory-files dir-name))
   t)
 
@@ -353,67 +338,4 @@ that files which shouldn't be compiled aren't."
 	      (when (or (not (file-exists-p (concat file ?c)))
 			(file-newer-than-file-p file (concat file ?c)))
 		(compile-file file))))
-	  compiler-sources)))
-
-(defun compile-function (function)
-  "Compiles the body of the function FUNCTION."
-  (interactive "aFunction to compile:")
-  (let-fluids ((defuns nil)
-	       (defvars nil)
-	       (defines nil)
-	       (current-fun function)
-	       (output-stream nil))
-  (let
-      ((body (closure-function function)))
-    (unless (bytecodep body)
-      (call-with-module-declared
-       (closure-structure function)
-       (lambda ()
-	 (set-closure-function function (compile-lambda body function)))))
-    function)))
-
-(defun compile-form (form)
-  "Compile the Lisp form FORM into a byte code form."
-
-  (let-fluids ((constant-alist '())
-	       (constant-index 0)
-	       (current-stack 0)
-	       (max-stack 0)
-	       (current-b-stack 0)
-	       (max-b-stack 0)
-	       (intermediate-code '()))
-
-    ;; Do the high-level compilation
-    (compile-form-1 form t)
-    (emit-insn (bytecode return))
-
-    ;; Now we have a [reversed] list of intermediate code
-    (fluid-set intermediate-code (nreverse (fluid intermediate-code)))
-
-    ;; Unless disabled, run the peephole optimiser
-    (unless *compiler-no-low-level-optimisations*
-      (when *compiler-debug*
-	(format standard-error "lap-0 code: %S\n\n" (fluid intermediate-code)))
-      (fluid-set intermediate-code (peephole-optimizer
-				    (fluid intermediate-code))))
-    (when *compiler-debug*
-      (format standard-error "lap-1 code: %S\n\n" (fluid intermediate-code)))
-
-    ;; Then optimise the constant layout
-    (unless *compiler-no-low-level-optimisations*
-      (when *compiler-debug*
-	(format standard-error
-		"original-constants: %S\n\n" (fluid constant-alist)))
-      (fluid-set intermediate-code (constant-optimizer
-				    (fluid intermediate-code)))
-      (when *compiler-debug*
-	(format standard-error
-		"final-constants: %S\n\n" (fluid constant-alist))))
-
-    ;; Now transform the intermediate code to byte codes
-    (when *compiler-debug*
-      (format standard-error "lap-2 code: %S\n\n" (fluid intermediate-code)))
-    (list 'run-byte-code
-	  (assemble-bytecodes (fluid intermediate-code))
-	  (make-constant-vector)
-	  (+ (fluid max-stack) (ash (fluid max-b-stack) 16))))))
+	  compiler-sources))))
