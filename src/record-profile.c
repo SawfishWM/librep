@@ -118,7 +118,7 @@ test_interrupt (void)
 		for (j = 0; j < seen_i; j++)
 		{
 		    if (seen[j] == name)
-			continue;
+			goto skip;
 		}
 
 		tem = F_structure_ref (profile_table, name);
@@ -131,6 +131,7 @@ test_interrupt (void)
 
 		seen[seen_i++] = name;
 	    }
+	skip: {}
 	}
 	set_timer ();
     }
