@@ -170,7 +170,6 @@ The number of list levels to descend when printing before abbreviating.
 
 DEFSYM(autoload_verbose, "autoload-verbose");
 DEFSYM(load, "load");
-DEFSYM(macro_environment, "macro-environment");
 
 /* When rep_TRUE Feval() calls the "debug-entry" function */
 rep_bool rep_single_step_flag;
@@ -970,7 +969,7 @@ rep_bind_lambda_list(repv lambdaList, repv argList, rep_bool eval_args)
 		argobj = list;
 	    }
 	    else
-		argobj = argList;
+		argobj = Fcopy_sequence (argList);
 	    boundlist = rep_bind_symbol(boundlist, argspec, argobj);
 	    state = STATE_AUX;
 	    break;
@@ -1861,58 +1860,6 @@ Use the Lisp debugger to evaluate FORM.
     return res;
 }
 
-DEFUN("macroexpand", Fmacroexpand, Smacroexpand, (repv form, repv env), rep_Subr2) /*
-::doc:macroexpand::
-macroexpand FORM [ENVIRONMENT]
-
-If FORM is a macro call, expand it until it isn't. If ENVIRONMENT is
-specified it is an alist of `(MACRO-NAME . DEFINITION)'.
-::end:: */
-{
-    repv car;
-    rep_GC_root gc_form, gc_env, gc_car;
-    rep_PUSHGC(gc_form, form);
-    rep_PUSHGC(gc_env, env);
-    rep_PUSHGC(gc_car, car);
-top:
-    if(rep_CONSP(form))
-    {
-	repv bindings;
-	rep_GC_root gc_bindings;
-
-	car = rep_CAR(form);
-	if(rep_SYMBOLP(car))
-	{
-	    repv tmp;
-	    if(env != Qnil && (tmp = Fassq(car, env)) && rep_CONSP(tmp))
-		car = rep_CDR(tmp);
-	    else
-	    {
-		car = Fsymbol_value (car, Qt);
-		if (!rep_CONSP(car) || rep_CAR(car) != Qmacro)
-		    goto end;
-		car = rep_CDR(car);
-	    }
-	}
-	else if (rep_CONSP(car) && rep_CAR(car) == Qmacro)
-	    car = rep_CDR(car);
-
-	if (Ffunctionp(car) == Qnil)
-	    goto end;
-
-	bindings = rep_bind_symbol (Qnil, Qmacro_environment, env);
-	rep_PUSHGC(gc_bindings, bindings);
-	form = rep_funcall (car, rep_CDR(form), rep_FALSE);
-	rep_POPGC;
-	rep_unbind_symbols (bindings);
-	if (form != rep_NULL)
-	    goto top;
-    }
-end:
-    rep_POPGC; rep_POPGC; rep_POPGC;
-    return form;
-}
-
 DEFUN("signal", Fsignal, Ssignal, (repv error, repv data), rep_Subr2) /*
 ::doc:signal::
 signal ERROR-SYMBOL DATA
@@ -2206,7 +2153,6 @@ rep_lisp_init(void)
     rep_ADD_SUBR(Sprogn);
     rep_ADD_SUBR(Sbreak);
     rep_ADD_SUBR_INT(Sstep);
-    rep_ADD_SUBR(Smacroexpand);
     rep_ADD_SUBR(Ssignal);
     rep_ADD_SUBR(Scondition_case);
     rep_ADD_SUBR(Sbacktrace);
@@ -2261,5 +2207,4 @@ rep_lisp_init(void)
 
     rep_INTERN_SPECIAL(autoload_verbose);
     rep_INTERN(load);
-    rep_INTERN_SPECIAL(macro_environment);
 }
