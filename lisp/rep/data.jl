@@ -114,6 +114,19 @@ returns false."
 		   cdddar cdaadr cddadr cdaddr cddddr))
 
 
+;; vector utils
+
+(defun vector->list (vec)
+  (do ((i 0 (1+ i))
+       (out '() (cons (aref vec i) out)))
+      ((= i (length vec)) (nreverse out))))
+
+(defun list->vector (lst)
+  (apply vector lst))
+
+(export-bindings '(vector->list list->vector))
+
+
 ;; guardian wrapper
 
 (defun make-guardian ()

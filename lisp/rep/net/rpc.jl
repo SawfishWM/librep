@@ -86,11 +86,6 @@
 ;; executing rpc call
 
 
-;; Todo:
-
-;; - add a mechanism for async (`oneway') requests
-
-
 (define-structure rep.net.rpc
 
     (export rpc-socket-listener
@@ -102,6 +97,7 @@
 	    make-rpc-servant
 	    destroy-rpc-servant
 	    call-with-rpc-servant
+	    async-rpc-call
 	    rpc-proxy->global-id
 	    rpc-proxy->servant-id
 	    servant-id->global-id
@@ -221,19 +217,25 @@ server sockets."
 	       ((socket-result-pending sock-data) form))
 		
 	      (t ;; Request
-	       (let ((result (call-with-exception-handler
-			      (lambda ()
-				(let ((impl (servant-ref (car form)))
-				      (args (cdr form)))
-				  (unless impl
-				    (error "No such RPC servant: %s"
-					   (car form)))
-				  (let-fluids ((active-socket socket))
-				    (cons '#t (apply impl args)))))
-			      (lambda (data)
-				(cons '#f data)))))
-		 ;;(format standard-error "Wrote: %S\n" result)
-		 (write socket (prin1-to-string result)))))
+	       (let ((send-result t))
+		 (when (vectorp form)
+		   ;; vectors denote async requests
+		   (setq send-result nil)
+		   (setq form (vector->list form)))
+		 (let ((result (call-with-exception-handler
+				(lambda ()
+				  (let ((impl (servant-ref (car form)))
+					(args (cdr form)))
+				    (unless impl
+				      (error "No such RPC servant: %s"
+					     (car form)))
+				    (let-fluids ((active-socket socket))
+				      (cons '#t (apply impl args)))))
+				(lambda (data)
+				  (cons '#f data)))))
+		   (when send-result
+		     ;;(format standard-error "Wrote: %S\n" result)
+		     (write socket (prin1-to-string result)))))))
 	    (setq point (car stream))))
 	(when (< point (length output))
 	  (socket-pending-data-set! sock-data (substring output point))))))
@@ -314,12 +316,26 @@ becomes invalid."
 	    ;; when called like this, do special things
 	    (case (cadr args)
 	      ((global-id) global-id)
-	      ((servant-id) servant-id))
+
+	      ((servant-id) servant-id)
+
+	      ((async)
+	       ;; async request - no result required
+	       (let ((socket (server-socket server port)))
+		 (write socket (prin1-to-string
+				;; cheap hack, vectors mean async
+				(apply vector (cons servant-id
+						    (cddr args))))))))
 
 	  ;; otherwise, just forward to the server
 	  (let ((socket (server-socket server port)))
 	    (write socket (prin1-to-string (cons servant-id args)))
 	    (wait-for-reponse socket))))))
+
+  (define (async-rpc-call proxy . args)
+    "Call the rpc proxy function PROXY with arguments ARGS. It will be called
+asynchronously - no result will be returned from the remote function."
+    (apply proxy proxy-token 'async args))
 
   (define (rpc-proxy->global-id proxy)
     "Return the globally-valid servant-id (a string) that can be used to

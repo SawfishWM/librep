@@ -1,5 +1,10 @@
 2001-06-28  John Harper  <jsh@pixelslut.com>
 
+	* rep/net/rpc.jl (async-rpc-call, make-proxy,
+	rpc-output-handler): support async (`one way') rpc requests
+
+	* rep/data.jl (vector->list, list->vector): new functions
+
 	* rep/net/rpc.jl (make-proxy): precalculate global-id value
 
 2001-06-27  John Harper  <jsh@pixelslut.com>
