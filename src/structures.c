@@ -413,7 +413,7 @@ lookup_or_add (rep_struct *s, repv var)
 	rep_data_after_gc += sizeof (rep_struct_node);
 	n->symbol = var;
 	n->is_constant = 0;
-	n->is_exported = 0;
+	n->is_exported = s->export_all;
 	n->next = s->buckets[HASH (var, s->total_buckets)];
 	s->buckets[HASH (var, s->total_buckets)] = n;
 	s->total_bindings++;
@@ -568,6 +568,7 @@ BODY-THUNK may be modified by this function!
     s->accessible = Qnil;
     s->special_env = Qt;
     s->exclusion = 0;
+    s->export_all = 0;
     s->next = all_structures;
     all_structures = s;
 
@@ -800,6 +801,7 @@ Set the interface of structure object STRUCTURE to INTERFACE.
     rep_DECLARE2 (sig, rep_INTERFACEP);
     s = rep_STRUCTURE (structure);
     s->inherited = Fcopy_sequence (sig);
+    s->export_all = 0;
 
     for (i = 0; i < s->total_buckets; i++)
     {
@@ -1206,6 +1208,12 @@ rep_add_subr(rep_xsubr *subr, rep_bool export)
 	n->is_exported = export;
     }
     return sym;
+}
+
+void
+rep_structure_exports_all (repv s, rep_bool status)
+{
+    rep_STRUCTURE (s)->export_all = status ? 1 : 0;
 }
 
 /* This is a horrible kludge :-(
