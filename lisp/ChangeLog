@@ -1,5 +1,15 @@
 Sat May 23 11:30:19 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* asm-mode.jl, buffer-menu.jl, buffer-summary.jl, c-mode.jl,
+	compile.jl, cvs.jl, debug.jl, dired.jl, fill.jl, gdb.jl,
+	help.jl, info.jl, isearch.jl, keymap.jl, lisp-mode.jl,
+	loadkeys.jl, mail-dir-summary.jl, prompt.jl, rcs.jl,
+	read-mail.jl, replace.jl, send-mail.jl, shell.jl, summary.jl,
+	telnet.jl, tex-mode.jl, texinfo-mode.jl, text-mode.jl: use new
+	names of make-keytab and make-keylist (make-keymap and
+	make-sparse-keymap). Also use new method for inheriting
+	bindings
+
 	* keymap.jl: updated for new key binding structure (uses cons
 	cells instead of a vector)
 

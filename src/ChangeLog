@@ -1,5 +1,13 @@
 Sat May 23 11:28:01 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* keys.c (cmd_make_keytab, cmd_make_keylist): renamed as
+	make-keymap and make-sparse-keymap. make-sparse-keymap takes an
+	optional argument, a sparse keymap whose bindings should be
+	inherited (achieved by consing the whole thing onto the end of
+	the new keymap)
+	(findkey, cmd_unbind_keys): cope with finding inherited keymaps
+	in the middle of lists
+
 	* keys.h, keys.c: changed the definition of KEY (the
 	representation of a single binding) to (COMMAND . (CODE .
 	MODS)) instead of the old [CODE MODS COMMAND]. The cons cell
