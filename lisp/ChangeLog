@@ -1,3 +1,16 @@
+1998-07-07  John Harper  <john@dcs.warwick.ac.uk>
+
+	* edit.jl (paragraph-start): new variable, finer control over
+	paragraph definition
+	(forward-paragraph): use paragraph start
+	* c-mode.jl, lisp-mode.jl, perl-mode.jl, sh-mode.jl,
+	tex-mode.jl, texinfo-mode.jl: set paragraph-start and
+	paragraph-separate to sensible values
+
+	* dired.jl (dired-directory-files): new variable, defines how
+	the list of files is created
+	(dired): new optional arg, the value of the above variable
+
 1998-07-06  John Harper  <john@dcs.warwick.ac.uk>
 
 	* modes.jl (auto-mode-alist): added sh-mode entries
