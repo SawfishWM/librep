@@ -46,41 +46,59 @@ DEFSYM(command_line_args, "command-line-args");
 DEFSYM(batch_mode, "batch-mode");
 DEFSYM(interpreted_mode, "interpreted-mode");
 
-#ifndef INIT_SCRIPT
-# define INIT_SCRIPT "init"
-#endif
-static u_char *init_script = INIT_SCRIPT;
+DEFSTRING(definit, "init");
+static repv init_script = rep_VAL(&definit);
 
 static void rep_main_init(void);
 
 static void
 usage(char *prog_name, void (*sys_usage)(void))
 {
-    if (sys_usage != 0)
-    {
-	fprintf(stderr, "usage: %s [REP-OPTIONS] [SYSTEM-OPTIONS] [LISP-OPTIONS]\n", prog_name);
-    }
-    else
-	fprintf(stderr, "usage: %s [REP-OPTIONS] [LISP-OPTIONS]\n", prog_name);
-
-    fputs ("\nREP-OPTIONS include:\n"
+    fprintf(stderr, "usage: %s [OPTIONS...]\n", prog_name);
+    fputs ("\nwhere OPTIONS may include:\n"
 	   "    --init FILE  use FILE instead of `init.jl' to boot from\n"
-	   "    -v           print version/revision details\n"
+	   "    --version    print version/revision details\n"
 	   "    --batch      don't open any windows; process args and exit\n"
-	   "    --interp     don't load compiled Lisp files\n",
-	   stderr);
-
+	   "    --interp     don't load compiled Lisp files\n", stderr);
     if (sys_usage != 0)
 	(*sys_usage)();
-
-    fputs ("\nand LISP-OPTIONS are:\n"
-	   "    --no-rc      don't load .jaderc or site-init files\n"
+    fputs ("    --no-rc      don't load rc or site-init files\n"
 	   "    -f FUNCTION  call the Lisp function FUNCTION\n"
 	   "    -l FILE      load the file of Lisp forms called FILE\n"
-	   "    -q           quit\n"
-	   "    FILE         load FILE into a new buffer\n"
-	   "\nNote that ordering _is_ important.\n",
-	   stderr);
+	   "    -q           quit\n", stderr);
+}
+
+DEFSTRING(noarg, "No argument for option");
+
+/* Look for the command line option called OPTION. If ARGP is non-null,
+   the option requires an argument, it will be stored in *ARGP. If
+   the option isn't given return false, else return true. */
+rep_bool
+rep_get_option (char *option, repv *argp)
+{
+    repv opt = rep_string_dup (option);
+    repv tem = Fmember (opt, rep_SYM(Qcommand_line_args)->value);
+    if (tem && tem != Qnil)
+    {
+	if (argp != 0)
+	{
+	    if (!rep_CONSP(rep_CDR(tem)))
+	    {
+		Fsignal (Qerror, rep_list_2(rep_VAL(&noarg), opt));
+		return rep_FALSE;
+	    }
+	    else
+	    {
+		*argp = rep_CAR(rep_CDR(tem));
+		rep_CDR(tem) = rep_CDR(rep_CDR(tem));
+	    }
+	}
+	rep_SYM(Qcommand_line_args)->value
+	    = Fdelq (rep_CAR(tem), rep_SYM(Qcommand_line_args)->value);
+	return rep_TRUE;
+    }
+    else
+	return rep_FALSE;
 }
 
 static int
@@ -89,35 +107,10 @@ get_main_options(char *prog_name, int *argc_p,
 {
     int argc = *argc_p;
     char **argv = *argv_p;
-    repv head, *last;
-    while(argc && (**argv == '-'))
-    {
-	if((argc >= 2) && !strcmp("--init", *argv))
-	{
-	    init_script = *(++argv);
-	    argc--;
-	}
-	else if(!strcmp("-v", *argv))
-	{
-	    fputs("rep version " rep_VERSION "\n", stdout);
-	    return rep_FALSE;
-	}
-	else if(!strcmp("--batch", *argv))
-	    rep_SYM(Qbatch_mode)->value = Qt;
-	else if(!strcmp("--interp", *argv))
-	    rep_SYM(Qinterpreted_mode)->value = Qt;
-	else if(!strcmp("-?", *argv) || !strcmp("--help", *argv))
-	{
-	    usage(prog_name, sys_usage);
-	    return rep_FALSE;
-	}
-	else
-	    break;
-	argc--;
-	argv++;
-    }
-    /* any command line args left now get made into a list of strings
-       in symbol "command-line-args".  */
+    repv head, *last, opt;
+
+    /* any command line args are made into a list of strings
+       in symbol command-line-args.  */
     head = Qnil;
     last = &head;
     while(argc > 0)
@@ -130,6 +123,24 @@ get_main_options(char *prog_name, int *argc_p,
     rep_SYM(Qcommand_line_args)->value = head;
     *argc_p = argc;
     *argv_p = argv;
+
+    if (rep_get_option ("--init", &opt))
+	init_script = opt;
+    if (rep_get_option ("--version", 0))
+    {
+	fputs("rep version " rep_VERSION "\n", stdout);
+	return rep_FALSE;
+    }
+    if (rep_get_option("--batch", 0))
+	rep_SYM(Qbatch_mode)->value = Qt;
+    if (rep_get_option("--interp", 0))
+	rep_SYM(Qinterpreted_mode)->value = Qt;
+    if (rep_get_option("--help", 0) || rep_get_option ("-?", 0))
+    {
+	usage(prog_name, sys_usage);
+	return rep_FALSE;
+    }
+
     return rep_TRUE;
 }
 
@@ -182,12 +193,9 @@ rep_init(char *prog_name, int *argc, char ***argv,
 
 	if(get_main_options(prog_name, argc, argv, sys_usage))
 	{
-	    repv arg, res;
-	    if((arg = rep_string_dup(init_script))
-	       && (res = Fload(arg, Qnil, Qnil, Qnil)))
-	    {
+	    repv res = Fload(init_script, Qnil, Qnil, Qnil);
+	    if (res != rep_NULL)
 		return;
-	    }
 	}
     }
 
