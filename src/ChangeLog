@@ -1,3 +1,9 @@
+2000-02-14  John Harper  <john@dcs.warwick.ac.uk>
+
+	* tables.c: added support for weakly-keyed hash tables
+
+	* continuations.c: test if root_barrier == 0 at sensible points
+
 2000-02-12  John Harper  <john@dcs.warwick.ac.uk>
 
 	* files.c (rep_file_fdopen): new function, open a file object

@@ -451,6 +451,7 @@ extern repv Funtrace(repv sym);
 extern repv Vobarray(repv val);
 
 /* from values.c */
+extern repv Qafter_gc_hook;
 extern rep_cons *rep_dumped_cons_start, *rep_dumped_cons_end;
 extern rep_symbol *rep_dumped_symbols_start, *rep_dumped_symbols_end;
 extern repv rep_dumped_non_constants;

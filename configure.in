@@ -362,9 +362,18 @@ AC_MSG_CHECKING([for stack growth direction])
 AC_ARG_WITH(stack-direction,
  [  --with-stack-direction=DIR
 			  Stack growth direction. -1 for downwards,
-			   +1 for upwards. [DIR=<probed>]], [],
- [with_stack_direction=0])
-if test "${with_stack_direction}" = 0; then
+			   +1 for upwards.], [],
+ [with_stack_direction=unknown])
+if test "${with_stack_direction}" = unknown; then
+  case ${host} in
+    sparc-*|i?86)
+      AC_MSG_RESULT([assuming downwards])
+      with_stack_direction="-1"
+      ;;
+    dnl any other known stack directions..?
+  esac
+fi
+if test "${with_stack_direction}" = unknown; then
   AC_TRY_RUN([ void inner (char *foo) { char bar; exit (!(foo >= &bar)); }
 	       void main () { char foo; inner (&foo); } ],
    [AC_MSG_RESULT([downwards])

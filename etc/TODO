@@ -10,6 +10,9 @@ and more long-term ideas are marked -
 Outstanding bugs
 ================
 
+ ! ((call/cc call/cc) (call/cc call/cc)) can't be interrupted, and it
+   eats all memory
+
  ! #'SYMBOL should dereference SYMBOL, not enclose it
 
  ! Putting a breakpoint in a .jaderc file doesn't work correctly; the
