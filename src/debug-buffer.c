@@ -41,7 +41,7 @@ _PR void *db_alloc(char *name, int size);
 _PR void db_free(void *db);
 _PR void db_vprintf(void *_db, char *fmt, va_list args);
 _PR void db_printf(void *db, char *fmt, ...);
-_PR void db_print_frame(void *_db, char *fun);
+_PR void db_print_backtrace(void *_db, char *fun);
 _PR void db_spew(void *_db);
 _PR void db_spew_all(void);
 _PR void db_kill(void);
@@ -123,10 +123,10 @@ db_printf(void *_db, char *fmt, ...)
 }
 
 void
-db_print_frame(void *_db, char *fun)
+db_print_backtrace(void *_db, char *fun)
 {
-#if defined __GNUC__
-    void *stack[20];
+#if defined(__GNUC__)
+    void *stack[32];
     int i;
 
 # define STACK_PROBE(i)					\
@@ -137,21 +137,21 @@ db_print_frame(void *_db, char *fun)
 	    stack[i] = 0;				\
     } while(0)
 
-    STACK_PROBE(0); STACK_PROBE(1); STACK_PROBE(2); STACK_PROBE(3);
-    STACK_PROBE(4); STACK_PROBE(5); STACK_PROBE(6); STACK_PROBE(7);
-    STACK_PROBE(8); STACK_PROBE(9); STACK_PROBE(10); STACK_PROBE(11);
+    STACK_PROBE(0);  STACK_PROBE(1);  STACK_PROBE(2);  STACK_PROBE(3);
+    STACK_PROBE(4);  STACK_PROBE(5);  STACK_PROBE(6);  STACK_PROBE(7);
+    STACK_PROBE(8);  STACK_PROBE(9);  STACK_PROBE(10); STACK_PROBE(11);
     STACK_PROBE(12); STACK_PROBE(13); STACK_PROBE(14); STACK_PROBE(15);
     STACK_PROBE(16); STACK_PROBE(17); STACK_PROBE(18); STACK_PROBE(19);
     STACK_PROBE(20); STACK_PROBE(21); STACK_PROBE(22); STACK_PROBE(23);
     STACK_PROBE(24); STACK_PROBE(25); STACK_PROBE(26); STACK_PROBE(27);
     STACK_PROBE(28); STACK_PROBE(29); STACK_PROBE(30); STACK_PROBE(31);
 
-    db_printf(_db, "\n Frame in `%s':", fun);
-    for(i = 0; i < 32 && stack[i] != 0; i++)
+    db_printf(_db, "\n Backtrace in `%s':", fun);
+    for(i = 1; i < 32 && stack[i] != 0; i++)
     {
 	if(i % 4 == 0)
 	    db_printf(_db, "\n#%-2d  ", i);
-	db_printf(_db, "0x%lx  ", stack[i]);
+	db_printf(_db, "0x%08lx  ", stack[i]);
     }
     db_printf(_db, "\n");
 #endif
