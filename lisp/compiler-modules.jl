@@ -28,6 +28,7 @@
 					   compiler-binding-from-rep-p
 					   compiler-binding-immutable-p
 					   get-procedure-handler
+					   get-language-property
 					   compiler-macroexpand
 					   compiler-macroexpand-1
 					   compile-module-body
@@ -35,7 +36,8 @@
 					   note-macro-def
 					   compile-structure
 					   compile-define-structure
-					   compile-structure-ref)
+					   compile-structure-ref
+					   call-with-module-declared)
   (open rep
 	structure-internals
 	compiler-basic
@@ -57,6 +59,8 @@
   ;; set when compiling code outside a module definition
   (define current-structure (make-fluid
 			     (%get-structure (fluid current-module))))
+
+  (define current-language (make-fluid 'rep))
 
   ;; the names of the currently open and accessed modules
   (define open-modules (make-fluid (and (fluid current-structure)
@@ -142,6 +146,9 @@
 			  var)
 			(%intern-structure struct))))))
 
+  (defun get-language-property (prop)
+    (and (fluid current-language) (get (fluid current-language) prop)))
+
   (defun get-procedure-handler (name prop-name)
     (unless (or (memq name (fluid spec-bindings))
 		(assq name (fluid lex-bindings)))
@@ -193,31 +200,13 @@
 		(defines nil)
 		(lexically-pure t)
 		(output-stream nil))
-    (let
-	(pass-1 pass-2
-	 next-body)
 
-      ;; find language pass-1 and pass-2 compilers; scan all opened
-      ;; modules, then scan any they import, ..
-      (catch 'out
-	(let ((tocheck (list (list (fluid current-module))
-			     (fluid open-modules))))
-	  (while tocheck
-	    (mapc (lambda (struct)
-		    (if (get struct 'compiler-module)
-			(progn
-			  (%intern-structure (get struct 'compiler-module))
-			  (setq pass-1 (get struct 'compiler-pass-1))
-			  (setq pass-2 (get struct 'compiler-pass-2))
-			  (throw 'out))
-		      (when (%get-structure struct)
-			(setq tocheck (nconc tocheck
-					     (list (%structure-imports
-						    (%get-structure struct))))))))
-		  (car tocheck))
-	    (setq tocheck (cdr tocheck)))
-	  (compiler-warning
-	   "unknown language dialect for module" (fluid current-module))))
+    (find-language-module)
+    (let
+	;; find language pass-1 and pass-2 compilers
+	((pass-1 (get-language-property 'compiler-pass-1))
+	 (pass-2 (get-language-property 'compiler-pass-2))
+	 next-body)
 
       ;; pass 1. remember definitions in the body for pass 2
       (when pass-1
@@ -262,6 +251,41 @@
 				     (%make-closure-in-structure
 				      body (%get-structure *root-structure*)))
 			       (fluid macro-env))))
+
+  (defun call-with-module-declared (struct thunk)
+    (fluid-let ((current-module (%structure-name struct))
+		(current-structure struct)
+		(current-language nil))
+      (fluid-let ((open-modules (and (fluid current-structure)
+				     (%structure-imports
+				      (fluid current-structure))))
+		  (accessed-modules (and (fluid current-structure)
+					 (%structure-accessible
+					  (fluid current-structure)))))
+	(find-language-module)
+	(thunk))))
+
+  (defun find-language-module ()
+    ;; scan all opened modules, then scan any they import, ..
+    (catch 'out
+      (let ((tocheck (list (list (fluid current-module))
+			   (fluid open-modules))))
+	(while tocheck
+	  (mapc (lambda (struct)
+		  (if (get struct 'compiler-module)
+		      (progn
+			(%intern-structure (get struct 'compiler-module))
+			(fluid-set current-language struct)
+			(throw 'out))
+		    (when (%get-structure struct)
+		      (setq tocheck (nconc tocheck
+					   (list (%structure-imports
+						  (%get-structure struct))))))))
+		(car tocheck))
+	  (setq tocheck (cdr tocheck)))
+	(compiler-warning
+	 "unknown language dialect for module" (fluid current-module)))))
+
 
 
 ;;; declarations
