@@ -49,9 +49,7 @@
 # include <memory.h>
 #endif
 
-_PR VALUE sym_start, sym_end, sym_format_hooks_alist;
-DEFSYM(start, "start");
-DEFSYM(end, "end");
+_PR VALUE sym_format_hooks_alist;
 DEFSYM(format_hooks_alist, "format-hooks-alist"); /*
 ::doc:format_hooks_alist::
 Alist of (CHAR . FUNCTION) defining extra format conversions for the
@@ -65,12 +63,7 @@ _PR int stream_putc(VALUE, int);
 _PR int stream_puts(VALUE, void *, int, bool);
 _PR int stream_read_esc(VALUE, int *);
 
-_PR void file_sweep(void);
-_PR int file_cmp(VALUE, VALUE);
-_PR void file_prin(VALUE, VALUE);
-
 _PR void streams_init(void);
-_PR void streams_kill(void);
 
 static int
 pos_getc(TX *tx, VALUE *pos)
@@ -143,14 +136,22 @@ stream_getc(VALUE stream)
     if(NILP(stream)
        && !(stream = cmd_symbol_value(sym_standard_input, sym_nil)))
 	return(c);
+top:
     switch(VTYPE(stream))
     {
 	VALUE res;
 	int oldgci;
 
     case V_File:
-	if(VFILE(stream)->name)
-	    c = getc(VFILE(stream)->file);
+	if(NILP(VFILE(stream)->name))
+	    return unbound_file_error(stream);
+	else if(LOCAL_FILE_P(stream))
+	    c = getc(VFILE(stream)->file.fh);
+	else
+	{
+	    stream = VFILE(stream)->file.stream;
+	    goto top;
+	}
 	break;
 
     case V_Mark:
@@ -235,6 +236,7 @@ stream_ungetc(VALUE stream, int c)
     if(NILP(stream)
        && !(stream = cmd_symbol_value(sym_standard_input, sym_nil)))
 	return(rc);
+top:
     switch(VTYPE(stream))
     {
 	VALUE *ptr;
@@ -242,8 +244,13 @@ stream_ungetc(VALUE stream, int c)
 	int oldgci;
 
     case V_File:
-	if(ungetc(c, VFILE(stream)->file) != EOF)
-	    rc = TRUE;
+	if(LOCAL_FILE_P(stream))
+	    c = ungetc(c, VFILE(stream)->file.fh);
+	else
+	{
+	    stream = VFILE(stream)->file.stream;
+	    goto top;
+	}
 	break;
 
     case V_Mark:
@@ -293,6 +300,7 @@ stream_putc(VALUE stream, int c)
     if(NILP(stream)
        && !(stream = cmd_symbol_value(sym_standard_output, sym_nil)))
 	return(rc);
+top:
     switch(VTYPE(stream))
     {
 	VALUE args, res, new;
@@ -300,10 +308,17 @@ stream_putc(VALUE stream, int c)
 	u_char tmps[2];
 
     case V_File:
-	if(VFILE(stream)->name)
+	if(NILP(VFILE(stream)->name))
+	    return unbound_file_error(stream);
+	else if(LOCAL_FILE_P(stream))
 	{
-	    if(putc(c, VFILE(stream)->file) != EOF)
+	    if(putc(c, VFILE(stream)->file.fh) != EOF)
 		rc = 1;
+	}
+	else
+	{
+	    stream = VFILE(stream)->file.stream;
+	    goto top;
 	}
 	break;
 
@@ -421,17 +436,21 @@ stream_puts(VALUE stream, void *data, int bufLen, bool isValString)
     buf = isValString ? VSTR(data) : data;
     if(bufLen == -1)
 	bufLen = isValString ? STRING_LEN(VAL(data)) : strlen(buf);
-
+top:
     switch(VTYPE(stream))
     {
 	VALUE args, res, new;
 	int len, newlen;
 
     case V_File:
-	if(VFILE(stream)->name)
+	if(NILP(VFILE(stream)->name))
+	    return unbound_file_error(stream);
+	else if(LOCAL_FILE_P(stream))
+	    rc = fwrite(buf, 1, bufLen, VFILE(stream)->file.fh);
+	else
 	{
-	    if((rc = fwrite(buf, 1, bufLen, VFILE(stream)->file)) == bufLen)
-		rc = bufLen;
+	    stream = VFILE(stream)->file.stream;
+	    goto top;
 	}
 	break;
 
@@ -705,12 +724,13 @@ Read one line of text from STREAM.
 ::end:: */
 {
     u_char buf[400];
-    if(FILEP(stream))
+    if(FILEP(stream) && LOCAL_FILE_P(stream))
     {
 	/* Special case for file streams. We can read a line in one go.	 */
-	if(VFILE(stream)->name && fgets(buf, 400, VFILE(stream)->file))
-	    return(string_dup(buf));
-	return(sym_nil);
+	if(fgets(buf, 400, VFILE(stream)->file.fh))
+	    return string_dup(buf);
+	else
+	    return sym_nil;
     }
     else
     {
@@ -1174,299 +1194,53 @@ Returns t if ARG is a stream.
     return(res);
 }
 
-static Lisp_File *lfile_chain;
+_PR VALUE cmd_write_area_to_stream(VALUE stream, VALUE start, VALUE end);
+DEFUN("write-area-to-stream", cmd_write_area_to_stream,
+      subr_write_area_to_stream, (VALUE stream, VALUE start, VALUE end),
+      V_Subr3, DOC_write_area_to_stream) /*
+::doc:write_area_to_stream::
+write-area-to-stream STREAM START END
 
-void
-file_sweep(void)
+Copy the contents of the current buffer from START to END to stream STREAM.
+::end:: */
 {
-    Lisp_File *lf = lfile_chain;
-    lfile_chain = NULL;
-    while(lf)
+    TX *tx = curr_vw->vw_Tx;
+    long row, col;
+    LINE *line;
+
+    DECLARE2(start, POSP);
+    DECLARE3(end, POSP);
+
+    /* Don't call check_section() since that looks at the restriction. */
+    if(POS_LESS_P(end, start) || VROW(start) < 0
+       || VROW(end) > tx->tx_NumLines)
+	return(cmd_signal(sym_invalid_area, list_3(VAL(tx), start, end)));
+
+    row = VROW(start);
+    line = tx->tx_Lines + row;
+    col = MIN(VCOL(start), line->ln_Strlen - 1);
+
+    while(row <= VROW(end))
     {
-	Lisp_File *nxt = lf->next;
-	if(!GC_CELL_MARKEDP(VAL(lf)))
-	{
-	    if(lf->name && !(lf->car & LFF_DONT_CLOSE))
-		fclose(lf->file);
-	    FREE_OBJECT(lf);
-	}
-	else
-	{
-	    GC_CLR_CELL(VAL(lf));
-	    lf->next = lfile_chain;
-	    lfile_chain = lf;
-	}
-	lf = nxt;
+	int len = (((row == VROW(end))
+		    ? VCOL(end) : line->ln_Strlen - 1) - col);
+	if(len > 0
+	   && stream_puts(stream, line->ln_Line + col, len, FALSE) != len)
+	    return LISP_NULL;
+	if(row != VROW(end)
+	   && stream_putc(stream, '\n') != 1)
+	    return LISP_NULL;
+	col = 0;
+	row++;
+	line++;
     }
-}
 
-int
-file_cmp(VALUE v1, VALUE v2)
-{
-    if(VTYPE(v1) == VTYPE(v2))
-    {
-	if(VFILE(v1)->name && VFILE(v2)->name)
-	    return(!same_files(VSTR(VFILE(v1)->name), VSTR(VFILE(v2)->name)));
-    }
-    return(1);
-}
-
-void
-file_prin(VALUE strm, VALUE obj)
-{
-    stream_puts(strm, "#<file ", -1, FALSE);
-    if(VFILE(obj)->name)
-    {
-	stream_puts(strm, VSTR(VFILE(obj)->name), -1, FALSE);
-	stream_putc(strm, '>');
-    }
-    else
-	stream_puts(strm, "*unbound*>", -1, FALSE);
-}
-
-_PR VALUE cmd_open_file(VALUE name, VALUE modes, VALUE file);
-DEFUN("open-file", cmd_open_file, subr_open_file, (VALUE name, VALUE modes, VALUE file), V_Subr3, DOC_open_file) /*
-::doc:open_file::
-open-file [FILE-NAME MODE-STRING] [FILE]
-
-Opens a file called FILE-NAME with modes MODE-STRING (standard c-library
-modes, ie `r' == read, `w' == write, etc). If FILE is given it is an
-existing file object which is to be closed before opening the new file on it.
-::end:: */
-{
-    Lisp_File *lf;
-    if(!FILEP(file))
-    {
-	lf = ALLOC_OBJECT(sizeof(Lisp_File));
-	if(lf)
-	{
-	    lf->next = lfile_chain;
-	    lfile_chain = lf;
-	    lf->car = V_File;
-	}
-    }
-    else
-    {
-	lf = VFILE(file);
-	if(lf->name && !(lf->car & LFF_DONT_CLOSE))
-	    fclose(lf->file);
-    }
-    if(lf != NULL)
-    {
-	lf->file = NULL;
-	lf->name = LISP_NULL;
-	lf->car = V_File;
-	if(STRINGP(name) && STRINGP(modes))
-	{
-	    lf->file = fopen(VSTR(name), VSTR(modes));
-	    if(lf->file)
-	    {
-		lf->name = name;
-#ifdef HAVE_UNIX
-		/*
-		 * set close-on-exec for easy process fork()ing
-		 */
-		fcntl(fileno(lf->file), F_SETFD, 1);
-#endif
-	    }
-	    else
-		return(cmd_signal(sym_file_error, list_2(lookup_errno(), name)));
-	}
-	return(VAL(lf));
-    }
-    return LISP_NULL;
-}
-
-_PR VALUE cmd_close_file(VALUE file);
-DEFUN("close-file", cmd_close_file, subr_close_file, (VALUE file), V_Subr1, DOC_close_file) /*
-::doc:close_file::
-close-file FILE
-
-Kills any association between object FILE and the file in the filesystem that
-it has open.
-::end:: */
-{
-    DECLARE1(file, FILEP);
-    if(VFILE(file)->name && !(VFILE(file)->car & LFF_DONT_CLOSE))
-	fclose(VFILE(file)->file);
-    VFILE(file)->file = NULL;
-    VFILE(file)->name = LISP_NULL;
-    return(file);
-}
-
-DEFSTRING(file_unbound, "file is unbound");
-
-_PR VALUE cmd_seek_file(VALUE file, VALUE offset, VALUE where);
-DEFUN("seek-file", cmd_seek_file, subr_seek_file, (VALUE file, VALUE offset, VALUE where), V_Subr3, DOC_seek_file) /*
-::doc:seek_file::
-seek-file FILE [OFFSET] [WHERE-FROM]
-
-Called as (seek-file FILE), returns the distance in bytes from the start
-of the file that the next character would be read from.
-
-Called as (seek-file FILE OFFSET [WHERE]) alters the position from which the
-next byte will be read. WHERE can be one of,
-
-	nil		OFFSET bytes after the current position
-	start		OFFSET bytes after the beginning of the file
-	end		OFFSET bytes before the end of the file.
-::end:: */
-{
-    DECLARE1(file, FILEP);
-    if(!VFILE(file)->name)
-	return cmd_signal(sym_error, list_2(VAL(&file_unbound), file));
-    if(!INTP(offset))
-	return MAKE_INT(ftell(VFILE(file)->file));
-    else
-    {
-	int whence = SEEK_CUR;
-	if(where == sym_start)
-	    whence = SEEK_SET;
-	else if(where == sym_end)
-	    whence = SEEK_END;
-	if(fseek(VFILE(file)->file, VINT(offset), whence) != 0)
-	    return signal_file_error(LIST_1(file));
-	else
-	    return sym_t;
-    }
-}
-
-_PR VALUE cmd_flush_file(VALUE file);
-DEFUN("flush-file", cmd_flush_file, subr_flush_file, (VALUE file), V_Subr1, DOC_flush_file) /*
-::doc:flush_file::
-flush-file FILE
-
-Flushes any buffered output on FILE.
-::end:: */
-{
-    DECLARE1(file, FILEP);
-    if(VFILE(file)->name)
-	fflush(VFILE(file)->file);
-    return(file);
-}
-
-_PR VALUE cmd_filep(VALUE arg);
-DEFUN("filep", cmd_filep, subr_filep, (VALUE arg), V_Subr1, DOC_filep) /*
-::doc:filep::
-filep ARG
-
-Returns t if ARG is a file object.
-::end:: */
-{
-    if(FILEP(arg))
-	return(sym_t);
-    return(sym_nil);
-}
-
-_PR VALUE cmd_file_bound_p(VALUE file);
-DEFUN("file-bound-p", cmd_file_bound_p, subr_file_bound_p, (VALUE file), V_Subr1, DOC_file_bound_p) /*
-::doc:file_bound_p::
-file-bound-p FILE
-
-Returns t if FILE is currently bound to a physical file.
-::end:: */
-{
-    DECLARE1(file, FILEP);
-    if(VFILE(file)->name)
-	return(sym_t);
-    return(sym_nil);
-}
-
-_PR VALUE cmd_file_binding(VALUE file);
-DEFUN("file-binding", cmd_file_binding, subr_file_binding, (VALUE file), V_Subr1, DOC_file_binding) /*
-::doc:file_binding::
-file-binding FILE
-
-Returns the name of the physical file FILE is bound to, or nil.
-::end:: */
-{
-    DECLARE1(file, FILEP);
-    if(VFILE(file)->name)
-	return(VFILE(file)->name);
-    return(sym_nil);
-}
-
-_PR VALUE cmd_file_eof_p(VALUE file);
-DEFUN("file-eof-p", cmd_file_eof_p, subr_file_eof_p, (VALUE file), V_Subr1, DOC_file_eof_p) /*
-::doc:file_eof_p::
-file-eof-p FILE
-
-Returns t when the end of FILE is reached.
-::end:: */
-{
-    DECLARE1(file, FILEP);
-    if(VFILE(file)->name && feof(VFILE(file)->file))
-	return(sym_t);
-    return(sym_nil);
-}
-
-DEFSTRING(stdin_name, "<stdin>");
-
-_PR VALUE cmd_stdin_file(void);
-DEFUN("stdin-file", cmd_stdin_file, subr_stdin_file, (void), V_Subr0, DOC_stdin_file) /*
-::doc:stdin_file::
-stdin-file
-
-Returns the file object representing the editor's standard input.
-::end:: */
-{
-    static VALUE stdin_file;
-    if(stdin_file)
-	return(stdin_file);
-    stdin_file = cmd_open_file(sym_nil, sym_nil, sym_nil);
-    VFILE(stdin_file)->name = VAL(&stdin_name);
-    VFILE(stdin_file)->file = stdin;
-    VFILE(stdin_file)->car |= LFF_DONT_CLOSE;
-    mark_static(&stdin_file);
-    return(stdin_file);
-}
-
-DEFSTRING(stdout_name, "<stdout>");
-
-_PR VALUE cmd_stdout_file(void);
-DEFUN("stdout-file", cmd_stdout_file, subr_stdout_file, (void), V_Subr0, DOC_stdout_file) /*
-::doc:stdout_file::
-stdout-file
-
-Returns the file object representing the editor's standard output.
-::end:: */
-{
-    static VALUE stdout_file;
-    if(stdout_file)
-	return(stdout_file);
-    stdout_file = cmd_open_file(sym_nil, sym_nil, sym_nil);
-    VFILE(stdout_file)->name = VAL(&stdout_name);
-    VFILE(stdout_file)->file = stdout;
-    VFILE(stdout_file)->car |= LFF_DONT_CLOSE;
-    mark_static(&stdout_file);
-    return(stdout_file);
-}
-
-DEFSTRING(stderr_name, "<stderr>");
-
-_PR VALUE cmd_stderr_file(void);
-DEFUN("stderr-file", cmd_stderr_file, subr_stderr_file, (void), V_Subr0, DOC_stderr_file) /*
-::doc:stderr_file::
-stderr-file
-
-Returns the file object representing the editor's standard output.
-::end:: */
-{
-    static VALUE stderr_file;
-    if(stderr_file)
-	return(stderr_file);
-    stderr_file = cmd_open_file(sym_nil, sym_nil, sym_nil);
-    VFILE(stderr_file)->name = VAL(&stderr_name);
-    VFILE(stderr_file)->file = stderr;
-    VFILE(stderr_file)->car |= LFF_DONT_CLOSE;
-    mark_static(&stderr_file);
-    return(stderr_file);
+    return stream;
 }
 
 void
 streams_init(void)
 {
-    INTERN(start); INTERN(end);
     INTERN(format_hooks_alist); DOC(format_hooks_alist);
     ADD_SUBR(subr_write);
     ADD_SUBR(subr_read_char);
@@ -1481,30 +1255,5 @@ streams_init(void)
     ADD_SUBR(subr_make_string_output_stream);
     ADD_SUBR(subr_get_output_stream_string);
     ADD_SUBR(subr_streamp);
-    ADD_SUBR(subr_open_file);
-    ADD_SUBR(subr_close_file);
-    ADD_SUBR(subr_seek_file);
-    ADD_SUBR(subr_flush_file);
-    ADD_SUBR(subr_filep);
-    ADD_SUBR(subr_file_bound_p);
-    ADD_SUBR(subr_file_binding);
-    ADD_SUBR(subr_file_eof_p);
-    ADD_SUBR(subr_stdin_file);
-    ADD_SUBR(subr_stdout_file);
-    ADD_SUBR(subr_stderr_file);
-}
-
-void
-streams_kill(void)
-{
-    Lisp_File *lf = lfile_chain;
-    while(lf)
-    {
-	Lisp_File *nxt = lf->next;
-	if(lf->name && !(lf->car & LFF_DONT_CLOSE))
-	    fclose(lf->file);
-	FREE_OBJECT(lf);
-	lf = nxt;
-    }
-    lfile_chain = NULL;
+    ADD_SUBR(subr_write_area_to_stream);
 }

@@ -39,6 +39,8 @@ _PR VALUE null_string(void);
 _PR VALUE make_string(int);
 _PR VALUE string_dupn(const u_char *, int);
 _PR VALUE string_dup(const u_char *);
+_PR VALUE concat2(u_char *, u_char *);
+_PR VALUE concat3(u_char *, u_char *, u_char *);
 _PR int string_cmp(VALUE, VALUE);
 static void string_sweep(void);
 _PR bool set_string_len(VALUE, long);
@@ -106,7 +108,7 @@ Lisp_Type_Data data_types[V_MAX] = {
     DT_NULL,
     { mark_cmp, mark_prin, mark_prin, mark_sweep, "mark" },
     DT_NULL,
-    { file_cmp, file_prin, file_prin, file_sweep, "file" },
+    { ptr_cmp, file_prin, file_prin, file_sweep, "file" },
     DT_NULL,
     { ptr_cmp, glyphtable_prin, glyphtable_prin,
       glyphtable_sweep, "glyph-table" },
@@ -204,6 +206,23 @@ string_dup(const u_char *src)
     return string_dupn(src, strlen(src));
 }
 
+VALUE
+concat2(u_char *s1, u_char *s2)
+{
+    int len = strlen(s1) + strlen(s2);
+    VALUE res = make_string(len + 1);
+    stpcpy(stpcpy(VSTR(res), s1), s2);
+    return(res);
+}
+VALUE
+concat3(u_char *s1, u_char *s2, u_char *s3)
+{
+    int len = strlen(s1) + strlen(s2) + strlen(s3);
+    VALUE res = make_string(len + 1);
+    stpcpy(stpcpy(stpcpy(VSTR(res), s1), s2), s3);
+    return(res);
+}
+
 int
 string_cmp(VALUE v1, VALUE v2)
 {
@@ -263,7 +282,7 @@ string_sweep(void)
 	MemChunk *nxtmlc = mlc->mc_Header.next;
 	register Lisp_String *ds = (Lisp_String *)mlc->mc_Mem.mem;
 	if(!GC_CELL_MARKEDP(VAL(ds)))
-	    myfree(mlc);
+	    sys_free(mlc);
 	else
 	{
 	    GC_CLR_CELL(VAL(ds));
@@ -329,9 +348,9 @@ Returns a new cons-cell with car CAR-VALUE and cdr CDR-VALUE.
     {
 	Lisp_Cons_Block *cb;
 #if MALLOC_ALIGNMENT >= CONS_ALIGNMENT
-	cb = mymalloc(sizeof(Lisp_Cons_Block));
+	cb = sys_alloc(sizeof(Lisp_Cons_Block));
 #else
-	cb = mymalloc(sizeof(Lisp_Cons_Block) + CONS_ALIGNMENT - 1);
+	cb = sys_alloc(sizeof(Lisp_Cons_Block) + CONS_ALIGNMENT - 1);
 #endif
 	if(cb != NULL)
 	{
@@ -402,7 +421,7 @@ cons_sweep(void)
 	if(newused == 0)
 	{
 	    /* Whole ConsBlk unused, lets get rid of it.  */
-	    myfree(cb->alloc_address);
+	    sys_free(cb->alloc_address);
 	    allocated_cons -= CONSBLK_SIZE;
 	}
 	else
@@ -560,7 +579,7 @@ Returns a new copy of POS.
 
 /* Garbage collection */
 
-#define STATIC_ROOTS 160
+#define STATIC_ROOTS 256
 static VALUE *static_roots[STATIC_ROOTS];
 static int next_static_root;
 
@@ -680,6 +699,7 @@ again:
     case V_Buffer:
 	GC_SET_CELL(val);
 	MARKVAL(VTX(val)->tx_FileName);
+	MARKVAL(VTX(val)->tx_CanonicalFileName);
 	MARKVAL(VTX(val)->tx_BufferName);
 	MARKVAL(VTX(val)->tx_ModeName);
 	MARKVAL(VTX(val)->tx_MinorModeNameList);
@@ -725,6 +745,10 @@ again:
     case V_File:
 	GC_SET_CELL(val);
 	MARKVAL(VFILE(val)->name);
+	MARKVAL(VFILE(val)->handler);
+	MARKVAL(VFILE(val)->handler_data);
+	if(!LOCAL_FILE_P(val))
+	    MARKVAL(VFILE(val)->file.stream);
 	break;
 
     case V_Process:
@@ -929,7 +953,7 @@ values_kill(void)
     while(cb != NULL)
     {
 	Lisp_Cons_Block *nxt = cb->next;
-	myfree(cb->alloc_address);
+	sys_free(cb->alloc_address);
 	cb = nxt;
     }
     while(v != NULL)
