@@ -40,7 +40,7 @@ DL_OBJS = libtest-dl.la libsdbm.la
 REP_SRCS =	rep.c
 REP_OBJS =	$(REP_SRCS:.c=.o)
 
-all : libxsdbm.la librep.la $(DL_OBJS) rep rep-config
+all : libxsdbm.la librep.la $(DL_OBJS) rep rep-config rep-remote
 
 libxsdbm.la : $(SDBM_OBJS)
 	$(LIBTOOL) $(CC) $(LDFLAGS) -o $@ $^ -rpath $(libdir)
@@ -52,12 +52,15 @@ rep : $(REP_OBJS) librep.la $(LIBOBJS)
 	$(LIBTOOL) $(CC) $(CPPFLAGS) $(CFLAGS) -o $@ \
 	  $(REP_OBJS) librep.la $(LIBOBJS) $(LIBS)
 
+rep-remote : rep-remote.c
+
 install : all installdirs
 	$(LIBTOOL) cp librep.la ${libdir}
 	$(LIBTOOL) -n --finish ${libdir}
 	$(LIBTOOL) cp rep ${bindir}
 	$(LIBTOOL) cp repdoc ${bindir}
 	$(INSTALL_PROGRAM) rep-config ${bindir}
+	$(INSTALL_PROGRAM) rep-remote ${bindir}
 	for dl in $(DL_OBJS); do \
 	  $(LIBTOOL) cp $$dl ${repexecdir}; \
 	done
@@ -74,6 +77,7 @@ uninstall :
 	$(LIBTOOL) rm ${bindir}/rep
 	$(LIBTOOL) rm ${bindir}/repdoc
 	rm ${bindir}/rep-config
+	rm ${bindir}/rep-remote
 	for dl in $(DL_OBJS); do \
 	  $(LIBTOOL) rm ${repexecdir}/$$dl; \
 	done
