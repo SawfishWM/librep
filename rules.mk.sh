@@ -18,8 +18,8 @@ rep_LIBTOOL=\$(repexecdir)/libtool
 # libfoo.la : foo.lo bar.lo
 #	\$(rep_DL_LD) link-opts...
 
-rep_DL_LD=	\$(rep_LIBTOOL) \$(CC) -export-dynamic -rpath \$(repexecdir)
-rep_DL_INSTALL=	\$(rep_LIBTOOL) \$(INSTALL)
+rep_DL_LD=\$(rep_LIBTOOL) \$(CC) -export-dynamic -module -rpath \$(repexecdir)
+rep_DL_INSTALL=\$(rep_LIBTOOL) \$(INSTALL)
 rep_DL_UNINSTALL=\$(rep_LIBTOOL) rm
 
 # Rule for libtool controlled C objects
