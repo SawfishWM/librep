@@ -241,10 +241,11 @@ rep_null_string(void)
 
 DEFSTRING(string_overflow, "String too long");
 
-/* Return a string object with room for exactly LEN characters. No extra
-   byte is allocated for a zero terminator; do this manually if required. */
+/* PTR should have been allocated using rep_alloc or malloc. Ownership
+   of its memory passes to the lisp system. LEN _doesn't_ include the zero
+   terminator */
 repv
-rep_make_string(long len)
+rep_box_string (char *ptr, long len)
 {
     rep_string *str;
 
@@ -276,14 +277,20 @@ rep_make_string(long len)
     used_strings++;
     rep_data_after_gc += sizeof(rep_string);
 
-    str->car = rep_MAKE_STRING_CAR (len - 1);
-    str->data = rep_alloc (len);
-    if(str->data != NULL)
-    {
-	allocated_string_bytes += len;
-	rep_data_after_gc += len;
-	return rep_VAL(str);
-    }
+    str->car = rep_MAKE_STRING_CAR (len);
+    rep_data_after_gc += len;
+    str->data = ptr;
+    return rep_VAL (str);
+}
+
+/* Return a string object with room for exactly LEN characters. No extra
+   byte is allocated for a zero terminator; do this manually if required. */
+repv
+rep_make_string(long len)
+{
+    char *data = rep_alloc (len);
+    if(data != NULL)
+	return rep_box_string (data, len - 1);
     else
 	return rep_NULL;
 }
