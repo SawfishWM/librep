@@ -320,6 +320,35 @@ rep_unix_set_fd_cloexec(int fd)
 	fcntl(fd, F_SETFD, tem | FD_CLOEXEC);
 }
 
+/* Turns on or off restarted system calls for SIG */
+void
+rep_sig_restart(int sig, rep_bool flag)
+{
+    struct sigaction act;
+    sigaction (sig, 0, &act);
+    if(flag)
+    {
+#ifdef SA_RESTART
+	act.sa_flags |= SA_RESTART;
+#else
+# ifdef SA_INTERRUPT
+	act.sa_flags &= ~SA_INTERRUPT;
+# endif
+#endif
+    }
+    else
+    {
+#ifdef SA_RESTART
+	act.sa_flags &= ~SA_RESTART;
+#else
+# ifdef SA_INTERRUPT
+	act.sa_flags |= SA_INTERRUPT;
+# endif
+#endif
+    }
+    sigaction(sig, &act, 0);
+}
+
 /* Wait for input for no longer than TIMEOUT-MSECS for input fds defined
    by INPUTS. If input arrived return the number of ready fds, with the
    actual fds defined by the fdset INPUTS. Return zero if the timeout
@@ -374,11 +403,13 @@ wait_for_input(fd_set *inputs, u_long timeout_msecs)
 		break;
 	}
 
-	/* Don't want select() to restart after a SIGCHLD;
+	/* Don't want select() to restart after a SIGCHLD or SIGALRM;
 	   there may be a notification to dispatch.  */
-	rep_sigchld_restart(rep_FALSE);
+	rep_sig_restart(SIGCHLD, rep_FALSE);
+	rep_sig_restart(SIGALRM, rep_FALSE);
 	ready = select(FD_SETSIZE, &copy, NULL, NULL, &timeout);
-	rep_sigchld_restart(rep_TRUE);
+	rep_sig_restart(SIGALRM, rep_TRUE);
+	rep_sig_restart(SIGCHLD, rep_TRUE);
 
 	timeout_msecs -= this_timeout_msecs;
     } while (ready == 0 && timeout_msecs > 0);
