@@ -27,8 +27,10 @@
 		   rep.io.streams
 		   rep.io.files))
 
-(%define nil '())
-(%define t 't)
+(%define nil '()
+  "The value of the boolean-false and end-of-list object.")
+(%define t 't
+  "The symbol often used as the canonical boolean-true value.")
 (make-binding-immutable 'nil)
 (make-binding-immutable 't)
 
@@ -45,7 +47,15 @@
 (%define defmacro
       (cons 'macro
 	    (lambda (symbol . body)
-"defmacro NAME LAMBDA-LIST [DOC-STRING] BODY...
+	      (cond ((bytecodep (car body))
+		     (setq body (car body)))
+		    (t (setq body (list 'quote (cons 'lambda body)))))
+	      (list '%define symbol
+		    (list 'cons
+			  (list 'quote 'macro)
+			  (list 'make-closure body
+				(symbol-name symbol))))))
+  "defmacro NAME LAMBDA-LIST [DOC-STRING] BODY...
 defmacro NAME BYTECODE-OBJECT
 
 Defines a macro called NAME with argument spec. LAMBDA-LIST,
@@ -54,16 +64,7 @@ documentation DOC-STRING (optional) and body BODY.
 Macros are called with their arguments un-evaluated, they are expected
 to return a form which will be executed to provide the result of the
 expression. Note that macros are expanded at compile-time, and may be
-expanded an arbitrary number of times."
-
-	      (cond ((bytecodep (car body))
-		     (setq body (car body)))
-		    (t (setq body (list 'quote (cons 'lambda body)))))
-	      (list '%define symbol
-		    (list 'cons
-			  (list 'quote 'macro)
-			  (list 'make-closure body
-				(symbol-name symbol)))))))
+expanded an arbitrary number of times.")
 
 (defmacro defun (symbol . body)
   "defun NAME LAMBDA-LIST [DOC-STRING] BODY...
