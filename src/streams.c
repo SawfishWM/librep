@@ -900,11 +900,13 @@ implemented:
 {
     u_char *fmt, *last_fmt;
     bool mk_str;
-    VALUE stream = ARG2;
+    VALUE stream, format;
     u_char c;
-    DECLARE1(stream, STRINGP);
-    fmt = VSTR(stream);
-    stream = ARG1;
+
+    if(!CONSP(args))
+	return signal_missing_arg(1);
+    stream = VCAR(args);
+    args = VCDR(args);
     if(NILP(stream))
     {
 	stream = cmd_cons(string_dupn("", 0), MAKE_INT(0));
@@ -912,41 +914,53 @@ implemented:
     }
     else
 	mk_str = FALSE;
-    args = move_down_list(args, 2);
+
+
+    if(!CONSP(args))
+	return signal_missing_arg(2);
+    format = VCAR(args);
+    args = VCDR(args);
+    DECLARE2(format, STRINGP);
+    fmt = VSTR(format);
+
     last_fmt = fmt;
     while((c = *fmt++))
     {
 	if(c == '%')
 	{
-	    u_char tbuf[40], nfmt[4];
-	    VALUE val = ARG1;
-	    if(last_fmt != fmt - 1)
+	    if(last_fmt != fmt)
 		stream_puts(stream, last_fmt, fmt - last_fmt - 1, FALSE);
-	    switch(c = *fmt++)
-	    {
-	    case 'd':
-	    case 'x':
-	    case 'o':
-	    case 'c':
-		nfmt[0] = '%';
-		nfmt[1] = 'l';
-		nfmt[2] = c;
-		nfmt[3] = 0;
-		sprintf(tbuf, nfmt, INTP(val) ? VINT(val) : (long)val);
-		stream_puts(stream, tbuf, -1, FALSE);
-		break;
-	    case 's':
-		princ_val(stream, val);
-		break;
-	    case 'S':
-		print_val(stream, val);
-		break;
-	    case '%':
+	    c = *fmt++;
+	    if(c == '%')
 		stream_putc(stream, '%');
-		break;
+	    else
+	    {
+		u_char tbuf[40], nfmt[4];
+		VALUE val;
+		if(!CONSP(args))
+		    return signal_missing_arg(0); /* ?? */
+		val = VCAR(args);
+		args = VCDR(args);
+		switch(c)
+		{
+		case 'd': case 'x': case 'o': case 'c':
+		    nfmt[0] = '%';
+		    nfmt[1] = 'l';
+		    nfmt[2] = c;
+		    nfmt[3] = 0;
+		    sprintf(tbuf, nfmt, INTP(val) ? VINT(val) : (long)val);
+		    stream_puts(stream, tbuf, -1, FALSE);
+		    break;
+
+		case 's':
+		    princ_val(stream, val);
+		    break;
+
+		case 'S':
+		    print_val(stream, val);
+		    break;
+		}
 	    }
-	    if(c != '%')
-		args = move_down_list(args, 1);
 	    last_fmt = fmt;
 	}
     }
