@@ -40,7 +40,8 @@ DEFSYM(or, "or");
 DEFSYM(and, "and");
 DEFSYM(load_path, "load-path");
 DEFSYM(after_load_alist, "after-load-alist");
-DEFSYM(lisp_lib_dir, "lisp-lib-dir"); /*
+DEFSYM(lisp_lib_dir, "lisp-lib-dir");
+DEFSYM(documentation_file, "documentation-file"); /*
 ::doc:load_path::
 A list of directory names. When `load' opens a lisp-file it searches each
 directory named in this list in turn until the file is found or the list
@@ -53,6 +54,9 @@ exactly match the FILE argument given to `load'.
 ::end::
 ::doc:lisp_lib_dir::
 The name of the directory in which the standard lisp files live.
+::end::
+::doc:documentation_file::
+The name of the file containing all Jade's documentation strings.
 ::end:: */
 
 _PR VALUE cmd_quote(VALUE);
@@ -1042,6 +1046,32 @@ INITIAL-VALUE, or to space if INITIAL-VALUE is not given.
     return(res);
 }
 
+_PR VALUE cmd_substring(VALUE string, VALUE start, VALUE end);
+DEFUN("substring", cmd_substring, subr_substring, (VALUE string, VALUE start, VALUE end), V_Subr3, DOC_substring) /*
+::doc:substring::
+substring STRING START [END]
+
+Returns the portion of STRING starting at character number START and ending
+at the character before END (or the end of the string is END is not given).
+All indices start at zero.
+::end:: */
+{
+    int slen;
+    DECLARE1(string, STRINGP);
+    DECLARE2(start, INTP);
+    slen = STRING_LEN(string);
+    if(VINT(start) > slen)
+	return(signal_arg_error(start, 2));
+    if(INTP(end))
+    {
+	if((VINT(end) > slen) || (VINT(end) < VINT(start)))
+	    return(signal_arg_error(end, 3));
+	return(string_dupn(VSTR(string) + VINT(start), VINT(end) - VINT(start)));
+    }
+    else
+	return(string_dupn(VSTR(string) + VINT(start), slen - VINT(start)));
+}
+
 static inline int
 extend_concat(u_char **buf, int *bufLen, int i, int addLen)
 {
@@ -1439,7 +1469,14 @@ If the compiled version is older than it's source code, the source code is
 loaded and a warning is displayed.
 ::end:: */
 {
-    VALUE name = LISP_NULL, stream, path;
+    /* Avoid the need to protect these args from GC. */
+    bool no_error_p = !NILP(noerr_p), no_suffix_p = !NILP(nosuf_p);
+
+    VALUE name = sym_nil, path;
+    VALUE dir = LISP_NULL, try = LISP_NULL;
+
+    GC_root gc_file, gc_name, gc_path, gc_dir, gc_try;
+
     DECLARE1(file, STRINGP);
     if(NILP(nopath_p))
     {
@@ -1449,84 +1486,122 @@ loaded and a warning is displayed.
     }
     else
 	path = cmd_cons(null_string(), sym_nil);
-    while(!name && CONSP(path))
-    {
-	u_char *dir = STRINGP(VCAR(path)) ? VSTR(VCAR(path)) : (u_char *)"";
-	if(NILP(nosuf_p))
-	{
-	    bool jl_p = file_exists3(dir, VSTR(file), ".jl");
-	    bool jlc_p = file_exists3(dir, VSTR(file), ".jlc");
-#ifdef DUMPED
-	    bool jld_p = file_exists3(dir, VSTR(file), ".jld");
 
-	    if(jld_p)
-		name = concat3(dir, VSTR(file), ".jld");
-	    else
+    PUSHGC(gc_name, name);
+    PUSHGC(gc_file, file);
+    PUSHGC(gc_path, path);
+    PUSHGC(gc_dir, dir);
+    PUSHGC(gc_try, try);
+
+    /* Scan the path for the file to load. */
+    while(NILP(name) && CONSP(path))
+    {
+	dir = cmd_file_name_as_directory(STRINGP(VCAR(path))
+					 ? VCAR(path)
+					 : null_string());
+	if(dir == LISP_NULL || !STRINGP(dir))
+	    goto path_error;
+
+	if(!no_suffix_p)
+	{
+	    VALUE tem;
+	    static char *suffixes[3] = { ".jl", ".jlc", ".jld" };
+	    int i;
+#ifdef DUMPED
+	    i = 2;
+#else
+	    i = 1;
 #endif
-	    if(jlc_p)
+	    for(; i >= 0; i--)
 	    {
-		name = concat3(dir, VSTR(file), ".jlc");
-		if(jl_p)
+		try = concat3(VSTR(dir), VSTR(file), suffixes[i]);
+		tem = cmd_file_exists_p(try);
+		if(!tem)
+		    goto path_error;
+		if(!NILP(tem))
 		{
-		    VALUE tmp = concat3(dir, VSTR(file), ".jl");
-		    if(file_mod_time(VSTR(tmp)) > file_mod_time(VSTR(name)))
+		    if(!NILP(name))
 		    {
-			messagef("Warning: %s newer than %s, using .jl",
-				     VSTR(tmp), VSTR(name));
-			name = tmp;
+			if(file_newer_than(try, name))
+			{
+			    messagef("Warning: %s newer than %s, using %s",
+				     VSTR(try), VSTR(name), VSTR(try));
+			    name = try;
+			}
 		    }
+		    else
+			name = try;
 		}
 	    }
-	    else if(jl_p)
-		name = concat3(dir, VSTR(file), ".jl");
 	}
-	if(!name && file_exists2(dir, VSTR(file)))
-	    name = concat2(dir, VSTR(file));
+	if(NILP(name))
+	{
+	    /* Try without a suffix */
+	    VALUE tem;
+	    try = concat2(VSTR(dir), VSTR(file));
+	    tem = cmd_file_exists_p(try);
+	    if(!tem)
+		goto path_error;
+	    if(!NILP(tem))
+		name = try;
+	}
 	path = VCDR(path);
 	TEST_INT;
 	if(INT_P)
-	    return(LISP_NULL);
+	    goto path_error;
     }
-    if(!name)
+path_error:
+    POPGC; POPGC; POPGC; POPGC; POPGC;
+
+    if(NILP(name))
     {
-	if(NILP(noerr_p))
-	    return(cmd_signal(sym_file_error,
-			      list_2(VAL(&no_load_file), file)));
+	if(!no_error_p)
+	    return signal_file_error(file);
 	else
-	    return(sym_nil);
+	    return sym_nil;
     }
-    if((stream = cmd_open_file(name, VAL(&r_str), sym_nil)) && FILEP(stream))
+
     {
-	VALUE obj;
+	VALUE stream;
+	GC_root gc_stream;
+
+	VALUE tem;
 	int c;
-	GC_root gc_stream, gc_file;
-	PUSHGC(gc_stream, stream);
+
 	PUSHGC(gc_file, file);
+	stream = cmd_open_file(name, sym_read);
+	if(!stream || !FILEP(stream))
+	{
+	    POPGC;
+       	    return LISP_NULL;
+	}
+
+	PUSHGC(gc_stream, stream);
 	c = stream_getc(stream);
-	while((c != EOF) && (obj = readl(stream, &c)))
+	while((c != EOF) && (tem = readl(stream, &c)))
 	{
 	    TEST_INT;
-	    if(INT_P || !cmd_eval(obj))
+	    if(INT_P || !cmd_eval(tem))
 	    {
 		POPGC; POPGC;
-		return(LISP_NULL);
+		return LISP_NULL;
 	    }
 	}
-	POPGC; POPGC;
+	POPGC;
 
-	/* Loading succeded. Look for an applicable item in
+	/* Loading succeeded. Look for an applicable item in
 	   the after-load-alist. */
-	obj = cmd_symbol_value(sym_after_load_alist, sym_t);
-	if(obj != LISP_NULL && CONSP(obj))
+	tem = cmd_symbol_value(sym_after_load_alist, sym_t);
+	if(tem != LISP_NULL && CONSP(tem))
 	{
-	    obj = cmd_assoc(file, obj);
-	    if(obj != LISP_NULL && CONSP(obj))
-		cmd_progn(VCDR(obj));
+	    tem = cmd_assoc(file, tem);
+	    if(tem != LISP_NULL && CONSP(tem))
+		cmd_progn(VCDR(tem));
 	}
+	POPGC;
 
-	return(sym_t);
+	return sym_t;
     }
-    return(LISP_NULL);
 }
 
 /*
@@ -2500,6 +2575,7 @@ lispcmds_init(void)
     ADD_SUBR(subr_aset);
     ADD_SUBR(subr_aref);
     ADD_SUBR(subr_make_string);
+    ADD_SUBR(subr_substring);
     ADD_SUBR(subr_concat);
     ADD_SUBR(subr_length);
     ADD_SUBR(subr_copy_sequence);
@@ -2558,14 +2634,17 @@ lispcmds_init(void)
     ADD_SUBR(subr_catch);
     ADD_SUBR(subr_throw);
     ADD_SUBR(subr_unwind_protect);
+
     INTERN(load_path); DOC(load_path);
-    VSYM(sym_load_path)->value = list_3(null_string(),
-					VAL(&site_lisp_dir),
+    VSYM(sym_load_path)->value = list_2(VAL(&site_lisp_dir),
 					VAL(&lisp_lib_dir));
     INTERN(after_load_alist); DOC(after_load_alist);
     VSYM(sym_after_load_alist)->value = sym_nil;
     INTERN(lisp_lib_dir); DOC(lisp_lib_dir);
     VSYM(sym_lisp_lib_dir)->value = VAL(&lisp_lib_dir);
+
+    INTERN(documentation_file); DOC(documentation_file);
+    VSYM(sym_documentation_file)->value = VAL(&doc_file);
 
     INTERN(or); INTERN(and);
 }
