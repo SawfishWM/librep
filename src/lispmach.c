@@ -504,6 +504,10 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		rep_SYM(tmp2)->car |= rep_SF_DEFVAR;
 	    break;
 
+	case OP_ENCLOSE:
+	    TOP = Fmake_closure (TOP, Qnil);
+	    break;
+
 	case OP_INIT_BIND:
 	    bindstack = Fcons(Qnil, bindstack);
 	    goto fetch;

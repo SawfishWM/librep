@@ -22,7 +22,7 @@
 #define BYTECODES_H
 
 #define BYTECODE_MAJOR_VERSION 8
-#define BYTECODE_MINOR_VERSION 0
+#define BYTECODE_MINOR_VERSION 1
 
 /* Number of bits encoded in each extra opcode forming the argument. */
 #define ARG_SHIFT    8
@@ -73,7 +73,7 @@
 #define OP_REF 0x40			/* push (symbol-value pop) */
 #define OP_SET 0x41			/* call-2 set */
 #define OP_DSET 0x42			/* call-2 set & mark as defvar'd */
-
+#define OP_ENCLOSE 0x43			/* push (make-closure pop[1] nil) */
 #define OP_INIT_BIND 0x44		/* new-binding-set */
 #define OP_UNBIND 0x45			/* rewind-binding-set */
 #define OP_DUP	0x46			/* push stk[0] */
