@@ -171,8 +171,14 @@ static int
 symbol_cmp(repv v1, repv v2)
 {
     if(rep_TYPE(v1) == rep_TYPE(v2))
-	return(!(rep_SYM(v1) == rep_SYM(v2)));
-    return(1);
+    {
+	if (v1 == v2)
+	    return 0;
+	else
+	    return rep_value_cmp (rep_SYM(v1)->name, rep_SYM(v2)->name);
+    }
+    else
+	return 1;
 }
 
 static void
