@@ -251,18 +251,22 @@
 		     (eval `(featurep ',feature) (fluid current-structure))))
       ;; XXX this is broken; there's no way to tell if we're trying
       ;; XXX to load a module, or a bare file.
-      (cond ((intern-structure feature)
+      (cond ((get-structure feature)
+	     ;; structure already loaded..
 	     (fluid-set open-modules (cons feature (fluid open-modules))))
+
 	    ((fluid current-structure)
+	     ;; try to require it..
 	     (eval `(require ',feature) (fluid current-structure))
 	     (when (get-structure feature)
 	       (fluid-set open-modules (cons feature (fluid open-modules)))))
-	    (t
-	     ;; XXX this doesn't work, no alternative..?
-	     (require feature)
-	     (when (get-structure feature)
-	       (fluid-set open-modules
-			  (cons feature (fluid open-modules))))))))
+
+	    ;; no current structure, try to load the file
+	    ;; as a module..
+	    ((intern-structure feature)
+	     (fluid-set open-modules (cons feature (fluid open-modules))))
+
+	    (t (compiler-warning "Unable to require `%s'" feature)))))
 
   ;; XXX enclose macro defs in the *user-structure*, this is different
   ;; to with interpreted code
