@@ -720,10 +720,12 @@ rep_parse_number (char *buf, u_int len, u_int radix, int sign, u_int type)
 		while ((c = *buf++) != 0)
 		{
 		    int d = toupper (c) - '0';
-		    if (d < 0 || d >= radix)
+		    if (d < 0 || d >= sizeof (map))
 			goto error;
 		    value = value * radix + map[d];
 		}
+		if (value < 0)
+		    goto error;
 	    }
 	    return ((sign > 0)
 		    ? rep_MAKE_INT (value)
