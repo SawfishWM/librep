@@ -82,9 +82,6 @@ Don't touch this unless you know what you're doing!")
   "List of (TAG . FORMAT-STRING) specifying the syntax of the target
 assembler's various pseudo-operations.")
 
-(defvar dump-inline-strings t
-  "Must mirror the INLINE_STATIC_STRINGS definition in lisp.h")
-
 ;; Special vars
 (defvar dump-non-constant-forms nil)
 (defvar dump-string-constants nil)
@@ -103,8 +100,6 @@ assembler's various pseudo-operations.")
 ;; where OPTIONS may be any of:
 ;;
 ;;	-o OUTPUT-FILE			Specify the output file
-;;	--enable-inline-strings		Dump for inlined string constants
-;;	--disable-inline-strings	Dump for non-inline strings
 
 (defun dump-batch ()
   (let
@@ -115,10 +110,6 @@ assembler's various pseudo-operations.")
        ((equal (car command-line-args) "-o")
 	(setq output (car (cdr command-line-args))
 	      command-line-args (cdr command-line-args)))
-       ((equal (car command-line-args) "--enable-inline-strings")
-	(setq dump-inline-strings t))
-       ((equal (car command-line-args) "--disable-inline-strings")
-	(setq dump-inline-strings nil))
        (t
 	(setq files (cons (car command-line-args) files))))
       (setq command-line-args (cdr command-line-args)))
@@ -499,13 +490,11 @@ the lisp-lib-directory with .jlc as its suffix."
       (setq obj (dump-get-object (car head)))
       (dump-output stream 'value (logior (lsh (length obj) 8) 0x45))
       (dump-output stream 'value 0)
-      (if dump-inline-strings
-	  (dump-output stream 'string obj)
-	(let
-	    ((data-label (gensym)))
-	  (dump-output stream 'value data-label)
-	  (dump-output stream 'label data-label)
-	  (dump-output stream 'string obj)))
+      (let
+	  ((data-label (gensym)))
+	(dump-output stream 'value data-label)
+	(dump-output stream 'label data-label)
+	(dump-output stream 'string obj))
       (dump-output-align-cell stream)
       (setq head (cdr head)))
     (dump-output stream 'global "dumped_strings_end")
