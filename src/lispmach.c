@@ -171,17 +171,10 @@ snap_environment (int count)
 }
 
 /* The number of special variables bound by FRAME */
-static int
+static inline int
 bound_specials (repv frame)
 {
-    int specials = 0;
-    while(rep_CONSP(frame))
-    {
-	if (rep_CONSP(rep_CAR(frame)))
-	    specials++;
-	frame = rep_CDR(frame);
-    }
-    return specials;
+    return rep_INT (rep_CAR (frame));
 }
 
 static repv
@@ -1046,7 +1039,7 @@ again:
 	case OP_UNBINDALL:
 	    gc_stackbase.count = STK_USE;
 	    bindstack = unbind_all_but_one (bindstack);
-	    impurity = bound_specials (bindstack);
+	    impurity = bound_specials (rep_CAR(bindstack));
 	    break;
 
 	case OP_BOUNDP:
