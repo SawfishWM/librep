@@ -19,9 +19,6 @@
 ;;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 ;; TODO:
-;;    - Make reconnection after server timeout happen transparently.
-;;	Currently an error is signalled, then the _next_ command to
-;;	access the host/user combination reconnects.
 ;;    - Allow file transfer mode (binary/ascii) to be determined by
 ;;	matching files against regexp(s)
 ;;    - Cache more than a single directory listing?
@@ -109,12 +106,12 @@ directory substituted for the single %s format specifier.")
 	  "local:|Trying|125 |550-|221 .*oodbye")
   "Regular expression matching ftp messages that can be ignored.")
 
-(defvar remote-ftp-fatal-msgs
+(defvar remote-ftp-reconnect-msgs
   (concat "ftp: |Not connected|530 |4[25]1 |rcmd: |"
 	  "No control connection|([a-zA-Z0-9.-]+: )?unknown host|"
 	  "lost connection")
-  "Regular expression matching ftp messages that indicate serious errors.
-These mean that the FTP process should (or already has) been killed.")
+  "Regular expression matching ftp messages that indicate that the current
+FTP process should be abandoned, and a new session started.")
 
 (defvar remote-ftp-passwd-msgs "[Pp]assword: *"
   "Regular expression matching password prompt.")
@@ -159,26 +156,31 @@ file types.")
 	  remote-ftp-sessions)
     ;; Create a new session
     (let*
-	((session (make-vector remote-ftp-struct-size))
-	 (process (make-process `(lambda (data)
-				   (remote-ftp-output-filter ,session data))
-				'remote-ftp-sentinel
-				nil ftp-program
-				(append remote-ftp-args (list host)))))
-      (when (and remote-ftp-max-sessions
-		 (> (length remote-ftp-sessions) remote-ftp-max-sessions))
-	;; Kill the session last used the earliest
-	(remote-ftp-close-session (last remote-ftp-sessions)))
-      (set-process-connection-type process 'pty)
+	((session (make-vector remote-ftp-struct-size)))
       (aset session remote-ftp-host host)
       (aset session remote-ftp-user user)
-      (aset session remote-ftp-process process)
-      (aset session remote-ftp-status 'busy)
-      (or (start-process process)
-	  (error "Can't start FTP session"))
-      (setq remote-ftp-sessions (cons session remote-ftp-sessions))
-      (remote-ftp-login session)
-      session)))
+      (remote-ftp-open-session session))))
+
+(defun remote-ftp-open-session (session)
+  (let
+      ((process (make-process `(lambda (data)
+				 (remote-ftp-output-filter ,session data))
+			      'remote-ftp-sentinel
+			      nil ftp-program
+			      (append remote-ftp-args
+				      (list (aref session remote-ftp-host))))))
+    (when (and remote-ftp-max-sessions
+	       (> (length remote-ftp-sessions) remote-ftp-max-sessions))
+      ;; Kill the session last used the earliest
+      (remote-ftp-close-session (last remote-ftp-sessions)))
+    (set-process-connection-type process 'pty)
+    (aset session remote-ftp-process process)
+    (aset session remote-ftp-status 'busy)
+    (or (start-process process)
+	(error "Can't start FTP session"))
+    (setq remote-ftp-sessions (cons session remote-ftp-sessions))
+    (remote-ftp-login session)
+    session))
 
 (defun remote-ftp-close-session (session)
   (when (and (aref session remote-ftp-process)
@@ -219,7 +221,8 @@ file types.")
   (aset session remote-ftp-status 'busy))
 
 (defun remote-ftp-while (session status &optional type)
-  (when (remote-ftp-status-p session 'dying)
+  (when (and (not (eq status 'dying))
+	     (remote-ftp-status-p session 'dying))
     (error "FTP session is dying"))
   (while (remote-ftp-status-p session status)
     (and (accept-process-output remote-ftp-timeout)
@@ -227,14 +230,30 @@ file types.")
 	 (error "FTP process timed out (%s)" (or type "unknown")))))
 
 (defun remote-ftp-command (session type format &rest args)
-  (when remote-ftp-display-progress
-    (message (format nil "FTP %s: " type) t))
-  (remote-ftp-while session 'busy type)
-  (remote-ftp-write session format args)
-  (remote-ftp-while session 'busy type)
-  (when remote-ftp-display-progress
-    (format t " %s" (aref session remote-ftp-status)))
-  (eq (aref session remote-ftp-status) 'success))
+  (let
+      ((retry t))
+    (while retry
+      (setq retry nil)
+      (condition-case data
+	  (progn
+	    (when remote-ftp-display-progress
+	      (message (format nil "FTP %s: " type) t))
+	    (remote-ftp-while session 'busy type)
+	    (remote-ftp-write session format args)
+	    (remote-ftp-while session 'busy type)
+	    (when remote-ftp-display-progress
+	      (format t " %s" (aref session remote-ftp-status))))
+	(error
+	 (when (string-match "transient error" (nth 1 data))
+	   ;; The session has been killed. Wait for it to die
+	   ;; totally then try to reconnect
+	   (message (format nil "FTP: reconnecting to `%s'...\n"
+			    (aref session remote-ftp-host)))
+	   (remote-ftp-while session 'dying type)
+	   (remote-ftp-open-session session)
+	   (setq retry t)))))
+    ;; Return t if successful
+    (eq (aref session remote-ftp-status) 'success)))
 
 (defun remote-ftp-output-filter (session output)
   (when remote-ftp-echo-output
@@ -289,10 +308,10 @@ file types.")
 		;; One line of a multi-line message
 		(remote-ftp-show-multi output point line-end)
 		(setq point line-end))
-	       ((string-looking-at remote-ftp-fatal-msgs output point)
-		;; Fatal error. Kill the session
+	       ((string-looking-at remote-ftp-reconnect-msgs output point)
+		;; Transient error. Kill the session, then try to reopen it
 		(remote-ftp-close-session session)
-		(error "FTP process had fatal error"))
+		(error "FTP process had transient error"))
 	       (t
 		;; Hmm. something else. If one exists invoke the callback
 		(if (aref session remote-ftp-callback)
@@ -310,11 +329,9 @@ file types.")
       (aset session remote-ftp-process nil)
       (aset session remote-ftp-dircache nil)
       (aset session remote-ftp-status nil)
-      (setq remote-ftp-sessions (delq session remote-ftp-sessions))
-      (message (format nil "FTP session %s@%s exited"
-		       (aref session remote-ftp-user)
-		       (aref session remote-ftp-host))))))
-    
+      (aset session remote-ftp-pending-output nil)
+      (aset session remote-ftp-callback nil)
+      (setq remote-ftp-sessions (delq session remote-ftp-sessions)))))
 
 (defun remote-ftp-show-multi (string start end)
   (let
@@ -341,8 +358,9 @@ file types.")
   (and (remote-ftp-command session 'login "user %s"
 			   (aref session remote-ftp-user))
        (remote-ftp-command session 'type "type %s" remote-ftp-transfer-type)
-       ;; For testing purposes
-       ;(remote-ftp-command session 'idle "idle 30")
+       ;; For testing the reconnection-on-idle
+       ;(setq remote-ftp-echo-output t)
+       ;(remote-ftp-command session 'idle "quote site idle 30")
        (and remote-ftp-display-progress
 	    (remote-ftp-command session 'hash "hash"))))
 
