@@ -537,7 +537,7 @@ numbers) and cons cells (cars compared before cdrs).
 
 @defun > arg1 arg2 arg3 @dots{} argn
 Returns @code{t} when @var{arg1} is `greater than' @var{arg2}, and
-@var{arg3} is greater than @var{arg2}, and so on, upto @var{argn}.
+@var{arg2} is greater than @var{arg3}, and so on, upto @var{argn}.
 @end defun
 
 @defun >= arg1 arg2 arg3 @dots{} argn
