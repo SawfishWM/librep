@@ -48,6 +48,13 @@
   (define lambda-args (make-fluid))		;arg spec of current lambda
   (define lambda-bindings (make-fluid))	;value of c-l-b at top of lambda
 
+  ;; stop macroexpanding if we come across a function with a special handler
+  (defun macroexpand-pred (in out)
+    (or (eq in out)
+	(and (variable-ref-p (car out))
+	     (get-procedure-handler
+	      (car out) 'compiler-handler-property))))
+
   ;; Compile one form so that its value ends up on the stack when interpreted
   (defun compile-form-1 (form &optional return-follows)
     (cond
@@ -58,7 +65,7 @@
       (emit-insn (bytecode t))
       (increment-stack))
 
-     ((variable-ref-p form)
+     ((symbolp form)
       ;; A variable reference
       (let
 	  (val)
@@ -110,7 +117,8 @@
 	   (t
 	    ;; Expand macros
 	    (test-function-call (car form) (length (cdr form)))
-	    (if (not (eq (setq fun (compiler-macroexpand form)) form))
+	    (if (not (eq (setq fun (compiler-macroexpand
+				    form macroexpand-pred)) form))
 		;; The macro did something, so start again
 		(compile-form-1 fun return-follows)
 	      ;; No special handler, so do it ourselves
