@@ -181,6 +181,7 @@
 (setq file-handler-alist (cons '("^/((.*)@)?(.*):" . remote-file-handler) file-handler-alist))
 (put 'ftp 'remote-backend 'remote-ftp-handler)
 (autoload 'remote-ftp-handler "remote-ftp")
+(autoload 'remote-ftp-add-passwd "remote-ftp" t)
 (put 'rcp 'remote-backend 'remote-rcp-handler)
 (autoload 'remote-rcp-handler "remote-rcp")
 ;;; ::autoload-end::

@@ -1,3 +1,16 @@
+Sun Jun 14 11:53:36 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* files.c (cmd_copy_file): handle local->remote and
+	remote->local copies correctly
+
+Sat Jun 13 11:08:18 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* buffers.c (var_last_save_time): was expecting parameters in
+	long-int format, not as a timestamp
+
+	* unix_files.c (sys_file_modes): mask out all but the
+	permission bits
+
 Fri Jun 12 18:11:17 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_files.c (sys_expand_file_names): fix somes bugs when

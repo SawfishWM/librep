@@ -1,4 +1,29 @@
+Sun Jun 14 11:58:46 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* remote-ftp.jl: fix remote file copying
+
+Sat Jun 13 11:10:50 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* remote-ftp.jl (remote-ftp-passwd-alist,
+	remote-ftp-get-passwd, remote-ftp-add-passwd): password caching
+	(remote-ftp-bad-msgs): attempt to differentiate between success
+	and soft-failures
+	(remote-ftp-chmod): attempts to use the `chmod' command
+	(remote-ftp-file-modes): parse mode string to permission bits
+	(remote-ftp-display-progress): when t, use hash marks
+	(remote-ftp-transfer-type): allow binary or ascii transfers;
+	should allow this to be set by file extension
+
 Fri Jun 12 17:34:16 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* prompt.jl (prompt-next-history, prompt-previous-history):
+	check for (null prompt-history)
+
+	* pwd-prompt.jl (pwd-prompt): bind prompt-history to nil to
+	prevent passwords being stored
+
+	* remote-ftp.jl (remote-ftp-max-sessions,
+	remote-ftp-anon-users, remote-ftp-anon-passwd): new variables
 
 	* remote-ftp.jl: new file, an FTP backend for accessing remote
 	files; seems to work quite well
