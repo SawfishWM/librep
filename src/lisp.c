@@ -1990,7 +1990,7 @@ DEFSTRING(one_err_fmt, "%s");
 DEFSTRING(two_err_fmt, "%s: %s");
 DEFSTRING(three_err_fmt, "%s: %s, %s");
 DEFSTRING(four_err_fmt, "%s: %s, %s, %s");
-DEFSTRING(n_err_fmt, "%s: ...");
+DEFSTRING(n_err_fmt, "%s: %s");
 
 void
 rep_handle_error(repv error, repv data)
@@ -2018,7 +2018,7 @@ rep_handle_error(repv error, repv data)
 					  rep_CAR(rep_CDR(rep_CDR(data))))));
 	break;
     default:
-	Fformat(rep_list_3(Qt, rep_VAL(&n_err_fmt), errstr));
+	Fformat(rep_list_4(Qt, rep_VAL(&n_err_fmt), errstr, data));
     }
 }
 
