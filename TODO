@@ -20,6 +20,8 @@ Before release
 
  + document in manual: current-utime, new read syntaxes
 
+ + doc strings for structure macros
+
 
 Outstanding bugs
 ================

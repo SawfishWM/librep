@@ -1,5 +1,9 @@
 2000-06-08  John Harper  <john@dcs.warwick.ac.uk>
 
+	* records.jl (record-printer): if the value returned from the
+	discloser function is a string, print it without surrounding
+	quotes
+
 	* records.jl (define-record-type): removed the NAME argument,
 	it's not very useful, and conflicts with the definition in
 	SRFI 9 (http://srfi.schemers.org/srfi-9/)
