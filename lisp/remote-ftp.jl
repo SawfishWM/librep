@@ -545,7 +545,7 @@ file types.")
 		(throw 'exit dir-entry)))
 	  (aref session remote-ftp-dircache))))
 
-(defun remote-ftp-get-file-details (session filename)
+(defun remote-ftp-get-file (session filename)
   (let
       ((dir (file-name-directory filename))
        (base (file-name-nondirectory filename))
@@ -596,6 +596,18 @@ file types.")
 		(when (string= (aref f remote-ftp-file-name) base)
 		  (throw 'return f)))
 	    (aref entry remote-ftp-cache-entries)))))
+
+;; similar to remote-ftp-get-file, but symbolic links are followed
+(defun remote-ftp-lookup-file (session file)
+  (let
+      ((file-struct (remote-ftp-get-file session file)))
+    (while (and file-struct
+		(eq (aref file-struct remote-ftp-file-type) 'symlink))
+      (let
+	  ((link (aref file-struct remote-ftp-file-symlink)))
+	(setq file (expand-file-name link (file-name-directory file)))
+	(setq file-struct (remote-ftp-get-file session file))))
+    file-struct))
 
 (defun remote-ftp-dircache-callback (cache-entry session output point line-end)
   (let
@@ -655,7 +667,7 @@ file types.")
 (defun remote-ftp-handler (split-name op args)
   (cond
    ((eq op 'canonical-file-name)
-    ;; No feasible way to do this?
+    ;; XXX implement this by resolving symlinks
     (car args))
    ((filep (car args))
     ;; Operations on file handles
@@ -737,7 +749,7 @@ file types.")
 	(let
 	    ;; XXX this assumes local/remote have same naming structure!
 	    ((dir (file-name-as-directory file-name)))
-	  (remote-ftp-get-file-details session dir)
+	  (remote-ftp-lookup-file session dir)
 	  (mapcar #'(lambda (f)
 		      (aref f remote-ftp-file-name))
 		  (aref (remote-ftp-dir-cached-p session dir)
@@ -770,7 +782,9 @@ file types.")
 	  local-fh))
        (t
 	(let
-	    ((file (remote-ftp-get-file-details session file-name)))
+	    ((file (if (eq op 'file-symlink-p)
+		       (remote-ftp-get-file session file-name)
+		     (remote-ftp-lookup-file session file-name))))
 	  (cond
 	   ((eq op 'file-exists-p)
 	    file)
