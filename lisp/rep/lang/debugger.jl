@@ -68,7 +68,7 @@ Ctrl-c Ctrl-x	: Set value of form\n\n"))
   (with-buffer debug-buffer
     (goto (start-of-line (end-of-buffer)))
     (let
-	((print-escape-newlines t))
+	((print-escape 'newlines))
       (format debug-buffer "%s%S\n" (make-string (* 2 debug-depth)) debug-obj))
     (goto-glyph (forward-line 1 (indent-pos (forward-line -1))))
     (catch 'debug
