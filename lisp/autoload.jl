@@ -230,4 +230,5 @@
 (autoload 'tex-print "tex-shell" t)
 (autoload 'tex-view "tex-shell" t)
 (autoload 'tex-show-print-queue "tex-shell" t)
+(autoload 'page-summary "page-summary" t)
 ;;; ::autoload-end::

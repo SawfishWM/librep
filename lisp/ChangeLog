@@ -1,3 +1,26 @@
+1998-11-11  John Harper  <john@dcs.warwick.ac.uk>
+
+	* tex-shell.jl (tex-shell-program, tex-shell-program-args): new
+	variables
+
+1998-11-09  John Harper  <john@dcs.warwick.ac.uk>
+
+	* tex-mode.jl (latex-mode, plain-tex-mode): added doc strings
+
+	* page-summary.jl: new file, a command to summarise a buffer by
+	the comments at the start of each page
+
+1998-11-07  John Harper  <john@dcs.warwick.ac.uk>
+
+	* sort.jl (sort): when merging lists ensure that equal keys
+	retain their original order
+
+1998-11-05  John Harper  <john@dcs.warwick.ac.uk>
+
+	* gdb.jl (gdb-frame-face): new variable, the face used to
+	highlight the source line of the current stack frame (instead
+	of using the block)
+
 1998-11-01  John Harper  <john@dcs.warwick.ac.uk>
 
 	* buffers.jl (kill-buffer): call kill-buffer-hook with the

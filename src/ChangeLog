@@ -1,3 +1,23 @@
+1998-11-11  John Harper  <john@dcs.warwick.ac.uk>
+
+	* windows.c (cmd_make_window): set the w_CurrVW field
+	explicitly to the first view in the window
+
+	* editcommands.c (cmd_empty_line_p): add some error checking
+
+	* views.c (cmd_with_view): save the current window and the
+	current view in the window to be altered so that the state can
+	be properly recovered later
+	* lispmach.c (cmd_jade_byte_code): in the BIND-VIEW
+	instruction, save the current window, and the current view in
+	the window to be altered
+
+1998-11-10  John Harper  <john@dcs.warwick.ac.uk>
+
+	* main.c (on_idle): protect against calling the idle-hook
+	recursively
+	* unix_main.c (handle_input): set refreshp on an interrupt
+
 1998-11-01  John Harper  <john@dcs.warwick.ac.uk>
 
 	* x11_windows.c (sys_new_window): when setting the XSizeHints
