@@ -148,13 +148,13 @@ typedef struct {
    of 2^3, i.e. 16, cell8 types.
 
    cell16 types have eight extra type bits, bits 8->15, this gives 256
-   dynamically allocated type codes: [256 k | k <- [0..255]]. */
+   dynamically allocated type codes: [256 k + 0x21 | k <- [0..255]]. */
 
 #define rep_CELL_IS_8		0x01
 #define rep_CELL_IS_16		0x20
 #define rep_CELL_STATIC_BIT	0x40
 #define rep_CELL_MARK_BIT	0x80
-#define rep_CELL8_TYPE_MASK	0x1f
+#define rep_CELL8_TYPE_MASK	0x3f
 #define rep_CELL8_TYPE_BITS	8
 #define rep_CELL16_TYPE_MASK	0xff21	/* is8 and is16 bits set */
 #define rep_CELL16_TYPE_SHIFT	8
