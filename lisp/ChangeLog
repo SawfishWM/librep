@@ -1,3 +1,13 @@
+1998-07-09  John Harper  <john@dcs.warwick.ac.uk>
+
+	* thesaurus.jl (thesaurus-lookup-word, thesaurus-show-words):
+	new file, two commands for accessing the "th" thesaurus front
+	end
+
+	* edit.jl (mouse-yank-at-point): new variable, when t (the
+	default), yank-to-mouse doesn't move to the mouse position
+	before yanking
+
 1998-07-08  John Harper  <john@dcs.warwick.ac.uk>
 
 	* sh-mode.jl (sh-get-basic-indent): skip blank lines

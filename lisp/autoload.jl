@@ -207,4 +207,6 @@
 (autoload 'server-open "server-dl" t)
 (autoload 'server-reply "server-dl" t)
 (autoload 'perl-mode "perl-mode" t)
+(autoload 'thesaurus-lookup-word "thesaurus" t)
+(autoload 'thesaurus-show-words "thesaurus" t)
 ;;; ::autoload-end::
