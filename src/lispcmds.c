@@ -53,7 +53,7 @@ Returns ARG.
 {
     if(CONSP(args))
 	return(VCAR(args));
-    return(NULL);
+    return signal_missing_arg(1);
 }
 
 _PR VALUE cmd_function(VALUE);
@@ -68,7 +68,7 @@ it causes ARG to be compiled as a lambda expression.
 {
     if(CONSP(args))
 	return(VCAR(args));
-    return(NULL);
+    return signal_missing_arg(1);
 }
 
 _PR VALUE cmd_defmacro(VALUE);
@@ -94,12 +94,13 @@ code has not been compiled).
 ::end:: */
 {
     if(CONSP(args)
-       && cmd_fset(VCAR(args),
-		    cmd_cons(sym_macro, cmd_cons(sym_lambda, VCDR(args)))))
+       && cmd_fset(VCAR(args), cmd_cons(sym_macro,
+					cmd_cons(sym_lambda, VCDR(args)))))
     {
 	return(VCAR(args));
     }
-    return(NULL);
+    else
+	return signal_missing_arg(1);
 }
 
 _PR VALUE cmd_defun(VALUE);
@@ -118,7 +119,8 @@ value is,
     {
 	return(VCAR(args));
     }
-    return(NULL);
+    else
+	return signal_missing_arg(1);
 }
 
 _PR VALUE cmd_defvar(VALUE);
@@ -156,7 +158,8 @@ variable will be set (if necessary) not the local value.
 	}
 	return(sym);
     }
-    return(NULL);
+    else
+	return signal_missing_arg(CONSP(args) ? 2 : 1);
 }
 
 _PR VALUE cmd_defconst(VALUE);
@@ -185,7 +188,7 @@ the compiler source (`lisp/compiler.jl').
 	    return(cmd_set_const_variable(tmp, sym_nil));
 	return(tmp);
     }
-    return(signal_arg_error(sym_nil, 1));
+    return signal_missing_arg(1);
 }
 
 _PR VALUE cmd_car(VALUE);
@@ -267,10 +270,13 @@ Non-destructively concatenates each of it's argument LISTS... into one
 new list which is returned.
 ::end:: */
 {
+    int i = 1;
     VALUE res = sym_nil;
     VALUE *resend = &res;
     while(CONSP(args))
     {
+	if(!LISTP(VCAR(args)))
+	    return signal_arg_error(VCAR(args), i);
 	if(CONSP(VCAR(args)) && CONSP(VCDR(args)))
 	{
 	    /* Only make a new copy if there's another list after this
@@ -287,6 +293,7 @@ new list which is returned.
 	    resend = &(VCDR(*resend));
 	}
 	args = VCDR(args);
+	i++;
     }
     return(res);
 }
@@ -301,11 +308,14 @@ list. Every LIST but the last is modified so that it's last cdr points
 to the beginning of the next list. Returns the new list.
 ::end:: */
 {
+    int i = 1;
     VALUE res = sym_nil;
     VALUE *resend = &res;
     while(CONSP(args))
     {
 	VALUE tmp = VCAR(args);
+	if(!LISTP(tmp))
+	    return signal_arg_error(tmp, i);
 	if(CONSP(tmp))
 	{
 	    *resend = tmp;
@@ -361,6 +371,7 @@ reverse order.
 ::end:: */
 {
     VALUE res = sym_nil;
+    DECLARE1(head, LISTP);
     while(CONSP(head))
     {
 	res = cmd_cons(VCAR(head), res);
@@ -385,8 +396,9 @@ were. This function is destructive towards it's argument.
 {
     VALUE res = sym_nil;
     VALUE nxt;
-    if(!CONSP(head))
-	return(sym_nil);
+    DECLARE1(head, LISTP);
+    if(NILP(head))
+	return(head);
     do {
 	if(CONSP(VCDR(head)))
 	    nxt = VCDR(head);
@@ -414,6 +426,7 @@ For example,
      => (three . 3)
 ::end:: */
 {
+    DECLARE2(list, LISTP);
     while(CONSP(list))
     {
 	register VALUE car = VCAR(list);
@@ -437,6 +450,7 @@ to compare elements. Returns the sub-list starting from the first matching
 association.
 ::end:: */
 {
+    DECLARE2(list, LISTP);
     while(CONSP(list))
     {
 	register VALUE car = VCAR(list);
@@ -462,6 +476,7 @@ For example,
      => (three . 3)
 ::end:: */
 {
+    DECLARE2(list, LISTP);
     while(CONSP(list))
     {
 	register VALUE car = VCAR(list);
@@ -484,6 +499,7 @@ Searches ASSOC-LIST for a cons-cell whose cdr is `eq' to ELT.
 Returns the first matching cons-cell, else nil.
 ::end:: */
 {
+    DECLARE2(list, LISTP);
     while(CONSP(list))
     {
 	register VALUE car = VCAR(list);
@@ -507,6 +523,7 @@ Returns the INDEXth element of LIST. The first element has an INDEX of zero.
 {
     int i;
     DECLARE1(index, NUMBERP);
+    DECLARE2(list, LISTP);
     i = VNUM(index);
     while(i && CONSP(list))
     {
@@ -528,6 +545,7 @@ Returns the INDEXth cdr of LIST. The first is INDEX zero.
 {
     int i;
     DECLARE1(index, NUMBERP);
+    DECLARE2(list, LISTP);
     i = VNUM(index);
     while(i && CONSP(list))
     {
@@ -547,6 +565,7 @@ last LIST
 Returns the last element of LIST.
 ::end:: */
 {
+    DECLARE1(list, LISTP);
     if(CONSP(list))
     {
 	while(CONSP(VCDR(list)))
@@ -575,7 +594,9 @@ returns a new list constructed from the results, ie,
     VALUE res = sym_nil;
     VALUE *last = &res;
     GCVAL gcv_list, gcv_argv, gcv_res;
-    VALUE argv = cmd_cons(fun, cmd_cons(sym_nil, sym_nil));
+    VALUE argv;
+    DECLARE2(list, LISTP);
+    argv = cmd_cons(fun, cmd_cons(sym_nil, sym_nil));
     if(argv)
     {
 	PUSHGC(gcv_res, res);
@@ -615,6 +636,7 @@ Applies FUNCTION to each element in LIST, discards the results.
 {
     VALUE argv, res = list;
     GCVAL gcv_argv, gcv_list;
+    DECLARE2(list, LISTP);
     if(!(argv = cmd_cons(fun, cmd_cons(sym_nil, sym_nil))))
 	return(NULL);
     PUSHGC(gcv_argv, argv);
@@ -645,6 +667,7 @@ from the matched ELT, ie,
 `member' uses `equal' to compare atoms.
 ::end:: */
 {
+    DECLARE2(list, LISTP);
     while(CONSP(list))
     {
 	if(!value_cmp(elt, VCAR(list)))
@@ -669,6 +692,7 @@ from the matched ELT, ie,
 `memq' uses `eq' to compare atoms.
 ::end:: */
 {
+    DECLARE2(list, LISTP);
     while(CONSP(list))
     {
 	if(elt == VCAR(list))
@@ -690,6 +714,7 @@ Returns LIST with any members `equal' to ELT destructively removed.
 ::end:: */
 {
     VALUE *head = &list;
+    DECLARE2(list, LISTP);
     while(CONSP(*head))
     {
 	if(!value_cmp(elt, VCAR(*head)))
@@ -712,6 +737,7 @@ Returns LIST with any members `eq' to ELT destructively removed.
 ::end:: */
 {
     VALUE *head = &list;
+    DECLARE2(list, LISTP);
     while(CONSP(*head))
     {
 	if(elt == VCAR(*head))
@@ -740,6 +766,7 @@ applied to that element, ie,
 {
     VALUE *head = &list;
     VALUE tmp;
+    DECLARE2(list, LISTP);
     while(CONSP(*head))
     {
 	if(!(tmp = call_lisp1(pred, VCAR(*head))))
@@ -770,6 +797,7 @@ applied to that element, ie,
 {
     VALUE *head = &list;
     VALUE tmp;
+    DECLARE2(list, LISTP);
     while(CONSP(*head))
     {
 	if(!(tmp = call_lisp1(pred, VCAR(*head))))
@@ -942,6 +970,7 @@ extend_concat(u_char **buf, int *bufLen, int i, int addLen)
 	*bufLen = newbuflen;
 	return(TRUE);
     }
+    mem_error();
     return(FALSE);
 }
 _PR VALUE cmd_concat(VALUE);
@@ -959,6 +988,7 @@ a character or a list or vector of characters.
     {
 	VALUE res = NULL;
 	int i = 0;
+	int argnum = 1;
 	while(CONSP(args))
 	{
 	    VALUE arg = VCAR(args);
@@ -1009,8 +1039,12 @@ a character or a list or vector of characters.
 		    }
 		}
 		break;
+	    default:
+		res = signal_arg_error(arg, argnum);
+		goto error;
 	    }
 	    args = VCDR(args);
+	    argnum++;
 	}
 	res = string_dupn(buf, i);
 error:
@@ -1147,7 +1181,7 @@ First evals FORM1 then FORMS, returns the value that FORM1 gave.
 	POPGC;
 	return(res);
     }
-    return(NULL);
+    return signal_missing_arg(1);
 }
 
 _PR VALUE cmd_prog2(VALUE);
@@ -1179,7 +1213,7 @@ Evals FORM1 then FORM2 then the rest. Returns whatever FORM2 gave.
 	POPGC;
 	return(res);
     }
-    return(NULL);
+    return signal_missing_arg(CONSP(args) ? 2 : 1);
 }
 
 _PR VALUE cmd_while(VALUE);
@@ -1210,7 +1244,7 @@ procedure, else return nil.
 	    return(NULL);
 	return(sym_nil);
     }
-    return(NULL);
+    return signal_missing_arg(1);
 }
 
 _PR VALUE cmd_cond(VALUE);
@@ -1289,7 +1323,7 @@ ie,
 	    return(cmd_signal(sym_bad_arg, LIST_1(VCAR(args))));
 	return(cmd_funcall(list));
     }
-    return(cmd_signal(sym_missing_arg, LIST_1(make_number(1))));
+    return signal_missing_arg(1);
 }
 
 _PR VALUE cmd_load(VALUE file, VALUE noerr_p, VALUE nopath_p, VALUE nosuf_p);
@@ -1386,31 +1420,39 @@ loaded and a warning is displayed.
  * some arithmetic commands
  */
 
-#define APPLY_OP( op )					\
+#define APPLY_OP(op)					\
     if(CONSP(args) && NUMBERP(VCAR(args)))		\
     {							\
 	long sum = VNUM(VCAR(args));			\
+	int i = 2;					\
 	args = VCDR(args);				\
-	while(CONSP(args) && NUMBERP(VCAR(args)))	\
+	while(CONSP(args))				\
 	{						\
+	    if(!NUMBERP(VCAR(args)))			\
+		return signal_arg_error(VCAR(args), i);	\
 	    sum = sum op VNUM(VCAR(args));		\
 	    args = VCDR(args);				\
+	    i++;					\
 	    TEST_INT;					\
 	    if(INT_P)					\
 		return(NULL);				\
 	}						\
 	return(make_number(sum));			\
     }							\
-    return(NULL);
+    return (CONSP(args)					\
+	    ? signal_arg_error(VCAR(args), 1)		\
+	    : signal_missing_arg(1));
 
 _PR VALUE cmd_plus(VALUE);
 DEFUN("+", cmd_plus, subr_plus, (VALUE args), V_SubrN, DOC_plus) /*
 ::doc:plus::
 + NUMBERS...
 
-Adds all NUMBERS together.
+Adds all NUMBERS together. If no arguments are given returns 0.
 ::end:: */
 {
+    if(NILP(args))
+	return make_number(0);
     APPLY_OP( + )
 }
 
@@ -1430,7 +1472,7 @@ NUMBERS
 	else
 	    APPLY_OP( - )
     }
-    return(NULL);
+    return signal_missing_arg(1);
 }
 
 _PR VALUE cmd_product(VALUE);
@@ -1438,9 +1480,11 @@ DEFUN("*", cmd_product, subr_product, (VALUE args), V_SubrN, DOC_product) /*
 ::doc:product::
 * NUMBERS...
 
-Multiplies all NUMBERS together
+Multiplies all NUMBERS together. If no numbers are given returns 1.
 ::end:: */
 {
+    if(NILP(args))
+	return make_number(1);
     APPLY_OP( * )
 }
 
@@ -1457,53 +1501,71 @@ Divides NUMBERS (in left-to-right order), ie,
     if(CONSP(args) && NUMBERP(VCAR(args)))
     {
 	long sum = VNUM(VCAR(args));
+	int i = 1;
 	args = VCDR(args);
-	while(CONSP(args) && NUMBERP(VCAR(args)))
+	while(CONSP(args))
 	{
+	    if(!NUMBERP(VCAR(args)))
+	       return signal_arg_error(VCAR(args), i);
 	    if(VNUM(VCAR(args)) == 0)
-	    {
 		return cmd_signal(sym_arith_error,
-				  LIST_1(MKSTR("Dividing by zero")));
-	    }
+				  LIST_1(MKSTR("Divide by zero")));
 	    sum = sum / VNUM(VCAR(args));
 	    args = VCDR(args);
+	    i++;
 	    TEST_INT;
 	    if(INT_P)
 		return(NULL);
 	}
 	return(make_number(sum));
     }
-    return(NULL);
+    return (CONSP(args)
+	    ? signal_arg_error(VCAR(args), 1) : signal_missing_arg(1));
 }
 
-_PR VALUE cmd_remainder(VALUE);
-DEFUN("%", cmd_remainder, subr_remainder, (VALUE args), V_SubrN, DOC_remainder) /*
+_PR VALUE cmd_remainder(VALUE n1, VALUE n2);
+DEFUN("%", cmd_remainder, subr_remainder, (VALUE n1, VALUE n2), V_Subr2, DOC_remainder) /*
 ::doc:remainder::
-% NUMBERS...
+% DIVIDEND DIVISOR
 
-Applies the remainder operator between each of NUMBERS.
+Returns the integer remainder after dividing DIVIDEND by DIVISOR.
 ::end:: */
 {
-    if(CONSP(args) && NUMBERP(VCAR(args)))
-    {
-	long sum = VNUM(VCAR(args));
-	args = VCDR(args);
-	while(CONSP(args) && NUMBERP(VCAR(args)))
-	{
-	    if(VNUM(VCAR(args)) == 0)
-	    {
-		return cmd_signal(sym_arith_error,
-				  LIST_1(MKSTR("Dividing by zero")));
-	    }
-	    sum = sum % VNUM(VCAR(args));
-	    args = VCDR(args);
-	    TEST_INT;
-	    if(INT_P)
-		return(NULL);
-	}
-	return(make_number(sum));
-    }
-    return(NULL);
+    DECLARE1(n1, NUMBERP);
+    DECLARE2(n2, NUMBERP);
+    if(VNUM(n2) == 0)
+	return cmd_signal(sym_arith_error, LIST_1(MKSTR("Divide by zero")));
+    return make_number(VNUM(n1) % VNUM(n2));
+}
+
+_PR VALUE cmd_mod(VALUE n1, VALUE n2);
+DEFUN("mod", cmd_mod, subr_mod, (VALUE n1, VALUE n2), V_Subr2, DOC_mod) /*
+::doc:mod::
+mod DIVIDEND DIVISOR
+
+Returns the value of DIVIDEND modulo DIVISOR; unlike the % (remainder)
+function the behaviour of `mod' is well-defined for negative arguments,
+we have that,
+
+	(mod X Y) == X - (* Y (floor (/ X Y))),	for Y not equal to zero
+
+assuming that (floor Z) gives the least integer greater than or equal to Z,
+and that floating point division is used.
+::end:: */
+{
+    long tem;
+    DECLARE1(n1, NUMBERP);
+    DECLARE2(n2, NUMBERP);
+    if(VNUM(n2) == 0)
+	return cmd_signal(sym_arith_error, LIST_1(MKSTR("Divide by zero")));
+
+    /* This code from GNU Emacs */
+    tem = VNUM(n1) % VNUM(n2);
+    /* If the "remainder" comes out with the wrong sign, fix it.  */
+    if (VNUM(n2) < 0 ? tem > 0 : tem < 0)
+	tem += VNUM(n2);
+
+    return make_number(tem);
 }
 
 _PR VALUE cmd_lognot(VALUE);
@@ -1627,9 +1689,7 @@ strings built from the same characters in the same order even if the strings'
 location in memory is different.
 ::end:: */
 {
-    if(value_cmp(val1, val2))
-	return(sym_nil);
-    return(sym_t);
+    return (value_cmp(val1, val2) == 0) ? sym_t : sym_nil;
 }
 
 _PR VALUE cmd_eq(VALUE, VALUE);
@@ -1641,9 +1701,7 @@ Returns t if VALUE1 and VALUE2 are one and the same object. Note that
 this may or may not be true for numbers of the same value (see `eql').
 ::end:: */
 {
-    if(val1 == val2)
-	return(sym_t);
-    return(sym_nil);
+    return (val1 == val2) ? sym_t : sym_nil;
 }
 
 _PR VALUE cmd_eql(VALUE arg1, VALUE arg2);
@@ -1718,60 +1776,78 @@ Returns t if NUMBER1 and NUMBER2 are unequal.
     return(sym_nil);
 }
 
-_PR VALUE cmd_gtthan(VALUE, VALUE);
-DEFUN(">", cmd_gtthan, subr_gtthan, (VALUE arg1, VALUE arg2), V_Subr2, DOC_gtthan) /*
-::doc:gtthan::
-> ARG1 ARG2
+#define APPLY_COMPARISON(op)				\
+    if(CONSP(args) && NUMBERP(VCAR(args)))		\
+    {							\
+	VALUE pred = VCAR(args);			\
+	int i = 2;					\
+	args = VCDR(args);				\
+	while(CONSP(args))				\
+	{						\
+	    if(!NUMBERP(VCAR(args)))			\
+		return signal_arg_error(VCAR(args), i);	\
+	    if(!(value_cmp(pred, VCAR(args)) op 0))	\
+		return sym_nil;				\
+	    pred = VCAR(args);				\
+	    args = VCDR(args);				\
+	    i++;					\
+	    TEST_INT;					\
+	    if(INT_P)					\
+		return(NULL);				\
+	}						\
+	return sym_t;					\
+    }							\
+    return (CONSP(args)					\
+	    ? signal_arg_error(VCAR(args), 1)		\
+	    : signal_missing_arg(1));
 
-Returns t if ARG1 is greater than ARG2. Note that this command isn't
-limited to numbers, it can do strings, positions, marks, etc as well.
+_PR VALUE cmd_gtthan(VALUE);
+DEFUN(">", cmd_gtthan, subr_gtthan, (VALUE args), V_SubrN, DOC_gtthan) /*
+::doc:gtthan::
+> ARG1 ARG2 [ARG3 ...]
+
+Returns t if ARG1 is greater than ARG2, and if ARG2 is greater than ARG3,
+and so on. Note that this command isn't limited to numbers, it can do
+strings, positions, marks, etc as well.
 ::end:: */
 {
-    if(value_cmp(arg1, arg2) > 0)
-	return(sym_t);
-    return(sym_nil);
+    APPLY_COMPARISON(>)
 }
 
-_PR VALUE cmd_gethan(VALUE, VALUE);
-DEFUN(">=", cmd_gethan, subr_gethan, (VALUE arg1, VALUE arg2), V_Subr2, DOC_gethan) /*
+_PR VALUE cmd_gethan(VALUE);
+DEFUN(">=", cmd_gethan, subr_gethan, (VALUE args), V_SubrN, DOC_gethan) /*
 ::doc:gethan::
->= ARG1 ARG2
+>= ARG1 ARG2 [ARG3 ...]
 
 Returns t if ARG1 is greater-or-equal than ARG2. Note that this command
 isn't limited to numbers, it can do strings, positions, marks, etc as well.
 ::end:: */
 {
-    if(value_cmp(arg1, arg2) >= 0)
-	return(sym_t);
-    return(sym_nil);
+    APPLY_COMPARISON(>=)
 }
 
-_PR VALUE cmd_ltthan(VALUE, VALUE);
-DEFUN("<", cmd_ltthan, subr_ltthan, (VALUE arg1, VALUE arg2), V_Subr2, DOC_ltthan) /*
+_PR VALUE cmd_ltthan(VALUE);
+DEFUN("<", cmd_ltthan, subr_ltthan, (VALUE args), V_SubrN, DOC_ltthan) /*
 ::doc:ltthan::
-< ARG1 ARG2
+< ARG1 ARG2 [ARG3 ...]
 
 Returns t if ARG1 is less than ARG2. Note that this command isn't limited to
 numbers, it can do strings, positions, marks, etc as well.
 ::end:: */
 {
-    if(value_cmp(arg1, arg2) < 0)
-	return(sym_t);
-    return(sym_nil);
+    APPLY_COMPARISON(<)
 }
 
-_PR VALUE cmd_lethan(VALUE, VALUE);
-DEFUN("<=", cmd_lethan, subr_lethan, (VALUE arg1, VALUE arg2), V_Subr2, DOC_lethan) /*
+_PR VALUE cmd_lethan(VALUE);
+DEFUN("<=", cmd_lethan, subr_lethan, (VALUE args), V_SubrN, DOC_lethan) /*
 ::doc:lethan::
-<= ARG1 ARG2
+<= ARG1 ARG2 [ARG3 ...]
 
 Returns t if ARG1 is less-or-equal than ARG2. Note that this command isn't
 limited to numbers, it can do strings, positions, marks, etc as well.
 ::end:: */
 {
-    if(value_cmp(arg1, arg2) <= 0)
-	return(sym_t);
-    return(sym_nil);
+    APPLY_COMPARISON(<=)
 }
 
 _PR VALUE cmd_plus1(VALUE);
@@ -1852,9 +1928,7 @@ null ARG
 Returns t if ARG is nil.
 ::end:: */
 {
-    if(NILP(arg))
-	return(sym_t);
-    return(sym_nil);
+    return NILP(arg) ? sym_t : sym_nil;
 }
 
 _PR VALUE cmd_atom(VALUE);
@@ -1865,9 +1939,7 @@ atom ARG
 Returns t if ARG is not a cons-cell.
 ::end:: */
 {
-    if(!CONSP(arg))
-	return(sym_t);
-    return(sym_nil);
+    return CONSP(arg) ? sym_t : sym_nil;
 }
 
 _PR VALUE cmd_consp(VALUE);
@@ -1878,9 +1950,7 @@ consp ARG
 Returns t if ARG is a cons-cell.
 ::end:: */
 {
-    if(CONSP(arg))
-	return(sym_t);
-    return(sym_nil);
+    return CONSP(arg) ? sym_t : sym_nil;
 }
 
 _PR VALUE cmd_listp(VALUE);
@@ -1891,9 +1961,7 @@ listp ARG
 Returns t if ARG is a list, (either a cons-cell or nil).
 ::end:: */
 {
-    if(NILP(arg) || CONSP(arg))
-	return(sym_t);
-    return(sym_nil);
+    return LISTP(arg) ? sym_t : sym_nil;
 }
 
 _PR VALUE cmd_numberp(VALUE);
@@ -1904,9 +1972,7 @@ numberp ARG
 Return t if ARG is a number.
 ::end:: */
 {
-    if(NUMBERP(arg))
-	return(sym_t);
-    return(sym_nil);
+    return NUMBERP(arg) ? sym_t : sym_nil;
 }
 
 _PR VALUE cmd_integerp(VALUE);
@@ -1917,9 +1983,7 @@ integerp ARG
 Return t if ARG is a integer.
 ::end:: */
 {
-    if(NUMBERP(arg))
-	return(sym_t);
-    return(sym_nil);
+    return NUMBERP(arg) ? sym_t : sym_nil;
 }
 
 _PR VALUE cmd_stringp(VALUE);
@@ -1930,9 +1994,7 @@ stringp ARG
 Returns t is ARG is a string.
 ::end:: */
 {
-    if(STRINGP(arg))
-	return(sym_t);
-    return(sym_nil);
+    return STRINGP(arg) ? sym_t : sym_nil;
 }
 
 _PR VALUE cmd_vectorp(VALUE);
@@ -1943,9 +2005,7 @@ vectorp ARG
 Returns t if ARG is a vector.
 ::end:: */
 {
-    if(VECTORP(arg))
-	return(sym_t);
-    return(sym_nil);
+    return VECTORP(arg) ? sym_t : sym_nil;
 }
 
 _PR VALUE cmd_functionp(VALUE);
@@ -2033,9 +2093,7 @@ sequencep ARG
 Returns t is ARG is a sequence (a list, vector or string).
 ::end:: */
 {
-    if(NILP(arg) || CONSP(arg) || VECTORP(arg) || STRINGP(arg))
-	return(sym_t);
-    return(sym_nil);
+    return (LISTP(arg) || VECTORP(arg) || STRINGP(arg)) ? sym_t : sym_nil;
 }
 
 _PR VALUE cmd_subr_documentation(VALUE subr, VALUE useVar);
@@ -2163,7 +2221,7 @@ end:
 	POPGC;
 	return(res);
     }
-    return(NULL);
+    return signal_missing_arg(1);
 }
 
 _PR VALUE cmd_eval_hook2(VALUE hook, VALUE arg);
@@ -2256,7 +2314,7 @@ There are several pre-defined `catch'es which are,
 	POPGC;
 	return(res);
     }
-    return(NULL);
+    return signal_missing_arg(1);
 }
 
 _PR VALUE cmd_throw(VALUE, VALUE);
@@ -2317,7 +2375,7 @@ BODY is being evaluated.
 	POPGC; POPGC; POPGC;
 	return(res);
     }
-    return(NULL);
+    return signal_missing_arg(1);
 }
 
 void
@@ -2375,6 +2433,7 @@ lispcmds_init(void)
     ADD_SUBR(subr_product);
     ADD_SUBR(subr_divide);
     ADD_SUBR(subr_remainder);
+    ADD_SUBR(subr_mod);
     ADD_SUBR(subr_lognot);
     ADD_SUBR(subr_not);
     ADD_SUBR(subr_logior);
