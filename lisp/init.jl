@@ -548,6 +548,18 @@ of THUNK) each function will be called exactly once."
 
 ;; numeric functions
 
+(defun realp (x)
+  "Return t if X is a real number."
+  (numberp x))
+
+(defun rationalp (x)
+  "Return t if X is a (possibly inexact) rational number."
+  (numberp x))
+
+(defun inexactp (x)
+  "Return t if X is an inexact number."
+  (and (numberp x) (not (exactp x))))
+
 (defun positivep (x)
   "Return t if X is greater than zero."
   (> x 0))
