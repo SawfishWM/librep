@@ -160,6 +160,23 @@
 		     arg (%intern-structure *repl-in-struct*)))))
 (put 'dis 'repl-help "FORM")
 
+(put 'compile-proc 'repl-command
+     (lambda args
+       (require 'compiler)
+       (mapc (lambda (arg)
+	       (compile-function (%eval-in-structure
+				  arg (%intern-structure *repl-in-struct*))))
+	     args)))
+(put 'compile-proc 'repl-help "PROCEDURE ...")
+
+(put 'compile 'repl-command
+     (lambda args
+       (require 'compiler)
+       (if (null args)
+	   (compile-module *repl-in-struct*)
+	 (mapc compile-module args))))
+(put 'compile 'repl-help "[STRUCT ...]")
+
 (put 'doc 'repl-command
      (lambda (arg)
        (require 'lisp-doc)
