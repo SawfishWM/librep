@@ -156,6 +156,8 @@ Some of the features of @code{librep} are:
 @item Most ``standard'' Emacs Lisp functions, with some others from
 Common Lisp
 
+@item Fully tail-recursive evaluation of compiled functions
+
 @item Mostly-Perl-like regular expressions, including \s, \S, \w, \W,
 \d, \D, \b, \B, classes and ??, ?*, ?+ (non-greedy) operators (but none
 of the curly-brace quantifiers, and no matching of already-remembered
@@ -179,6 +181,9 @@ define new types)
 
 @item Extensible ``stream''-based input/output system, with many different
 stream types
+
+@item Guardian objects allowing programmer-controlled garbage
+collection of data objects
 
 @item Designed for embedding within other applications, or as a
 stand-alone interpreter

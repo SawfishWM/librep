@@ -2532,12 +2532,13 @@ their arguments, including the forms to be conditionally evaluated,
 were evaluated automatically this would defeat the object of being
 conditional!).
 
-The special forms supported by librep are: @code{and}, @code{catch},
-@code{cond}, @code{condition-case}, @code{defconst}, @code{defmacro},
-@code{defun}, @code{defvar}, @code{function}, @code{if}, @code{let},
-@code{let*}, @code{or}, @code{prog1}, @code{prog2}, @code{progn},
-@code{quote}, @code{setq}, @code{setq-default}, @code{unwind-protect},
-@code{while}, @code{with-object}.
+The special forms supported by librep are: @code{and}, @code{case},
+@code{catch}, @code{cond}, @code{condition-case}, @code{defconst},
+@code{defmacro}, @code{defun}, @code{defvar}, @code{function},
+@code{if}, @code{let}, @code{let*}, @code{or}, @code{prog1},
+@code{prog2}, @code{progn}, @code{quote}, @code{setq},
+@code{setq-default}, @code{unwind-protect}, @code{while},
+@code{with-object}.
 
 @defun special-form-p arg
 Returns @code{t} if @var{arg} is a special form.
@@ -2823,6 +2824,48 @@ All of the other conditionals can be written in terms of @code{cond},
 
 There are also a number of special forms which combine conditions together
 by the normal logical rules.
+
+@defspec case key clauses@dots{}
+This special form is similar to @code{cond}, but switches on the result
+of evaluating a single form @var{key}, checking for equality with a
+number of other values, defined by the @var{clauses}. If any of these
+other values is the same as the result of evaluating @var{key}, then a
+sequence of forms associated with the value is evaluated.
+
+Each element of the @var{clauses} list has the format:
+
+@lisp
+((@var{value-1} @var{value-2} @dots{} @var{value-n}) @var{forms}@dots{})
+@end lisp
+
+@noindent
+Each of the values in the car of the clause is tested for equality with
+@var{key}, using the @code{eql} function. If any test positively, then
+the associated @var{forms} are evaluated and the resulting value
+becomes the result of the special form.
+
+Instead of supplying a list of possible values, it is also possible to
+just specify the symbol @code{t}. If such a clause is encountered, and
+no other clauses have matched the value of @var{key}, then this clause
+is assumed to match by default.
+
+If any of the values in the @var{clauses} appear multiply, then the
+behaviour of the construct is undefined.
+
+Here is an example use of @code{case}:
+
+@lisp
+(case foo
+  ((bar baz)
+    (print "It was either bar or baz"))
+  ((quux)
+    (print "It was quux"))
+  (t
+    (print "I've no idea what it was...")))
+@end lisp
+@end defspec
+
+
 
 @defspec or forms@dots{}
 The first of the @var{forms} is evaluated, if it is non-@code{nil} its
@@ -4950,25 +4993,43 @@ When called interactively the symbol @var{feature} is prompted for.
 @section Compiled Lisp
 @cindex Compiled Lisp
 
-@code{librep} contains a rudimentary Lisp compiler; this takes a Lisp
-form or program and compiles it into a @dfn{byte-code} form. This
-byte-code form is a string of characters representing virtual machine
-instructions, a vector of constants and some other meta-information.
+@code{librep} contains a Lisp compiler as well as interpreter; this
+takes a Lisp form or program and compiles it into a @dfn{byte-code}
+object. This byte-code object is a string of characters representing
+virtual machine instructions, a vector of constants and some other
+meta-information. The system also contains a byte-code interpreter;
+this takes the compiled byte-codes and executes them by simulating the
+virtual machine. This simulation will have exactly the same effect as
+interpreting the original form or program.
 
-The main reason for compiling programs is to increase their speed, it
-is difficult to quantify the speed increase gained---some programs
-(especially those using a lot of macros) will execute many times
-quicker than their uncompiled version whereas others may only execute a
-bit quicker.
+One of the main reasons for compiling programs is to increase their
+speed, it is difficult to quantify the speed increase gained---some
+programs (especially those using a lot of macros) will execute many
+times quicker than their uncompiled version whereas others may only
+execute a bit quicker.
+
+There is also another important reason for using compilation: the
+virtual machine is able to detect and eliminate tail-calls where it is
+possible to do so.@footnote{A @dfn{tail-call} is a function call that
+occurs immediately before exiting the containing function. Since the
+containing function need not receive the result of the function call,
+it is possible to, in effect, exit from the containing function before
+invoking the called function.
+
+Note however, that this is only possible where none of the dynamic
+features of the language (i.e. bindings to special variables,
+@code{unwind-protect}, @code{condition-case}, @code{catch}, etc@dots{})
+are currently active in the containing function.}
 
 @menu
 * Compilation Functions::       How to compile Lisp programs
+* Evaluating at Compile Time::	Evaluating forms ahead of time
 * Compilation Tips::            Getting the most out of the compiler
 * Disassembly::                 Examining compiled functions
 @end menu
 
 
-@node Compilation Functions, Compilation Tips, , Compiled Lisp
+@node Compilation Functions, Evaluating at Compile Time, , Compiled Lisp
 @subsection Compilation Functions
 @cindex Compilation functions
 @cindex Functions, compilation
@@ -5057,7 +5118,23 @@ Returns @code{t} if @var{arg} is a byte-code subroutine.
 @end defun
 
 
-@node Compilation Tips, Disassembly, Compilation Functions, Compiled Lisp
+@node Evaluating at Compile Time, Compilation Tips, Compilation Functions, Compiled Lisp
+@subsection Evaluating at Compile Time
+@cindex Evaluating at compile time
+@cindex Compile time evaluation
+
+It is often useful to be able to cause certain forms in your programs
+to be evaluated only when the program is being compiled.
+
+@defspec eval-when-compile form
+This form tells the system that @var{form} should only be evaluated
+when the containing code is being compiled. When interpreted it always
+returns @code{nil}, when compiled it returns the value of evaluating
+@var{form}.
+@end defspec
+
+
+@node Compilation Tips, Disassembly, Evaluating at Compile Time, Compiled Lisp
 @subsection Compilation Tips
 @cindex Compilation tips
 @cindex Tips, compilation
@@ -5066,63 +5143,70 @@ Here are some tips for making compiled code run fast(er):
 
 @itemize @bullet
 @item
-Always favour iteration over recursion; function calls are relatively
-slow. The compiler doesn't know about tail recursion or whatever so
-you'll have to do this explicitly.
+Instead of using @code{while} loops to traverse lists, use @code{mapc}
+or tail recursion.
 
-For example, an elegant way of searching a list is to use recursion,
-
-@lisp
-(defun scan-list (list elt)
-  "Search the LIST for an element ELT. Return it if one is found."
-  (if (eq (car list) elt)
-      elt
-    (scan-list (cdr list) elt)))
-@end lisp
-
-@noindent
-but this is fairly slow. Instead, iterate through each element,
+For example you might code a function to scan a list using iteration
+through a @code{while} loop:
 
 @lisp
-(defun scan-list (list elt)
+(defun scan-list (lst elt)
+  "Search the LST for an element similar to ELT.
+Return it if one is found."
   (catch 'return
-    (while (consp list)
-      (when (eq (car list) elt)
+    (while (consp lst)
+      (when (equal (car lst) elt)
         (throw 'return elt))
-      (setq list (cdr list)))))
+      (setq lst (cdr lst)))))
 @end lisp
 
 @noindent
-In fact, the compiler knows that calls to @code{mapc} with a constant
-lambda expression can be open-coded. So a faster-still (and more
-elegant) version of the above function is:
+As well as obscuring what is actually happening, this will probably be
+fairly slow to execute. A more elegant solution is to use
+tail-recursion:
 
 @lisp
-(defun scan-list (list elt)
+(defun scan-list (lst elt)
+  (if (equal (car lst) elt)
+      elt
+    (scan-list (cdr lst) elt)))
+@end lisp
+
+@noindent
+An alternative idiom is to map an anonymous function over the list
+using the @code{mapc} function:
+
+@lisp
+(defun scan-list (lst elt)
   (catch 'return
     (mapc (lambda (x)
-            (when (eq x elt)
+            (when (equal x elt)
               (throw 'return elt)))
-          list)
+          lst)
     nil))
 @end lisp
 
 @noindent
-The compiler will code the list traversal using the virtual machine
-stack, not the dynamically bound (i.e. slow) variables.
+In fact, the compiler knows that calls to @code{mapc} with a constant
+lambda expression can be open-coded, so it will code the list traversal
+directly using the virtual machine stack.
+
+However, in most cases the execution time differences are likely to
+negligible.
+
 
 @item
 In some cases the functions @code{member}, @code{memq}, @code{assoc},
 etc@dots{} can be used to search lists. Since these are primitives
-written in C they will run @emph{much} faster than an equivalent Lisp
-function.
+written in C they will probably execute several times faster than an
+equivalent Lisp function.
 
 So the above @code{scan-list} example can again be rewritten, this time
-as, 
+as:
 
 @lisp
-(defun scan-list (list elt)
-  (car (memq elt list)))
+(defun scan-list (lst elt)
+  (car (member elt lst)))
 @end lisp
 
 @item
@@ -5194,7 +5278,7 @@ the car of the list is one of:
 @code{if}, @code{cond}, @code{when}, @code{unless}, @code{let}, @code{let*},
 @code{catch}, @code{unwind-protect}, @code{error-protect}, @code{with-buffer},
 @code{with-window}, @code{progn}, @code{prog1}, @code{prog2}, @code{while},
-@code{and}, @code{or}.
+@code{and}, @code{or}, @code{case}.
 
 @noindent
 then the form is compiled. Otherwise it is just written to the output file
@@ -5242,6 +5326,7 @@ Here is a small example. Consider the following function definition:
     (- y x)))
 @end lisp
 
+@noindent
 After compilation and disassembly, the following is produced (but
 without the annotations):
 
@@ -5251,21 +5336,22 @@ Disassembly of function foo:
 Arguments: (x y)
 Interactive spec: nil
 Doc string: nil
-[Uses 15 code bytes, 2 constants, and 2 stack slots]
+[Uses 14 code bytes, 0 constants, and 2 stack slots]
 
 Disassembly:
 
-0		refq	[0] x   ;load x onto the stack
-1		refq	[1] y   ;load y onto the stack
+0		refn	#1      ;load x onto the stack
+1		refn	#0      ;load y onto the stack
 2		gt              ;greater-than comparison
-3		jn	12      ;if !(x > y) goto 12
-6		refq	[0] x
-7		refq	[1] y
+3		jn	10      ;if (x > y) is nil goto 12
+6		refn	#1
+7		refn	#0
 8		sub             ;x - y on stack
-9		jmp	15      ;goto end
-12		refq	[1] y
-13		refq	[0] x
-14		sub             ;y - x on stack
+9		return          ;return x - y
+10		refn	#0
+11		refn	#1
+12		sub
+13		return          ;return y - x
 @end example
 
 

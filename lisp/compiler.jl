@@ -324,7 +324,7 @@ value when given the same inputs. Used when constant folding.")
 
 (defvar comp-top-level-compiled
   '(if cond when unless let let* catch unwind-protect condition-case
-    progn prog1 prog2 while and or)
+    progn prog1 prog2 while and or case)
   "List of symbols, when the name of the function called by a top-level form
 is one of these that form is compiled.")
 
