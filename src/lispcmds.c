@@ -41,7 +41,8 @@ DEFSYM(lisp_lib_directory, "lisp-lib-directory");
 DEFSYM(site_lisp_directory, "site-lisp-directory");
 DEFSYM(exec_directory, "exec-directory");
 DEFSYM(documentation_file, "documentation-file");
-DEFSYM(documentation_files, "documentation-files"); /*
+DEFSYM(documentation_files, "documentation-files");
+DEFSYM(dl_load_reloc_now, "dl-load-reloc-now"); /*
 ::doc:Vload-path::
 A list of directory names. When `load' opens a lisp-file it searches each
 directory named in this list in turn until the file is found or the list
@@ -76,6 +77,10 @@ The name of the database containing the lisp-library's documentation strings.
 ::end::
 ::doc:Vdocumentation-files::
 A list of database names containing all documentation strings.
+::end::
+::doc:Vdl-load-reloc-now::
+When non-nil, dynamically loaded libraries have all symbol relocations
+perfromed at load-time, not as required.
 ::end:: */
 
 DEFUN("quote", Fquote, Squote, (repv args), rep_SF) /*
@@ -2833,4 +2838,7 @@ rep_lispcmds_init(void)
     rep_SYM(Qafter_load_alist)->value = Qnil;
 
     rep_INTERN(or); rep_INTERN(and);
+
+    rep_INTERN(dl_load_reloc_now);
+    rep_SYM(Qdl_load_reloc_now)->value = Qnil;
 }
