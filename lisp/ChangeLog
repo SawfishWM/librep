@@ -1,3 +1,10 @@
+2000-12-29  John Harper  <jsh@eazel.com>
+
+	* rep/threads/condition-variable.jl: new file, implemented
+	the usual condition variable interface (but not quite strong
+	enough for SRFI-18 compatibility, condition-variable-wait would
+	need a TIMEOUT parameter)
+
 2000-12-20  John Harper  <jsh@eazel.com>
 
 	* rep/util/gaol.jl (gaol-safe-functions): added string-split
