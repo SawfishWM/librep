@@ -1,3 +1,8 @@
+2001-05-01  John Harper  <jsh@eazel.com>
+
+	* rep/vm/compiler/rep.jl (trans-defvar): if the defvar has a
+	constant doc string, add it to the documentation database
+
 2001-04-30  John Harper  <jsh@eazel.com>
 
 	* rep/lang/interpreter.jl (define-special-variable): new macro,

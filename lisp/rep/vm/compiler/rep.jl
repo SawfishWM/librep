@@ -264,9 +264,13 @@
 	 (value (nth 2 form))
 	 (doc (nth 3 form)))
       (remember-variable name)
+      (when (and (compiler-constant-p doc)
+		 (stringp (compiler-constant-value doc))
+		 *compiler-write-docs*)
+	(add-documentation name nil (compiler-constant-value doc))
+	(setq doc nil))
       `(progn
-	 (when ,doc
-	   (put ',name 'variable-documentation ,doc))
+	 ,@(and doc (list '(put ',name 'variable-documentation ,doc)))
 	 (make-variable-special ',name)
 	 (unless (boundp ',name)
 	   (setq ,name ,value)))))
