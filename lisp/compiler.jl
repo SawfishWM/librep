@@ -67,31 +67,195 @@
 ;;;
 ;;; If you have doubts about whether or not to use constants -- don't; it may
 ;;; lead to subtle bugs.
+;;;
+;;; Inline Functions
+;;; ================
+;;; The defsubst macro allows functions to be defined which will be open-
+;;; coded into any callers at compile-time. Of course, this can have a
+;;; similar effect to using a macro, with some differences:
+;;;
+;;;	* Macros can be more efficient, since the formal parameters
+;;;	  are only bound at compile time. But, this means that the
+;;;	  arguments may be evaluated more than once, unlike a defsubst
+;;;	  where applied forms will only ever be evaluated once, when
+;;;	  they are bound to a formal parameter
+;;;
+;;;	* Macros are more complex to write; though the backquote mechanism
+;;;	  can help a lot with this
+;;;
+;;;	* defsubst's are more efficient in uncompiled code, but this
+;;;	  shouldn't really be a consideration, unless code is being
+;;;	  generated on the fly
+;;;
+;;; Warnings
+;;; ========
+;;; Currently warnings are generated for the following situations:
+;;;
+;;;	* Functions or special variables are multiply defined
+;;;	* Undefined variables are referenced or set ("undefined" means
+;;;	  not defined by defvar, not currently (lexically) bound, and
+;;;	  not boundp at compile-time)
+;;;	* Undefined functions are referenced, that is, not defun'd and
+;;;	  not fboundp at compile-time
+;;;	* Functions are called with an incorrect number of arguments,
+;;;	  either too few required parameters, or too many supplied
+;;;	  to a function without a &rest keyword
+;;;	* Unreachable code in conditional statements
+;;;	* Possibly some other things...
+;;;
+;;; TODO
+;;; ====
+;;; Obviously, optimisation of output code. This can be done in two
+;;; stages, (1) source code transformations, (2) optimisation of
+;;; intermediate form (basically bytecode, but as a list of operations
+;;; and symbolic labels, i.e. the basic blocks)
+;;;
+;;; Optimisation would probably be a lot more profitable if variables
+;;; were lexically scoped, perhaps I should get this working first.
+;;; It shouldn't break anything much, since the compiler will give
+;;; warnings if any funky dynamic-scope tricks are used without the
+;;; symbols being defvar'd (and therefore declared special/dynamic)
 
 
 ;; Options
+
 (defvar comp-write-docs nil
   "When t all doc-strings are appended to the doc file and replaced with
 their position in that file.")
 
+(defvar comp-max-inline-depth 8
+  "The maximum nesting of open-coded function applications.")
+
+(defvar comp-batch-compile nil
+  "When t, all output goes to standard output.")
+
 
 ;; Environment of this byte code sequence being compiled
 
+;; Output state
 (defvar comp-constant-alist '())	;list of (VALUE . INDEX)
 (defvar comp-constant-index 0)		;next free constant index number
 (defvar comp-current-stack 0)		;current stack requirement
 (defvar comp-max-stack 0)		;highest possible stack
 (defvar comp-output nil)		;list of (BYTE . INDEX)
 (defvar comp-output-pc 0)		;INDEX of next byte
+
+;; Compilation "environment"
 (defvar comp-macro-env '())		;alist of (NAME . MACRO-DEF)
 (defvar comp-const-env '())		;alist of (NAME . CONST-DEF)
+(defvar comp-inline-env '())		;alist of (NAME . FUNCTION-VALUE)
+(defvar comp-defuns t)			;alist of (NAME REQ OPT RESTP)
+					; for all functions/macros in the file
+(defvar comp-defvars t)			;all variables declared at top-level
+(defvar comp-bindings '())		;list of currently bound variables
 (defvar comp-current-file nil)		;the file being compiled
 (defvar comp-current-fun nil)		;the function being compiled
+(defvar comp-inline-depth 0)		;depth of lambda-inlining
 
-(defvar comp-buffer (make-buffer "*compilation-output*"))
-(set-buffer-special comp-buffer t)
+(defvar comp-output-stream nil)		;stream for compiler output
 
 
+;; Message output
+
+(defun comp-message (fmt &rest args)
+  (if (null comp-output-stream)
+      (if comp-batch-compile
+	  (setq comp-output-stream (stdout-file))
+	(setq comp-output-stream (open-buffer "*compilation-output*"))
+	(set-buffer-special comp-output-stream t)
+	(goto-buffer comp-output-stream)
+	(goto (end-of-buffer))))
+; (when comp-current-file
+;   (format comp-output-stream "%s:" comp-current-file))
+  (when comp-current-fun
+    (format comp-output-stream "%s:" comp-current-fun))
+  (apply 'format comp-output-stream fmt args))
+
+(put 'compile-error 'error-message "Compilation mishap")
+(defun comp-error (&rest data)
+  (signal 'compile-error data))
+
+(defun comp-warning (format &rest args)
+  (apply 'comp-message format args)
+  (write comp-output-stream "\n"))
+
+
+;; Code to handle warning tests
+
+;; Note that there's a function or macro NAME with lambda-list ARGS
+;; in the current file
+(defun comp-remember-fun (name args)
+  (unless (eq comp-defuns t)
+    (if (assq name comp-defuns)
+	(comp-warning "Multiply defined function or macro: %s" name)
+      (let
+	  ((required 0)
+	   (optional nil)
+	   (rest nil)
+	   (state 'required))
+	;; Scan the lambda-list for the number of required and optional
+	;; arguments, and whether there's a &rest clause
+	(while args
+	  (if (memq (car args) '(&optional &rest &aux))
+	      (cond
+	       ((eq (car args) '&optional)
+		(setq state 'optional
+		      optional 0
+		      args (cdr args)))
+	       ((eq (car args) '&rest)
+		(setq args nil
+		      rest t))
+	       ((eq (car args) '&aux)
+		(setq args nil)))
+	    (set state (1+ (symbol-value state)))
+	    (setq args (cdr args))))
+	(setq comp-defuns (cons (list name required optional rest)
+				comp-defuns))))))
+
+;; Similar for variables
+(defun comp-remember-var (name)
+  (unless (eq comp-defvars t)
+    (if (memq name comp-defvars)
+	(comp-warning "Multiply defined variable: %s" name)
+      (setq comp-defvars (cons name comp-defvars)))))
+
+;; Test that a reference to variable NAME appears valid
+(defun comp-test-varref (name)
+  (when (and (not (eq comp-defvars t))
+	     (null (memq name comp-defvars))
+	     (null (memq name comp-bindings))
+	     (not (boundp name)))
+    (comp-warning "Reference to undeclared free variable: %s" name)))
+
+;; Test a call to NAME with NARGS arguments
+(defun comp-test-funcall (name nargs)
+  (let
+      ((decl (assq name comp-defuns)))
+    (when (and (null decl) (fboundp name))
+      (setq decl (symbol-function name))
+      (when (or (subrp decl)
+		(and (consp decl) (eq (car decl) 'autoload)))
+	(return))
+      (if (bytecodep decl)
+	  (comp-remember-fun name (aref decl 0))
+	(comp-remember-fun name (nth (if (macrop name) 2 1) decl)))
+      (setq decl (assq name comp-defuns)))
+    (if (null decl)
+	(comp-warning "Call to undeclared function: %s" name)
+      (let
+	  ((required (nth 1 decl))
+	   (optional (nth 2 decl))
+	   (rest (nth 3 decl)))
+	(if (< nargs required)
+	    (comp-warning "%d arguments required by %s; %d supplied"
+			  required name nargs)
+	  (when (and (null rest) (> nargs (+ required (or optional 0))))
+	    (comp-warning "Too many arguments to %s (%d given, %d used)"
+			  name nargs (+ required (or optional 0)))))))))
+
+
+;; Top level entrypoints
+
 (defvar comp-top-level-compiled
   '(if cond when unless let let* catch unwind-protect condition-case
     with-buffer with-window with-view progn prog1 prog2 while and or)
@@ -105,20 +269,39 @@ is one of these that form is compiled.")
   (interactive "fLisp file to compile:")
   (let
       ((comp-current-file file-name)
-       src-file dst-file form
-       comp-macro-env
-       comp-const-env
-       form)
+       (comp-macro-env '())
+       (comp-const-env '())
+       (comp-inline-env '())
+       (comp-defuns '())
+       (comp-defvars '())
+       (comp-bindings '())
+       src-file dst-file form)
     (message (concat "Compiling " file-name "...") t)
     (when (setq src-file (open-file file-name "r"))
       (unwind-protect
-	  ;; Pass 1. Scan for macro definitions in FILE-NAME
+	  ;; Pass 1. Scan for top-level definitions in the file.
 	  (while (not (file-eof-p src-file))
 	    (setq form (read src-file))
-	    (when (eq (car form) 'defmacro)
+	    (cond
+	     ((eq (car form) 'defun)
+	      (comp-remember-fun (nth 1 form) (nth 2 form)))
+	     ((eq (car form) 'defmacro)
+	      (comp-remember-fun (nth 1 form) (nth 2 form))
 	      (setq comp-macro-env (cons (cons (nth 1 form)
 					       (cons 'lambda (nthcdr 2 form)))
-					 comp-macro-env))))
+					 comp-macro-env)))
+	     ((eq (car form) 'defsubst)
+	      (comp-remember-fun (nth 1 form) (nth 2 form))
+	      (setq comp-inline-env (cons (cons (nth 1 form)
+						(cons 'lambda (nthcdr 2 form)))
+					  comp-inline-env)))
+	     ((eq (car form) 'defvar)
+	      (comp-remember-var (nth 1 form)))
+	     ((eq (car form) 'defconst)
+	      (comp-remember-var (nth 1 form))
+	      (setq comp-const-env (cons (cons (nth 1 form)
+					       (nth 2 form))
+					 comp-const-env)))))
 	(close-file src-file))
       (when (and (setq src-file (open-file file-name "r"))
 		 (setq dst-file (open-file (concat file-name ?c) "w")))
@@ -141,7 +324,7 @@ is one of these that form is compiled.")
 		    (when (setq form (read src-file))
 		      (cond
 		       ((memq (car form) '(defun defmacro defvar
-					    defconst require))
+					    defconst defsubst require))
 			(setq form (comp-compile-top-form form)))
 		       ((memq (car form) comp-top-level-compiled)
 			;; Compile this form
@@ -176,7 +359,8 @@ EXCLUDE-LIST is a list of files which shouldn't be compiled."
 	(let*
 	    ((file (file-name-concat dir-name (car dir)))
 	     (cfile (concat file ?c)))
-	  (when (file-newer-than-file-p file cfile)
+	  (when (or (not (file-exists-p cfile))
+		    (file-newer-than-file-p file cfile))
 	    (compile-file file))))
       (setq dir (cdr dir)))
     t))
@@ -192,14 +376,20 @@ This makes sure that all doc strings are written to their special file and
 that files which shouldn't be compiled aren't."
   (interactive "P")
   (let
-      ((comp-write-docs t))
+      ((comp-write-docs t)
+       (comp-batch-compile t))
     (compile-directory lisp-lib-dir force-p compile-lib-exclude-list)))
 
-;; Used when bootstrapping from the Makefile
+;; Used when bootstrapping from the Makefile, recompiles compiler.jl if
+;; it's out of date
 (defun compile-compiler ()
   (let
-      ((comp-write-docs t))
-    (compile-file (file-name-concat lisp-lib-dir "compiler.jl"))))
+      ((comp-write-docs t)
+       (comp-batch-compile t)
+       (file (file-name-concat lisp-lib-dir "compiler.jl")))
+    (when (or (not (file-exists-p (concat file ?c)))
+	      (file-newer-than-file-p file (concat file ?c)))
+      (compile-file file))))
 
 ;;;###autoload
 (defun compile-function (function)
@@ -214,20 +404,7 @@ that files which shouldn't be compiled aren't."
   function)
     
 
-(put 'compile-error 'error-message "Compilation mishap")
-(defun comp-error (&rest data)
-  (signal 'compile-error data))
-
-(defun comp-warning (string)
-  (unless (memq comp-buffer buffer-list)
-    (add-buffer comp-buffer))
-  (goto-buffer comp-buffer)
-  (insert "Warning: ")
-  (when comp-current-file
-    (format comp-buffer "%s:" comp-current-file))
-  (when comp-current-fun
-    (format comp-buffer "%s:" comp-current-fun))
-  (format comp-buffer " %s\n" string))
+;; Low level compilation
 
 ;; Compile a form which occurred at the `top-level' into a byte code form.
 ;; defuns, defmacros, defvars, etc... are treated specially.
@@ -255,13 +432,24 @@ that files which shouldn't be compiled aren't."
 	    (rplacd tmp code)
 	  (comp-error "Compiled macro wasn't in environment" (nth 1 form)))
 	(list 'defmacro (nth 1 form) code)))
+     ((eq fun 'defsubst)
+      (when comp-write-docs
+	(cond
+	 ((stringp (nth 3 form))
+	  (rplaca (nthcdr 3 form) (add-doc-string (nth 3 form))))
+	 ((stringp (nth 4 form))
+	  (rplaca (nthcdr 4 form) (add-doc-string (nth 4 form))))))
+      (unless (assq (nth 1 form) comp-inline-env)
+	(comp-error "Inline function wasn't in environment" (nth 1 form)))
+      form)
      ((eq fun 'defconst)
       (let
 	  ((value (eval (nth 2 form)))
 	   (doc (nth 3 form)))
 	(when (and comp-write-docs (stringp doc))
 	  (rplaca (nthcdr 3 form) (add-doc-string doc)))
-	(setq comp-const-env (cons (cons (nth 1 form) value) comp-const-env)))
+	(unless (assq (nth 1 form) comp-const-env)
+	  (comp-error "Constant wasn't in environment" (nth 1 form))))
       form)
      ((eq fun 'defvar)
       (let
@@ -337,8 +525,10 @@ that files which shouldn't be compiled aren't."
       (comp-write-op op-t)
       (comp-inc-stack))
     ((symbolp form)
+     ;; A variable reference
      (let
 	 (val)
+       (comp-test-varref form)
        (cond
 	((const-variable-p form)
 	 ;; A constant already interned
@@ -352,33 +542,45 @@ that files which shouldn't be compiled aren't."
 	 (comp-write-op op-refq (comp-add-constant form))
 	 (comp-inc-stack)))))
     ((consp form)
-      (let
-	  (fun)
-	(if (and (symbolp (car form)) (setq fun (get (car form) 'compile-fun)))
-	    (funcall fun form)
-	  (setq form (macroexpand form comp-macro-env))
-	  (if (and (symbolp (car form))
-		   (setq fun (get (car form) 'compile-fun)))
-	      (funcall fun form)
-	    (setq fun (car form))
-	    (cond
-	     ((symbolp fun)
-	      (comp-compile-constant fun))
-	     ((and (consp fun) (eq (car fun) 'lambda))
-	      (comp-compile-constant (comp-compile-lambda fun)))
-	     (t
-	      (comp-error "Bad function name" fun)))
-	    (setq form (cdr form))
-	    (let
-		((i 0))
-	      (while (consp form)
-		(comp-compile-form (car form))
-		(setq i (1+ i)
-		      form (cdr form)))
-	      (comp-write-op op-call i)
-	      (comp-dec-stack i))))))
+     ;; A subroutine application of some sort
+     (comp-test-funcall (car form) (length (cdr form)))
+     (let
+	 (fun)
+       ;; Check if there's a special handler for this function
+       (if (and (symbolp (car form))
+		(setq fun (get (car form) 'compile-fun)))
+	   (funcall fun form)
+	 ;; Expand macros, and try again for a special handler
+	 (setq form (macroexpand form comp-macro-env))
+	 (if (and (symbolp (car form))
+		  (setq fun (get (car form) 'compile-fun)))
+	     (funcall fun form)
+	   ;; No special handler, so do it ourselves
+	   (setq fun (car form))
+	   (cond
+	    ((and (consp fun) (eq (car fun) 'lambda))
+	     ;; An inline lambda expression
+	     (comp-compile-lambda-inline (car form) (cdr form)))
+	    ((and (symbolp fun) (assq fun comp-inline-env))
+	     ;; A call to a function that should be open-coded
+	     (comp-compile-lambda-inline (cdr (assq fun comp-inline-env))
+					 (cdr form)))
+	    (t
+	     ;; Assume a normal function call
+	     (if (symbolp fun)
+		 (comp-compile-constant fun)
+	       (comp-error "Bad function name" fun))
+	     (setq form (cdr form))
+	     (let
+		 ((i 0))
+	       (while (consp form)
+		 (comp-compile-form (car form))
+		 (setq i (1+ i)
+		       form (cdr form)))
+	       (comp-write-op op-call i)
+	       (comp-dec-stack i))))))))
     (t
-      (comp-compile-constant form))))
+     (comp-compile-constant form))))
 
 ;; Push a constant onto the stack
 (defun comp-compile-constant (form)
@@ -414,6 +616,15 @@ that files which shouldn't be compiled aren't."
 	(comp-dec-stack))
       (setq body (cdr body)))))
 
+;; Remove all keywords from a lambda list ARGS, returning the list of
+;; variables that would be bound
+(defun comp-get-lambda-vars (args)
+  (delq nil (mapcar #'(lambda (x)
+			(if (memq x '(&optional &rest &aux))
+			    nil
+			  x))
+		    args)))
+
 ;; From LIST, `(lambda (ARGS) [DOC-STRING] BODY ...)' returns a byte-code
 ;; vector
 (defun comp-compile-lambda (list &optional macrop)
@@ -431,17 +642,46 @@ that files which shouldn't be compiled aren't."
       ;; so that it's not ignored
       (setq interactive (or (car (cdr (car body))) t)
 	    body (cdr body)))
-    (when (setq form (compile-form (cons 'progn body)))
+    (when (setq form (let
+			 ((comp-bindings
+			   (nconc (comp-get-lambda-vars args) comp-bindings)))
+		       (compile-form (cons 'progn body))))
       (make-byte-code-subr args (nth 1 form) (nth 2 form) (nth 3 form)
 			   doc interactive macrop))))
 
-
 ;; Managing the output code
 
 ;; Return a new label
 (defmacro comp-make-label ()
   ;; a label is, (PC-OF-LABEL . (LIST-OF-REFERENCES))
   '(cons nil nil))
+
+(defmacro comp-get-label-addr (label)
+  (list 'car label))
+
+;; Output one byte
+(defsubst comp-byte-out (byte)
+  (setq comp-output (cons (cons byte comp-output-pc) comp-output)
+	comp-output-pc (1+ comp-output-pc)))
+
+;; Output one opcode and its optional argument
+(defun comp-write-op (opcode &optional arg)
+  (cond
+   ((null arg)
+    (comp-byte-out opcode))
+   ((<= arg comp-max-1-byte-arg)
+    (comp-byte-out (+ opcode arg)))
+   ((<= arg comp-max-2-byte-arg)
+    ;; 2-byte instruction
+    (comp-byte-out (+ opcode 6))
+    (comp-byte-out arg))
+   ((<= arg comp-max-3-byte-arg)
+    ;; 3-byte instruction
+    (comp-byte-out (+ opcode 7))
+    (comp-byte-out (lsh arg -8))
+    (comp-byte-out (logand arg 0xff)))
+   (t
+    (comp-error "Opcode overflow!"))))
 
 ;; Output a branch instruction to the label LABEL, if LABEL has not been
 ;; located yet this branch is recorded for later backpatching.
@@ -470,33 +710,6 @@ that files which shouldn't be compiled aren't."
 					(1+ (car label)))
 				  comp-output))
 	  label (cdr label))))
-
-(defmacro comp-get-label-addr (label)
-  (list 'car label))
-
-;; Output one opcode and its optional argument
-(defun comp-write-op (opcode &optional arg)
-  (cond
-   ((null arg)
-    (comp-byte-out opcode))
-   ((<= arg comp-max-1-byte-arg)
-    (comp-byte-out (+ opcode arg)))
-   ((<= arg comp-max-2-byte-arg)
-    ;; 2-byte instruction
-    (comp-byte-out (+ opcode 6))
-    (comp-byte-out arg))
-   ((<= arg comp-max-3-byte-arg)
-    ;; 3-byte instruction
-    (comp-byte-out (+ opcode 7))
-    (comp-byte-out (lsh arg -8))
-    (comp-byte-out (logand arg 0xff)))
-   (t
-    (comp-error "Opcode overflow!"))))
-
-;; Output one byte
-(defun comp-byte-out (byte)
-  (setq comp-output (cons (cons byte comp-output-pc) comp-output)
-	comp-output-pc (1+ comp-output-pc)))
 
 
 ;; Functions which compile non-standard functions (ie special-forms)
@@ -574,10 +787,113 @@ that files which shouldn't be compiled aren't."
   (comp-write-op op-fset)
   (comp-dec-stack 2))
 
+;; This compiles an inline lambda, i.e. FORM is something like
+;;	((lambda (LAMBDA-LIST...) BODY...) ARGS...)
+(defun comp-compile-lambda-inline (fun args)
+  (when (>= (setq comp-inline-depth (1+ comp-inline-depth))
+	    comp-max-inline-depth)
+    (setq comp-inline-depth 0)
+    (comp-error "Won't inline more than %d nested functions"
+		comp-max-inline-depth))
+  (let*
+      ((lambda-list (nth 1 fun))
+       (body (nthcdr 2 fun))
+       (arg-count 0))
+    ;; First of all, evaluate each argument onto the stack
+    (while (consp args)
+      (comp-compile-form (car args))
+      (setq args (cdr args)
+	    arg-count (1+ arg-count)))
+    ;; Now the interesting bit. The args are on the stack, in
+    ;; reverse order. So now we have to scan the lambda-list to
+    ;; see what they should be bound to.
+    (let
+	((state 'required)
+	 (args-left arg-count)
+	 (bind-stack '())
+	 (comp-bindings (nconc (comp-get-lambda-vars lambda-list)
+			       comp-bindings)))
+      (while (consp lambda-list)
+	(if (memq (car lambda-list) '(&optional &rest &aux))
+	    (setq state (car lambda-list))
+	  (cond
+	   ((eq state 'required)
+	    (if (zerop args-left)
+		(comp-error "Required arg missing" (car lambda-list))
+	      (setq bind-stack (cons (car lambda-list) bind-stack)
+		    args-left (1- args-left))))
+	   ((eq state '&optional)
+	    (if (zerop args-left)
+		(progn
+		  (comp-write-op op-nil)
+		  (comp-inc-stack))
+	      (setq args-left (1- args-left)))
+	    (setq bind-stack (cons (car lambda-list) bind-stack)))
+	   ((eq state '&rest)
+	    (setq bind-stack (cons (cons (car lambda-list) args-left)
+				   bind-stack)
+		  args-left 0
+		  state '&aux))
+	   ((eq state '&aux)
+	    (setq bind-stack (cons (cons (car lambda-list) nil)
+				   bind-stack)))))
+	(setq lambda-list (cdr lambda-list)))
+      (when (> args-left 0)
+	(comp-warning "%d unused parameters to inline lambda" args-left))
+      ;; Set up the body for compiling, skip any interactive form or
+      ;; doc string
+      (while (and (consp body) (or (stringp (car body))
+				   (and (consp (car body))
+					(eq (car (car body)) 'interactive))))
+	(setq body (cdr body)))
+      ;; Now we have a list of things to bind to, in the same order
+      ;; as the stack of evaluated arguments. The list has items
+      ;; SYMBOL, (SYMBOL . ARGS-TO-BIND), or (SYMBOL . nil)
+      (if bind-stack
+	  (progn
+	    (comp-write-op op-init-bind)
+	    ;; Bind all variables
+	    (while bind-stack
+	      (if (consp (car bind-stack))
+		  (progn
+		    (if (null (cdr (car bind-stack)))
+			(progn
+			  (comp-write-op op-nil)
+			  (comp-inc-stack))
+		      (comp-write-op op-list (cdr (car bind-stack)))
+		      (comp-inc-stack)		;in case of a zero-length list
+		      (comp-dec-stack (cdr (car bind-stack))))
+		    (comp-write-op op-bind (comp-add-constant
+					    (car (car bind-stack)))))
+		(comp-write-op op-bind (comp-add-constant (car bind-stack))))
+	      (comp-dec-stack)
+	      (setq bind-stack (cdr bind-stack)))
+	    ;; Then pop any args that weren't used.
+	    (while (> args-left 0)
+	      (comp-write-op op-pop)
+	      (comp-dec-stack)
+	      (setq args-left (1- args-left)))
+	    (comp-compile-body body)
+	    (comp-write-op op-unbind))
+	;; Nothing to bind to. Just pop the evaluated args and
+	;; evaluate the body
+	(while (> args-left 0)
+	  (comp-write-op op-pop)
+	  (comp-dec-stack)
+	  (setq args-left (1- args-left)))
+	(comp-compile-body body))))
+  (setq comp-inline-depth (1- comp-inline-depth)))
+
+;; The defsubst form stuffs this into the compile-fun property of
+;; all defsubst declared functions
+(defun comp-compile-inline-function (form)
+  (comp-compile-lambda-inline (symbol-function (car form)) (cdr form)))
+
 (put 'let* 'compile-fun 'comp-compile-let*)
 (defun comp-compile-let* (form)
   (let
-      ((list (car (cdr form))))
+      ((list (car (cdr form)))
+       (comp-bindings comp-bindings))
     (comp-write-op op-init-bind)
     (while (consp list)
       (cond
@@ -585,10 +901,12 @@ that files which shouldn't be compiled aren't."
 	  (let
 	      ((tmp (car list)))
 	    (comp-compile-body (cdr tmp))
+	    (setq comp-bindings (cons (car tmp) comp-bindings))
 	    (comp-write-op op-bind (comp-add-constant (car tmp)))))
 	(t
 	  (comp-write-op op-nil)
 	  (comp-inc-stack)
+	  (setq comp-bindings (cons (car list) comp-bindings))
 	  (comp-write-op op-bind (comp-add-constant (car list)))))
       (comp-dec-stack)
       (setq list (cdr list)))
@@ -599,7 +917,8 @@ that files which shouldn't be compiled aren't."
 (defun comp-compile-let (form)
   (let
       ((list (car (cdr form)))
-       (sym-stk nil))
+       (sym-stk nil)
+       bindings)
     (comp-write-op op-init-bind)
     (while (consp list)
       (cond
@@ -611,11 +930,13 @@ that files which shouldn't be compiled aren't."
 	  (comp-write-op op-nil)
 	  (comp-inc-stack)))
       (setq list (cdr list)))
-    (while (consp sym-stk)
-      (comp-write-op op-bind (comp-add-constant (car sym-stk)))
-      (comp-dec-stack)
-      (setq sym-stk (cdr sym-stk)))
-    (comp-compile-body (nthcdr 2 form))
+    (let
+	((comp-bindings (append sym-stk comp-bindings)))
+      (while (consp sym-stk)
+	(comp-write-op op-bind (comp-add-constant (car sym-stk)))
+	(comp-dec-stack)
+	(setq sym-stk (cdr sym-stk)))
+      (comp-compile-body (nthcdr 2 form)))
     (comp-write-op op-unbind)))
 
 (put 'defun 'compile-fun 'comp-compile-defun)
@@ -787,7 +1108,10 @@ that files which shouldn't be compiled aren't."
 
     (comp-inc-stack 2)			;reach here with two items on stack
     (if (consp handlers)
-	(progn
+	(let
+	    ((comp-bindings (if (nth 1 form)
+				(nconc (list (nth 1 form)) comp-bindings)
+			      comp-bindings)))
 	  ;; Loop over all but the last handler
 	  (while (consp (cdr handlers))
 	    (if (consp (car handlers))
