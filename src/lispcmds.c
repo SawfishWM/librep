@@ -114,110 +114,6 @@ Evaluates to an anonymous function.
 	return rep_signal_missing_arg(1);
 }
 
-DEFUN("defmacro", Fdefmacro, Sdefmacro, (repv args), rep_SF) /*
-::doc:defmacro::
-defmacro NAME LAMBDA-LIST [DOC-STRING] BODY...
-defmacro NAME BYTECODE-OBJECT
-
-Defines a macro called NAME with argument spec. LAMBDA-LIST, documentation
-DOC-STRING (optional) and body BODY. The actual function value is
-    `(macro lambda LAMBDA-LIST [DOC-STRING] BODY...)'
-Macros are called with their arguments un-evaluated, they are expected to
-return a form which will be executed to provide the result of the expression.
-
-A pathetic example could be,
-  (defmacro foo (x) (list 'cons nil x))
-   => foo
-  (foo 'bar)
-   => (nil . bar)
-This makes `(foo X)' a pseudonym for `(cons nil X)'.
-
-Note that macros are expanded at *compile-time* (unless, of course, the Lisp
-code has not been compiled).
-::end:: */
-{
-    repv name;
-    if(!rep_CONSP(args))
-	return rep_signal_missing_arg(1);
-    name = rep_CAR(args);
-    args = rep_CDR(args);
-    if(!rep_CONSP(args))
-	return rep_signal_missing_arg(2);
-    if(!rep_COMPILEDP(rep_CAR(args)))
-	args = Fcons(Qlambda, args);
-    else
-	args = rep_CAR(args);
-    if (Fset(name, Fcons (Qmacro, Fmake_closure (args, rep_SYM(name)->name))))
-    {
-	rep_SYM(name)->car |= rep_SF_DEFVAR;
-	rep_macros_clear_history ();
-	return name;
-    }
-    else
-	return rep_NULL;
-}
-
-DEFUN("defun", Fdefun, Sdefun, (repv args), rep_SF) /*
-::doc:defun::
-defun NAME LAMBDA-LIST [DOC-STRING] BODY...
-defun NAME BYTECODE-OBJECT
-
-Defines a function called NAME with argument specification LAMBDA-LIST,
-documentation DOC-STRING (optional) and body BODY. The actual function
-value is,
-    `(lambda LAMBDA-LIST [DOC-STRING] BODY...)'
-::end:: */
-{
-    repv name;
-    if(!rep_CONSP(args))
-	return rep_signal_missing_arg(1);
-    name = rep_CAR(args);
-    args = rep_CDR(args);
-    if(!rep_CONSP(args))
-	return rep_signal_missing_arg(2);
-    if(!rep_COMPILEDP(rep_CAR(args)))
-	args = Fcons(Qlambda, args);
-    else
-	args = rep_CAR(args);
-    if (Fset(name, Fmake_closure (args, rep_SYM(name)->name)))
-    {
-	rep_SYM(name)->car |= rep_SF_DEFVAR;
-	return name;
-    }
-    else
-	return rep_NULL;
-}
-
-DEFSTRING(const_bound, "Constant already bound");
-
-DEFUN("defconst", Fdefconst, Sdefconst, (repv args), rep_SF) /*
-::doc:defconst::
-defconst NAME repv [DOC-STRING]
-
-Define a constant NAME whose (default) value is repv. If NAME is already
-bound an error is signalled.
-
-Constants are treated specially by the Lisp compiler, basically they are
-hard-coded into the byte-code. For more details see the comments in
-the compiler source (`lisp/compiler.jl').
-::end:: */
-{
-    if(rep_CONSP(args))
-    {
-	repv tmp = Fdefault_boundp(rep_CAR(args));
-	if(tmp && !rep_NILP(tmp))
-	{
-	    return(Fsignal(Qerror, rep_list_2(rep_VAL(&const_bound),
-						rep_CAR(args))));
-	}
-	tmp = Fdefvar(args);
-	if(tmp)
-	    return(Fset_const_variable(tmp, Qnil));
-	return(tmp);
-    }
-    return rep_signal_missing_arg(1);
-}
-
 DEFUN("car", Fcar, Scar, (repv cons), rep_Subr1) /*
 ::doc:car::
 car CONS-CELL
@@ -2386,9 +2282,6 @@ rep_lispcmds_init(void)
 {
     rep_ADD_SUBR(Squote);
     rep_ADD_SUBR(Slambda);
-    rep_ADD_SUBR(Sdefmacro);
-    rep_ADD_SUBR(Sdefun);
-    rep_ADD_SUBR(Sdefconst);
     rep_ADD_SUBR(Scar);
     rep_ADD_SUBR(Scdr);
     rep_ADD_SUBR(Slist);
