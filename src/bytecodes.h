@@ -21,7 +21,7 @@
 #ifndef BYTECODES_H
 #define BYTECODES_H
 
-#define BYTECODE_MAJOR_VERSION 6
+#define BYTECODE_MAJOR_VERSION 7
 #define BYTECODE_MINOR_VERSION 0
 
 /* Number of bits encoded in each extra opcode forming the argument. */
@@ -183,6 +183,11 @@
 					   stk[2] = stk[0]. */
 
 #define OP_MOD 0xbb			/* push (mod pop[1] pop[2]) */
+
+#define OP_MAKE_CLOSURE 0xbc		/* push (make-closure pop[1]) */
+#define OP_FBIND 0xbd			/* fbind pop[1] pop[2] */
+#define OP_CLOSUREP 0xbe		/* push (closurep pop[1]) */
+#define OP_BINDENV 0xbf
 
 
 /* Jump opcodes */
