@@ -41,6 +41,11 @@ Outstanding bugs
    searching for `/\*(.|\n)*\*/' in a C file with reasonable large
    comments.
 
+ ! Deleting text doesn't delete extents contained within the deletion
+
+ ! The extent position updating code doesn't always work; try splitting
+   a line which contains an extent and its child
+
 
 General programming tasks:
 ==========================

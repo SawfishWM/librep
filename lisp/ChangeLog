@@ -1,3 +1,8 @@
+1998-09-10  John Harper  <john@dcs.warwick.ac.uk>
+
+	* ispell.jl (ispell-highlight-misspellings): support for
+	aborting if input arrives in the middle of spell-checking
+
 1998-09-09  John Harper  <john@dcs.warwick.ac.uk>
 
 	* ispell.jl (ispell-add-word-to-dictionary): new command
