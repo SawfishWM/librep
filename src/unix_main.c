@@ -477,16 +477,20 @@ sigio_handler(int sig)
 # endif
 #endif
 
+static volatile bool in_fatal_signal_handler;
+
 /* Invoked by any of the handlable error reporting signals */
 static RETSIGTYPE
 fatal_signal_handler(int sig)
 {
-    static volatile bool in_error;
+    /* Sometimes this function can get in an infinite loop, even with the
+       in_fatal_signal_handler exclusion? Does this help..? */
+    signal(sig, SIG_DFL);
 
     /* Check for nested calls to this function */
-    if(in_error)
+    if(in_fatal_signal_handler)
 	raise(sig);
-    in_error = TRUE;
+    in_fatal_signal_handler = TRUE;
 
 #ifdef HAVE_PSIGNAL
     psignal(sig, "jade: received fatal signal");
