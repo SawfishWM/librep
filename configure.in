@@ -32,7 +32,7 @@ output_files="man/Makefile jade/Makefile:src/Makefile.in\
 
 opt_enable_dumped=0
 dumped_lisp_files="lisp backquote tilde windows buffers modes edit prompt\
- replace isearch lisp-mode c-mode text-mode fill"
+ help keymap replace isearch lisp-mode c-mode text-mode fill"
 
 AC_ARG_ENABLE(swap-del-bs,
 [  --enable-swap-del-bs	  Swap the meaning of Delete and Backspace
