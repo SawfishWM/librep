@@ -45,13 +45,13 @@ all : libxsdbm.la librep.la $(DL_OBJS) rep rep-config rep-remote
 libxsdbm.la : $(SDBM_OBJS)
 	$(LIBTOOL) $(CC) $(LDFLAGS) -o $@ $^ -rpath $(libdir)
 
-librep.la : $(OBJS)
+librep.la : $(OBJS) $(LIBOBJS) $(ALLOCA)
 	$(LIBTOOL) $(CC) $(LDFLAGS) -version-info $(libversion) \
 	  -o $@ $^ -rpath $(libdir)
 
-rep : $(REP_OBJS) librep.la $(LIBOBJS)
+rep : $(REP_OBJS) $(EXTRA_LIBOBJS) librep.la
 	$(LIBTOOL) $(CC) $(CPPFLAGS) $(CFLAGS) -o $@ \
-	  $(REP_OBJS) librep.la $(LIBOBJS) $(LIBS)
+	  $(REP_OBJS) librep.la $(EXTRA_LIBOBJS) $(LIBS)
 
 rep-remote : rep-remote.c
 
