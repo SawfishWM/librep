@@ -389,12 +389,13 @@ with the current time of day.
     }
 
     if(rep_INTP(arg))
+    {
 	limit = rep_INT(arg);
+	if (limit <= 0)
+	    limit = rep_LISP_MAX_INT;
+    }
     else
 	limit = rep_LISP_MAX_INT;
-
-    if (limit <= 0)
-	return 0;
 
     divisor = rep_LISP_MAX_INT / limit;
     do {
