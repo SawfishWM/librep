@@ -36,7 +36,7 @@ usage (void)
 int
 main(int argc, char **argv)
 {
-    DEFSTRING (rep, "rep");
+    DEFSTRING (rep, "rep/user");
 
     char *prog_name = *argv++;
     argc--;
