@@ -1,3 +1,7 @@
+1999-12-05  John Harper  <john@dcs.warwick.ac.uk>
+
+	* version 0.8.1
+
 1999-11-29  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lisp-doc.jl, compiler.jl: fixed the documentation functions
