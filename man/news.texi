@@ -47,6 +47,14 @@ The existing modules have been renamed to fit this scheme (see the file
 @file{TREE} in the distribution for the hierarchy details). However,
 old module names will still work for the time being
 
+@item The @code{rep} module no longer includes the @code{rep.regexp},
+@code{rep.system}, @code{rep.io.files}, @code{rep.io.processes} or
+@code{rep.io.file-handlers} modules. These need to be imported
+explicitly
+
+@item Record constructors may include all lambda-list keywords (e.g.
+keywords and/or default values)
+
 @item Incompatible virtual machine changes, hence bytecode files will
 need to be recompiled. Improvements include:
 
@@ -99,7 +107,8 @@ deprecated, use @samp{#x123} and @samp{#o123} instead
 @code{rep.vm.safe-interpreter}, @code{rep.vm.assembler},
 @code{unscheme}, @code{rep.data.objects}, @code{rep.www.quote-url},
 @code{rep.www.fetch-url}, @code{rep.util.ispell},
-@code{rep.util.base64}, @code{rep.util.autoloader}
+@code{rep.util.base64}, @code{rep.util.autoloader},
+@code{rep.io.sockets}, @code{rep.util.time}
 
 @item Bug fixes, including:
 

@@ -14,8 +14,6 @@ Outstanding bugs
 
  ! #!key params can't be inlined by the compiler
 
- ! (define foo bar "Doc") should do something with "Doc"
-
  ! non-top-level compiled defvar's aren't quite right
 
  ! scheme define/lambda doesn't splice begin forms
@@ -79,6 +77,8 @@ Outstanding bugs
 
 General programming tasks:
 ==========================
+
+ + rename backquote* as quasiquote* -- helps scheme, doesn't affect rep
 
  + add restricted load to gaol? (same directory only?)
 

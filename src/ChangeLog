@@ -1,3 +1,39 @@
+2000-09-11  John Harper  <john@dcs.warwick.ac.uk>
+
+	* symbols.c (F_define): optional third-arg DOC-STRING, use
+	rep_documentation_property to find the property to store it
+	under
+
+	* structures.c (rep_documentation_property): new function,
+	returns the property used to store documentation in a symbol's
+	plist for a binding in a patrticular module
+
+2000-09-10  John Harper  <john@dcs.warwick.ac.uk>
+
+	* fake-libexec: delete .libexec before [re]creating it
+
+2000-09-09  John Harper  <john@dcs.warwick.ac.uk>
+
+	* sockets.c: new module rep.io.sockets; provides interface to
+	SOCK_STREAM sockets, unix and internet domains
+
+	* unix_main.c (rep_add_event_loop_callback): new function
+	(rep_proc_periodically): moved this function from
+	unix_processes.c, it now runs a sequence of callbacks added by
+	the above function
+
+	* unix_processes.c (rep_proc_periodically): now a local
+	function, added as an event loop callback (can this be made
+	into a plugin now?)
+
+2000-09-08  John Harper  <john@dcs.warwick.ac.uk>
+
+	* symbols.c: moved some functions out of rep.lang.symbols into
+	rep.lang.interpreter or rep.structures
+
+	* main.c (rep_load_environment): added rep.regexp to list of
+	structures that have lisp initial code
+
 2000-09-05  John Harper  <john@dcs.warwick.ac.uk>
 
 	* structures.c (rep_structures_init): moved `provide',

@@ -1,3 +1,13 @@
+2000-09-13  John Harper  <john@dcs.warwick.ac.uk>
+
+	* configure.in: version 0.13pre2
+
+2000-09-08  John Harper  <john@dcs.warwick.ac.uk>
+
+	* configure.in: removed hack to look in etc for install-sh
+
+	* man/repl.texi: new chapter `The REPL'
+
 2000-09-05  John Harper  <john@dcs.warwick.ac.uk>
 
 	* configure.in: adapted patch from Jacob for weird debian gmp
