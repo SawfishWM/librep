@@ -23,7 +23,7 @@
 (provide 'disassembler)
 
 ;; Lookup table of strings naming instructions
-(defvar dis-opcode-vector
+(defvar disassembler-opcodes
  [ nil nil nil nil nil nil nil nil	 ; 0x00
    "call" nil nil nil nil nil nil nil
    "push" nil nil nil nil nil nil nil	 ; 0x10
@@ -58,76 +58,91 @@
    "ejmp\t%d" "jpn\t%d" "jpt\t%d" "jmp\t%d" "jn\t%d" "jt\t%d" "jnp\t%d" "jtp\t%d" ])
 
 ;;;###autoload
-(defun disassemble-fun (fun &optional stream)
-  "Disassembles the byte code form which is the function value of FUN. If
-STREAM is given all output goes to that stream."
+(defun disassemble (arg &optional stream)
+  "Dissasembles ARG, with output to STREAM, or the *disassembly* buffer."
   (interactive "aFunction to disassemble:")
-  (when (symbolp fun)
-    (setq fun (symbol-function fun)))
-  (if (eq (car fun) 'macro)
-      (setq fun (nthcdr 3 fun))
-    (setq fun (nthcdr 2 fun)))
-  (when (or (stringp (car fun)) (numberp (car fun)))
-    ;; doc-string
-    (setq fun (cdr fun)))
-  (when (and (consp (car fun)) (eq (car (car fun)) 'interactive))
-    ;; interactive decl
-    (setq fun (cdr fun)))
-  (disassemble (car fun)) stream)
-
-;; Disassembles the FORM, output goes to STREAM
-(defun disassemble (form &optional stream)
   (let
-      ((code-string (nth 1 form))
-       (consts (nth 2 form))
-       (i 0)
-       c arg op)
+      (code-string consts stack
+       (print-escape 'newlines))
     (unless stream
-      (setq stream standard-output))
-    (while (setq c (aref code-string i))
-      (format stream "\n%d:\t" i)
-      (cond
-       ((< c op-last-with-args)
-	(setq op (logand c 0xf8))
+      (setq stream (open-buffer "*disassembly*"))
+      (set-buffer-special stream t)
+      (clear-buffer stream)
+      (goto-other-view)
+      (goto-buffer stream)
+      (insert "\n" stream)
+      (goto (start-of-buffer))
+      (setq stream (cons stream t)))
+    (if (symbolp arg)
+	(progn
+	  (format stream "Disassembly of function %s:\n\n" arg)
+	  (setq arg (symbol-function arg)))
+      (format stream "Disassembly of form %S:\n\n" arg))
+    (cond
+     ((and (consp arg) (eq (car arg) 'jade-byte-code))
+      (setq code-string (nth 1 arg)
+	    consts (nth 2 arg)
+	    stack (nth 3 arg)))
+     (t
+      (setq code-string (aref arg 1)
+	    consts (aref arg 2))
+      (format stream "Arguments: %S\nInteractive spec: %S\nDoc string: %S\n"
+	      (aref arg 0) (aref arg 5) (aref arg 4))
+      (if (zerop (logand (aref arg 3) 0x10000))
+	  ;; Not a macro
+	  (setq stack (aref arg 3))
+	(format stream "[This is a macro definition]\n")
+	(setq stack (logand (aref arg 3) 0xffff)))))
+    (format stream "[Uses %d code bytes, %d constants, and %d stack slots]\n
+Disassembly:\n" (length code-string) (length consts) stack)
+    (let
+	((i 0)
+	 c arg op)
+      (while (< i (length code-string))
+	(setq c (aref code-string i))
+	(format stream "\n%d\t\t" i)
 	(cond
-	 ((< (logand c 0x07) 6)
-	  (setq arg (logand c 0x07)))
-	 ((= (logand c 0x07) 6)
-	  (setq i (1+ i)
-		arg (aref code-string i)))
-	 (t
+	 ((< c op-last-with-args)
+	  (setq op (logand c 0xf8))
+	  (cond
+	   ((< (logand c 0x07) 6)
+	    (setq arg (logand c 0x07)))
+	   ((= (logand c 0x07) 6)
+	    (setq i (1+ i)
+		  arg (aref code-string i)))
+	   (t
+	    (setq arg (logior (lsh (aref code-string (1+ i)) 8)
+			      (aref code-string (+ i 2)))
+		  i (+ i 2))))
+	  (cond
+	   ((= op op-call)
+	    (format stream "call\t#%d" arg))
+	   ((= op op-push)
+	    (let
+		((argobj (aref consts arg)))
+	      (if (and (consp argobj) (eq (car argobj) 'jade-byte-code))
+		  (progn
+		    (format stream "push\t[%d] %S\n<byte-code" arg argobj)
+		    (disassemble argobj stream)
+		    (write stream "\n>"))
+		(format stream "push\t[%d] %S" arg (aref consts arg)))))
+	   ((= op op-refq)
+	    (format stream "refq\t[%d] %S" arg (aref consts arg)))
+	   ((= op op-setq)
+	    (format stream "setq\t[%d] %S" arg (aref consts arg)))
+	   ((= op op-list)
+	    (format stream "list\t#%d" arg))
+	   ((= op op-bind)
+	    (format stream "bind\t[%d] %S" arg (aref consts arg)))))
+	 ((> c op-last-before-jmps)
 	  (setq arg (logior (lsh (aref code-string (1+ i)) 8)
 			    (aref code-string (+ i 2)))
-		i (+ i 2))))
-	(cond
-	 ((= op op-call)
-	  (format stream "call\t#%d" arg))
-	 ((= op op-push)
-	  (let
-	      ((argobj (aref consts arg)))
-	    (if (and (consp argobj) (eq (car argobj) 'jade-byte-code))
-		(progn
-		  (format stream "push\t[%d] %S\n<byte-code" arg argobj)
-		  (disassemble argobj stream)
-		  (write stream "\n>"))
-	      (format stream "push\t[%d] %S" arg (aref consts arg)))))
-	 ((= op op-refq)
-	  (format stream "refq\t[%d] %S" arg (aref consts arg)))
-	 ((= op op-setq)
-	  (format stream "setq\t[%d] %S" arg (aref consts arg)))
-	 ((= op op-list)
-	  (format stream "list\t#%d" arg))
-	 ((= op op-bind)
-	  (format stream "bind\t[%d] %S" arg (aref consts arg)))))
-       ((> c op-last-before-jmps)
-	(setq arg (logior (lsh (aref code-string (1+ i)) 8)
-			  (aref code-string (+ i 2)))
-	      op c
-	      i (+ i 2))
-	(format stream (aref dis-opcode-vector op) arg))
-       (t
-	(if (setq op (aref dis-opcode-vector c))
-	    (write stream op)
-	  (format stream "<unknown opcode %d>" c))))
-      (setq i (1+ i)))
-    t))
+		op c
+		i (+ i 2))
+	  (format stream (aref disassembler-opcodes op) arg))
+	 (t
+	  (if (setq op (aref disassembler-opcodes c))
+	      (write stream op)
+	    (format stream "<unknown opcode %d>" c))))
+	(setq i (1+ i)))
+      (write stream ?\n))))
