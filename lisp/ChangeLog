@@ -1,3 +1,17 @@
+Thu Jun  4 14:53:30 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* cvs.jl (cvs-find-file, cvs-find-file-other-view): now handle
+	more than one selected file
+
+Wed Jun  3 09:19:34 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* modes.jl (normal-mode): given an interactive decl
+
+	* rm-summary.jl (rm-summary-print-item): reference
+	rm-summary-format in the message's buffer
+
+	* read-mail.jl: more minor fixes
+
 Tue Jun  2 09:06:16 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* read-mail.jl, rm-misc.jl, rm-output.jl, rm-summary.jl,

@@ -1,3 +1,8 @@
+Thu Jun  4 14:52:49 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* buffers.c (cmd_all_buffers): new function, return a list of
+	all existing buffers
+
 Tue Jun  2 09:06:58 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lispcmds.c (cmd_load): execute multiple matching items from
