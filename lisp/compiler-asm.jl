@@ -72,19 +72,19 @@
 		    ((memq opcode byte-two-byte-insns)
 		     (if (< arg 256)
 			 (byte-out arg)
-		       (comp-error "Argument overflow in two-byte insn: %d"
-				   opcode)))
+		       (compiler-error
+			"Argument overflow in two-byte insn: %d" opcode)))
 
 		    ((memq opcode byte-three-byte-insns)
 		     (if (< arg 65536)
 			 (progn
 			   (byte-out (ash arg -8))
 			   (byte-out (logand arg 255)))
-		       (comp-error "Argument overflow in three-byte insn: %d"
-				   opcode)))
+		       (compiler-error
+			"Argument overflow in three-byte insn: %d" opcode)))
 
-		    (t (comp-error "Spurious argument given to insn: %d"
-				   opcode)))))
+		    (t (compiler-error
+			"Spurious argument given to insn: %d" opcode)))))
 
 	   (t					; insn with encoded argument
 	    (cond ((<= arg byte-max-1-byte-arg)
@@ -97,7 +97,8 @@
 		   (byte-out (ash arg -8))
 		   (byte-out (logand arg 255)))
 		  (t
-		   (comp-error "Argument overflow in insn: %d" opcode)))))))
+		   (compiler-error
+		    "Argument overflow in insn: %d" opcode)))))))
 
       ;; assemble to alist of bytes
       (mapc insn-out lap-code)

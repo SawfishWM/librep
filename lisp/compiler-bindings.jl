@@ -21,12 +21,17 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure compiler-bindings (export comp-spec-bound-p
-					    comp-note-binding
-					    comp-note-bindings
-					    comp-binding-lexical-addr
-					    comp-emit-binding
-					    comp-emit-varset)
+(define-structure compiler-bindings (export spec-bound-p
+					    note-binding
+					    note-bindings
+					    binding-lexical-addr
+					    emit-binding
+					    emit-varset
+					    note-binding-modified
+					    binding-modified-p
+					    note-binding-captured
+					    binding-captured-p
+					    note-closure-made)
   (open rep
 	compiler-utils
 	compiler-lap
@@ -34,51 +39,85 @@
 	compiler-const
 	bytecodes)
 
-  (defmacro comp-spec-bound-p (var)
+  (defmacro spec-bound-p (var)
     (list 'or (list 'memq var 'comp-defvars) (list 'special-variable-p var)))
 
-  (defun comp-note-binding (var)
-    (if (comp-spec-bound-p var)
+  ;; note that the outermost binding of symbol VAR has state TAG
+  (defun tag-binding (var tag)
+    (let ((cell (assq var comp-lex-bindings)))
+      (when cell
+	(unless (memq tag (cdr cell))
+	  (rplacd cell (cons tag (cdr cell)))))))
+
+  ;; return t if outermost binding of symbol VAR has state TAG
+  (defun binding-tagged-p (var tag)
+    (let ((cell (assq var comp-lex-bindings)))
+      (and cell (memq tag (cdr cell)))))
+
+  ;; note that symbol VAR has been bound
+  (defun note-binding (var)
+    (if (spec-bound-p var)
 	(progn
 	  ;; specially bound (dynamic scope)
 	  (setq comp-spec-bindings (cons var comp-spec-bindings))
 	  (setq comp-lexically-pure nil))
       ;; assume it's lexically bound otherwise
-      (setq comp-lex-bindings (cons var comp-lex-bindings)))
+      (setq comp-lex-bindings (cons (list var) comp-lex-bindings)))
     (when (eq var comp-lambda-name)
       (setq comp-lambda-name nil)))
 
-  (defmacro comp-note-bindings (vars)
-    (list 'mapc 'comp-note-binding vars))
+  (defmacro note-bindings (vars)
+    (list 'mapc 'note-binding vars))
 
-  (defun comp-binding-lexical-addr (var)
-    (if (comp-spec-bound-p var)
+  ;; note that the outermost binding of VAR has been modified
+  (defun note-binding-modified (var)
+    (tag-binding var 'modified))
+
+  (defun binding-modified-p (var)
+    (binding-tagged-p var 'modified))
+
+  ;; note that the outermost binding of VAR has been captured by a closure
+  (defun note-binding-captured (var)
+    (tag-binding var 'captured))
+
+  (defun binding-captured-p (var)
+    (binding-tagged-p var 'captured))
+
+  ;; note that all current lexical bindings have been captured
+  (defun note-closure-made ()
+    (mapc (lambda (cell)
+	    (note-binding-captured (car cell))) comp-lex-bindings))
+
+  (defun binding-lexical-addr (var)
+    (if (spec-bound-p var)
 	nil
       (catch 'out
 	(let
 	    ((i 0))
 	  (mapc (lambda (x)
-		  (when (eq x var)
+		  (when (eq (car x) var)
 		    (throw 'out i))
 		  (setq i (1+ i))) comp-lex-bindings)
 	  nil))))
 
-  (defun comp-emit-binding (var)
-    (comp-write-op (if (comp-spec-bound-p var)
-		       (bytecode bindspec)
-		     (bytecode bind))
-		   (comp-add-constant var))
-    (comp-note-binding var))
+  (defun emit-binding (var)
+    (emit-insn (if (spec-bound-p var)
+		   (bytecode bindspec)
+		 (bytecode bind))
+	       (add-constant var))
+    (note-binding var))
 
-  (defun comp-emit-varset (sym)
-    (comp-test-varref sym)
-    (if (comp-spec-bound-p sym)
-	(comp-write-op (bytecode setq) (comp-add-constant sym))
+  (defun emit-varset (sym)
+    (test-variable-ref sym)
+    (if (spec-bound-p sym)
+	(emit-insn (bytecode setq) (add-constant sym))
       (let
-	  ((lex-addr (comp-binding-lexical-addr sym)))
+	  ((lex-addr (binding-lexical-addr sym)))
 	(if lex-addr
 	    ;; The lexical address is known. Use it to avoid scanning
-	    (comp-write-op (bytecode setn) lex-addr)
+	    (progn
+	      (emit-insn (bytecode setn) lex-addr)
+	      (note-binding-modified sym))
 	  ;; No lexical binding, but not special either. Just
 	  ;; update the global value
-	  (comp-write-op (bytecode setg) (comp-add-constant sym)))))))
+	  (emit-insn (bytecode setg) (add-constant sym)))))))

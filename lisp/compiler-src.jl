@@ -21,7 +21,7 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure compiler-src (export comp-src-transform)
+(define-structure compiler-src (export source-code-transform)
 
   (open rep
 	compiler-utils
@@ -34,9 +34,9 @@
 
   (defun foldablep (name)
     (unless (or (memq name comp-spec-bindings)
-		(memq name comp-lex-bindings))
+		(assq name comp-lex-bindings))
       (let
-	  ((fun (comp-get-procedure-handler name 'compiler-foldablep)))
+	  ((fun (get-procedure-handler name 'compiler-foldablep)))
 	(and fun (fun name)))))
 	
   ;; This assumes that FORM is a list, and its car is one of the functions
@@ -46,11 +46,11 @@
       (let
 	  ((args (mapcar (lambda (arg)
 			   (when (consp arg)
-			     (setq arg (comp-macroexpand arg)))
+			     (setq arg (compiler-macroexpand arg)))
 			   (when (and (consp arg) (foldablep (car arg)))
 			     (setq arg (fold-constants arg)))
-			   (if (comp-constant-p arg)
-			       (comp-constant-value arg)
+			   (if (compiler-constant-p arg)
+			       (compiler-constant-value arg)
 			     ;; Not a constant, abort, abort
 			     (throw 'exit form)))
 			 (cdr form))))
@@ -64,7 +64,7 @@
 
 ;;; Entry point
 
-  (defun comp-src-transform (form)
+  (defun source-code-transform (form)
     (let (tem)
       ;; first try constant folding
       (when (and (consp form) (foldablep (car form)))
@@ -72,7 +72,7 @@
 
       ;; then look for a specific tranformer
       (when (and (symbolp (car form))
-		 (setq tem (comp-get-procedure-handler
+		 (setq tem (get-procedure-handler
 			    (car form) 'compiler-transform-property)))
 	(setq form (tem form)))
 

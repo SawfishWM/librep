@@ -21,6 +21,8 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
+;; XXX this is pretty much untested..
+
 (define-structure compiler-scheme (export)
 
   (open rep
@@ -71,17 +73,17 @@
 
   (defun pass-1 (form)
     (unless (or (eq (car form) 'define) (memq (car form) top-level-compiled))
-      (setq form (comp-macroexpand
+      (setq form (compiler-macroexpand
 		  form (lambda (in out)
 			 (or (eq in out) (eq (car out) 'define)
 			     (memq (car out) top-level-compiled))))))
     (when (eq (car form) 'define)
       (let ((name (cadr form)))
 	(cond ((symbolp name)
-	       (comp-remember-lexical-var (comp-constant-value name)))
+	       (remember-lexical-variable (compiler-constant-value name)))
 	      ((and (consp name) (symbolp (car name)))
-	       (comp-remember-fun (car name) (cdr name)))
-	      (t (comp-error "Invalid define statement" form)))))
+	       (remember-function (car name) (cdr name)))
+	      (t (compiler-error "Invalid define statement" form)))))
 
     form)
 
@@ -99,6 +101,7 @@
 
   (put 'scheme 'compiler-pass-2 pass-2)
 
+  ;; XXX this is broken, e.g.: (define ((foo a) b) (+ a b))
   (defun compile-define (form)
     (let ((name (cadr form)))
       (if (symbolp name)
@@ -108,8 +111,8 @@
 		(nth 2 form)))
 	`(define ,(car name)
 	   (make-closure
-	    ,(comp-compile-lambda `(lambda ,(cdr name) ,@(cddr form))
-				  (car name) 'begin)
+	    ,(compile-lambda `(lambda ,(cdr name) ,@(cddr form))
+			     (car name) 'begin)
 	    ',(car name))))))
 
 
@@ -132,23 +135,23 @@
   (put 'structure-ref 'rep-compile-fun compile-structure-ref)
 
   (put 'quote 'scheme-compile-fun (get 'quote 'rep-compile-fun))
-  (put 'lambda 'scheme-compile-fun (get 'lambda 'rep-compile-fun))
+  (put '%lambda 'scheme-compile-fun (get 'lambda 'rep-compile-fun))
   (put '%while 'scheme-compile-fun (get 'while 'rep-compile-fun))
   (put '%progn 'scheme-compile-fun (get 'progn 'rep-compile-fun))
 
   (defun compile-set! (form)
     (let ((sym (nth 1 form))
 	  (val (nth 2 form)))
-      (comp-compile-form val)
-      (comp-write-op (bytecode dup))
-      (comp-inc-stack)
-      (comp-emit-varset sym)
-      (comp-dec-stack)))
+      (compile-form-1 val)
+      (emit-insn (bytecode dup))
+      (increment-stack)
+      (emit-varset sym)
+      (decrement-stack)))
   (put 'set! 'scheme-compile-fun compile-set!)
 
   (defun compile-%test (form)
-    (comp-compile-form (cadr form))
-    (comp-write-op (bytecode scm-test)))
+    (compile-form-1 (cadr form))
+    (emit-insn (bytecode scm-test)))
   (put '%test 'scheme-compile-fun compile-%test)
 
   ;; compile let* specially to coalesce all bindings into a single frame

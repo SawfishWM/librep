@@ -21,23 +21,24 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure compiler-modules (export comp-variable-p
-					   comp-locate-var
-					   comp-symbol-value
-					   comp-binding-from-rep-p
-					   comp-binding-immutable-p
-					   comp-get-procedure-handler
-					   comp-macroexpand
-					   comp-macroexpand-1
-					   comp-compile-module-body
-					   comp-note-require
-					   comp-note-macro
+(define-structure compiler-modules (export variable-ref-p
+					   locate-variable
+					   compiler-symbol-value
+					   compiler-binding-from-rep-p
+					   compiler-binding-immutable-p
+					   get-procedure-handler
+					   compiler-macroexpand
+					   compiler-macroexpand-1
+					   compile-module-body
+					   note-require
+					   note-macro-def
 					   compile-structure
 					   compile-define-structure
 					   compile-structure-ref)
   (open rep
 	structure-internals
 	compiler-basic
+	compiler-bindings
 	compiler-const
 	compiler-utils
 	compiler-lap
@@ -69,15 +70,15 @@
   ;; return t if ARG is a structure reference form
   (defun structure-ref-p (arg)
     (and (eq (car arg) 'structure-ref)
-	 (memq (comp-locate-var 'structure-ref) '(rep module-system))))
+	 (memq (locate-variable 'structure-ref) '(rep module-system))))
 
   ;; return t if ARG refers to a variable
-  (defun comp-variable-p (arg)
+  (defun variable-ref-p (arg)
     (or (symbolp arg) (structure-ref-p arg)))
 
   ;; return the name of the structure exporting VAR to the current
   ;; structure, or nil
-  (defun comp-locate-var (var)
+  (defun locate-variable (var)
     (if (structure-ref-p var)
 	(nth 1 var)
       (let loop ((rest comp-open-modules))
@@ -94,45 +95,45 @@
 	    nil)))))
 
   ;; if possible, return the value of variable VAR, else return nil
-  (defun comp-symbol-value (var)
+  (defun compiler-symbol-value (var)
     (cond ((and (symbolp var) (special-variable-p var))
 	   (symbol-value var))
 	  ((and (symbolp var) comp-current-structure
 		(%structure-bound-p comp-current-structure var))
 	   (%structure-ref comp-current-structure var))
 	  (t
-	   (let ((struct (comp-locate-var var)))
+	   (let ((struct (locate-variable var)))
 	     (and struct (%structure-ref (%intern-structure struct)
 					 (if (consp var)
 					     (nth 2 var)	;structure-ref
 					   var)))))))
 
   ;; return t if the binding of VAR comes from the rep (built-ins) module
-  (defun comp-binding-from-rep-p (var)
+  (defun compiler-binding-from-rep-p (var)
     (if (structure-ref-p var)
 	(eq (nth 1 var) 'rep)
       (and (not (or (memq var comp-spec-bindings)
-		    (memq var comp-lex-bindings)))
-	   (eq (comp-locate-var var) 'rep))))
+		    (assq var comp-lex-bindings)))
+	   (eq (locate-variable var) 'rep))))
 
   ;; return t if the binding of VAR is a known constant
   ;; (not including those in comp-constant-env)
-  (defun comp-binding-immutable-p (var)
+  (defun compiler-binding-immutable-p (var)
     (and (not (or (memq var comp-spec-bindings)
-		  (memq var comp-lex-bindings)))
+		  (assq var comp-lex-bindings)))
 	 (let
-	     ((struct (comp-locate-var var)))
+	     ((struct (locate-variable var)))
 	   (and struct (binding-immutable-p
 			(if (consp var)
 			    (nth 2 var)	;structure-ref
 			  var)
 			(%intern-structure struct))))))
 
-  (defun comp-get-procedure-handler (name prop-name)
+  (defun get-procedure-handler (name prop-name)
     (unless (or (memq name comp-spec-bindings)
-		(memq name comp-lex-bindings))
+		(assq name comp-lex-bindings))
       (let*
-	  ((struct (comp-locate-var name))
+	  ((struct (locate-variable name))
 	   (prop (and struct (get struct prop-name))))
 	(if (and prop (symbolp prop))
 	    (get (if (consp name)
@@ -140,29 +141,29 @@
 		   name) prop)
 	  prop))))
 
-  (defun comp-macroexpand-1 (form)
+  (defun compiler-macroexpand-1 (form)
     (when (consp form)
       (let* ((def (assq (car form) comp-macro-env))
 	     ;; make #<subr macroexpand> pass us any inner expansions
-	     (macro-environment comp-macroexpand))
+	     (macro-environment compiler-macroexpand))
 	(if def
 	    (setq form (apply (cdr def) (cdr form)))
-	  (setq def (comp-symbol-value (car form)))
+	  (setq def (compiler-symbol-value (car form)))
 	  (when (and (eq (car def) 'macro) (functionp (cdr def)))
 	    (setq form (apply (cdr def) (cdr form)))))))
     form)
 
-  (defun comp-macroexpand (form &optional pred)
+  (defun compiler-macroexpand (form &optional pred)
     (let loop ((in form))
       (let
-	  ((out (comp-macroexpand-1 in)))
+	  ((out (compiler-macroexpand-1 in)))
 	;;(format standard-error "in: %S, out: %S\n" in out)
 	(if ((or pred eq) in out)
 	    out
 	  (loop out)))))
 
   ;; if OPENED or ACCESSED are `t', the current values are used
-  (defun comp-compile-module-body (body name opened accessed)
+  (defun compile-module-body (body name opened accessed)
     (let
 	((comp-current-module (or name comp-current-module))
 	 (comp-current-structure (if name nil comp-current-structure))
@@ -201,8 +202,8 @@
 						    (%get-structure struct))))))))
 		  (car tocheck))
 	    (setq tocheck (cdr tocheck)))
-	  (comp-warning "unknown language dialect for module"
-			comp-current-module)))
+	  (compiler-warning
+	   "unknown language dialect for module" comp-current-module)))
 
       ;; pass 1. remember definitions in the body for pass 2
       (when pass-1
@@ -221,7 +222,7 @@
       ;; return the compiled representation of the body
       body))
 
-  (defun comp-note-require (feature)
+  (defun note-require (feature)
     (unless (memq feature comp-open-modules)
       (cond ((%get-structure feature)
 	     (setq comp-open-modules (cons feature comp-open-modules)))
@@ -240,7 +241,7 @@
 
   ;; XXX enclose macro defs in the *root-structure*, this is different
   ;; to with interpreted code
-  (defun comp-note-macro (name body)
+  (defun note-macro-def (name body)
     (setq comp-macro-env (cons (cons name
 				     (%make-closure-in-structure
 				      body (%get-structure *root-structure*)))
@@ -290,23 +291,25 @@
       (setq header (cons '(%open-structures '(module-system))
 			 (nreverse header)))
 
-      (setq body (comp-compile-module-body body name opened accessed))
-      (comp-compile-form '%make-structure)
-      (comp-compile-form `(%parse-interface ',sig))
+      (setq body (compile-module-body body name opened accessed))
+      (compile-form-1 '%make-structure)
+      (compile-form-1 `(%parse-interface ',sig))
       (if header
 	  (progn
-	    (comp-compile-constant `(lambda () ,@header))
-	    (comp-write-op (bytecode enclose)))
-	(comp-compile-constant nil))
+	    (compile-constant `(lambda () ,@header))
+	    (emit-insn (bytecode enclose))
+	    (note-closure-made))
+	(compile-constant nil))
       (if body
 	  (progn
-	    (comp-compile-constant `(lambda () ,@body))
-	    (comp-write-op (bytecode enclose)))
-	(comp-compile-constant nil))
+	    (compile-constant `(lambda () ,@body))
+	    (emit-insn (bytecode enclose))
+	    (note-closure-made))
+	(compile-constant nil))
       (when name
-	(comp-compile-constant name))
-      (comp-write-op (bytecode call) (if name 4 3))
-      (comp-dec-stack (if name 4 3))))
+	(compile-constant name))
+      (emit-insn (bytecode call) (if name 4 3))
+      (decrement-stack (if name 4 3))))
 
   (defun parse-interface (sig)
     (cond ((eq (car sig) 'export)
@@ -318,17 +321,17 @@
 	  ((symbolp sig)
 	   (if (boundp sig)
 	       (symbol-value sig)
-	     (comp-error "Don't know this interface: %s" sig)))))
+	     (compiler-error "Don't know this interface: %s" sig)))))
 
   (defun compile-structure-ref (form)
     (let
 	((struct (nth 1 form))
 	 (var (nth 2 form)))
       (or (memq struct comp-accessed-modules)
-	  (comp-error "Referencing non-accessible structure" struct))
+	  (compiler-error "Referencing non-accessible structure" struct))
       (or (module-exports-p struct var)
-	  (comp-error "Referencing non-exported variable" struct var))
-      (comp-compile-constant struct)
-      (comp-compile-constant var)
-      (comp-write-op (bytecode structure-ref))
-      (comp-dec-stack))))
+	  (compiler-error "Referencing non-exported variable" struct var))
+      (compile-constant struct)
+      (compile-constant var)
+      (emit-insn (bytecode structure-ref))
+      (decrement-stack))))

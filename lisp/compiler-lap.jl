@@ -21,47 +21,47 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure compiler-lap (export comp-write-op
-				       comp-make-label
-				       comp-push-label-addr
-				       comp-compile-jmp
-				       comp-set-label
-				       comp-start-label)
+(define-structure compiler-lap (export emit-insn
+				       make-label
+				       push-label-addr
+				       emit-jmp-insn
+				       fix-label
+				       get-start-label)
   (open rep
 	compiler-utils
 	compiler-vars
 	bytecodes)
 
   ;; Output one opcode and its optional argument
-  (defmacro comp-write-op (opcode &optional arg)
+  (defmacro emit-insn (opcode &optional arg)
     `(setq comp-intermediate-code (cons (cons ,opcode ,arg)
 					comp-intermediate-code)))
 
   ;; Create a new label
-  (defmacro comp-make-label ()
+  (defmacro make-label ()
     ;; a label is either (label . nil) or (label . (CODE-REFS...))
     ;; or (label BYTE-ADDRESS)
     `(cons 'label nil))
 
   ;; Arrange for the address of LABEL to be pushed onto the stack
-  (defmacro comp-push-label-addr (label)
+  (defmacro push-label-addr (label)
     `(progn
-       (comp-write-op (bytecode pushi-pair-pos) ,label)
-       (comp-inc-stack)))
+       (emit-insn (bytecode pushi-pair-pos) ,label)
+       (increment-stack)))
 
-  (defun comp-compile-jmp (opcode label)
-    (comp-write-op opcode label))
+  (defun emit-jmp-insn (opcode label)
+    (emit-insn opcode label))
 
   ;; Set the address of the label LABEL to the current pc
-  (defmacro comp-set-label (label)
+  (defmacro fix-label (label)
     `(setq comp-intermediate-code (cons ,label comp-intermediate-code)))
 
   ;; return the label marking the start of the bytecode sequence
-  (defun comp-start-label ()
+  (defun get-start-label ()
     (let
 	((label (last comp-intermediate-code)))
       (unless (eq (car label) 'label)
-      (setq label (comp-make-label))
+      (setq label (make-label))
 	(setq comp-intermediate-code (nconc comp-intermediate-code
 					    (list label))))
       label)))

@@ -61,13 +61,14 @@ their position in that file.")
   (defvar comp-defvars nil)		;all variables declared at top-level
   (defvar comp-defines nil)		;all lex. vars. declared at top-level
   (defvar comp-spec-bindings '())	;list of currently bound variables
-  (defvar comp-lex-bindings '())	;list of currently bound variables
+  (defvar comp-lex-bindings '())	;alist of currently bound variables
   (defvar comp-current-file nil)	;the file being compiled
   (defvar comp-current-fun nil)		;the function being compiled
   (defvar comp-inline-depth 0)		;depth of lambda-inlining
   (defvar comp-lexically-pure t)	;any dynamic state?
   (defvar comp-lambda-name nil)		;name of current lambda exp
   (defvar comp-lambda-args nil)		;arg spec of current lambda
+  (defvar comp-lambda-bindings nil)	;value of c-l-b at top of lambda
 
   (defvar comp-output-stream nil)	;stream for compiler output
 

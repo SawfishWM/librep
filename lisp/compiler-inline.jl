@@ -21,27 +21,26 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure compiler-inline (export comp-push-args
-					  comp-pop-args
-					  comp-compile-lambda-inline
-					  comp-compile-inline-function
-					  comp-do-tail-call)
+(define-structure compiler-inline (export compile-lambda-inline
+					  compile-inline-function
+					  compile-tail-call)
   (open rep
 	compiler
 	compiler-utils
 	compiler-basic
 	compiler-vars
+	compiler-modules
 	compiler-lap
 	compiler-bindings
 	bytecodes)
 
-  (defun comp-push-args (lambda-list args &optional pushed-args-already tester)
+  (defun push-inline-args (lambda-list args &optional pushed-args-already tester)
     (let
 	((arg-count 0))
       (if (not pushed-args-already)
 	  ;; First of all, evaluate each argument onto the stack
 	  (while (consp args)
-	    (comp-compile-form (car args))
+	    (compile-form-1 (car args))
 	    (setq args (cdr args)
 		  arg-count (1+ arg-count)))
 	;; Args already on stack
@@ -54,7 +53,7 @@
 	  ((state 'required)
 	   (args-left arg-count)
 	   (bind-stack '()))
-	(mapc tester (comp-get-lambda-vars lambda-list))
+	(mapc tester (get-lambda-vars lambda-list))
 	(while lambda-list
 	  (cond
 	   ((symbolp lambda-list)
@@ -66,14 +65,14 @@
 	      (cond
 	       ((eq state 'required)
 		(if (zerop args-left)
-		    (comp-error "Required arg missing" (car lambda-list))
+		    (compiler-error "Required arg missing" (car lambda-list))
 		  (setq bind-stack (cons (car lambda-list) bind-stack)
 			args-left (1- args-left))))
 	       ((eq state '&optional)
 		(if (zerop args-left)
 		    (progn
-		      (comp-write-op (bytecode nil))
-		      (comp-inc-stack))
+		      (emit-insn (bytecode nil))
+		      (increment-stack))
 		  (setq args-left (1- args-left)))
 		(setq bind-stack (cons (car lambda-list) bind-stack)))
 	       ((eq state '&rest)
@@ -86,29 +85,30 @@
 				       bind-stack)))))))
 	  (setq lambda-list (cdr lambda-list)))
 	(when (> args-left 0)
-	  (comp-warning "%d unused parameters to lambda expression" args-left))
+	  (compiler-warning
+	   "%d unused parameters to lambda expression" args-left))
 	(cons args-left bind-stack))))
 
-  (defun comp-pop-args (bind-stack args-left setter)
+  (defun pop-inline-args (bind-stack args-left setter)
     ;; Bind all variables
     (while bind-stack
       (if (consp (car bind-stack))
 	  (progn
 	    (if (null (cdr (car bind-stack)))
 		(progn
-		  (comp-write-op (bytecode nil))
-		  (comp-inc-stack))
-	      (comp-write-op (bytecode list) (cdr (car bind-stack)))
-	      (comp-dec-stack (cdr (car bind-stack)))
-	      (comp-inc-stack))
+		  (emit-insn (bytecode nil))
+		  (increment-stack))
+	      (emit-insn (bytecode list) (cdr (car bind-stack)))
+	      (decrement-stack (cdr (car bind-stack)))
+	      (increment-stack))
 	    (setter (car (car bind-stack))))
 	(setter (car bind-stack)))
-      (comp-dec-stack)
+      (decrement-stack)
       (setq bind-stack (cdr bind-stack)))
     ;; Then pop any args that weren't used.
     (while (> args-left 0)
-      (comp-write-op (bytecode pop))
-      (comp-dec-stack)
+      (emit-insn (bytecode pop))
+      (decrement-stack)
       (setq args-left (1- args-left))))
 
   ;; This compiles an inline lambda, i.e. FUN is something like
@@ -116,19 +116,19 @@
   ;; If PUSHED-ARGS-ALREADY is non-nil it should be a count of the number
   ;; of arguments pushed onto the stack (in reverse order). In this case,
   ;; ARGS is ignored
-  (defun comp-compile-lambda-inline (fun args &optional pushed-args-already)
+  (defun compile-lambda-inline (fun args &optional pushed-args-already
+				return-follows)
+    (setq fun (compiler-macroexpand fun))
     (when (>= (setq comp-inline-depth (1+ comp-inline-depth))
 	      comp-max-inline-depth)
       (setq comp-inline-depth 0)
-      (comp-error (format nil "Won't inline more than %d nested functions"
-			  comp-max-inline-depth)))
-    (unless (eq (car fun) 'lambda)
-      (comp-error "Invalid function to inline: %s, %s" fun args))
+      (compiler-error (format nil "Won't inline more than %d nested functions"
+			      comp-max-inline-depth)))
     (let*
 	((lambda-list (nth 1 fun))
 	 (body (nthcdr 2 fun))
-	 (out (comp-push-args
-	       lambda-list args pushed-args-already comp-test-varbind))
+	 (out (push-inline-args
+	       lambda-list args pushed-args-already test-variable-bind))
 	 (args-left (car out))
 	 (bind-stack (cdr out))
 	 (comp-spec-bindings comp-spec-bindings)
@@ -148,36 +148,49 @@
       ;; SYMBOL, (SYMBOL . ARGS-TO-BIND), or (SYMBOL . nil)
       (if bind-stack
 	  (progn
-	    (comp-write-op (bytecode init-bind))
-	    (comp-pop-args bind-stack args-left comp-emit-binding)
-	    (comp-compile-body body)
-	    (comp-write-op (bytecode unbind)))
+	    (emit-insn (bytecode init-bind))
+	    (pop-inline-args bind-stack args-left emit-binding)
+	    (compile-body body return-follows)
+	    (emit-insn (bytecode unbind)))
 	;; Nothing to bind to. Just pop the evaluated args and
 	;; evaluate the body
 	(while (> args-left 0)
-	  (comp-write-op (bytecode pop))
-	  (comp-dec-stack)
+	  (emit-insn (bytecode pop))
+	  (decrement-stack)
 	  (setq args-left (1- args-left)))
-	(comp-compile-body body)))
+	(compile-body body return-follows)))
     (setq comp-inline-depth (1- comp-inline-depth)))
   
   ;; The defsubst form stores the defun in the compile-inline property
   ;; of all defsubst declared functions
-  (defun comp-compile-inline-function (form)
-    (comp-compile-lambda-inline (get (car form) 'compile-inline) (cdr form)))
+  (defun compile-inline-function (form)
+    (compile-lambda-inline (get (car form) 'compile-inline) (cdr form)))
 
-  (defun comp-do-tail-call (arg-spec args)
+  (defun compile-tail-call (arg-spec args)
     (let*
-	((out (comp-push-args arg-spec args nil comp-test-varref))
+	((out (push-inline-args arg-spec args nil test-variable-ref))
 	 (args-left (car out))
 	 (bind-stack (cdr out))
 	 (comp-spec-bindings comp-spec-bindings)
 	 (comp-lex-bindings comp-lex-bindings)
 	 (comp-lexically-pure comp-lexically-pure)
 	 (comp-lambda-name comp-lambda-name))
-      (comp-write-op (bytecode unbindall-0))
-      (comp-write-op (bytecode init-bind))
-      (comp-pop-args bind-stack args-left comp-emit-binding)
-      (when (> comp-current-stack 0)
-	(comp-write-op (bytecode pop-all)))
-      (comp-write-op (bytecode jmp) (comp-start-label)))))
+      (if (catch 'foo
+	    (mapc (lambda (var)
+		    (when (binding-captured-p var)
+		      (throw 'foo t)))
+		  (get-lambda-vars arg-spec))
+	    nil)
+	  ;; some of the parameter bindings have been captured,
+	  ;; so rebind all of them
+	  (progn
+	    (emit-insn (bytecode unbindall-0))
+	    (emit-insn (bytecode init-bind))
+	    (pop-inline-args bind-stack args-left emit-binding)
+	    (when (> comp-current-stack 0)
+	      (emit-insn (bytecode pop-all))))
+	;; none of the bindings are captured, so just modify them
+	(pop-inline-args bind-stack args-left emit-varset)
+	(unless (eq comp-lambda-bindings comp-lex-bindings)
+	  (emit-insn (bytecode unbindall))))
+      (emit-insn (bytecode jmp) (get-start-label)))))

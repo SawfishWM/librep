@@ -247,7 +247,7 @@ we would like. This is due to the view of folded functions as
 			(setq body (cons (read src-file) body)))
 		    (end-of-stream)))
 	      (close-file src-file))
-	    (setq body (comp-compile-module-body (nreverse body) nil t t))
+	    (setq body (compile-module-body (nreverse body) nil t t))
 	    (when (setq dst-file (open-file temp-file 'write))
 	      (condition-case error-info
 		  (unwind-protect
@@ -358,8 +358,8 @@ that files which shouldn't be compiled aren't."
        (comp-defines nil)
        (comp-output-stream nil))
     (when (assq 'jade-byte-code body)
-      (comp-error "Function already compiled" function))
-    (setq body (comp-compile-lambda body function))
+      (compiler-error "Function already compiled" function))
+    (setq body (compile-lambda body function))
     (if (closurep fbody)
 	(set-closure-function fbody body)
       (set function body))
@@ -377,8 +377,8 @@ that files which shouldn't be compiled aren't."
        (comp-intermediate-code nil))
 
     ;; Do the high-level compilation
-    (comp-compile-form form t)
-    (comp-write-op (bytecode return))
+    (compile-form-1 form t)
+    (emit-insn (bytecode return))
 
     ;; Now we have a [reversed] list of intermediate code
     (setq comp-intermediate-code (nreverse comp-intermediate-code))

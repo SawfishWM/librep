@@ -28,6 +28,7 @@
 				       constant-optimizer)
   (open rep
 	compiler
+	compiler-lap
 	compiler-vars
 	bytecodes)
 
@@ -192,6 +193,19 @@
 	  (rplacd insn1 nil)
 	  (setq keep-going t))
 
+	 ;; <varref> X; <varset> X --> deleted
+	 ((or (and (eq (car insn0) (bytecode refn))
+		   (eq (car insn1) (bytecode setn))
+		   (equal (cdr insn0) (cdr insn1)))
+	      (and (eq (car insn0) (bytecode refg))
+		   (eq (car insn1) (bytecode setg))
+		   (equal (cdr insn0) (cdr insn1)))
+	      (and (eq (car insn0) (bytecode refq))
+		   (eq (car insn1) (bytecode setq))
+		   (equal (cdr insn0) (cdr insn1))))
+	  (del-0-1)
+	  (setq keep-going t))
+
 	 ;; c?r; c?r --> c??r
 	 ((and (or (eq (car insn0) (bytecode car))
 		   (eq (car insn0) (bytecode cdr)))
@@ -250,10 +264,10 @@
 	  (setq keep-going t))
 
 	 ;; {jn,jt} X; jmp Y; X: --> {jt,jn} Y; X:
-	 ((and (or (eq (car insn1) (bytecode jn))
-		   (eq (car insn1) (bytecode jt)))
+	 ((and (or (eq (car insn0) (bytecode jn))
+		   (eq (car insn0) (bytecode jt)))
 	       (eq (car insn1) (bytecode jmp))
-	       (eq (car insn2) (cdr insn0)))
+	       (eq (cdr insn0) insn2))
 	  (rplaca insn1 (if (eq (car insn0) (bytecode jn))
 			    (bytecode jt)
 			  (bytecode jn)))
@@ -450,7 +464,7 @@
 		(rplacd insn0 (cdr jmp))
 	      ;; add label `Z:' following the second jump
 	      (let
-		  ((label (cons (cons 'label) (cdr tem))))
+		  ((label (cons (make-label) (cdr tem))))
 		(rplacd insn0 (car label))
 		(rplacd tem label)))
 	    (setq keep-going t)))

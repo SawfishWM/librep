@@ -22,8 +22,8 @@
 |#
 
 (define-structure compiler-const (export make-constant-vector
-					 comp-compile-constant
-					 comp-add-constant)
+					 compile-constant
+					 add-constant)
   (open rep
 	compiler-lap
 	compiler-utils
@@ -39,37 +39,37 @@
       vec))
 
   ;; Push a constant onto the stack
-  (defun comp-compile-constant (form)
+  (defun compile-constant (form)
     (cond
      ((eq form nil)
-      (comp-write-op (bytecode nil)))
+      (emit-insn (bytecode nil)))
      ((eq form t)
-      (comp-write-op (bytecode t)))
+      (emit-insn (bytecode t)))
      ((and (integerp form) (<= form 65535) (>= form -65535))
       ;; use one of the pushi instructions
       (cond ((zerop form)
-	     (comp-write-op (bytecode pushi-0)))
+	     (emit-insn (bytecode pushi-0)))
 	    ((= form 1)
-	     (comp-write-op (bytecode pushi-1)))
+	     (emit-insn (bytecode pushi-1)))
 	    ((= form 2)
-	     (comp-write-op (bytecode pushi-2)))
+	     (emit-insn (bytecode pushi-2)))
 	    ((= form -1)
-	     (comp-write-op (bytecode pushi-minus-1)))
+	     (emit-insn (bytecode pushi-minus-1)))
 	    ((= form -2)
-	     (comp-write-op (bytecode pushi-minus-2)))
+	     (emit-insn (bytecode pushi-minus-2)))
 	    ((and (<= form 127) (>= form -128))
-	     (comp-write-op (bytecode pushi) (logand form 255)))
+	     (emit-insn (bytecode pushi) (logand form 255)))
 	    ((and (< form 0) (>= form -65535))
-	     (comp-write-op (bytecode pushi-pair-neg) (- form)))
+	     (emit-insn (bytecode pushi-pair-neg) (- form)))
 	    (t
-	     (comp-write-op (bytecode pushi-pair-pos) form))))
+	     (emit-insn (bytecode pushi-pair-pos) form))))
      (t
-      (comp-write-op (bytecode push) (comp-add-constant form))))
-    (comp-inc-stack))
+      (emit-insn (bytecode push) (add-constant form))))
+    (increment-stack))
 
   ;; Put a constant into the alist of constants, returning its index number.
   ;; It won't be added twice if it's already there.
-  (defun comp-add-constant (const)
+  (defun add-constant (const)
     (or (cdr (assoc const comp-constant-alist))
 	(progn
 	  (setq comp-constant-alist (cons (cons const comp-constant-index)
