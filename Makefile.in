@@ -42,15 +42,18 @@ install : all installdirs
 	$(INSTALL_DATA) DOC.* $(repdir)/$(version)
 	$(INSTALL_PROGRAM) libtool $(repexecdir)
 	$(INSTALL_DATA) rules.mk $(repexecdir)
+	$(INSTALL_DATA) rep.m4 $(aclocaldir)
 
 installdirs : $(top_srcdir)/mkinstalldirs
-	$(SHELL) $(top_srcdir)/mkinstalldirs $(repdir)/$(version) $(bindir)
+	$(SHELL) $(top_srcdir)/mkinstalldirs $(repdir)/$(version) \
+	  $(bindir) $(aclocaldir)
 
 uninstall :
 	-set -e; for dir in $(SUBDIRS); do \
 	  ( cd $$dir && $(MAKE) $@ ); \
 	done
 	rm -rf $(repdir)/$(version)
+	rm -f $(aclocaldir)/rep.m4
 
 DOC.dir : repdoc
 	src/repdoc DOC `find . -name '*.c' -print`

@@ -25,13 +25,13 @@ AC_CONFIG_HEADER(config.h src/rep.h)
 AC_CONFIG_AUX_DIR(etc)
 
 dnl Release versioning info
-version="0.1"
+version="0.2"
 
 dnl libtool versioning info: `CURRENT:REVISION:AGE'. CURRENT is the
 dnl current interface id, REVISION is the version number of this
 dnl implementation, AGE defines the first interface id also supported
 dnl (i.e. all interfaces between CURRENT-AGE and CURRENT are supported)
-libversion="0:0:0"
+libversion="1:1:0"
 
 makefile_template="Makefile.in:Makedefs.in"
 output_files="src/Makefile:Makedefs.in:src/Makefile.in\
@@ -147,6 +147,15 @@ if test ${jade_cv_sys_dev_pty} != no; then
   AC_DEFINE(HAVE_PTYS)
   AC_DEFINE_UNQUOTED(FIRST_PTY_LETTER, '${jade_cv_sys_dev_pty}')
 fi
+
+dnl Try to find the aclocal directory for installation
+AC_MSG_CHECKING([for aclocal directory])
+aclocaldir="`aclocal --print-ac-dir`"
+if test "x${aclocaldir}" = "x"; then
+  aclocaldir='${datadir}/aclocal'
+fi
+AC_MSG_RESULT([${aclocaldir}])
+AC_SUBST(aclocaldir)
 
 dnl If GCC was found we can probably use __asm__ statements to inline
 dnl LISP string constants

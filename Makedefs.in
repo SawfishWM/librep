@@ -36,6 +36,7 @@ libexecdir=@libexecdir@
 localstatedir=@localstatedir@
 mandir=@mandir@
 sharedstatedir=@sharedstatedir@
+aclocaldir=@aclocaldir@
 
 host_type=@host@
 repdir=@repdir@
