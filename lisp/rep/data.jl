@@ -42,18 +42,24 @@ string INPUT."
 (%define string< <)
 
 (defun member-if (fun lst)
+  "Similar to the `member' function, except that the function FUN is
+called to test the elements for matches. If `(FUN ELT)' returns true,
+then the sublist starting with ELT is returned."
   (cond ((null lst) '())
 	((fun (car lst)) lst)
 	(t (member-if fun (cdr lst)))))
 
 (defun remove (elt lst #!optional (samep equal))
+  "Returns a new copy of LST with all elements `equal' to ELT discarded."
   (let loop ((rest lst)
 	     (out '()))
     (cond ((null rest) (nreverse out))
 	  ((samep (car rest) elt) (loop (cdr rest) out))
 	  (t (loop (cdr rest) (cons (car rest) out))))))
 
-(defun remq (elt lst) (remove elt lst eq))
+(defun remq (elt lst)
+  "Returns a new copy of LST with all elements `eq' to ELT discarded."
+  (remove elt lst eq))
 
 (export-bindings '(assoc-regexp setcar setcdr string= string<
 		   member-if remove remq))
