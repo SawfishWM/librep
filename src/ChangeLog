@@ -1,3 +1,7 @@
+2000-06-08  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispcmds.c (Fnconc): allow last arg to be non-proper-list
+
 2000-06-07  John Harper  <john@dcs.warwick.ac.uk>
 
 	* symbols.c (Fclosure_name): new function
@@ -520,6 +524,19 @@
 
 	* continuations.c: track addition of structure field to call
 	stack
+
+2000-04-13  John Harper  <john@dcs.warwick.ac.uk>
+
+        * version 0.11.3
+
+2000-04-12  John Harper  <john@dcs.warwick.ac.uk>
+
+        * lisp.c (rep_load_autoload): when throwing error, don't refer
+        to uninitialized variable (merged from HEAD)
+
+2000-04-09  John Harper  <john@dcs.warwick.ac.uk>
+
+        * version 0.11.2
 
 2000-04-06  John Harper  <john@dcs.warwick.ac.uk>
 

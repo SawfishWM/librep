@@ -4,6 +4,143 @@
 @cindex News
 
 
+@unnumberedsec 0.12
+
+@itemize @bullet
+
+@item Added a basic module system.
+
+Modelled after the Scheme48 system, but simpler. At its simplest,
+include a @code{define-structure} form in each file representing a
+module:
+
+@lisp
+(define-structure @var{name} @var{interface} @var{config} @var{body}@dots{})
+@end lisp
+
+@noindent
+The external definitions of this module can then be imported by other
+modules through their @var{config} statements, e.g. @code{(open
+@var{NAMES}@dots{})}. Most modules will open @code{rep} to get the
+standard language definitions.
+
+@code{foo#bar} reads as @code{(structure-ref foo bar)}
+
+The @code{timers}, @code{tables}, @code{sdbm}, @code{gdbm},
+@code{readline}, @code{gettext}, @code{ring}, @code{mutex},
+@code{memoize}, @code{lisp-doc}, @code{disassembler}, @code{compiler},
+@code{date}, @code{cgi-get}, @code{gaol} features are all now modules
+(this is backwards compatible, since modules may be imported using
+@code{require})
+
+See the ``Modules'' section of the manual for more details.
+
+@item The repl now contains meta-commands for inspecting and
+configuring the module system (amongst other things)
+
+@item Added a facility for creating new primitive types:
+@code{make-datum}, @code{datum-ref}, @code{datum-set},
+@code{has-type-p}, @code{define-datum-printer}
+
+@item Added an SRFI 9 compatible @code{define-record-type} macro for
+defining data structures (the @code{records} module)
+
+@item Added fluid variables---a method of creating dynamically scoped
+bindings that fit well with lexically scoped definitions
+(@code{make-fluid}, @code{fluid}, @code{fluid-set}, @code{with-fluids},
+@code{let-fluids})
+
+@item Added a @code{queues} module providing a basic queue type
+
+@item Added stream functions: @code{peek-char}, @code{input-stream-p},
+@code{output-stream-p}
+
+@item Interpreter now also eliminates tail-calls
+
+@item Changed handling of inexact numbers to be compatible with the
+Scheme standard:
+
+@itemize @minus
+@item Many operations now produce inexact outputs if any of their
+inputs are inexact (e.g. @code{min}, @code{max}, @code{floor},
+@code{ceiling}, @code{round}, @code{truncate})
+
+@item @code{eql} and @code{equal} no longer ignore exactness when
+comparing numbers. @code{=}, @code{/=}, @code{<}, @code{>}, @code{<=}
+and @code{>=} @emph{do} ignore inexactness. E.g.
+
+@lisp
+(eql 2 2.) @result{} nil
+(= 2 2.) @result{} t
+@end lisp
+@end itemize
+
+@item Support most of Scheme's read-syntax for numbers (i.e. @samp{#b},
+@samp{#o}, @samp{#d}, @samp{#x} radix prefixes, and @samp{#e},
+@samp{#i} exactness prefixes).
+
+@item Implemented Scheme's @code{string->number} and
+@code{number->string} functions
+
+@item Included a basic R4RS Scheme implementation (module:
+@code{scheme}). Do @kbd{,new foo @key{RET} ,open scheme} to test it in
+the repl, use @code{(open scheme)} instead of @code{(open rep)} to use
+it within modules.
+
+The compiler also knows enough about Scheme to be able to compile it.
+Also, use the @samp{-s} or @samp{--scheme} options to load a file of
+Scheme code.
+
+@item The debugger works better (and can be used to walk the stack
+history somewhat)
+
+@item Last arg of @code{append} and @code{nconc} may be a
+non-proper-list now
+
+@item Implemented the Scheme @code{do} macro for iteration
+
+@item @code{define} supports curried functions. E.g. @code{(define
+((plus a) b) (+ a b))}, then @code{(plus 1)} evaluates to the function
+that adds one to its argument.
+
+@item Many performance improvements:
+
+@itemize @minus
+@item Allocates less memory (so garbage collects less often)
+
+@item Much faster at bytecode-to-bytecode function calling
+
+@item Much reduced VM overhead (when compiled with GCC)
+@end itemize
+
+@item Compiler improvements:
+
+@itemize @minus
+@item Supports the @code{(declare @var{clauses}@dots{})} form. See the
+``Compiler Declarations'' section of the manual for details on the
+actual declarations supported.
+
+@item Is cleverer about detecting when to create new bindings when tail
+recursing, and when the old bindings can just be overwritten
+
+@item Groks the module system, and the language of the module being
+compiled (so that it can compile both rep and Scheme code)
+
+@item Splices bodies of top-level @code{progn} and @code{begin} forms
+themselves into the top-level (for when macros expand into multiple
+definitions)
+
+@item Compiling already defined functions (or whole modules of
+functions) now (mostly) works
+
+@item Coalesce and compile non-defining top-level forms
+@end itemize
+
+@item Many bug fixes (see ChangeLog files for details)
+
+@end itemize
+
+
 @unnumberedsec 0.11.3
 
 @itemize @bullet
