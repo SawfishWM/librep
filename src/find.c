@@ -346,8 +346,10 @@ compile_regexp(VALUE re)
     int re_len = STRING_LEN(re);
     while(*x != 0)
     {
-	if(STRING_LEN((*x)->regexp) == re_len
-	   && memcmp(VSTR((*x)->regexp), VSTR(re), re_len) == 0)
+	VALUE saved_re = (*x)->regexp;
+	if(saved_re == re
+	   || (STRING_LEN(saved_re) == re_len
+	       && memcmp(VSTR(saved_re), VSTR(re), re_len) == 0))
 	{
 	    /* Found it. Move this node to the head of the list. Then
 	       return the compiled copy. */
