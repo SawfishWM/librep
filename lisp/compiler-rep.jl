@@ -461,6 +461,29 @@
 	(decrement-b-stack))))
   (put 'fluid-let 'rep-compile-fun compile-fluid-let)
 
+  (defun compile-defun (form)
+    (remember-function (nth 1 form) (nth 2 form))
+    (compile-constant
+     (compile-lambda (cons 'lambda (nthcdr 2 form)) (nth 1 form)))
+    (emit-insn (bytecode enclose))
+    (emit-insn (bytecode dup))
+    (increment-stack)
+    (emit-varset (nth 1 form))
+    (decrement-stack))
+  (put 'defun 'rep-compile-fun compile-defun)
+
+  (defun compile-defmacro (form)
+    (remember-function (nth 1 form) (nth 2 form))
+    (compile-constant
+     (cons 'macro
+	   (compile-lambda (cons 'lambda (nthcdr 2 form)) (nth 1 form))))
+    (emit-insn (bytecode enclose))
+    (emit-insn (bytecode dup))
+    (increment-stack)
+    (emit-varset (nth 1 form))
+    (decrement-stack))
+  (put 'defmacro 'rep-compile-fun compile-defmacro)
+
   (defun compile-cond (form &optional return-follows)
     (let
 	((end-label (make-label))
