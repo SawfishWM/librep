@@ -48,10 +48,9 @@
 
 ;; Print a message in the first buffer
 (format default-buffer
-	";; Jade version %d.%d, Copyright (C) 1993, 1994 John Harper
+	";; %s, Copyright (C) 1993, 1994 John Harper
 ;; Jade comes with ABSOLUTELY NO WARRANTY; for details see the file COPYING\n\n"
-	(major-version-number)
-	(minor-version-number))
+	(version-string))
 ;; Don't want it in the undo list
 (setq buffer-undo-list nil)
 
