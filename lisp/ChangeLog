@@ -1,5 +1,11 @@
 Sun May 24 13:18:54 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* rm-thread.jl: initial attempt at message threading, needs a
+	lot of work
+
+	* read-mail.jl (rm-get-message-id, rm-get-in-reply-to,
+	rm-get-references): new functions to use the header cache
+
 	* help.jl (substitute-command-keys): new function, replace
 	strings in mode documentation with keymap descriptions. Mostly
 	compatible with Emacs method of doing this
