@@ -50,14 +50,17 @@
 
    Here is the module language grammar adapted from Rees' memo:
 
-   <definition> -> (define-structure <name> <interface> <clause>* <form>*)
+   <definition> -> (define-structure <name> <interface> <config> <form>*)
 		   (define-interface <name> <interface>)
 
-   <structure> -> (structure <interface> <clause>* <form>*)
+   <structure> -> (structure <interface> <config> <form>*)
 
    <interface> -> (export <id>*)
 		  <name>
 		  (compound-interface <interface>*)
+
+   <config> -> (<clause>*)
+	       <clause>
 
    <clause> -> (open <name>*)
 	       (access <name>*)
@@ -70,6 +73,8 @@
        (1+ x)))
 
    The name of the module may be inferred from the file containing it.
+   The <config> clauses define which structures the new module imports,
+   the `module-system' structure is always included. (XXX remove this?)
 
    As Rees points out, this changes load from being used for its side
    effects to being used for its value, the created structure.
