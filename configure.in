@@ -365,7 +365,7 @@ AC_SUBST(HAVE_X11)
 AC_SUBST(LIBOBJS)
 
 AC_DEFINE_UNQUOTED(rep_VERSION, "${version}")
-AC_DEFINE_UNQUOTED(rep_INTERFACE, "${libcurrent}")
+AC_DEFINE_UNQUOTED(rep_INTERFACE, ${libcurrent})
 
 dnl Hacks for libintl
 AM_LC_MESSAGES
