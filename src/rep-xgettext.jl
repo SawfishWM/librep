@@ -114,7 +114,7 @@ exec rep "$0" "$@"
   (let
       ((cell (assoc string *found-strings*)))
     (if cell
-	(unless (assoc *current-file* (cdr cell))
+	(unless (member *current-file* (cdr cell))
 	  (rplacd cell (cons *current-file* (cdr cell))))
       (setq *found-strings* (cons (list string *current-file*)
 				  *found-strings*)))))
