@@ -125,3 +125,15 @@ obscure configure options
     addresses to lower addresses), +1 for upwards. If not given, will
     try to infer this automatically (though it has been known to fail)
 
+  --enable-full-name-terminator=CHARACTER
+
+    If the GECOS fields in your password file contain extra information
+    after the user's full name, this option allows the separator
+    character to be given, letting rep's user-full-name function return
+    the correct information.
+
+    E.g. some systems have GECOS as a comma-separated list of values,
+    the first of which is the full name. For this case:
+
+	--enable-full-name-terminator=,
+
