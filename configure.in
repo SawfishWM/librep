@@ -170,14 +170,35 @@ AC_ARG_ENABLE(dbsyms,
  [if test "$enableval" != "no"; then AC_DEFINE(DB_RESOLVE_SYMBOLS) fi],
  [AC_DEFINE(DB_RESOLVE_SYMBOLS)])
 
-dnl Assumptions for now
+dnl Assumption for now
 HAVE_UNIX=1
 AC_DEFINE(rep_HAVE_UNIX, 1)
 
-dnl These will need changing for a 64-bit pointer model..
-AC_DEFINE(rep_PTR_SIZED_INT, long int)
-AC_DEFINE(rep_PTR_SIZED_INT_BITS, 32)
-AC_DEFINE(rep_MALLOC_ALIGNMENT, 4)
+dnl These will only need changing for a 64-bit pointer model, and even
+dnl then only if sizeof(long) < sizeof(void *)
+AC_ARG_WITH(value-type,
+ [  --with-value-type=TYPE  Implicitly signed data type, as wide as a
+			   pointer. [TYPE=long int]],
+ [AC_DEFINE_UNQUOTED(rep_PTR_SIZED_INT, ${with_value_type})],
+ [AC_DEFINE(rep_PTR_SIZED_INT, long int)])
+
+dnl Also, this is still valid as long as it's _less_ than the actual
+dnl number of bits in the type
+AC_ARG_WITH(value-bits,
+ [  --with-value-bits=BITS  Must be less than or equal to the number
+			   of bits in the --with-value-type data type.
+			   [BITS=32]],
+ [AC_DEFINE_UNQUOTED(rep_PTR_SIZED_INT_BITS, ${with_value_bits})],
+ [AC_DEFINE(rep_PTR_SIZED_INT_BITS, 32)])
+
+dnl This is the malloc granularity. It's unlikely that anything has
+dnl less alignment than the default value of four bytes
+AC_ARG_WITH(malloc-alignment,
+ [  --with-malloc-alignment=BYTES
+			  Must be less than or equal to the alignment
+			   returned by the malloc function. [BYTES=4]],
+ [AC_DEFINE_UNQUOTED(rep_MALLOC_ALIGNMENT, ${with_malloc_alignment})],
+ [AC_DEFINE(rep_MALLOC_ALIGNMENT, 4)])
 
 dnl Nonstandard exported symbols
 AC_SUBST(version)
