@@ -760,9 +760,12 @@ variable will be set (if necessary) not the local value.
 
 	if(rep_CONSP(rep_CDR(rep_CDR(args))))
 	{
-	    if (!Fput(sym, Qdocumentation,
-		      rep_CAR(rep_CDR(rep_CDR(args)))))
-		return rep_NULL;
+	    repv doc = rep_CAR(rep_CDR(rep_CDR(args)));
+	    if (rep_STRINGP (doc))
+	    {
+		if (Fput(sym, Qdocumentation, doc) == rep_NULL)
+		    return rep_NULL;
+	    }
 	}
 	return sym;
     }
