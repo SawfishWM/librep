@@ -714,6 +714,10 @@ char *
 rep_print_number_to_string (repv obj, int radix, int prec)
 {
     char *out = 0;
+
+    if (!rep_NUMERICP (obj))
+	return strdup ("#<non-number>");
+
     switch (rep_NUMERIC_TYPE (obj))
     {
 	u_char buf[64], fmt[8], *tem;
