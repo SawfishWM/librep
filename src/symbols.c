@@ -713,7 +713,7 @@ Make SYMBOL have no value as a variable.
 ::end:: */
 {
     DECLARE1(sym, SYMBOLP);
-    VSYM(sym)->value = LISP_NULL;
+    VSYM(sym)->value = void_value;
     return(sym);
 }
 
@@ -726,7 +726,7 @@ Make the function slot of SYMBOL have no value.
 ::end:: */
 {
     DECLARE1(sym, SYMBOLP);
-    VSYM(sym)->function = LISP_NULL;
+    VSYM(sym)->function = void_value;
     return(sym);
 }
 
