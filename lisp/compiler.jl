@@ -674,7 +674,11 @@ that files which shouldn't be compiled aren't."
       ;; If we have (interactive), set the interactive spec to t
       ;; so that it's not ignored
       (setq interactive (or (car (cdr (car body))) t)
-	    body (cdr body)))
+	    body (cdr body))
+      ;; See if it might be a good idea to compile the interactive decl
+      (when (and (consp interactive)
+		 (memq (car interactive) comp-top-level-compiled))
+	(setq interactive (compile-form interactive))))
     (when (setq form (let
 			 ((comp-bindings
 			   (nconc (comp-get-lambda-vars args) comp-bindings)))
