@@ -419,6 +419,12 @@ sys_event_loop(void)
 	    undo_end_of_command();
 	    cmd_redisplay(sym_nil);
 	}
+
+#ifdef C_ALLOCA
+	/* Using the C implementation of alloca. So garbage collect
+	   anything below the current stack depth. */
+	alloca(0);
+#endif
     }
 
 end:
