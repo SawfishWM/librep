@@ -31,8 +31,8 @@
 _PR void misc_init(void);
 
 DEFSTRING(vers_string, VERSSTRING);
-DEFSTRING(build_string, VERSSTRING ", built " BUILD_DATE
-	  " on " BUILD_HOST ", by " BUILD_USER ".");
+DEFSTRING(build_id_string,
+	  BUILD_DATE " by " BUILD_USER "@" BUILD_HOST ", for " HOST_TYPE ".");
 
 _PR VALUE sym_operating_system, sym_window_system, sym_process_environment;
 DEFSYM(operating_system, "operating-system");
@@ -306,16 +306,16 @@ Return a string identifying the current version of Jade.
     return VAL(&vers_string);
 }
 
-_PR VALUE cmd_version_and_build_string(void);
-DEFUN("version-and-build-string", cmd_version_and_build_string, subr_version_and_build_string, (void), V_Subr0, DOC_version_and_build_string) /*
-::doc:version_and_build_string::
-version-and-build-string
+_PR VALUE cmd_build_id_string(void);
+DEFUN("build-id-string", cmd_build_id_string, subr_build_id_string, (void), V_Subr0, DOC_build_id_string) /*
+::doc:build_id_string::
+build-id-string
 
-Returns a string describing the current version of Jade, as well as where
-and when it was built.
+Returns a string describing when, where, and by who the running version of
+Jade was built.
 ::end:: */
 {
-    return VAL(&build_string);
+    return VAL(&build_id_string);
 }
 
 void
@@ -350,5 +350,5 @@ misc_init(void)
     ADD_SUBR(subr_major_version_number);
     ADD_SUBR(subr_minor_version_number);
     ADD_SUBR(subr_version_string);
-    ADD_SUBR(subr_version_and_build_string);
+    ADD_SUBR(subr_build_id_string);
 }
