@@ -124,7 +124,7 @@ DEFSYM(_specials, "%specials");
 DEFSYM(_user_structure_, "*user-structure*");
 DEFSYM(_root_structure_, "*root-structure*");
 
-repv F_get_structure (repv);
+repv Fget_structure (repv);
 static rep_struct_node *lookup_or_add (rep_struct *s, repv var);
 
 
@@ -465,7 +465,7 @@ remove_binding (rep_struct *s, repv var)
 static rep_struct_node *
 lookup_recursively (repv name, repv var)
 {
-    repv s = F_get_structure (name);
+    repv s = Fget_structure (name);
     if (s && rep_STRUCTUREP (s)
 	&& !(rep_STRUCTURE (s)->car & rep_STF_EXCLUSION))
     {
@@ -509,10 +509,10 @@ rep_search_imports (rep_struct *s, repv var)
 
 /* lisp functions */
 
-DEFUN("%get-structure", F_get_structure,
-      S_get_structure, (repv name), rep_Subr1) /*
-::doc:%get-structure::
-%get-structure NAME
+DEFUN("get-structure", Fget_structure,
+      Sget_structure, (repv name), rep_Subr1) /*
+::doc:get-structure::
+get-structure NAME
 
 Return the structure called NAME (a symbol), or return `nil' if no
 such structure.
@@ -524,10 +524,10 @@ such structure.
     return n ? n->binding : Qnil;
 }
 
-DEFUN("%name-structure", F_name_structure,
-      S_name_structure, (repv structure, repv name), rep_Subr2) /*
-::doc:%name-structure::
-%name-structure STRUCTURE NAME
+DEFUN("name-structure", Fname_structure,
+      Sname_structure, (repv structure, repv name), rep_Subr2) /*
+::doc:name-structure::
+name-structure STRUCTURE NAME
 
 Assign the name NAME (a symbol) to structure object STRUCTURE.
 ::end:: */
@@ -537,7 +537,7 @@ Assign the name NAME (a symbol) to structure object STRUCTURE.
 
     if (name != Qnil)
     {
-	F_structure_set (rep_structures_structure, name, structure);
+	Fstructure_set (rep_structures_structure, name, structure);
 
 	/* XXX I'm not sure about this..? */
 	if (rep_STRUCTURE (structure)->name == Qnil)
@@ -546,18 +546,18 @@ Assign the name NAME (a symbol) to structure object STRUCTURE.
     else if (rep_STRUCTURE (structure)->name != Qnil)
     {
 	/* remove the name->structure relation */
-	F_structure_set (rep_structures_structure,
-			 rep_STRUCTURE (structure)->name, Qnil);
+	Fstructure_set (rep_structures_structure,
+			rep_STRUCTURE (structure)->name, Qnil);
     }
     cache_flush ();
     return name;
 }
 
 /* environment of thunks are modified! */
-DEFUN ("%make-structure", F_make_structure, S_make_structure,
+DEFUN ("make-structure", Fmake_structure, Smake_structure,
        (repv sig, repv header_thunk, repv body_thunk, repv name), rep_Subr4) /*
-::doc:%make-structure::
-%make-structure INTERFACE CONFIG-THUNK BODY-THUNK [NAME]
+::doc:make-structure::
+make-structure INTERFACE CONFIG-THUNK BODY-THUNK [NAME]
 
 Create and return a new structure. If NAME is a non-nil symbol the
 structure will take that name.
@@ -612,7 +612,7 @@ BODY-THUNK may be modified by this function!
     rep_PUSHGC (gc_s, s_);
 
     if (s->name != Qnil)
-	F_name_structure (rep_VAL (s), s->name);
+	Fname_structure (rep_VAL (s), s->name);
 
     rep_PUSHGC (gc_body, body_thunk);
     if (header_thunk != Qnil)
@@ -635,9 +635,18 @@ BODY-THUNK may be modified by this function!
 	if (tem == rep_NULL)
 	    s = 0;
     }
-
     rep_POPGC;
-    return rep_VAL (s);
+
+    if (s != 0)
+	return rep_VAL (s);
+    else
+    {
+	/* initialization failed. */
+	s = rep_STRUCTURE (s_);
+	if (s->name != Qnil)
+	    Fname_structure (rep_VAL (s), Qnil);
+	return rep_NULL;
+    }
 }
 
 DEFUN ("%structure-ref", F_structure_ref,
@@ -666,10 +675,10 @@ Returns a void value if no such binding.
     return (n != 0) ? n->binding : rep_void_value;
 }
 
-DEFUN ("%structure-bound-p", F_structure_bound_p,
-       S_structure_bound_p, (repv structure, repv var), rep_Subr2) /*
-::doc:%structure-bound-p::
-%structure-bound-p STRUCTURE VAR
+DEFUN ("structure-bound-p", Fstructure_bound_p,
+       Sstructure_bound_p, (repv structure, repv var), rep_Subr2) /*
+::doc:structure-bound-p::
+structure-bound-p STRUCTURE VAR
 
 Return `t' if symbol VAR has a non-void binding in STRUCTURE.
 ::end:: */
@@ -680,10 +689,10 @@ Return `t' if symbol VAR has a non-void binding in STRUCTURE.
     return tem;
 }
 
-DEFUN ("%structure-set", F_structure_set, S_structure_set,
+DEFUN ("structure-set", Fstructure_set, Sstructure_set,
        (repv structure, repv var, repv value), rep_Subr3) /*
-::doc:%structure-set::
-%structure-set STRUCTURE VAR VALUE
+::doc:structure-set::
+structure-set STRUCTURE VAR VALUE
 
 Set the value of the binding of symbol VAR in structure object
 STRUCTURE to VALUE. If no such binding exists, one will be created.
@@ -716,10 +725,10 @@ STRUCTURE to VALUE. If no such binding exists, one will be created.
     }
 }
 
-DEFUN ("%external-structure-ref", F_external_structure_ref,
-       S_external_structure_ref, (repv name, repv var), rep_Subr2) /*
-::doc:%external-structure-ref::
-%external-structure-ref STRUCT-NAME VAR
+DEFUN ("external-structure-ref", Fexternal_structure_ref,
+       Sexternal_structure_ref, (repv name, repv var), rep_Subr2) /*
+::doc:external-structure-ref::
+external-structure-ref STRUCT-NAME VAR
 
 Return the value of the binding of symbol VAR within the structure
 called STRUCT-NAME. This structure must have previously been marked as
@@ -749,10 +758,10 @@ Signals an error if no such binding exists.
 	return Fsignal (Qvoid_value, rep_LIST_1 (var));
 }
 
-DEFUN ("%structure-name", F_structure_name,
-       S_structure_name, (repv structure), rep_Subr1) /*
-::doc:%structure-name::
-%structure-name STRUCTURE
+DEFUN ("structure-name", Fstructure_name,
+       Sstructure_name, (repv structure), rep_Subr1) /*
+::doc:structure-name::
+structure-name STRUCTURE
 
 Returns the name of structure object STRUCTURE.
 ::end:: */
@@ -761,10 +770,10 @@ Returns the name of structure object STRUCTURE.
     return rep_STRUCTURE (structure)->name;
 }
 
-DEFUN ("%structure-interface", F_structure_interface,
-       S_structure_interface, (repv structure), rep_Subr1) /*
-::doc:%structure-interface::
-%structure-interface STRUCTURE
+DEFUN ("structure-interface", Fstructure_interface,
+       Sstructure_interface, (repv structure), rep_Subr1) /*
+::doc:structure-interface::
+structure-interface STRUCTURE
 
 Returns the interface of structure object STRUCTURE.
 ::end:: */
@@ -787,10 +796,10 @@ Returns the interface of structure object STRUCTURE.
     return list;
 }
 
-DEFUN ("%structure-exports-p", F_structure_exports_p,
-       S_structure_exports_p, (repv structure, repv var), rep_Subr2) /*
-::doc:%structure-exports-p::
-%structure-exports-p STRUCTURE VAR
+DEFUN ("structure-exports-p", Fstructure_exports_p,
+       Sstructure_exports_p, (repv structure, repv var), rep_Subr2) /*
+::doc:structure-exports-p::
+structure-exports-p STRUCTURE VAR
 
 Returns `t' if structure object STRUCTURE exports a binding of symbol
 VAR.
@@ -807,10 +816,10 @@ VAR.
 		(rep_STRUCTURE (structure), var) ? Qt : Qnil);
 }
 
-DEFUN ("%structure-imports", F_structure_imports,
-       S_structure_imports, (repv structure), rep_Subr1) /*
-::doc:%structure-imports::
-%structure-imports STRUCTURE
+DEFUN ("structure-imports", Fstructure_imports,
+       Sstructure_imports, (repv structure), rep_Subr1) /*
+::doc:structure-imports::
+structure-imports STRUCTURE
 
 Returns the list of structure names opened by structure object
 STRUCTURE.
@@ -820,10 +829,10 @@ STRUCTURE.
     return rep_STRUCTURE (structure)->imports;
 }
 
-DEFUN ("%structure-accessible", F_structure_accessible,
-       S_structure_accessible, (repv structure), rep_Subr1) /*
-::doc:%structure-accessible::
-%structure-accessible STRUCTURE
+DEFUN ("structure-accessible", Fstructure_accessible,
+       Sstructure_accessible, (repv structure), rep_Subr1) /*
+::doc:structure-accessible::
+structure-accessible STRUCTURE
 
 Returns the list of structure names accessed by structure object
 STRUCTURE.
@@ -833,10 +842,10 @@ STRUCTURE.
     return rep_STRUCTURE (structure)->accessible;
 }
 
-DEFUN ("%set-interface", F_set_interface,
-       S_set_interface, (repv structure, repv sig), rep_Subr2) /*
-::doc:%set-interface::
-%set-interface STRUCTURE INTERFACE
+DEFUN ("set-interface", Fset_interface,
+       Sset_interface, (repv structure, repv sig), rep_Subr2) /*
+::doc:set-interface::
+set-interface STRUCTURE INTERFACE
 
 Set the interface of structure object STRUCTURE to INTERFACE.
 ::end:: */
@@ -869,10 +878,23 @@ Set the interface of structure object STRUCTURE to INTERFACE.
     return Qt;
 }
 
-DEFUN("%intern-structure", F_intern_structure,
-      S_intern_structure, (repv name), rep_Subr1) /*
-::doc:%intern-structure::
-%intern-structure STRUCT-NAME
+DEFUN("structure-file", Fstructure_file,
+      Sstructure_file, (repv name), rep_Subr1) /*
+::doc:structure-file::
+structure-file NAME
+
+Return a string that would be used to locate a structure called NAME (a
+symbol).
+::end:: */
+{
+    rep_DECLARE1 (name, rep_SYMBOLP);
+    return rep_structure_file (rep_SYM (name)->name);
+}
+
+DEFUN("intern-structure", Fintern_structure,
+      Sintern_structure, (repv name), rep_Subr1) /*
+::doc:intern-structure::
+intern-structure STRUCT-NAME
 
 Return the structure called STRUCT-NAME. If no such structure exists,
 attempt to load it.
@@ -880,7 +902,7 @@ attempt to load it.
 {
     repv tem;
     rep_DECLARE1 (name, rep_SYMBOLP);
-    tem = F_get_structure (name);
+    tem = Fget_structure (name);
     if (tem == Qnil)
     {
 	repv old = rep_structure;
@@ -895,19 +917,19 @@ attempt to load it.
 	tem = Fsymbol_value (Q_root_structure_, Qt);
 	if (!rep_VOIDP (tem))
 	{
-	    tem = F_get_structure (tem);
+	    tem = Fget_structure (tem);
 	    if (rep_STRUCTUREP (tem))
 		rep_structure = tem;
 	}
 
 	rep_PUSHGC (gc_old, old);
 	rep_PUSHGC (gc_name, name);
-	tem = Fload (Fsymbol_name (name), Qnil, Qnil, Qnil, Qnil);
+	tem = Fload (Fstructure_file (name), Qnil, Qnil, Qnil, Qnil);
 	rep_POPGC;
 	if (tem != rep_NULL)
 	{
 	    if (rep_STRUCTUREP (tem))
-		F_name_structure (tem, name);
+		Fname_structure (tem, name);
 	    else
 		tem = Qnil;
 	}
@@ -917,10 +939,12 @@ attempt to load it.
     return tem;
 }
 
-DEFUN ("%open-structures", F_open_structures,
-       S_open_structures, (repv args), rep_Subr1) /*
-::doc:%open-structures::
-%open-structures STRUCT-NAMES
+DEFSTRING (no_struct, "No such structure");
+
+DEFUN ("open-structures", Fopen_structures,
+       Sopen_structures, (repv args), rep_Subr1) /*
+::doc:open-structures::
+open-structures STRUCT-NAMES
 
 Mark that the current structures has opened the list of structures
 named in the list STRUCT-NAMES.
@@ -928,6 +952,7 @@ named in the list STRUCT-NAMES.
 {
     rep_struct *dst = rep_STRUCTURE (rep_structure);
     rep_GC_root gc_args;
+    repv ret = Qnil;
     rep_DECLARE1 (args, rep_LISTP);
     rep_PUSHGC (gc_args, args);
     while (rep_CONSP (args))
@@ -935,23 +960,26 @@ named in the list STRUCT-NAMES.
 	repv tem = Fmemq (rep_CAR (args), dst->imports);
 	if (tem == Qnil)
 	{
-	    repv s = F_intern_structure (rep_CAR (args));
-	    if (s == rep_NULL)
+	    repv s = Fintern_structure (rep_CAR (args));
+	    if (s == rep_NULL || !rep_STRUCTUREP (s))
+	    {
+		ret = Fsignal (Qerror, rep_list_2 (rep_VAL (&no_struct),
+						   rep_CAR (args)));
 		break;
-	    if (rep_STRUCTUREP (s))
-		dst->imports = Fcons (rep_CAR (args), dst->imports);
+	    }
+	    dst->imports = Fcons (rep_CAR (args), dst->imports);
 	}
 	args = rep_CDR (args);
     }
     rep_POPGC;
     cache_flush ();
-    return Qnil;
+    return ret;
 }
 
-DEFUN ("%access-structures", F_access_structures,
-       S_access_structures, (repv args), rep_Subr1) /*
-::doc:%access-structures::
-%access-structures STRUCT-NAMES
+DEFUN ("access-structures", Faccess_structures,
+       Saccess_structures, (repv args), rep_Subr1) /*
+::doc:access-structures::
+access-structures STRUCT-NAMES
 
 Mark that the current structures may access the list of structures
 named in the list STRUCT-NAMES.
@@ -959,6 +987,7 @@ named in the list STRUCT-NAMES.
 {
     rep_struct *dst = rep_STRUCTURE (rep_structure);
     rep_GC_root gc_args;
+    repv ret = Qnil;
     rep_DECLARE1 (args, rep_LISTP);
     rep_PUSHGC (gc_args, args);
     while (rep_CONSP (args))
@@ -966,22 +995,26 @@ named in the list STRUCT-NAMES.
 	repv tem = Fmemq (rep_CAR (args), dst->accessible);
 	if (tem == Qnil)
 	{
-	    repv s = F_intern_structure (rep_CAR (args));
+	    repv s = Fintern_structure (rep_CAR (args));
 	    if (s == rep_NULL || !rep_STRUCTUREP (s))
+	    {
+		ret = Fsignal (Qerror, rep_list_2 (rep_VAL (&no_struct),
+						   rep_CAR (args)));
 		break;
+	    }
 	    dst->accessible = Fcons (rep_CAR (args), dst->accessible);
 	}
 	args = rep_CDR (args);
     }
     rep_POPGC;
     cache_flush ();
-    return Qnil;
+    return ret;
 }
 
-DEFUN ("%current-structure", F_current_structure,
-      S_current_structure, (void), rep_Subr0) /*
-::doc:%current-structure::
-%current-structure
+DEFUN ("current-structure", Fcurrent_structure,
+      Scurrent_structure, (void), rep_Subr0) /*
+::doc:current-structure::
+current-structure
 
 Return the current structure object.
 ::end:: */
@@ -989,9 +1022,9 @@ Return the current structure object.
     return rep_structure;
 }
 
-DEFUN ("%structurep", F_structurep, S_structurep, (repv arg), rep_Subr1) /*
-::doc:%structurep::
-%structurep ARG
+DEFUN ("structurep", Fstructurep, Sstructurep, (repv arg), rep_Subr1) /*
+::doc:structurep::
+structurep ARG
 
 Return `t' if ARG is a structure object.
 ::end:: */
@@ -1030,8 +1063,8 @@ Return the result of evaluating FORM inside structure object STRUCTURE
     return result;
 }
 
-DEFUN ("%make-closure-in-structure", F_make_closure_in_structure,
-       S_make_closure_in_structure, (repv fun, repv structure), rep_Subr2)
+DEFUN ("make-closure-in-structure", Fmake_closure_in_structure,
+       Smake_closure_in_structure, (repv fun, repv structure), rep_Subr2)
 {
     repv closure;
     rep_DECLARE2 (structure, rep_STRUCTUREP);
@@ -1041,10 +1074,10 @@ DEFUN ("%make-closure-in-structure", F_make_closure_in_structure,
     return closure;
 }
 
-DEFUN ("%structure-walk", F_structure_walk,
-       S_structure_walk, (repv fun, repv structure), rep_Subr2) /*
-::doc:%structure-walk::
-%structure-walk FUNCTION STRUCTURE
+DEFUN ("structure-walk", Fstructure_walk,
+       Sstructure_walk, (repv fun, repv structure), rep_Subr2) /*
+::doc:structure-walk::
+structure-walk FUNCTION STRUCTURE
 
 Call FUNCTION for each binding in structure object STRUCTURE. The
 function is called with two arguments, the variable and the binding's
@@ -1078,8 +1111,8 @@ out:
 }
 
 #ifdef DEBUG
-DEFUN ("%structure-stats", F_structure_stats,
-       S_structure_stats, (repv structure), rep_Subr1)
+DEFUN ("structure-stats", Fstructure_stats,
+       Sstructure_stats, (repv structure), rep_Subr1)
 {
     rep_struct *s;
     int i, empties = 0;
@@ -1170,7 +1203,7 @@ structure.
     tem = Fmemq (feature, value);
     if (tem && tem == Qnil)
 	value = Fcons (feature, value);
-    F_structure_set (rep_structure, Qfeatures, value);
+    Fstructure_set (rep_structure, Qfeatures, value);
     return feature;
 }
 
@@ -1200,19 +1233,19 @@ loaded is either FILE (if given), or the print name of FEATURE.
     tem = Fmemq (feature, dst->imports);
     if (tem == Qnil)
     {
-	tem = F_get_structure (feature);
+	tem = Fget_structure (feature);
 	if (!rep_STRUCTUREP (tem))
 	{
 	    rep_GC_root gc_feature;
 	    rep_PUSHGC (gc_feature, feature);
-	    tem = Fload (Fsymbol_name (feature), Qnil, Qnil, Qnil, Qnil);
+	    tem = Fload (Fstructure_file (feature), Qnil, Qnil, Qnil, Qnil);
 	    rep_POPGC;
 	    
 	    if (tem == rep_NULL)
 		return rep_NULL;
 
 	    if (rep_STRUCTUREP (tem))
-		F_name_structure (tem, feature);
+		Fname_structure (tem, feature);
 	}
 	if (rep_STRUCTUREP (tem))
 	{
@@ -1228,23 +1261,49 @@ loaded is either FILE (if given), or the print name of FEATURE.
 /* C interface for structure building */
 
 repv
+rep_push_structure_name (repv name)
+{
+    if (rep_STRINGP (name))
+	name = Fintern (name, Qnil);
+    if (rep_SYMBOLP (name))
+    {
+	repv s = Fget_structure (name);
+	repv old = rep_structure;
+	if (s == Qnil)
+	    s = Fmake_structure (Qnil, Qnil, Qnil, name);
+	rep_structure = s;
+	return old;
+    }
+    else
+	return Qnil;
+}
+
+repv
 rep_push_structure (const char *name)
 {
-    repv old = rep_structure;
-    repv sym = Fintern (rep_string_dup (name), Qnil);
-    repv s = F_get_structure (sym);
-    if (s == Qnil)
-	s = F_make_structure (Qnil, Qnil, Qnil, sym);
-    rep_structure = s;
-    return old;
+    return rep_push_structure_name (rep_string_dup (name));
 }
 
 repv
 rep_pop_structure (repv old)
 {
-    repv new = rep_structure;
-    rep_structure = old;
-    return new;
+    if (rep_STRUCTUREP (old))
+    {
+	repv new = rep_structure;
+	rep_structure = old;
+	return new;
+    }
+    else
+	return Qnil;
+}
+
+void
+rep_alias_structure (repv name)
+{
+    if (rep_STRINGP (name))
+	name = Fintern (name, Qnil);
+    if (rep_SYMBOLP (name))
+	Fname_structure (rep_structure, name);
 }
 
 repv
@@ -1270,16 +1329,16 @@ rep_structure_exports_all (repv s, rep_bool status)
 	rep_STRUCTURE (s)->car &= ~rep_STF_EXPORT_ALL;
 }
 
-DEFUN("%structure-exports-all", F_structure_exports_all,
-      S_structure_exports_all, (repv s, repv status), rep_Subr2)
+DEFUN("structure-exports-all", Fstructure_exports_all,
+      Sstructure_exports_all, (repv s, repv status), rep_Subr2)
 {
     rep_DECLARE1 (s, rep_STRUCTUREP);
     rep_structure_exports_all (s, status != Qnil);
     return s;
 }
 
-DEFUN("%structure-install-vm", F_structure_install_vm,
-      S_structure_install_vm, (repv structure, repv vm), rep_Subr2)
+DEFUN("structure-install-vm", Fstructure_install_vm,
+      Sstructure_install_vm, (repv structure, repv vm), rep_Subr2)
 {
     rep_struct *s;
     rep_DECLARE1 (structure, rep_STRUCTUREP);
@@ -1314,13 +1373,13 @@ rep_get_initial_special_value (repv sym)
     repv user = F_structure_ref (rep_specials_structure, Q_user_structure_);
     if (!rep_VOIDP (user))
     {
-	repv s = F_get_structure (user);
+	repv s = Fget_structure (user);
 	if (rep_STRUCTUREP (s))
 	{
 	    repv old = F_structure_ref (s, sym);
 	    if (!rep_VOIDP (old))
 	    {
-		F_structure_set (s, sym, rep_void_value);
+		Fstructure_set (s, sym, rep_void_value);
 		cache_invalidate_symbol (sym);
 		return old;
 	    }
@@ -1341,45 +1400,46 @@ rep_pre_structures_init (void)
 						structure_sweep,
 						structure_mark,
 						0, 0, 0, 0, 0, 0, 0);
-    rep_default_structure = F_make_structure (Qnil, Qnil, Qnil, Qnil);
-    rep_specials_structure = F_make_structure (Qnil, Qnil, Qnil, Qnil);
-    rep_structures_structure = F_make_structure (Qnil, Qnil, Qnil, Qnil);
+    rep_default_structure = Fmake_structure (Qnil, Qnil, Qnil, Qnil);
+    rep_specials_structure = Fmake_structure (Qnil, Qnil, Qnil, Qnil);
+    rep_structures_structure = Fmake_structure (Qnil, Qnil, Qnil, Qnil);
 }
 
 void
 rep_structures_init (void)
 {
-    rep_ADD_SUBR (S_make_structure);
+    rep_ADD_SUBR (Smake_structure);
     rep_ADD_INTERNAL_SUBR (S_structure_ref);
-    rep_ADD_INTERNAL_SUBR (S_structure_bound_p);
-    rep_ADD_INTERNAL_SUBR (S_structure_set);
-    rep_ADD_SUBR (S_external_structure_ref);
-    rep_ADD_INTERNAL_SUBR (S_structure_name);
-    rep_ADD_INTERNAL_SUBR (S_structure_interface);
-    rep_ADD_INTERNAL_SUBR (S_structure_exports_p);
-    rep_ADD_INTERNAL_SUBR (S_structure_imports);
-    rep_ADD_INTERNAL_SUBR (S_structure_accessible);
-    rep_ADD_INTERNAL_SUBR (S_set_interface);
-    rep_ADD_INTERNAL_SUBR (S_get_structure);
-    rep_ADD_INTERNAL_SUBR (S_name_structure);
-    rep_ADD_INTERNAL_SUBR (S_intern_structure);
-    rep_ADD_INTERNAL_SUBR (S_open_structures);
-    rep_ADD_INTERNAL_SUBR (S_access_structures);
-    rep_ADD_INTERNAL_SUBR (S_current_structure);
-    rep_ADD_INTERNAL_SUBR (S_structurep);
+    rep_ADD_INTERNAL_SUBR (Sstructure_bound_p);
+    rep_ADD_INTERNAL_SUBR (Sstructure_set);
+    rep_ADD_SUBR (Sexternal_structure_ref);
+    rep_ADD_INTERNAL_SUBR (Sstructure_name);
+    rep_ADD_INTERNAL_SUBR (Sstructure_interface);
+    rep_ADD_INTERNAL_SUBR (Sstructure_exports_p);
+    rep_ADD_INTERNAL_SUBR (Sstructure_imports);
+    rep_ADD_INTERNAL_SUBR (Sstructure_accessible);
+    rep_ADD_INTERNAL_SUBR (Sset_interface);
+    rep_ADD_INTERNAL_SUBR (Sget_structure);
+    rep_ADD_INTERNAL_SUBR (Sname_structure);
+    rep_ADD_INTERNAL_SUBR (Sstructure_file);
+    rep_ADD_INTERNAL_SUBR (Sintern_structure);
+    rep_ADD_INTERNAL_SUBR (Sopen_structures);
+    rep_ADD_INTERNAL_SUBR (Saccess_structures);
+    rep_ADD_INTERNAL_SUBR (Scurrent_structure);
+    rep_ADD_INTERNAL_SUBR (Sstructurep);
     rep_ADD_INTERNAL_SUBR (Seval_real);
-    rep_ADD_INTERNAL_SUBR (S_make_closure_in_structure);
-    rep_ADD_INTERNAL_SUBR (S_structure_walk);
+    rep_ADD_INTERNAL_SUBR (Smake_closure_in_structure);
+    rep_ADD_INTERNAL_SUBR (Sstructure_walk);
 #ifdef DEBUG
-    rep_ADD_SUBR (S_structure_stats);
+    rep_ADD_SUBR (Sstructure_stats);
 #endif
     rep_ADD_SUBR (Smake_binding_immutable);
     rep_ADD_SUBR (Sbinding_immutable_p);
     rep_ADD_SUBR (Sfeaturep);
     rep_ADD_SUBR (Sprovide);
     rep_ADD_SUBR_INT (Srequire);
-    rep_ADD_INTERNAL_SUBR (S_structure_exports_all);
-    rep_ADD_INTERNAL_SUBR (S_structure_install_vm);
+    rep_ADD_INTERNAL_SUBR (Sstructure_exports_all);
+    rep_ADD_INTERNAL_SUBR (Sstructure_install_vm);
 
     rep_INTERN (features);
     rep_INTERN (_structures);
@@ -1394,9 +1454,9 @@ rep_structures_init (void)
     rep_mark_static (&rep_specials_structure);
     rep_mark_static (&rep_structures_structure);
 
-    F_name_structure (rep_default_structure, Qrep);
-    F_name_structure (rep_specials_structure, Q_specials);
-    F_name_structure (rep_structures_structure, Q_structures);
+    Fname_structure (rep_default_structure, Qrep);
+    Fname_structure (rep_specials_structure, Q_specials);
+    Fname_structure (rep_structures_structure, Q_structures);
 #ifdef DEBUG
     atexit (print_cache_stats);
 #endif
