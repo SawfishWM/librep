@@ -91,6 +91,32 @@ General programming tasks:
    itself) but really %make-structure should just create the thing
    (with an optional name for printing)
 
+ - allow ML-like functors (parameterized modules)
+
+   the basic support is there. Can do:
+
+   (define (my-functor x)
+     (structure (export foo) (open rep)
+       (define (foo y) (+ x y))))
+
+   but there's currently no clean way to import the first-class
+   structure (without resorting to open-structures)
+
+   I think the way is to require the functor to implement a named
+   interface which is specified in the module signature:
+
+   (define-structure foo
+       (open rep
+	     (functor some-interface (my-functor x)))
+       ...
+
+   `(my-functor x) would get evaluated in the environment containing
+   the define-structure form? Or in the environment created up to that
+   point?
+
+   The named-interface trick could also be useful for importing normal
+   modules (to avoid having to load them at compile time)
+
  - add a facility for dumping a set of structures, for later reloading
 
  - move the gtk-independent parts of the rep-gtk glue generator and
