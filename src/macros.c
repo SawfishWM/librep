@@ -80,6 +80,7 @@ pass the value of the `macro-environment' variable to this parameter.
     if (env != Qnil && Ffunctionp (env) != Qnil)
 	return rep_call_lisp1 (env, form);
 
+again:
     car = rep_CAR(form);
     if(rep_SYMBOLP(car))
     {
@@ -97,6 +98,33 @@ pass the value of the `macro-environment' variable to this parameter.
 
     if (Ffunctionp(car) == Qnil)
 	return form;
+
+    if (rep_FUNARGP (car))
+    {
+	repv fun = rep_FUNARG (car)->fun;
+	if (rep_CONSP (fun) && rep_CAR (fun) == Qautoload)
+	{
+	    /* an autoload. handle this locally. */
+	    struct rep_Call lc;
+	    rep_GC_root gc_form, gc_env;
+	    lc.fun = Qnil;
+	    lc.args = Qnil;
+	    lc.args_evalled_p = Qnil;
+
+	    rep_PUSH_CALL (lc);
+	    rep_USE_FUNARG (car);
+	    rep_PUSHGC (gc_form, form);
+	    rep_PUSHGC (gc_env, env);
+	    car = rep_load_autoload (car);
+	    rep_POPGC; rep_POPGC;
+	    rep_POP_CALL (lc);
+
+	    if (car != rep_NULL)
+		goto again;
+	    else
+		return rep_NULL;
+	}
+    }
 
     bindings = rep_bind_symbol (Qnil, Qmacro_environment, rep_structure);
     rep_PUSHGC(gc_bindings, bindings);
