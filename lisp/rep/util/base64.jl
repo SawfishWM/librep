@@ -48,10 +48,10 @@
 	      (setq reg (logior (lsh reg1 16) (lsh reg2 8) reg3))
 	      (write output (aref mime-base64-alphabet (lsh reg -18)))
 	      (write output (aref mime-base64-alphabet
-				  (logand (lsh reg -12) 077)))
+				  (logand (lsh reg -12) #o77)))
 	      (write output (aref mime-base64-alphabet
-				  (logand (lsh reg -6) 077)))
-	      (write output (aref mime-base64-alphabet (logand reg 077)))
+				  (logand (lsh reg -6) #o77)))
+	      (write output (aref mime-base64-alphabet (logand reg #o77)))
 	      (setq col (+ col 4))
 	      (when (>= col 76)
 		(write output #\newline)
@@ -61,15 +61,15 @@
 	    (setq reg (lsh (logior (lsh reg1 8) reg2) 2))
 	    (write output (aref mime-base64-alphabet (lsh reg -12)))
 	    (write output (aref mime-base64-alphabet
-				(logand (lsh reg -6) 077)))
-	    (write output (aref mime-base64-alphabet (logand reg 077)))
+				(logand (lsh reg -6) #o77)))
+	    (write output (aref mime-base64-alphabet (logand reg #o77)))
 	    (write output #\=)
 	    (throw 'done t))
 	   (reg1
 	    ;; eight bits read, shift in 4 zeros
 	    (setq reg (lsh reg1 4))
 	    (write output (aref mime-base64-alphabet (lsh reg -6)))
-	    (write output (aref mime-base64-alphabet (logand reg 077)))
+	    (write output (aref mime-base64-alphabet (logand reg #o77)))
 	    (write output #\=)
 	    (write output #\=)
 	    (throw 'done t))
