@@ -832,6 +832,57 @@ that files which shouldn't be compiled aren't."
       (comp-dec-stack)
       (setq form (cdr form)))))
 
+;; Used for >, >=, < and <=
+(defun comp-compile-transitive-relation (form)
+  (let
+      ((opcode (get (car form) 'compile-opcode)))
+    (setq form (cdr form))
+    (cond
+     ((<= (length form) 1)
+      (comp-error "Too few args to relation" form))
+     ((= (length form) 2)
+      ;; Simple case, only two arguments, i.e. `(OP ARG1 ARG2)' into:
+      ;;  PUSH ARG1; PUSH ARG2; OP;
+      (comp-compile-form (car form))
+      (comp-compile-form (nth 1 form))
+      (comp-write-op opcode)
+      (comp-dec-stack))
+     (t
+      ;; Tricky case, >2 args,
+      ;; Eg. `(OP ARG1 ARG2 ARG3... ARGN)' into something like,
+      ;;  PUSH ARG1; PUSH ARG2; DUP; SWAP2; OP; JNP Fail;
+      ;;  PUSH ARG3; DUP; SWAP2; OP; JNP Fail;
+      ;;  ...
+      ;;  PUSH ARGN; OP; JMP End;
+      ;; Fail:
+      ;;  SWAP; POP;
+      ;; End:
+      (let
+	  ((fail-label (comp-make-label))
+	   (end-label (comp-make-label)))
+	(comp-compile-form (car form))
+	(setq form (cdr form))
+	(while (>= (length form) 2)
+	  (comp-compile-form (car form))
+	  (comp-write-op op-dup)
+	  (comp-inc-stack)
+	  (comp-write-op op-swap2)
+	  (comp-write-op opcode)
+	  (comp-dec-stack)
+	  (comp-compile-jmp op-jnp fail-label)
+	  (comp-dec-stack)
+	  (setq form (cdr form)))
+	;; Last arg coming up.
+	(comp-compile-form (car form))
+	(comp-write-op opcode)
+	(comp-dec-stack)
+	(comp-compile-jmp op-jmp end-label)
+	(comp-set-label fail-label)
+	(comp-write-op op-swap)
+	(comp-write-op op-pop)
+	(comp-dec-stack)
+	(comp-set-label end-label))))))
+
 
 ;; Opcode properties for the generic instructions, in a progn for compiled
 ;; speed
@@ -865,8 +916,10 @@ that files which shouldn't be compiled aren't."
   (put '* 'compile-opcode op-mul)
   (put '/ 'compile-fun 'comp-compile-binary-op)
   (put '/ 'compile-opcode op-div)
-  (put '% 'compile-fun 'comp-compile-binary-op)
-  (put '% 'compile-opcode op-mod)
+  (put '% 'compile-fun 'comp-compile-2-args)
+  (put '% 'compile-opcode op-rem)
+  (put 'mod 'compile-fun 'comp-compile-2-args)
+  (put 'mod 'compile-opcode op-mod)
   (put 'lognot 'compile-fun 'comp-compile-1-args)
   (put 'lognot 'compile-opcode op-lnot)
   (put 'not 'compile-fun 'comp-compile-1-args)
@@ -885,13 +938,13 @@ that files which shouldn't be compiled aren't."
   (put '= 'compile-opcode op-num-eq)
   (put '/= 'compile-fun 'comp-compile-2-args)
   (put '/= 'compile-opcode op-num-noteq)
-  (put '> 'compile-fun 'comp-compile-2-args)
+  (put '> 'compile-fun 'comp-compile-transitive-relation)
   (put '> 'compile-opcode op-gt)
-  (put '< 'compile-fun 'comp-compile-2-args)
+  (put '< 'compile-fun 'comp-compile-transitive-relation)
   (put '< 'compile-opcode op-lt)
-  (put '>= 'compile-fun 'comp-compile-2-args)
+  (put '>= 'compile-fun 'comp-compile-transitive-relation)
   (put '>= 'compile-opcode op-ge)
-  (put '<= 'compile-fun 'comp-compile-2-args)
+  (put '<= 'compile-fun 'comp-compile-transitive-relation)
   (put '<= 'compile-opcode op-le)
   (put '1+ 'compile-fun 'comp-compile-1-args)
   (put '1+ 'compile-opcode op-inc)
