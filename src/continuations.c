@@ -119,7 +119,6 @@ char *alloca ();
 #include <stdlib.h>
 #include <assert.h>
 #include <setjmp.h>
-#include <limits.h>
 
 #ifdef NEED_MEMORY_H
 # include <memory.h>
@@ -796,6 +795,8 @@ enqueue_thread (rep_thread *t, rep_barrier *root)
 static void
 unlink_thread (rep_thread *t)
 {
+    rep_barrier *root = t->cont->root;
+
     if (t->pred != 0)
 	t->pred->next = t->next;
     if (t->next != 0)
@@ -803,17 +804,17 @@ unlink_thread (rep_thread *t)
 
     if (!(t->car & TF_SUSPENDED))
     {
-	if (root_barrier->head == t)
-	    root_barrier->head = t->next;
-	if (root_barrier->tail == t)
-	    root_barrier->tail = t->pred;
+	if (root->head == t)
+	    root->head = t->next;
+	if (root->tail == t)
+	    root->tail = t->pred;
     }
     else
     {
-	if (root_barrier->susp_head == t)
-	    root_barrier->susp_head = t->next;
-	if (root_barrier->susp_tail == t)
-	    root_barrier->susp_tail = t->pred;
+	if (root->susp_head == t)
+	    root->susp_head = t->next;
+	if (root->susp_tail == t)
+	    root->susp_tail = t->pred;
     }
     t->next = t->pred = 0;
 }
@@ -1032,8 +1033,10 @@ thread_suspend (rep_thread *t, u_long msecs)
     t->car |= TF_SUSPENDED;
     if (msecs == 0)
     {
-	t->run_at.tv_sec = LONG_MAX;
-	t->run_at.tv_usec = LONG_MAX;
+	/* XXX assumes twos-complement representation.. but Solaris
+	   XXX has a weird struct timeval.. */
+	t->run_at.tv_sec = ~0UL >> 1;
+	t->run_at.tv_usec = ~0UL >> 1;
     }
     else
     {
