@@ -1,3 +1,28 @@
+1999-01-22  John Harper  <john@dcs.warwick.ac.uk>
+
+	* html-decode.jl: parse <frameset> sections half-heartedly, and
+	be slightly more clueful about unnested close tags
+
+1999-01-21  John Harper  <john@dcs.warwick.ac.uk>
+
+	* find-url.jl (find-url-file, find-url-ftp): detect if a file:
+	URL contains HTML code, if so decode it
+
+	* html-decode.jl (html-decode): bind html-decode-source and
+	html-decode-point to the position of the next item to be
+	parsed, called functions may then alter these
+	(html-decode:script): skip <script> sections
+
+1999-01-20  John Harper  <john@dcs.warwick.ac.uk>
+
+	* find-url.jl (find-url-asynchronously): new variable, only
+	find-url-http takes note of it, calling wget asynchronously
+	when it's non-nil
+
+	* html-display.jl (html-display): the OTHER-VIEW parameter may
+	be the actual view to display in, or nil, or anything else to
+	switch to the other view
+
 1999-01-19  John Harper  <john@dcs.warwick.ac.uk>
 
 	* html-display.jl (html-display): new function, a mode to tie

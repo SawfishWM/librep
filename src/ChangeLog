@@ -1,3 +1,15 @@
+1999-01-20  John Harper  <john@dcs.warwick.ac.uk>
+
+	* buffers.c (make_marks_non_resident): add a comment noting that
+	any TX fields used must be explicitly gc marked
+	* values.c (mark_value): in the V_Mark case, remember to mark
+	tx_File, now that make_marks_non_resident accesses it
+
+1999-01-17  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.c (cmd_eval): preserve regexp matches while calling the
+	debugger
+
 1999-01-14  John Harper  <john@dcs.warwick.ac.uk>
 
 	* buffers.c (cmd_set_mark_file): bug-fixes
