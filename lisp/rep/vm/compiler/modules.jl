@@ -332,7 +332,9 @@
 
 		((access)
 		 (setq accessed (nconc (reverse (cdr clause)) accessed))
-		 (setq header (cons clause header)))))
+		 (setq header (cons clause header)))
+
+		(t (setq header (cons clause header)))))
 	    config)
       (setq header (cons '(open rep.module-system) (nreverse header)))
 
