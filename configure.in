@@ -24,7 +24,7 @@ AC_INIT(src/rep_subrs.h)
 AC_CONFIG_HEADER(config.h src/rep_config.h)
 
 dnl Release versioning info
-version="0.14"
+version="0.15"
 
 dnl libtool versioning info: `CURRENT:REVISION:AGE'. CURRENT is the
 dnl current interface id, REVISION is the version number of this
@@ -118,6 +118,10 @@ if test "$with_gmp" != "no"; then
 
   if test "$found_gmp" = "yes"; then
     AC_DEFINE(HAVE_GMP)
+    _libs="$LIBS"
+    LIBS="$LIBS $GMP_LIBS"
+    AC_CHECK_FUNC(__gmp_randinit, AC_DEFINE(HAVE_GMP_RANDINIT))
+    LIBS="$_libs"
   elif test "$with_gmp" != "no"; then
     AC_MSG_ERROR([Can't find GMP (--without-gmp for cut-down non-GMP build)])
   fi

@@ -340,6 +340,9 @@
 /* Define this if GMP is to be used. */
 #undef HAVE_GMP
 
+/* The random number functions are only in gmp 3 */
+#undef HAVE_GMP_RANDINIT
+
 /* Define if continuations / threading support should be built */
 #undef WITH_CONTINUATIONS
 

@@ -1,3 +1,10 @@
+2001-10-01  John Harper  <jsh@unfactored.org>
+
+	* configure.in: version 0.15
+
+	* configure.in: check for __gmp_randinit () if gmp is found,
+	and define HAVE_GMP_RANDINIT if so
+
 2001-09-15  John Harper  <jsh@unfactored.org>
 
 	* config.h.in: removed spurious close-comment from after
