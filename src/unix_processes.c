@@ -1016,8 +1016,8 @@ set in the PROCESS prior to calling this function.
 			    return signal_file_error(temp_file);
 			close(fd);
 		    }
-		    ret = cmd_write_buffer_area(start, end,
-						temp_file, sym_nil);
+		    ret = cmd_write_buffer_contents(temp_file, start, end,
+						    sym_nil);
 		    if(ret && !NILP(ret))
 		    {
 			if(deletep)
