@@ -35,7 +35,7 @@
    "ref" "set" "fref" "fset" "init-bind" "unbind" "dup" "swap"	; 0x40
    "pop" "push\tnil" "push\tt" "cons" "car" "cdr" "rplaca" "rplacd"
    "nth" "nthcdr" "aset" "aref" "length" "eval" "add" "neg" "sub"	; 0x50
-   "mul" "div" "mod" "lnot" "not" "lor" "land"
+   "mul" "div" "rem" "lnot" "not" "lor" "land"
    "equal" "eq" "num-eq" "num-not-eq" "gt" "ge" "lt" "le"	; 0x60
    "inc" "dec" "lsh" "zerop" "null" "atom" "consp" "listp"
    "numberp" "stringp" "vectorp" "catch-kludge" "throw" "unwind-pro" "<obsolete>" "fboundp"	; 0x70
@@ -47,7 +47,7 @@
    nil nil nil nil nil nil nil nil	 ; 0xa0
    nil nil nil nil nil nil nil nil
    "set-current-buffer" "bind-buffer" "current-buffer" "bufferp" "markp" "windowp" "bind-window" "viewp"
-   "bind-view" "current-view" "swap2" nil nil nil nil nil
+   "bind-view" "current-view" "swap2" "mod" nil nil nil nil
    nil nil nil nil nil nil nil nil	 ; 0xc0
    nil nil nil nil nil nil nil nil
    nil nil nil nil nil nil nil nil	 ; 0xd0
