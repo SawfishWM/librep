@@ -52,7 +52,7 @@ at least one lower-case character)."
 ;;;###autoload
 (defun string-capitalized-p (x)
   "Returns t if string X is capitalized (first character is upper case)."
-  (upper-case-p (aref x 0)))
+  (and (> (length x) 0) (upper-case-p (aref x 0))))
 
 ;;;###autoload
 (defun string-upcase (x)
@@ -67,10 +67,11 @@ at least one lower-case character)."
 ;;;###autoload
 (defun capitalize-string (x)
   "Return a new string, a copy of X with its first character in upper case."
-  (let
-      ((new (copy-sequence x)))
-    (aset new 0 (char-upcase (aref new 0)))
-    new))
+  (if (zerop (length x))
+      x
+    (let ((new (copy-sequence x)))
+      (aset new 0 (char-upcase (aref new 0)))
+      new)))
 
 ;;;###autoload
 (defun mapconcat (fun sequence separator)

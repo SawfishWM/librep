@@ -1,3 +1,10 @@
+2003-03-18  John Harper  <jsh@unfactored.org>
+
+	* rep/data/string-util.jl (string-capitalized-p,
+	capitalize-string): fixed zero-length string case. Pointed out
+	and fixed by Charles Stewart <cas@linearity.org>, though I used
+	a slightly different patch
+
 2003-02-25  John Harper  <jsh@unfactored.org>
 
 	* version 0.16.2
