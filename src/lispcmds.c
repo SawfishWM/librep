@@ -35,11 +35,17 @@ static DEFSTRING(site_lisp_dir, SITE_LISP_DIR);
 static DEFSTRING(div_zero, "Divide by zero");
 
 DEFSYM(load_path, "load-path");
+DEFSYM(after_load_alist, "after-load-alist");
 DEFSYM(lisp_lib_dir, "lisp-lib-dir"); /*
 ::doc:load_path::
 A list of directory names. When `load' opens a lisp-file it searches each
 directory named in this list in turn until the file is found or the list
 is exhausted.
+::end::
+::doc:after_load_alist::
+A list of (LIBRARY FORMS...). Whenever the `load' command reads a file
+of Lisp code LIBRARY, it executes each of FORMS. Note that LIBRARY must
+exactly match the FILE argument given to `load'.
 ::end::
 ::doc:lisp_lib_dir::
 The name of the directory in which the standard lisp files live.
@@ -1405,19 +1411,31 @@ loaded and a warning is displayed.
     {
 	VALUE obj;
 	int c;
-	GC_root gc_stream;
+	GC_root gc_stream, gc_file;
 	PUSHGC(gc_stream, stream);
+	PUSHGC(gc_file, file);
 	c = stream_getc(stream);
 	while((c != EOF) && (obj = readl(stream, &c)))
 	{
 	    TEST_INT;
 	    if(INT_P || !cmd_eval(obj))
 	    {
-		POPGC;
+		POPGC; POPGC;
 		return(LISP_NULL);
 	    }
 	}
-	POPGC;
+	POPGC; POPGC;
+
+	/* Loading succeded. Look for an applicable item in
+	   the after-load-alist. */
+	obj = cmd_symbol_value(sym_after_load_alist, sym_t);
+	if(obj != LISP_NULL && CONSP(obj))
+	{
+	    obj = cmd_assoc(file, obj);
+	    if(obj != LISP_NULL && CONSP(obj))
+		cmd_progn(VCDR(obj));
+	}
+
 	return(sym_t);
     }
     return(LISP_NULL);
@@ -2428,6 +2446,8 @@ lispcmds_init(void)
     VSYM(sym_load_path)->value = list_3(VAL(null_string),
 					VAL(site_lisp_dir),
 					VAL(lisp_lib_dir));
+    INTERN(after_load_alist); DOC(after_load_alist);
+    VSYM(sym_after_load_alist)->value = sym_nil;
     INTERN(lisp_lib_dir); DOC(lisp_lib_dir);
     VSYM(sym_lisp_lib_dir)->value = VAL(lisp_lib_dir);
 }
