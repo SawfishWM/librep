@@ -117,7 +117,8 @@ struct rep_struct_struct {
        environment, or Qt to denote all specials. */
     repv special_env;
 
-    /* Bytecode interpreter to use when calling functions defined here */
+    /* Bytecode interpreter to use when calling functions defined here.
+       If null, call rep_apply_bytecode  */
     repv (*apply_bytecode) (repv subr, int nargs, repv *args);
 };
 

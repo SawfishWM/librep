@@ -718,7 +718,7 @@ BODY-THUNK may be modified by this function!
     if (rep_structure != rep_NULL)
 	s->apply_bytecode = rep_STRUCTURE (rep_structure)->apply_bytecode;
     else
-	s->apply_bytecode = rep_apply_bytecode;
+	s->apply_bytecode = 0;
     s->next = all_structures;
     all_structures = s;
 
@@ -1482,6 +1482,12 @@ DEFUN("structure-exports-all", Fstructure_exports_all,
     return s;
 }
 
+static repv
+invalid_apply_bytecode (repv subr, int nargs, repv *args)
+{
+    return Fsignal (Qinvalid_function, rep_LIST_1 (subr));
+}
+
 DEFUN("structure-install-vm", Fstructure_install_vm,
       Sstructure_install_vm, (repv structure, repv vm), rep_Subr2)
 {
@@ -1490,7 +1496,7 @@ DEFUN("structure-install-vm", Fstructure_install_vm,
     s = rep_STRUCTURE (structure);
     if (vm == Qnil)
     {
-	s->apply_bytecode = 0;
+	s->apply_bytecode = invalid_apply_bytecode;
 	return Qnil;
     }
     else

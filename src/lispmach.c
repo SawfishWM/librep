@@ -577,7 +577,6 @@ again:
 	BEGIN_INSN_WITH_ARG (OP_CALL)
 	    struct rep_Call lc;
 	    rep_bool was_closed;
-	    repv (*bc_apply) (repv, int, repv *);
 
 	    /* args are still available above the top of the stack,
 	       this just makes things a bit easier. */
@@ -597,174 +596,178 @@ again:
 		was_closed = rep_TRUE;
 	    }
 
-	    switch(rep_TYPE(tmp))
+	    if (!rep_CELLP (tmp))
+		goto invalid;
+	    if (rep_CELL8P (tmp))
 	    {
-	    case rep_Subr0:
-		TOP = rep_SUBR0FUN(tmp)();
-		break;
-
-	    case rep_Subr1:
-		TOP = rep_SUBR1FUN(tmp)(arg >= 1 ? stackp[1] : Qnil);
-		break;
-
-	    case rep_Subr2:
-		switch(arg)
+		switch (rep_CELL8_TYPE (tmp))
 		{
-		case 0:
-		    TOP = rep_SUBR2FUN(tmp)(Qnil, Qnil);
+		case rep_Subr0:
+		    TOP = rep_SUBR0FUN(tmp)();
 		    break;
-		case 1:
-		    TOP = rep_SUBR2FUN(tmp)(stackp[1], Qnil);
-		    break;
-		default:
-		    TOP = rep_SUBR2FUN(tmp)(stackp[1], stackp[2]);
-		    break;
-		}
-	        break;
 
-	    case rep_Subr3:
-		switch(arg)
-		{
-		case 0:
-		    TOP = rep_SUBR3FUN(tmp)(Qnil, Qnil, Qnil);
+		case rep_Subr1:
+		    TOP = rep_SUBR1FUN(tmp)(arg >= 1 ? stackp[1] : Qnil);
 		    break;
-		case 1:
-		    TOP = rep_SUBR3FUN(tmp)(stackp[1], Qnil, Qnil);
-		    break;
-		case 2:
-		    TOP = rep_SUBR3FUN(tmp)(stackp[1], stackp[2], Qnil);
-		    break;
-		default:
-		    TOP = rep_SUBR3FUN(tmp)(stackp[1], stackp[2], stackp[3]);
-		    break;
-		}
-	        break;
 
-	    case rep_Subr4:
-		switch(arg)
-		{
-		case 0:
-		    TOP = rep_SUBR4FUN(tmp)(Qnil, Qnil,
-					 Qnil, Qnil);
-		    break;
-		case 1:
-		    TOP = rep_SUBR4FUN(tmp)(stackp[1], Qnil,
-					 Qnil, Qnil);
-		    break;
-		case 2:
-		    TOP = rep_SUBR4FUN(tmp)(stackp[1], stackp[2],
-					 Qnil, Qnil);
-		    break;
-		case 3:
-		    TOP = rep_SUBR4FUN(tmp)(stackp[1], stackp[2],
-					 stackp[3], Qnil);
-		    break;
-		default:
-		    TOP = rep_SUBR4FUN(tmp)(stackp[1], stackp[2],
-					 stackp[3], stackp[4]);
-		    break;
-		}
-	        break;
-
-	    case rep_Subr5:
-		switch(arg)
-		{
-		case 0:
-		    TOP = rep_SUBR5FUN(tmp)(Qnil, Qnil, Qnil,
-					 Qnil, Qnil);
-		    break;
-		case 1:
-		    TOP = rep_SUBR5FUN(tmp)(stackp[1], Qnil, Qnil,
-					 Qnil, Qnil);
-		    break;
-		case 2:
-		    TOP = rep_SUBR5FUN(tmp)(stackp[1], stackp[2], Qnil,
-					 Qnil, Qnil);
-		    break;
-		case 3:
-		    TOP = rep_SUBR5FUN(tmp)(stackp[1], stackp[2], stackp[3],
-					 Qnil, Qnil);
-		    break;
-		case 4:
-		    TOP = rep_SUBR5FUN(tmp)(stackp[1], stackp[2], stackp[3],
-					 stackp[4], Qnil);
-		    break;
-		default:
-		    TOP = rep_SUBR5FUN(tmp)(stackp[1], stackp[2], stackp[3],
-					 stackp[4], stackp[5]);
-		    break;
-		}
-	        break;
-
-	    case rep_SubrN:
-		tmp2 = Qnil;
-		POPN(-arg); /* reclaim my args */
-		while(arg--)
-		    tmp2 = inline_Fcons(RET_POP, tmp2);
-		lc.args = tmp2;
-		TOP = rep_SUBRNFUN(tmp)(tmp2);
-		break;
-
-	    case rep_Compiled:
-		bc_apply = rep_STRUCTURE (rep_structure)->apply_bytecode;
-		if (was_closed && bc_apply != 0)
-		{
-		    if (bc_apply != rep_apply_bytecode)
+		case rep_Subr2:
+		    switch(arg)
 		    {
-			TOP = bc_apply (tmp, arg, stackp+1);
+		    case 0:
+			TOP = rep_SUBR2FUN(tmp)(Qnil, Qnil);
+			break;
+		    case 1:
+			TOP = rep_SUBR2FUN(tmp)(stackp[1], Qnil);
+			break;
+		    default:
+			TOP = rep_SUBR2FUN(tmp)(stackp[1], stackp[2]);
+			break;
 		    }
-		    else if (impurity != 0 || *pc != OP_RETURN)
+		    break;
+
+		case rep_Subr3:
+		    switch(arg)
 		    {
-			TOP = APPLY (tmp, arg, stackp+1);
+		    case 0:
+			TOP = rep_SUBR3FUN(tmp)(Qnil, Qnil, Qnil);
+			break;
+		    case 1:
+			TOP = rep_SUBR3FUN(tmp)(stackp[1], Qnil, Qnil);
+			break;
+		    case 2:
+			TOP = rep_SUBR3FUN(tmp)(stackp[1], stackp[2], Qnil);
+			break;
+		    default:
+			TOP = rep_SUBR3FUN(tmp)(stackp[1], stackp[2], stackp[3]);
+			break;
 		    }
-		    else
+		    break;
+
+		case rep_Subr4:
+		    switch(arg)
 		    {
-			/* A tail call that's safe for eliminating */
-			repv bindings;
+		    case 0:
+			TOP = rep_SUBR4FUN(tmp)(Qnil, Qnil, Qnil, Qnil);
+			break;
+		    case 1:
+			TOP = rep_SUBR4FUN(tmp)(stackp[1], Qnil, Qnil, Qnil);
+			break;
+		    case 2:
+			TOP = rep_SUBR4FUN(tmp)(stackp[1], stackp[2], Qnil, Qnil);
+			break;
+		    case 3:
+			TOP = rep_SUBR4FUN(tmp)(stackp[1], stackp[2], stackp[3], Qnil);
+			break;
+		    default:
+			TOP = rep_SUBR4FUN(tmp)(stackp[1], stackp[2], stackp[3], stackp[4]);
+			break;
+		    }
+		    break;
 
-			/* snap the call stack */
-			rep_call_stack = lc.next;
-			rep_call_stack->fun = lc.fun;
-			rep_call_stack->args = lc.args;
-			rep_call_stack->args_evalled_p = lc.args_evalled_p;
+		case rep_Subr5:
+		    switch(arg)
+		    {
+		    case 0:
+			TOP = rep_SUBR5FUN(tmp)(Qnil, Qnil, Qnil, Qnil, Qnil);
+			break;
+		    case 1:
+			TOP = rep_SUBR5FUN(tmp)(stackp[1], Qnil, Qnil, Qnil, Qnil);
+			break;
+		    case 2:
+			TOP = rep_SUBR5FUN(tmp)(stackp[1], stackp[2], Qnil, Qnil, Qnil);
+			break;
+		    case 3:
+			TOP = rep_SUBR5FUN(tmp)(stackp[1], stackp[2], stackp[3], Qnil, Qnil);
+			break;
+		    case 4:
+			TOP = rep_SUBR5FUN(tmp)(stackp[1], stackp[2], stackp[3], stackp[4], Qnil);
+			break;
+		    default:
+			TOP = rep_SUBR5FUN(tmp)(stackp[1], stackp[2], stackp[3], stackp[4], stackp[5]);
+			break;
+		    }
+		    break;
 
-			/* since impurity==0 there can only be lexical
-			   bindings; these were unbound when switching
-			   environments.. */
+		case rep_SubrN:
+		    tmp2 = Qnil;
+		    POPN(-arg); /* reclaim my args */
+		    while(arg--)
+			tmp2 = inline_Fcons(RET_POP, tmp2);
+		    lc.args = tmp2;
+		    TOP = rep_SUBRNFUN(tmp)(tmp2);
+		    break;
 
-			bindings = (make_bytecode_frame
-				    (rep_COMPILED_LAMBDA(tmp), arg, stackp+1));
-			if(bindings != rep_NULL)
+		case rep_Compiled:
+		    if (was_closed)
+		    {
+			repv (*bc_apply) (repv, int, repv *);
+			bc_apply = rep_STRUCTURE (rep_structure)->apply_bytecode;
+
+			if (bc_apply == 0)	/* calling self */
 			{
-			    int n_req_s, n_req_b;
-
-			    /* set up parameters */
-			    code = rep_COMPILED_CODE (tmp);
-			    consts = rep_COMPILED_CONSTANTS (tmp);
-			    frame = bindings;
-
-			    rep_POPGCN; rep_POPGCN; rep_POPGC; rep_POPGC;
-
-			    /* do the goto, after deciding if the
-			       current stack allocation is sufficient. */
-			    n_req_s = rep_INT (rep_COMPILED_STACK (tmp)) & 0xffff;
-			    n_req_b = rep_INT (rep_COMPILED_STACK (tmp)) >> 16;
-			    if (n_req_s > v_stkreq || n_req_b > b_stkreq)
+			    if (impurity != 0 || *pc != OP_RETURN)
 			    {
-				v_stkreq = n_req_s;
-				b_stkreq = n_req_b;
-				goto again_stack;
+				TOP = APPLY (tmp, arg, stackp+1);
 			    }
 			    else
-				goto again;
+			    {
+				/* A tail call that's safe for eliminating */
+				repv bindings;
+
+				/* snap the call stack */
+				rep_call_stack = lc.next;
+				rep_call_stack->fun = lc.fun;
+				rep_call_stack->args = lc.args;
+				rep_call_stack->args_evalled_p = lc.args_evalled_p;
+
+				/* since impurity==0 there can only be lexical
+				   bindings; these were unbound when switching
+				   environments.. */
+
+				bindings = (make_bytecode_frame
+					    (rep_COMPILED_LAMBDA(tmp),
+					     arg, stackp+1));
+				if(bindings != rep_NULL)
+				{
+				    int n_req_s, n_req_b;
+
+				    /* set up parameters */
+				    code = rep_COMPILED_CODE (tmp);
+				    consts = rep_COMPILED_CONSTANTS (tmp);
+				    frame = bindings;
+
+				    rep_POPGCN; rep_POPGCN; rep_POPGC; rep_POPGC;
+
+				    /* do the goto, after deciding if the
+					current stack allocation is sufficient. */
+				    n_req_s = rep_INT (rep_COMPILED_STACK (tmp)) & 0xffff;
+				    n_req_b = rep_INT (rep_COMPILED_STACK (tmp)) >> 16;
+				    if (n_req_s > v_stkreq || n_req_b > b_stkreq)
+				    {
+					v_stkreq = n_req_s;
+					b_stkreq = n_req_b;
+					goto again_stack;
+				    }
+				    else
+					goto again;
+				}
+			    }
+			}
+			else
+			{
+			    TOP = bc_apply (tmp, arg, stackp+1);
 			}
 		    }
-		}
-		else
-		    goto invalid;
-		break;
+		    else
+			goto invalid;
+		    break;
 
-	    case rep_Cons:
+		default: invalid:
+		    TOP = Fsignal(Qinvalid_function, rep_LIST_1(TOP));
+		}
+	    }
+	    else /* !consp */
+	    {
 		/* a call to intepreted code, just cons up the args
 		   and send it to the interpreter.. */
 		POPN(-arg);
@@ -773,10 +776,6 @@ again:
 		rep_POP_CALL (lc);
 		TOP = rep_funcall(TOP, tmp2, rep_FALSE);
 		NEXT;
-
-	    default:
-	    invalid:
-		TOP = Fsignal(Qinvalid_function, rep_LIST_1(TOP));
 	    }
 	    rep_POP_CALL(lc);
 	    INLINE_NEXT;
@@ -1984,7 +1983,7 @@ DEFUN("run-byte-code", Frun_byte_code, Srun_byte_code,
     if (rep_STRUCTUREP (code))
     {
 	/* install ourselves in this structure */
-	rep_STRUCTURE (code)->apply_bytecode = rep_apply_bytecode;
+	rep_STRUCTURE (code)->apply_bytecode = 0;
 	return Qt;
     }
 

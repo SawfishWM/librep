@@ -1504,18 +1504,22 @@ again:
 	{
 	    int nargs;
 	    repv *args;
-	    
-	    rep_USE_FUNARG(closure);
+	    repv (*bc_apply) (repv, int, repv *);
 
-	    if (rep_STRUCTURE (rep_structure)->apply_bytecode == 0)
-		goto invalid;
+	    rep_USE_FUNARG(closure);
+	    bc_apply = rep_STRUCTURE (rep_structure)->apply_bytecode;
 
 	    nargs = rep_list_length (arglist);
 	    args = alloca (sizeof (repv) * nargs);
-	    if (!copy_to_vector (arglist, nargs, args, eval_args, rep_FALSE))
-		result = rep_NULL;
+	    if (copy_to_vector (arglist, nargs, args, eval_args, rep_FALSE))
+	    {
+		if (bc_apply == 0)
+		    result = rep_apply_bytecode (fun, nargs, args);
+		else
+		    result = bc_apply (fun, nargs, args);
+	    }
 	    else
-		result = rep_STRUCTURE (rep_structure)->apply_bytecode (fun, nargs, args);
+		result = rep_NULL;
 	    break;
 	}
 	/* FALL THROUGH */
@@ -1782,16 +1786,18 @@ rep_call_lispn (repv fun, int argc, repv *argv)
 
 	struct rep_Call lc;
 	repv ret;
+	repv (*bc_apply) (repv, int, repv *);
 
 	lc.fun = fun;
 	lc.args = rep_void_value;
 	lc.args_evalled_p = Qt;
 	rep_PUSH_CALL (lc);
 	rep_USE_FUNARG (fun);
-	if (rep_STRUCTURE (rep_structure)->apply_bytecode != 0)
-	    ret = rep_STRUCTURE (rep_structure)->apply_bytecode (rep_FUNARG (fun)->fun, argc, argv);
+	bc_apply = rep_STRUCTURE (rep_structure)->apply_bytecode;
+	if (bc_apply == 0)
+	    ret = rep_apply_bytecode (rep_FUNARG (fun)->fun, argc, argv);
 	else
-	    ret = Fsignal (Qinvalid_function, rep_LIST_1 (fun));
+	    ret = bc_apply (rep_FUNARG (fun)->fun, argc, argv);
 	rep_POP_CALL (lc);
 	return ret;
     }
