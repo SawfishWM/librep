@@ -204,7 +204,7 @@ typedef struct rep_guardian_struct {
 
 /* cons' */
 
-#define rep_CONSBLK_SIZE	510		/* ~4k */
+#define rep_CONSBLK_SIZE	1022		/* ~8k */
 
 /* Structure of cons allocation blocks */
 typedef struct rep_cons_block_struct {
