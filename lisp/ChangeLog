@@ -1,3 +1,12 @@
+Sun May 17 19:51:41 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rm-misc.jl (rm-forward): new method of deleting trailing
+	blank lines, this one seems to work
+
+	* send-mail.jl (send-mail-show-output): new variable, when t
+	output from sendmail is always displayed. Replaces
+	sendmail-debug
+
 Sat May 16 23:39:14 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* mail-dir.jl (mail-dir-auto-expand-aliases): deleted; the user
