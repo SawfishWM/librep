@@ -23,6 +23,7 @@
 
 #include "lists.h"
 #include "build.h"
+#include <stdlib.h>
 
 #define HAVE_SUBPROCESSES
 
@@ -37,7 +38,9 @@
 
 /* These are related to the definition of sys_alloc() in unix_main.c */
 #ifndef DEBUG_SYS_ALLOC
-# define sys_free(p) do { if(p != 0) free(p); } while(0)
+# define sys_alloc(n) malloc(n)
+# define sys_realloc(p,n) realloc(p,n)
+# define sys_free(p) free(p)
 # define sys_memory_kill()
 #else
   extern void sys_free(void *p);

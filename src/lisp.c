@@ -508,9 +508,9 @@ static VALUE
 read_str(VALUE strm, int *c_p)
 {
     VALUE result;
-    int buflen = MAXBUCKETSIZE;	/* biggest block that will be cached */
+    int buflen = 128;
     int c = stream_getc(strm);
-    u_char *buf = str_alloc(buflen);
+    u_char *buf = sys_alloc(buflen);
     register u_char *cur = buf;
     u_char *bufend = buf + buflen;
     if(buf)
@@ -520,11 +520,11 @@ read_str(VALUE strm, int *c_p)
 	    if(cur == bufend)
 	    {
 		register int newbuflen = buflen * 2;
-		register u_char *newbuf = str_alloc(newbuflen);
+		register u_char *newbuf = sys_alloc(newbuflen);
 		if(newbuf)
 		{
 		    memcpy(newbuf, buf, cur - buf);
-		    str_free(buf);
+		    sys_free(buf);
 		    buf = newbuf;
 		    cur = buf + buflen;
 		    buflen = newbuflen;
@@ -555,7 +555,7 @@ read_str(VALUE strm, int *c_p)
 	    *c_p = stream_getc(strm);
 	    result = string_dupn(buf, cur - buf);
 	}
-	str_free(buf);
+	sys_free(buf);
 	return result;
     }
     return mem_error();

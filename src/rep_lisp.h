@@ -81,11 +81,11 @@
 /* True when V is a long integer. */
 #define LONG_INTP(v)	(CONSP(v) && INTP(VCAR(v)) && INTP(VCDR(v)))
 
-#if CELL_ALIGNMENT <= STRMEM_ALIGNMENT
+#if CELL_ALIGNMENT <= MALLOC_ALIGNMENT
   /* Allocate SIZE bytes of memory, aligned to NORMAL_ALIGNMENT */
-# define ALLOC_CELL(n) str_alloc(n)
+# define ALLOC_CELL(n) sys_alloc(n)
   /* Free something allocated by ALLOC_OBJECT */
-# define FREE_CELL(x)  str_free(x)
+# define FREE_CELL(x)  sys_free(x)
 #else
 # error Need an aligned malloc()
 #endif
@@ -274,13 +274,14 @@ extern Lisp_Type_Data data_types[V_MAX];
    introducing extra overhead (the need to differentiate between
    the two). */
 
-typedef struct {
+typedef struct lisp_string {
     /* Bits 0->7 are standard cell8 defines. Bits 8->31 store the length
        of the string.
 
        This means that strings can't contain more than 2^24-1 bytes
        (thats about 16.7MB) */
     VALUE car;
+    struct lisp_string *next;
 
     union {
 #ifndef INLINE_STATIC_STRINGS
@@ -294,12 +295,12 @@ typedef struct {
     } data;
 } Lisp_String;
 
-#define LISP_MAX_STRING		((1 << 24) - 1)
 #define STRING_LEN_SHIFT	8
+#define LISP_MAX_STRING		((1 << (VALUE_BITS - STRING_LEN_SHIFT)) - 1)
 
 /* The number of bytes that need to be allocated for a string cell
    containg X string bytes (including terminating zero). */
-#define DSTRING_SIZE(x) 	(sizeof(VALUE) + (x))
+#define DSTRING_SIZE(x) 	(sizeof(VALUE) + sizeof(Lisp_String *) + (x))
 
 #define STRINGP(v)		VCELL8_TYPEP(v, V_String)
 #define VSTRING(v)		((Lisp_String *)VPTR(v))
@@ -317,6 +318,7 @@ typedef struct {
 /* Structure for initialising statically allocated strings. */
 struct static_string {
     VALUE car;
+    Lisp_String *next;
     u_char *data;
 };
 
@@ -325,7 +327,7 @@ struct static_string {
 # define DEFSTRING(v, s) 					\
     static struct static_string v ALIGN_CELL			\
 	= { ((sizeof(s) - 1) << STRING_LEN_SHIFT)		\
-	    | CELL8_STATIC_BIT | V_String, s }
+	    | CELL8_STATIC_BIT | V_String, 0, s }
 
 # define VSTR(v)	((VSTRING(v)->car & STRING_STATIC)	\
 			 ? VSTRING(v)->data.static_string	\
@@ -345,6 +347,7 @@ struct static_string {
 	     QUOTE(v) ":\n"						\
 	     "\t.long (((2f-1f)-1) << " QUOTE(STRING_LEN_SHIFT) ") | "	\
 	     QUOTE(CELL8_STATIC_BIT) " | " QUOTE(V_String) "\n"		\
+	     "\t.long 0\n"						\
 	     "1:\t.asciz \"" s "\"\n2:\n")
 
 # define VSTR(v)	(VSTRING(v)->data.dynamic_string)

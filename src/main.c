@@ -34,9 +34,6 @@ _PR void main_init(void);
 _PR void *common_db;
 void *common_db;
 
-_PR StrMem main_strmem;
-StrMem main_strmem;
-
 _PR int recurse_depth;
 int recurse_depth = -1;
 
@@ -142,7 +139,6 @@ main(int argc, char **argv)
 
     if(!sys_memory_init())
 	return 10;
-    sm_init(&main_strmem);
 
     common_db = db_alloc("common", 4096);
 
@@ -163,7 +159,6 @@ main(int argc, char **argv)
 	rc = 5;
     values_kill();
 
-    sm_kill(&main_strmem);
     sys_memory_kill();
 
     return rc;

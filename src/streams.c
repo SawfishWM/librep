@@ -378,7 +378,7 @@ top:
 		{
 		    s[w->w_MessageLen++] = c;
 		    s[w->w_MessageLen] = 0;
-		    str_free(w->w_Message);
+		    sys_free(w->w_Message);
 		    w->w_Message = s;
 		    w->w_Flags |= WINFF_MESSAGE;
 		}
@@ -508,7 +508,7 @@ top:
 		{
 		    memcpy(s + w->w_MessageLen, buf, bufLen);
 		    s[newlen] = 0;
-		    str_free(w->w_Message);
+		    sys_free(w->w_Message);
 		    w->w_Message = s;
 		    w->w_MessageLen = newlen;
 		    w->w_Flags |= WINFF_MESSAGE;

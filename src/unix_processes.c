@@ -1048,7 +1048,7 @@ set in the PROCESS prior to calling this function.
     else
     {
 	int numargs = list_length(pr->pr_Args) + 1;
-	char **argv = str_alloc(sizeof(char *) * (numargs + 1));
+	char **argv = sys_alloc(sizeof(char *) * (numargs + 1));
 	if(argv)
 	{
 	    int i;
@@ -1070,7 +1070,7 @@ set in the PROCESS prior to calling this function.
 		res = cmd_signal(sym_process_error, list_2(VAL(&cant_start),
 							   VAL(pr)));
 	    }
-	    str_free(argv);
+	    sys_free(argv);
 	}
     }
     return(res);
@@ -1149,7 +1149,7 @@ set in the PROCESS prior to calling this function.
     if(NILP(res))
     {
 	int numargs = list_length(pr->pr_Args) + 1;
-	char **argv = str_alloc(sizeof(char *) * (numargs + 1));
+	char **argv = sys_alloc(sizeof(char *) * (numargs + 1));
 	if(argv)
 	{
 	    int i;
@@ -1171,7 +1171,7 @@ set in the PROCESS prior to calling this function.
 		res = cmd_signal(sym_process_error, list_2(VAL(&cant_start),
 							   VAL(pr)));
 	    }
-	    str_free(argv);
+	    sys_free(argv);
 	}
     }
     return(res);

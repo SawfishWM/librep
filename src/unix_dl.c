@@ -74,7 +74,7 @@ open_dl_library(VALUE file_name)
 		cmd_signal(sym_error, LIST_1(string_dup(err)));
 	    return 0;
 	}
-	x = str_alloc(sizeof(struct dl_lib_info));
+	x = sys_alloc(sizeof(struct dl_lib_info));
 	if(x == 0)
 	{
 	    mem_error();
@@ -90,7 +90,7 @@ open_dl_library(VALUE file_name)
 	    if(ret == LISP_NULL)
 	    {
 		/* error. abort abort.. */
-		str_free(x);
+		sys_free(x);
 		dlclose(handle);
 		return 0;
 	    }
@@ -135,7 +135,7 @@ kill_dl_libraries(void)
 	if(exit_func != 0)
 	    exit_func();
 	dlclose(x->handle);
-	str_free(x);
+	sys_free(x);
 	x = next;
     }
 }

@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <time.h>
 
+_PR u_char *str_dupn(const u_char *old, int len);
 _PR void misc_init(void);
 
 DEFSTRING(vers_string, VERSSTRING);
@@ -86,6 +87,18 @@ memchr(const void *mem, int c, size_t len)
     return(NULL);
 }
 #endif /* !HAVE_MEMCHR */
+
+u_char *
+str_dupn(const u_char *old, int len)
+{
+    char *new = sys_alloc(len + 1);
+    if(new)
+    {
+	memcpy(new, old, len);
+	new[len] = 0;
+    }
+    return new;
+}
 
 _PR VALUE cmd_beep(void);
 DEFUN_INT("beep", cmd_beep, subr_beep, (void), V_Subr0, DOC_beep, "") /*

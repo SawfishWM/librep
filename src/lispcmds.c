@@ -1114,11 +1114,11 @@ extend_concat(u_char **buf, int *bufLen, int i, int addLen)
     if((i + addLen) < *bufLen)
 	return(TRUE);
     newbuflen = (i + addLen) * 2;
-    newbuf = str_alloc(newbuflen);
+    newbuf = sys_alloc(newbuflen);
     if(newbuf)
     {
 	memcpy(newbuf, *buf, i);
-	str_free(*buf);
+	sys_free(*buf);
 	*buf = newbuf;
 	*bufLen = newbuflen;
 	return(TRUE);
@@ -1135,8 +1135,8 @@ Concatenates all ARGS... into a single string, each argument can be a string,
 a character or a list or vector of characters.
 ::end:: */
 {
-    int buflen = MAXBUCKETSIZE;	/* biggest block that will be cached */
-    u_char *buf = str_alloc(buflen);
+    int buflen = 128;
+    u_char *buf = sys_alloc(buflen);
     if(buf)
     {
 	VALUE res = LISP_NULL;
@@ -1203,7 +1203,7 @@ a character or a list or vector of characters.
 	}
 	res = string_dupn(buf, i);
 error:
-	str_free(buf);
+	sys_free(buf);
 	return(res);
     }
     return(LISP_NULL);

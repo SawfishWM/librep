@@ -174,7 +174,8 @@ type_cmp(VALUE val1, VALUE val2)
 
 /* Strings */
 
-static StrMem lisp_strmem;
+static Lisp_String *strings;
+static int allocated_strings, allocated_string_bytes;
 
 DEFSTRING(null_string_const, "");
 
@@ -198,14 +199,19 @@ make_string(int len)
 	return cmd_signal(sym_error, LIST_1(VAL(&string_overflow)));
 
     memlen = DSTRING_SIZE(len);
-    str = sm_alloc(&lisp_strmem, memlen);
+    str = ALLOC_OBJECT(memlen);
     if(str != NULL)
     {
 	str->car = MAKE_STRING_CAR(len - 1);
+	str->next = strings;
+	strings = str;
+	allocated_strings++;
+	allocated_string_bytes += memlen;
 	data_after_gc += memlen;
 	return VAL(str);
     }
-    return LISP_NULL;
+    else
+	return LISP_NULL;
 }
 
 VALUE
@@ -260,56 +266,24 @@ string_cmp(VALUE v1, VALUE v2)
 static void
 string_sweep(void)
 {
-    int bucket;
-    MemChunk *mlc;
-    for(bucket = 0; bucket < NUMBUCKETS; bucket++)
+    Lisp_String *x = strings;
+    strings = 0;
+    allocated_strings = 0;
+    allocated_string_bytes = 0;
+    while(x != 0)
     {
-	MemChunk **freelist = &lisp_strmem.sm_MemBuckets[bucket].mbu_FreeList;
-	MemBlock *mbl = (MemBlock *)lisp_strmem.sm_MemBuckets[bucket].mbu_MemBlocks.mlh_Head;
-	MemBlock *nxt;
-	int chnksiz = MCHNK_SIZE((bucket + 1) * GRAIN);
-	int numchnks = lisp_strmem.sm_ChunksPerBlock[bucket];
-	*freelist = NULL;
-	lisp_strmem.sm_MemBuckets[bucket].mbu_FreeCount = 0;
-	while((nxt = (MemBlock *)mbl->mbl_Node.mln_Succ))
+	Lisp_String *next = x->next;
+	if(GC_CELL_MARKEDP(VAL(x)))
 	{
-	    MemChunk *mc = mbl->mbl_Chunks;
-	    int j;
-	    for(j = 0; j < numchnks; j++)
-	    {
-		if(mc->mc_BlkType != MBT_FREE)
-		{
-		    register Lisp_String *ds = (Lisp_String *)mc->mc_Mem.mem;
-		    if(GC_CELL_MARKEDP(VAL(ds)))
-			GC_CLR_CELL(VAL(ds));
-		    else
-		    {
-			mc->mc_BlkType = MBT_FREE;
-			mc->mc_Mem.nextfree = *freelist;
-			lisp_strmem.sm_MemBuckets[bucket].mbu_FreeCount++;
-			*freelist = mc;
-		    }
-		}
-		mc = (MemChunk *)((char *)mc + chnksiz);
-	    }
-	    mbl = nxt;
+	    GC_CLR_CELL(VAL(x));
+	    x->next = strings;
+	    strings = x;
+	    allocated_strings++;
+	    allocated_string_bytes += DSTRING_SIZE(STRING_LEN(VAL(x)));
 	}
-    }
-    mlc = lisp_strmem.sm_MallocChain;
-    lisp_strmem.sm_MallocChain = NULL;
-    while(mlc)
-    {
-	MemChunk *nxtmlc = mlc->mc_Header.next;
-	register Lisp_String *ds = (Lisp_String *)mlc->mc_Mem.mem;
-	if(!GC_CELL_MARKEDP(VAL(ds)))
-	    sys_free(mlc);
 	else
-	{
-	    GC_CLR_CELL(VAL(ds));
-	    mlc->mc_Header.next = lisp_strmem.sm_MallocChain;
-	    lisp_strmem.sm_MallocChain = mlc;
-	}
-	mlc = nxtmlc;
+	    sys_free(x);
+	x = next;
     }
 }
 
@@ -944,10 +918,6 @@ last garbage-collection is greater than `garbage-threshold'.
 	if(data_types[i].sweep != NULL)
 	    data_types[i].sweep();
 
-    /* This seems an ideal time to reclaim any general strings... */
-    sm_flush(&main_strmem);
-    flush_all_buffers();
-
 #ifndef NO_GC_MSG
     cmd_message(VAL(&gc_done), sym_t);
     restore_message(curr_win, old_msg, old_msg_len);
@@ -963,10 +933,12 @@ last garbage-collection is greater than `garbage-threshold'.
 
     if(NILP(noStats))
     {
-	return(list_3(cmd_cons(MAKE_INT(used_cons),
+	return(list_4(cmd_cons(MAKE_INT(used_cons),
 			       MAKE_INT(allocated_cons - used_cons)),
 		      cmd_cons(MAKE_INT(used_symbols),
 			       MAKE_INT(allocated_symbols - used_symbols)),
+		      cmd_cons(MAKE_INT(allocated_strings),
+			       MAKE_INT(allocated_string_bytes)),
 		      MAKE_INT(used_vector_slots)));
     }
     return(sym_t);
@@ -976,8 +948,6 @@ last garbage-collection is greater than `garbage-threshold'.
 void
 pre_values_init(void)
 {
-    sm_init(&lisp_strmem);
-    lisp_strmem.sm_UseMallocChain = TRUE;
 }
 
 void
@@ -996,6 +966,7 @@ values_kill(void)
 {
     Lisp_Cons_Block *cb = cons_block_chain;
     Lisp_Vector *v = vector_chain;
+    Lisp_String *s = strings;
     while(cb != NULL)
     {
 	Lisp_Cons_Block *nxt = cb->next;
@@ -1008,9 +979,15 @@ values_kill(void)
 	FREE_OBJECT(v);
 	v = nxt;
     }
+    while(s != NULL)
+    {
+	Lisp_String *nxt = s->next;
+	FREE_OBJECT(s);
+	s = nxt;
+    }
     cons_block_chain = NULL;
     vector_chain = NULL;
-    sm_kill(&lisp_strmem);
+    strings = NULL;
 }
 
 

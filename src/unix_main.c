@@ -475,10 +475,20 @@ sys_poll_input(int fd)
 }
 
 
-/* Memory allocation; sys_free() is a macro in unix_defs.h */
+/* Memory allocation; most of these are normally macros in unix_defs.h */
+
+#if defined(DOUG_LEA_MALLOC) && !defined(LIBC_MALLOC)
+void *
+__jade_morecore(long size)
+{
+    void *ptr = sbrk(size);
+    /* functions in the __morecore hook are expected to return zero
+       when failing */
+    return (ptr == (void *)-1) ? 0 : ptr;
+}
+#endif
 
 #ifdef DEBUG_SYS_ALLOC
-
 struct alloc_data {
     struct alloc_data *next;
     size_t size;
@@ -487,38 +497,25 @@ struct alloc_data {
 };
 
 static struct alloc_data *allocations;
-#endif
 
 void *
 sys_alloc(u_int length)
 {
     void *mem;
-#ifdef DEBUG_SYS_ALLOC
     length += sizeof(struct alloc_data);
-#endif
     mem = malloc(length);
-    if(mem == 0)
-    {
-	/* Unsuccessful; flush the string allocation blocks before
-	   trying one last time.. */
-	sm_flush(&main_strmem);
-	mem = malloc(length);
-    }
     if(mem != 0)
     {
+	struct alloc_data *x = mem;
+
 	/* Check that the alignment promised actually occurs */
 	assert((((PTR_SIZED_INT)mem) & (MALLOC_ALIGNMENT - 1)) == 0);
 
-#ifdef DEBUG_SYS_ALLOC
-	{
-	    struct alloc_data *x = mem;
-	    mem = ((char *)mem) + sizeof(struct alloc_data);
-	    x->next = allocations;
-	    allocations = x;
-	    x->size = length - sizeof(struct alloc_data);
-	    x->function = db_return_address();
-	}
-#endif
+	mem = ((char *)mem) + sizeof(struct alloc_data);
+	x->next = allocations;
+	allocations = x;
+	x->size = length - sizeof(struct alloc_data);
+	x->function = db_return_address();
     }
     return mem;
 }
@@ -527,45 +524,32 @@ void *
 sys_realloc(void *ptr, u_int length)
 {
     void *mem;
-#ifdef DEBUG_SYS_ALLOC
     length += sizeof(struct alloc_data);
     ptr = (void *)(((char *)ptr) - sizeof(struct alloc_data));
-#endif
     mem = realloc(ptr, length);
-    if(mem == 0)
-    {
-	/* Unsuccessful; flush the string allocation blocks before
-	   trying one last time.. */
-	sm_flush(&main_strmem);
-	mem = realloc(ptr, length);
-    }
     if(mem != 0)
     {
+	struct alloc_data *x = mem;
+
 	/* Check that the alignment promised actually occurs */
 	assert((((PTR_SIZED_INT)mem) & (MALLOC_ALIGNMENT - 1)) == 0);
 
-#ifdef DEBUG_SYS_ALLOC
+	if(allocations == ptr)
+	    allocations = x;
+	else
 	{
-	    struct alloc_data *x = mem;
-	    if(allocations == ptr)
-		allocations = x;
-	    else
-	    {
-		struct alloc_data *p = allocations;
-		while(p->next != ptr)
-		    p = p->next;
-		p->next = x;
-	    }
-	    mem = ((char *)mem) + sizeof(struct alloc_data);
-	    x->size = length - sizeof(struct alloc_data);
-	    x->function = db_return_address();
+	    struct alloc_data *p = allocations;
+	    while(p->next != ptr)
+		p = p->next;
+	    p->next = x;
 	}
-#endif
+	mem = ((char *)mem) + sizeof(struct alloc_data);
+	x->size = length - sizeof(struct alloc_data);
+	x->function = db_return_address();
     }
     return mem;
 }
 
-#ifdef DEBUG_SYS_ALLOC
 void
 sys_free(void *ptr)
 {

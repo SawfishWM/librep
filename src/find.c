@@ -376,7 +376,7 @@ compile_regexp(VALUE re)
 	regexp *compiled = regcomp(VSTR(re));
 	if(compiled != 0)
 	{
-	    this = str_alloc(sizeof(struct cached_regexp));
+	    this = sys_alloc(sizeof(struct cached_regexp));
 	    if(this != 0)
 	    {
 		this->regexp = re;
@@ -416,7 +416,7 @@ mark_cached_regexps(void)
 	{
 	    xp = x->next;
 	    free(x->compiled);
-	    str_free(x);
+	    sys_free(x);
 	    x = xp;
 	}
     }
@@ -432,7 +432,7 @@ release_cached_regexps(void)
     {
 	struct cached_regexp *next = x->next;
 	free(x->compiled);
-	str_free(x);
+	sys_free(x);
 	x = next;
     }
 }
@@ -1018,7 +1018,7 @@ it is returned as-is (un-copied).
     DECLARE1(str, STRINGP);
     s = VSTR(str);
     slen = STRING_LEN(str);
-    buf = str_alloc(buflen);
+    buf = sys_alloc(buflen);
     if(!buf)
 	goto error;
     while(slen-- > 0)
@@ -1028,11 +1028,11 @@ it is returned as-is (un-copied).
 	if(i + 2 >= buflen)
 	{
 	    int newlen = buflen * 2;
-	    u_char *newbuf = str_alloc(newlen);
+	    u_char *newbuf = sys_alloc(newlen);
 	    if(!newbuf)
 		goto error;
 	    memcpy(newbuf, buf, i);
-	    str_free(buf);
+	    sys_free(buf);
 	    buf = newbuf;
 	    buflen = newlen;
 	}
@@ -1066,7 +1066,7 @@ it is returned as-is (un-copied).
 	res = string_dupn(buf, i);
 error:
     if(buf)
-	str_free(buf);
+	sys_free(buf);
     return(res);
 }
 
