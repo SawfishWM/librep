@@ -14,14 +14,22 @@
 static void
 usage (void)
 {
-    fputs ("\
+    fputs ("\n\
+    FILE		load the Lisp file FILE (from the cwd if possible,\n\
+			 implies --batch mode)\n\
+
+    --call FUNCTION	call the Lisp function FUNCTION\n\
+    --f FUNCTION
+
+    --load FILE		load the file of Lisp forms called FILE\n\
+    -l FILE
+
+    --scheme FILE	load the file of Scheme forms called FILE\n\
+    -s FILE		 (implies --batch mode)\n\
+
     --version		print version details\n\
     --no-rc		don't load rc or site-init files\n\
-    -f FUNCTION		call the Lisp function FUNCTION\n\
-    -l FILE		load the file of Lisp forms called FILE\n\
-    -q			quit\n\
-    FILE		load the Lisp file FILE (from the cwd if possible,\n\
-			  implies --batch mode)\n",
+    --quit, -q		terminate the interpreter process\n",
 	   stderr);
 }
 
