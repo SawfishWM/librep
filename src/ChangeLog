@@ -1,5 +1,8 @@
 2000-03-29  John Harper  <john@dcs.warwick.ac.uk>
 
+	* misc.c (rep_misc_init): removed references to `value' field
+	of symbols
+
 	* symbols.c (Fmark_symbol_defined): new function, sets
 	rep_SF_DEFVAR flag if allowed to
 	(Fdefine_value): deleted, now a macro
