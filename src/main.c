@@ -69,24 +69,7 @@ DEFSYM(error_mode, "error-mode");
 DEFSYM(interrupt_mode, "interrupt-mode");
 DEFSYM(before_exit_hook, "before-exit-hook");
 
-DEFSTRING(definit, "init");
-static repv init_script = rep_VAL(&definit);
-
 static void rep_main_init(void);
-
-static void
-usage(char *prog_name, void (*sys_usage)(void))
-{
-    fprintf(stderr, "usage: %s [OPTIONS...]\n", prog_name);
-    fputs ("\
-where OPTIONS may include:\n\
-    --init FILE		use FILE instead of `init' to boot from\n\
-    --batch		batch mode: process command line args and exit\n\
-    --interp		don't load compiled Lisp files\n",
-	   stderr);
-    if (sys_usage != 0)
-	(*sys_usage)();
-}
 
 DEFSTRING(noarg, "No argument for option");
 
@@ -139,12 +122,11 @@ rep_get_option (char *option, repv *argp)
 }
 
 static int
-get_main_options(char *prog_name, int *argc_p,
-		 char ***argv_p, void (*sys_usage)(void))
+get_main_options(char *prog_name, int *argc_p, char ***argv_p)
 {
     int argc = *argc_p;
     char **argv = *argv_p;
-    repv head, *last, opt;
+    repv head, *last;
 
     /* any command line args are made into a list of strings
        in symbol command-line-args.  */
@@ -161,17 +143,10 @@ get_main_options(char *prog_name, int *argc_p,
     *argc_p = argc;
     *argv_p = argv;
 
-    if (rep_get_option ("--init", &opt))
-	init_script = opt;
     if (rep_get_option("--batch", 0))
 	Fset (Qbatch_mode, Qt);
     if (rep_get_option("--interp", 0))
 	Fset (Qinterpreted_mode, Qt);
-    if (rep_get_option("--help", 0) || rep_get_option ("-?", 0))
-    {
-	usage(prog_name, sys_usage);
-	return rep_FALSE;
-    }
 
     return rep_TRUE;
 }
@@ -214,16 +189,16 @@ check_configuration (int *stack_low)
    argc on the stack frame of the outermost procedure */
 void
 rep_init(char *prog_name, int *argc, char ***argv,
-	 void (*sys_symbols)(void), void (*sys_usage)(void))
+	 void (*sys_symbols)(void), void (*obsolete_sys_usage)(void))
 {
     char *dump_file = getenv ("REPDUMPFILE");
     rep_init_from_dump (prog_name, argc, argv,
-			sys_symbols, sys_usage, dump_file);
+			sys_symbols, obsolete_sys_usage, dump_file);
 }
 
 void
 rep_init_from_dump(char *prog_name, int *argc, char ***argv,
-		   void (*sys_symbols)(void), void (*sys_usage)(void),
+		   void (*sys_symbols)(void), void (*obsolete_sys_usage)(void),
 		   char *dump_file)
 {
     int dummy;
@@ -271,7 +246,7 @@ rep_init_from_dump(char *prog_name, int *argc, char ***argv,
 
 	Fset (Qprogram_name, rep_string_dup (prog_name));
 
-	if(get_main_options(prog_name, argc, argv, sys_usage))
+	if(get_main_options(prog_name, argc, argv))
 	    return;
     }
     exit (10);
