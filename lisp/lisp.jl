@@ -341,9 +341,7 @@ string INPUT."
 
 ;; some scheme compatibility functions
 
-(defun call-with-current-continuation (f)
-  "See `call/cc'."
-  (call/cc f))
+(define-value 'call-with-current-continuation call/cc)
 
 (defun dynamic-wind (before thunk after)
   "Call THUNK without arguments, returning the result of this call.
