@@ -1,0 +1,3218 @@
+Fri Apr 17 14:20:01 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.c, lispmach.c, redisplay.c, symbols.c: add preprocessor
+	magic from autoconf manual to handle alloca declaration
+	* unix_main.c (sys_event_loop): when C_ALLOCA is defined call
+	alloca(0) to garbage collect
+
+	* files.c (cmd_canonical_file_name): call
+	sys_canonical_file_name for unhandled files
+	* unix_files.c (sys_canonical_file_name): new function, uses
+	realpath to expand links in a file name
+	(sys_expand_file_name): fix bug in expanding "foo/../bar"
+	* unix_defs.h: prototype for realpath when HAVE_REALPATH isn't
+	defined
+
+	* Makefile.in: handle LIBOBJS and ALLOCA correctly, some
+	cosmetic changes
+
+Tue Apr  7 11:20:28 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_processes.c (run_process): when running synchronously,
+	look for the child exiting, as well as EOF on its output
+	streams. If it does exit, stop and close all streams. This is
+	to allow shell commands to be put into the background mainly
+	(though they'll get a SIGPIPE if they do any output)
+
+Mon Apr  6 09:26:30 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* glyphs.c (make_window_glyphs): reinitialise glyph_row each
+	view; I think this may fix an intermittent bug in which the
+	line after the end of the glyph buffer is accessed
+
+Sat Apr  4 17:57:50 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_files.c (sys_file_symlink_p): fixed to use lstat() again
+	instead of stat_file(), and therefore stat()
+	(sys_file_modes_as_string): S and T bits had their case the
+	wrong way around, now they're lowercase if the corresponding
+	execute bit is also set, as in "ls -l"
+
+Fri Apr  3 10:47:31 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* edit.h (glyph_buf): includes arrays of pointers to each line
+	instead of the GLYPH_BUF_CODES and GLYPH_BUF_ATTRS macros
+	* glyphs.c, redisplay.c: modifications for new glyph_buf
+	structure
+	* redisplay.c (hash_glyph_row): don't rotate, the hash values
+	it generated weren't very well distributed. Go back to K=33
+
+	* unix_server.c: if DEBUG_SERVER is defined generate trace of
+	all server traffic into a debug buffer
+	(server_accept_connection): set the fd returned from accept()
+	to be _blocking_. I didn't realise that accepted connections
+	inherit the characteristics of listening socket. This was the
+	cause of the intermittent bug (a read returning EAGAIN when I
+	didn't expect it)
+
+	* unix_main.c (unix_set_fd_blocking): new function, opposite of
+	unix_set_fd_nonblocking
+
+	* jade.h: include <stdarg.h>
+
+	* debug-buffer.c (db_printf, db_vprintf): split the old
+	db_printf into these two functions
+
+	* undo.c (undo_record_unmodified): function to call when a
+	buffer is set as being unmodified; it deletes any previous
+	"unmodified" mark in the undo list
+	* buffers.c (cmd_set_buffer_modified): when STATUS is nil, call
+	undo_record_unmodified
+
+	* redisplay.c (hash_glyph_row): rotate the hash value instead
+	of just shifting
+
+Wed Apr  1 00:54:36 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* files.c: new file, groups together all functions dealing with
+	files; also implements Emacs-like magic-file-names using the
+	`file-handler-alist' variable
+	* unix_files.c: new file, functions to implement the built-in
+	file handler for files in the local filing system
+	* lisp.h: changed Lisp_File structure slightly
+
+	* buffers.c, edit.c, lispcmds.c, streams.c, unix_main.c,
+	unix_processes.c, unix_server.c, values.c, x11_main.c:
+	modifications to handle new file primitives. Mainly to deal
+	with canonical names (to compare to files), and most
+	importantly, ensuring that everything is gc-protected whilst
+	calling any function in files.c that could invoke some Lisp
+	code
+
+	* edit.h (TX): added tx_CanonicalFileName field
+
+	* find.c (push_regexp_data, pop_regexp_data): functions for
+	preserving the regexp match data
+
+	* jade.h: always include regexp.h
+
+	* keys.c (eval_input_event): fix bug when inserting repeated
+	string
+
+	* lisp.c (cmd_add_doc_string, cmd_get_doc_string): deleted
+	(call_lisp3, call_lisp4): new functions
+	(funcall): guarantee that arguments will be gc-protected
+
+	* lispcmds.c (sym_documentation_file): new variable
+	(cmd_substring): moved here from misc.c
+
+	* main.c: if an error occurs in startup, print it to stderr
+
+	* misc.c: lots of reorganisation, including:
+	(sym_operating_system, sym_window_system): replace
+	x11-p, unix-p and amiga-p functions
+	(system): deleted
+	(getenv): deleted, now in environ.jl
+
+	* unix_main.c (unix_set_fd_nonblocking, unix_set_fd_cloexec):
+	new functions
+	(sigio_handler): unused support for async input
+
+	* unix_processes.c: use process-environment variable to give
+	environ of each subprocess
+
+Fri Mar 20 12:24:50 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* x11_windowsys.h (CLEAR_GLYPHS, FILL_GLYPHS): new macros, for
+	clearing and filling a horizontal sequence of glyphs in a window
+
+	* redisplay.c (redisplay_do_draw): while scanning a line for
+	attribute changes, also check if the chunk to be drawn consists
+	only of spaces. If so use the CLEAR_GLYPHS or FILL_GLYPHS
+	macros to draw it
+
+Thu Mar 19 14:54:39 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_client.c: two new options "-" and "--", for different
+	methods of evaluating forms read from stdin. "-" is intended
+	for interactive use, "--" for batch use
+
+	* symbols.c (cmd_makunbound, cmd_fmakunbound): don't set slots
+	to LISP_NULL, but to void_value
+
+Tue Mar 17 11:11:29 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* glyphs.c (recenter_cursor): fixed a couple of bugs
+	(line_glyph_length): added special case for direct-mapped
+	cache; currently this is what's being used
+
+Mon Mar 16 10:47:21 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispmach.c, bytecodes.h (OP_FILTER, OP_MACROP, OP_BYTECODEP):
+	new opcodes
+
+	* lispcmds.c (cmd_filter): new function, similar to the Miranda
+	function of the same name, construct a new list containing
+	elements of an input list that satisfy a predicate
+
+	* x11_keys.c (translate_event): was always using the display at
+	the head of the x11_display_list to convert keycodes to
+	keysyms; now use the display that the event came from
+
+Sat Mar 14 14:58:34 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* streams.c (cmd_format, sym_format_hooks_alist): big overhaul
+	of the format function. Now flags work with most conversions,
+	and user-defined conversions are possible via the
+	format-hooks-alist variable
+
+	* unix_main.c (cmd_file_symlink_p): was using stat() instead of
+	lstat() to get the file's attributes
+
+Fri Mar 13 15:06:28 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_main.c (cmd_file_modes_as_string): returns an "ls -l"
+	type attribute string
+
+	* misc.c (cmd_file_name_as_directory, cmd_directory_file_name):
+	new functions
+	* unix_main.c (file_name_as_directory, directory_file_name):
+	support for the above
+
+	* misc.c (cmd_current_time_string): now takes two optional
+	arguments, a timestamp and a strftime() style format string
+
+	* lisp.c (bindlambdalist): fixed the bug of binding like let*
+	instead of like let
+
+Tue Mar 10 20:23:41 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* find.c (cmd_search_forward, cmd_search_backward): fixed
+	case-insensitive matching (first character was always being
+	compared sensitively)
+
+Mon Mar  9 09:29:23 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_processes.c (get_pty, run_process): handle not being able
+	to get a pty gracefully (i.e. don't dump core)
+
+	* regexp.c (regmatch_string): new function, basically a wrapper
+	for regtry(), i.e. compares a regexp to a string with no
+	searching
+
+	* find.c (cmd_string_match): swapped the order of the NOCASEP
+	and START args (now START is first). Should really make NOCASEP
+	a variable
+	(cmd_string_looking_at): new function, matches a regexp at one
+	place and one place only in a string
+
+Tue Mar  3 22:13:22 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* redisplay.c (COMPARE_FAST_AND_LOOSE): when defined as
+	non-zero (the default) just compare hash codes to see if two
+	lines are the same, don't bother actually comparing them byte
+	by byte
+	(hash_glyph_row): changed how the attrs are included
+	(redisplay_message): hash the message line
+
+Mon Mar  2 11:10:59 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_client.c: new options "-x DISPLAY" and "-X" to simplify
+	opening a window to the server process
+
+	* x11_windowsys.h (struct x11_display): data structure to track
+	per-Display data
+	(WINDOW_XDPY): macro giving a pointer to the display data of a
+	partcular window
+	* x11_main.c (x11_open_display, x11_close_display,
+	x11_close_all_displays): functions for managing Displays
+	(x11_display_list): list of all open Display connections
+	* x11_windows.c: misc. updates to handle multiple displays
+	(cmd_make_window_on_display): low-level function to open a
+	window on a specified display (currently always opening a new
+	display connection)
+	* x11_keys.c: misc. updates to handle multiple displays; needs
+	to maintain individual Meta mappings per display
+	* x11_misc.c: misc. updates to handle multiple displays
+
+	* windows.c (cmd_destroy_window): call sys_unset_font before
+	closing the window
+
+	* unix_server.c: now accepts different types of requests, the
+	old find-file, eval, and end-of-session. Also, the connection
+	isn't closed after a file has been replied to
+	* unix_client.c: expanded to handle the new multiple request
+	server. New options -f, -e, and -q
+	* unix_defs.h (enum server_request): defines the request types
+	for the client/server stuff
+
+	* values.c (STATIC_ROOTS): increased from 128 to 160
+
+Sat Feb 28 15:38:33 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* keys.c (eval_input_event): always clear prefix-arg
+
+Fri Feb 27 12:31:48 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* movement.c (cmd_center_display): changed semantics of
+	argument, positive args now count from zero, not one
+
+	* command.c (cmd_call_command): two new flags, @ and !. If the
+	result of the command is a position, and @ is set, move the
+	cursor to this position before returning. If ! is set, before
+	moving the cursor call the lisp function set-auto-mark
+
+	* movement.c (cmd_end_of_buffer, cmd_start_of_buffer,
+	cmd_end_of_line, cmd_start_of_line, cmd_forward_line,
+	cmd_forward_char, cmd_forward_tab, cmd_find_matching_bracket):
+	use new interactive decl flags @ and !
+
+Tue Feb 24 12:16:47 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* redisplay.c (redisplay_message): new function, draws the
+	message line in the specified window
+	* glyphs.c (make_message_glyphs): new function, outputs the
+	glyphs needed to draw the message in the specified window
+	* windows.c, lisp.c: when the message has to be redisplayed
+	immediately call redisplay_message() instead of doing a full
+	redisplay
+
+	* views.c (cmd_get_buffer_view): new function, find a view
+	displaying a specified buffer
+
+Thu Feb 19 00:01:16 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* Makefile.in: added @top_srcdir@/lib-src to VPATH
+
+	* lispcmds.c: added prototypes for all DEFSYMS
+
+	* windows.c (no_message): deleted, it was never called
+
+	* glyphs.c (recenter_cursor): global instead of static
+	* views.c (cmd_view_origin): calls recenter_cursor() to ensure
+	that the returned value will be correct after the next
+	redisplay (assuming that the current configuration still
+	exists)
+
+	* buffers.c (swap_buffer, swap_buffer_tmp): swap_buffer_tmp
+	deleted, this was almost the same as swap_buffer anyway. Added
+	code to remove a message that may obscure a newly activated
+	minibuffer
+
+	* keys.c (eval_input_event): modifications to allow prefix
+	arguments to work with unbound events (i.e. they insert ARG
+	copies of whatever they would normally insert)
+	(unbound-key-hook): this is now an `or' style hook
+
+	* glyphs.c (make_window_glyphs): only display a cursor in the
+	current window
+
+	* lisp.c (readl): accept the various backquote characters, that
+	is `X => (backquote X), ,@X => (backquote-splice X), and
+	,X => (backquote-unquote X)
+
+Wed Feb 18 22:52:13 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* glyphs.c (gl_cache_entry_t, gl_cache, line_glyph_length):
+	structures and functions for caching the number of glyphs in a
+	line. Currently a 2-way associative 200 entry cache (indexed by
+	line number)
+	(string_glyph_length): renamed as uncached_string_glyph_length
+	(make_window_glyphs): much work to support line wrapping as
+	well as the old truncation display method
+	(skip_glyph_rows_forwards, skip_glyph_rows_backwards): new
+	functions for moving through a buffer as it would be displayed
+	on screen
+	(recenter_cursor): new function to handle the display origin of
+	each view. Replaces the old resync_xy()
+	(calc_cursor_offset): renamed as get_cursor_column(), now
+	actually returns the column number
+	(char_glyphs): deleted
+	(adjust_cursor_to_glyph): replaced by set_cursor_vertically,
+	this takes a view and a line number and moves the cursor to
+	that line trying to keep the original horizontal screen
+	position
+	(cmd_display_to_char_pos, cmd_char_to_display_pos): translate
+	between screen coordinates in a view and character positions
+
+  	* redisplay.c (cmd_redisplay): don't call resync_xy()
+
+	* movement.c (sym_next_screen_context_lines): overlap for when
+	scrolling by the screenful
+	(cmd_center_display, cmd_forward_line): updated for wrapped
+	lines
+	(move_down_screens, move_up_screens): deleted
+	(cmd_next_screen, cmd_prev_screen): updated for wrapped lines,
+	also moves the cursor relative to the screen origin, and may
+	leave some context
+	(cmd_mouse_pos): deleted, now implemented in edit.jl
+
+	* housekeeping.c (resync_xy, set_start_col, set_start_line):
+	all deleted
+
+	* editcommands.c (cmd_indent_to): call get_cursor_column()
+	instead of calc_cursor_offset()
+
+	* edit.h (Mark): type renamed as Lisp_Mark, removed mk_ prefix
+	from field names, removed MKFF_RESIDENT flag, implied by type
+	of "file" field. Added MARK_IS_RESIDENT_P() macro
+	(TXFF_DONT_WRAP_LINES): flag controlling whether long lines are
+	truncated or wrapped when rendering. TX_WRAP_LINES_P() accessor
+	macro.
+	(VWFF_AT_BOTTOM): flag set by recenter_cursor() when the end of
+	the buffer is displayed by the view
+
+	* edit.c (check_row): new function, similar to check_line but
+	takes a line number instead of a position
+
+	* buffers.c (cmd_in_restriction_p): deleted
+	(cmd_buffer_restricted_p): new function, returns t when the
+	buffer is restricted to less than its full size
+	(var_truncate_lines): new variable, controls the
+	TXFF_DONT_WRAP_LINES flag
+	(cmd_set_mark): deleted
+	(cmd_set_mark_pos, cmd_set_mark_file): new functions
+
+	* windows.c (cmd_make_window): call make-window-hook
+
+	* views.c (cmd_destroy_view): updated for line wrapping (use
+	skip_glyph_rows functions)
+	(update_status_buffer): use VWFF_AT_BOTTOM for position flag
+	(cmd_translate_pos_to_view): updated for new display regime
+
+	* unix_server: replace all occurrences of server-open-file with
+	server-find-file
+
+	* symbols.c (symbols_init): explicitly initialise the function
+	value of sym_nil in case it was dumped (and left as 0)
+
+	* lispcmds.c (cmd_list): add test for interrupt
+	(cmd_list_star): new function, creates a dotted list
+	(cmd_atom): somehow I'd inverted the meaning of this predicate
+	(cmd_macrop): new function
+	(cmd_subrp): don't treat bytecode objects as subrs
+
+	* Makefile.in: use substitution opt_enable_dumped instead of
+	enable_dumped
+
+Thu Feb 12 18:30:19 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* jade.h, io.c, lispcmds.c, lispmach.c, redisplay.c, regexp.c,
+	symbols.c, undo.c, unix_client.c, unix_main.c,
+	unix_processes.c, unix_server.c, x11_defs.h, x11_keys.c,
+	x11_misc.c: changes to work with autoconf/configure managed
+	configuration process
+
+	* memcmp.c: new file, defines the memcmp() library function in
+	case its not in libc
+
+	* unix_processes.c (get_pty): support for /dev/ptmx style
+	opening of pseudo terminals
+
+	* glyphs.c (make_window_glyphs): a lot of reorganisation,
+	mostly aimed at simplifying things
+
+	* housekeeping.c (resync_y): fixed gaps at the end of buffers
+	not being suppressed. It now goes the other way, and is
+	possibly a bit too eager now, but I'll see if I get used to
+	it.. (see the function for a comment)
+
+Tue Feb 10 11:15:06 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* glyphs.c (make_window_glyphs): fix for rectangular blocks not
+	working in glyph coordinates
+
+Thu Feb  5 17:46:50 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* glyphs.c (make_window_glyphs): fix for block ending past last
+	displayed column
+
+	* views.c (update_status_buffer): fix for "All of" not being
+	displayed when the last line in the buffer falls exactly on the
+	last line of the view
+
+Mon Feb  2 00:05:12 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* edit.h (TX): deleted tx_LastLogical? and tx_Mod?, also
+	removed the flags TXFF_REFRESH_ALL and TXFF_REFRESH_STATUS.
+	The functions flag_insertion, flag_deletion, and
+	flag_modification are now macros that simply bump the buffer's
+	change counter.
+	(VW): removed vw_LastDisplayOrigin and vw_LastBlock?. Changed
+	vw_BlockStatus to an int. Replaced vw_?Pix by vw_FirstX and
+	vw_FirstY. Deleted VWFF_FORCE_REFRESH, VWFF_REFRESH_BLOCK, and
+	VWFF_REFRESH_STATUS flags.
+	(glyph_code, glyph_attr, enum Glyph_Attrs, glyph_buf): types
+	for glyph buffers
+	(WIN): w_Content and w_NewContent, old and new glyph buffers.
+	Deleted w_FontStart, not used anywhere.
+
+	* glyphs.c (make_glyph_array, expand_tabs): deleted
+	(make_window_glyphs): new function, out of the ashes of
+	make_glyph_array(), it creates the glyph buffer of a window
+	(GlyphTable): changed name to glyph_table_t
+
+	* redisplay.c: new file, provides a general redisplay algorithm
+	using diffing of glyph buffers to decide what to redraw
+
+	* x11_windowsys.h: all macros deleted, replaced by DRAW_GLYPHS
+	and COPY_GLYPHS
+
+	* main.c (inner_main): call redisplay_init instead of
+	refresh_init, don't control cursor
+	(cmd_recursive_edit): don't mess with cursor
+
+	* unix_main.c (event_loop): don't control refresh explicitly,
+	just call cmd_redisplay() once per loop
+
+	* views.c (recalc_pixel_measures): renamed recalc_measures
+	(cmd_destroy_view): when there's no preceding view to give the
+	space to, ensure that the following view is ``scrolled''
+	upwards such that no display scrolling takes place	
+	(var_max_scroll): deleted
+
+	* windows.c: allocation/deallocation of glyph buffers
+	(update_window_dimensions): centralised function to call when
+	the window changes size
+
+	* x11_main.c: handle Expose events by marking that a rectangle
+	of the current glyph buffer is garbage. Also handle
+	GraphicsExpose here now
+	(sys_flush_output): deleted, call cmd_flush_output() instead
+
+	* x11_windows.c: minor changes
+	* edit.c (pos_in_block, page_in_block, line_in_block,
+	set_block_refresh): all deleted
+	* editcommands.c: don't call set_block_refresh
+	* housekeeping.c: don't update vw_LastBlock? or tx_Mod?
+	positions since they don't exist anymore
+	* buffers.c, io.c, streams.c: don't set any of the explicit
+	refresh flags anymore, since they were removed
+	* values.c (make_value): don't mark tx_Mod? or vw_LastBlock? or
+	vw_LastDisplayOrigin
+	* movement.c (cmd_mouse_pos): use vw_FirstY instead of
+	vw_TopPix
+	* refresh.c, render.c, x11_render.c: deleted
+	* unix_processes.c, unix_server.c: don't control cursor anymore
+
+	* lisp.c: don't call refresh_message(); cmd_flush_output() to
+	get a message displayed, just cmd_redisplay(), also don't turn
+	cursor on or off, or call refresh_X
+	* lisp.h (VGLYPHTAB): new name for underlying typedef
+
+	* keys.c (usekey): renamed as eval_input_event(). Also, don't
+	do anything to handle the display
+
+Sun Jan 25 14:03:09 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* io.c (cmd_write_buffer_contents): don't call check_section to
+	check the START and END arguments since it looks at the current
+	restriction, not what is required, so do it manually. Also try
+	to defend against START and END pointing past the end of their
+	respective lines
+
+Sat Jan 24 16:46:25 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* io.c (cmd_read_buffer): renamed as read-file-contents
+	(cmd_write_buffer): deleted
+	(cmd_write_buffer_area): renamed as write-buffer-contents.
+	Moved the FILE argument to be first, START and END are now
+	optional, by default the start and end of the current buffer
+	(ignoring restrictions)
+	(cmd_insert_file_contents): new function
+	* unix_processes.c (cmd_call_process_area): calls
+	cmd_write_buffer_contents now
+
+	* jade.h: moved CONCAT() and QUOTE() to the top of the file,
+	include "unix_defs.h", "x11_defs.h" and "amiga_defs.h" (when
+	necessary) instead of in the config file. Also the
+	configuration file is defined by the macro CONFIG_FILE (it will
+	be quoted)
+
+	* lisp.c (eval_lambda, funcall): handle throw to 'defun (i.e. a
+	non-local return) properly
+	(cmd_condition_case): ensure that throw_value == LISP_NULL
+	while chasing down the list of handlers
+
+	* lisp.h: definitions for dumped Lisp constants
+	(CONS_WRITABLE_P): true when the cons cell arg is not in
+	read-only storage
+	(V_Compiled): set to 7
+	(VECTOR_WRITABLE_P): defined in terms of dumped_text_start and
+	dumped_text_end
+	(COMPILED_WRITABLE_P): deleted, use VECTOR_W_P
+	(dumped_X_{start,end}): prototypes for the symbols created by
+	dump.jl
+	(DUMPED_SYM_NIL): a pointer to the dumped nil symbol
+
+	* symbols.c (OB_NIL): now defined as &void_object
+	(symbols_sweep): treat all dumped symbols as an extra
+	allocation block (albeit one in which unused symbols are never
+	put on the free-list)
+	(cmd_put): check that cons cell being updated is
+	CONS_WRITABLE_P, if not allocate a new one
+	(pre_symbols_init): new function to create the obarray
+
+	* lispcmds.c (cmd_nconc, cmd_rplaca, cmd_rplacd, cmd_nreverse):
+	check if CONS_WRITABLE_P(), signal setting-constant error if
+	not
+	(cmd_load): check for ".jld" suffix first when DUMPED is
+	defined, these are the files of non-constant forms output by
+	dump.jl
+	(cmd_subr_documentation): for built-in subroutines, don't
+	return the string from the DOC file, just its position
+
+	* lispmach.c (cmd_jade_byte_code): in OP_ERRORPRO don't do one
+	to many cdrs when finding the error data
+
+	* main.c (main): mods for dumped constants. Call
+	pre_values_init() and pre_symbols_init(), then dumped_init()
+	when DUMPED is defined, then the normal stuff
+
+	* regexp.h, regjade.c, regsub.c: replace #ifdef BUILD_JADE by
+	#ifdef JADE. Also moved to the main src directory so remove ..
+	in included file names.
+
+	* streams.c (cmd_open, cmd_close): renamed as open-file and
+	close-file
+	(cmd_seek_file): new function, a combination of ftell() and
+	fseek()
+	(cmd_read_file_until): deleted
+
+	* unix_main.c (read_file): deleted
+
+	* unix_processes.c (run_process): set close-on-exec for
+	pr_Stderr. Order of interrupt signals for synchronous processes
+	is not SIGINT, SIGTERM, SIGKILL.
+
+	* values.c (string_cmp): use memcmp to compare strings, not
+	strcmp which exits on finding a zero byte, doh!
+	(mark_value): don't mark read-only cons or vector cells
+	(values_init): now called pre_values_init
+	(values_init2): now called values_init
+	(dumped_init): function to get all dumped data ready for use,
+	basically interns all symbols, setting NULL pointers they
+	contain to nil. Also initialises the allocated_X counts
+
+	* io.c (cmd_read_file, cmd_write_file): deleted these
+	functions
+
+Mon Jan 19 00:32:48 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.h (Lisp_Compiled): changed to allow a minimum of four
+	items in the vector, also changed some of the related macros
+
+	* lispcmds.c (cmd_bytecodep): new function
+	(cmd_defun, cmd_defmacro): now accept bytecode objects as
+	second argument
+
+	* lispmach.c (cmd_jade_byte_code): check when handling
+	exceptions that throw_value != LISP_NULL
+
+	* find.c (compile_regexp): check for NULL value of last program
+
+	* buffers.c, commands.c, editcommands.c, find.c, keys.c,
+	lisp.c, lispmach.c, main.c, symbols.c, undo.c,
+	unix_processes.c, unix_server.c, views.c, windows.c,
+	x11_misc.c: made all DEFSYM's global and ensured that each
+	DEFSYM is on a separate line.
+
+	* lisp.h (VECTOR_WRITABLE_P): check if a vector is in writable
+	memory or not
+	* lispcmds.c (cmd_aset): check when modifying a vector that the
+	cell8 static bit isn't set. For this and (now) for modifying a
+	static string the setting-constant error is raised
+
+	* lispmach.c (cmd_jade_byte_code): use a single switch
+	statement, instead of differentiating between those
+	instructions with embedded arguments, and those without.
+
+Sun Jan 18 00:10:41 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.h (Lisp_Compiled): new type, a five-element vector
+	representing a byte code subroutine
+	(Lisp_Cell): given each cell8 type a `static' bit as bit 7,
+	this also doubles the maximum size of strings
+
+	* values.c: minor changes for new type
+
+	* streams.c (stream_put_cntl): deleted since it was never used
+
+	* lispmach.c (cmd_jade_byte_code): calling byte code subrs
+	(cmd_make_byte_code_subr): new function
+
+	* lispcmds.c: updated to support byte code subrs in most places
+	that vectors are supported
+
+	* lisp.c: big changes: support for byte code subrs, eval now
+	uses funcall to call functions, only macroexpands expands
+	macros, #[...] reads and prints as a byte code object, cleaned
+	up what is protected from garbage collection, only funcall
+	increments and checks max-lisp-depth..
+	(print-escape-newlines): now called `print-escape', can also be
+	set to produce octal escapes for _all_ non-printing characters
+
+	* edit.c (free_line_buf): function version of FREE_LINE_BUF
+	* io.c (read_tx): use free_line_buf() to free lines
+
+	* commands.c: updated to handle byte code subrs
+
+	* edit.h, edit.c, buffers.c, io.c: each buffer now gets its own
+	StrMem pool
+
+	* stringmem.c (sm_init): initialise more of the fields
+
+	* stringmem.h, stringmem.c: new field in MemBucket structure,
+	`mbu_FreeCount', contains the number of available objects in
+	the buffer
+
+	* lisp.h: Changed the VALUE format again. Now its:
+
+	"Bit definitions for VALUE pointers. The lowest bit is always
+	zero except during GC. If bit one is set the object is a 30-bit
+	signed integer, with the data bits stored in the pointer as
+	bits 2->31.
+
+	If bit one is clear the VALUE is a pointer to a "cell", all
+	objects apart from integers are represented by various types of
+	cells. Every cell has a VALUE as its first element, the lowest
+	bits of this VALUE define the actual type of the cell.
+
+	If bit zero is unset, the cell is a cons, a pair of two
+	values the car and the cdr (the GC mark bit of the cons is bit
+	zero of the cdr).
+
+	If bit zero is set the cell more type information is stored
+	in bits 1->6, with bit 7 the mark bit."
+
+Fri Jan 16 00:40:41 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_misc.c: renamed as unix_main.c
+	(register_input_fd, deregister_input_fd): functions to register
+	that we need to listen for input on a file description, and the
+	function to be called when input is available
+	(event_loop): a totally general input loop using select(), made
+	from old bits of x11_eventloop.c
+
+	* x11_display.c: renamed as x11_main.c, inherited what's left
+	of x11_eventloop.c
+	(x11_handle_input): a function that's registered as the input
+	handler for the X11 Display fd; does all event handling
+	(sys_flush_output): a function called from event_loop() that
+	just calls XFlush()	
+
+	* main.c (on_idle): new function to move the idle actions out
+	of the system-specific code
+	(handle_input_exception): similar idea for handling of
+	exceptions in low-level input loops
+	(doconmsg, input_lock, cmd_input_lock): deleted all these
+	remnants of Amigadom
+
+	* unix_processes.c: uses [de]register_input_fd()
+	(cmd_signal_process): deleted this function, it was ill-guided,
+	instead define a function do_signal_command by which the Lisp
+	functions that send signals are implemented
+
+	* unix_server.c: uses [de]register_input_fd()
+
+	* values.c (cmd_cons): _will_ return LISP_NULL if we are out of
+	memory, this will break things further up the line..
+
+Thu Jan 15 12:46:46 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispcmds.c (cmd_nth, cmd_nthcdr): these now check for interrupts
+
+	* lisp.c (find_member_by_index, move_down_list): removed these
+	functions, they were (almost) the same as nth and nthcdr
+
+	* commands.c (interactive_spec, cmd_interactivep): don't use
+	find_member_by_index() and move_down_list(), use nth and nthcdr
+	instead.
+	* streams.c (cmd_format): don't use ARG1 and ARG2 macros
+	* lisp.h: removed ARG1-4 and ARGN macros
+
+	* lisp.c (debug_on_error): made this into a normal variable,
+	not a subr-variable type thing
+
+	* misc.c (cmd_make_completion_string): cleaned up this function
+
+	* lispcmds.c (cmd_function, cmd_return): removed, defined as a
+	macro in lisp.jl
+	(cmd_make_list): don't build the list front-to-back, ordering's
+	not important
+	(cmd_eval_hook, cmd_eval_hook2): deleted
+	(cmd_call_hook): new function, three arguments, HOOK-SYMBOL,
+	ARG-LIST, and optionally TYPE. TYPE is one of nil, or, and,
+	defining how the return values of the hook functions are
+	treated.
+
+	* commands.c, editcommands.c, keys.c, views.c, windows.c,
+	x11_eventloop.c: changed calls to eval-hook to use call-hook
+
+Wed Jan 14 17:49:27 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispmach.c, bytecodes.h: totally rethought how exceptions
+	(i.e. unwind-protect, catch/throw and condition-case) are
+	handled. Before the handler forms were compiled into separate
+	byte-code forms. Now we handle them inline to the original
+	piece of code. The idea is that the new instruction OP_BINDERR
+	registers an exception handler (an offset into the byte-code
+	string), along with the current stack pointer, by adding to the
+	binding stack. When an exception occurs the bind stack is
+	unbound, when a (PC . SP) item is found, the stack pointer is
+	set to SP, throw_value is pushed onto it, and PC is jumped to.
+	The EJMP instruction can be used to give control back to the C
+	error handler.
+
+	(OP_CATCH_KLUDGE, OP_UNWIND_PRO, OP_UN_UNWIND_PRO,
+	OP_ERROR_PRO) all been deleted.
+
+	(OP_CATCH): new opcode. This takes two arguments, TAG and
+	THROW-VALUE. THROW-VALUE is the saved copy of throw_value, if
+	(car THROW-VALUE) == TAG we match, and we leave two values on
+	the stack, nil on top (to pacify EJMP), (cdr THROW-VALUE) below
+	that.
+
+	(OP_BINDERR): Pop our single argument and cons it onto the
+	bind- stack in a pair with the current stack-pointer. This
+	installs an address in the code string as an error handler.
+
+	(OP_ERRORPRO): This should be called with three values on the
+	stack. 1. conditions of the error handler 2. throw_value of the
+	exception 3. symbol to bind the error data to (or nil). It pops
+	(1) and tests it against the error in (2). If they match it
+	sets (2) to nil, and binds the error data to the symbol in (3).
+
+	(OP_EJMP): Pop the stack; if it's nil jmp pc[0,1], otherwise
+	set throw_value=ARG and goto the C error handler.
+
+	* lisp.c (cmd_error_protect): renamed this as condition-case
+	and inserted a new first parameter VAR, the symbol to bind the
+	error data to. This is the same as Emacs function, it's
+	necessary for the new VM error handling
+	(compare_error): new function to compare the conditions a
+	handler says it will take, against the error that was
+	signalled
+
+	* lispcmds.c (cmd_unwind_protect): only reinstall the old throw
+	if it's actually an error and there was no error in the cleanup
+	forms. This way the newest error takes precedence
+
+Mon Jan 12 22:15:55 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* find.c (buffer-compare-string): function to compare a string
+	with a position in a buffer
+
+	* lisp.c (sym_debug_macros, eval): when debug-macros is nil the
+	debugger is never entered to expand a macro definition
+
+	* lispcmds.c (cmd_max, cmd_min): new functions
+	* bytecodes.h, lispmach.c (OP_MAX, OP_MIN): new instructions
+
+Sun Jan 11 19:16:09 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispcmds.c (cmd_load, sym_eval_after_load): a method of having
+	a form be evaluated after a specified Lisp-library is loaded.
+
+Tue Jan  6 13:06:06 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* edit.c (pad_cursor): reinstall the original cursor position
+	after calling pad_pos(), since spaces may have been inserted
+	before it, pushing it further down the line.
+
+	* unix_processes.c (check_for_zombies): re-ordered a lot of this
+	function. Also fixed the bug where errno was being looked at
+	even if the return from waitpid() was zero.
+
+Sat Jan  3 20:57:03 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* refresh.c (refresh_block): move the initialisation of tstart
+	and tend to before they're passed as arguments to sub_regions()
+
+Sun Dec 21 02:48:28 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.h (VCONS): don't mask out the VALUE_CONS_MARK_BIT, if
+	this needs to be done, it's done explicitly
+
+	* lisp.h (LISP_MAX_INT, LISP_MIN_INT): macros defining the
+	limits of what can be stored in integer values
+
+	* lisp.c (read_symbol): rewrote the code to parse integers, it
+	does all calculation inline, removing the need to call
+	strtol() at the end, plus negative hexadecimal numbers work
+	properly now.
+
+Sat Dec 20 00:01:55 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* misc.c, build-info, Makefile.in: the shell script build-info
+	produces a header file build.h, defining some of the
+	circumstances of the build process. misc.c includes this
+	header file and makes the information available through the
+	`version-and-build-string' function.
+
+	* lisp.h (Lisp_Data_Type): Added a new `sweep' field, a
+	function to call in the sweep phase of GC
+
+	* values.c (data_types): filled in the new `sweep' field
+	(cmd_garbage_collect): call each `sweep' function in turn
+	instead of doing this by name
+
+	* unix_processes.c (proc_init): now installs type information
+	about V_Process objects in data_types[] itself.
+	also removed the __waitpid__ debugging since the bug never
+	occurred, maybe it will now...
+
+	* lisp.h: Positions are now (ROW . COL), we keep the `Pos'
+	structures for internal use, to avoid the masking and shifting
+	required to access Lisp cons and integers. Having said that,
+	they're not used that widely, just a few functions.
+
+	* editcommands.c (pos-col, pos-line): removed these, they're
+	defined in lisp.jl as macros (cdr and car respectively)
+
+	* bytecodes.h, lispmach.c (OP_POS, OP_POSP): two new opcodes,
+	the pos and posp functions. Note that pos isn't the same as
+	cons since it replaces nil arguments with the current row or
+	column of the cursor (also, of course, the arguments are the
+	opposite order to in the cons function.)
+
+	* lisp.h: Totally changed the way that VALUEs (Lisp objects)
+	are defined; instead of wasting memory storing type
+	information in cons cells and storing integers as allocated
+	objects, we now do some bit-twiddling to store a subset of the
+	type information in the two or three lowest bits of the VALUE.
+
+	This means that cons cells only take 2 words (8 bytes) instead
+	of 3, and integers can be stored in the VALUE itself (but now
+	we only have 29-bit signed integers, not 32). Also we have to
+	enforce strict alignment rules: cons cells to at least eight
+	bytes, _everything_ else to at least four bytes.
+
+	It's basically trading memory use in the data section for
+	some code bloat (the extra instructions to do the bit
+	twiddling). It's not too bad though, all objects but cons
+	cells and numbers can be accessed from a VALUE as-is, once
+	their type has been established (which does take a few more
+	instructions).
+
+	I've also taken this opportunity to clean up some of the other
+	Lisp object handling code. Also, the plan is to remove
+	position objects completely and store them as a cons cell
+	containing two integers.
+
+	To overcome the loss of the three bits in integers, I've
+	defined a new pseudo-type called LONG_INT, which is a cons
+	cell containing the low 24 bits in its car, and the high bits
+	in the cdr. This allows large values like time stamps to be
+	stored without dropping bits.
+
+	* configs/config.h.*: added some more configuration macros, all
+	to do with alignment,
+	(MALLOC_ALIGNMENT): this has to be defined to the minimum
+	alignment of malloc() allocations. It's checked in an assert
+	in unix_memory.c currently
+	(PTR_SIZED_INT): by default `long int', this must be an
+	implicitly signed integer of the same size as a standard
+	pointer (i.e. sizeof(PTR_SIZED_INT) == sizeof(void *), this is
+	also checked, in main.c)
+	(ALIGN_4, ALIGN_8): these aren't actually mentioned in the
+	config files, but they align definitions to four and eight
+	bytes respectively. For GNU CC they'll be defined in jade.h
+	when not already existing
+
+	* lisp.c (handle_var_long_int): similar to handle_var_int, but
+	for 32 bit integers stored in cons cells
+	* buffers.c (var_last_save_time): defined as a LONG_INT now
+	* misc.c (cmd_current_time): returns a LONG_INT now
+	(cmd_time_later_p): new function for comparing time stamps
+
+	* edit.h (TX): Changed some long fields to ints, to signal
+	that they can be stored in less than 24 bits
+
+	* jade.h (ALIGN_4, ALIGN_8): definitions for GNU CC
+	(CONCAT, OFFSETOF): new macros
+
+	* stringmem.c, stringmem.h: formalised old alignment
+	assumptions, all allocated blocks will be aligned to at least
+	four bytes.
+	(STRMEM_ALIGNMENT): defined to the minimum alignment of blocks
+	allocated by sm_alloc()
+
+Tue Dec 16 12:05:14 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispcmds.c (cmd_or, cmd_and): deleted, these are now macros
+	in lisp.jl
+
+Mon Dec 15 10:52:24 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* edit.c: When allocating line buffers, use the knowledge that
+	stringmem.c allocates memory in multiples of eight bytes to
+	improve our allocation strategy. Lines are also allocated in
+	multiples of eight bytes, and insertions/deletions that don't
+	cause a multiple-of-eight boundary to be crossed are handled
+	by a simple memory copy.
+	(LINE_BUF_SIZE, ALLOC_LINE_BUF, FREE_LINE_BUF): macros to
+	implement the above strategy
+	(alloc_line_buf): function version of ALLOC_LINE_BUF
+	(delete_section): when joining two lines, optimise the case
+	where either of the lines is empty
+	* io.c (read_tx): all line allocations use alloc_line_buf()
+	now.
+
+	* bytecodes.h (OP_JPN, OP_JPT): new opcodes, jump-and-pop-if-t
+	and jump-and-pop-if-nil
+	* lispmach.c (jade-byte-code): implemented JPN and JPT
+
+Sun Dec 14 14:10:47 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* editrect.c: removed, now implemented in Lisp in rectangle.jl
+	* Makefile.in: removed editrect.c from COMMON_SRCS
+	* main.c (inner_main): removed call to editrect_init()
+
+	* glyphs.c (char-to-glyph-pos, glyph-to-char-pos): now check
+	the validity of the POS argument
+
+	* find.c (string-match): new optional arg START, defining
+	where in the string to start searching
+
+	* Radically changed the way in which position objects are
+	handled. Removed the old POS/LPos distinction; now we only
+	have positions as Lisp objects, two new macros VCOL(p) and
+	VROW(p) to access the two components of a position.
+
+	But perhaps the most important change is that positions in
+	Lisp objects are _immutable_, that is, once they've been
+	created their contents can not be modified. Although this may
+	appear to involve many more objects being allocated, this
+	isn't necessarily the case since pointers to position objects
+	may be passed around much more freely, for example, when
+	creating undo information.
+
+	There is a distinction made between accessing positions
+	through VALUEs, and through `Pos *' pointers---the latter are
+	generally stored on the stack and hence writable.
+
+	The immutability of positions means that the functions
+	next-char, et al. which _modify_ position objects are no
+	longer valid. A list of function changes follows:
+
+	* editcommands.c (set-pos-col, set-pos-row, split-line):
+	removed, split-line implemented in edit.jl
+
+	* movement.c (next-char, prev-char): renamed as forward-char
+	(next-line, prev-line): renamed as forward-line
+	(next-tab, prev-tab): renamed as forward-tab
+	In all of these backward-X is provided by lisp/edit.jl. These
+	functions are similar to the old ones, but always return a new
+	position.
+	(screen-top-line, screen-bottom-line,
+	screen-first-column, screen-last-column): removed, they were
+	never used
+	(left-char, right-char): removed, sort of implemented as
+	macros in edit.jl
+	(goto-char): renamed as `goto'
+	(buffer-end, line-end): renamed as `end-of-X'
+	(buffer-start, line-start): renamed a `start-of-X'
+	(goto-buffer-start, goto-buffer-end, goto-line-start,
+	goto-buffer-end, goto-next-line, goto-prev-line,
+	goto-left-char, goto-right-char, goto-prev-tab, goto-next-tab,
+	goto-next-char, goto-prev-char): removed, most of the new
+	functions can be called interactively instead
+	(match-brackets): renamed as `find-matching-bracket'
+
+	* find.c: lots of name changes. Also added a 1-deep cache of
+	compiled regexps, preliminary results indicate a 10% hit ratio
+	(find-next-regexp, find-prev-regexp): renamed as
+	`re-search-forward' and `re-search-backward'
+	(find-next-string, find-prev-string): renamed as
+	`search-forward' and `search-backward'
+	(find-next-char, find-prev-char): renamed as
+	`char-search-forward' and `char-search-backward'
+	(regexp-quote): renamed as `quote-regexp'
+	(regexp-match): renamed as `string-match'
+	(replace-string, replace-regexp, regexp-expand,
+	regexp-expand-line, regexp-match-line): removed,
+	replace-string implemented in lisp/replace.jl
+	(expand-last-match): expands a template using the
+	subexpression data of the most recent regexp match
+
+	* I have a sed script that will perform a lot of these name
+	changes,
+
+s/(buffer-start/(start-of-buffer/
+s/(buffer-end/(end-of-buffer/
+s/(line-start/(start-of-line/
+s/(line-end/(end-of-line/
+s/(goto-char/(goto/
+s/(match-brackets/(find-matching-bracket/
+s/(next-char/(forward-char/
+s/(next-line/(forward-line/
+s/(next-tab/(forward-tab/
+s/(goto-buffer-start)/(goto (start-of-buffer))/
+s/(goto-buffer-end)/(goto (end-of-buffer))/
+s/(goto-line-start)/(goto (start-of-line))/
+s/(goto-line-end)/(goto (end-of-line))/
+s/(find-next-regexp/(re-search-forward/
+s/(find-prev-regexp/(re-search-backward/
+s/(find-next-string/(search-forward/
+s/(find-prev-string/(search-backward/
+s/(find-next-char/(char-search-forward/
+s/(find-prev-char/(char-search-backward/
+s/(regexp-quote/(quote-regexp/
+s/(regexp-match/(string-match/
+
+	It still leaves a lot to be done by hand though, all prev-char,
+	prev-line and prev-tab calls should be changed to forward-X
+	with negative arguments (faster than calling backward-X); also
+	the result of the function must be used now.
+
+	* unix_processes.c: once again I've simplified the process
+	termination code; now the only thing done in the SIGCHLD
+	handler is to set a flag that is checked by a function called
+	after every event/timeout by x11_eventloop.c, I've also added
+	some debugging trace info. to try and narrow down the
+	intermittent bug that causes synchronous processes to hang on
+	exit (if it still exists)
+
+	* debug-buffer.c: new file; provides circular output buffers
+	and a `db_printf' function to output to them, on a crash or by
+	called `db_spew' their contents is output
+
+	* unix_misc.c: all standard signal handling is here now,
+	including the SIGINT handler that used to be in x11_display.c
+
+	All error signals (FPE, ILL, SEGV, BUS, QUIT, ABRT) are
+	trapped and cause all debug buffers, and the lisp backtrace to
+	be output before termination.
+
+	SIGINT works as before, by stuffing int_cell into throw_value
+
+	All other termination signals (TERM, HUP) cause term_cell to
+	be stuffed into throw_value, this winds back to the top-level
+	event loop, which auto-saves all modified files before quitting
+
+	* x11_eventloop.c: now calls proc_periodically() instead of
+	proc_notification(), also handles finding sym_term_interrupt
+	in the car of the throw_value (as described in the previous
+	paragraph).
+
+	* x11_windows.c (screen-width, screen-height, window-left-edge,
+	window-top-edge, window-width, window-height,
+	window-bar-height): removed, they weren't used by anything
+
+	* buffers.c (auto-save-buffers): new boolean argument,
+	`force_save', when true the time factor when looking for files
+	to auto save is ignored.
+	(get_tx_cursor_ptr): similar to `get_tx_cursor' but returns a
+	ptr-to-a-ptr
+
+	* edit.c: cleaned up the myriad of insignificant functions
+
+	* misc.c (strtoc, ctostr): removed these ugly functions
+	(version-string): new function returning a string describing
+	the current editor version
+
+	* streams.c (stderr-file): does for stderr what stdout-file
+	does for stdout
+
+	* views.c (view-origin): returns the position of the top-left
+	character in the view
+
+	* configs/config.h.* (HAVE_PSIGNAL, HAVE_STRSIGNAL): two new
+	configuration macros
+
+	* regexp/regexp.h, regexp/regjade.c, regexp/regsub.c: changes
+	for new position objects, also some changes to calling format
+
+Mon Dec  8 11:32:15 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* undo.c (undo_record_insertion, undo_record_deletion,
+	undo_record_modification, undo_push_deletion): ensure that
+	null commands are ignored (i.e. when START == END)
+
+	* editcommands.c (cmd_set_indent_pos): in the `diff > 0'
+	section, the undo_record_modification() function was being
+	called _after_ the modification had been performed, not before
+	as it should be
+
+	* unix_processes.c: Simplified the async. process clean up; the
+	PR_EXITED value has been scrapped. Now we assume that once we
+	receive SIGCHLD from a process there won't be any more output
+	coming from it. This seems to work ok but I think there may be
+	race-conditions involved (between the main select() and the
+	clean up code). Needs serious investigation.
+
+	* x11_eventloop.c: Removed call to proc_on_idle()
+
+Wed Nov 26 13:13:52 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* jade.h: reorganised a bit
+	(MAX,MIN,POS): macros for maximum, minimum, and positive part,
+	respectively
+	(ROUND_UP_INT, ROUND_DOWN_INT): rounding macros
+
+	* housekeeping.c (resync_y): rewritten; fixed the bug in which
+	the cursor was sometimes being left outside the visible
+	region. Also avoids unnecessary space being left at the bottom
+	of the display in certain circumstances
+
+Mon Nov 24 11:25:06 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispcmds.c (cmd_last): now returns the last element as it
+	should, not the last cons cell
+
+Sun Nov 23 16:09:44 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.c (signal_missing_arg): put the argument number into a
+	list.
+
+	* lispcmds.c (APPLY_COMPARISON): don't check for numerical
+	args, comparison works on all objects. Signal an error if less
+	than two arguments are given
+
+	* lispmach.c (unbind_one_level): when reinstalling a view,
+	check that its parent window is still valid
+
+	* views.c (cmd_with_view): don't save the old window, it's
+	stored in the view structure
+
+	* windows.c (cmd_with_window): reinstall the current view in
+	the old window, as well as the window itself
+
+Fri Nov 21 12:23:16 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispcmds.c: generally improved error reporting, especially
+	of missing arguments (a lot of functions just returned NULL,
+	no errors or anything..) Also functions which take lists as
+	arguments don't silently ignore anything that's not a cons
+	cell, an error is signalled if it's not LISTP (cons or nil)
+	(cmd_plus): no arguments gives a result of zero.
+	(cmd_product): no arguments gives a result of one.
+	(cmd_remainder): restricted to two arguments now, any more are
+	pretty meaningless
+	(cmd_mod): new function implementing the modulo operation,
+	similar to cmd_remainder but works properly for negative
+	arguments.
+	(cmd_gtthan, cmd_gethan, cmd_ltthan, cmd_lethan): can now take
+	more than two arguments
+
+	* lisp.c (signal_missing_arg): new function for convenience
+
+	* lisp.h (LISTP): new macro, disjunction of NILP and CONSP
+
+	* bytecodes.h, lispmach.c (OP_MOD): renamed as OP_REM to allow
+	a new instruction OP_MOD that does the proper modulo operation
+
+	* lispmach.c (cmd_validate_byte_code): new function to check
+	if a given byte code instruction set version may be executed
+	in the current version of the editor
+	* bytecodes.h (BYTECODE_MAJOR_VERSION, BYTECODE_MINOR_VERSION):
+	macros defining the current byte code version
+
+Mon Nov 17 19:02:44 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* undo.c (undo_end_of_command): this new function replaces
+	both undo_distinct() and undo_new_group(). Instead of trying
+	to be clever when adding group separators, simply add one
+	after _every_ event is processed. Also, separators are added to
+	_every_ buffer whose last undo item is not already a separator.
+	(cmd_undo): new optional arg controlling the number of
+	commands that are undone; when called interactively this is
+	taken from the prefix arg.
+
+	* commands.c (cmd_call_command): removed calls to
+	undo_distinct().
+	* x11_eventloop.c, amiga_eventloop.c: removed all calls to
+	undo_distinct(), replaced by two strategically placed calls to
+	undo_end_of_command().
+	* keys.c (usekey): removed calls to undo_distinct(). To ensure
+	that successive self-bound key insertions are merged in the
+	undo list, any leading group-separator after a previous
+	insertion command is removed before inserting the text (and
+	then replaced at the head of the undo list afterwards).
+
+	* views.c (cmd_translate_pos_to_view): adds vw_StartCol into
+	the column of the result
+
+Sun Nov 16 01:22:06 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* movement.c (cmd_raw_mouse_pos): new function giving the
+	glyph position of the mouse relative to the origin of the
+	current window
+
+	* views.c (cmd_find_view_by_pos): new function to find the
+	view in a window specified by a window-relative position
+	(cmd_translate_pos_to_view): new function to make a
+	buffer-relative glyph position from a window-relative glyph
+	position and a view
+
+	* x11_eventloop.c, x11_windows.c (handle_event,
+	sys_get_mouse_pos): try not to query the server for the
+	pointer position---when possible grab it from the last event.
+
+	* glyphs.c (char_col): try to handle columns past the end of
+	a line without crashing
+
+Fri Nov 14 12:44:01 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* io.c (read_tx): Now uses a predictive method of allocating the
+	array of line headers whilst loading files. The average number of
+	chars-per-line in the last file loaded is used to predict the
+	number of lines in the current file. If this prediction is wrong
+	the chars-per-line of the loaded portion of the new file is used
+	to refine the predicted number of lines.
+
+	* unix_misc.c, amiga_misc.c (sys_file_length): new function to
+	return the size, in bytes, of a named file, or -1 if the size
+	is unknown. Currently the Amiga implementation is totally
+	untested.
+
+	* edit.c (clear_line_list, kill_line_list, resize_line_list): the
+ 	tx_Line array of line headers now includes "slack", i.e. unused
+ 	entries at the end of the array. Currently a maximum of 32 extra
+	entries, allocated as +/- 16. This makes line insertion/deletion
+	faster, as well as possibly reducing memory fragmentation.
+	* edit.h (TX): added tx_TotalLines field to allow unused entries
+	at the end of the tx_Lines array
+
+Fri Nov  7 09:52:30 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* render.c (draw_bit, draw_line, draw_block_line, draw_line,
+	draw_line_part, draw_line_glyph_length): miscellaneous fixes,
+	mostly to help fix block rendering
+	
+	* edit.h (TX): new variables tx_LastLogicalStart and
+	tx_LastLogicalEnd; the restriction at the last refresh.
+	* refresh.c: now uses tx_LastLogical{Start,End} to see if the
+	restriction has changed, if so just redraw everything
+	* buffers.c (cmd_restrict_buffer): don't set TXFF_REFRESH_ALL
+	anymore, it's covered by the variables described above
+	* housekeeping.c: the position updating functions also update
+	tx_LastLogical{Start,End}
+
+Mon Nov  3 01:27:49 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* refresh.c (refresh_block, refresh_view,
+	sub_intersect_regions, sub_regions): _much_ better handling of
+	block refresh--now only the stuff that needs to be redrawn
+	actually is! The sub_* functions implement two set/logical
+	operations on pairs of regions
+
+	* render.c (redraw_region): better clipping of region
+
+	* views.c (cmd_set_rect_blocks): sets the VWFF_FORCE_REFRESH
+	flag; this should really be done properly
+
+	* edit.c (set_block_refresh): just sets VWFF_REFRESH_BLOCK
+
+	* edit.h (VW): new fields vw_LastBlockS, vw_LastBlockE,
+	vw_LastBlockStatus.
+
+	* housekeeping.c: updates the two new fields in the VW
+	structure.
+
+Thu Oct 30 13:16:45 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_processes.c (run_process): some fixes made to the
+	synchronous parent code; shouldn't hang anymore (?) and now does
+	time outs to look for user interruptions
+
+Tue Oct 28 17:07:53 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_processes.c: Hopefully fixed the long-running "process
+	exited but no eof" debacle; everything should work now (famous
+	last words). Also separates the stdout and stderr streams when
+	using pipes; the process-error-stream and set-process-error-stream
+	functions control where the output actually goes. By default it's
+	set to the same value as the output-stream
+	(run_process): when using a pty initialise some of the more basic
+	control codes to sensible values
+
+	* x11_eventloop.c (event_loop): now calls proc_notification()
+	_after_ going through the input fd's and handling the idle
+	stuff
+
+Tue Oct  7 13:12:03 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* movement.c (cmd_center_display): renamed from
+	centre-display. Now takes a second optional argument
+	controlling where in the display to put the line under the
+	cursor. Taken from the prefix-arg when interactive.
+
+Thu Oct  2 18:32:17 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_processes.c (proc_on_idle): new function called when the
+	editor is idle; it acts as a safety net for processes that have
+	exited but haven't given an EOF over the connection. Any such
+	processes are marked as truly dead
+	* x11_eventloop.c (event_loop): calls proc_on_idle()
+
+Wed Oct  1 21:00:17 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* render.c (redraw_lines_clr): check arguments against
+	tx_Logical{Start,End} more rigorously.
+
+Sun Sep 28 22:03:43 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* housekeeping.c (adjust_marks_join_y): fixed a really bad bug
+	that must have existed for _years_. If the position being updated
+	was past the two lines being joined it wasn't adjusted
+
+Sat Sep 27 11:34:13 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.c (sym_print_escape_newlines, sym_print_level,
+	sym_print_length): variables controlling how lists and strings
+	are printed
+
+	* housekeeping.c (adjust_marks_add_y, adjust_marks_sub_y,
+	adjust_marks_split_y, adjust_marks_join_y): these now update
+	vw_LastDisplayOrigin iff they update vw_DisplayOrigin. This
+	stops the refresh code scrolling erroneously
+
+	* x11_render.c (redraw_exposed_area): recognises when expose
+	events hit status lines correctly now
+
+Thu Sep 25 09:48:57 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_misc.c (same_files): tries to compare files that don't
+ 	actually exist
+	(cmd_file_absolute_p): new function
+
+	* amiga_misc.c (cmd_file_name_absolute_p): new function
+
+	* unix_defs.h, amiga_defs.h: Define SITE_LISP_DIR
+
+	* lispcmds.c (sym_load_path): added site-lisp directory
+
+	* revision.h: Now protected by #ifndef stuff
+
+	* Makefile.in: Added revision.h to HDRS
+
+	* jade.h: Include revision.h
+
+Wed Sep 24 11:11:49 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* misc.c (cmd_file_name_equal):	new function, called file-name=,
+	that tests whether two filenames actually refer to the same
+	file.
+
+	* x11_eventloop.c (x11_last_event_time): variable containing the
+	timestamp from the last X11 event (that has a timestamp).
+
+	* x11_misc.c: Now each selection info has the timestamp of when
+	the selection was created. x11_lose_selection() ignores events
+	with times less than or equal to this time
+
+	* x11_misc.c (cmd_x11_own_selection_p): returns t when Jade has
+ 	the selection
+	(x11_window_lose_selections): lose anything owned by a particular
+	window
+	(x11_set_selection): can now set a string as the current selection
+
+	* x11_windows.c (sys_kill_window): calls
+	x11_window_lose_selections()
+
+Tue Sep 23 10:55:03 1997  John Harper  (john@dcs.warwick.ac.uk)
+
+	* views.c (update_status_buffer): all line numbers/counts now
+	take note of the current restriction. Also the buffer position
+	is displayed in "all/top/bottom/percentage" style
+
+	* refresh.c (refresh_view): call resync_xy() before redrawing
+	the status line, not after.
+
+	* unix_server.c, amiga_server.c: (server-reply): compare files
+	with same_file() not just comparing their names (which doesn't
+	always work)
+
+Mon Sep 22 17:53:50 1997  John Harper  (john@gem.dcs.warwick.ac.uk)
+
+	* editcommands.c (delete-area): given it an interactive spec 
+	(the current block)
+
+	* buffers.c (restrict_buffer): made the interactive spec clear
+	the block
+
+	* keys.c, keys.h: new handling of meta modifier. Now defined as a
+ 	variable in keys.c. This allows meta to change from system to
+ 	system.
+
+	* x11_keys.c, amiga_keys.c (sys_find_meta): new function
+	to return the meta modifier mask for the current system. Also some
+	work to decode and encode meta modifiers
+
+Mon Sep 22 00:03:08 1997  John Harper  (john@orcrist)
+
+	* lispmach.c: (slightly) better error reporting for when
+	arguments aren't of the required type for inlined functions
+
+	* views.c, windows.c, buffers.c (cmd_with_view,
+	cmd_with_window, cmd_with_buffer): these now signal an error
+	if the first argument isn't of the required type
+
+	* lispcmds.c (cmd_unwind_protect): don't lose errors occuring
+	in the cleanup-forms anymore
+
+Sun Sep 21 14:42:19 1997  John Harper  (john@orcrist)
+
+	* views.c (cmd_destroy_view): don't let minibuffer views be
+	killed anymore
+
+Sat Sep 20 00:20:29 1997  John Harper  (john@orcrist)
+
+	* unix_processes.c (cmd_call_process_area): new function to
+	call a process with a portion of the current buffer as its
+	input.
+
+	* misc.c (cmd_tmp_file_name): now uses its own buffer
+
+	* io.c (cmd_write_buffer_area): fixed bug which could cause an
+	attempt to write -1 (i.e. MAXUINT) bytes. Also added an
+	interactive spec so it can be called as a command
+
+	* unix_processes.c (cmd_run_process): renamed as call-process
+
+	* unix_misc.c, amiga_misc.c (cmd_file_size): new function that
+	return the size of a specified file. The Amiga version is totally
+	untested and probably wrong
+
+	* io.c (cmd_write_buffer, cmd_write_buffer_area): both functions
+	now accept streams for output, as well as the original file name
+	interface
+
+	* lisp.h (VIEWP): now checks if vw_Win pointer is non-null;
+	this happens when the view has been destroyed but is still in
+	scope.
+
+	* views.c (view_prin): prints "#<dead-view>" for views that
+	have been destroyed
+
+Fri Sep 19 00:48:20 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* find.c (buffer_strpbrk, buffer_reverse_strpbrk, buffer_strchr,
+	buffer_reverse_strchr, buffer_compare_n, forward_char,
+	backward_char): new buffer utility functions. Used mainly by the
+	new regexp matcher
+
+	* find.c: Most of the lisp functions have been rewritten to use
+	the new regexp matcher. All functions now allow matches across
+	line boundaries (including string and char variants)
+	find-{next,prev}-string both set the match-start and match-end
+	variables.
+
+	* editcommands.c (sym_flatten_table): variable containing a
+ 	translation table that converts newlines to spaces
+
+Thu Sep 18 21:06:05 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* movement.c (prev_char, delete_char): deleted these functions,
+	they're replaced by forward_char and backward_char in find.c
+
+	* edit.c (delete_section): doesn't trash the `startPos' and
+	`endPos' parameters anymore
+
+Sun Sep 14 19:39:50 1997  John Harper  (john@orcrist)
+
+	* views.c (cmd_view_dimensions, cmd_set_view_dimensions):
+	commands for reading and manipulating the size of a view
+	(set_scroll_steps): checks that the scroll step isn't greater
+	than the width/height of the view
+
+	* windows.c (cmd_window_dimensions): returns the glyph
+	dimensions of a window
+
+	* movement.c (cmd_mouse_pos): now adds in vw_StartCol
+
+Sat Sep 13 11:55:23 1997  John Harper  (john@orcrist)
+
+	* edit.c (check_pos, check_line, check_section): when these
+	functions return FALSE they also signal an error. Also
+	check_pos() now returns FALSE (not void), when the line is out
+	of range
+
+	* find.c, movement.c, editcommands.c: now check the return
+	value of check_pos()
+
+	* lisp.c (sym_invalid_pos): new error symbol
+
+	* buffers.c (cmd_restrict_buffer): now calls
+	cmd_unrestrict_buffer() before checking the validity of the
+	specified section. Otherwise anything outside the current
+	restriction will be rejected.
+
+Mon Sep  8 00:24:47 1997  John Harper  (john@orcrist)
+
+	* unix_misc.c (cmd_system_name): try harder to get a fully
+	qualified host name (with domain information)
+
+Sun Sep  7 00:05:37 1997  John Harper  (john@orcrist)
+
+	* views.c (update_status_buffer): surrounds the cursor
+	position with square brackets when a restriction is in effect
+
+	* streams.c: all streams using buffers take note of any
+	restriction to that buffer
+
+	* io.c (read_buffer): clears any restriction before reading
+	(write_buffer): option to only write restricted text
+
+	* edit.c (check_pos, check_line, check_section): region being
+	validated must be inside any restriction
+
+	* movement.c, editcommands.c, find.c: restrict parts of the
+	buffer that may be used to the restriction (if it exists)
+
+	* buffers.c (cmd_in_restriction_p): new function; a predicate
+	on whether a position is in the restricted part of a buffer
+
+	* buffers.c (cmd_restriction_end): now does what it is
+	documented as doing, returns the last character of the line
+	before tx_LogicalEnd
+
+	* movement.c (cmd_buffer_end): when I-R-P is null just return
+	the value of restriction-end
+
+Sat Sep  6 13:34:55 1997  John Harper  (john@orcrist)
+
+	* housekeeping.c (adjust_marks_add_y): doesn't shift
+	tx_LogicalStart if it equals the insertion line
+
+	* buffers.c (cmd_restrict_buffer, cmd_unrestrict_buffer,
+	cmd_restriction_start, cmd_restriction_end): new functions to
+	work with tx_LogicalStart and tx_LogicalEnd
+
+	* edit.h (TX): added tx_LogicalStart and tx_LogicalEnd fields;
+	the line numbers of the first and last+1 lines that may be
+	displayed in the buffer
+
+	* movement.c (cmd_buffer_end, cmd_buffer_start): extra
+	argument IGNORE-RESTRICTION-P
+	(cmd_centre_display, cmd_goto_buffer_end,
+	cmd_goto_buffer_start, cmd_goto_next_line, cmd_goto_prev_line,
+	move_down_screens, move_up_screens): modified to work with
+	buffer restrictions
+
+	* housekeeping.c (adjust_marks_add_y, adjust_marks_sub_y,
+	adjust_marks_split_y, adjust_marks_join_y, resync_y): modified
+	to work with buffer restrictions
+
+	* io.c (read_tx): sets the buffer restriction to the entire
+	file initially.
+
+	* edit.c (clear_line_list): initialises restriction
+
+	* render.c: ensure that nothing outside the restriction is
+	rendered.
+
+	* All files are now under RCS control, not before time
+
+Fri Sep  5 20:06:32 1997  John Harper  (john@orcrist)
+
+	* view.c (update_status_buffer): fixed display "line" or 
+	"lines" depending on the number of lines in the buffer
+
+Thu Sep  4 00:11:59 1997  John Harper  (john@orcrist)
+
+	* command.c (sym_pre_command_hook, sym_post_command_hook,
+	cmd_call_command): these two hooks bracket the evaluation of
+	each command. pre-command-hook is given the command to be
+	called as its sole arg.
+
+	* keys.c (usekey): calls pre-command-hook and
+	post-command-hook around insertion of unbound keys.
+
+Wed Sep  3 20:41:19 1997  John Harper  (john@orcrist)
+
+	* render.c (redraw_status_buffer): when VWFF_CUSTOM_STATUS is
+	set draw the status line in the highlight colour to make it
+	stand out.
+
+	* lispmach.c, bytecodes.h: renamed quite a few opcodes. Also
+	changed the op-setq and op-set (previously op-vsetc and
+	op-vset) instructions to the set value on the stack.
+
+Wed Sep  3 15:53:37 1997  John Harper  (john@gem)
+
+	* stringmem.c, stringmem.h: some general cleaning up of the
+	code. Only notable change is that when STRMEM_STATS is defined
+	it now prints the statistics when sm_kill() is invoked.
+
+	* revision.h: bumped version to 4.0 alpha
+
+Tue Sep  2 23:38:39 1997  John Harper  (john@orcrist)
+
+	* bytecodes.h: new header file defining all bytecodes in
+	lispmach.c
+
+	* lispmach.c (unbind_one_level): new function that handles
+	undoing the first element in the `bindstack'. It can handle
+	symbol bindings, unwind-protect forms, and binding to buffers,
+	views and windows. OP_UNWIND calls this function.
+	(OP_BIND_BUFFER, OP_BIND_VIEW, OP_BIND_WINDOW): these opcodes
+	replace the OP_SWAP_X opcodes. They install their sole
+	argument (on the stack) (a buffer, view or window) and add an
+	entry to the bindstack to let it be unwound later.
+	(OP_UN_UNWIND_PRO): removed, OP_UNWIND does this now.
+
+Mon Sep  1 21:52:48 1997  John Harper  (john@orcrist)
+
+	* lisp.c (max_lisp_depth): doubled to 500, the compiler was
+	catching the limit sometimes
+
+	* lispcommands.c (cmd_if, cmd_when, cmd_unless): removed;
+	these are now defined as macros in lisp.jl
+
+	* view.c (update_views_dimensions): won't abort if vertical
+	size is still the same but horizontal has changed
+
+Sun Aug 31 11:12:09 1997  John Harper  (john@orcrist)
+
+	* Makefile.in: removed *commandline.c; added views.c
+
+	* amiga_commandline.c, commandline.c, x11_commandline.c:
+	banished to the obsolete directory (not before time)
+
+	* buffers.c (first_buffer): creates the buffer before the
+	window, this lets make-view find at least one buffer in
+	existence.
+
+	(get_tx_cursor): now checks active-view, other views in the
+	same window, then views in other windows.
+
+	(cmd_current_buffer, cmd_set_current_buffer): now operate on
+	views not windows
+
+	(cmd_set_buffer_file_name, cmd_set_buffer_name,
+	cmd_set_buffer_modified, cmd_set_buffer_special,
+	cmd_set_buffer_read_only, var_mode_name, var_minor_mode_names):
+	all set the flag TXFF_REFRESH_STATUS to show that any status
+	lines reflecting this buffer may need updating.
+
+	(cmd_with_buffer): saves the current view so that the reset
+	stage works when the active view changes. I don't think this
+	works in the compiled version properly..
+
+	* configs/: all config-*.h files now have an extra Makefile
+	entry, EXTRA_LIBS
+
+	* edit.c (resize_line_list): uses memset() not bzero()
+
+	* edit.h (TX): new flag TXFF_REFRESH_STATUS -- reflects when a
+	view displaying the buffer needs to refresh its status display
+
+	(VW): now represents a single view in a window, as such all
+	window system data has been removed. Has a `vw_NextView' field
+	pointing to the view beneath it in the window. `vw_MaxY' and 
+	`vw_MaxX' refer to the size of the view.
+	The flags VWFF_SLEEPING and VWFF_MESSAGE have been removed;
+	new flags VWFF_MINIBUF and VWFF_CUSTOM_STATUS have been added.
+
+	(WIN): new structure representing a physical window (what
+	Emacs would call a frame). Most things are those that were
+	removed from the VW. `w_ViewList' points to the top view in
+	the window, `w_CurrVW' to the current view, and `w_MiniBuf' to
+	the minibuffer view.
+
+	(MINIBUFFER_ACTIVE_P(win)): macro to check if a window's
+	minibuffer view is in use.
+
+	* editcommands.c (sym_block_status_hook): hook called when the
+	current view's block status changes; one argument the block
+	status.
+
+	* editrect.c (cmd_insert_rect): tries to return the position
+	following the insertion; not so useful as it doesn't lead to
+	the size of the rectangle.
+
+	* lisp.c (sym_window_error): new error type
+
+	* lisp.h (V_View, VVIEW, VIEWP): define the view type
+
+	* lispmach.c (OP_VIEWP, OP_SWAP_VIEW, OP_CURRENT_VIEW,
+	OP_SWAP2): new opcodes. swap-buffer has changed incompatibly!,
+	but probably still won't work in case of errors
+
+	* movement.c (cmd_centre_display, cmd_mouse_pos): work
+	relative to the current view now, not the window.
+
+	* refresh.c (refresh_window) renamed as `refresh_view' and
+	made to work on a per-view basis. A new function `
+	refresh_window' has been added that cycles through each view
+	in a window refreshing each in turn.
+	(vert_scroll): calls portable scroll_vw() not sys_scroll_vw()
+	(refresh_message): function to redraw a window's message if
+	necessary.
+
+	* render.c: all functions work relative to the view now, in
+	fact they assume the view is at position (0,0) and let the
+	window-system macros (i.e. MOVE, DRAW, etc...) work out where
+	the view actually is.  It is also assumed that four pens exist
+	now: P_TEXT, P_TEXT_RV, P_BLOCK, and P_BLOCK_RV.
+	(redraw_cmd_line, redraw_cmd_line_from, cmd_line_cursor):
+	deleted.
+	(draw_message_line, redraw_message, redraw_status_buffer):
+	added.
+	(scroll_vw): portable version of sys_scroll_vw(), uses
+	CLR_AREA and COPY_AREA macros
+
+	* streams.c: writing to the message line works on the current
+	window, not the current view
+
+	* unix_misc.c: used ENVIRON_UNDEFINED, not ENVIRON_UNDECLARED,
+	doh!
+
+	* unix_processes.c: include <signal.h> not <sys/signal.h>,
+	also includes <stdio.h> and <fcntl.h>
+
+	* values.c (ValueClasses): entries for V_View
+	(mark_value): changed V_Window and V_View actions
+	(cmd_garbage_collect): added view_sweep() to list of sweep
+	functions.
+
+	* views.c: new file providing view functions
+	(view_chain, curr_vw): list of all views, and current view
+	(make-view-hook, destroy-view-hook): what they say
+	(cmd_make_view, cmd_destroy_view): also what they say
+	(update_view_dimension): recalibrates the view dimensions of a
+	window after the window size has changed
+	(update_status_buffer): reformats the status line
+	(cmd_next_view, cmd_previous_view): for traversing views
+	(cmd_with_view): similar to `with-window'
+	(cmd_minibuffer_view, cmd_minibuffer_view_p,
+	cmd_minibuffer_active_p): new functions
+	(cmd_set_status_message): allows the hijacking of the status
+	line.
+
+	* windows.c: many things changed to use `WIN *' instead of 
+	`VW *', some functions moved to the new file views.c
+	(win_chain, curr_win): replace `view_chain' and `curr_vw'
+	(copy_prefs): renamed `copy_win_prefs'
+	(cmd_make_window): creates two views by default, a main view
+	with everything but the one row taken by the minibuffer view
+
+	* x11_display.c: includes <signal.h> not <sys/signal.h>
+	(x11_high_pixel): pixel colour used to provide P_BLOCK pens
+	(x11_jade_sel): property used to transfer selection's atom
+	(x11_get_options): `-hl' for highlight pixel
+	(handle_event): works in windows not views, now handles
+	MotionNotify, SelectionRequest, and SelectionClear events.
+	(event_loop): in the timeout try to remove messages from
+	minibuffers if the minibuffer is active.
+
+	* x11_keys.c (translate_event): handles MotionNotify events
+	(KeyDescr): remove pounds-sterling sign; it seems that Solaris
+	strcasecmp() only works with 7-bit ASCII?
+
+	* x11_misc.c (x11_convert_selection, x11_lose_selection,
+	cmd_x11_set_selection, cmd_x11_selection_active_p,
+	cmd_x11_get_selection, cmd_x11_lose_selection, sym_xa_primary,
+	sym_xa_secondary, x11_misc_init): selection handling
+
+	* x11_render.c (redraw_exposed_area): new function; given a
+	window and a rectangular region, works out which bits in each
+	view need redrawing, and redraws them.
+	(sys_scroll_vw): deleted
+
+	* x11_windows.c (INPUT_EVENTS): added ButtonMotionMask and
+	PointerMotionHintMask.
+	(sys_sleep_vw, sys_unsleep_vw, sys_set_vw_pos): renamed
+	`sys_sleep_win', `sys_unsleep_win', and 'sys_set_win_pos'
+	(sys_new_window): creates GCs for all four pens
+
+	* x11_windowsys.h (W_WindowSys): new entry ws_GC_array[] which
+	holds all GCs.
+	(P_TEXT, P_TEXT_RV, P_BLOCK, P_BLOCK_RV, P_MAX): defined
+	(MOVE, PEN_X, PEN_Y, CLR_AREA, CLR_RECT, SET_AREA, SET_RECT,
+	COPY_AREA, DRAW_LINE): all coordinates are relative to the
+	specified view. SET_{RECT,AREA} now take a PEN argument
+	defining the GC to use.
+
+Thu Jul 13 11:56:35 1995  John Harper  (jsh@orcrist)
+
+	* Makefile.in: fixed the _JADE_DIR macro containing a leading
+	space character.
+
+	* unix_defs.h, unix_server.c, unix_client.c (JADE_SOCK_NAME):
+	This is now defined in the unix_defs.h header file to prevent
+	any more embarassing mistakes (changing its definition in only
+	one place)
+
+	* render.c (clear_lines): New function
+
+	* refresh.c (flag_deletion): The tx_ModEnd is set to the end
+	of the deleted text, not the same place as the beginning of
+	the deletion. This fixes the annoying ``delete a block near
+	the end of the buffer'' bug which sometimes occurs. What does
+	it break though? (it probably hits performance..)
+
+Sun May 28 01:11:57 1995  John Harper  (jsh@orcrist)
+
+	* jade.h (QUOTE): Macro to stringify its argument
+	* Makefile.in, unix_defs.h (_JADE_DIR, JADE_DIR): Due to rot
+	in cpp the method of passing in JADE_DIR broke. Now it's
+	passed from the command line without quotes. The definitions
+	of LISP_LIB_DIR and DOC_FILE quote it.
+
+Wed Feb 22 20:15:18 1995  John Harper  (jsh@orcrist)
+
+	* movement.c (next_char): When POS is past the end of the line
+	move it back to the end.
+
+Thu Jan 12 16:27:23 1995  John Harper  (jsh@orcrist)
+
+	* lispcmds.c (cmd_divide, cmd_remainder): Now check for
+	divide-by-zero and signal an error if it will occur.
+
+Wed Jan 11 14:43:33 1995  John Harper  (jsh@orcrist)
+
+	* commands.c (interactive_spec): Doesn't assume that lambda
+	expressions are always valid anymore
+
+Sat Dec 24 15:46:52 1994  John Harper  (jsh@orcrist)
+
+	* render.c (draw_line_glyph_length, draw_rect): Hopefully
+	fixed the problem of the glyph in the right-most column
+	sometimes being left undrawn.
+
+Sun Nov 13 19:48:55 1994  John Harper  (jsh@orcrist)
+
+	* buffers.c (var_auto_save_interval): corrected its doc-string
+
+Sun Oct 30 15:24:16 1994  John Harper  (jsh@orcrist)
+
+	* x11_windows.c (sys_new_window): windows are now called `Jade'
+
+Wed Oct 26 17:52:44 1994  John Harper  (jsh@orcrist)
+
+	* unix_client.c (JADE_SOCK_NAME): changed to ".Jade_rendezvous";
+	I'd changed this in unix_server.c but not here (oops!)
+
+Sun Oct 23 19:54:24 1994  John Harper  (jsh@orcrist)
+
+	* windows.c (save_message, restore_message): Mechanism for
+	temporarily installing a message.
+
+	* values.c (cmd_garbage_collect): Prints a message while
+	gc'ing (again).
+
+	* lisp.c (load_autoload): Temporarily prints a message
+	while loading the file.
+
+	* Makefile.in: moved the definitions of CFLAGS and LDFLAGS to
+	`../Makefile'; hopefully this means the user can override them
+	properly when compiling.
+
+Fri Oct  7 15:12:19 1994  John Harper  (jsh@orcrist)
+
+	* Version 3.2 released
+
+Tue Oct  4 00:06:10 1994  John Harper  (jsh@orcrist)
+
+	* lisp.h, symbols.c, values.c: new type V_Void. Used to denote
+	a void value in a symbol.
+	
+	* symbols.c (cmd_symbol_value, cmd_symbol_function,
+	cmd_default_value): these now take an extra argument `NO-ERROR'.
+	Unless this is t, when the value is void they signal an error.
+
+	* symbols.c: rewrote buffer-local variables to be compatible
+	 with Emacs. Removed `set-buffer-variable' and
+	`buffer-variable-p', renamed `delete-buffer-variables' to
+	`kill-all-local-variables' and created the new functions,
+	`make-local-variable', `make-variable-buffer-local' and
+	`kill-local-variable'.
+	(cmd_set): SF_BUFFER_LOCAL only means that a variable may
+	have a local value; not that one should be created (see next
+	entry)
+
+	* lisp.h (SF_SET_BUFFER_LOCAL): new flag, means that setting
+	this symbol gives it a buffer-local binding
+
+Mon Oct  3 17:53:07 1994  John Harper  (jsh@orcrist)
+
+	* io.c (read_tx): no longer scans for code section
+	* buffers.c (eval_file_code): removed
+	* editrect.c (col_copy_sect): removed
+
+	* housekeeping.c (set-start-line): this was doing it's own
+	rendering; a bad thing all in all
+
+	* Most module's _kill function didn't set that module's private
+	chain of objects to NULL. In particular the Amiga menus were
+	stepping through the de-allocated view_chain and guruing...
+
+Sat Oct  1 14:48:49 1994  John Harper  (jsh@orcrist)
+
+	* amiga_keys.c (lookup_event_name): doesn't pass any qualifiers
+	to MapRawKey() anymore
+
+	* commands.c (cmd_call_command): the `N' code-letter was screwed
+
+	* main.c, x11_display.c, amiga_display.c: startup modified so
+	that the sys_init() function calls a new function inner_main()
+	which does most of what main() used to do. This allows the Amiga
+	version of sys_init() to play with the stack
+
+	* amiga_display.c (sys_init): now contains code to allocate a
+	larger stack if the `-stack' argument is given.
+
+	* unix_processes.c (run_process): when using pipes stderr is also
+	connected up
+
+Thu Sep 29 15:33:23 1994  John Harper  (jsh@orcrist)
+
+	* unix_processes.c (cmd_signal_process, cmd_interrupt_process,
+	cmd_kill_process, cmd_stop_process, cmd_continue_process): All
+	have a new argument, SIGNAL-GROUP, which makes them signal the
+	whole process group.
+
+Mon Sep 26 21:13:32 1994  John Harper  (jsh@orcrist)
+
+	* unix_processes.c (cmd_make_process): default value of the
+	connection-type component is now `pipe'
+
+Tue Sep 20 14:22:22 1994  John Harper  (jsh@orcrist)
+
+	* refresh.c (refresh_world_curs): no longer makes an ill-judged
+	guess as to whether a window should be refreshed or not; sometimes
+	it got it wrong :-(
+
+	* keys.c (var_next_keymap_path): now passes the prefix-arg through
+	the chain of multi-key bindings
+
+	* x11_keys.c, amiga_keys.c (lookup_event): doesn't look for backslash
+	characters anymore, also a `-' character as the first character in
+	a token won't terminate the token.
+
+Sun Sep 18 15:37:00 1994  John Harper  (jsh@orcrist)
+
+	* misc.c (cmd_file_concat): renamed as `file-name-concat'
+
+Wed Sep 14 15:08:52 1994  John Harper  (jsh@orcrist)
+
+	* misc.c (cmd_path_name, cmd_base_name): renamed as `file-name-
+	directory' and `file-name-nondirectory' respectively
+
+	* symbols.c (bind_symbol, unbind_symbols): uses the `set-default'
+	and `default-value' functions to bind variables
+	(cmd_set_default, cmd_default_value): now checks for a V_Var type
+	of object
+
+Tue Sep 13 15:10:56 1994  John Harper  (jsh@orcrist)
+
+	* unix_misc.c, amiga_misc.c (cmd_setenv): new function
+
+	* housekeeping.c (resync_y): checks for a blank area at the
+	bottom of the display; if one exists it's removed
+
+Fri Sep  9 14:59:16 1994  John Harper  (jsh@orcrist)
+
+	* render.c (cut_paste_lines): when deleting lines, and the stuff
+	which couldn't be blitted is only partly in the buffer, the rest is
+	cleared.
+	(cut_paste_lines): doesn't check if `srcLine' is greater than
+	the last line displayed anymore; this is perfectly valid
+
+Tue Sep  6 14:47:48 1994  John Harper  (jsh@orcrist)
+
+	* housekeeping.c (resync_y): when the cursor goes totally out
+	of the display its put back at the center of the screen.
+
+	* unix_server.c, amiga_server.c (cmd_server_open, cmd_server_close):
+	these can now be called interactively
+
+Sat Sep  3 15:50:18 1994  John Harper  (jsh@orcrist)
+
+	* find.c (replaceit): now expands the replacement before deleting
+	the original text; a much better idea (i.e. it works)
+
+Thu Sep  1 14:17:57 1994  John Harper  (jsh@orcrist)
+
+	* commands.c (cmd_interactive): now a special form
+
+Wed Aug 31 20:28:06 1994  John Harper  (jsh@orcrist)
+
+	* x11_eventloop.c, amiga_eventloop.c: the hook `close-gadget-hook'
+	has been renamed to `window-closed-hook'.
+
+Tue Aug 30 11:47:17 1994  John Harper  (jsh@orcrist)
+
+	* keys.c (cmd_bind_keys, cmd_unbind_keys): the KEY-DESCRIPTION
+	may now be an event
+
+	* keys.h: redefined the EV_TYPE and EV_MOD defines so that
+	most events will fit this field into 8 bits, and hence will
+	use the pre-allocated static integers to save memory.
+
+Mon Aug 29 12:47:47 1994  John Harper  (jsh@orcrist)
+
+	* glyphs.c (cmd_set_glyph): when a glyph-string of "" is
+	set the first glyph is set to ' '
+	(cmd_glyph_to_char_pos): POS isn't optional anymore
+
+	* buffers.c (mark_prin): doesn't add one to the marks line and
+	column before printing them anymore. Also resident marks have
+	their buffer printed not their name
+	(cmd_set_mark): setting the name of the file should work now
+
+Tue Aug 23 13:11:34 1994  John Harper  (jsh@orcrist)
+
+	* lispcmds.c (cmd_bit_not, cmd_bit_or, cmd_bit_and): renamed
+	as `lognot', `logior' and `logand' respectively.
+
+	* lispcmds.c (cmd_logxor): new function
+	* lispmach.c (OP_LOGXOR_2): new opcode
+
+Thu Aug 18 16:20:48 1994  John Harper  (jsh@orcrist)
+
+	* streams.c (cmd_make_string_input_stream,
+	cmd_make_string_output_stream, cmd_get_output_stream_string,
+	cmd_streamp): new functions
+	(cmd_file_p): renamed as `filep'
+
+Wed Aug 17 14:30:17 1994  John Harper  (jsh@orcrist)
+
+	* lispcmds.c (cmd_defvar, cmd_defconst): the default value of
+	buffer-local variables is set, not the local value
+	(cmd_list): now conses up a *new* list, doesn't use its arg list;
+	this could be risky
+	(cmd_apply): now signals an error if its last argument is not
+	a list
+
+Tue Aug 16 19:32:02 1994  John Harper  (jsh@orcrist)
+
+	* symbols.c (cmd_default_boundp, cmd_set_default): new functions
+
+Sun Aug 14 19:45:52 1994  John Harper  (jsh@orcrist)
+
+	* symbols.c: obarrays no longer use NULL to terminate a bucket: any
+	non-symbol object can be used instead. This means that having a
+	NULL sym_Next can signify that a symbol is not interned, making
+	the SF_INTERNED flag obsolete -- it's been removed.
+
+	* symbols.c (var_obarray): new variable -- provides access
+	to the default obarray
+
+Sat Aug 13 12:40:00 1994  John Harper  (jsh@orcrist)
+
+	* glyphs.c (cmd_glyph_table_p): new function
+
+	* lispcmds.c (cmd_reverse): this was totally screwed
+	(cmd_aref, cmd_aset): changed documentation
+	(cmd_arrayp, cmd_elt): new functions
+
+	* editcmds.c (cmd_alpha_char_p, cmd_upper_case_p, cmd_lower_case_p,
+	cmd_digit_char_p, cmd_alphanumericp, cmd_space_char_p): these now
+	accept non-integer arguments -- they just return nil for them.
+
+Fri Aug 12 14:09:06 1994  John Harper  (jsh@orcrist)
+
+	* x11_display.c (x11_text_cursor): cursor to use in all windows
+	* x11_windows.c (sys_new_window): sets the window's cursor
+
+Thu Aug 11 20:13:10 1994  John Harper  (jsh@orcrist)
+
+	* lispcmds.c (cmd_mod): this was actually a remainder function
+	not modulo; it's renamed to `%'
+	(cmd_lsh): this was actually an arithmetic shift, new function
+	`ash' to do this and lsh is fixed
+	(cmd_integerp): new function
+
+Sun Jul 17 13:46:40 1994  John Harper  (jsh@orcrist)
+
+	* movement.c (cmd_next_char, cmd_goto_next_char, cmd_prev_char,
+	cmd_goto_prev_char): now take a COUNT argument: the number
+	of characters to move. The new args to next-char and prev-char
+	are incompatible with the old ones :-(
+
+Fri Jul 15 15:01:20 1994  John Harper  (jsh@orcrist)
+
+	* lisp.c (lisp_init): int_cell is now (user-interrupt)
+	not (error user-interrupt). This means that interrupts are no
+	longer errors and therefore are unable to be caught by error-pro.
+	* x11_eventloop.c, amiga_eventloop.c (event_loop): checks for
+	explicitly for user-interrupt
+
+Thu Jul 14 15:54:10 1994  John Harper  (jsh@orcrist)
+
+	* unix_server.c (server_accept_connection): the connection fd is
+	marked to be discarded on exec()
+	(server_kill): closes the open connections now
+
+Wed Jul 13 18:20:03 1994  John Harper  (jsh@orcrist)
+
+	* lispcmds.c (cmd_eql): new function
+	* lispmach.c (cmd_lisp_code2): added OP_EQL
+
+Tue Jul 12 13:05:08 1994  John Harper  (jsh@orcrist)
+
+	* amiga_menus.c (cmd_set_menu): the action of the menu is a command
+	not a list of forms
+
+	* undo.c (undo_trim): when an undo is in progress tries to
+	truncate the oldest of the three undo-lists
+
+	* lispmach.c (CALL_1, CALL_2, CALL_3): macros containing the code
+	to call a function for an instruction. Lots more opcodes have
+	been added.	
+
+Mon Jul 11 11:53:56 1994  John Harper  (jsh@orcrist)
+
+	* edit.c (pad_pos): now adds the insertion to the buffer's undo-list
+
+	* undo.c: doesn't use prefix counts to group items anymore. Instead
+	a marker (`nil') is placed between each group. This lets me make
+	each command a separate undo-group; also undo through several
+	recursive edits works properly.
+
+	* commands.c (var_last_command): no longer checks if VAL is nil
+
+Sun Jul 10 20:06:15 1994  John Harper  (jsh@orcrist)
+
+	* keys.c (print_event_prefix): now prints the whole sequence
+	each time.
+	(event_buf, event_index): records all events in the current
+	sequence.
+	(cmd_current_key_string): renamed to `current-event-string'
+
+Thu Jul  7 15:05:40 1994  John Harper  (jsh@orcrist)
+
+	* commands.c: New file; stuff for interactive function calling
+
+	* streams.c (stream_puts, stream_putc): When writing to a string
+	an extra byte is allocated to hold the zero terminator
+	(cmd_format): writes each chunk of characters between format
+	specifiers as one string instead of individually
+
+Wed Jul  6 19:32:31 1994  John Harper  (jsh@orcrist)
+
+	* streams.c (cmd_format): with a STREAM of nil a string is
+	constructed.
+
+	* edit.h, symbols.c, windows.c: Window-local Lisp variables are
+	no longer supported; they were only used for one variable, the
+	`buffer-list'. This variable is now an entry in the VW structure.
+
+	* lispcmds.c (cmd_aset): doesn't modify V_StaticString's
+
+	* editcommands.c (cmd_translate_string): checks for read-only
+	strings
+
+	* lisp.h (STRING_WRITEABLE_P): macro to check if a Lisp string
+	may be modified.
+
+Sun Jul  3 15:08:17 1994  John Harper  (jsh@orcrist)
+
+	* lispcmds.c (cmd_defconst): an error is signalled if the symbol
+	is already bound.
+
+	* refresh.c (refresh_window): when a deletion is recognised the line
+	it occurs is *always* redrawn from the first char deleted.
+
+	* misc.c (cmd_expand_file_name): new arg, QUALIFY-FULLY. When t
+	this says to get an absolute name.
+	* amiga_misc.c, unix_misc.c (sys_fully_qualify_file_name): new
+	function for the above Lisp function.
+
+	* movement.c: (cmd_file_start, cmd_file_end, cmd_goto_file_start,
+	cmd_goto_file_end): renamed, ``file'' replaced by ``buffer''
+
+	* buffers.c (cmd_file_length): now called `buffer-length'
+	(cmd_file_name): now called `buffer-file-name'
+	(cmd_set_file_name): now called `set-buffer-file-name'
+
+Fri Jul  1 10:51:45 1994  John Harper  (jsh@orcrist)
+
+	* refresh.c (flag_deletion): tx_ModEnd is set to the start of the
+	deletion not the end
+	(refresh_window): when (tx_ModDelta < 0) (i.e. a deletion) the
+	cut & paste operation is a bit different now (hopefully this way
+	works!?)
+
+	* render.c (redraw_region): returns immediately when (START == END)
+
+	* editcommands.c (sym_inhibit_read_only): new variable
+	* edit.c (read_only): takes note of `inhibit-read-only' when it's
+	bound and non-nil.
+
+Wed Jun 29 16:48:46 1994  John Harper  (jsh@orcrist)
+
+	* Major alterations to all files; I've tried to impose
+	a sensible naming style onto all symbols. All global
+	symbols have a prefix. This is either null for files
+	common to all configurations, `x11_' for stuff accessed
+	only by the X files, likewise for `unix_' and `ami_'.
+	The `sys_' prefix is for things which are accessed from
+	the common area but exists in one of the non-common
+	files.
+
+Tue Jun 28 14:42:30 1994  John Harper  (jsh@orcrist)
+
+	* amiga_windows.c (newwindow): calculates for the status line
+	when opening the window
+
+	* amiga_display.c (initwinsys): uses onbreak() to hijack
+	^C signals caught by stdio
+	* configs/config.h.amiga (HAVE_ONBREAK): new macro for above
+
+Sun Jun 26 16:26:43 1994  John Harper  (jsh@orcrist)
+
+	* x11_windowsys.h, amiga_windowsys.h (DRAW_LINE): new macro,
+	draws a 1-pixel wide line
+	* render.c, x11_render.c, amiga_render.c, x11_windows.c,
+	amiga_windows.c: all stuff to do with the status/message line
+	is made system-independant. This means that messages on the
+	Amiga now use the bottom line of the window as in X
+
+	* amiga_eventloop.c (eventloop): in idle timeout calls
+	print_event_prefix() and also refreshes the display if
+	necessary.
+
+	* amiga_keys.c (lookup_event_name): uses MapRawKey() to
+	decipher unknown keycodes.
+
+	* amiga_eventloop.c (eventloop): calls undo_distinct() when
+	the current window changes
+
+	* amiga_defs.h (TEST_INT): tests for SIGBREAKF_CTRL_C and calls
+	amiga_interrupt_handler()
+	* amiga_display.c (amiga_interrupt_handler): new function, resets
+	the ^C signal bit and throws an interrupt
+	(JadeProc): pointer to our process
+
+Thu Jun 23 19:57:13 1994  John Harper  (jsh@orcrist)
+
+	* keys.c (KEYTAB_HASH_FUN): macro defining how to make a hash
+	key from an event. Now key-tables are 127 entries long not 128.	
+
+	* keys.c: meta-sends-esc is reversed to become esc-means-meta, now
+	there is no separate map for meta/esc keys
+
+Wed Jun 22 16:38:52 1994  John Harper  (jsh@orcrist)
+
+	* unix_processes.c (proc_notification): now blocks sigchld
+
+	* keys.c (usekey): unbound insertions now set the last-command
+	variable to t.
+
+	* undo.c: now records when a buffer changes from un-modified
+	to modified so this too can be undone.
+
+Mon Jun 20 22:23:46 1994  John Harper  (jsh@orcrist)
+
+	* undo.c: new file, undo recording and undo-ing
+	* Wherever flag*tion() is called undo_record_*tion() is also
+	called.
+	* x11_eventloop.c (eventloop): calls undo_distinct() when the
+	current window changes
+
+	* editcommands.c (cmd_insert): now returns the position of the
+	end of the insertion
+
+Sat Jun 18 11:54:50 1994  John Harper  (jsh@orcrist)
+
+	* lisp.c (read_str): an escaped newline is now ignored
+	(read_symbol): checks that its static buffer doesn't overflow
+
+	* x11_windows.c (unsleep): this may work now?
+	(sleepwin, unsleep): now use the VWFF_SLEEPING flag
+	* x11_eventloop.c (handleevent): if we get an Expose event while
+	sleeping assume that we woke up. Also if the VWFF_FORCE_REFRESH
+	flag is set we discard all Expose events, when one has a count of
+	zero (the last) do a total redraw of the window
+
+Thu Jun 16 20:18:58 1994  John Harper  (jsh@orcrist)
+
+	* refresh.c (refreshwindow): sets vw_LastDisplayOrigin here after
+	completing refresh
+	* housekeeping.c (resyncxy): no longer sets vw_LastDisplayOrigin
+
+	* movement.c (cmd_centre_display): new function
+
+Wed Jun 15 16:06:13 1994  John Harper  (jsh@orcrist)
+
+	* lispcmds.c (cmd_concat): no longer stomps on memory when the
+	string grows very quickly :-)
+
+	* streams.c (cmd_write): optional LENGTH arg for strings
+
+	* symbols.c (cmd_delete_buffer_variables): new function
+
+Tue Jun 14 10:54:03 1994  John Harper  (jsh@orcrist)
+
+	* windows.c (stdtitle): now calls calc_cursor_offset()
+
+	* find.c (cmd_match_start, cmd_match_end): new functions; these
+	replace the variables `find-last-start-pos' and `find-last-end-pos'.
+	Now the position of any expression can be found and in strings
+	as well as in buffers.
+
+	* editcommands.c (cmd_offset_to_pos, cmd_pos_to_offset): new
+	functions for converting between byte counts and positions
+
+	* unix_processes.c (struct Proc): pr_UsePty changed to pr_ConnType
+	(runproc): option to set the ECHO flag in a pty
+	(cmd_set_process_connection_type): now uses named symbols
+
+Mon Jun 13 00:44:26 1994  John Harper  (jsh@orcrist)
+
+	* unix_processes.c (runproc): now connects stdin of the child to
+	a defined file when running synchronously.
+	(cmd_run_process): new arg IN-FILE to make use of the above feature
+	(runproc, readfromproc): don't write to pr_OutputStream if it's nil
+
+Sun Jun 12 02:05:10 1994  John Harper  (jsh@orcrist)
+
+	* unix_processes.c (struct Proc): pr_File becomes pr_Prog, pr_Argv
+	becomes pr_Args and is now a list of arguments 1..N. Arg #0 is
+	taken from pr_Prog
+	(cmd_start_process, cmd_run_process): new arg spec. ARGS are now
+	passed as the last N args in the call. Also the PROCESS arg
+	is optional, a vanilla process will be created if necessary
+	(cmd_process_name, cmd_set_process_name): renamed to process-prog
+	and set-process-prog
+	(cmd_process_argv, cmd_set_process_argv): renamed argv to args and
+	takes a list instead of a vector
+
+	* lispcmds.c (cmd_copy_list, cmd_copy_string): combined into
+	cmd_copy_sequence().
+	(cmd_sequencep): new function
+
+Sat Jun 11 19:21:00 1994  John Harper  (jsh@orcrist)
+
+	* x11_eventloop.c (eventloop): some reorganisations
+
+	* lisp.c (handleerror): now handles cursor and reresh itself
+
+	* windows.c (cmd_title): renamed as `message', also a new arg
+	saying draw it immediately
+	(cmd_title_now): removed
+	(var_status_line_cursor): variable controlling VWFF_STATUS_CURS
+
+	* render.c (cursor): Takes note of VWFF_STATUS_CURS (but only
+	in X11 so far)
+
+	* edit.h (VW): vw_Sleeping and vw_NonStdTitle now in vw_Flags.
+	New flag VWFF_STATUS_CURS means draw the cursor in the status
+	line.
+
+	* keys.c (usekey, print_event_prefix): a second after a prefix
+	key is received the current prefix is displayed
+
+Fri Jun 10 19:24:36 1994  John Harper  (jsh@orcrist)
+
+	* streams.c (cmd_format): added octal formatting (`%o')
+	(cmd_format): `%%' doesn't swallow an argument anymore
+
+	* keys.c (usekey): the `unbound-key-hook' is now called for all
+	unbound events -- not just keyboard events
+
+	* amiga_keys.c: updated after yesterday's changes, not finished
+	yet I can't remember the name of a function I need to use :-(
+
+Thu Jun  9 11:32:49 1994  John Harper  (jsh@orcrist)
+
+	* keys.c, keys.h: massive changes; all key/event structures are
+	now standard Lisp types (vector & cons cells). Some new functions
+	for manipulating events and their bindings.
+	* x11_keys.c (lookup_event_name): new function
+
+Wed Jun  8 20:04:27 1994  John Harper  (jsh@orcrist)
+
+	* keys.c (sym_idle_hook): new hook, called periodically when idle
+	time is available
+	* amiga_eventloop.c, x11_eventloop.c (eventloop): calls idle-hook
+
+	* values.c (cmd_garbage_collect): no longer prints a message
+	while gc is in progress
+
+Tue Jun  7 00:24:30 1994  John Harper  (jsh@orcrist)
+
+	* edit.c (cmd_set_indent_pos): didn't rebuild line if it already
+	had the correct number of indentation characters
+
+	* unix_processes.c (queue_notify, proc_notification): The callback
+	function for a process isn't called directly anymore, this is too
+	risky.
+	(cmd_make_process, runproc, cmd_fork_process, cmd_run_process): now
+	more arguments can be passed to set the state of the process object.
+	(cmd_process_connection_type, cmd_set_process_connection_type):
+	support for using pipes *or* ptys when connecting to a process
+	(cmd_fork_process): renamed as `start-process'
+
+Mon Jun  6 20:23:55 1994  John Harper  (jsh@orcrist)
+
+	* unix_misc.c (cmd_copy_file): oops, didn't open the destination
+	file with O_TRUNC :-(
+
+	* misc.c (cmd_substr): renamed as `substring' and significantly
+	changed.
+
+	* find.c (cmd_regexp_quote): new function
+
+Sun Jun  5 22:58:43 1994  John Harper  (jsh@orcrist)
+
+	* lisp.c, lispcmds.c, lispmach.c, lisp.h, x11_eventloop.c,
+	amiga_eventloop.c: Interrupt support -- now you can break those
+	annoying infinite loops :)
+	* x11_display.c (x11_int_handler): handler for SIGINT
+
+Sat Jun  4 14:08:48 1994  John Harper  (jsh@orcrist)
+
+	* keys.c (var_this_command, var_last_command): new functions
+
+Thu Jun  2 12:29:11 1994  John Harper  (jsh@orcrist)
+
+	* Version 3.1 released
+
+Wed Jun  1 21:02:03 1994  John Harper  (jsh@orcrist)
+
+	* x11_windows.c (makemousepos): didn't check that the returned value
+	was legal
+
+Mon May 30 16:48:21 1994  John Harper  (jsh@deep)
+
+	* windows.c (stdtitle): changed the format string
+
+	* amiga_misc.c (cmd_file_req): sets the length of the returned string
+	to its correct value
+
+	* render.c (cutpastelines): doesn't assume that the window contains
+	an integral number of lines -- screen debris was left between the
+	end of the last line and the bottom of the window
+
+	* misc.c (memchr): in case the C library doesn't provide memchr(),
+	one of mine doesn't :(
+
+	* configs/: new option in all config files `HAVE_MEMCHR'
+
+	* amiga_menus.c (setallmenus, clearallmenus): Didn't ignore window
+	objects which don't have a physical window open, this was causing
+	Enforcer hits
+	
+Wed May 25 19:16:11 1994  John Harper  (jsh@orcrist)
+
+	* find.c (findprev): kludged the index manipulation
+
+	* movement.c (findmatchingbracket): new argument ESC plus code
+	to check for escape chars
+	(cmd_match_brackets): new arg ESC, for the above modification
+
+Tue May 24 16:06:14 1994  John Harper  (jsh@orcrist)
+
+	* movement.c (cmd_screen_bottom_line, cmd_screen_last_column):
+	returned 1 to big
+
+	* editcommands.c (get-char): didn't return newlines
+
+	* lispmach.c (cmd_lisp_code2): renamed the conditional jumps
+
+	* render.c (redraw_line_from, redraw_region): these now notice if
+	they're told to start drawing before the first visible column
+
+	* lispmach.c (cmd_lisp_code2): wasn't setting ThrowValue to NULL
+	while evaluating unwind-protect forms
+
+	* symbols.c (cmd_setq_default, cmd_default_value): new functions
+	for accessing the default value of symbols
+
+	* Makefile.in: no longer uses CFLAGS to pass the JADE_DIR define
+
+Mon May 23 02:07:53 1994  John Harper  (jsh@orcrist)
+
+	* Changed the origin of a buffer's coordinates to (0,0) not (1,1),
+	what will this break??
+
+	* glyphs.c (expand_tabs): didn't like START-GLYPH==0
+
+	* editcommands.c (cmd_set_indent_pos, cmd_indent_to): options
+	to only insert spaces, not tabs
+
+	* movement.c: fixed the `tab' functions to work with glyph
+	positions
+
+	* stringmem.c (sm_free): when a (non-malloc'd) string is freed
+	increment DataAfterGC by its size
+
+Sun May 22 23:13:10 1994  John Harper  (jsh@orcrist)
+
+	* values.c (cmd_garbage_collect): calls sm_flush() on the MainStrMem
+	block.
+
+	* buffers.c (cmd_destroy_buffer): doesn't bother calling sm_flush()
+	anymore
+
+Sat May 21 20:59:11 1994  John Harper  (jsh@orcrist)
+
+	* refresh.c (refreshworldcurs): doesn't try to setvwtitle()
+	closed windows anymore
+
+Fri May 20 21:52:37 1994  John Harper  (jsh@orcrist)
+
+	* configs: added HAVE_SETPGID and HAVE_SETPGRP options
+	* unix_processes.c: takes note of the above macros
+
+Thu May 19 21:02:06 1994  John Harper  (jsh@orcrist)
+
+	* unix_client.c, amiga_client.c (main): resets the line number for
+	each file.
+
+	* x11_windows.c (cmd_window_left_edge, cmd_window_top_edge): these
+	used to return coordinates relative to our parent window (created
+	by the wm) not the root window.
+
+Sun May 15 00:30:48 1994  John Harper  (jsh@orcrist)
+
+	* lispmach.c: new instruction OP_RETURN
+
+	* find.c (replacit, replaceitstr): calls flaginsertion() before
+	inserting the string not after (when the pos has been advanced)
+
+	* lispcmds.c (cmd_unwind_protect): temporarily sets `ThrowValue' to
+	NULL while evaluating the body.
+	* lispmach.c (cmd_lisp_code2): similar to the above when unwinding
+
+Fri May 13 21:52:40 1994  John Harper  (jsh@orcrist)
+
+	* editcommands.c (cmd_set_char): new function
+
+Thu May 12 19:24:22 1994  John Harper  (jsh@orcrist)
+
+	* lispmach.c: cmd_lisp_code renamed as cmd_lisp_code2 since
+	compiled forms are now different.
+
+	* lisp.c (string_print): no longer escapes tabs or newlines
+
+	* editcommands.c (cmd_translate_string, cmd_get_char): new
+	functions.
+
+Tue May 10 21:19:29 1994  John Harper  (jsh@orcrist)
+
+	* lisp.h, value.h: New definition of the VALUE type, no longer
+	is it (void *)
+
+Sun May  8 18:42:03 1994  John Harper  (jsh@orcrist)
+
+	* editrect.c: New file. Most rectangle code has moved here from
+	edit.c and updated to cope with the fact that a character's position 
+	in a line may not be the same as its position on the screen. Also 
+	lots of TAB handling.
+
+	* keys.c (evalbinding): if the symbol `meta-sends-esc' is non-nil
+	any meta-modified events get translated into ESC then the
+	un-meta'd event.
+
+Sat May  7 13:53:59 1994  John Harper  (jsh@orcrist)
+
+	* glyphs.c: each buffer can now have its own glyph-table. A new
+	data type for glyph-tables has been created. New functions to
+	manipulate these.
+
+Fri May  6 20:31:33 1994  John Harper  (jsh@orcrist)
+
+	* editcommands.c (cmd_indent_to): new function
+
+	* edit.c: changes uses of strcpy() and family to memcpy() so
+	nul bytes don't cause havoc.
+
+Thu May  5 17:08:23 1994  John Harper  (jsh@orcrist)
+
+	* unix_processes.c (writetoproc): new arg BUFLEN
+
+	* streams.c (stream_puts): new arg BUFLEN, the length of the
+	string being written
+	(stream_read_esc): now understands octal escapes of less than 3
+	chars and hex escapes
+
+	* lisp.h: strings allocated (as opposed to being string-constants)
+	now contain a length field. This will allow these strings to
+	contain '\000' characters. The macro STRING_LEN gives the number
+	of characters in any type of Lisp string.
+
+	* values.c: accommodate the above changes
+
+	* io.c (cmd_write_file): uses fwrite() not fputs
+
+Wed May  4 20:28:31 1994  John Harper  (jsh@orcrist)
+
+	* edit.c (posinblock): for rectangular blocks uses glyph coords
+
+	* housekeeping.c: the block marks are only updated in the y direction
+        if rectangular blocks are being marked.
+
+	* render.c (draw_bit): END arg is now inclusive
+
+	* amiga_misc.c, unix_misc.c (fileexists): now returns bool
+
+Tue May  3 08:30:52 1994  John Harper  (jsh@orcrist)
+
+	* buffers.c (var_disk_tab, var_save_tabs): removed
+	(var_screen_tab): renamed as var_tab_size
+
+	* edit.h (struct _TX): removed tx_DiskTab and tx_SaveTabs :)
+
+	* movement.c (cmd_next_tab, cmd_goto_next_tab, cmd_prev_tab,
+	cmd_goto_prev_tab): new arg TAB-SIZE. Also the goto variants
+	convert glyph-pos to char-pos. The other return the *glyph* pos.
+
+	* find.c (strrchrn, strrstrn): renamed as mystrrchrn() and
+	mystrrstrn() incase they clash with anyone's C library
+
+	* misc.c (stpblk, stpalnum, cpyalnum): deleted, they were
+	not used anymore
+
+	* find.c (mystricmp): args toupper() and tolower() had side
+	effects! Deleted this function since it's not used anymore
+	anyway
+
+	* housekeeping.c: #undef's no longer state the macro's args,
+	I'm told this is illegal
+
+	* movement.c (cmd_goto): renamed as cmd_goto_char
+	(cmd_goto_glyph): new function
+
+	* editcommands.c (cmd_indent_pos, cmd_set_indent_pos): hacked
+	to allow `proper' TABs
+
+	* edit.c (insertstring): no longer has to expand TAB chars.
+
+	* io.c (readtx): rewritten, no longer has to expand TAB chars,
+	should make it a lot faster?
+	(writeline): not needed anymore
+
+	* render.c: many changes to cope with the `glyphs' code, now
+	there are two types of column position, the `character' one
+	which is the number of characters from the start of the line, and
+	the `glyph' pos, the number of glyphs from the start of the
+	line.
+
+	* glyphs.c: new file, manages mappings between characters and
+	their printed representations. Includes new Lisp functions,
+	`glyph-to-char-pos', `char-to-glyph-pos', `set-glyph' and
+	`get-glyph'.
+
+Mon May	 2 10:13:12 1994  John Harper  (jsh@orcrist)
+
+	* windows.c (stdtitle): bracketing around mode names now shows
+	if in a recursive-edit
+
+	* values.c (cmd_dup_pos): renamed as cmd_copy_pos
+
+	* streams.c (streamputc, streamputs): strings now have a number
+	associated with them, their *actual* size.
+
+	* lispcmds.c (cmd_rassoc, cmd_rassq): new functions
+	(cmd_copy_string): new function
+
+Sun May	 1 23:36:00 1994  John Harper  (jsh@orcrist)
+
+	* lisp.c: Optimised some of the read functions, got rid of the
+	nextlispexp() function.
+
+Sat Apr 30 10:44:56 1994  John Harper  (jsh@orcrist)
+
+	* symbols.c (symbols_init): nil and t are now constants
+
+	* windows.c (cmd_make_window): only calls updatescroller() if
+	tx is non-NULL, should fix the other Enforcer hit?
+
+	* buffers.c (firstbuffer): now calls updatescroller() *after*
+	switching in the first buffer, I think this should kill the
+	Enforcer hit at startup?
+
+	* refresh.c (refreshworldcurs): updates status line properly
+
+	* edit.c (checksect, checkpos, checkline): didn't make sure the
+	line number was positive
+
+	* unix_client.c: now takes a series of files
+
+	* amiga_eventloop.c (eventloop): Wait()'s for ServerSig as well
+
+	* amiga_server.c, amiga_client.c: new files (untested, as yet)
+
+Fri Apr 29 21:38:03 1994  John Harper  (jsh@orcrist)
+
+	* unix_server.c, unix_client.c: new files
+
+Thu Apr 28 19:21:43 1994  John Harper  (jsh@orcrist)
+
+	* amiga_defs.h, unix_defs.h (DOC_FILE): renamed as DOC
+
+	* unix_misc.c (geterrstring): macro HAVE_STRERROR replaces
+	 ERRNO_STRING, much simpler.
+
+Thu Apr 28 14:39:49 1994  J.S.Harper  (jsh@raven.ukc.ac.uk)
+
+	* render.c (cutpastelines): fixed one [more] bug
+
+Thu Apr 28 01:26:58 1994  John Harper  (jsh@orcrist)
+
+	* editcommands.c (cmd_delete_area, cmd_cut_area): these now
+	call padpos() on their section markers.
+
+Wed Apr 27 19:53:27 1994  John Harper  (jsh@orcrist)
+
+	* unix_memory.c, unix_defs.h (myfree, initmem, killmem): these are
+	now macros in unix_defs.h
+
+Tue Apr 26 22:59:44 1994  John Harper  (jsh@orcrist)
+
+	* Makefile.in: new file, cpp source to make src/Makefile. Now only
+	one configuration file has to be edited, src/config.h, it's used
+	for both Makefile and C configurations.
+
+Mon Apr 25 22:14:41 1994  John Harper  (jsh@orcrist)
+
+	* keys.c (cmd_current_key_string): new function
+
+	* buffers.c (var_minor_mode_names): list of strings which is printed
+	in the status line.
+	* edit.h (TX): tx_MinorModeNameList and tx_MinorModeNameString
+
+Sun Apr 24 13:06:56 1994  John Harper  (jsh@orcrist)
+
+	* unix_misc.c (cmd_directory_files): oops. If it couldn't open the
+	named dir, it signalled the error with the C-string not the Lisp one.
+
+	* misc.c (cmd_expand_file_name): new function
+	* unix_misc.c (expand_file_name): does the work of the above function
+	* unix_defs.h: #define EXPAND_FILE_NAME expand_file_name
+
+	* unix_processes.c (runproc): initialises the pty more carefully
+
+	* streams.c (posputc, posputs): uses `tx_DiskTab' for tab size, not
+	`tx_TabSize'. What will this break?
+
+Sat Apr 23 21:05:34 1994  John Harper  (jsh@orcrist)
+
+	* lispcmds.c (cmd_defvar, cmd_defconst): these are now in C
+
+	* find.c (cmd_looking_at): used to set `find-last-end-pos' to the
+	wrong position, also, the NOCASE_P arg was being ignored.
+
+Wed Apr 20 16:02:28 1994  John Harper  (jsh@orcrist)
+
+	* Version 3.0 released
+
+Tue Apr 19 20:51:28 1994  John Harper  (jsh@deep)
+
+	* refresh.c (refreshworldcurs): Checks if buffer has switched
+
+	* amiga_minrexx.c (disp_rexx_port): changed the way that results are
+	returned. Numbers and Strings are returned via RESULT. `nil'
+	means RC=1 (command failed), anything else RC=0 (command succeeded).
+
+Mon Apr 18 20:54:42 1994  John Harper  (jsh@orcrist)
+
+	* lisp.c (LispDepth, MaxLispDepth, var_max_lisp_depth, _eval, funcall):
+	Protection against infinite recursion.
+
+Mon Apr 18 11:13:52 1994  John Harper  (jsh@deep)
+
+	* prefs.c (copyfileprefs): by default `save-tabs' is 'all
+
+Sun Apr 17 19:29:37 1994  John Harper  (jsh@orcrist)
+
+	* refresh.c (refreshwindow): simpler way of checking if block has
+	already been drawn. Not good, but it may actually work!
+
+	* render.c (cursor): checks if cursor is off bottom of window
+
+	* x11_commandline.c (docmdline): now redraws the separator line
+	on an expose event.
+
+	* unix_misc.c, amiga_misc.c (cmd_move_file): renamed to
+	`cmd_rename_file'.
+
+	* unix_misc.c, amiga_misc.c (cmd_copy_file, cmd_file_nlinks,
+	cmd_file_modes, cmd_set_file_modes): New functions
+
+Sat Apr 16 14:04:45 1994  John Harper  (jsh@orcrist)
+
+	* Added license notices at the beginning of all source files.
+
+	* All instances of the string `jed' have been changed to `jade'. I
+	decided to change its name since there is at least one other editor
+	called jed.
+
+Fri Apr 15 14:35:55 1994  John Harper  (jsh@deep)
+
+	* amiga_windows.c (newwindow, sleepwin): `DefDims' contains the
+	number of rows/columns, not pixels.
+
+	* amiga_display.c (initwinsys): Command line arguments `-pubscreen'
+	and `-font'
+
+Thu Apr 14 20:23:27 1994  John Harper  (jsh@deep)
+
+	* values.c (values_kill): Due to a typo blocks of Numbers weren't being
+	deallocated, now they are.
+
+	* amiga_eventloop.c (eventloop): Fixed idle test. It's not ideal
+	-- it uses 10 Intuiticks equal one second. Of course, the main
+	loss is that Intuiticks are only sent while one of our windows is
+	active :-(
+
+Thu Apr 14 11:31:49 1994  John Harper  (jsh@orcrist)
+
+	* amiga_menus.c: More or less wholly rewritten. Doesn't take menu
+	definitions from a file anymore, but from a list. No support for
+	submenus at the moment though.
+
+	* buffers.c (makemarksres, makemarksnonres): Don't bother checking
+	for a NULL `tx_FileName', this can't happen.
+
+	* values.c (markvalue): Marks don't get gc-marked down their
+	chain, this was wrong.
+	* buffers.c (sweep_mark, unchainmark): To go with the above, marks
+	are now unchained from their buffer when swept.
+
+	* misc.c (cmd_file_concat): function to stick together
+	path-name components.
+	* amiga_misc.c, unix_misc.c (addfilepart): for the above function
+
+Wed Apr 13 11:31:45 1994  John Harper  (jsh@orcrist)
+
+	* symbols.c (bindsymbol, unbindsymbols): Can now bind to V_Var
+	objects properly (the function is used to retrieve and set its
+	value)
+
+Tue Apr 12 14:55:56 1994  John Harper  (jsh@orcrist)
+
+	* x11_windowsys.h: CLR_RECT and SET_RECT did one two many columns/rows
+
+	* find.c (cmd_looking_at): new function
+
+Mon Apr 11 23:17:56 1994  John Harper  (jsh@orcrist)
+
+	* symbols.c: `make-*-variable' functions have been changed to
+	`set-*-variable'. They don't make anything, just set a flag.
+
+Sun Apr 10 19:22:35 1994  John Harper  (jsh@orcrist)
+
+	* find.c (strrchrn): Now uses a pointer instead of an array index.
+
+Fri Apr	 8 20:21:07 1994  John Harper  (jsh@orcrist)
+
+	* symbols.c (cmd_symbol_value, symbol_function): Got rid of the
+	`void-symbol-function' hook.
+
+Tue Apr 05 15:19:47 1994  John Harper  (jsh@deep)
+
+	* amiga_windows.c (cmd_font_size): Removed, obsoleted by the
+	`font-y-size' function
+
+	* windows.c (cmd_font_x_size, cmd_font_y_size): New commands
+
+	* amiga_misc.c (cmd_full_name): No longer returns NULL when it
+	can't read the ENV: variable `REALNAME'.
+
+	* amiga_clipboard.c: Errors now reported via signal, not just printed
+	in the status line.
+	(readclip): Used to return a normal string not a VALUE
+
+Mon Apr	 4 12:40:00 1994  John Harper  (jsh@orcrist)
+
+	* Makefile, DMakefile: Now *all* source files are scanned for
+	doc-strings. This is so that there is only one `DOC-strings' file
+	for any particular revision (not one for each target OS).
+
+Sun Apr	 3 20:57:24 1994  John Harper  (jsh@orcrist)
+
+	* main.c, x11_eventloop.c, amiga_eventloop.c: Now eventloop() calls
+	refreshworldcurs() when it is entered, this used to be done in
+	cmd_recursive_edit() (but not in main()).
+
+Thu Mar 31 12:27:21 1994  John Harper  (jsh@orcrist)
+
+	* Files in the directories `amiga/', `unix/' and `x11/' have been
+	moved into the root source dir with prefixes of `amiga_', `unix_' and
+	`x11_' respectively. This makes compilation a lot easier.
+
+Tue Mar 29 00:45:13 1994  John Harper  (jsh@orcrist)
+
+	* render.c: As much as possible of x11/render.c has been moved to
+	here. Uses macros defined in windowsys.h to do as much platform-
+	independant rendering as possible. This turns out to be everything
+	but the prompt line.
+
+	* refresh.c: Copied most of render.c into this file.
+
+Fri Mar 25 13:20:11 1994  John Harper  (jsh@orcrist)
+
+	* x11/eventloop.c: increasing the vertical size of a window no longer
+	leaves the old status line in the middle of the display (if the buffer
+	doesn't overwrite it).
+
+	* values.c (cons_sweep): wholly unused blocks are now freed
+	(markvalue): attempt to limit recursion as much as possible
+
+Thu Mar 24 09:51:07 1994  John Harper  (jsh@orcrist)
+
+	* symbols.c: Got rid of `symbol-flags' function. Now there's none
+	of these annoying `flags' functions left :-)
+
+	* buffers.c: TXFF_IMMORTAL and TXFF_NOCHANGE are consolidated
+	into TXFF_SPECIAL. New functions `set-buffer-special' and
+	`buffer-special-p'. Got rid of `tx-flags' function.
+	(set-buffer-name, set-file-name): Order of arguments reversed,
+	this is more consistent with all other `set*' functions.
+
+	* files.c: renamed to buffers.c, this makes more sense now
+
+Wed Mar 23 12:06:02 1994  John Harper  (jsh@orcrist)
+
+	* values.c (markvalue): Two new algorithms for marking cons cells
+
+	* General code cleanup so that it will compile with -Wparentheses.
+
+Sat Mar 19 03:45:03 1994  John Harper  (jsh@orcrist)
+
+	* find.c (cmd_find_next_regexp, cmd_find_prev_regexp, cmd_regexp_match,
+	cmd_regexp_match_line): optional arg `IGNORE-CASE-P'
+
+	* regexp/regexp.h, regexp/regexp.c: new flag to regexec2(),
+	REG_NOCASE, means ignore case when comparing strings (but not
+	for character classes).
+
+	* io.c: new command `read-file-from-to'
+
+	* streams.c: new commands `read-line' and `read-file-until'
+
+Fri Mar 18 01:03:28 1994  John Harper  (jsh@orcrist)
+
+	* doc/: Directory with manual stuff, new Makefile
+
+	* find.c: New command `regexp-expand-line' a cross between
+	`regexp-expand' and `regexp-match-line'.
+
+Thu Mar 17 18:55:54 1994  John Harper  (jsh@orcrist)
+
+	* jed.h, windows.c: Got rid of obsolete VWFF_NOSAVEPOS flag. Also
+	the var `vw-flags' is gone. Functions `rect-blocks-p' and
+	`set-rect-blocks' are used instead (the other flags are internal).
+
+	* unix/processes.c: Now uses SA_RESTART if possible and O_NONBLOCK
+	instead of O_NDELAY.
+
+Tue Mar 15 23:04:34 1994  John Harper  (jsh@orcrist)
+
+	* jed.texi: New file, at last! I've started the manual
+
+	* files.c (var_save_tabs): Now uses descriptive symbols for the
+	options, not magic numbers.
+
+Mon Mar 14 21:21:41 1994  John Harper  (jsh@orcrist)
+
+	* unix/processes.c: Now uses sigaction() and sigprocmask() instead
+	of signal(). I'm not sure if I've done this correctly, from looking
+	at the kernel sources it seems ok...
+
+Sat Mar 12 22:25:36 1994  John Harper  (jsh@orcrist)
+
+	* x11/display.c: Added `-name' option -- sets the name which is
+	primarily used to lookup resources with.
+	* x11/display.c (getxresources): If unable to find a resource with
+	the program name tries with the string "Jed".
+
+Thu Mar 10 22:08:33 1994  John Harper  (jsh@orcrist)
+
+	* find.c: (cmd_replace_regexp, cmd_replace_string): Checks if `pos'
+	is out of range (instead of just seg-faulting).
+
+Mon Mar	 7 21:27:25 1994  John Harper  (jsh@orcrist)
+
+	* lispcmds.c: New symbol `lisp-lib-dir'
+	* lisp.c (cmd_add_doc_string): New command to write a new doc-string
+	to the DOC file and return its index.
+
+Sun Mar	 6 12:49:38 1994  John Harper  (jsh@orcrist)
+
+	* windows.c (window_prin): Handles dead windows now.
+
+	* windows.c (cmd_destroy_window): Now does (throw 'quit 0) when no
+	more windows exist.
+	* windows.c, amiga/windows.c: Fixed `NumWindows' variable -- it's
+	now decremented in `cmd_destroy_window'.
+
+Sat Mar	 5 01:21:35 1994  John Harper  (jsh@orcrist)
+
+	* edit.c: #if 0'd `stuffline'. This is now done inline where functions
+	can take advantage of knowing the length of the line.
+
+	* editcommands.c (cmd_translate_area): Applies a translation-table
+	(a string) to a region of a buffer. Also, variables `upcase-table' and
+	`downcase-table' are provided. Needs `cmd_translate_rect'.
+
+Fri Mar	 4 18:55:38 1994  John Harper  (jsh@orcrist)
+
+	* lispcmds.c (cmd_functionp, cmd_special_form_p): Fixed null-ref
+	when a symbol has no function value.
+
+	* edit.c (rectinsertstring, rectdeletesect): Now calls the `flag*'
+	functions properly. Also fixed bug that inserting past the bottom
+	of the file didn't work properly.
+
+	* files.c: Changed `cmd_find_file' to `cmd_get_file_buffer' and
+	`cmd_find_buffer' to `cmd_get_buffer'.
+
+Thu Mar	 3 21:36:01 1994  John Harper  (jsh@orcrist)
+
+	* lispcmds.c (cmd_eval_hook2): Could exit with `GCinhibit' still set.
+
+	* keys.c (usekey): Now checks for a read-only buffer before inserting
+	a keypress.
+
+Mon Feb 28 19:34:54 1994  John Harper  (jsh@orcrist)
+
+	* symbols.c, lisp.h: New flag in Symbol struct: SF_INTERNED.
+	This gets set when a symbol is interned. Lets me protect against
+	interning a symbol twice.
+
+	* streams.c (cmd_stdin_file, cmd_stdout_file): These didn't
+	actually set the LFF_DONT_CLOSE flag which I had so carefully
+	prepared for them :-(
+
+Sun Feb 27 20:48:56 1994  John Harper  (jsh@orcrist)
+
+	* x11/windows.c (activatewin): Actually does something now -- raises
+	the window and warps the mouse to it's top-left corner.
+
+Tue Feb 22 21:58:18 1994  John Harper  (jsh@orcrist)
+
+	* x11/render.c (cutpastelines): Doesn't bother if `dstLine' is off
+	bottom of window.
+
+	* lisp.c, lispcmds.c, lispmach.c, ../lisp/lisp.jl: Got rid of 'lambda
+	throw tag, this won't work as expected in some pieces of compiled
+	code. Replaced by 'defun tag which returns a value from a defun.
+
+Mon Feb 21 02:05:56 1994  John Harper  (jsh@orcrist)
+
+	* lispcmds.c (cmd_load): Now takes note of variable `load-path' (list
+	of directory names) and warns if compiled file is older than it's
+	source. Also an option to suppress the error when file doesn't exist.
+
+Sun Feb 20 21:20:02 1994  John Harper  (jsh@orcrist)
+
+	* io.c (cmd_write_buffer_area): New command, writes a portion of
+	a buffer to a file.
+
+Sat Feb 19 00:45:53 1994  John Harper  (jsh@orcrist)
+
+	* lisp.c, lispmach.c (cmd_backtrace): Now keeps a stack of all
+	living Lisp function calls. This is mainly so it's easy to see
+	where an error occurs.
+
+	* lisp.c [mainly]: Error signalling written. New subrs, signal,
+	error-protect (similar to emacs' `condition-case') and a var,
+	debug-on-error. New byte-opcodes introduced -- op-signal and
+	op-error-protect.
+
+Tue Feb 15 20:59:53 1994  John Harper  (jsh@orcrist)
+
+	* x11/render.c (cutpastelines): Some optimisation of what lines get
+	moved (now leaves trailing blank lines alone).
+
+	* unix/misc.c (cmd_user_login_name): Tries getlogin() before
+	getpwuid().
+
+Mon Feb 14 21:32:27 1994  John Harper  (jsh@orcrist)
+
+	* Changed doc-string handling -- now all subr doc-strings are kept in
+	a separate file. All source files containg `DEFUN's have been
+	changed to accomplish this and a new tool `makedoc' has been written.
+	This only saves about 40K in the binary but since that was about a
+	quarter of the whole size I think it's worth it.
+
+Sat Feb 12 14:35:05 1994  J.S.Harper  (jsh@falcon.ukc.ac.uk)
+
+	* find.c (cmd_regexp_match_line): New command, matches a regexp
+	to a line of a buffer.
+
+	* movement.c (cmd_next_tab, cmd_goto_next_tab, cmd_prev_tab,
+	cmd_goto_prev_tab): These would go into a (near-)infinite loop
+	when given a negative argument.
+
+	* unix/misc.c (cmd_user_full_name): `FULL_NAME_TERMINATOR' option.
+
+Sat Feb 12 01:28:01 1994  John Harper  (jsh@orcrist)
+
+	* misc.c (cmd_major_version_number, cmd_minor_version_number): New
+	commands.
+
+Thu Feb 10 03:15:12 1994  John Harper  (jsh@orcrist)
+
+	* render.c: '#if 0' out `cmd_refresh_window'. This isn't possible
+	anymore -- there's no way of saying that a certain window has been
+	updated re: a buffer while other views of that buffer haven't. This
+	is no big loss, use `refresh-all' instead.
+
+	* jed.h, x11/windowsys.h, amiga/windowsys.h: Took out most #ifdef's
+	from the VW structure. Now all window-system specific bits of a VW
+	are in a separate structure (`VW_WindowSystem').
+
+Wed Feb	 9 22:46:34 1994  John Harper  (jsh@orcrist)
+
+	* jed.h, files.c, ../lisp/buffers.jl: Fixed problem of buffer being
+	marked unmodified after an auto-save. -Introduced new field,
+	`tx_ProperSaveChanges', containing the change count at the last
+	time the buffer was written to its file (*not* an auto-save).
+
+	* io.c (readtx, writetx): No longer assumes that all files end
+	in '\n'. This means that files without a trailing newline don't
+	get given one anyway when they're written to disk.
+
+Tue Feb	 8 03:29:19 1994  John Harper  (jsh@orcrist)
+
+	* files.c (cmd_buffer_changes, cmd_buffer_modified_p,
+	cmd_set_buffer_modified): New method of dealing with modification
+	counts. `tx_Changes' is *never* reset -- when the buffer is
+	`un-modified' another field `tx_LastSaveChanges' is set to the
+	current value of `tx_Changes'. This is so the new refresh code
+	can rely on the change counter.
+
+	* render.c, x11/render.c, edit.c, editcommands.c: Rewrote functions
+	which control what gets redrawn and when. This almost works. Much
+	more efficient and loses some embarassing misfeatures.
+
+Sun Feb	 6 01:25:15 1994  John Harper  (jsh@orcrist)
+
+	* lisp.h, streams.c: New flag in LFile structure, `LFF_DONT_CLOSE',
+	means *never* fclose() the lf_File field.
+	* streams.c (cmd_stdin_file, cmd_stdout_file): Access to stdin/out.
+	* .gdbinit: New file, command to print a lisp object in gdb.
+
+	* lisp.c (bindlambdalist): uses static symbols to match ampersand-
+	keywords (`&optional', `&rest', `&aux').
+
+	* amiga/misc.c: merged amiga/io.c into this file.
+	* amiga/misc.c (cmd_user_login_name, cmd_user_real_name,
+	cmd_user_home_directory, cmd_system_name): New commands in line
+	with their unix counterparts, get their values from strategically
+	placed environment variables.
+
+	* unix/misc.c: merged unix/io.c into this file.
+
+	* unix/io.c (cmd_user_login_name, cmd_user_real_name,
+	cmd_user_home_directory, cmd_system_name): These now cache their
+	results after the first time they're called.
+	* unix/io.c (cmd_system_name): Now returns the full hostname, with
+	domains and everything.
+
+Sat Feb	 5 21:36:22 1994  John Harper  (jsh@orcrist)
+
+	* windows.c (cmd_with_window): special-form (similar to `with-buffer').
+	* lispmach.c, ../lisp/compiler.jl: support for above special form, new
+	opcodes `swap-window' and `windowp'.
+
+	* lispmach.c: Put stack bounds checking inside `#ifdef PARANOID'
+
+	* unix/processes.c (signalprocess): Signals no longer use characters.
+	(Unless you define `SIGNALS_VIA_CHARS'.)
+
+Fri Feb	 4 23:26:31 1994  John Harper  (jsh@orcrist)
+
+	* ChangeLog starts here, I've decided to try and keep one of these
+	things.

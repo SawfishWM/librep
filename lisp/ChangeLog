@@ -1,0 +1,2461 @@
+Fri Apr 17 14:18:22 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* tilde.jl (tilde-file-handler): handle the expand-file-name
+	operation separately now, simplify the stuff after the tilde
+	expression
+
+Wed Apr  8 11:59:44 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* pwd-prompt.jl (pwd-prompt): use unwind-protect to ensure that
+	the old glyph table is re-established
+
+	* telnet.jl (telnet-grab-passwords): variable controlling
+	whether to scan for password prompts, and if so, for how long
+	after the start of the session
+	(rlogin-program): new variable
+	(telnet): new optional arg, USE-RLOGIN
+	(rlogin): new command
+	(telnet-filter): don't try to be clever when telnet-echos is
+	non-nil
+	(telnet-send-line): when telnet-echos is non-nil, delete input
+	immediately after it's sent
+
+Tue Apr  7 10:20:02 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* telnet.jl (telnet): specifying a port number now works
+
+	* telnet.jl (telnet): spawns a telnet session in a buffer
+
+	* pwd-prompt.jl (pwd-prompt): prompts for a string
+	confidentially. Does this by hacking (literally) prompt.jl to
+	use a special glyph table
+
+	* find-url.jl (find-url-telnet, find-url-mailto): new functions
+
+	* compiler.jl (compile-file): slightly modified comment
+	prefixed to compiled files
+
+	* loadkeys.c: bound "Ctrl-x Ctrl-Meta-f" to find-url
+
+	* shell.jl (shell-command-on-area): don't popup *shell-output*
+	buffer if it's totally empty
+
+	* find-url.jl (find-url): new file, new command, it allows urls
+	to be followed. By default, http urls are redirected to
+	netscape, and file ones are loaded into the editor. ftp and
+	telnet (and others?) are still to be implemented
+
+Sun Apr  5 20:13:42 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* buffers.jl (save-some-buffers): print a message if no
+	modified buffers exist on entry
+
+	* compiler.jl (comp-get-lambda-vars): made into a macro; now
+	uses filter instead of a combination of mapcar and delq
+
+	* compiler.jl (comp-compile-funcall): open code constant lambda
+	expressions; this isn't going to be useful with existing code,
+	but it might be in the future (and it's painless..)
+
+Sat Apr  4 19:39:28 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* file-subst.jl: provide file-subst
+	* html-style.jl: require file-subst
+
+	* edit.jl (mouse-select-drag-block, mouse-select-drag-rect):
+	new functions, calling mouse-select-drag, but not until they've
+	set or cleared the rect-blocks flag
+	* loadkeys.jl: bound Ctrl-Mouse events to mark rectangles
+
+Fri Apr  3 12:38:54 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* fill.jl (fill-area): hopefully fixed the bug erroneously
+	leaving single words on the last line of the buffer
+
+Thu Apr  2 10:28:19 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rm-misc.jl (rm-forward): fix deletion of trailing blank lines
+
+Wed Apr  1 00:47:04 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* html-style.jl: simplified the default style a lot
+
+	* compiler.jl (comp-compile-mapc): for mapc calls whose
+	function argument is a constant lambda expression, do the
+	looping in byte code and open-code the function call. All other
+	mapc calls use the mapc opcode as before
+
+	* html-style.jl: new file, code to work with file-subst.jl to
+	create web pages to a common style
+
+Tue Mar 31 00:42:31 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* tilde.jl: new file; a file-handler to expand a tilde (~) at
+	the start of a file name. Understands both ~/ and ~USER/
+
+	* shell.jl: fix TERMCAP entry
+
+	* read-mail.jl, rm-misc.jl, rm-output.jl: more fixes to
+	ensuring correct separation between messages
+
+	* loadmenus.jl: change for new operating-system variable; I
+	don't know why I keep this file...
+
+	* lisp.jl (file-name=): no longer a primitive, this now works
+	by comparing canonical file names
+
+	* init.jl: minor changes to order of loadup; also catch all
+	errors when executing site-local and user config files
+
+	* info.jl (info-find-node): fixed some bugs
+
+	* help.jl (get-documentation, add-documentation): new
+	functions, these replace the old get-doc-string and
+	add-doc-string primitives
+
+	* file-subst.jl: new file, provides a method of generating
+	arbitrary text files from input templates. Allows the full
+	expressiveness of Lisp to be used in expansions. I use this to
+	build all my web pages using the same style
+
+	* environ.jl (getenv, setenv): new file, these functions used
+	to be primitives, now they use the process-environment variable
+
+	* edit.jl: use (eq window-system 'x11) to test for X
+
+	* dired.jl: added `% d' and `% m' commands. Also cleaned up
+	some code. Needs more commands
+
+	* compiler.jl: support for comp-transform property in
+	functions, basically a method for specifying a source code
+	transformation (i.e. macro) to compile the form
+
+	* buffer-summary.jl (bs-print-item): handle oversized fields
+	more elegantly
+
+	* add-log.jl, buffers.jl, compile.jl, compiler.jl, dired.jl,
+	dump.jl, find-autoloads.jl, gdb.jl, gzip.jl, info.jl,
+	mail-dir.jl, maildefs.jl, miranda.jl, print.jl, prompt.jl,
+	rcs-hooks.jl, rcs.jl, read-mail.jl, rm-output.jl, send-mail.jl,
+	shell.jl, tags.jl: changes for new file handling (mainly to
+	support file names relative to the current buffer; includes
+	replacing uses of the file-name-concat function by
+	expand-file-name, and ensuring that subprocesses get given
+	local-file-name's)
+
+Mon Mar 23 09:29:30 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* read-mail.jl, rm-misc.jl, rm-output.jl: was checking if
+	number of lines in buffer is zero to see if the file's
+	empty---there's always at least one line (doh!)
+
+	* read-mail.jl (rm-append-inbox): set rm-current-msg-index to
+	zero if we're adding the first message in the folder
+
+Fri Mar 20 13:49:28 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* dired.jl (dired-print): changed the output format slightly
+	(dired-delete, dired-execute-end): don't confirm deletion one
+	file at a time; record all files to be deleted, then use
+	map-y-or-n-p
+
+Thu Mar 19 09:55:21 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* info.jl (info-prompt): fix validation function not
+	constructing the list of options
+	(info-menu): when searching for entered menu name, search case
+	insensitively
+
+	* mail-headers.jl (mail-parse-atom): a few minor fixes to allow
+	null strings, comments and addresses to be recognised
+
+Mon Mar 16 15:48:28 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* read-mail.jl, rm-misc.jl, rm-output.jl: miscellaneous fixes
+	to make the message at the end of the file be handled better;
+	also changed how the \n\n separator is inserted between
+	messages
+
+	* compiler.jl, disassembler.jl, bytecodes.jl (op-filter,
+	op-macrop, op-bytecodep): new opcodes
+
+	* buffers.jl (save-some-buffers): rewritten using map-y-or-n-p
+	and filter
+
+	* prompt.jl (map-y-or-n-p): new function, apply y-or-n-p to a
+	list of inputs
+
+Sat Mar 14 16:06:25 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* read-mail.jl (rm-summary-print-item): use the all-new and
+	enhanced format function to do all dirty work
+
+	* summary.jl (summary-mark-item, summary-mark-delete): when
+	called interactively these now use the prefix arg to find how
+	many items to mark. Also s-mark-delete just calls s-mark-item
+
+	* summary.jl (summary-assoc-item-function): new variable
+	(summary-unmark-all): new command, bound to "U"
+	(summary-execute): always ignore the `mark' symbol, also ensure
+	that any skipped symbols are preserved in the list of those
+	pending
+	(summary-mark-line, summary-map-marked-items): new functions
+	for working with marked items
+
+	* dired.jl (dired-print): works with broken symlinks
+
+Fri Mar 13 15:03:55 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* summary.jl (summary-next-item, summary-previous-item): handle
+	cursor not being on an item gracefully
+
+	* dired.jl (dired-functions, dired-cursor-column): add an
+	after-move vector to put the cursor in column
+	dired-cursor-column; by default the first character of the file
+	name
+
+	* dired.jl, dired-hooks.jl: first attempt at a dired program
+	* init.jl: load dired-hooks
+
+	* buffers.jl (find-file-hook): renamed as after-read-file-hook.
+	There's now a new hook find-file-hook that can take over almost
+	all find-file functionality
+	* rcs-hooks.jl: use after-read-file-hook, not find-file-hook
+
+	* rcs.jl, rcs-hooks.jl (rcs-set-default-branch): new command,
+	bound to "Ctrl-x v b", sets the default branch of the file to
+	either the currently checked out revision, or the highest (with
+	a prefix arg)
+
+Thu Mar 12 20:23:28 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* mail-headers.jl (mail-quote-phrase, mail-format-address): now
+	does proper quoting of phrases when necessary
+
+	* mail-dir-summary.jl (mds-alias-functions,
+	mds-address-functions): bind the mds-compose-mail-to-item
+	function to the select tag (i.e. pressing RET)
+	(mds-compose-mail-to-item): make ITEM an argument, but infer
+	the IN-CC arg from current-prefix-arg
+
+Wed Mar 11 09:30:52 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* maildefs.jl (mail-atom-re): fixed this to be [almost] exactly
+	what RFC-822 specifies. It's now defined exclusively instead of
+	inclusively (how foolish..)
+
+	* mail-headers.jl (mail-parse-address): build the various
+	regexps each call, this works even when mail-atom-re changes
+	behind our back
+
+Tue Mar 10 20:24:28 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* shell.jl (shell-mode-kill, shell-start-process): when a
+	shell-process exists, check that it's in use before complaining
+
+	* tags.jl (find-tag, visit-tags-file): new file, new commands.
+	Currently only supports etags generated TAGS files
+	loadkeys.jl (global-keymap): find-tag bound to M-.
+
+Mon Mar  9 09:32:33 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* read-mail.jl (rm-current-message-end): renamed as
+	rm-message-end, with the message as an optional arg
+	* rm-output.jl (rm-output, rm-output-message): some minor fixes
+
+	* read-mail.jl (rm-summary-format, rm-summary-functions):
+	variables to define the structure of summary lines
+	(rm-saved-cache-tags): message cache tags whose contents should
+	persist across calls to the mail reader
+	(rm-kill-subject): new command (bound to `k') that deletes all
+	messages with the same subject as the current message
+	(rm-pipe-message): new command, calls shell-command-on-area for
+	the current message (bound to `|')
+	(rm-msg-): changed the format of the message structure, now
+	very little info is stored explicitly, everything parsed from
+	message headers is stored in the rm-msg-cache slot
+	(rm-cached-form): macro to execute a form whose value may
+	previously have been cached for the message in question
+	(rm-tag-cached-p, rm-invalidate-tag): cache utilities
+	(rm-current-message-end): no longer uses the position of the
+	next message, instead uses the new rm-msg-total-lines field
+	(rm-update-flags): as well as the X-Jade-Flags-v1 header, also
+	outputs X-Jade-Cache-v1 containing persistent items in the
+	message's cache
+	(rm-get-msg-header): wrapper for mail-get-header, but on an
+	arbitrary message
+	(rm-get-senders, rm-get-recipients, rm-get-subject,
+	rm-get-date-vector): wrappers to rm-get-msg-header, but working
+	through the cache
+	(rm-create-summary): call hook read-mail-summary-mode-hook
+	immediately before calling summary-mode
+	(rm-summary-print-item, rm-summary-format-item): functions for
+	formatting summary lines, the line is cached (non-persistently)
+	(rm-invalidate-summary): function to remove the cached summary
+	line
+
+	* rm-mail-dir.jl (rm-mail-dir-scanner): use rm-get-recipients
+	and rm-get-senders when scanning for new addresses
+
+	* mail-dir-summary.jl (mds-sort-list): command (bound to `s')
+	to sort the mail directory lists
+
+	* summary.jl (after-marking): ensure that this function tag is
+	called _before_ the updating takes place
+	(summary-mark-delete): optional arg can specify item
+
+	* maildefs.jl (mail-month-alist): alist of RFC-822 month
+	abbrevs to numeric indices (Jan=1, ...)
+
+	* mail-headers.jl: new file, moved all of the functions that
+	deal with mail headers to this file
+	(mail-parse-address, mail-parse-date): new functions
+
+	* modes.jl, prompt.jl, rectangle.jl: reversed order of NOCASEP
+	and START in calls to string-match
+
+Fri Mar  6 10:51:58 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compiler.jl (comp-defuns, comp-defvars): these are always
+	used now, even if we're not compiling a file (mainly use
+	comp-defuns as a cache of previously seen functions)
+	(comp-compile-funcall): open-code funcall forms with op-call
+
+	* sort.jl (sort): new file, new function, sorts a list
+
+	* summary.jl (summary-mode): install a _copy_ of the functions
+	vector in the buffer, this allows for easier modification later
+
+Wed Mar  4 14:02:40 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* edit.jl (goto-mouse): new function, abstracted from
+	mouse-select, this finds the position and view under the mouse
+	and moves to them
+	(mouse-select-drag): when dragging words, find the start of the
+	word as well as the end
+
+Tue Mar  3 11:53:40 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* edit.jl (kill-ring-size): variable controlling size of kill
+	ring, set to 8 by default
+	(kill-string): examines relative cursor positions to decide
+	whether to prepend of append additive kills
+	(yank, yank-rectangle, yank-next): more or less totally
+	rewritten, may even work properly now? Uses a truly gruesome
+	hack to make undo take some of the load
+	(yank-to-mouse): uses mouse-select to find the mouse position,
+	this means that view switches work correctly
+
+	* edit.jl (next-line, previous-line): new commands for moving
+	up and down lines, preserving the original column position
+	* loadkeys.jl: bind Ctrl-n and Down, and Ctrl-p and Up, to
+	next-line and previous-line respectively
+
+	* windows.jl (open-window-on-display): calls set-current-window
+	on the new window, this allows things like "jadeclient -X -f
+	read-mail" to work as you would expect
+
+	* buffer.jl (maybe-save-buffer): fixed
+
+	* compiler.jl (comp-max-inline-depth): variable controlling
+	maximum nesting of open-coded functions
+	(comp-batch-compile): var controlling whether to print messages
+	to stdout, or to a buffer
+	(comp-inline-env): alist of functions to open-code
+	(comp-defuns): alist of seen functions, and the number of args
+	they require
+	(comp-defvars): list of defvar'd variables
+	(comp-bindings): lexical environment of current form
+	(comp-inline-depth): current inlining nesting
+	(comp-message, comp-error, comp-warning): rewritten
+	(comp-remember-fun, comp-remember-var): functions for recording
+	global variables and functions
+	(comp-test-varref, comp-test-funcall): functions to emit
+	warnings if something looks suspicious
+	(compile-file): initial-pass now scans for all top-level
+	definitions: defun, defsubst, defvar, and defconst.
+	(comp-get-lambda-vars): return the symbols that will be bound
+	by a particular lambda list
+	(comp-compile-inline-lambda): open-codes a function call, used
+	both for constant lambda expressions as the first element of
+	function applications, and for inlining defsubst declared
+	functions
+	(comp-compile-inline-function): defsubst puts this into the
+	compile-fun property of all inline functions
+
+	* lisp.jl (defsubst): new macro, define an inline defun
+	* lisp-mode.jl: Add intentation hint for defsubst
+	* dump.jl: Support (untested as yet) for defsubst functions
+
+	* add-log.jl, buffers.jl, compile.jl, debug.jl, dump.jl,
+	edit.jl, info.jl, isearch.jl, lisp.jl, prompt.jl, rcs.jl,
+	read-mail.jl, replace.jl, rm-misc.jl, tex-mode.jl,
+	texinfo-mode.jl, windows.jl: Minor fixes for bugs found via
+	compiler warning, mainly adding defvars for special variables
+
+	* server.jl (server-find-file): chooses the view to open the
+	file in, rather than the window
+
+Mon Mar  2 17:15:35 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* windows.jl (open-window-on-display): new command, is to
+	make-window-on-display as open-window is to make-window
+
+Sun Mar  1 11:29:09 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* read-mail.jl (rm-summary-keymap): quote rm-followup
+
+	* rm-misc.jl (rm-really-burst-message): call replace-last-match
+	instead of the non-existant replace-regexp
+	(rm-reply): only append msg-id to list of references when
+	making new list of references if msg-id is non-nil
+
+Fri Feb 27 12:26:14 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* edit.jl (goto-view-line): new function, bound to Meta-r.
+	Moves the cursor to the start of a line displayed in the
+	current view (similar to C-l, but moving the cursor, not the
+	display)
+	* loadkeys.jl: bound M-r as described above
+
+	* edit.jl (backward-char, backward-tab, backward-line,
+	forward-word, backward-word, forward-paragraph,
+	backward-paragraph, forward-page, backward-page): removed the
+	hacky MOVE argument, replaced by the new @ interactive flag
+	(word-start, mouse-pos): added interactive declarations
+	(goto-start-of-buffer, goto-end-of-buffer): removed
+	(top-of-buffer, end-of-buffer): don't call goto and
+	set-auto-mark explicitly, just use the interactive flags
+	(save-excursion, save-restriction): use ,@ instead of ,
+	* loadkeys.jl (global-keymap): changed M-> and M-< bindings
+
+Wed Feb 25 10:07:41 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rcs.jl (rcs-init-file): don't check out zero length files, if
+	the file actually is zero bytes in the repository we'll go into
+	an infinite loop
+
+	* c-mode.jl, xc.jl: integrated the XC code with the standard C
+	mode. Of course, there's still a lot of improvements to be made
+	and bugs to be fixed..
+
+	* keymap.jl (read-event): rewritten to use the minibuffer to
+	display the prompt, this means that the cursor also appears in
+	the minibuffer. Also, easier to handle cleanup
+	(describe-key): handle chained bindings better
+
+	* rcs.jl (rcs-display-diffs): renamed as rcs-compare-revisions,
+	when called interactively with a prefix arg, the revisions will
+	be prompted for
+	(rcs-display-log-args): new variable, a list of arguments to
+	pass to rlog
+	(rcs-down-history, rcs-up-history): fixed these functions
+
+Tue Feb 24 12:14:09 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rcs.jl (rcs-make-backup-files): variable controlling whether
+	or not to make backup files if the file's controlled by RCS
+	(rcs-only-lock-seen-files): variable controlling whether to
+	lock when checking out files whose revision is different from
+	the currently viewed revision
+	(rcs-revision): local variable containing the revision of the
+	buffer, or nil
+	(rcs-version): function renamed as rcs-find-version
+	(rcs-init-file): when called on a file that doesn't exist, or
+	is zero bytes in size, check out the current version
+	(rcs-verify-buffer, rcs-register-buffer, rcs-check-in-buffer,
+	rcs-lock-buffer, rcs-view-revision, rcs-revert-buffer): removed
+	the BUFFER argument, all now operate on the current buffer
+
+	* read-mail.jl (rm-display-current-message): when highlighting
+	headers ensure that any continuation lines are also included
+
+	* maildefs.jl (mail-display-summary): slightly changed
+	semantics -- set to `bottom' means display summary at bottom of
+	display, otherwise non-nil means display at top, nil means
+	don't display (as before)
+
+	* read-mail.jl (rm-configure-views): new function to set up the
+	window configuration, two views mail and summary
+
+	* summary.jl (summary-highlight-index): highlight to the end of
+	the line or the right edge of the display, whichever is greater
+
+Sun Feb 22 15:51:24 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* dump.jl: enable constant "put" forms to be dumped
+
+Thu Feb 19 00:02:49 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp-mode.jl (lisp-forward-sexp, lisp-backward-sexp): treat
+	the three characters ` , @ as single quote (i.e. step over them
+	when they occur at the start of a sexp)
+
+	* backquote.jl: don't use (` X), (, X) and (,@ X), the Lisp
+	reader now parses the usual syntax
+
+	* edit.jl (save-restriction): changed to use normal backquote
+	syntax
+	(save-cursor): renamed save-excursion since it does actually
+	save the current buffer as well as the cursor, this is close
+	enough to the usual definition of save-excursion for me
+
+	* rm-output.jl, text-mode.jl: change calls to save-cursor to
+	call save-excursion
+
+Wed Feb 18 23:20:34 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* backquote.jl: new file, provides pseudo-backquote operation.
+	This file was taken from GNU Emacs 19.34 (originally by Rick
+	Sladkey), with very minor modifications
+
+	* edit.jl (auto-mark): now made buffer-local, i.e. each buffer
+	gets its own auto-mark
+	(goto-mark): added optional arg DONT-SET-AUTO which can inhibit
+	setting the auto-mark before moving
+	(save-restriction, save-cursor): now implemented using
+	backquote, both have been improved, save-restriction now uses
+	marks, both check that the buffer is still resident before
+	reinstalling it
+	(mouse-pos): new function
+	(mouse-select): updated for line wrapping redisplay
+
+	* buffers.jl (goto-mark, set-auto-mark,
+	swap-cursor-and-auto-mark): moved to edit.jl
+
+	* bookmarks.jl (set-bookmark, goto-bookmark, kill-bookmark,
+	kill-all-bookmarks, list-bookmarks): new file, provides named
+	bookmarks
+
+	* windows.jl (shrink-view-if-larger-than-buffer): handle line
+	wrapping redisplay
+
+	* rm-misc.jl (rm-reply): accept null subject lines gracefully
+	(rm-forward): minor changes, also don't put empty lines between
+	the forwarded message and its delimiters
+
+	* loadkeys.jl: removed mark-1, mark-2 and mark-3, and the key
+	bindings to set and goto them
+
+	* isearch.jl (isearch-accept): call set-auto-mark to do it's
+	stuff instead of faking it
+
+	* init.jl: load backquote on startup
+
+	* help.jl (describe-function): updated for compiled bytecode
+	objects
+
+	* fill.jl (unfill-paragraph): new command, changes all newlines
+	withing the current paragraph(s) to spaces
+
+Mon Feb 16 20:29:06 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* replace.jl (replace-last-match): fixed; I was deleting the
+	matched text before expanding it (doh!)
+
+Thu Feb 12 18:51:44 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* dump.jl (dump-batch): options --enable-inline-strings and
+	--disable-inline-strings
+	(dump-defvar, dump-defconst): set the property
+	variable-documentation not just documentation (which is wrong)
+
+	* help.jl (documentation): fix for subr built-in variables
+
+Sun Feb  8 14:46:12 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* windows.jl (scroll-next-view): new command, bound to
+	"Ctrl-Meta-v", scrolls the next view in the window
+	* loadkeys.jl (global-keymap): binding for above
+
+	* rcs.jl (rcs-goto-buffer): display the RCS output buffer in a
+	separate view, and call shrink-view-if-larger-than-buffer
+
+Thu Feb  5 17:32:21 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* windows.jl (other-view): new interpretation of the LINES
+	optional argument. If LINES is given then it always specifies
+	the size of the returned view (even if the view already
+	exists). If LINES is the symbol t, then the size of an already
+	existing view is never changed. If LINES is nil the size of the
+	returned view and the size of the current view are roughly
+	equal.
+	(enlarge-view, shrink-view): new functions to add or remove
+	lines from the current view, shrink-view just calls
+	enlarge-view with a negative argument
+	(shrink-view-if-larger-than-buffer): new function to reduce the
+	size of the current view to the number of lines in its buffer
+	* loadkeys.jl (ctrl-x-keymap): "Ctrl-x ^" bound to
+	enlarge-view, "Ctrl-x -" bound to shrink-view-if-larger...
+
+	* read-mail.jl (rm-summary-select-item,
+	rm-summary-execute-end): both call other-view with LINES set to
+	t to prevent view resizing
+
+	* shell.jl (shell-command-on-area): when displaying a new
+	buffer, shrink the view to the buffer's size
+
+	* help.jl (help-wrapper): macro to replace the help-setup
+	function. This handles shrinking the view to the size of the
+	final buffer, and leaving the cursor in the original view, not
+	that of the help-buffer
+	* help.jl, keymap.jl: all calls to help-setup translated to use
+	help-wrapper
+
+Wed Feb  4 13:00:03 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* read-mail.jl (rm-delete-current-message): was sometimes
+	leaving a blank line at the start of mailboxes
+
+Mon Feb  2 00:04:01 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* buffers.jl (auto-save-function): use message to display the
+	message not format
+
+Sat Jan 24 17:11:56 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* keymap.jl (print-keymap): was initialising the array index
+	variable one to high (and thereby accessing past the end of the
+	array)
+
+	* buffers.jl, gzip.jl, read-mail.jl, send-mail.jl: updated for
+	new function names, write-buffer-contents, read-file-contents
+	and insert-file-contents.
+
+	* buffers.jl (find-file): absorbs all functionality of
+	open-file, and gets a new optional arg DONT-ACTIVATE which can
+	be used to prevent the new buffer being installed in the
+	current view.
+	(open-file): deleted
+	(open-file-hook): renamed as find-file-hook
+
+	* dump.jl: new file, provides dumping of compiled Lisp files to
+	an assembler file that can be assembled and linked into a
+	special "jaded" executable. Only forms that are ``constant''
+	are dumped, the rest get put in a FILE.jld file that cmd_load
+	knows when to look for
+
+	* lisp.jl (autoload): when the executable contains dumped data,
+	don't add autoload definitions for any files that were dumped
+	(since they may overwrite the constant definitions), instead
+	load the file there and then (unless it's already been loaded)
+
+	* add-log.jl, buffers.jl, find-autoloads, gdb.jl, rcs-hooks.jl,
+	rcs.jl, server.jl: use find-file instead of open-file
+
+	* compiler.jl, gzip.jl, mail-dir.jl, rm-output.jl,
+	send-mail.jl: use open-file and close-file instead of open and
+	close
+
+	* init.jl: now load autoloads.jl after loading windows.jl and
+	buffers.jl (I can't remember why!?) Also cleaned up how the
+	command-line-args are used, if a function is called via the -f
+	option it's guaranteed that the next argument will be the car
+	of the list
+
+	* debugrc.jl: now catches all errors and prints them before
+	resuming operation. On catching end-of-stream though it quits
+
+	* text-mode.jl (indented-text-mode): explicitly give
+	fill-prefix a buffer-local value, in case fill.jl hasn't made
+	it automatically buffer-local yet
+
+Tue Jan 20 14:28:45 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* mail-dir-summary.jl (mds-compose-mail-to-item): command
+	(bound to "m") that composes a new mail message with the
+	current item as the recipient (by default in the To: field,
+	prefix arg means put it in the CC: header)
+
+Mon Jan 19 18:22:52 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compiler.jl (comp-compile-top-form): use defun and defmacro
+	again now they can handle bytecode objects
+
+Sun Jan 18 21:59:02 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* add-log.jl (changelog-mode): explicitly create buffer-local
+	values of fill-prefix and fill-prefix-width, in case fill.jl is
+	not yet loaded
+
+	* lisp-mode.jl (lisp-backward-sexp): if an expression is
+	preceded by #, move onto it.
+
+	* disassembler.jl: only one entry point now: `disassemble',
+	this handles single forms and function/macro definitions.
+	Now by default it outputs to the buffer *disassembly*, and
+	heads the text with some information about the byte code
+
+	* compiler.jl: modifications for byte code subrs. Instead of
+	compiling functions and macros to a lambda list, we compile
+	them to a byte code object. Also don't print newlines between
+	output forms
+
+	* debug.jl: bind to print-escape, not print-escape-newlines
+
+Thu Jan 15 12:38:46 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* edit.jl (paragraph-regexp): renamed as paragraph-separate,
+	this is now a regexp that matches the beginning of a line that
+	separates two paragraphs
+	(page-regexp): renamed as page-start
+	(forward-paragraph, backward-paragraph): totally rewritten,
+	these work properly now. As with all other forward- and
+	backward- functions, forward-paragraph find the character
+	following the end of the paragraph, backward-paragraph finds
+	the character at the start of the paragraph
+	(mark-paragraph): renamed as paragraph-edges, this function now
+	finds the beginning and end of the current COUNT paragraphs.
+	Marks them as a block when called interactively.
+	(transpose-paragraphs): does what you'd expect, bound to `Ctrl-x
+	Ctrl-Meta-t'.
+	(save-cursor): now uses a mark to store the position
+
+	* fill.jl: renamed from fill-mode.jl, this file has been almost
+	completely rewritten
+	(fill-break-re): regexp defining where it's permissable to
+	break lines (by default: space, tab, newline or form-feed)
+	(fill-mode-active): what used to be fill-mode-p
+	(fill-prefix, fill-prefix-width): variable defining the fill
+	prefix of the buffer. A string or a function, see its
+	documentation for details.
+	(set-fill-prefix): new command (bound to `Ctrl-x .') that
+	saves from the start of the line to the cursor as the fill
+	prefix for the buffer
+	(fill-area): new function to fill an arbitrary region of text.
+	Handles a prefix at the beginning of each line
+	(fill-paragraph): now calls fill-area
+	(fill-check-line): rewritten (this is for auto-fill mode)
+	(center-line, center-paragraph): moved from text-mode.jl,
+	untested
+
+	* tex-mode.jl (tex-mode): set paragraph-separate to include
+	"$$" as well as the normal blank lines. Also configures the
+	generic expression handling code to handle TeX syntax a bit
+	better ($..$ as delimiters, comments, don't have an escape
+	character.
+
+	* text-mode.jl (text-mode-init): don't include underscores and
+	hyphens in word syntax.
+	(indented-text-mode): set fill-prefix to text-mode-fill-prefix
+	(text-mode-fill-prefix): function to handle fill prefix as
+	indentation of the previous line.
+	(center-line, center-paragraph): moved to fill.jl
+
+	* loadkeys.jl (global-keymap): `Meta-h' bound to paragraph
+	edges
+	(ctrl-x-keymap): `Ctrl-x Ctrl-Meta-t' bound to
+	transpose-paragraphs, `Ctrl-x .' bound to set-fill-prefix
+	
+	* lisp.jl (function, return): new macros
+
+	* summary.jl (summary-update-item): don't use save-cursor anymore,
+	now that uses marks it screws things up
+
+	* compiler.jl (comp-inc-stack): rewritten as a macro, and given
+	an optional argument N.
+	(comp-compile-constant): checks if FORM is nil or t, and uses
+	the special opcodes if it is
+
+	* add-log.jl, asm-mode.jl, buffer-menu.jl, buffers.jl,
+	c-mode.jl, edit.jl, gdb.jl, lisp-mode.jl, modes.jl,
+	read-mail.jl, rm-misc.jl, send-mail.jl, shell.jl, summary.jl,
+	tex-mode.jl, texinfo-mode.jl, text-mode.jl, xc.jl: change calls
+	to eval-hook to use call-hook instead Note that read-file-hook,
+	write-file-hook, insert-file-hook, auto-save-hook,
+	read-mail-delete-message-hook, mail-yank-hooks are all "or"
+	style hooks
+
+Wed Jan 14 18:02:21 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* bytecodes.jl, disassembler.jl: opcode changes for new
+	exception handling
+	* compiler.jl (comp-get-label-addr): returns the pc of a
+	previously-set label
+	(comp-compile-catch, comp-compile-unwind-protect,
+	comp-compile-error-protect): modified for new exception
+	handling mechanisms. error-protect renamed as condition-case.
+
+	* isearch.jl, lisp-mode.jl, read-mail.jl, xc.jl: changed
+	error-protect to condition-case
+
+Tue Jan 13 00:03:25 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* add-log.jl (changelog-mode): new major mode
+	* modes.jl (mode-alist): added changelog-mode
+
+Mon Jan 12 12:48:41 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* bytecodes.jl, compiler.jl, disassembler.jl (op-max, op-min):
+	new instructions
+
+	* mail-dir.jl: new file, provides an email directory, both of
+	addresses to names, and aliases to addresses
+
+	* mail-dir-summary.jl (list-mail-addresses, list-mail-aliases):
+	new file, uses summary-mode to display the email directory
+	information. Also allows interactive editing of the directory.
+
+	* rm-mail-dir.jl: hooks to interface the mail-dir with
+	read-mail mode. Adds a new command `+' when reading mail that
+	allows the address of the sender to be added to the directory.
+	Also has facilities for doing this (semi-) automatically
+
+	* sm-mail-dir.jl: hooks for send-mail mode. Two new commands,
+	`Ctrl-c a' inserts an address from the directory (in the style
+	defined by mail-address-style); `Ctrl-c Ctrl-a' inserts an
+	alias definition. Also has support (untested as yet) for
+	expanding aliases automatically prior to a message being sent
+
+Sun Jan 11 13:21:55 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* maildefs.jl (mail-format-address): function to create a string
+	with name and address parts, formatted according to
+	mail-address-style.
+	* send-mail.jl (sendmail-send-message): use mail-format-address
+
+	* lisp.jl (eval-after-load): new function, adds entries to
+	after-load-alist (see `load' command)
+
+	* buffers.jl: reorganised this file so that similar functions
+	are grouped together
+	(save-and-quit): optional arg NO-QUERY, when t don't bother
+	asking whether any unsaved files should be saved.
+	(before-exit-hook): hook called by save-and-quit before exiting.
+	(split-line-indent): deleted this function
+	(goto-line): moved to edit.jl
+
+	* prompt.jl (prompt-from-list): new optional arg DONT-VALIDATE;
+	when t no validation function is installed, and hence strings
+	that aren't in the supplied list may be entered.
+
+Fri Jan  9 11:09:51 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* replace.jl (query-replace-rest): still invoked the
+	replace-regexp function which has been deleted.
+	(query-replace-keymap): bound Ctrl-g to quit
+	(replace-string, replace-all, query-replace): minor doc-string
+	changes
+
+Thu Jan  8 15:48:32 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compile.jl: general clean-up. Removed the compile-command,
+	compile-default-command dichotomy, instead compile-command is
+	left global (any attempt to set it in a "Local Variables:"
+	section will make a local value). Also made the grep command
+	prompt for the whole command string, not just the arguments;
+	grep-buffer has been made to work again.
+
+Sun Jan  4 23:48:31 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* modes.jl (add-minor-mode): changed the optional arg NO-KEYMAP
+	to be the argument KEYMAP--the keymap of the minor mode being
+	installed.
+	(remove-minor-mode): new optional arg KEYMAP--the keymap to be
+	removed along with the minor mode
+	(minor-mode-keymap): this variable removed
+	(minor-mode-installed): renamed as minor-mode-installed-p
+
+	* edit.jl (overwrite-mode): changes for new minor mode style,
+	also changed the variable overwrite-mode-p to
+	overwrite-mode-active
+
+	* rcs.jl (rcs-init-file): updated for new minor mode
+	conventions
+
+Sat Jan  3 21:03:48 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* keymaps.jl (km-print-list): when recognising
+	next-keymap-path being set, check that the thing it's being
+	set to is a list, before adding it to the list of maps to print
+
+	* gdb.jl (gdb-output-filter, gdb-redisplay-frame): put the
+	cursor at the indentation position of the line, not at the end.
+
+Sun Dec 21 02:51:44 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* buffers.jl, info.jl: fix timestamp usage (now a cons cell)
+
+	* buffers.jl (revert-buffer): delete the auto save file
+	_before_ loading the original, to remove the annoying `auto
+	save is newer..' message
+
+Sat Dec 20 00:16:47 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* bytecodes.jl, compiler.jl, disassembler.jl (op-pos,
+	op-posp): new opcodes, for `pos' and `posp' respectively
+
+	* lisp.jl (pos-col, pos-line): new macros
+
+	* buffers.jl (auto-save-file-newer-p, file-newer-than-file-p):
+	both use the new function time-later-p to compare time stamps
+
+Wed Dec 17 12:34:26 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* modes.jl (init-mode): fixed '-*-X-*-' not being recognised
+
+Tue Dec 16 12:01:45 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.jl (or, and): new macros, in place of the old special
+	forms of the same name
+	(prin1-to-string, read-from-string): both defined as macros
+	instead of functions
+
+	* compiler.jl (comp-compile-cond): optimise case where the
+	last condition list has no action associated with it--just
+	fall out the bottom with the condition itself as the value
+	(comp-compile-or, comp-compile-and): deleted
+
+Mon Dec 15 10:49:06 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compiler.jl (comp-compile-while): now puts conditional branch
+	at the top of the loop to reduce the number of branches
+	executed, uses the new opcode jpt
+	* bytecodes.jl (op-jpt, op-jpn): new opcodes, jump-and-pop-if-t
+	and jump-and-pop-if-nil
+	* disassembler.jl (dis-opcode-vector): added entries for the
+	above two opcodes
+
+Sun Dec 14 15:47:25 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* Makefile: now compiles the Lisp files in two runs; the first
+	uses the compiler to bootstrap itself, the second uses the
+	compiled compiler to build everything else
+	* compiler.jl (compile-compiler): small function to aid the
+	above process
+
+	* rectangle.jl (insert-rectangle, copy-rectangle,
+	delete-rectangle, cut-rectangle): new file, replacing
+	src/editrect.c. The functions have slightly different names,
+	but not much has changed
+	* edit.jl: change all calls to X-rect to be X-rectangle
+
+	* Many changes to almost all files, adapting to the changes
+	mentioned under the same date in src/ChangeLog. There's sure
+	to be some fallout still to be fixed.
+
+	* edit.jl (backward-char, backward-tab, backward-line,
+	split-line, goto-start-of-buffer, goto-end-of-buffer,
+	top-of-buffer, bottom-of-buffer): new functions
+	(left-char, right-char): new macros
+
+	* init.jl: now uses version-string when printing the startup
+	banner
+
+	* replace.jl (replace-last-match): function that replaces the
+	most recently matched regular expression with the expansion of
+	its argument
+	(replace-string): replaces one string with another at a
+	specified position
+
+Wed Nov 26 00:34:32 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* maildefs.jl (mail-default-headers): Added an "X-Mailer"
+	line
+	(mail-summary-lines): reduced to eight
+	(mail-parse-list, mail-parse-group, mail-parse-atom): the
+	second and third functions are new, split off from
+	mail-parse-list. It's now possible to read "groups" of
+	expressions---things not separated by commas. A new optional
+	arg to mail-parse-list controls this
+	(mail-get-header): option to read a list of groups, not a list
+	of comma-separated expressions
+	(mail-insert-list): option to suppress comma-separators
+
+	* send-mail.jl (mail-setup): now puts the subject immediately
+	after the recipients. Also inserts the REFERENCES arg as a
+	list of groups
+
+	* rm-misc.jl (rm-reply): read and generate the "References:"
+	header
+
+Tue Nov 25 12:01:51 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* edit.jl (delete-blank-lines): rewritten to be compatible
+	with Emacs' command of the same name, remove the infinite
+	loop bug as well
+
+	* summary.jl: new optional action `current'; if this is
+	provided by the back-end it should return the index of the
+	currently selected item
+
+	* read-mail.jl (rm-display-current-message): new optional arg
+	no-summary-update; controls whether or not to update the
+	current summary item
+	(rm-delete-messages): fixed some bugs, also now tracks how
+	many messages have been moved through, so that when it has
+	finished the current message is as close as possible to the
+	current message on entry
+	(rm-summary-current-item, rm-summary-functions): provide a
+	`current' action
+
+Fri Nov 21 12:27:10 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compiler.jl: change '%' to use op-rem and 'mod' to use op-mod
+	(comp-compile-transitive-relation): new function to compile
+	>, >=, <, and <=. Needed since these functions can now take
+	more than two arguments	
+
+	* disassembler.jl: Update for op-mod/op-rem stuff
+
+	* compiler.jl (compile-file): emit a validate-byte-code form
+	* bytecodes.jl (bytecode-major, bytecode-minor): define
+	instruction set described
+
+Thu Nov 20 19:07:24 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* info.jl (info-find-node, info-read-dir): fixed a couple of
+	minor bugs
+
+Wed Nov 19 10:32:03 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* miranda.jl (miranda): new command; runs a Miranda session in
+	the other view, prompting for the script to use beforehand.
+
+	* summary.jl (summary-add-pending-op): now dispatches the
+	function vector `after-marking'
+	(summary-mark-delete): doesn't dispatch `after-marking' since
+	the above change takes care of it
+	(summary-quit): only bury the current buffer if the function
+	vector `on-quit' doesn't exist; otherwise the `on-quit'
+	function must handle everything
+
+	* buffer-summary.jl (bs-quit): new function, bound to the
+	summary's `on-quit' vector
+	(buffer-summary): don't use goto-buffer to install the
+	summary, to avoid the buffer-list being modified just use
+	set-current-buffer
+	(bs-select-item, bs-select-two-views): don't bury-buffer the
+	summary, just call bs-quit
+	(bs-mark-save): don't call summary-next-item, it's now called
+	indirectly by add-pending-op (and the `after-marking' vector)
+
+	* buffers.jl (open-buffer): new optional arg ALWAYS-CREATE.
+	When t, an already-existing buffer is never returned.
+
+	* compiler.jl (comp-warning): call add-buffer, if necessary,
+	to add the compiler output buffer to each views list of buffers
+	* gdb.jl, info.jl, rcs.jl, send-mail.jl, shell.jl: use
+	open-buffer not make-buffer to create buffers; ensuring they're
+	in the buffer-lists of all views.
+
+	* prompt.jl (prompt-for-file): new optional arg HISTORY-LIST
+
+	* maildefs.jl (prompt-for-folder): new function to prompt for
+	a mail folder; uses its own history list and fills in defaults
+	sensibly.
+
+	* read-mail.jl (rm-next-undeleted-message,
+	rm-previous-undeleted-message): commands to remove some of the
+	overloading on rm-next-message and rm-previous-message
+	(rm-next-message, rm-previous-message): the arg
+	DONT-SKIP-DELETED has had the DONT- removed, and therefore the
+	meaning reversed
+	(rm-keymap): bind "s" to rm-output
+	(read-mail-folder): use prompt-for-folder
+	(rm-command-with-folder, rm-command-in-folder): macros to call
+	a command in the folder buffer, used by rm-summary-keymap
+
+	* rm-output.jl (rm-output): new command to save the next COUNT
+	messages to another folder. Special action is taken if the
+	destination folder is currently in a buffer; even more special
+	action occurs if this buffer has read-mail-mode as its major
+	mode (the new messages are added to the buffer's list of
+	message structures). This hasn't really been tested yet.
+	
+Sun Nov 16 01:27:32 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* edit.jl (mouse-select): now handles views properly, i.e.
+	activate the view that the mouse was clicked in
+
+Thu Nov  6 15:37:27 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* print.jl (print-buffer, print-buffer-to-file,
+	print-buffer-to-printer, print-area, print-area-to-file,
+	print-area-to-printer): commands to print text, by default
+	using the GNU `enscript' command.
+
+	* prompt.jl (prompt-for-string): START arg wasn't being used
+	correctly.
+
+Mon Nov  3 01:33:51 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* edit.jl (mouse-select, mouse-double-select,
+	mouse-select-drag): implement dragged selections
+	* (global-keymap): new left mouse button bindings for
+	drag-select
+
+	* edit.jl (mark-block): does no extra refresh, it's not
+	necessary anymore
+	(mark-page): forces non-rectangular blocks
+
+Sun Nov  2 11:01:25 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* read-mail.jl (rm-delete-messages): if we can't display the
+	old current message; try to display the last message in the
+	folder
+
+Sat Nov  1 12:54:05 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* read-mail.jl (rm-build-message-struct, rm-update-flags):
+	flags are now remembered via the "X-Jade-Flags-v1" header
+	(rm-display-current-message): looks for a header matching the
+	`mail-highlighted-headers' regexp, and highlights it
+	* maildefs.jl (mail-highlighted-headers): regexp matching
+	headers to highlight
+	* rm-misc.jl (rm-reply, rm-forward): the callback functions to
+	set the necessary flags work properly now
+
+	* shell.jl (shell-command-on-area): new arg DELETEP which is
+	passed to call-process-area. When INSERTP and DELETEP are both
+	t output replaces the input region
+	(shell-command-on-buffer): new command, similar to
+	shell-command-on-area, but over the whole buffer.
+
+	* loadkeys.jl (ctrl-x-keymap): bound `shell-command-on-buffer'
+	to `Ctrl-x |'
+
+Tue Oct 28 15:09:17 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* shell.jl (shell-command, shell-comand-on-area): commands to
+	run shell commands in a user-friendly manner
+
+	* loadkeys.jl (global-keymap): `M-!' and `M-|' bound to
+	shell-command and shell-command-on-area respectively
+
+	* rcs.jl (rcs-command): now directs error output to the *rcs*
+	buffer no matter what the OUTPUT-STREAM parameter is
+
+Sun Oct 19 19:20:49 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* loadkeys.jl: Bound sensible commands to "Insert" 
+	(overwrite-mode), "Home", "End", "Prior" and "Next".
+
+	* tex-mode.jl: `Ctrl-c Ctrl-c m' now inserts "\emph{}", fixed
+	some bugs in tex-insert-end and tex-insert-braces
+
+Thu Oct 16 15:33:35 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rm-misc.jl (rm-reply): now looks for a "Reply-To" header as
+	it should, and ensures that the initialised message is marked
+	as being unmodifed
+
+Wed Oct 15 23:15:43 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* send-mail.jl (mail-setup, send-mail-signature): now
+	inserts "\n-- \n" before signatures as it should do, instead
+	of "\n--\n"
+
+	* read-mail.jl (rm-enforce-msg-separator): now assumes that
+	the cursor is at the position to insert at
+
+	* rm-misc.jl (rm-burst-message, rm-really-burst-message): now
+	works properly, and handles both RFC-934 _and_ RFC-1153
+	encapsulation schemes; seems to work ok..
+
+	* prompt.jl (prompt-validate-from-list): ensures that the
+	symbol `t' is returned, not just any old t value
+
+Tue Oct 14 00:53:27 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* summary.jl (summary-update-item): now calls after-update
+	function after doing its stuff
+
+	* rm-misc.jl (rm-forward): now quotes "^-" properly
+	(rm-burst-message): new command to unburst digests, should
+	also handle sensibly forwarded messages
+
+	* read-mail.jl (rm-enforce-msg-separator): new function to
+	ensure "\n\n" exists when inserting new messages. Minor other
+	fixes.
+
+Sun Oct 12 21:06:30 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* modes.jl (generic-forward-exp, generic-backward-exp): two
+	functions to provide expression handling for many common types
+	of code. Installed by default in mode-forward-exp and
+	mode-backward-exp.
+
+Wed Oct  8 11:56:17 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* tex-mode.jl: initial revision; a simple mode for editing TeX
+	and LaTeX. Derived from texinfo.jl with the bonus that
+	tex-insert-braces works properly with negative args.
+
+	* modes.jl (mode-alist): added tex-mode, some other minor
+	changes
+
+Tue Oct  7 12:10:23 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rcs.jl (rcs-initial-comment): new variable controlling if an
+	initial description of a registered file is prompted for
+	(rcs-command): new optional argument OUTPUT-STREAM
+	(rcs-register-buffer, rcs-check-in-buffer, rcs-lock-buffer):
+	now allow the revision number to be specified (by typing 
+	`Ctrl-u' before calling the command.)
+	(rcs-view-revision): new command to display an arbitrary
+	revision of the current buffer. Since stdout and stderr are
+	linked when getting output from processes, this includes some
+	unsightly header information.. (for now)
+
+	* rcs-hooks.jl (rcs-keymap): moved here from rcs.jl so that the
+	`Ctrl-x v ...' bindings work from startup
+
+	* loadkeys.jl (global-keymap): `Ctrl-l' now bound to
+	center-display not centre-display
+
+	* prompt.jl (prompt-list-fold-case): new variable controlling
+	whether or not prompt-complete-from-list and
+	prompt-validate-from-list ignore case
+
+	* info.jl (info-find-node): set info-file-name here; this
+	seems to fix the weird history problem.
+	(info-prompt): let prompt-list-fold-case be t
+
+Sun Oct  5 22:04:56 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* read-mail.jl (rm-after-marking): won't move to the next
+	message when it doesn't exist
+
+Fri Oct  3 11:28:34 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rm-misc.jl (rm-default-yank-function): fixed [yet] again,
+	hopefully it now deletes only _blank_ trailing lines.. 
+
+Thu Oct  2 00:06:54 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* read-mail.jl: don't search for mail-message-start in
+	case-folding mode, this isn't a good idea
+
+	* prompt.jl (prompt-complete-symbol): now regexp-quote's the
+	word to be completed, this allows things like "let*" to work
+	properly.
+
+Wed Oct  1 17:04:00 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* summary.jl (summary-highlight-index): allows the
+	highlighting of a single item (via the block marks).
+	(after-update): new action
+
+	* read-mail.jl: uses summary-highlight to mark the current
+	message, not the "->" insertion.
+
+	* send-mail.jl (send-mail-signature): now works properly when
+	a signature already exists
+
+	* read-mail.jl (rm-coalesce-visible-headers): when working on
+	the headers end the restriction at the blank line following
+	the last header. This prevents us hitting the end of the
+	buffer when parsing the last header
+
+	* rm-misc.jl (rm-default-yank-function): now properly deletes
+	all trailing blank lines (not just empty lines)
+
+	* summary.jl: added some more actions, after-marking,
+	after-move, and on-quit. Removed the summary-after-execute
+	hook since it was redundant.
+
+	* buffer-summary.jl: defines an after-marking action that
+	simply moves to the next item in the display
+
+	* read-mail.jl: uses the after-marking action to move to the
+	next message. If the current message was the one just marked,
+	and rm-move-after-deleting is t select this message as well.
+	Unfortunately this stops Ctrl-d moving backwards, have to fix
+	this at some point
+
+Sun Sep 28 13:58:33 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* buffer-summary.jl (bs-mark-save): advances to next item
+	explicitly	
+
+	* info.jl (info-prompt): don't define prompt-word-regexps,
+	they should be okay by default
+
+	* prompt.jl: now does history recall, three history lists by
+	default: files, symbols and others. Also some more support
+	for default values, stored at history item -1. Alsi fixed M-?
+	command, and bound it to M-/ as well
+
+	* summary.jl (summary-unmark-item): new optional arg
+	MOVE-AFTER-P; whether or not to move to the next item
+	(summary-update-item): don't trash cursor position anymore
+	(summary-mark-delete): move to the next item explicitly
+
+	* read-mail.jl (rm-message-count): variable storing the number
+	of messages in the folder
+	(rm-keymap): fixed `d' and `Ctrl-d' bindings, added `N' and 
+	`P' bindings for moving through deleted messages, added `u'
+	binding to unmark deleted messages
+	(rm-last-folder): stores name of last read folder. Used when
+	prompting for folders by read-mail-folder
+	(rm-fix-status-info): function to set the minor-mode-names
+	list to something describing the status of the current
+	message; this isn't always updated when it should be yet
+	(rm-summary-keymap): added `N' and `P' bindings, removed `d', 
+	`DEL' and `Ctrl-d' bindings; handled by summary.jl
+
+	* send-mail.jl (mail-setup): promoted to be a command. Now
+	displays the mail buffer while asking if it's okay to lose its
+	contents. Calls the text-mode-hook to enable auto-fill or
+	whatever
+	* loadkeys.jl (ctrl-x-keymap): bound `x' to mail-setup
+
+	* rcs.jl (rcs-callback-with-description): Made the mode line
+	description a lot shorter so that it fits in the window. Also
+	invoke text-mode
+
+	* rm-misc.jl (rm-forward): new argument ALL-HEADERS-P, takes
+	it value from the raw prefix argument. Controls whether all
+	headers or just those that are visible are included. Also now
+	leaves the cursor in the ^To: field when no recipients are
+	specified
+
+	* read-mail.jl (rm-summary-keymap): calls rm-forward with the
+	prefix-arg
+
+	* fill-mode.jl (fill-paragraph): first attempt at this. Not
+	particularly robust yet
+	* loadkeys.jl (global-keymap): `Meta-q' bound to
+	fill-paragraph
+
+	* edit.jl (forward-word): doesn't trash its POS argument
+	anymore.
+
+Sat Sep 27 17:19:54 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* debug.jl (debug-entry): let print-escape-newlines be t
+
+	* edit.jl (capitalize-word): works more intuitively when COUNT
+	is positive now.
+
+Fri Sep 26 15:21:52 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* read-mail.jl (rm-auto-next-message, rm-move-after-deleting):
+	two new configuration variables
+	(rm-next-page, rm-previous-page): commands for paging
+	(rm-mark-message-deletion): switches message afterwards
+
+	* read-mail.jl: Added reply, followup and forward commands.
+	Removed the rm-always-with-X macros; now includes each command
+	in the summary buffer that needs to run in the folder with
+	rm-with-folder.
+	(rm-in-folder): new macro
+	(rm-summary-buffer): don't set mildly-special buffer, instead
+	destroy-buffer it manually on exit
+
+	* send-mail.jl (mail-setup): Many fixes. Changed a lot of mail-
+ 	symbol prefixes to send-mail-.
+	Removed mail-buffer-in-use variable, inferred from whether the
+	buffer is read-only
+
+	* maildefs.jl (mail-yank-hooks, mail-reply-prefix,
+ 	mail-fill-column): new variables
+	(mail-parse-list): returns the list in the order the items
+ 	actually occur
+	(mail-find-header): can optionally specify the position to start
+ 	searching
+	(mail-get-header): when LISTP is t, will look for multiple headers
+ 	of the same name
+	(mail-insert-list): inserts a list of strings (separated by
+ 	commas), filled to the mail-fill-column. New lines are indented a
+ 	la RFC-822
+	
+	* edit.jl (forward-page,backward-page): don't move the cursor
+ 	by default; only when optional third arg is non-nil
+	(capitalize-word): now has a COUNT arg -- which word to change
+	(transpose-lines): new command
+	(delete-blank-lines): new command
+
+	* loadkeys.jl (ctrl-x-keymap): "Ctrl-o" bound to
+ 	delete-blank-lines, "Ctrl-t" bound to transpose-lines
+	
+Thu Sep 25 11:25:22 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* buffers.jl (fix-local-variables): fixed
+
+	* maildefs.jl, read-mail.jl: try to be more intelligent when
+	locating files
+
+Wed Sep 24 11:13:28 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* maildefs.jl (mail-default-folder, mail-spool-files,
+	movemail-program): new configuration variables. Note that
+	movemail-program defaults to undefined.
+	(mail-find-inboxes): returns a list of possible spool files
+	for a particular mail folder
+
+	* read-mail.jl: lots of new features; including the ability to
+	read mail from spool files :-)  Lots of other things that were
+	needed before the thing is usable.
+
+	* buffers.jl (goto-buffer): new optional argument VIEW,
+	defining the view whose buffer should be changed
+
+	* add-log.jl (add-change-log-entry): now surrounds the mail
+	address with angled brackets
+
+	* edit.jl (after-kill-hook): called after changing the
+ 	kill-ring. Used under X11 to install the current-kill as the
+ 	primary selection
+	(yank): won't yank the current selection if it's owned by Jade
+
+Tue Sep 23 10:38:29 1997  John Harper  (john@dcs.warwick.ac.uk)
+
+	* edit.jl (page-regexp, forward-page, backward-page,
+	mark-page, restrict-to-page): page handling code. Pages are
+	delimited by ^L
+	* loadkeys.jl (ctrl-x-keymap): `Ctrl-p' is mark-page,
+	`[' is backward-page, ']' is forward-page
+
+	* edit.jl (save-cursor): macro to preserve the current cursor
+	position
+	* lisp-mode.jl: added indentation hint for save-cursor
+
+	* add-log.jl (change-log-address, change-log-name): removed
+	these two variables, they're replaced by user-mail-address and
+	(user-full-name) respectively
+
+Mon Sep 22 17:56:06 1997  John Harper  (john@gem.dcs.warwick.ac.uk)
+
+	* loadkeys.jl (ctrl-x-n-keymap): new keymap, hooked to `Ctrl-x
+	n'. Three commands "n" restrict to the current block, "w"
+	unrestrict, and "p" restrict to a page (unimplemented) 
+
+Mon Sep 22 00:13:43 1997  John Harper  (john@orcrist)
+
+	* read-mail.jl: changed the way summaries are used. Now a
+	summary buffer always exists for each mail buffer, but maybe
+	not displayed. Also unified some of the summary/mail buffer
+	commands
+
+	* maildefs.jl (mail-display-summary): new option; displays a
+	summary as soon as a mail buffer is entered
+
+	* compiler.jl: Correctly handles macros defined after they're
+	used. The compiler now does two passes through each file it
+	compiles --- the first builds the macro environment, the
+	second does the actual compilation
+
+Sun Sep 21 00:34:39 1997  John Harper  (john@orcrist)
+
+	* send-mail.jl: new file provides means to send mail messages.
+	Currently only via sendmail(8) but hooks allow customisation.
+
+	* maildefs.jl: central definition of all mail configuration
+	variables, both for reading and sending, and a few mail
+	utility functions. I've tried to keep the configuration
+	options as compatible with Emacs as possible.
+
+	* read-mail.jl: moved configuration parameters to maildefs.jl
+	Also added a `replied' attribute to the message structure;
+	it's set when the message contains a ^Replied: header; how can
+	this be made compatible with VM?
+
+	* windows.jl (close-view, close-other-views): make sure that
+	the minibuffer view isn't closed
+
+	* edit.jl (save-restriction): new macro, preserves the current
+	buffer's restriction
+	* lisp-mode.jl: Added indentation hint for save-restriction
+
+Sat Sep 20 00:22:52 1997  John Harper  (john@orcrist)
+
+	* c-mode.jl, lisp-mode.jl: minor changes for new regexp code
+
+	* gdb.jl (gdb-redisplay-frame): doesn't redisplay the frame in
+	the current view when it's a buffer running gdb; uses the
+	other-view instead
+
+	* read-mail.jl (mail-header-name): this variable is defined in
+	both read-mail.jl and send-mail.jl
+
+	* read-mail.jl: a couple of fixes for the new regexp code,
+	also fixed the rm-summary-update-current function
+
+Fri Sep 19 00:49:09 1997  John Harper  <john@dcs.warwick.ac.uk>
+
+	* info.jl: a couple of minor fixes for the new regexp code
+
+Wed Sep 17 00:33:16 1997  John Harper  (john@orcrist)
+
+	* read-mail.jl: added support for deleting messages; also now
+	handles an empty folder
+
+	* summary.jl: added `execute-start' and `execute-end' function
+	vectors that surround the guts of summary-execute.
+
+Tue Sep 16 01:55:37 1997  John Harper  (john@orcrist)
+
+	* summary.jl: removed `n' and `p' keybindings, leave them for
+	customisation by the deriving summary modes
+	(summary-update, summary-update-item): print the newline
+	themselves now.
+	* summary.jl: various other stuff
+
+	* read-mail.jl: works a lot better now, the summary buffer
+	works properly, tracking the mail buffer..
+
+	* buffer-summary.jl (bs-print-item): doesn't print newline
+
+Sun Sep 14 00:21:53 1997  John Harper  (john@orcrist)
+
+	* windows.jl (other-view): new optional argument LINES, how
+	many lines to give a newly created view. Does nothing in the
+	case that the other view already exists.
+
+	* buffer-summary.jl (buffer-summary-mode): new function that
+	only contains a documentation string, for the mode.
+
+Sat Sep 13 18:25:13 1997  John Harper  (john@orcrist)
+
+	* summary.jl: new file provides a generic menu system.
+	Somewhat like the buffer-menu, it can be customised to suit
+	whatever is being represented underneath. For example it will
+	be able to provide the summary view of the mail reader
+
+	* buffer-summary.jl: new file, replicates what buffer-menu.jl
+	does, but using summary.jl for all the complex stuff.
+
+	* read-mail.jl: first go at a basic mail reader. Currently it
+	just parsers BSD style mailboxes, doesn't manipulate them at
+	all.
+
+Sun Sep  7 16:17:39 1997  John Harper  (john@orcrist)
+
+	* buffers.jl (read-file-into-buffer): now clears the buffer
+	before doing anything
+
+	* info.jl: much updated. Now uses the restriction feature,
+	which in turn allows compressed files to be read. May also be
+	less brain-damaged on Info files without tag tables.
+
+Sat Sep  6 13:34:23 1997  John Harper  (john@orcrist)
+
+	* gdb.jl: Now displays source code in a different view of the
+	current window; not a different window
+
+	* rcs.jl (rcs-command): when rereading the buffer try to
+	preserve the current cursor position (in a particularly
+	non-bullet-proof manner)
+
+	* rcs.jl (rcs-down-history, rcs-up-history): functions (bound
+	to Meta-p and Meta-n respectively) used in the RCS callback
+	buffer to recall the previously entered descriptions
+
+	* All files are now under RCS control except for autoload.jl
+
+Fri Sep  5 20:22:12 1997  John Harper  (john@orcrist)
+
+	* rcs.jl (rcs-version): fixed version numbers containing zeros
+	not being recognized (regexp [1-9] not [0-9]!)
+
+	* rcs-hooks.jl: new file, contains the function installed in
+	the open-file-hook to recognize RCS controlled files. This
+	loads rcs.jl when the first is found.
+
+	* rcs.jl (rcs-file-p): moved to rcs-hooks.jl
+
+Thu Sep  4 00:13:55 1997  John Harper  (john@orcrist)
+
+	* ring.jl (set-ring-head): was setting the next free position,
+	not the previously accessed slot
+
+	* prompt.jl: now displays messages in the status line after
+	the title message
+
+Wed Sep  3 20:39:34 1997  John Harper  (john@orcrist)
+
+	* bytecodes.jl, compiler.jl, disassembler.jl: Moved all byte
+	code definitions from the compiler to bytecodes.jl. Also many
+	of the opcodes have been renamed. op-setq and op-set
+	(previously op-vsetc and op-vset) now leave the set value on
+	the stack.
+
+Tue Sep  2 23:43:49 1997  John Harper  (john@orcrist)
+
+	* compiler.jl: uses the new bind-{buffer,view,window} opcodes
+	when compiling with-{buffer,view,window} special forms.
+	Also modified compilation of unwind-protect to use the new
+	binding mechanism
+
+	* disassembler.jl: updated for new opcodes
+
+Mon Sep  1 21:54:24 1997  John Harper  (john@orcrist)
+
+	* lisp.jl (if, when, unless): new macros, defined in terms of
+	cond.
+
+	* compiler.jl: fine-tuned the comp-compile-cond function; this
+	now produces exactly the same code as the specialist if, when
+	and unless functions. This is why they're now macros
+
+Sun Aug 31 10:49:45 1997  John Harper  (john@orcrist)
+
+	* buffer-menu.jl: now understands multiple views; defines
+	the commands `1', `2', and `o' accordingly. Still displays
+	itself in the current view, no matter what that is.
+
+	* compiler.jl (op-viewp, op-swap-view, op-current-view,
+	op-swap2): new opcodes. `swap2' makes the top of the stack
+	be beneath the next two stack values. `swap-buffer' now
+	takes two arguments the buffer and the current view, and
+	leaves them both on the stack. This is incompatible with
+	old code!
+	(comp-top-level-compiled): added `with-view' to the list
+	(comp-compile-with-form): meta function to compile
+	`with-window' and `with-view'.
+	(comp-compile-with-buffer): uses new form of swap-buffer.
+
+	* disassembler.jl (dis-opcode-vector): added new instructions.
+
+	* edit.jl (forward-word, word-start): tries to handle hitting
+	the start of the buffer more gracefully.
+
+	* edit.jl (x11-block-status-function): new function, added to
+	the `block-status-hook' when in X11. It sets up the current
+	block as the current primary selection when necessary.
+
+	* edit.jl (kill-ring, kill-string, killed-string): the new
+	variable `kill-ring' is a ring-buffer (see ring.jl) holding
+	killed text.
+	(yank, yank-rectangle, yank-next): now use the kill-ring; 
+	`yank-next' allows the contents of the kill-ring to be cycled
+	through (but not with rectangles yet).
+
+	* help.jl (help-setup): switches to the `other-view'
+
+	* info.jl (info-prompt): uses the new minibuffer `prompt'
+	instead of `prompt2'
+
+	* init.jl: '(load prompt)' removed; the prompt functions are
+	now autoloaded.
+
+	* lisp-mode.jl: added hints for `with-view'
+
+	* loadkeys.jl ("Meta-y"): bound to `yank-next'
+	("Ctrl-x 0", "Ctrl-x 1", "Ctrl-x 2", "Ctrl-x o"): now work
+	with views
+	("Ctrl-x 4 ..."): now works in the `other-view'
+
+	* ring.jl (make-ring, ring-capacity, ring-size, add-to-ring,
+	get-from-ring, set-ring-head): New file, provides a ring-
+	buffer type.
+
+	* prompt.jl (prompt2): renamed as `prompt' and made to work
+	with in the minibuffer view. Completions in a separate view.
+	(prompt, prompt-for-directory, prompt-for-buffer,
+	prompt-for-symbol, prompt-for-lisp, prompt-for-function,
+	prompt-for-variable, prompt-for-command, prompt-for-string,
+	prompt-for-number): all autoloaded now
+
+	* prompt.jl (yes-or-no-p, y-or-n-p): moved here from ask.jl,
+	both autoloaded anyway so makes no difference.
+
+	* windows.jl (open-view, close-view, close-other-views,
+	in-other-view, goto-other-view, other-view, goto-next-view):
+	new functions to provide some level of interface to views.
+	open and close should be used instead of make and destroy.
+        (add-buffer, remove-buffer): now cycles through every view in
+	every window, since `buffer-list' is now view-local.
+
+Mon Aug 25 00:42:24 1997  John Harper  (john@orcrist)
+
+	* rcs.jl: New file providing a particularly simple interface
+	to RCS. Do (require 'rcs) to install it.
+
+Sun Aug 24 20:43:30 1997  John Harper  (john@orcrist)
+
+	* buffers.jl (read-file-into-buffer): new function, split off
+	from open file to handle initialisation when loading a file.
+	(revert-buffer): calls read-file-into-buffer
+
+	* edit.jl (toggle-buffer-read-only): new function
+	(toggle-read-only-function): new hook
+
+	* buffers.jl (maybe-save-buffer): new function, asks whether or
+	not to save a buffer if it contains unsaved modifications.
+
+Sun Jun 25 12:01:01 1995  John Harper  (jsh@orcrist)
+
+	* gzip.jl (gzip-uncompress): Checks if a file exists before
+	attempting to expand it -- this allows non-existent files with
+	names ending in .gz or .Z to be edited properly.
+
+Tue Mar 21 16:33:04 1995  John Harper  (jsh@orcrist)
+
+	* help.jl (help-prompt-keymap): Got rid of the incorrect
+	`Ctrl-i' binding.
+
+Mon Mar 20 19:29:01 1995  John Harper  (jsh@orcrist)
+
+	* text-mode.jl (word-count-area): New function to count the
+	number of words in a region of text, bound to `Meta-=' in the
+	text-mode-keymap.
+
+Fri Jan 13 18:07:56 1995  John Harper  (jsh@orcrist)
+
+	* info.jl (info-parse-menu-line): Now ignores spaces between
+	the name of the node and the `::' in a menu line.
+
+Thu Jan 12 16:19:21 1995  John Harper  (jsh@orcrist)
+
+	* c-mode.jl (c-backslash-area): General fixes.
+
+	* edit.jl (just-spaces): Doesn't miss the space at the
+	beginning of a line anymore.
+
+Wed Jan 11 14:42:58 1995  John Harper  (jsh@orcrist)
+
+	* info.jl (info-visit-file): Command to prompt for a file then
+	load it into Info.
+
+Thu Jan  5 00:03:37 1995  John Harper  (jsh@orcrist)
+
+	* loadkeys.jl: `Ctrl-x Ctrl-q' is now the key sequence to
+	toggle read-only-ness
+
+Mon Jan  2 15:32:32 1995  John Harper  (jsh@orcrist)
+
+	* loadmenus.jl: Changed the ``Print Keymap'' item to call the
+	describe-keymap command
+
+Tue Dec 27 15:08:14 1994  John Harper  (jsh@orcrist)
+
+	* xc.jl (xc-indent-pos): Doesn't recognize do_... as a `do while'
+	statement anymore.	
+
+Sat Dec 24 15:10:38 1994  John Harper  (jsh@orcrist)
+
+	* c-mode.jl (c-backward-exp): Hopefully I've fixed the infinite
+	loop which used to happen when the start of some files was reached.
+
+Wed Dec 21 00:18:28 1994  John Harper  (jsh@orcrist)
+
+	* c-mode.jl (c-backward-exp): Doesn't get confused when it
+	finds punctuation in the middle of an expression.
+
+	* buffer-menu.jl: The key table now binds `LMB-Off' to `nop' to
+	avoid it getting caught by the unbound-key-hook thing (and
+	being really annoying).	
+
+	* edit.jl (nop): New command, does absolutely nothing.
+
+Tue Dec 13 20:56:11 1994  John Harper  (jsh@orcrist)
+
+	* c-mode.jl (c-mode-ctrl-c-keymap): Now this binds `c-backslash-area'
+	to `Ctrl-c Ctrl-\' as it should have done before
+
+Sat Nov 26 18:00:55 1994  John Harper  (jsh@orcrist)
+
+	* fill-mode.jl: `RET' is also made to check whether the line
+	needs to be broken, as well as `SPC'.
+
+	* xc.jl (xc-indent-pos): Fixed the regexp used to match goto
+	labels, it now checks the character after the colon to be
+	white space of eol.
+
+Sun Nov 13 19:49:54 1994  John Harper  (jsh@orcrist)
+
+	* compile.jl (compile): unless an argument is given the command is
+	*always* prompted for. Whatever the command is that is eventually
+	executed is, it's stored in the `compile-command' variable.
+
+	* buffers.jl (revert-buffer): doesn't ask if you want to revert
+	to the most recent auto-save; use `recover-file' to do that!
+
+	* xc.jl (xc-indent-pos): now indents `{' properly (I fixed a
+	couple of typos -- `exp-ind' for `exp-pos')
+
+Tue Nov  8 09:22:19 1994  John Harper  (jsh@orcrist)
+
+	* lisp.jl (require): this can now be called interactively --
+	it prompts for its first argument (the feature symbol).
+
+Mon Nov  7 17:47:43 1994  John Harper  (jsh@orcrist)
+
+	* buffer-menu.jl (bm-list-buffers): now prints the mode name
+	properly; i.e. chains through the list of minor mode names,
+	printing each in turn.
+
+	* fill-mode.jl (fill-mode-spc): takes account of the glyph
+	position of the cursor, not the char position. Also the hack to
+	auto indent indented-text-mode buffers properly works even if
+	the previous line wasn't indented at all.
+
+Thu Oct 27 23:24:42 1994  John Harper  (jsh@orcrist)
+
+	* asm-mode.jl: removed the `.' command. Also `RET' deletes
+	any trailing TAB or SPC characters from the end of the line it
+	breaks.
+
+Wed Oct 26 17:51:47 1994  John Harper  (jsh@orcrist)
+
+	* gdb.jl (gdb): changed `kill-all-buffer-variables' to
+	`kill-all-local-variables' -- now it works!
+
+Sun Oct 23 20:03:38 1994  John Harper  (jsh@orcrist)
+
+	* compiler.jl: added some warnings
+
+	* compiler.jl (compile-function): New command
+	
+Fri Oct  7 15:12:56 1994  John Harper  (jsh@orcrist)
+
+	* Version 3.2 released
+
+Wed Oct  5 16:31:39 1994  John Harper  (jsh@orcrist)
+
+	* edit.jl (transpose-items): now this actually does what it
+	says it does
+
+Tue Oct  4 00:33:37 1994  John Harper  (jsh@orcrist)
+
+	* buffers.jl (fix-local-variables): new function; scans the
+	end of a newly-loaded buffer for Emacs-style local variable
+	definitions. Called from `open-file'.
+
+Mon Oct  3 17:59:44 1994  John Harper  (jsh@orcrist)
+
+	* buffers.jl (recover-file): sets the `modified' flag
+
+Sun Oct  2 15:17:26 1994  John Harper  (jsh@orcrist)
+
+	* fill-mode.jl (fill-mode-spc): this now auto-indents the newly
+	created line when the major mode is indented-text-mode.
+
+	* xc.jl: many improvements.
+
+	* c-mode.jl (c-forward-exp, c-backward-exp): cpp lines don't
+	count as an expression anymore
+
+Sat Oct  1 16:41:42 1994  John Harper  (jsh@orcrist)
+
+	* modes.jl: expression functions now use word syntax if expressions
+	aren't defined in the buffer
+
+Wed Sep 21 15:12:26 1994  John Harper  (jsh@orcrist)
+
+	* c-mode.jl (c-forward-exp, c-backward-exp): minor fixups plus
+	cpp lines are now recognised
+
+Tue Sep 13 20:55:14 1994  John Harper  (jsh@orcrist)
+
+	* shell.jl: now sets the termcap environment variables correctly
+
+Sat Sep  3 15:23:02 1994  John Harper  (jsh@orcrist)
+
+	* gzip.jl (gzip-insert-file): this hooks into `insert-file-hook'
+	so inserted files can be decompressed
+
+	* buffers.jl (insert-file): now calls the hook `insert-file-hook'
+
+	* buffers.jl, gzip.jl: the read-file-hook now has to set the
+	modtime of the buffer
+
+Thu Sep  1 20:12:18 1994  John Harper  (jsh@orcrist)
+
+	* ask.jl (y-or-n-p): now resets its values in the proper buffer
+
+Wed Aug 31 20:26:36 1994  John Harper  (jsh@orcrist)
+
+	* buffer-menu.jl (bm-select-buffer): now burys the buffer-menu
+	buffer
+
+	* loadkeys.jl, windows.jl (window-closed-hook): since this was
+	renamed (from `close-gadget-hook') it's a good time to put it
+	in a better place
+
+Tue Aug 30 11:05:09 1994  John Harper  (jsh@orcrist)
+
+	* help.jl (describe-function): now prints a macro's arguments
+	properly
+
+Tue Aug 23 17:51:19 1994  John Harper  (jsh@orcrist)
+
+	* disassembler.jl (disassemble-fun): now knows about interactive
+	declarations
+
+	* compiler.jl, disassembler.jl (op-logxor-2): new opcode
+
+Thu Aug 18 16:29:30 1994  John Harper  (jsh@orcrist)
+
+	* shell.jl (shell-start-process): the default output stream
+	is now `(BUFFER . t)' not `BUFFER'
+
+	* edit.jl (set-variable, show-variable): both removed;
+	`set' can be called interactively and `describe-variable'
+	can be used to see the value of a variable
+
+Tue Jul 19 16:56:46 1994  John Harper  (jsh@orcrist)
+
+	* lisp.jl (eval-and-print): interactive version of eval
+
+Mon Jul 18 21:45:29 1994  John Harper  (jsh@orcrist)
+
+	* edit.jl (transpose-items): new function to swap items of text
+	defined by two functions
+	(transpose-words, transpose-chars): commands using the above; bound
+	to Meta-t and Ctrl-t respectively
+	* modes.jl (transpose-exps): new command, bound to Ctrl-Meta-t
+
+Sun Jul 17 13:04:59 1994  John Harper  (jsh@orcrist)
+
+	* edit.jl (just-one-space): renamed to `just-spaces', now
+	takes a COUNT arg; the number of spaces wanted.
+	(no-spaces): new command, bound to Meta-\
+
+Sat Jul 16 17:47:57 1994  John Harper  (jsh@orcrist)
+
+	* compiler.jl (compile-file): only selected top-level forms are
+	compiled -- those which may(?) benefit from it
+
+Wed Jul 13 18:19:35 1994  John Harper  (jsh@orcrist)
+
+	* compiler.jl: added op-eql
+
+Tue Jul 12 13:06:14 1994  John Harper  (jsh@orcrist)
+
+	* compiler.jl: many more opcodes added.
+	* disassembler.jl: synchronised with the above additions
+
+Mon Jul 11 19:50:48 1994  John Harper  (jsh@orcrist)
+
+	* c-mode.jl (c-backward-exp): better method of skipping comments;
+	doesn't loop for ever anymore :-)
+
+	* edit.jl: many more commands use the prefix argument now
+	(kill-line): can now kill backwards and uses the prefix-arg to
+	specify the number of lines to kill
+
+Wed Jul  6 19:45:35 1994  John Harper  (jsh@orcrist)
+
+	* buffers.jl (buffer-list): removed, now in ../src/windows.c
+
+Tue Jul  5 18:19:40 1994  John Harper  (jsh@orcrist)
+
+	* ask.jl (ask-yes-or-no): renamed as `yes-or-no-p'
+	(ask-y-or-n): renamed as `y-or-n-p'
+
+Sun Jul  3 15:18:44 1994  John Harper  (jsh@orcrist)
+
+	* debug.jl: now uses a (semi-) proper mode `debug-mode'
+
+	* help.jl (describe-function): now prints the name of the function
+	and, if it's not a subr, its argument specification
+
+	* compiler.jl: defconst forms handled (more) properly now
+
+	* All occurrences of `file-length', `file-name', `set-file-name',
+	`file-start', `goto-file-start', `file-end' and `goto-file-end'
+	have been replaced by their new names (see ../src/ChangeLog for
+	more details).
+
+Fri Jul  1 17:52:41 1994  John Harper  (jsh@orcrist)
+
+	* prompt.jl (prompt-file-exclude): under UNIX the `.' and `..'
+	directory nodes are ignored
+
+	* info.jl (info-find-node): uses the `inhibit-read-only' variable
+	instead of manually calling `set-buffer-read-only' all the
+	time.
+
+Thu Jun 30 21:59:20 1994  John Harper  (jsh@orcrist)
+
+	* buffer-menu.jl: new file
+
+Tue Jun 28 15:03:20 1994  John Harper  (jsh@orcrist)
+
+	* help.jl (describe-variable): takes the value of the variable from
+	the buffer which was active when this command is called.
+
+	* shell.jl (shell-whole-line): new option; shell-send-line sends the
+	*whole* line.
+
+Fri Jun 24 21:46:46 1994  John Harper  (jsh@orcrist)
+
+	* xc.jl: experimental indentation functions for C mode; these
+	give much better indentation but are a tad slower...
+
+Thu Jun 23 20:33:41 1994  John Harper  (jsh@orcrist)
+
+	* All packages which define esc keymaps have had them put into
+	their main keymaps (with each key Meta-qualified).
+
+Tue Jun 21 22:12:29 1994  John Harper  (jsh@orcrist)
+
+	* prompt.jl: attempts to only record undo information for user edits,
+	not completions
+
+Sat Jun 18 18:21:31 1994  John Harper  (jsh@orcrist)
+
+	* texinfo-mode.jl (texinfo-insert-@end): now tries to find
+	what is being ended.
+
+	* c-mode.jl (c-forward-exp, c-backward-exp): expression handling
+
+	* modes.jl (mode-indent-function, indent-area): hooks for
+	doing indentation
+	(mode-forward-exp, mode-backward-exp, forward-exp, backward-exp,
+	kill-exp, backward-kill-exp): expression handling
+
+Thu Jun 16 21:22:56 1994  John Harper  (jsh@orcrist)
+
+	* buffers.jl (mildly-special-buffer): controls whether kill-buffer
+	will actually nuke a `special' buffer
+
+Wed Jun 15 19:46:55 1994  John Harper  (jsh@orcrist)
+
+	* gdb.jl: interface to gdb; highlights the source of the current
+	frame plus some other nice stuff
+
+Mon Jun 13 01:09:09 1994  John Harper  (jsh@orcrist)
+
+	* shell.jl: simple interface to a shell subprocess
+
+	* modes.jl (init-mode): tries -*-X-*- before mode-name
+
+	* gzip.jl: provides editing of gzipped files
+
+Sun Jun 12 02:15:18 1994  John Harper  (jsh@orcrist)
+
+	* buffers.jl (write-file-hook): order of arguments changed (to
+	match read-file-hook
+	(backup-file): new function
+
+	* loadkeys.jl (user-keymap): keymap hung from `Ctrl-c', intended
+	for user bindings
+
+Fri Jun 10 13:58:20 1994  John Harper  (jsh@orcrist)
+
+	* latin-1.jl: This now looks like a minor mode. The function
+	`latin-1-mode' toggles the Latin-1 character in *all* buffers.
+
+	* lisp-mode.jl: functions to eval Lisp in a buffer now use sexps
+	not paragraphs
+	(lisp-forward-sexp, lisp-backward-sexp): now understands #<...>
+	style expressions
+	(lisp-indent-pos): now notices when there are no previous sexps to
+	indent against.
+
+	* keymap.jl (read-event): new function
+	(describe-key): interactive command to print the command that is
+	bound to an entered key sequence
+
+Thu Jun  9 22:13:27 1994  John Harper  (jsh@orcrist)
+
+	* info.jl: where regexps are made with concat the necessary strings
+	are regexp-quote'd
+
+	* keymap.jl (print-keymap): function to print the contents of
+	a list of keymaps
+
+Wed Jun  8 20:55:36 1994  John Harper  (jsh@orcrist)
+
+	* help.jl (describe-variable): now works with unbound variables
+
+Tue Jun  7 20:32:18 1994  John Harper  (jsh@orcrist)
+
+	* edit.jl (just-one-space): new command, bound to `ESC SPC'
+
+Mon Jun  6 19:55:58 1994  John Harper  (jsh@orcrist)
+
+	* buffers.jl (write-file): new backup option `else-backup-by-copying'
+	when it's unsafe to rename the file it's copied instead
+
+	* add-log.jl (log-in-same-day-p): changed `substr' to `substring'
+
+	* init.jl: uses file-concat to make the .jaderc file's path
+
+	* modes.jl (mode-alist): fixed some case confusion
+
+Sun Jun  5 17:53:59 1994  John Harper  (jsh@orcrist)
+
+	* lisp-mode.jl (lisp-indent-pos): rewritten, now this works properly!
+
+Sat Jun  4 19:29:19 1994  John Harper  (jsh@orcrist)
+
+	* edit.jl (yank-to-mouse): new function, bound to the middle mouse
+	button
+
+	* buffers.jl (bury-buffer): new function
+
+Fri Jun  3 20:41:00 1994  John Harper  (jsh@orcrist)
+
+	* edit.jl (kill-string, kill-area, copy-area-as-kill): new functions
+	plus some other functions have been rewritten/created to use them
+	(yank, yank-rectangle): new functions
+
+	* info.jl (info-read-dir): deletes all lines before the first `file:'
+	line
+
+Thu Jun  2 12:29:41 1994  John Harper  (jsh@orcrist)
+
+	* Version 3.1 released
+
+Wed Jun  1 21:04:22 1994  John Harper  (jsh@orcrist)
+
+	* info.jl (info-read-dir): discards the preamble of all supplementary
+	dir files
+
+Wed May 25 20:52:31 1994  John Harper  (jsh@orcrist)
+
+	* lisp-mode.jl (lisp-forward-sexp, lisp-backward-sexp): new functions
+
+Tue May 24 21:25:34 1994  John Harper  (jsh@orcrist)
+
+	* disassembler.jl: now uses a lookup table to get the names of
+	opcodes.
+
+	* compiler.jl (compile-file): Compiles top-level forms now (except
+	for defX and require). Also writes a header to the compiled file.
+
+	* compiler.jl: Changed the names of the conditional jump instructions
+
+Mon May 23 19:16:16 1994  John Harper  (jsh@orcrist)
+
+	* texinfo-mode.jl: TAB inserts spaces now
+
+	* Changed lots of stuff to cope with coordinate origin at (0,0)
+
+	* info.jl (info-locate-file): now tries the lowercase version of
+	the filename
+
+Sun May 22 23:20:19 1994  John Harper  (jsh@orcrist)
+
+	* info.jl (info-read-dir): function to read all `dir' files in the
+	info-directory-list
+
+Sat May 21 19:57:51 1994  John Harper  (jsh@orcrist)
+
+	* windows.jl (in-new-window, goto-new-window): new
+
+	* modes.jl: support for inserting comments
+
+	* help.jl (describe-mode): works now
+
+	* asm-mode.jl: new file
+
+Thu May 19 21:40:29 1994  John Harper  (jsh@orcrist)
+
+	* fill-mode.jl (fill-mode-spc): deletes the trailing space it leaves.
+	(set-fill-column): now uses the glyph position of the cursor.
+
+Sun May 15 23:14:12 1994  John Harper  (jsh@orcrist)
+
+	* compiler.jl (compile-file, compile-directory): now prompt for
+	their argument if necessary. Also new instruction `return'.
+	
+	* replace.jl: new file, user commands for replacing, `replace-all'
+	replaces all occurrences of a regexp after the cursor, and
+	`query-replace' an Emacs style interactive replace. Both these
+	commands work on regexps not strings.
+
+Sat May 14 18:47:31 1994  John Harper  (jsh@orcrist)
+
+	* isearch.jl: new file, provides an Emacs'ish incremental search
+
+Thu May 12 20:42:57 1994  John Harper  (jsh@orcrist)
+
+	* compiler.jl: bytes no longer have their high-bit set -- this
+	means bigger arguments are possible. Generates forms which
+	call `lisp-code2'.
+
+Wed May 11 00:02:10 1994  John Harper  (jsh@orcrist)
+
+	* find-autoloads.jl: reorganised, also now copies any forms
+	after the `;;;###autoload' marker.
+
+Tue May 10 23:28:41 1994  John Harper  (jsh@orcrist)
+
+	* init.jl: `loadkeys.jl' is now loaded before `autoload.jl'
+
+Sun May  8 19:39:00 1994  John Harper  (jsh@orcrist)
+
+	* info.jl: double-clicking the left mouse button selects menu
+	items and xrefs.
+
+Sat May  7 13:55:37 1994  John Harper  (jsh@orcrist)
+
+	* latin-1.jl: new file, makes the default glyph-table use Latin1
+	character set
+
+Fri May  6 22:25:03 1994  John Harper  (jsh@orcrist)
+
+	* buffers.jl (save-file-as): tried to delete the auto-save'd file
+	itself, failed if it didn't exist
+
+Tue May  3 20:48:04 1994  John Harper  (jsh@orcrist)
+
+	* Changed occurrences of `goto' to `goto-char' or `goto-glyph'
+
+Mon May	 2 10:37:04 1994  John Harper  (jsh@orcrist)
+
+	* debug.jl: changed keybindings
+
+	* lisp.jl (format-string): renamed as format-to-string
+	(prin1-to-string): new function
+
+Sun May	 1 09:45:16 1994  John Harper  (jsh@orcrist)
+
+	* prompt.jl (prompt-complete-filename): Discards files which match
+	the regexp `prompt-file-exclude'
+
+	* info.jl (info-parse-ref): didn't work if the *Note was the last
+	thing on the line
+
+	* find-autoloads.jl: new file
+
+	* help.jl: `documentation' and `document-var' functions moved
+	here from lisp.jl
+
+	* lisp.jl (require): optional second arg, the file to load the
+	feature from
+
+Sat Apr 30 21:40:11 1994  John Harper  (jsh@orcrist)
+
+	* loadsyms.jl: renamed as autoload.jl, more sensible
+
+	* compiler.jl (compile-directory): new arg, EXCLUDE-LIST
+	(compile-lisp-lib): takes advantage of the above new arg to
+	compile-directory
+
+Fri Apr 29 23:20:58 1994  John Harper  (jsh@orcrist)
+
+	* info.jl (info-parse-menu-line): *another* bug fixed
+
+	* server.jl: code to handle client/server stuff
+
+Fri Apr 29 11:32:56 1994  J.S.Harper  (jsh@raven.ukc.ac.uk)
+
+	* prompt.jl: You can now double click the lmb to select a completion
+
+Thu Apr 28 21:15:30 1994  John Harper  (jsh@orcrist)
+
+	* info.jl (info-parse-menu-line): didn't allow punctuation in
+	file names
+
+Thu Apr 28 10:59:05 1994  J.S.Harper  (jsh@raven.ukc.ac.uk)
+
+	* texinfo-mode.jl (texinfo-mode): now calls `text-mode-hook'
+
+	* init.jl: now loads files properly
+
+Thu Apr 28 01:20:58 1994  John Harper  (jsh@orcrist)
+
+	* text-mode.jl (text-mode-indent-tab): this works properly now
+
+Wed Apr 27 22:34:14 1994  John Harper  (jsh@orcrist)
+
+	* edit.jl (overwrite-mode): moved from overwrite-mode.jl
+
+Tue Apr 26 01:04:18 1994  John Harper  (jsh@orcrist)
+
+	* buffers.jl (auto-save-mode): minor-mode interface to toggle
+	auto-saving buffers.
+
+	* fill-mode.jl: new minor-mode
+
+Mon Apr 25 20:57:51 1994  John Harper  (jsh@orcrist)
+
+	* overwrite-mode.jl: new minor-mode (the first!)
+
+	* modes.jl (add-minor-mode, remove-minor-mode): support for minor-
+	modes.
+
+	* buffers.jl (write-file): remembers the modes of the file and resets
+	them after the file has been saved.
+
+Sun Apr 24 11:33:30 1994  John Harper  (jsh@orcrist)
+
+	* edit.jl (capitalize-word): new function, bound to `ESC c'
+
+	* *-mode.jl: new way of working to allow the user to just call the
+	mode's function, possibly when a different mode is already in effect.
+	Every mode must check for a non-nil `major-mode-kill' when it starts,
+	calling this function if necessary.
+
+	* text-mode.jl: new file
+
+	* help.jl (describe-variable): says whether var is buffer-local,
+	window-local or global, and whether it's a constant.
+
+	* add-log.jl: fixed problem of null strings not being treated as
+	directories. Also added some defvar's to override the stuff that
+	gets put into the header.
+
+	* prompt.jl: When prompting for a file now copes with `~' characters
+
+	* disassembler.jl (disassemble): sets `disk-tab' as well as `screen-tab'
+
+	* info.jl (info-read-tags): didn't close the file it opened, this
+	is now done in an unwind-protect for safety.
+
+Sat Apr 23 20:06:15 1994  John Harper  (jsh@orcrist)
+
+	* lisp.jl (defvar, defconst): these are now special-forms
+
+	* compiler.jl (comp-compile-file-form): now does macro-expansion
+	of top-level forms.
+
+	* info.jl (info-has-tags-p): new var, set when a tag-table is loaded.
+	If a file doesn't have a tag-table the whole file is loaded. This is
+	mainly so the `dir' file can be edited by hand.
+	(info-directory-list): replaces `info-directory', a list of directorys
+	to search.
+	(info-parse-menu): didn't like punctuation in comments
+	(info-goto-link, info-next-link, info-prev-link): for moving around
+	menus and refs, bound to RET, TAB and SHIFT-TAB respectively.
+	(info-parse-ref): new function to extract the guts of an xref
+	(info-follow-ref): no menu yet, just finds the next ref
+
+Wed Apr 20 16:02:51 1994  John Harper  (jsh@orcrist)
+
+	* Version 3.0 released
+
+Mon Apr 18 13:27:55 1994  John Harper  (jsh@deep)
+
+	* c-mode.jl (c-indent-pos-empty): handles opening braces on the same
+	line as the keyword now
+
+Sun Apr 17 19:40:05 1994  John Harper  (jsh@orcrist)
+
+	* buffers.jl (write-buffer): now copes better with backup files,
+	if `backup-by-copying' is non-nil the file is copied not renamed.
+	Else, the file is only renamed if it won't damage anything.
+
+Sat Apr 16 14:04:45 1994  John Harper  (jsh@orcrist)
+
+	* info.jl (info-find-node): Protection against info-file being
+	modified while we're viewing it, if this happens it reloads the
+	tags table.
+
+	* info.jl (info): Doesn't always show `(dir)' if no NODE-NAME is
+	given, uses the currently loaded node if one exists.
+
+	* Added license notices at the beginning of all Lisp files
+
+	* All instances of the string `jed' have been changed to `jade'. I
+	decided to change its name since there is at least one other editor
+	called jed.
+
+Fri Apr 15 16:14:48 1994  John Harper  (jsh@deep)
+
+	* init.jl: Now sets the status line while initialising. Also
+	loads `loadmenus' if necessary.
+
+	* loadmenus.jl: New file, sets up a small menu strip, but only
+	on Amigas
+
+Tue Apr 12 14:54:57 1994  John Harper  (jsh@orcrist)
+
+	* lisp.jl (add-command-arg, clear-command-args, command-prompt): new
+	functions -- provide a method of giving arguments to commands invoked
+	with `ESC x'
+
+	* edit.jl (mark-paragraph): now works properly on a paragraph boundary
+
+	* prompt.jl: Now keeps a list of the buffers it's used so they
+	can be recycled.
+
+	* edit.jl: Rewrote word handling, now it works :)
+
+Mon Apr 11 16:12:05 1994  John Harper  (jsh@orcrist)
+
+	* All occurrences of `make-*-variable' changed to `set-*-variable'
+
+	* c-mode.jl, texinfo-mode.jl: Doesn't bother to redefine
+	`paragraph-start' anymore.
+
+	* edit.jl (prev-paragraph): Now goes to the start of the current
+	paragraph, or start of previous one if already at start.
+	(mark-paragraph): Marks line which ends paragraph as well.
+	(paragraph-start): Deleted
+
+	* lisp-mode.jl: Got rid of `lisp-interactive-mode' entry point, the
+	only difference it had with `lisp-mode' was the name!
+
+Fri Apr	 8 20:22:10 1994  John Harper  (jsh@orcrist)
+
+	* loadsyms.jl: Removed `void-symbol-function'
+
+Tue Apr 05 19:34:24 1994  John Harper  (jsh@deep)
+
+	* buffers.jl: New option `amiga-use-file-req-p' -- makes find-file
+	and friends use the ASL file requester
+
+Sun Apr	 3 17:12:21 1994  John Harper  (jsh@orcrist)
+
+	* add-log.jl: Now asks for the directory whose ChangeLog should
+	be updated.
+
+Thu Mar 24 09:51:07 1994  John Harper  (jsh@orcrist)
+
+	* compiler.jl (comp-compile-body): Fixed for null lists (it
+	wasn't incrementing the stack counter).
+	(comp-compile-file-form): Now copes with doc-strings in defvar and
+	defconst (ie, they're written to disk if necessary).
+
+Sat Mar 19 03:45:03 1994  John Harper  (jsh@orcrist)
+
+	* info.jl: Braindead support for viewing info files
+
+Sat Mar 12 22:25:36 1994  John Harper  (jsh@orcrist)
+
+	* compile.jl: Renamed `grep' to `grep-buffer'. New function
+	`grep' which executes the program grep.
+	* compile.jl: Error descriptions are now stored in the error-list
+	* compile.jl: Some new options to `start-compile-command'
+
+Mon Mar	 7 21:27:25 1994  John Harper  (jsh@orcrist)
+
+	* compiler.jl: New options `comp-eval-constants-p' and
+	`comp-write-docs-p'. New function `compile-lisp-lib'. General
+	support for writing doc strings to the file.
+
+Sat Mar	 5 01:21:35 1994  John Harper  (jsh@orcrist)
+
+	* edit.jl: Various upcase/downcase functions to use the stuff
+	noted below.
+
+Fri Mar	 4 18:55:38 1994  John Harper  (jsh@orcrist)
+
+	* loadkeys.jl: Lots of changes.
+
+	* compile.jl: Variables to control extraction of error details.
+	Also takes note of the directory that the compilation was run in.
+
+	* c-mode.jl: Now handles if (etc) constructs which have a space
+	between the keyword and the parenthesised expression.
+
+Sun Feb 27 20:48:56 1994  John Harper  (jsh@orcrist)
+
+	* edit.jl: paragraph handling functions, `next-paragraph',
+	`prev-paragraph', `paragraph-start', `mark-paragraph' and variable
+	`paragraph-regexp'.
+
+Sat Feb 19 00:45:53 1994  John Harper  (jsh@orcrist)
+
+	* debug.jl: Support for debugging errors and getting
+	backtraces.
+
+Sat Feb 12 01:28:01 1994  John Harper  (jsh@orcrist)
+
+	* c-mode.jl: Now handles `do' keyword properly.
+
+Thu Feb 10 03:15:12 1994  John Harper  (jsh@orcrist)
+
+	* c-mode.jl: Now copes with empty lines and preprocessor
+	directives. Still fairly braindead though.
+
+Sun Feb	 6 01:25:15 1994  John Harper  (jsh@orcrist)
+
+	* help.jl: No longer uses recursive-edit, just some deft
+	keymap manipulation.
+
+Sat Feb	 5 21:36:22 1994  John Harper  (jsh@orcrist)
+
+	* buffers.jl, windows.jl: Made each window have its own
+	`buffer-list'. This means some new functions, `add-buffer' and
+	`remove-buffer'.
+	* windows.jl: `window-list' variable -- list of all open windows.
