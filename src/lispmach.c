@@ -804,12 +804,6 @@ again:
 		TOP = Qnil;
 	    goto fetch;
 
-	case OP_NUM_EQ:
-	    CALL_2(Fnum_eq);
-
-	case OP_NUM_NOTEQ:
-	    CALL_2(Fnum_noteq);
-
 	case OP_GT:
 	    tmp = RET_POP;
 	    if(rep_value_cmp(TOP, tmp) > 0)
@@ -848,8 +842,8 @@ again:
 	case OP_DEC:
 	    CALL_1(Fsub1);
 
-	case OP_LSH:
-	    CALL_2(Flsh);
+	case OP_ASH:
+	    CALL_2(Fash);
 
 	case OP_ZEROP:
 	    CALL_1(Fzerop);

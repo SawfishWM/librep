@@ -120,15 +120,15 @@
 #define OP_LAND 0x5f			/* push (logand pop[1] pop[2]) */
 #define OP_EQUAL 0x60			/* push (equal pop[1] pop[2]) */
 #define OP_EQ 0x61			/* push (eq pop[1] pop[2]) */
-#define OP_NUM_EQ 0x62			/* push (= pop[1] pop[2]) */
-#define OP_NUM_NOTEQ 0x63		/* push (/= pop[1] pop[2]) */
+#define OP_UNUSED1 0x62
+#define OP_UNUSED2 0x63
 #define OP_GT 0x64			/* push (> pop[1] pop[2]) */
 #define OP_GE 0x65			/* push (>= pop[1] pop[2]) */
 #define OP_LT 0x66			/* push (< pop[1] pop[2]) */
 #define OP_LE 0x67			/* push (<= pop[1] pop[2]) */
 #define OP_INC 0x68			/* push (1+ pop[1]) */
 #define OP_DEC 0x69			/* push (1- pop[1]) */
-#define OP_LSH 0x6a			/* push (lsh pop[1] pop[2]) */
+#define OP_ASH 0x6a			/* push (ash pop[1] pop[2]) */
 #define OP_ZEROP 0x6b			/* push (zerop pop[1]) */
 #define OP_NULL 0x6c			/* push (null pop[1]) */
 #define OP_ATOM 0x6d			/* push (atom pop[1]) */
