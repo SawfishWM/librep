@@ -1,5 +1,10 @@
 2000-02-06  John Harper  <john@dcs.warwick.ac.uk>
 
+	* lispmach.c, bytecodes.h (rep_FORBID, rep_PERMIT): new
+	instructions
+
+	* lisp.c: call debugger in its own dynamic root
+
 	* rep.c: create a dynamic root
 
 	* continuations.c: introduced the idea of continuation
