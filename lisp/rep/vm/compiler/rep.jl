@@ -433,12 +433,6 @@
       (comp-write-op (bytecode unbind))))
   (put 'letrec 'rep-compile-fun compile-letrec)
 
-  (defun compile-save-environment (form)
-    (comp-write-op (bytecode bindenv))
-    (comp-compile-body (cdr form))
-    (comp-write-op (bytecode unbind)))
-  (put 'save-environment 'rep-compile-fun compile-save-environment)
-
   (defun compile-cond (form &optional return-follows)
     (let
 	((end-label (comp-make-label))
