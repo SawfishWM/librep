@@ -55,6 +55,11 @@ properly)
 @item Fixed bug when compiling structure definitions in non-top-level
 environments
 
+@item Fixed bug of being unable to @code{load} empty files
+
+@item When recursively macro-expanding, dereference identifiers in the
+correct module
+
 @end itemize
 
 

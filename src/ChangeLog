@@ -1,3 +1,7 @@
+2000-07-12  John Harper  <john@dcs.warwick.ac.uk>
+
+	* version 0.12.3
+
 2000-07-11  John Harper  <john@dcs.warwick.ac.uk>
 
 	* macros.c (Fmacroexpand_1): new function, does a single macro
