@@ -243,7 +243,7 @@ intern_static(VALUE *symp, VALUE name)
 	abort();
 }
 
-static INLINE u_long
+static inline u_long
 hash(u_char *str)
 {
     register u_long value = 0;

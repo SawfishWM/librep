@@ -23,13 +23,7 @@
  * regular-expression syntax might require a total rethink.
  */
 
-/*
- * CHANGED, 14-Jan-93, by J.Harper,
- *
- * Changed regexec() to regexec2() and added eflags arg for REG_NOTBOL.
- *
- * New eflag: REG_NOCASE -- ignore case of strings
- */
+/* Lots of changes for Jade. See the file README.regexp for more details */
 
 #include <stdio.h>
 #ifdef AMIGA
@@ -87,9 +81,10 @@ static void	reginsert(char, char *);
 static void	regtail(char *, char *);
 static void	regoptail(char *, char *);
 extern void	regerror(char *);
-#ifdef STRCSPN
+
+#ifndef HAVE_STRCSPN
 int		strcspn(char *, char *);
-#endif /* STRCSPN */
+#endif
 
 /*
  * - regcomp - compile a regular expression into internal code
@@ -1161,13 +1156,12 @@ regprop(op)
  * it; at least one public-domain implementation of those (highly useful)
  * string routines has been published on Usenet.
  */
-#ifdef STRCSPN
+#ifndef HAVE_STRCSPN
 /*
  * strcspn - find length of initial segment of s1 consisting entirely of
  * characters not from s2
  */
-
-static int
+int
 strcspn(s1, s2)
     char	   *s1;
     char	   *s2;

@@ -969,7 +969,7 @@ INITIAL-VALUE, or to space if INITIAL-VALUE is not given.
     return(res);
 }
 
-static INLINE int
+static inline int
 extend_concat(u_char **buf, int *bufLen, int i, int addLen)
 {
     u_char *newbuf;

@@ -48,7 +48,7 @@ DEFSTRING(unknown_op, "Unknown lisp opcode");
 		set WINDOW as current.
 	(PC . STACK-DEPTH)
 		not unbound here; install exception handler at PC */
-static INLINE VALUE
+static inline VALUE
 unbind_one_level(VALUE bind_stack)
 {
     if(CONSP(bind_stack))

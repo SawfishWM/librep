@@ -23,14 +23,41 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <limits.h>
 #include <sys/stat.h>
 #include <time.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <dirent.h>
 #include <pwd.h>
 #include <netdb.h>
 #include <signal.h>
+
+#ifdef HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
+
+#if HAVE_DIRENT_H
+# include <dirent.h>
+# define NAMLEN(dirent) strlen((dirent)->d_name)
+#else
+# define dirent direct
+# define NAMLEN(dirent) (dirent)->d_namlen
+# if HAVE_SYS_NDIR_H
+#  include <sys/ndir.h>
+# endif
+# if HAVE_SYS_DIR_H
+#  include <sys/dir.h>
+# endif
+# if HAVE_NDIR_H
+#  include <ndir.h>
+# endif
+#endif
+
+#ifdef HAVE_SYS_UTSNAME_H
+# include <sys/utsname.h>
+#endif
 
 #ifdef HAVE_STRERROR
 # include <errno.h>
@@ -41,6 +68,10 @@
 
 #ifdef ENVIRON_UNDECLARED
   extern char **environ;
+#endif
+
+#ifndef PATH_MAX
+# define PATH_MAX 256
 #endif
 
 _PR bool file_exists(u_char *);
@@ -499,8 +530,9 @@ in DIRECTORY have a `/' character appended to their name.
 	struct dirent *de;
 	while((de = readdir(dir)))
 	{
-	    VALUE name;
-	    if(!((name = string_dup(de->d_name)) && (list = cmd_cons(name, list))))
+	    VALUE name = string_dupn(de->d_name, NAMLEN(de));
+	    list = cmd_cons(name, list);
+	    if(name == LISP_NULL || list == LISP_NULL)
 	    {
 		mem_error();
 		closedir(dir);
@@ -508,9 +540,9 @@ in DIRECTORY have a `/' character appended to their name.
 	    }
 	}
 	closedir(dir);
-	return(list);
+	return list;
     }
-    return(cmd_signal(sym_file_error, list_2(lookup_errno(), dirname)));
+    return cmd_signal(sym_file_error, list_2(lookup_errno(), dirname));
 }
 
 _PR VALUE cmd_user_login_name(void);
@@ -624,13 +656,21 @@ Returns the name of the host which the editor is running on.
 On the Amiga this is taken from the environment variable `HOSTNAME'.
 ::end:: */
 {
-    u_char buf[128];
+    u_char buf[256];
     struct hostent *h;
     static VALUE system_name;
     if(system_name)
 	return(system_name);
-    if(gethostname(buf, 128))
+#ifdef HAVE_GETHOSTNAME
+    if(gethostname(buf, 256))
 	return LISP_NULL;
+#else
+    {
+	struct utsname uts;
+	uname(&uts);
+	strncpy(buf, uts.nodename, 256);
+    }
+#endif
     h = gethostbyname(buf);
     if(h)
     {
@@ -763,11 +803,15 @@ sys_expand_file_name(VALUE namev)
 VALUE
 sys_fully_qualify_file_name(VALUE name)
 {
-    u_char buf[512];
+    u_char buf[PATH_MAX];
     if(*VSTR(name) == '/')
 	/* starting from root. */
 	return(name);
-    if(getcwd(buf, 512) != NULL)
+#ifdef HAVE_GETCWD
+    if(getcwd(buf, PATH_MAX) != NULL)
+#else
+    if(getwd(buf) != NULL)
+#endif
     {
 	if(add_file_part(buf, VSTR(name), 512))
 	    return(string_dup(buf));
@@ -902,7 +946,7 @@ end:
 /* Standard signal handlers */
 
 /* Invoked by any of the handlable error reporting signals */
-static void
+static RETSIGTYPE
 fatal_signal_handler(int sig)
 {
     static volatile bool in_error;
@@ -937,7 +981,7 @@ fatal_signal_handler(int sig)
 }
 
 /* Invoked by SIGINT (i.e. ^C) */
-static void
+static RETSIGTYPE
 interrupt_signal_handler(int sig)
 {
     throw_value = int_cell;
@@ -945,7 +989,7 @@ interrupt_signal_handler(int sig)
 }
 
 /* Invoked by trappable termination signals */
-static void
+static RETSIGTYPE
 termination_signal_handler(int sig)
 {
     throw_value = term_cell;
