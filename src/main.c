@@ -437,8 +437,10 @@ rep_handle_input_exception(repv *result_p)
 	    (*rep_on_termination_fun)();
 	return rep_TRUE;
     }
+#if 0
     else if(rep_recurse_depth == 0)
 	rep_handle_error(Qno_catcher, rep_LIST_1(car));
+#endif
     else
     {
     unhandled:
