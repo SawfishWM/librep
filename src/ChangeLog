@@ -1,3 +1,15 @@
+2000-06-12  John Harper  <john@dcs.warwick.ac.uk>
+
+	* main.c (rep_handle_input_exception): don't catch uncaught
+	throws at top-level, it prevents scripts throwing out of
+	top-level recursive edits (maybe make this optional..?)
+
+	* tables.c: don't store hash values in signed integers
+
+2000-06-10  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispmach.c (vm): miscellaneous minor tweaks and cleanups
+
 2000-06-09  John Harper  <john@dcs.warwick.ac.uk>
 
 	* repint.h: don't include <build.h>
