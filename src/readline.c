@@ -32,6 +32,7 @@
 DEFSYM(rl_completion_generator, "rl-completion-generator");
 DEFSYM(boundp, "boundp");
 
+static repv completion_fun;
 static repv completions;
 
 #ifdef HAVE_LIBREADLINE
@@ -40,7 +41,10 @@ completion_generator (char *word, int state)
 {
     if (state == 0)
     {
-	repv fun = Fsymbol_value (Qrl_completion_generator, Qt);
+	repv fun = completion_fun;
+	if (fun == Qnil)
+	    /* backwards compatibility, ugh */
+	    fun = Fsymbol_value (Qrl_completion_generator, Qt);
 	if (Ffunctionp (fun) != Qnil)
 	{
 	    completions = (rep_call_with_barrier
@@ -159,12 +163,22 @@ match_paren(int x, int k)
 
 #endif
 
-DEFUN("readline", Freadline, Sreadline, (repv prompt_), rep_Subr1)
+DEFUN("readline", Freadline, Sreadline,
+      (repv prompt_, repv completer), rep_Subr2)
 {
     char *prompt = rep_STRINGP(prompt_) ? ((char *) rep_STR(prompt_)) : "> ";
 #ifdef HAVE_LIBREADLINE
-    repv ret = Qnil;
-    char *input = readline (prompt);
+    char *input;
+    repv ret = Qnil, saved;
+    rep_GC_root gc_saved;
+
+    saved = completion_fun;
+    completion_fun = completer;
+    rep_PUSHGC (gc_saved, saved);
+    input = readline (prompt);
+    rep_POPGC;
+    completion_fun = saved;
+
     if (input)
     {
 	int len = strlen (input);
@@ -181,8 +195,8 @@ DEFUN("readline", Freadline, Sreadline, (repv prompt_), rep_Subr1)
 #else
     if (isatty (0))
     {
-	printf (prompt);
-	fflush (stdout);
+	fputs (prompt, stderr);
+	fflush (stderr);
     }
     return Fread_line (Fstdin_file ());
 #endif
@@ -199,7 +213,10 @@ rep_dl_init(void)
     rep_INTERN(rl_completion_generator);
     rep_INTERN(boundp);
     completions = Qnil;
+    completion_fun = Qnil;
     rep_mark_static (&completions);
+    rep_mark_static (&completion_fun);
+
 #ifdef HAVE_LIBREADLINE
     rl_completion_entry_function = (void *) completion_generator;
     rl_basic_quote_characters = "\"";
