@@ -1,3 +1,13 @@
+2003-02-25  John Harper  <jsh@unfactored.org>
+
+	* version 0.16.2
+
+2002-09-29  John Harper  <jsh@unfactored.org>
+
+	* rep/lang/interpreter.jl (define-special-variable): define
+	manually, not using backquote, which seems to sometimes not be
+	loaded when this is used
+
 2002-09-21  John Harper  <jsh@unfactored.org>
 
 	* rep/vm/compiler/modules.jl (compiler-boundp): check if arg is

@@ -1,3 +1,7 @@
+2003-02-25  John Harper  <jsh@unfactored.org>
+
+	* version 0.16.2
+
 2002-10-07  John Harper  <jsh@unfactored.org>
 
 	* numbers.c (Fplus, Fminus, Fdivide, Fmultiply, Fmin, Fmax,
