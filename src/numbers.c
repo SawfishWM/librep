@@ -1416,12 +1416,11 @@ DEFUN("eql", Feql, Seql, (repv arg1, repv arg2), rep_Subr2) /*
 eql ARG1 ARG2
 
 Similar to `eq' except that numbers with the same value will always be
-considered `eql' (this may or may not be the case with `eq'). Note
-however that exact and inexact versions of the same number are not
-considered the same value.
+considered `eql' (this may or may not be the case with `eq').
 
-As a rule of thumb, if two values print the same, they will be
-considered `eql'.
+Note however that exact and inexact versions of the same number are not
+considered the same value. As a rule of thumb, if two numbers print the
+same, they will be considered `eql'.
 ::end:: */
 {
     if(rep_NUMERICP (arg1) && rep_NUMERICP (arg2))
