@@ -615,37 +615,34 @@ DEFUN("copy-stream", Fcopy_stream, Scopy_stream, (repv source, repv dest), rep_S
 ::doc:Scopy-stream::
 copy-stream SOURCE-STREAM DEST-STREAM
 
-Copy all characters from SOURCE-STREAM to DEST-STREAM until an EOF is read.
+Copy all characters from SOURCE-STREAM to DEST-STREAM until an EOF is
+read. Returns the number of characters copied.
 ::end:: */
 {
-#define COPY_BUFSIZ 512
     int len = 0, c;
-    u_char buff[COPY_BUFSIZ];
-    u_char *ptr = buff;
+    u_char buf[BUFSIZ+1];
+    int i = 0;
     while((c = rep_stream_getc(source)) != EOF)
     {
-	if(ptr - buff >= COPY_BUFSIZ - 1)
+	if(i == BUFSIZ)
 	{
-	    *ptr = 0;
-	    if(rep_stream_puts(dest, buff, ptr - buff, rep_FALSE) == EOF)
+	    buf[i] = 0;
+	    if(rep_stream_puts(dest, buf, BUFSIZ, rep_FALSE) == EOF)
 		break;
-	    ptr = buff;
+	    i = 0;
+	    rep_TEST_INT;
+	    if(rep_INTERRUPTP)
+		return rep_NULL;
 	}
-	else
-	    *ptr++ = c;
+	buf[i++] = c;
 	len++;
-	rep_TEST_INT;
-	if(rep_INTERRUPTP)
-	    return rep_NULL;
     }
-    if(ptr != buff)
+    if(i != 0)
     {
-	*ptr = 0;
-	rep_stream_puts(dest, buff, ptr - buff, rep_FALSE);
+	buf[i] = 0;
+	rep_stream_puts(dest, buf, i, rep_FALSE);
     }
-    if(len)
-	return(rep_MAKE_INT(len));
-    return(Qnil);
+    return rep_MAKE_INT(len);
 }
 
 DEFUN("read", Fread, Sread, (repv stream), rep_Subr1) /*
