@@ -1264,6 +1264,14 @@ rep_load_autoload(repv funarg)
     return fun;
 }
 
+DEFUN ("%load-autoload", F_load_autoload,
+       S_load_autoload, (repv def), rep_Subr1)
+{
+    rep_DECLARE1 (def, rep_FUNARGP);
+    rep_USE_FUNARG(def);
+    return rep_load_autoload (def);
+}
+
 DEFSTRING(max_depth, "max-lisp-depth exceeded, possible infinite recursion?");
 
 /* Applies ARGLIST to FUN. If EVAL-ARGS is true, all arguments will be
@@ -2276,6 +2284,7 @@ rep_lisp_init(void)
     rep_INTERN(amp_optional); rep_INTERN(amp_rest); rep_INTERN(amp_aux);
     rep_mark_static((repv *)&rep_throw_value);
     rep_ADD_INTERNAL_SUBR (S_scheme_bool_printer);
+    rep_ADD_SUBR(S_load_autoload);
     rep_ADD_SUBR(Seval);
     rep_ADD_SUBR(Sfuncall);
     rep_ADD_SUBR(Sprogn);
