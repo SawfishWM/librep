@@ -1,5 +1,10 @@
 Thu Apr 30 10:43:36 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* help.jl (lisp-documentation-file): name of the file
+	containing the Lisp library's documentation strings
+	(add-documentation, get-documentation): use the
+	lisp-documentation-file for Lisp documentation
+
 	* dired.jl (dired-do-copy, dired-do-rename): new commands
 
 	* summary.jl (summary-update, summary-update-item): mark the
