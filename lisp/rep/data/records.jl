@@ -42,13 +42,17 @@
 ;; General syntax of define-record-type is:
 
 ;; (define-record-type <type-name>
-;;   (<constructor-name> <field-tags>*)
+;;   (<constructor-name> <field-param>*)
 ;;   [<predicate-name>]
 ;;   (<field-tag> [<accessor-name> [<modifier-name>]])*)
+
+;; <field-param>* is a standard lambda list, the parameters should
+;; match the <field-tag>'s to be initialized
 
 (define-structure rep.data.records
 
     (export make-record-type
+	    make-record-datum
 	    record-constructor
 	    record-accessor
 	    record-modifier
@@ -79,6 +83,8 @@
   (define (make-record rt)
     (make-datum (make-vector (length (record-type-fields rt))) rt))
 
+  (define make-record-datum make-datum)
+
   (define (field-index rt field)
     (do ((i 0 (1+ i))
 	 (fields (record-type-fields rt) (cdr fields)))
@@ -106,6 +112,20 @@
 		  (field-set rt record (car ids) (car rest))
 		  (loop (cdr rest) (cdr ids)))
 	      record))))))
+
+  (define (make-record-constructor rt args field-names)
+    (define (has-field-p field)
+      (let loop ((rest args))
+	(cond ((null rest) nil)
+	      ((eq (or (caar rest) (car rest) rest) field) t)
+	      (t (loop (cdr rest))))))
+    (let loop ((rest field-names)
+	       (out '()))
+      (if (null rest)
+	  `(lambda ,args
+	     (make-record-datum (vector ,@(nreverse out)) ,rt))
+	(loop (cdr rest)
+	      (cons (and (has-field-p (car rest)) (car rest)) out)))))
 
   (define (record-accessor rt field)
     (let ((index (field-index rt field)))
@@ -153,7 +173,7 @@
       `(progn
 	 (define ,rt (make-record-type ',rt ',names))
 	 (define ,(car constructor)
-	   (record-constructor ,rt ',(cdr constructor)))
+	   ,(make-record-constructor rt (cdr constructor) names))
 	 ,@predicate-defs
 	 ,@accessor-defs
 	 ,@modifier-defs))))
