@@ -1936,25 +1936,51 @@ Returns t if STRING1 is `less' than STRING2, ignoring case.
 
 
 #define APPLY_COMPARISON(op)				\
-    if(rep_CONSP(args) && rep_CONSP(rep_CDR(args)))		\
+    if(rep_CONSP(args) && rep_CONSP(rep_CDR(args)))	\
     {							\
 	repv pred = rep_CAR(args);			\
 	int i = 2;					\
 	args = rep_CDR(args);				\
 	while(rep_CONSP(args))				\
 	{						\
-	    if(!(rep_value_cmp(pred, rep_CAR(args)) op 0))	\
+	    if(!(rep_value_cmp(pred, rep_CAR(args)) op 0)) \
 		return Qnil;				\
-	    pred = rep_CAR(args);				\
-	    args = rep_CDR(args);				\
+	    pred = rep_CAR(args);			\
+	    args = rep_CDR(args);			\
 	    i++;					\
-	    rep_TEST_INT;					\
-	    if(rep_INTERRUPTP)					\
+	    rep_TEST_INT;				\
+	    if(rep_INTERRUPTP)				\
 		return(rep_NULL);			\
 	}						\
 	return Qt;					\
     }							\
-    return rep_signal_missing_arg(rep_CONSP(args) ? 2 : 1);					\
+    return rep_signal_missing_arg(rep_CONSP(args) ? 2 : 1);
+
+DEFUN("=", Fnum_eq, Snum_eq, (repv args), rep_SubrN) /*
+::doc:=::
+= ARG1 ARG2 [ARG3 ...]
+
+Returns t if each value is the same as every other value. (Using
+`equal' to compare values.)
+::end:: */
+{
+    APPLY_COMPARISON(==)
+}
+
+DEFUN("/=", Fnum_noteq, Snum_noteq, (repv args), rep_SubrN) /*
+::doc::/=::
+/= ARG1 ARG2 ...
+
+Returns t if each value is different from every other value. (Using
+`equal' to compare values.)
+::end:: */
+{
+    repv ret = Fnum_eq (args);
+    if (ret)
+	return ret == Qnil ? Qt : Qnil;
+    else
+	return rep_NULL;
+}
 
 DEFUN(">", Fgtthan, Sgtthan, (repv args), rep_SubrN) /*
 ::doc:>::
@@ -2536,6 +2562,8 @@ rep_lispcmds_init(void)
     rep_ADD_SUBR(Sstring_head_eq);
     rep_ADD_SUBR(Sstring_equal);
     rep_ADD_SUBR(Sstring_lessp);
+    rep_ADD_SUBR(Snum_eq);
+    rep_ADD_SUBR(Snum_noteq);
     rep_ADD_SUBR(Sgtthan);
     rep_ADD_SUBR(Sgethan);
     rep_ADD_SUBR(Sltthan);
