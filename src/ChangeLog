@@ -1,3 +1,7 @@
+2000-06-27  John Harper  <john@dcs.warwick.ac.uk>
+
+	* record-profile.c: mechanism for a basic profiler
+
 2000-06-26  John Harper  <john@dcs.warwick.ac.uk>
 
 	* continuations.c (rep_thread): added fields `exit_val' (value

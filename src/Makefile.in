@@ -36,8 +36,10 @@ SDBM_SRCS = sdbm.c sdbm_pair.c sdbm_hash.c
 SDBM_OBJS = $(SDBM_SRCS:.c=.o)
 SDBM_LOBJS = $(SDBM_SRCS:.c=.lo)
 
-DL_SRCS = repsdbm.c timers.c gettext.c readline.c tables.c repgdbm.c
-DL_OBJS = sdbm.la timers.la gettext.la readline.la tables.la gdbm.la
+DL_SRCS = repsdbm.c timers.c gettext.c readline.c tables.c repgdbm.c \
+	  record-profile.c
+DL_OBJS = sdbm.la timers.la gettext.la readline.la tables.la gdbm.la \
+	  record-profile.la
 
 REP_SRCS =	rep.c
 REP_OBJS =	$(REP_SRCS:.c=.o)

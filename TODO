@@ -10,6 +10,8 @@ and more long-term ideas are marked -
 Outstanding bugs
 ================
 
+ ! interactive decls in define-declared functions don't work when compiled
+
  ! scheme define/lambda doesn't splice begin forms
 
  ! the scheme module fails some of the guile test.scm cases
