@@ -91,9 +91,11 @@ top:
 	res = rep_CAR(stream);
 	if(rep_INTP(res) && rep_STRINGP(rep_CDR(stream)))
 	{
-	    c = (int)rep_STR(rep_CDR(stream))[rep_INT(res)];
-	    if(c)
+	    if (rep_INT(res) < rep_STRING_LEN(rep_CDR(stream)))
+	    {
+		c = (int) rep_STR(rep_CDR(stream))[rep_INT(res)];
 		rep_CAR(stream) = rep_MAKE_INT(rep_INT(res) + 1);
+	    }
 	    else
 		c = EOF;
 	    break;

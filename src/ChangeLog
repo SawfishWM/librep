@@ -1,5 +1,8 @@
 2001-06-29  John Harper  <jsh@pixelslut.com>
 
+	* streams.c (rep_stream_getc): don't test for end of input by
+	looking for a null byte! Check the actual length of the string!
+
 	* sockets.c (blocking_write): new function, used to write ()
 	into a non-blocking fd, simulating blocking using select ().
 	Used when writing data into sockets
