@@ -98,7 +98,7 @@
 			     (memq (car out) top-level-compiled))))))
     (case (car form)
       ((defun)
-       (remember-function (nth 1 form) (nth 2 form)))
+       (remember-function (nth 1 form) (nth 2 form) (nthcdr 3 form)))
 
       ((defmacro)
        (remember-function (nth 1 form) (nth 2 form))
@@ -162,7 +162,7 @@
 
   (defun do-pass-2 (form)
     (case (car form)
-      ((defun)
+      ((defun defsubst)
        (let ((tmp (assq (nth 1 form) (fluid macro-env))))
 	 (let-fluids ((current-fun (nth 1 form)))
 	   (when tmp
@@ -182,19 +182,6 @@
 	     (compiler-error
 	      "Compiled macro wasn't in environment" (nth 1 form)))
 	   (list 'defmacro (nth 1 form) code))))
-
-      ((defsubst)
-       (when *compiler-write-docs*
-	 (cond
-	  ((stringp (nth 3 form))
-	   (add-documentation (nth 1 form) (nth 3 form))
-	   (setq form (delq (nth 3 form) form)))
-	  ((stringp (nth 4 form))
-	   (add-documentation (nth 1 form) (nth 4 form))
-	   (setq form (delq (nth 4 form) form)))))
-       (unless (assq (nth 1 form) (fluid inline-env))
-	 (compiler-error "Inline function wasn't in environment" (nth 1 form)))
-       form)
 
       ((defconst)
        (let
