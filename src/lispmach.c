@@ -395,10 +395,41 @@ fetch:
 	    break;
 
 	CASE_OP_ARG(OP_REFQ)
+	    /* try to optimise the common case of normal shallow binding */
+	    tmp = rep_VECT(consts)->array[arg];
+	    if (rep_SYMBOLP(tmp))
+	    {
+		register rep_symbol *sym = rep_SYM(tmp);
+		if ((sym->car & rep_SF_LOCAL) == 0)
+		{
+		    if (!rep_VOIDP(sym->value)
+			&& !rep_CELL8_TYPEP(sym->value, rep_Var))
+		    {
+			PUSH(sym->value);
+			break;
+		    }
+		}
+	    }
+	    /* fall back to common method */
 	    PUSH(Fsymbol_value(rep_VECT(consts)->array[arg], Qnil));
 	    break;
 
 	CASE_OP_ARG(OP_SETQ)
+	    /* try to optimise the common case of normal shallow binding */
+	    tmp = rep_VECT(consts)->array[arg];
+	    if (rep_SYMBOLP(tmp))
+	    {
+		register rep_symbol *sym = rep_SYM(tmp);
+		if ((sym->car & rep_SF_LOCAL) == 0)
+		{
+		    if (!rep_CELL8_TYPEP(sym->value, rep_Var))
+		    {
+			sym->value = TOP;
+			break;
+		    }
+		}
+	    }
+	    /* fall back to common method */
 	    TOP = Fset(rep_VECT(consts)->array[arg], TOP);
 	    break;
 
