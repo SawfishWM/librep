@@ -96,7 +96,15 @@ datum_print (repv stream, repv arg)
 /* lisp functions */
 
 DEFUN ("make-datum", Fmake_datum, Smake_datum,
-       (repv value, repv id, repv printer), rep_Subr3)
+       (repv value, repv id, repv printer), rep_Subr3) /*
+::doc:make-datum::
+make-datum VALUE ID PRINTER
+
+Create and return a new data object of type ID (an arbitrary value), it
+will have object VALUE associated with it. When printed, the function
+PRINTER will be called with two arguments, the stream to print to and
+the data object itself.
+::end:: */
 {
     datum *d = rep_ALLOC_CELL (sizeof (datum));
     d->next = all_datums;
@@ -108,14 +116,40 @@ DEFUN ("make-datum", Fmake_datum, Smake_datum,
     return rep_VAL (d);
 }
 
-DEFUN ("datum-ref", Fdatum_ref, Sdatum_ref, (repv obj, repv id), rep_Subr2)
+DEFUN ("datum-ref", Fdatum_ref, Sdatum_ref, (repv obj, repv id), rep_Subr2) /*
+::doc:datum-ref::
+datum-ref DATUM ID
+
+If data object DATUM has type ID, return its associated value, else
+signal an error.
+::end:: */
 {
     rep_DECLARE (1, obj, DATUMP (obj) && DATUM (obj)->id == id);
     return DATUM (obj)->value;
 }
 
+DEFUN ("datum-set", Fdatum_set, Sdatum_set,
+       (repv obj, repv id, repv value), rep_Subr3) /*
+::doc:datum-set::
+datum-set DATUM ID VALUE
+
+If data object DATUM has type ID, modify its associated value to be
+VALUE, else signal an error.
+::end:: */
+{
+    rep_DECLARE (1, obj, DATUMP (obj) && DATUM (obj)->id == id);
+    DATUM (obj)->value = value;
+    return value;
+}
+
 DEFUN ("has-type-p", Fhas_type_p,
-       Shas_type_p, (repv arg, repv id), rep_Subr2)
+       Shas_type_p, (repv arg, repv id), rep_Subr2) /*
+::doc:has-type-p::
+has-type-p ARG ID
+
+Return `t' if object ARG has data type ID (and thus was initially
+created using the `make-datum' function).
+::end:: */
 {
     return (DATUMP (arg) && DATUM (arg)->id == id) ? Qt : Qnil;
 }
@@ -132,5 +166,6 @@ rep_datums_init (void)
 
     rep_ADD_SUBR (Smake_datum);
     rep_ADD_SUBR (Sdatum_ref);
+    rep_ADD_SUBR (Sdatum_set);
     rep_ADD_SUBR (Shas_type_p);
 }
