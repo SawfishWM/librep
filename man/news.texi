@@ -22,15 +22,23 @@ constants
 
 @item New function @code{call/cc} (also available through the alias
 @code{call-with-current-continuation}). Provides scheme-like
-continuation functions.
+continuation functions. Special variables are now deep-bound to support
+this correctly
 
-These are full continuations (i.e. can be used to re-enter scope that
-has been left), but currently make no effort to handle rep's dynamic
-state (i.e. special bindings, @code{unwind-protect}, etc@dots{}).
+@item Supports ``soft'' preemptive threads using continuations and a
+general ``barrier'' mechanism (used either for restricting control
+flow, or for receiving notification when control passes across a
+barrier)
 
-They have only been tested on Linux/ix86 and Solaris/sparc---since they
-use some slightly dubious stack trickery other architectures may need
-some to do some tweaking
+@item Parameter lists in lambda expressions now support improper lists,
+as in scheme. E.g. @code{(lambda (x . y) @dots{})}
+
+@item Implements the scheme @code{define} syntax, with support for
+inner definitions
+
+@item The @code{tables} plugin implements hash tables, with extensible
+hashing and comparison methods; supports both strongly and weakly keyed
+tables
 
 @item @code{put} and @code{get} functions now use @code{equal} to
 compare property names
@@ -51,6 +59,10 @@ compiled code (when the calling function has no dynamic state)
 @noindent
 Compiled lisp code will need to be rebuilt to run on the modified
 virtual machine.
+
+@item When expanding macros, bind @code{macro-environment} to the
+macro environment it was called with. This allows macros to reliably
+expand inner macro uses
 
 @item New hook @code{before-exit-hook}. Called immediately before
 exiting
