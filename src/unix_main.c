@@ -266,6 +266,10 @@ static int input_pending_count;
 void (*rep_register_input_fd_fun)(int fd, void (*callback)(int fd)) = 0;
 void (*rep_deregister_input_fd_fun)(int fd) = 0;
 
+#define MAX_EVENT_LOOP_CALLBACKS 16
+static int next_event_loop_callback;
+static rep_bool (*event_loop_callbacks[MAX_EVENT_LOOP_CALLBACKS])(void);
+
 void
 rep_register_input_fd(int fd, void (*callback)(int fd))
 {
@@ -361,6 +365,27 @@ rep_sig_restart(int sig, rep_bool flag)
     }
     sigaction(sig, &act, 0);
 #endif /* !HAVE_SIGINTERRUPT */
+}
+
+void
+rep_add_event_loop_callback (rep_bool (*callback)(void))
+{
+    if (next_event_loop_callback == MAX_EVENT_LOOP_CALLBACKS)
+	abort ();
+    event_loop_callbacks [next_event_loop_callback++] = callback;
+}
+
+rep_bool
+rep_proc_periodically (void)
+{
+    rep_bool ret = rep_FALSE;
+    int i;
+    for (i = 0; i < next_event_loop_callback; i++)
+    {
+	if (event_loop_callbacks[i] ())
+	    ret = rep_TRUE;
+    }
+    return ret;
 }
 
 /* Wait for input for no longer than TIMEOUT-MSECS for input fds defined
