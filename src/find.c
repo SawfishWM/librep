@@ -37,9 +37,6 @@ _PR void mark_regexp_data(void);
 _PR void push_regexp_data(struct saved_regexp_data *sd);
 _PR void pop_regexp_data(void);
 
-_PR bool mystrcmp(u_char *, u_char *);
-_PR u_char *mystrrstrn(u_char *, u_char *, int);
-_PR u_char *mystrrchrn(u_char *, u_char, int);
 _PR void find_init(void);
 _PR void find_kill(void);
 
@@ -999,56 +996,6 @@ regerror(char *err)
 #else
     cmd_signal(sym_regexp_error, LIST_1(string_dup(err)));
 #endif
-}
-
-/*
- * These functions return TRUE if the strings match, if str1 ends before
- * str2 they are still considered to be matching.
- */
-bool
-mystrcmp(u_char *str1, u_char *str2)
-{
-    while(*str2 && *str1)
-    {
-	if(*str2++ != *str1++)
-	    return(FALSE);
-    }
-    if(*str2 || (*str2 == *str1))
-	return(TRUE);
-    return(FALSE);
-}
-
-/*
- * find last occurrence of str2 in str1
- */
-u_char *
-mystrrstrn(u_char *str1, u_char *str2, int str1Len)
-{
-    int str2len = strlen(str2);
-    register int i;
-    u_char c = str2[str2len - 1];
-    for(i = str1Len - 1; i >= str2len; i--)
-    {
-	if(str1[i] == c)
-	{
-	    u_char *tmp = (str1 + i) - (str2len - 1);
-	    if(mystrcmp(str2, tmp))
-		return(tmp);
-	}
-    }
-    return(NULL);
-}
-
-u_char *
-mystrrchrn(u_char *str, u_char c, int strLen)
-{
-    register u_char *s = str + strLen;
-    while(s != str)
-    {
-	if(*(--s) == c)
-	    return(s);
-    }
-    return(NULL);
 }
 
 void
