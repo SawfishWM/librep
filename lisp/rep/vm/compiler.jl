@@ -667,6 +667,30 @@ that files which shouldn't be compiled aren't."
       (make-byte-code-subr args (nth 1 form) (nth 2 form) (nth 3 form)
 			   doc interactive macrop))))
 
+;; Return t if FORM is a constant, definition from dump.jl
+(defun comp-constant-p (form)
+  (cond
+   ((or (integerp form) (stringp form)
+	(vectorp form) (bytecodep form)
+	(eq form t) (eq form nil)))
+   ((consp form)
+    (memq (car form) '(quote function)))
+   ;; What other constant forms have I missed..?
+   (t
+    nil)))
+
+;; If FORM is a constant, return its value, also from dump.jl
+(defun comp-constant-value (form)
+  (cond
+   ((or (integerp form) (stringp form)
+	(vectorp form) (bytecodep form)
+	(eq form t) (eq form nil))
+    ;; Self-evaluating types
+    form)
+   ((consp form)
+    ;; only quote or function
+    (nth 1 form))))
+
 ;; Managing the output code
 
 ;; Return a new label
@@ -761,6 +785,41 @@ that files which shouldn't be compiled aren't."
     (comp-compile-form (nth 1 form))
     (comp-compile-jmp op-jpt top-label)))
 
+;; Compile mapc specially if we can open code the function call
+(put 'mapc 'compile-fun 'comp-compile-mapc)
+(defun comp-compile-mapc (form)
+  (let
+      ((fun (nth 1 form))
+       (list (nth 2 form)))
+    (if (and (comp-constant-p fun)
+	     (eq (car (comp-constant-value fun)) 'lambda))
+	;; We can open code the function
+	(let
+	    ((top-label (comp-make-label))
+	     (test-label (comp-make-label)))
+	  (setq fun (comp-constant-value fun))
+	  (comp-compile-form list)
+	  (comp-compile-jmp op-jmp test-label)
+	  (comp-set-label top-label)
+	  (comp-write-op op-dup)
+	  (comp-inc-stack)
+	  (comp-write-op op-car)
+	  (comp-compile-lambda-inline fun nil 1)
+	  (comp-write-op op-pop)
+	  (comp-dec-stack)
+	  (comp-write-op op-cdr)
+	  (comp-set-label test-label)
+	  ;; I don't have a jump-if-t-but-never-pop instruction, so
+	  ;; make one out of "jpt TOP; nil". If I ever get a peep hole
+	  ;; optimiser working, the nil should be fodder for it..
+	  (comp-compile-jmp op-jtp top-label)
+	  (comp-write-op op-nil))
+      ;; The function must be called, so just use the mapc opcode
+      (comp-compile-form fun)
+      (comp-compile-form list)
+      (comp-write-op op-mapc)
+      (comp-dec-stack))))
+      
 (put 'progn 'compile-fun 'comp-compile-progn)
 (defun comp-compile-progn (form)
   (comp-compile-body (cdr form)))
@@ -812,7 +871,10 @@ that files which shouldn't be compiled aren't."
 
 ;; This compiles an inline lambda, i.e. FORM is something like
 ;;	((lambda (LAMBDA-LIST...) BODY...) ARGS...)
-(defun comp-compile-lambda-inline (fun args)
+;; If PUSHED-ARGS-ALREADY is non-nil it should be a count of the number
+;; of arguments pushed onto the stack (in reverse order). In this case,
+;; ARGS is ignored
+(defun comp-compile-lambda-inline (fun args &optional pushed-args-already)
   (when (>= (setq comp-inline-depth (1+ comp-inline-depth))
 	    comp-max-inline-depth)
     (setq comp-inline-depth 0)
@@ -822,11 +884,15 @@ that files which shouldn't be compiled aren't."
       ((lambda-list (nth 1 fun))
        (body (nthcdr 2 fun))
        (arg-count 0))
-    ;; First of all, evaluate each argument onto the stack
-    (while (consp args)
-      (comp-compile-form (car args))
-      (setq args (cdr args)
-	    arg-count (1+ arg-count)))
+    (if (not pushed-args-already)
+	;; First of all, evaluate each argument onto the stack
+	(while (consp args)
+	  (comp-compile-form (car args))
+	  (setq args (cdr args)
+		arg-count (1+ arg-count)))
+      ;; Args already on stack
+      (setq args nil
+	    arg-count pushed-args-already))
     ;; Now the interesting bit. The args are on the stack, in
     ;; reverse order. So now we have to scan the lambda-list to
     ;; see what they should be bound to.
@@ -1471,8 +1537,6 @@ that files which shouldn't be compiled aren't."
   (put 'last 'compile-opcode op-last)
   (put 'mapcar 'compile-fun 'comp-compile-2-args)
   (put 'mapcar 'compile-opcode op-mapcar)
-  (put 'mapc 'compile-fun 'comp-compile-2-args)
-  (put 'mapc 'compile-opcode op-mapc)
   (put 'member 'compile-fun 'comp-compile-2-args)
   (put 'member 'compile-opcode op-member)
   (put 'memq 'compile-fun 'comp-compile-2-args)
