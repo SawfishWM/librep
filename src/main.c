@@ -376,7 +376,11 @@ recursive-edit
 Enter a new recursive-edit.
 ::end:: */
 {
-    repv ret = (*rep_event_loop_fun)();
+    repv ret;
+
+    rep_recurse_depth++;
+    ret = (*rep_event_loop_fun)();
+    rep_recurse_depth--;
 
 #ifdef C_ALLOCA
     /* Using the C implementation of alloca. So garbage collect
