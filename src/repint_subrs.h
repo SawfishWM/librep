@@ -28,7 +28,6 @@ extern void rep_continuations_init (void);
 extern void rep_datums_init (void);
 
 /* from files.c */
-extern repv rep_get_fh_env (void);
 extern void rep_files_init(void);
 extern void rep_files_kill(void);
 
