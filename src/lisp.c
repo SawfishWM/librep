@@ -1567,6 +1567,39 @@ Calls FUNCTION with arguments ARGS... and returns the result.
 	return rep_funcall(rep_CAR(args), rep_CDR(args), rep_FALSE);
 }
 
+DEFUN("apply", Fapply, Sapply, (repv args), rep_SubrN) /*
+::doc:apply::
+apply FUNCTION ARGS... ARG-LIST
+
+Calls FUNCTION passing all of ARGS to it as well as all elements in ARG-LIST.
+ie,
+  (apply '+ 1 2 3 '(4 5 6))
+   => 21
+::end:: */
+{
+    repv list = Qnil, *last;
+    last = &list;
+    if(rep_CONSP(args))
+    {
+	while(rep_CONSP(rep_CDR(args)))
+	{
+	    if(!(*last = Fcons(rep_CAR(args), Qnil)))
+		return(rep_NULL);
+	    last = &rep_CDR(*last);
+	    args = rep_CDR(args);
+	    rep_TEST_INT;
+	    if(rep_INTERRUPTP)
+		return(rep_NULL);
+	}
+	if(!rep_NILP(Flistp(rep_CAR(args))))
+	    *last = rep_CAR(args);
+	else
+	    return rep_signal_arg_error (rep_CAR (args), -1);
+	return(Ffuncall(list));
+    }
+    return rep_signal_missing_arg(1);
+}
+
 static repv
 eval(repv obj, repv tail_posn)
 {
@@ -1626,7 +1659,8 @@ eval(repv obj, repv tail_posn)
 
 		ret = form ? rep_eval (form, tail_posn) : rep_NULL;
 	    }
-	    else if (rep_FUNARGP (funcobj) && tail_posn != Qnil)
+	    else if (tail_posn != Qnil &&
+		     (rep_FUNARGP (funcobj) || funcobj == rep_VAL (&Sapply)))
 	    {
 		/* This call can be performed later without losing any
 		   state, so package it up, then throw back to the
@@ -1641,8 +1675,17 @@ eval(repv obj, repv tail_posn)
 
 		if (args != rep_NULL)
 		{
-		    rep_throw_value = Fcons (TAIL_CALL_TAG,
-					     Fcons (funcobj, args));
+		    if (funcobj == rep_VAL (&Sapply))
+		    {
+			if (!rep_CONSP (args))
+			    ret = rep_signal_missing_arg (1);
+			else
+			    rep_CDR (args) = Flist_star (rep_CDR (args));
+		    }
+		    else
+			args = Fcons (funcobj, args);
+
+		    rep_throw_value = Fcons (TAIL_CALL_TAG, args);
 		}
 		ret = rep_NULL;
 	    }
@@ -2366,6 +2409,7 @@ rep_lisp_init(void)
     tem = rep_push_structure ("rep.lang.interpreter");
     rep_ADD_SUBR(Sload_autoload);
     rep_ADD_SUBR(Sfuncall);
+    rep_ADD_SUBR(Sapply);
     rep_ADD_SUBR(Sprogn);
     rep_ADD_SUBR(Ssignal);
     rep_ADD_SUBR(Sbacktrace);

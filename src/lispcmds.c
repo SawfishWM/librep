@@ -1227,39 +1227,6 @@ like the last else in an else-if statement in C.
     return(res);
 }
 
-DEFUN("apply", Fapply, Sapply, (repv args), rep_SubrN) /*
-::doc:apply::
-apply FUNCTION ARGS... ARG-LIST
-
-Calls FUNCTION passing all of ARGS to it as well as all elements in ARG-LIST.
-ie,
-  (apply '+ 1 2 3 '(4 5 6))
-   => 21
-::end:: */
-{
-    repv list = Qnil, *last;
-    last = &list;
-    if(rep_CONSP(args))
-    {
-	while(rep_CONSP(rep_CDR(args)))
-	{
-	    if(!(*last = Fcons(rep_CAR(args), Qnil)))
-		return(rep_NULL);
-	    last = &rep_CDR(*last);
-	    args = rep_CDR(args);
-	    rep_TEST_INT;
-	    if(rep_INTERRUPTP)
-		return(rep_NULL);
-	}
-	if(!rep_NILP(Flistp(rep_CAR(args))))
-	    *last = rep_CAR(args);
-	else
-	    return rep_signal_arg_error (rep_CAR (args), -1);
-	return(Ffuncall(list));
-    }
-    return rep_signal_missing_arg(1);
-}
-
 static inline repv
 load_file_exists_p (repv name)
 {
@@ -2091,7 +2058,6 @@ rep_lispcmds_init(void)
     rep_ADD_SUBR(Squote);
     rep_ADD_SUBR(Slambda);
     rep_ADD_SUBR(Scond);
-    rep_ADD_SUBR(Sapply);
     rep_ADD_SUBR(Scall_with_exception_handler);
     rep_ADD_SUBR(Sraise_exception);
     rep_ADD_SUBR(Sfunctionp);
