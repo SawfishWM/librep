@@ -28,6 +28,11 @@
 
 ;; Peephole optimiser
 
+;; todo:
+
+;; c{dd..d}r; car --> ca{dd..d}r
+;; c{dd..d}r; cdr --> cd{dd..d}r
+
 ;; shift the instruction window
 (defmacro comp-peep-shift ()
   '(progn
@@ -160,6 +165,21 @@
 	       (eq (cdr insn0) (cdr insn1)))
 	  (rplaca insn1 op-dup)
 	  (rplacd insn1 nil)
+	  (setq keep-going t))
+
+	 ;; c?r; c?r --> c??r
+	 ((and (or (eq (car insn0) op-car)
+		   (eq (car insn0) op-cdr))
+	       (or (eq (car insn1) op-car)
+		   (eq (car insn1) op-cdr)))
+	  (rplaca insn1 (if (eq (car insn0) op-car)
+			    (if (eq (car insn1) op-car)
+				op-caar
+			      op-cdar)
+			  (if (eq (car insn1) op-car)
+			      op-cadr
+			    op-cddr)))
+	  (comp-peep-del-0)
 	  (setq keep-going t))
 
 	 ;; jmp X; X: --> X:
@@ -394,13 +414,13 @@
 	(setq extra-stack 1)
 	(setq keep-going t))
 
-       ;; <const> X; {dup,<const> X}... --> <const X>; dup...
+       ;; <const> X; {dup,<const> X}... --> <const> X; dup...
        ;; refq X; {dup,refq X}... --> refq X; dup...
        ((or (memq (car insn0) comp-constant-insns)
 	    (eq (car insn0) op-refq))
 	(setq tem (nthcdr 2 point))
 	(while (or (eq (car (car tem)) op-dup)
-		   (eq (car tem) insn0))
+		   (equal (car tem) insn0))
 	  (rplaca (car tem) op-dup)
 	  (rplacd (car tem) nil)
 	  (setq tem (cdr tem)))))
