@@ -330,6 +330,8 @@ to the beginning of the next list. Returns the new list.
 	    return signal_arg_error(tmp, i);
 	if(CONSP(tmp))
 	{
+	    if(!CONS_WRITABLE_P(tmp))
+		return cmd_signal(sym_setting_constant, LIST_1(tmp));
 	    *resend = tmp;
 	    while(CONSP(VCDR(tmp)))
 	    {
@@ -355,6 +357,8 @@ value.
 ::end:: */
 {
     DECLARE1(cons, CONSP);
+    if(!CONS_WRITABLE_P(cons))
+	return cmd_signal(sym_setting_constant, LIST_1(cons));
     VCAR(cons) = car;
     return(car);
 }
@@ -369,6 +373,8 @@ value.
 ::end:: */
 {
     DECLARE1(cons, CONSP);
+    if(!CONS_WRITABLE_P(cons))
+	return cmd_signal(sym_setting_constant, LIST_1(cons));
     VCDR(cons) = cdr;
     return(cdr);
 }
@@ -409,6 +415,8 @@ were. This function is destructive towards it's argument.
     DECLARE1(head, LISTP);
     if(NILP(head))
 	return(head);
+    if(!CONS_WRITABLE_P(head))
+	return cmd_signal(sym_setting_constant, LIST_1(head));
     do {
 	if(CONSP(VCDR(head)))
 	    nxt = VCDR(head);
@@ -1374,7 +1382,15 @@ loaded and a warning is displayed.
 	if(NILP(nosuf_p))
 	{
 	    bool jl_p = file_exists3(dir, VSTR(file), ".jl");
-	    if(file_exists3(dir, VSTR(file), ".jlc"))
+	    bool jlc_p = file_exists3(dir, VSTR(file), ".jlc");
+#ifdef DUMPED
+	    bool jld_p = file_exists3(dir, VSTR(file), ".jld");
+
+	    if(jld_p)
+		name = concat3(dir, VSTR(file), ".jld");
+	    else
+#endif
+	    if(jlc_p)
 	    {
 		name = concat3(dir, VSTR(file), ".jlc");
 		if(jl_p)
@@ -1406,7 +1422,7 @@ loaded and a warning is displayed.
 	else
 	    return(sym_nil);
     }
-    if((stream = cmd_open(name, VAL(&r_str), sym_nil)) && FILEP(stream))
+    if((stream = cmd_open_file(name, VAL(&r_str), sym_nil)) && FILEP(stream))
     {
 	VALUE obj;
 	int c;
@@ -2163,8 +2179,8 @@ Returns the doc-string associated with SUBR.
     case V_SubrN:
     case V_SF:
     case V_Var:
-	return(cmd_read_file_from_to(VAL(&doc_file), VSUBR(subr)->doc_index,
-				     MAKE_INT((int)'\f')));
+	return VSUBR(subr)->doc_index;
+
     case V_Compiled:
 	return COMPILED_DOC(subr);
 
