@@ -994,7 +994,8 @@ copy_to_vector (repv argList, int nargs, repv *args,
 }
 
 repv
-rep_bind_lambda_list_1 (repv lambdaList, repv *args, int nargs)
+rep_bind_lambda_list_1 (repv lambdaList, repv *args, int nargs,
+			repv (*binder) (repv, repv, repv))
 {
     enum arg_state {
 	STATE_REQUIRED = 1, STATE_OPTIONAL, STATE_REST
@@ -1098,7 +1099,7 @@ out:
     boundlist = Qnil;
     while (frame != 0)
     {
-	boundlist = rep_bind_symbol (boundlist, frame->sym, frame->value);
+	boundlist = binder (boundlist, frame->sym, frame->value);
 	frame = frame->next;
     }
 
@@ -1131,7 +1132,8 @@ rep_bind_lambda_list(repv lambdaList, repv argList,
 	return rep_NULL;
     }
    
-    return rep_bind_lambda_list_1 (lambdaList, evalled_args, evalled_nargs);
+    return rep_bind_lambda_list_1 (lambdaList, evalled_args,
+				   evalled_nargs, rep_bind_symbol);
 }
 
 repv
