@@ -1,3 +1,8 @@
+2000-03-10  John Harper  <john@dcs.warwick.ac.uk>
+
+	* repgdbm.c (Fgdbm_fetch): always copy the returned string,
+	since it may not be zero terminated
+
 2000-03-07  John Harper  <john@dcs.warwick.ac.uk>
 
 	* numbers.c (maybe_demote): fixed typo when demoting rationals
