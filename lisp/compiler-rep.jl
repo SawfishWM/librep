@@ -237,6 +237,12 @@
 	   (rplaca (nthcdr 2 form) (compile-form (nth 2 form))))
 	 form))
 
+      ((define-structure)
+       (compile-top-level-define-structure form))
+
+      ((structure)
+       (compile-top-level-structure form))
+
       ((eval-when-compile) nil)
 
       (t (if (memq (car form) top-level-compiled)
