@@ -1,3 +1,7 @@
+2000-05-30  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispcmds.c (Fwhile): removed, now in lisp
+
 2000-05-29  John Harper  <john@dcs.warwick.ac.uk>
 
 	Work to make the interpreter tail recursive:

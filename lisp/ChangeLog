@@ -1,3 +1,10 @@
+2000-05-30  John Harper  <john@dcs.warwick.ac.uk>
+
+	* init.jl (while): new macro, basic tail-recursive definition
+
+	* define.jl (define-scan-form): removed `while' from the list
+	of special forms
+
 2000-05-27  John Harper  <john@dcs.warwick.ac.uk>
 
 	* scheme-misc.jl, records.jl, queues.jl: updated for datum

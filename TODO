@@ -14,6 +14,8 @@ Outstanding bugs
 
  ! document in manual: records, queues, datums, (declare ..)
 
+   also, document `do' and update `while'
+
  ! scheme define/lambda doesn't splice begin forms
 
  ! can't do numerator/denominator of flonums
@@ -105,7 +107,7 @@ General programming tasks:
    The current (29-3-99) list of special forms is:
 
    case catch cond condition-case defvar lambda prog1 progn quote setq
-   unwind-protect while with-object
+   unwind-protect with-object
 
  - subrs can't be called tail recursively (e.g. call/cc apply ..?)
 
