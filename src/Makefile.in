@@ -34,8 +34,8 @@ OBJS = $(SRCS:.c=.lo)
 SDBM_SRCS = sdbm.c sdbm_pair.c sdbm_hash.c
 SDBM_OBJS = $(SDBM_SRCS:.c=.lo)
 
-DL_SRCS = test-dl.c repsdbm.c timers.c gettext.c
-DL_OBJS = libtest-dl.la libsdbm.la libtimers.la libgettext.la
+DL_SRCS = repsdbm.c timers.c gettext.c readline.c
+DL_OBJS = libsdbm.la libtimers.la libgettext.la libreadline.la
 
 REP_SRCS =	rep.c
 REP_OBJS =	$(REP_SRCS:.c=.o)
@@ -99,8 +99,6 @@ rep-config : rep-config.sh
 repdoc : repdoc.o libxsdbm.la
 	$(LIBTOOL) $(CC) -static $(LDFLAGS) -o $@ repdoc.o libxsdbm.la
 
-libtest-dl.la : test-dl.c
-
 libsdbm.la : $(SDBM_OBJS) repsdbm.lo
 	$(LIBTOOL) $(CC) $(LDFLAGS) -module -o $@ \
 	 $(SDBM_OBJS) repsdbm.lo -rpath $(repexecdir)
@@ -108,6 +106,10 @@ libsdbm.la : $(SDBM_OBJS) repsdbm.lo
 libgettext.la : gettext.lo
 	$(LIBTOOL) $(CC) $(LDFLAGS) -module -o $@ \
 	 $^ ../intl/*.lo -rpath $(repexecdir)
+
+libreadline.la : readline.lo
+	$(LIBTOOL) $(CC) $(LDFLAGS) -module -o $@ \
+	 $^ $(READLINE_LIBS) -rpath $(repexecdir)
 
 clean :
 	rm -f *~ *.o *.lo *.la build.h

@@ -36,7 +36,7 @@ Link libraries and C header files for librep development.
 %setup
 
 %build
-./configure --prefix %{_prefix} %{_host}
+./configure --with-readline --prefix %{_prefix} %{_host}
 make CFLAGS="$RPM_OPT_FLAGS"
 
 %install
