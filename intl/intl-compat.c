@@ -31,14 +31,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
 #undef textdomain
 #undef bindtextdomain
 
-/* avoid clashing with libc functions (under solaris) */
-
-#define gettext gnu_gettext
-#define dgettext gnu_dgettext
-#define dcgettext gnu_dcgettext
-#define textdomain gnu_textdomain
-#define bindtextdomain gnu_bindtextdomain
-
 char *
 bindtextdomain (domainname, dirname)
      const char *domainname;
@@ -77,6 +69,54 @@ gettext (msgid)
 
 char *
 textdomain (domainname)
+     const char *domainname;
+{
+  return textdomain__ (domainname);
+}
+
+
+/* gnu_ aliases for all functions. I want to ensure that rep always
+   uses the same gettext implementation (and hence the same .mo files)
+   rep's gettext module calls these stubs  */
+
+char *
+gnu_bindtextdomain (domainname, dirname)
+     const char *domainname;
+     const char *dirname;
+{
+  return bindtextdomain__ (domainname, dirname);
+}
+
+
+char *
+gnu_dcgettext (domainname, msgid, category)
+     const char *domainname;
+     const char *msgid;
+     int category;
+{
+  return dcgettext__ (domainname, msgid, category);
+}
+
+
+char *
+gnu_dgettext (domainname, msgid)
+     const char *domainname;
+     const char *msgid;
+{
+  return dgettext__ (domainname, msgid);
+}
+
+
+char *
+gnu_gettext (msgid)
+     const char *msgid;
+{
+  return gettext__ (msgid);
+}
+
+
+char *
+gnu_textdomain (domainname)
      const char *domainname;
 {
   return textdomain__ (domainname);
