@@ -198,7 +198,7 @@
        (list* 'defvar (nth 1 form) (define-scan-form (nth 2 form))
 	      (nthcdr 3 form)))
 
-      ((structure define-structure) form)
+      ((structure define-structure declare) form)
 
       (t (let ((expansion (define-macroexpand-1 form)))
 	   (if (eq expansion form)

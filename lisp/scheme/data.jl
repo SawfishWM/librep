@@ -145,11 +145,11 @@
   (define exact? (make-predicate exactp))
   (define inexact? (make-predicate inexactp))
 
-  (define = (make-predicate =))
-  (define < (make-predicate <))
-  (define > (make-predicate >))
-  (define <= (make-predicate <=))
-  (define >= (make-predicate >=))
+  (define = (make-predicate rep#=))
+  (define < (make-predicate rep#<))
+  (define > (make-predicate rep#>))
+  (define <= (make-predicate rep#<=))
+  (define >= (make-predicate rep#>=))
 
   (define zero? (make-predicate zerop))
   (define positive? (make-predicate positivep))

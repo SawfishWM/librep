@@ -1,3 +1,14 @@
+2000-11-27  John Harper  <jsh@eazel.com>
+
+	* scheme/data.jl: when defining `>' and similar predicates, use
+	`rep#FOO' to get the rep versions, instead of just relying on
+	the fact that their local bindings haven't been created yet
+
+2000-11-26  John Harper  <jsh@eazel.com>
+
+	* rep/lang/define.jl (define-scan-form): don't expand (i.e.
+	delete) declaration forms
+
 2000-11-21  John Harper  <jsh@eazel.com>
 
 	* rep/vm/peephole.jl (peephole-optimizer): added transformation
