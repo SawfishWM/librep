@@ -135,6 +135,31 @@
 		   (mapconcat (lambda (x)
 				(format nil "%s" x)) data ", "))))
 
+
+;;; module utils
+
+  (define (module-exports-p name var)
+    (structure-exports-p (get-structure name) var))
+
+  (define (module-imports name)
+     (structure-imports (get-structure name)))
+
+  ;; find the name of the structure defining VAR using the list of
+  ;; module names IMPORTED as the search start points
+  (define (locate-binding var imported)
+    (when imported
+      (let ((tem (module-exports-p (car imported) var)))
+	(cond ((null tem)
+	       (locate-binding var (cdr imported)))
+	      ((eq tem 'external)
+	       ;; this module exports it, but it doesn't define
+	       ;; it, so search its imports
+	       (locate-binding var (module-imports (car imported))))
+	      (t (car imported))))))
+
+
+;;; commands
+
   (put 'in 'repl-command
        (lambda (struct #!optional form)
 	 (if form
@@ -209,9 +234,7 @@
 
   (put 'imports 'repl-command
        (lambda ()
-	 (print-list (structure-imports
-		      (intern-structure
-		       (repl-struct (fluid current-repl)))))))
+	 (print-list (module-imports (repl-struct (fluid current-repl))))))
 
   (put 'accessible 'repl-command
        (lambda ()
@@ -277,7 +300,11 @@ enter a meta-command prefixed by a `,' character.\n\n")
        (lambda (name)
 	 (require 'rep.lang.doc)
 	 (let* ((value (repl-eval name))
-		(doc (documentation name value)))
+		(imports (append (list (repl-struct (fluid current-repl)))
+				 (module-imports
+				  (repl-struct (fluid current-repl)))))
+		(doc (documentation
+		      name (locate-binding name imports) value)))
 	   (write standard-output #\newline)
 	   (describe-value value name)
 	   (write standard-output #\newline)
