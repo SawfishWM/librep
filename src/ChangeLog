@@ -1,3 +1,12 @@
+1999-11-11  John Harper  <john@dcs.warwick.ac.uk>
+
+	* symbols.c (Fsetplist, Fsymbol_plist, Fput): symbol must be in
+	caller's special environment
+
+	* lisp.c, lispmach.c: only allow bytecode subrs to be called if
+	jade-byte-code is in the function environment of the called
+	function
+
 1999-11-10  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep_lisp.h (rep_Funarg): new cell8 type, replaces rep_File,

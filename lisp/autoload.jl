@@ -51,4 +51,8 @@
 (autoload 'remote-rep-handler "remote-rep")
 (setq file-handler-alist (cons '("#tar\\b" . tar-file-handler) file-handler-alist))
 (autoload 'tar-file-handler "tar-file-handler")
+(autoload 'gaol-add-function "gaol")
+(autoload 'gaol-replace-function "gaol")
+(autoload 'gaol-add-feature "gaol")
+(autoload 'gaol-add-special "gaol")
 ;;; ::autoload-end::

@@ -273,7 +273,7 @@ extern repv Frequire(repv, repv);
 /* from lispmach.c */
 extern void rep_unbind_object(repv item);
 extern repv rep_bind_object(repv obj);
-extern repv Qbytecode_error;
+extern repv Qbytecode_error, Qjade_byte_code;
 extern repv Fjade_byte_code(repv code, repv consts, repv stkreq);
 extern repv Fvalidate_byte_code(repv bc_major, repv bc_minor);
 extern repv Fmake_byte_code_subr(repv args);
