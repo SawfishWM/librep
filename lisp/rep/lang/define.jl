@@ -23,19 +23,14 @@
 
 ;; Commentary:
 
-;; This is a half-hearted attempt at supporting scheme-like block-
-;; structured definitions. It scans inner defines from within outer
-;; defines, but it _doesn't_ scan inner defines from let, etc.. (see
-;; the provided lambda* macro that does this for lambda)
+;; This attempts to implement Scheme's elegant block-structured
+;; function definitions. It will scan leading `define' forms from all
+;; `define', `let', `let*', and `lambda' special forms (and from any
+;; macros in terms of these special forms)
 
-;; It would be hard to change this since let, etc, are all special
-;; forms, and therefore handled specially by the compiler (except for
-;; letrec which is a macro). [ recursively scanning the define body for
-;; these forms isn't possible since we don't know the macro environment ]
-
-;; Note that the rep interpreter/compiler support scheme-like lambda
-;; lists natively, so things like (define (foo . bar) ..) should work
-;; okay
+;; Note that the rep interpreter and compiler support scheme-like
+;; lambda lists natively, so things like (define (foo . bar) ..) will
+;; work correctly
 
 ;; returns (SYM . DEF)
 (defun define-parse (args)
@@ -53,17 +48,63 @@
 
 (defun define-scan-internals (body)
   (let
-      ((defs (mapcar (lambda (form)
-		       (define-parse (cdr form)))
-		     (filter (lambda (form)
-			       (eq (car form) 'define)) body))))
+      (defs)
+    (while (eq (caar body) 'define)
+      (setq defs (cons (define-parse (cdar body)) defs))
+      (setq body (cdr body)))
     (if defs
 	(list* 'letrec
 	       (mapcar (lambda (def)
-			 (list (car def) (cdr def))) defs)
-	       (filter (lambda (form)
-			 (not (eq (car form) 'define))) body))
-      (cons 'progn body))))
+			 (list (car def) (cdr def))) (nreverse defs))
+	       (define-scan-body body))
+      (cons 'progn (define-scan-body body)))))
+
+(defmacro define-scan-body (body)
+  `(mapcar define-scan-form
+	   (mapcar (lambda (f) 
+		     (macroexpand f macro-environment)) ,body)))
+
+;; this needs to handle all special forms
+(defun define-scan-form (form)
+  (case (car form)
+    ((let let*)
+     (list (car form)
+	   (mapcar (lambda (lst)
+		     (if (consp lst)
+			 (cons (car lst) (define-scan-body (cdr lst)))
+		       lst))
+		   (nth 1 form))
+	   (define-scan-internals (nthcdr 2 form))))
+
+    ((setq setq-default)
+     (list (car form) (nth 1 form) (define-scan-form (nth 2 form))))
+
+    ((cond)
+     (cons 'cond (mapcar (lambda (clause)
+			   (define-scan-body clause)) (cdr form))))
+
+    ((case)
+     (cons 'case (mapcar (lambda (clause)
+			   (cons (car clause) (define-scan-body (cdr clause))))
+			 (cdr form))))
+
+    ((condition-case)
+     (list* 'condition-case (nth 1 form) (define-scan-body (nthcdr 2 form))))
+
+    ((while if function and or catch unwind-protect
+      progn prog1 prog2 save-environment with-object)
+     (cons (car form) (define-scan-body (cdr form))))
+
+    ((quote)
+     form)
+
+    ((lambda)
+     (list 'lambda (nth 1 form) (define-scan-internals (nthcdr 2 form))))
+
+    (t
+     (if (consp form)
+	 (define-scan-body form)
+       form))))
 
 (defmacro define (&rest args)
   (let
@@ -71,6 +112,3 @@
     (if (eq (cadr def) 'lambda)
 	(list 'defun (car def) (caddr def) (car (cdddr def)))
       (list 'define-value (list 'quote (car def)) (cdr def)))))
-
-(defmacro lambda* (spec &rest body)
-  `(lambda ,spec ,(define-scan-internals body)))
