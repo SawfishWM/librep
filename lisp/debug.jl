@@ -22,28 +22,69 @@
 
 ;; Form stopped on
 (defvar debug-obj nil)
+(defvar debug-depth nil)
+
+(defvar debug-last nil)
+
+(defun debug-rep ()
+  (let
+      ((print-escape t))
+    (format standard-error "<%d> %S\n" debug-depth debug-obj)
+    (while t
+      (write standard-error "rep-db? ")
+      (when (filep standard-error)
+	(flush-file standard-error))
+      (let
+	  ((input (read-line standard-input))
+	   next-last)
+	(cond ((string-match "^\\s*n" input)
+	       (setq debug-last 'debug-next)
+	       (debug-next))
+	      ((string-match "^\\s*s" input)
+	       (setq debug-last 'debug-step)
+	       (debug-step))
+	      ((string-match "^\\s*c" input)
+	       (setq debug-last 'debug-continue)
+	       (debug-continue))
+	      ((string-match "^\\s*r\\w*\\s+" input)
+	       (debug-set-result
+		(eval (read-from-string (substring input (match-end))))))
+	      ((string-match "^\\s*p\\w*\\s+" input)
+	       (format standard-error "%S\n"
+		       (eval (read-from-string
+			      (substring input (match-end))))))
+	      ((string-match "^\\s*b" input)
+	       (debug-backtrace 0))
+	      ((string-match "^\\s*f" input)
+	       (format standard-error "<%d> %S\n" debug-depth debug-obj))
+	      ((string-match "^\\s*$" input)
+	       (if debug-last
+		   (progn
+		     (funcall debug-last)
+		     (setq next-last debug-last))
+		 (write standard-error "Nothing to repeat\n")))
+	      (t
+	       (write standard-error "\
+commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM',
+          `p[rint] FORM', `b[acktrace]', `f[orm]'\n")))
+	(setq debug-last next-last)))))
 
 ;;;###autoload
 (defun debug-entry (debug-obj debug-depth)
-  (let
-      ((print-escape 'newlines))
-    (format standard-output "%s%S\n"
-	    (make-string (* 2 debug-depth)) debug-obj))
     (catch 'debug
-      (recursive-edit)))
+      (debug-rep)))
 
 (defun debug-exit (debug-val debug-depth)
-  (format standard-output "%s=> %S\n"
-	  (make-string (* 2 debug-depth)) debug-val))
+  (format standard-error "<%d> => %S\n" debug-depth debug-val))
 
 ;;;###autoload
 (defun debug-error-entry (error-list)
-  (format standard-output "*** Error: %s: %S\n"
+  (format standard-error "*** Error: %s: %S\n"
 	  (or (get (car error-list) 'error-message)
 	      (car error-list)) (cdr error-list))
-  (debug-backtrace 3)
+  (debug-backtrace 1)
   (catch 'debug
-    (recursive-edit)
+    (debug-rep)
     nil))
 
 (defun debug-step ()
