@@ -147,8 +147,7 @@ is one of these that form is compiled.")
 			;; Compile this form
 			(setq form (compile-form form))))
 		      (when form
-			(print form dst-file)
-			(write dst-file ?\n)))))
+			(print form dst-file)))))
 	      (close dst-file)
 	      (close src-file))
 	  (error
@@ -245,20 +244,17 @@ that files which shouldn't be compiled aren't."
 	(when tmp
 	  (rplaca tmp nil)
 	  (rplacd tmp nil))
-	(cons 'defun
-	      (cons (nth 1 form)
-		    (cdr (comp-compile-lambda (cons 'lambda (nthcdr 2 form))))))))
+	(list 'fset (list 'quote (nth 1 form))
+	      (comp-compile-lambda (cons 'lambda (nthcdr 2 form))))))
      ((eq fun 'defmacro)
       (let
-	  ((code (comp-compile-lambda (cons 'lambda (nthcdr 2 form))))
+	  ((code (comp-compile-lambda (cons 'lambda (nthcdr 2 form)) t))
 	   (tmp (assq (nth 1 form) comp-macro-env))
 	   (comp-current-fun (nth 1 form)))
 	(if tmp
 	    (rplacd tmp code)
-;;; Don't do this, now we've added a pre-pass
-;;;	  (setq comp-macro-env (cons (cons (nth 1 form) code) comp-macro-env))
 	  (comp-error "Compiled macro wasn't in environment" (nth 1 form)))
-	(cons 'defmacro (cons (nth 1 form) (cdr code)))))
+	(list 'fset (list 'quote (nth 1 form)) code)))
      ((eq fun 'defconst)
       (let
 	  ((value (eval (nth 2 form)))
@@ -418,26 +414,26 @@ that files which shouldn't be compiled aren't."
 	(comp-dec-stack))
       (setq body (cdr body)))))
 
-;; From LIST, `(lambda (ARGS) [DOC-STRING] BODY ...)' returns a new list of,
-;; `(lambda (ARGS) [DOC-STRING] (jade-byte-code ...))'
-(defun comp-compile-lambda (list)
+;; From LIST, `(lambda (ARGS) [DOC-STRING] BODY ...)' returns a byte-code
+;; vector
+(defun comp-compile-lambda (list &optional macrop)
   (let
-      ((body (nthcdr 2 list))
-       new-head)
-    (cond
-      ((stringp (car body))
-	(setq body (cdr body)
-	      new-head (list 'lambda (nth 1 list)
-			     (if comp-write-docs
-				 (add-doc-string (nth 2 list))
-			       (nth 2 list)))))
-      (t
-	(setq new-head (list 'lambda (nth 1 list)))))
-    ;; Check for an `(interactive ...)' declaration; it doesn't get compiled
-    (when (eq (car (car body)) 'interactive)
-      (setq new-head (nconc new-head (list (car body)))
+      ((args (nth 1 list))
+       (body (nthcdr 2 list))
+       doc interactive form)
+    (when (stringp (car body))
+      (setq doc (if comp-write-docs
+		    (add-doc-string (nth 2 list))
+		  (nth 2 list))
 	    body (cdr body)))
-    (nconc new-head (cons (compile-form (cons 'progn body)) nil))))
+    (when (eq (car (car body)) 'interactive)
+      ;; If we have (interactive), set the interactive spec to t
+      ;; so that it's not ignored
+      (setq interactive (or (car (cdr (car body))) t)
+	    body (cdr body)))
+    (when (setq form (compile-form (cons 'progn body)))
+      (make-byte-code-subr args (nth 1 form) (nth 2 form) (nth 3 form)
+			   doc interactive macrop))))
 
 
 ;; Managing the output code
@@ -637,7 +633,8 @@ that files which shouldn't be compiled aren't."
   (comp-compile-constant (nth 1 form))
   (comp-write-op op-dup)
   (comp-inc-stack)
-  (comp-compile-constant (cons 'macro (comp-compile-lambda (cons 'lambda (nthcdr 2 form)))))
+  (comp-compile-constant (comp-compile-lambda
+			  (cons 'lambda (nthcdr 2 form)) t))
   (comp-write-op op-swap)
   (comp-write-op op-fset)
   (comp-dec-stack 2))
