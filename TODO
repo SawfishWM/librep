@@ -18,8 +18,6 @@ Outstanding bugs
 
  ! the scheme module fails some of the guile test.scm cases
 
-   [ also scheme `load' is broken, since it requires a .scm extension ]
-
  ! can't do numerator/denominator of flonums
 
  ! the first level lookup of foo#bar isn't cached
@@ -55,6 +53,10 @@ Outstanding bugs
 
  ! If a compiled file FOO.jlc is made from source file FOO, but FOO is
    newer, load doesn't notice, and loads the invalid FOO.jlc
+
+ ! if load can't find the file, its error message is confusing
+   (especially if the named file does exist, but no suffixed file
+   exists)
 
  ! non-fixnum numbers can't be dumped / dump totally broken re: modules
 

@@ -1,3 +1,12 @@
+2000-07-28  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep/lang/define.jl (define-macro): new macro, similar to
+	`define' but not quite so general
+
+	* rep/util/repl.jl (repl): fixed bug when completing
+
+	* scheme/misc.jl: export `load-file' as `load'
+
 2000-07-27  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep/util/repl.jl: core repl is now called for each line of

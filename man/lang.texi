@@ -4022,6 +4022,7 @@ The syntax of interface definitions is as follows:
 @var{interface} -> (export @var{id} @dots{})
           |  @var{name}
           |  (compound-interface @var{interface} @dots{})
+          |  (structure-interface @var{module-name})
 @end example
 
 @noindent
@@ -4128,15 +4129,18 @@ As described above, the common way of loading modules is to use the
 If the modules named by these clauses are not currently loaded into the
 interpreter, then the system will attempt to load them from the filing
 system, using the standard @code{load-path} variable to define the
-directories to search. As with the @code{require} function
-(@pxref{Features}) the file loaded will have the same name as the
-module being searched for (modulo any file extension, @pxref{Load
-Function}).
+directories to search.
 
-This file should contain a module definition form (as described in the
-previous section) as the last top-level form in the file. If the
-@code{structure} macro is used, and therefore the module is anonymous,
-it will be renamed to have the name of the module being loaded.
+To allow modules names to be hierarchical, any dot characters in a
+module's name are replaced by the operating system's directory
+separator string (i.e. on unix, all @samp{.} characters are simply
+replaced by @samp{/} characters).
+
+When searching for files to load, the standard filename suffixes are
+used to differentiate Lisp files from other types of files (@pxref{Load
+Function}). This file should contain a module definition form (as
+described in the previous section) as the last top-level form in the
+file.
 
 For backwards compatibility, the @code{require} function can also be
 used to import modules. If a module of the same name as the requested
@@ -4926,6 +4930,9 @@ control to pass across a dynamic root (@pxref{Threads}).
 Multiple threads of execution may be created, with control preemptively
 being switched between them.
 
+Unless otherwise noted, all definitions described in this section are
+provided by the @code{rep.threads} module.
+
 @menu
 * Thread Contexts::
 * Creating Threads::
@@ -5065,7 +5072,7 @@ Increment the forbid count.
 Decrement the forbid count.
 @end defun
 
-@defmac with-threads-blocked &rest forms
+@defmac without-interrupts &rest forms
 Evaluate the list of forms @var{forms} with thread preemption
 temporarily disabled.
 @end defmac
@@ -5079,7 +5086,8 @@ temporarily disabled.
 
 @dfn{Mutexes} are lisp objects used to coordinate access to data shared
 across multiple threads (where interleaved access would be bad). These
-functions are exported by the @code{mutex} module (@pxref{Modules}).
+functions are exported by the @code{rep.threads.mutex} module
+(@pxref{Modules}).
 
 @defun make-mutex
 Create and return a mutex object. No thread will own the new mutex.
@@ -5393,8 +5401,10 @@ This function will check the @code{features} variable to see if @var{feature}
 is already loaded, if so it will return immediately.
 
 If @var{feature} is not present it will be loaded. If @var{file} is
-non-@code{nil} it specifies the first argument to the @code{load} function,
-else the print name of the symbol @var{feature} is used.
+non-@code{nil} it specifies the first argument to the @code{load}
+function, else the print name of the symbol @var{feature} is used, with
+any @samp{.} characters replaced by the operating system's directory
+separator (@pxref{Module Loading}).
 
 @lisp
 ;;;; physics.jl -- the @code{physics} library
@@ -5864,7 +5874,7 @@ the queue (the @dfn{head}). The acts of entering and leaving a queue
 are often called @dfn{enqueing} and @dfn{dequeueing}.
 
 @code{librep} provides a straightforward queue implementation,
-implemented by the @code{queues} module (@pxref{Modules}).
+implemented by the @code{rep.data.queues} module (@pxref{Modules}).
 
 @defun make-queue
 Create and return a new queue object. The queue will initially be
@@ -5914,7 +5924,7 @@ distinct data type, meaning that there will only be a single
 type-predicate matching objects of any individual record type.
 
 All definitions documented in this section are provided by the
-@code{records} module (@pxref{Modules}).
+@code{rep.data.records} module (@pxref{Modules}).
 
 Record types are defined using the @code{define-record-type} macro,
 this in turn defines a number of functions implementing the type. These
@@ -6000,9 +6010,9 @@ y
 @cindex Hash tables
 @cindex Data types, hash tables
 
-The @code{tables} module provides a flexible hash table implementation
-(@pxref{Modules}). Each hash table is represented by a lisp object
-satisfying the @code{tablep} predicate:
+The @code{rep.data.tables} module provides a flexible hash table
+implementation (@pxref{Modules}). Each hash table is represented by a
+lisp object satisfying the @code{tablep} predicate:
 
 @defun tablep arg
 Return @code{t} if @var{arg} is a hash table.
@@ -8412,8 +8422,8 @@ managing the mapping between text strings in the programmer's native
 language and in the language of the end user.
 
 Three functions are provided to access the message catalogues
-maintained by GNU @code{gettext}. Import the @code{gettext} module to
-load them.
+maintained by GNU @code{gettext}. Import the @code{rep.i18n.gettext}
+module to load them.
 
 @defun _ string
 Attempt to find a native language equivalent of @var{string}. If no
@@ -8768,9 +8778,9 @@ signals to the child each interrupt, until it is eventually terminated.
 @cindex Asynchronous timers
 @cindex Timers, asynchronous
 
-The @code{timers} module (@pxref{Modules}) allows a Lisp program to
-create multiple asynchronous timers, each of which is primed to call a
-specified function after a specified period of time. These functions
+The @code{rep.io.timers} module (@pxref{Modules}) allows a Lisp program
+to create multiple asynchronous timers, each of which is primed to call
+a specified function after a specified period of time. These functions
 only work when the Lisp event loop is being used (i.e. at least one
 @code{recursive-edit} is currently in progress).
 

@@ -536,10 +536,11 @@ into the compiled program. When interpreted, nil is returned."
   nil)
 
 (autoload-macro 'define "rep/lang/define")
+(autoload-macro 'define-macro "rep/lang/define")
 (autoload-macro 'with-internal-definitions "rep/lang/define")
 
-(export-bindings '(error identity eval-when-compile
-		   define with-internal-definitions eval))
+(export-bindings '(error identity eval-when-compile eval
+		   define define-macro with-internal-definitions))
 
 ;; do this last since declare is defined in this file
 (declare (in-module rep.lang.interpreter))

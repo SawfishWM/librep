@@ -1,3 +1,14 @@
+2000-07-28  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispmach.c: reimplemented bytecode profiling
+
+	* lispcmds.c (Fload_file, Fload_dl_file): abstracted from
+	Fload, provide a more primitive interface to loading files (no
+	path searching of file-suffixing)
+
+	* lispcmds.c (Fload): don't declare trying_dl inside #ifdef
+	HAVE_DYNAMIC_LOADING, it's used always
+
 2000-07-27  John Harper  <john@dcs.warwick.ac.uk>
 
 	* structures.c, repint.h, lispmach.c, lisp.c: apply_bytecode

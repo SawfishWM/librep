@@ -1,3 +1,7 @@
+2000-07-28  John Harper  <john@dcs.warwick.ac.uk>
+
+	* configure.in: set GMP_LIBS to -lm if not using gmp
+
 2000-07-24  John Harper  <john@dcs.warwick.ac.uk>
 
 	* install-aliases: don't use -h or -H options to grep. Solaris
