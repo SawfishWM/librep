@@ -1,9 +1,11 @@
 Sat Apr 18 00:16:46 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_processes.c (run_process): when running synchronously,
-	if the child exits before EOFs are received, allow one more
-	poll of input before exiting. Hopefully this should be enough
-	to ensure that no final output from the process is missed
+	if the child exits before EOFs are received, allow a few more
+	polls of input before exiting. Hopefully this should be enough
+	to ensure that no final output from the process is missed. Of
+	course, this means that putting a shell command into the
+	background will take a few seconds to return
 
 	* lispcmds.c (sym_jade_dir, sym_lisp_lib_dir,
 	sym_site_lisp_dir): new pre-defined symbols
