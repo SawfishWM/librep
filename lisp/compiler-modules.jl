@@ -169,7 +169,7 @@
     (when (consp form)
       (let* ((def (assq (car form) (fluid macro-env)))
 	     ;; make #<subr macroexpand> pass us any inner expansions
-	     (macro-environment compiler-macroexpand))
+	     (macro-environment compiler-macroexpand-1))
 	(if def
 	    (setq form (apply (cdr def) (cdr form)))
 	  (setq def (compiler-symbol-value (car form)))
