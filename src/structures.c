@@ -98,6 +98,7 @@ struct rep_struct_node_struct {
     repv symbol;
     repv binding;
     int is_constant : 1;
+    int is_exported : 1;
 };
 
 /* structure encapsulating a single namespace */
@@ -106,7 +107,7 @@ struct rep_struct_struct {
     repv car;
     rep_struct *next;
     repv name;
-    repv interface;
+    repv inherited;	/* exported symbols that have no local binding */
     int total_buckets, total_bindings;
     rep_struct_node **buckets;
     repv imports;
@@ -218,6 +219,14 @@ cache_invalidate_struct (rep_struct *s)
     }
 }
 
+static void
+cache_flush (void)
+{
+    int i;
+    for (i = 0; i < CACHE_SETS; i++)
+	ref_cache[i].s = 0;
+}
+
 #else /* SINGLE_DM_CACHE */
 
 /* no cache at all */
@@ -244,8 +253,14 @@ cache_invalidate_struct (rep_struct *s)
 {
 }
 
+static void
+cache_flush (void)
+{
+}
+
 #endif /* !SINGLE_DM_CACHE */
 
+#if 0
 static void
 cache_invalidate_bindings (rep_struct *s, repv vars)
 {
@@ -255,6 +270,7 @@ cache_invalidate_bindings (rep_struct *s, repv vars)
 	vars = rep_CDR (vars);
     }
 }
+#endif
 
 
 /* type hooks */
@@ -273,7 +289,7 @@ structure_mark (repv x)
 	}
     }
     rep_MARKVAL (rep_STRUCTURE (x)->name);
-    rep_MARKVAL (rep_STRUCTURE (x)->interface);
+    rep_MARKVAL (rep_STRUCTURE (x)->inherited);
     rep_MARKVAL (rep_STRUCTURE (x)->imports);
     rep_MARKVAL (rep_STRUCTURE (x)->accessible);
 }
@@ -333,11 +349,12 @@ structure_print (repv stream, repv arg)
 
 /* utilities */
 
-/* Return true iff structure S exports a binding of symbol VAR */
-static inline rep_bool
-structure_exports_p (rep_struct *s, repv var)
+/* Return true iff structure S exports a binding of symbol VAR that it
+   inherits from one of its opened structures */
+static rep_bool
+structure_exports_inherited_p (rep_struct *s, repv var)
 {
-    repv tem = s->interface;
+    repv tem = s->inherited;
     while (rep_CONSP (tem))
     {
 	if (rep_CAR (tem) == var)
@@ -407,9 +424,16 @@ lookup_or_add (rep_struct *s, repv var)
 	rep_data_after_gc += sizeof (rep_struct_node);
 	n->symbol = var;
 	n->is_constant = 0;
+	n->is_exported = 0;
 	n->next = s->buckets[HASH (var, s->total_buckets)];
 	s->buckets[HASH (var, s->total_buckets)] = n;
 	s->total_bindings++;
+
+	if (structure_exports_inherited_p (s, var))
+	{
+	    n->is_exported = 1;
+	    s->inherited = Fdelq (var, s->inherited);
+	}
     }
     return n;
 }
@@ -420,20 +444,20 @@ static rep_struct_node *
 lookup_recursively (repv name, repv var)
 {
     repv s = F_get_structure (name);
-    if (s && rep_STRUCTUREP (s)
-	&& !rep_STRUCTURE (s)->exclusion
-	&& structure_exports_p (rep_STRUCTURE (s), var))
+    if (s && rep_STRUCTUREP (s) && !rep_STRUCTURE (s)->exclusion)
     {
 	rep_struct_node *n;
-	rep_STRUCTURE (s)->exclusion = 1;
 	n = lookup (rep_STRUCTURE (s), var);
-	if (n == 0)
+	if (n != 0)
+	    return n->is_exported ? n : 0;
+	rep_STRUCTURE (s)->exclusion = 1;
+	if (structure_exports_inherited_p (rep_STRUCTURE (s), var))
 	    n = search_imports (rep_STRUCTURE (s), var);
 	rep_STRUCTURE (s)->exclusion = 0;
-	if (n != 0)
-	    return n;
+	return n;
     }
-    return 0;
+    else
+	return 0;
 }
 
 static rep_struct_node *
@@ -547,7 +571,7 @@ BODY-THUNK may be modified by this function!
     s = rep_ALLOC_CELL (sizeof (rep_struct));
     rep_data_after_gc += sizeof (rep_struct);
     s->car = rep_structure_type;
-    s->interface = sig;
+    s->inherited = sig;
     s->name = name;
     s->total_buckets = s->total_bindings = 0;
     s->imports = Qnil;
@@ -705,10 +729,43 @@ DEFUN ("%structure-interface", F_structure_interface,
 
 Returns the interface of structure object STRUCTURE.
 ::end:: */
-
 {
+    rep_struct *s;
+    repv list;
+    int i;
     rep_DECLARE1 (structure, rep_STRUCTUREP);
-    return rep_STRUCTURE (structure)->interface;
+    s = rep_STRUCTURE (structure);
+    list = s->inherited;
+    for (i = 0; i < s->total_buckets; i++)
+    {
+	rep_struct_node *n;
+	for (n = s->buckets[i]; n != 0; n = n->next)
+	{
+	    if (n->is_exported)
+		list = Fcons (n->symbol, list);
+	}
+    }
+    return list;
+}
+
+DEFUN ("%structure-exports-p", F_structure_exports_p,
+       S_structure_exports_p, (repv structure, repv var), rep_Subr2) /*
+::doc:%structure-exports-p::
+%structure-exports-p STRUCTURE VAR
+
+Returns `t' if structure object STRUCTURE exports a binding of symbol
+VAR.
+::end:: */
+{
+    rep_struct_node *n;
+    rep_DECLARE1 (structure, rep_STRUCTUREP);
+    rep_DECLARE2 (var, rep_SYMBOLP);
+    n = lookup (rep_STRUCTURE (structure), var);
+    if (n != 0)
+	return n->is_exported ? Qt : Qnil;
+    else
+	return (structure_exports_inherited_p
+		(rep_STRUCTURE (structure), var) ? Qt : Qnil);
 }
 
 DEFUN ("%structure-imports", F_structure_imports,
@@ -743,16 +800,35 @@ DEFUN ("%set-interface", F_set_interface,
 %set-interface STRUCTURE INTERFACE
 
 Set the interface of structure object STRUCTURE to INTERFACE.
+
+Note that INTERFACE may subsequently be destructively modified!
 ::end:: */
 {
     rep_struct *s;
+    int i;
 
     rep_DECLARE1 (structure, rep_STRUCTUREP);
     rep_DECLARE2 (sig, rep_INTERFACEP);
     s = rep_STRUCTURE (structure);
-    s->interface = sig;
+    s->inherited = sig;
 
-    return sig;
+    for (i = 0; i < s->total_buckets; i++)
+    {
+	rep_struct_node *n;
+	for (n = s->buckets[i]; n != 0; n = n->next)
+	{
+	    if (structure_exports_inherited_p (s, n->symbol))
+	    {
+		n->is_exported = 1;
+		s->inherited = Fdelq (n->symbol, s->inherited);
+	    }
+	    else
+		n->is_exported = 0;
+	}
+    }
+
+    cache_flush ();
+    return Qt;
 }
 
 DEFUN("%intern-structure", F_intern_structure,
@@ -801,15 +877,12 @@ named in the list STRUCT-NAMES.
 	    if (s == rep_NULL)
 		break;
 	    if (rep_STRUCTUREP (s))
-	    {
 		dst->imports = Fcons (rep_CAR (args), dst->imports);
-		cache_invalidate_bindings (rep_STRUCTURE (s),
-					   rep_STRUCTURE (s)->interface);
-	    }
 	}
 	args = rep_CDR (args);
     }
     rep_POPGC;
+    cache_flush ();
     return Qnil;
 }
 
@@ -835,12 +908,11 @@ named in the list STRUCT-NAMES.
 	    if (s == rep_NULL || !rep_STRUCTUREP (s))
 		break;
 	    dst->accessible = Fcons (rep_CAR (args), dst->accessible);
-	    cache_invalidate_bindings (rep_STRUCTURE (s),
-				       rep_STRUCTURE (s)->interface);
 	}
 	args = rep_CDR (args);
     }
     rep_POPGC;
+    cache_flush ();
     return Qnil;
 }
 
@@ -1074,12 +1146,10 @@ rep_add_subr(rep_xsubr *subr, rep_bool export)
     repv sym = Fintern (subr->name, Qnil);
     if (sym)
     {
-	if (export)
-	{
-	    rep_struct *s = rep_STRUCTURE (rep_structure);
-	    s->interface = Fcons (sym, s->interface);
-	}
-	F_structure_set (rep_structure, sym, rep_VAL (subr));
+	rep_struct *s = rep_STRUCTURE (rep_structure);
+	rep_struct_node *n = lookup_or_add (s, sym);
+	n->binding = rep_VAL (subr);
+	n->is_exported = export;
     }
     return sym;
 }
@@ -1143,6 +1213,7 @@ rep_structures_init (void)
     rep_ADD_SUBR (S_external_structure_ref);
     rep_ADD_INTERNAL_SUBR (S_structure_name);
     rep_ADD_INTERNAL_SUBR (S_structure_interface);
+    rep_ADD_INTERNAL_SUBR (S_structure_exports_p);
     rep_ADD_INTERNAL_SUBR (S_structure_imports);
     rep_ADD_INTERNAL_SUBR (S_structure_accessible);
     rep_ADD_INTERNAL_SUBR (S_set_interface);
