@@ -31,9 +31,6 @@ Outstanding bugs
 
  ! `random' only accepts its range as a fixnum
 
- ! tail calling the current function is too slow, the compiler should
-   grok this (I have a patch that doesn't work to do this..)
-
 
 General programming tasks:
 ==========================

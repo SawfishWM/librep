@@ -1,7 +1,19 @@
+2000-03-09  John Harper  <john@dcs.warwick.ac.uk>
+
+	* compiler.jl: non-trivial changes to make the compiler
+	eliminate intra-function tail recursion. Also fixed some bugs
+	when handling defsubst's
+
+	* compiler-opt.jl: modified `jmp X; ... Y: --> jmp X; Y:'
+	pattern to handle `return' instructions as well as gotos, and
+	to delete until the end of the instruction stream if no
+	subsequence label. Also fixed bug stopping the optimization
+	being applied
+
 2000-03-08  John Harper  <john@dcs.warwick.ac.uk>
 
-	* compiler.jl (comp-compile-case): don't dup before the the
-	default branch
+	* compiler.jl (comp-compile-case): don't dup before the default
+	branch
 
 2000-03-05  John Harper  <john@dcs.warwick.ac.uk>
 
