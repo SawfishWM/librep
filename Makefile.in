@@ -94,6 +94,8 @@ realclean :
 	rm -f config.cache config.h config.log config.status Makefile libtool
 	rm -f *~ NEWS DOC TAGS build.h rules.mk librep.spec
 
+distclean : realclean
+
 tags: TAGS
 #
 # Use separate and explicit expressions rather than "(def.*" to avoid
@@ -125,4 +127,4 @@ TAGS :
 	   --regex="/[ \t]+([ \t]*define-datum-printer[ \t]+'\([^ \t)]+\)/\1/"\
 		$$rep_files
 
-.PHONY: install uninstall tar nobak clean realclean TAGS tags
+.PHONY: install uninstall tar nobak clean realclean TAGS tags distclean
