@@ -688,12 +688,12 @@ fatal_signal_handler(int sig)
     in_fatal_signal_handler = rep_TRUE;
 
 #ifdef HAVE_PSIGNAL
-    psignal(sig, "jade: received fatal signal");
+    psignal(sig, "rep: received fatal signal");
 #else
 # ifdef HAVE_STRSIGNAL
-    fprintf(stderr, "jade: received fatal signal: %s\n", strsignal(sig));
+    fprintf(stderr, "rep: received fatal signal: %s\n", strsignal(sig));
 # else
-    fprintf(stderr, "jade: received fatal signal: %d\n", sig);
+    fprintf(stderr, "rep: received fatal signal: %d\n", sig);
 # endif
 #endif
 
