@@ -336,14 +336,19 @@ structure_print (repv stream, repv arg)
 static rep_bool
 structure_exports_inherited_p (rep_struct *s, repv var)
 {
-    repv tem = s->inherited;
-    while (rep_CONSP (tem))
+    if (s->export_all)
+	return rep_TRUE;
+    else
     {
-	if (rep_CAR (tem) == var)
-	    return rep_TRUE;
-	tem = rep_CDR (tem);
+	repv tem = s->inherited;
+	while (rep_CONSP (tem))
+	{
+	    if (rep_CAR (tem) == var)
+		return rep_TRUE;
+	    tem = rep_CDR (tem);
+	}
+	return rep_FALSE;
     }
-    return rep_FALSE;
 }
 
 /* Scan for an immediate binding of symbol VAR in structure S, or return
@@ -1224,6 +1229,14 @@ rep_structure_exports_all (repv s, rep_bool status)
     rep_STRUCTURE (s)->export_all = status ? 1 : 0;
 }
 
+DEFUN("%structure-exports-all", F_structure_exports_all,
+      S_structure_exports_all, (repv s, repv status), rep_Subr2)
+{
+    rep_DECLARE1 (s, rep_STRUCTUREP);
+    rep_structure_exports_all (s, status != Qnil);
+    return s;
+}
+
 /* This is a horrible kludge :-(
 
    The problem is that we are used to doing (setq foo-special 42) in rc
@@ -1305,6 +1318,7 @@ rep_structures_init (void)
     rep_ADD_SUBR (Sfeaturep);
     rep_ADD_SUBR (Sprovide);
     rep_ADD_SUBR_INT (Srequire);
+    rep_ADD_INTERNAL_SUBR (S_structure_exports_all);
 
     rep_INTERN (features);
     rep_INTERN (_structures);
