@@ -452,8 +452,9 @@ make_bytecode_frame (repv spec, int nargs, repv *args)
 
 	if (nargs < min_args)
 	{
+	    repv fun = rep_call_stack != 0 ? rep_call_stack->fun : Qnil;
 	    return Fsignal (Qmissing_arg,
-			    rep_LIST_1 (rep_MAKE_INT (nargs + 1)));
+			    rep_list_2 (fun, rep_MAKE_INT (nargs + 1)));
 	}
 
 	if (rest_arg)

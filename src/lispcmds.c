@@ -930,8 +930,8 @@ can be a vector or a string. INDEX starts at zero.
 	    return(rep_VECTI(array, rep_INT(index)));
     }
     else
-	return(Fsignal(Qbad_arg, rep_list_2(array, rep_MAKE_INT(1))));
-    return(rep_signal_arg_error(index, 2));
+	return rep_signal_arg_error (array, 1);
+    return rep_signal_arg_error (index, 2);
 }
 
 DEFUN("make-string", Fmake_string, Smake_string, (repv len, repv init), rep_Subr2) /*
@@ -1115,8 +1115,7 @@ Returns the number of elements in SEQUENCE (a string, list or vector).
 	    return(rep_MAKE_INT(0));
 	/* FALL THROUGH */
     default:
-	Fsignal(Qbad_arg, rep_list_2(sequence, rep_MAKE_INT(1)));
-	return(rep_NULL);
+	return rep_signal_arg_error (sequence, 1);
     }
 }
 
@@ -1307,7 +1306,7 @@ ie,
 	if(!rep_NILP(Flistp(rep_CAR(args))))
 	    *last = rep_CAR(args);
 	else
-	    return(Fsignal(Qbad_arg, rep_LIST_1(rep_CAR(args))));
+	    return rep_signal_arg_error (rep_CAR (args), -1);
 	return(Ffuncall(list));
     }
     return rep_signal_missing_arg(1);

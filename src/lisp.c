@@ -1121,7 +1121,10 @@ rep_bind_lambda_list_1 (repv lambdaList, repv *args, int nargs,
 	    else if (state == STATE_OPTIONAL)
 		item->value = Qnil;
 	    else
-		return Fsignal (Qmissing_arg, rep_LIST_1 (argspec));
+	    {
+		repv fun = rep_call_stack != 0 ? rep_call_stack->fun : Qnil;
+		return Fsignal (Qmissing_arg, rep_list_2 (fun, argspec));
+	    }
 	    break;
 
 	case STATE_REST:
@@ -2278,13 +2281,15 @@ out:
 repv
 rep_signal_arg_error(repv obj, int argNum)
 {
-    return Fsignal(Qbad_arg, rep_list_2(obj, rep_MAKE_INT(argNum)));
+    repv fun = rep_call_stack != 0 ? rep_call_stack->fun : Qnil;
+    return Fsignal (Qbad_arg, rep_list_3 (fun, obj, rep_MAKE_INT (argNum)));
 }
 
 repv
 rep_signal_missing_arg(int argnum)
 {
-    return Fsignal(Qmissing_arg, rep_LIST_1(rep_MAKE_INT(argnum)));
+    repv fun = rep_call_stack != 0 ? rep_call_stack->fun : Qnil;
+    return Fsignal (Qmissing_arg, rep_list_2 (fun, rep_MAKE_INT (argnum)));
 }
 
 repv
@@ -2308,7 +2313,7 @@ ARGLIST had been evaluated or not before being put into the stack.
     struct rep_Call *lc = rep_call_stack;
 
     if(rep_NILP(strm) && !(strm = Fsymbol_value(Qstandard_output, Qnil)))
-	return Fsignal(Qbad_arg, rep_list_2(strm, rep_MAKE_INT(1)));
+	return rep_signal_arg_error (strm, 1);
 
     while (lc != 0)
     {
