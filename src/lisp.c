@@ -821,14 +821,15 @@ rep_readl(repv strm, register int *c_p)
 			    && char_names[i].name[1] == c2)
 			{
 			    char *ptr = char_names[i].name + 2;
-			    while ((c = rep_stream_getc (strm)) != EOF)
+			    while (1)
 			    {
+				c = rep_stream_getc (strm);
 				if (*ptr == 0)
 				{
 				    *c_p = c;
 				    return rep_MAKE_INT (char_names[i].value);
 				}
-				if (tolower (c) != *ptr++)
+				if (c == EOF || tolower (c) != *ptr++)
 				    goto error;
 			    }
 			}
