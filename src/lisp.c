@@ -68,7 +68,6 @@ DEFSYM(standard_output, "standard-output");
 
 DEFSYM(amp_optional, "&optional");
 DEFSYM(amp_rest, "&rest");
-DEFSYM(amp_aux, "&aux");
 
 /* When a `throw' happens a function stuffs a cons-cell in here with,
    (TAG . repv).
@@ -178,8 +177,7 @@ repv rep_env;
 repv rep_special_bindings;
 
 /* The bytecode interpreter to use. A subr or a null pointer */
-repv (*rep_bytecode_interpreter)(repv code, repv consts,
-				 repv stack, repv frame);
+repv (*rep_bytecode_interpreter)(repv subr, int nargs, repv *args);
 
 /* The lisp-call backtrace; also used for saving and restoring
    the current environment */
@@ -221,6 +219,8 @@ init_scm_booleans (void)
 				 rep_VAL (&S_scheme_bool_printer));
 	rep_scm_f = Fmake_datum (Qnil, rep_void_value,
 				 rep_VAL (&S_scheme_bool_printer));
+	rep_mark_static (&rep_scm_t);
+	rep_mark_static (&rep_scm_f);
     }
 }
 
@@ -943,11 +943,61 @@ eval_list(repv list)
     return result;
 }
 
+static repv
+copy_to_vector (repv argList, int nargs, repv *args,
+		rep_bool eval_args, rep_bool eval_in_env)
+{
+    if (eval_args)
+    {
+	repv old_env = rep_env, old_struct = rep_structure;
+	rep_GC_root gc_arglist;
+	rep_GC_n_roots gc_args;
+	rep_GC_root gc_old_env, gc_old_struct;
+	int i;
+	rep_PUSHGC(gc_arglist, argList);
+	rep_PUSHGCN(gc_args, args, 0);
+	if (!eval_in_env)
+	{
+	    rep_env = rep_call_stack->saved_env;
+	    rep_structure = rep_call_stack->saved_structure;
+	}
+	rep_PUSHGC(gc_old_env, old_env);
+	rep_PUSHGC(gc_old_struct, old_struct);
+	for(i = 0; i < nargs; i++)
+	{
+	    if((args[i] = Feval(rep_CAR(argList))) == rep_NULL)
+	    {
+		rep_POPGC;
+		rep_POPGCN;
+		rep_POPGC; rep_POPGC;
+		return rep_NULL;
+	    }
+	    argList = rep_CDR(argList);
+	    gc_args.count++;
+	}
+	rep_env = old_env;
+	rep_structure = old_struct;
+	rep_POPGC;
+	rep_POPGCN;
+	rep_POPGC; rep_POPGC;
+    }
+    else
+    {
+	int i;
+	for (i = 0; i < nargs; i++)
+	{
+	    args[i] = rep_CAR (argList);
+	    argList = rep_CDR (argList);
+	}
+    }
+    return Qt;
+}
+
 repv
 rep_bind_lambda_list_1 (repv lambdaList, repv *args, int nargs)
 {
     enum arg_state {
-	STATE_REQUIRED = 1, STATE_OPTIONAL, STATE_REST, STATE_AUX
+	STATE_REQUIRED = 1, STATE_OPTIONAL, STATE_REST
     };
 
     struct binding {
@@ -987,11 +1037,6 @@ rep_bind_lambda_list_1 (repv lambdaList, repv *args, int nargs)
 			return Fsignal (Qinvalid_lambda_list,
 					rep_LIST_1 (lambdaList));
 		    state = STATE_REST;
-		    continue;
-		}
-		else if (argspec == Qamp_aux)
-		{
-		    state = STATE_AUX;
 		    continue;
 		}
 	    }
@@ -1037,18 +1082,15 @@ rep_bind_lambda_list_1 (repv lambdaList, repv *args, int nargs)
 		}
 		item->value = list;
 	    }
-	    state = STATE_AUX;
+	    goto out;
 	    break;
-
-	case STATE_AUX:
-	    item->sym = argspec;
-	    item->value = Qnil;
 	}
 
 	rep_TEST_INT;
 	if (rep_INTERRUPTP)
 	    return rep_NULL;
     }
+out:
 
     /* Instantiate the bindings in reverse order, so that they
        end up in the same order that the compiler compiles
@@ -1066,11 +1108,9 @@ rep_bind_lambda_list_1 (repv lambdaList, repv *args, int nargs)
 /* format of lambda-lists is something like,
 
    [{required-symbols}] [&optional {optional-symbols}] [&rest symbol]
-   [&aux {auxiliary-symbols}]
 
-   NB: auxiliary symbols are set to nil. Also note that the lambdaList
-   arg isn't protected from gc by this function; it's assumed that
-   this is done by the caller.
+   Note that the lambdaList arg isn't protected from gc by this
+   function; it's assumed that this is done by the caller.
 
    IMPORTANT: this expects the top of the call stack to have the
    saved environments in which arguments need to be evaluated */
@@ -1085,50 +1125,13 @@ rep_bind_lambda_list(repv lambdaList, repv argList,
     evalled_args = alloca(sizeof(repv) * evalled_nargs);
 
     /* Evaluate arguments, and stick them in the evalled_args array */
-    if(eval_args)
+    if (!copy_to_vector (argList, evalled_nargs, evalled_args,
+			 eval_args, eval_in_env))
     {
-	repv old_env = rep_env, old_struct = rep_structure;
-	rep_GC_root gc_arglist;
-	rep_GC_n_roots gc_evalled_args;
-	rep_GC_root gc_old_env, gc_old_struct;
-	int i;
-	rep_PUSHGC(gc_arglist, argList);
-	rep_PUSHGCN(gc_evalled_args, evalled_args, 0);
-	if (!eval_in_env)
-	{
-	    rep_env = rep_call_stack->saved_env;
-	    rep_structure = rep_call_stack->saved_structure;
-	}
-	rep_PUSHGC(gc_old_env, old_env);
-	rep_PUSHGC(gc_old_struct, old_struct);
-	for(i = 0; i < evalled_nargs; i++)
-	{
-	    if((evalled_args[i] = Feval(rep_CAR(argList))) == rep_NULL)
-	    {
-		rep_POPGC;
-		rep_POPGCN;
-		rep_POPGC; rep_POPGC;
-		return rep_NULL;
-	    }
-	    argList = rep_CDR(argList);
-	    gc_evalled_args.count++;
-	}
-	rep_env = old_env;
-	rep_structure = old_struct;
 	rep_POPGC;
-	rep_POPGCN;
-	rep_POPGC; rep_POPGC;
+	return rep_NULL;
     }
-    else
-    {
-	int i;
-	for (i = 0; i < evalled_nargs; i++)
-	{
-	    evalled_args[i] = rep_CAR (argList);
-	    argList = rep_CDR (argList);
-	}
-    }
-
+   
     return rep_bind_lambda_list_1 (lambdaList, evalled_args, evalled_nargs);
 }
 
@@ -1474,23 +1477,20 @@ again:
 	/* don't allow unclosed bytecode for security reasons */
 	if (closure)
 	{
-	    repv boundlist;
+	    int nargs;
+	    repv *args;
+	    
 	    if (rep_bytecode_interpreter == 0)
 		goto invalid;
 
 	    rep_USE_FUNARG(closure);
-	    boundlist = rep_bind_lambda_list(rep_COMPILED_LAMBDA(fun),
-					     arglist, eval_args, rep_FALSE);
-	    if(boundlist != rep_NULL)
-	    {
-		result = (rep_bytecode_interpreter
-			  (rep_COMPILED_CODE(fun),
-			   rep_COMPILED_CONSTANTS(fun),
-			   rep_COMPILED_STACK(fun),
-			   boundlist));
-	    }
-	    else
+
+	    nargs = rep_list_length (arglist);
+	    args = alloca (sizeof (repv) * nargs);
+	    if (!copy_to_vector (arglist, nargs, args, eval_args, rep_FALSE))
 		result = rep_NULL;
+	    else
+		result = rep_bytecode_interpreter (fun, nargs, args);
 	    break;
 	}
 	/* FALL THROUGH */
@@ -1590,12 +1590,8 @@ eval(repv obj)
     /* not reached */
 }
 
-DEFUN("eval", Feval, Seval, (repv obj), rep_Subr1) /*
-::doc:eval::
-eval FORM
-
-Evaluates FORM and returns its value.
-::end:: */
+repv
+Feval (repv obj)
 {
     static int DbDepth;
     rep_bool newssflag = rep_TRUE;
@@ -2280,11 +2276,10 @@ rep_lisp_init(void)
     rep_INTERN_SPECIAL(standard_input); rep_INTERN_SPECIAL(standard_output);
     rep_INTERN_SPECIAL(debug_entry); rep_INTERN_SPECIAL(debug_exit);
     rep_INTERN_SPECIAL(debug_error_entry);
-    rep_INTERN(amp_optional); rep_INTERN(amp_rest); rep_INTERN(amp_aux);
+    rep_INTERN(amp_optional); rep_INTERN(amp_rest);
     rep_mark_static((repv *)&rep_throw_value);
     rep_ADD_INTERNAL_SUBR (S_scheme_bool_printer);
     rep_ADD_SUBR(S_load_autoload);
-    rep_ADD_SUBR(Seval);
     rep_ADD_SUBR(Sfuncall);
     rep_ADD_SUBR(Sprogn);
     rep_ADD_SUBR(Sbreak);
