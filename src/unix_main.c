@@ -30,6 +30,7 @@
 #include <dirent.h>
 #include <pwd.h>
 #include <netdb.h>
+#include <signal.h>
 
 #ifdef HAVE_STRERROR
 # include <errno.h>
@@ -802,6 +803,63 @@ sys_fully_qualify_file_name(VALUE name)
     return(NULL);
 }
 
+
+/* Standard signal handlers */
+
+/* Invoked by any of the handlable error reporting signals */
+static void
+fatal_signal_handler(int sig)
+{
+    static volatile bool in_error;
+
+    /* Check for nested calls to this function */
+    if(in_error)
+	raise(sig);
+    in_error = TRUE;
+
+#ifdef HAVE_PSIGNAL
+    psignal(sig, "jade: received fatal signal");
+#else
+# ifdef HAVE_STRSIGNAL
+    fprintf("jade: received fatal signal: %s\n", strsignal(sig));
+# else
+    fprintf("jade: received fatal signal: %d\n", sig);
+# endif
+#endif
+
+    /* Output all debug buffers */
+    db_spew_all();
+
+    /* Try and output the Lisp call stack; this may or may not
+       provoke another error, but who cares.. */
+    fprintf(stderr, "\nLisp backtrace:");
+    cmd_backtrace(cmd_stderr_file());
+    fputs("\n\n", stderr);
+
+    /* Now reraise the signal, since it's currently blocked
+       the default action will occur, i.e. termination */
+    raise(sig);
+}
+
+/* Invoked by SIGINT (i.e. ^C) */
+static void
+interrupt_signal_handler(int sig)
+{
+    throw_value = int_cell;
+    signal(SIGINT, interrupt_signal_handler);
+}
+
+/* Invoked by trappable termination signals */
+static void
+termination_signal_handler(int sig)
+{
+    throw_value = term_cell;
+    signal(sig, termination_signal_handler);
+}
+
+
+/* Initialisation */
+
 void
 sys_misc_init(void)
 {
@@ -827,4 +885,46 @@ sys_misc_init(void)
     ADD_SUBR(subr_user_home_directory);
     ADD_SUBR(subr_system_name);
     ADD_SUBR(subr_setenv);
+
+    /* First the error signals */
+#ifdef SIGFPE
+    if(signal(SIGFPE, fatal_signal_handler) == SIG_IGN)
+	signal(SIGFPE, SIG_IGN);
+#endif
+#ifdef SIGILL
+    if(signal(SIGILL, fatal_signal_handler) == SIG_IGN)
+	signal(SIGILL, SIG_IGN);
+#endif
+#ifdef SIGSEGV
+    if(signal(SIGSEGV, fatal_signal_handler) == SIG_IGN)
+	signal(SIGSEGV, SIG_IGN);
+#endif
+#ifdef SIGBUS
+    if(signal(SIGBUS, fatal_signal_handler) == SIG_IGN)
+	signal(SIGBUS, SIG_IGN);
+#endif
+#ifdef SIGQUIT
+    if(signal(SIGQUIT, fatal_signal_handler) == SIG_IGN)
+	signal(SIGQUIT, SIG_IGN);
+#endif
+#ifdef SIGABRT
+    if(signal(SIGABRT, fatal_signal_handler) == SIG_IGN)
+	signal(SIGABRT, SIG_IGN);
+#endif
+
+    /* Install the interrupt handler */
+#ifdef SIGINT
+    if(signal(SIGINT, interrupt_signal_handler) == SIG_IGN)
+	signal(SIGINT, SIG_IGN);
+#endif
+
+    /* Finally, the termination signals */
+#ifdef SIGTERM
+    if(signal(SIGTERM, termination_signal_handler) == SIG_IGN)
+	signal(SIGTERM, SIG_IGN);
+#endif
+#ifdef SIGHUP
+    if(signal(SIGHUP, termination_signal_handler) == SIG_IGN)
+	signal(SIGHUP, SIG_IGN);
+#endif
 }
