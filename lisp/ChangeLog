@@ -1,5 +1,10 @@
 Tue May 26 13:15:11 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* rm-restrict.jl: new file, rule-based message selection
+
+	* mail-headers.jl (mail-parse-date): initialise values to
+	sensible defaults
+
 	* mail-headers.jl (mail-parse-date): fix epoch-time calculation
 
 Mon May 25 17:12:39 1998  John Harper  <john@dcs.warwick.ac.uk>
