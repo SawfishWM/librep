@@ -18,16 +18,32 @@
    along with librep; see the file COPYING.  If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-/* todo:
+/* notes:
 
-   There's an obvious optimisation to make -- only copy the stack if
-   it's actually required. The only way it can be required is if either
-   the creating call/cc exits, or if invoke-primitive-continuation is
-   called. Either way the original stack contents are still available
-   for copying
+   The basic idea is to copy the entire active stack into the
+   continuation, together with a jmpbuf and the pointers into the stack
+   stored lisp histories (lisp call stack, gc roots, blocked file
+   operations, saved regexp data, etc..)
 
-   There are a few wrinkles though.. e.g. call/cc has to check that the
-   continuation hasn't been collected before copying in the stack.  */
+   When the continuation is activated, the stack is built up so that
+   it's large enough to contain the saved stack in the continuation.
+   The saved version is then copied over the current stack, and the
+   jmpbuf is called
+
+   Marking a continuation involves marking all the lisp histories, but
+   remembering to relocate into the copied stack data
+
+   Some of the ideas here were inspired by the SCM/Guile implementation
+   of continuations.
+
+   Note that continuations only save and restore lexical bindings, it
+   doesn't make sense to save dynamic bindings (this includes
+   catch/throw, unwind-protect, etc..), and I haven't worked out how to
+   do it anyway...
+
+   Hopefully this will be reasonably portable, I _think_ it only
+   depends on having a linear stack that completely encapsulates the
+   current process state, and a setjmp/longjmp implementation..   */
 
 #define _GNU_SOURCE
 
@@ -74,10 +90,13 @@ char *alloca ();
 # endif
 #endif
 
-/* The data saved for a continuation. Note that currently no attempt
-   is made to save/restore special bindings (variables or objects); I
-   can't think of an efficient way, and I'm not even sure it's possible
-   or desirable..? */
+#if defined (DEBUG)
+# define DB(x) printf x
+#else
+# define DB(x)
+#endif
+
+/* The data saved for a continuation */
 typedef struct rep_continuation {
     repv car;
     struct rep_continuation *next;
@@ -121,6 +140,26 @@ static rep_continuation *invoked_continuation;
 /* Approx. number of extra bytes of stack per recursion */
 #define STACK_GROWTH 512
 
+/* save the original stack for continuation C */
+static void
+save_stack (rep_continuation *c)
+{
+    FLUSH_REGISTER_WINDOWS;
+
+#if STACK_DIRECTION < 0
+    c->stack_size = rep_stack_bottom - c->stack_top;
+#else
+    c->stack_size = c->stack_top - rep_stack_bottom;
+#endif
+    c->stack_copy = rep_alloc (c->stack_size);
+    rep_data_after_gc += c->stack_size;
+#if STACK_DIRECTION < 0
+    memcpy (c->stack_copy, c->stack_top, c->stack_size);
+#else
+    memcpy (c->stack_copy, rep_stack_bottom, c->stack_size);
+#endif
+}
+
 /* Make sure that the current frame has enough space under it to
    hold the saved copy in C, then invoke the continuation */
 static void
@@ -149,10 +188,6 @@ grow_stack_and_invoke (rep_continuation *c, char *water_mark)
     memcpy (rep_stack_bottom, c->stack_copy, c->stack_size);
 #endif
 
-    /* save the continuation where it can be found, then
-       longjmp back to Fcall_cc () */
-
-    invoked_continuation = c;
     FLUSH_REGISTER_WINDOWS;		/* XXX necessary? */
     longjmp (c->jmpbuf, 1);
 }
@@ -178,33 +213,25 @@ DEFUN("primitive-invoke-continuation", Fprimitive_invoke_continuation,
        call to Fmake_closure () will have saved its old state.. */
 
     rep_CONTIN(cont)->ret_value = ret;
+    invoked_continuation = rep_CONTIN(cont);
+
+    DB (("invoke: calling continuation %p\n", rep_CONTIN(cont)));
     grow_stack_and_invoke (rep_CONTIN(cont), &water_mark);
 
     /* not reached */
     return Qnil;
 }
 
-/* save the original stack for continuation C */
-static void
-save_stack (rep_continuation *c)
+/* Return the address further into the stack than any part of the frame
+   of the calling function. */
+static char *
+get_stack_top (rep_continuation *c)
 {
+#if defined (__GNUC__) && !defined (BROKEN_ALPHA_GCC)
+    return __builtin_frame_address (0);
+#else
     int dummy;
-    char *stack_top = (char *) &dummy;
-
-    FLUSH_REGISTER_WINDOWS;
-
-    c->stack_top = stack_top;
-#if STACK_DIRECTION < 0
-    c->stack_size = rep_stack_bottom - stack_top;
-#else
-    c->stack_size = stack_top - rep_stack_bottom;
-#endif
-    c->stack_copy = rep_alloc (c->stack_size);
-    rep_data_after_gc += c->stack_size;
-#if STACK_DIRECTION < 0
-    memcpy (c->stack_copy, stack_top, c->stack_size);
-#else
-    memcpy (c->stack_copy, rep_stack_bottom, c->stack_size);
+    return (char *) &dummy;
 #endif
 }
 
@@ -223,6 +250,7 @@ values of any dynamic bindings currently in effect.
 ::end:: */
 {
     rep_continuation *c;
+    repv ret;
 
     c = rep_ALLOC_CELL (sizeof (rep_continuation));
     rep_data_after_gc += sizeof (rep_continuation);
@@ -230,19 +258,9 @@ values of any dynamic bindings currently in effect.
     continuations = c;
     c->car = rep_continuation_type;
 
-    c->call_stack = rep_call_stack;
-    c->gc_roots = rep_gc_root_stack;
-    c->gc_n_roots = rep_gc_n_roots_stack;
-    c->regexp_data = rep_saved_matches;
-    memcpy (c->blocked_ops, rep_blocked_ops, sizeof (c->blocked_ops));
-    c->throw_value = rep_throw_value;
-    c->single_step = rep_single_step_flag;
-    c->lisp_depth = rep_lisp_depth;
-
     if (setjmp (c->jmpbuf))
     {
 	/* back from call/cc */
-	repv ret;
 
 	/* fish out the continuation (variable `c' may have been lost) */
 	c = invoked_continuation;
@@ -259,25 +277,37 @@ values of any dynamic bindings currently in effect.
 
 	ret = c->ret_value;
 	c->ret_value = Qnil;
-	return ret;
     }
     else
     {
 	/* into call/cc */
 	repv proxy;
 
-	/* copy the stack contents, including this frame */
+	c->call_stack = rep_call_stack;
+	c->gc_roots = rep_gc_root_stack;
+	c->gc_n_roots = rep_gc_n_roots_stack;
+	c->regexp_data = rep_saved_matches;
+	memcpy (c->blocked_ops, rep_blocked_ops, sizeof (c->blocked_ops));
+	c->throw_value = rep_throw_value;
+	c->single_step = rep_single_step_flag;
+	c->lisp_depth = rep_lisp_depth;
+	c->stack_top = get_stack_top (c);
+
 	save_stack (c);
+
+	DB (("call/cc: saved %p; stack_size=%lu\n", c, c->stack_size));
 
 	proxy = Fmake_closure (rep_VAL(&Sprimitive_invoke_continuation), Qnil);
 	rep_FUNARG(proxy)->env = Fcons (Fcons (Qcontinuation, rep_VAL(c)),
 					rep_FUNARG(proxy)->env);
-	return rep_call_lisp1 (fun, proxy);
+	ret = rep_call_lisp1 (fun, proxy);
     }
+
+    return ret;
 }
 
 #if STACK_DIRECTION < 0
-static char *
+static inline char *
 fixup (char *addr, rep_continuation *c)
 {
     if (c->stack_top > c->stack_copy)
@@ -286,7 +316,7 @@ fixup (char *addr, rep_continuation *c)
 	return (addr - c->stack_copy) + c->stack_top;
 }
 #else
-static char *
+static inline char *
 fixup (char *addr, unsigned rep_PTR_SIZED_INT diff)
 {
     if (c->stack_top > c->stack_copy)
