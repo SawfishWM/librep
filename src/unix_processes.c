@@ -34,6 +34,7 @@
 #include <termios.h>
 #include <fcntl.h>
 #include <string.h>
+#include <assert.h>
 
 #ifdef NEED_MEMORY_H
 # include <memory.h>
@@ -223,8 +224,7 @@ check_for_zombies(void)
 		    break;
 		}
 	    }
-	    if(pr == 0)
-		abort();		/* Shouldn't happen. */
+	    assert(pr != 0);
 	}
 	else if(pid == 0)
 	    break;
