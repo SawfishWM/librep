@@ -146,7 +146,7 @@ test_interrupt (void)
 		if (c == rep_call_stack)
 		    rep_CAR (tem) = rep_MAKE_INT (rep_INT (rep_CAR (tem)) + 1);
 		rep_CDR (tem) = rep_MAKE_INT (rep_INT (rep_CDR (tem)) + 1);
-		Fstructure_set (profile_table, name, tem);
+		Fstructure_define (profile_table, name, tem);
 
 		seen[seen_i++] = name;
 	    }

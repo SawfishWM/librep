@@ -1563,7 +1563,7 @@ DEFUN("set-file-handler-environment", Fset_file_handler_environment,
 set-file-handler-environment ENV
 ::end:: */
 {
-    return Fstructure_set (structure, Qfh_env_key, env);
+    return Fstructure_define (structure, Qfh_env_key, env);
 }
 
 
