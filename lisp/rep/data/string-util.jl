@@ -67,13 +67,23 @@
 ;;;###autoload
 (defun mapconcat (fun sequence separator)
   "Call FUN for each member of SEQUENCE, concatenating the results. Between
-each pair of results, insert SEPARATOR. Return the resulting string." 
-  (let ((len (length sequence)))
-    (if (= len 0)
-	""
-      (let loop ((i 1)
-		 (frags (list (fun (elt sequence 0)))))
-	(if (= i len)
-	    (apply concat (nreverse frags))
-	  (loop (1+ i) (cons (fun (elt sequence i))
-			     (cons separator frags))))))))
+each pair of results, insert SEPARATOR. Return the resulting string."
+  (cond ((null sequence) "")
+	((consp sequence)
+	 ;; avoid O(n) operations on lists
+	 (let loop ((rest (cdr sequence))
+		    (frags (list (fun (car sequence)))))
+	   (if (null rest)
+	       (apply concat (nreverse frags))
+	     (loop (cdr rest)
+		   (cons (fun (car rest)) (cons separator frags))))))
+	(t ;; use general sequence operations
+	 (let ((len (length sequence)))
+	   (if (= len 0)
+	       ""
+	     (let loop ((i 1)
+			(frags (list (fun (elt sequence 0)))))
+	       (if (= i len)
+		   (apply concat (nreverse frags))
+		 (loop (1+ i) (cons (fun (elt sequence i))
+				    (cons separator frags))))))))))
