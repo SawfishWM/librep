@@ -133,7 +133,7 @@ unprotect_procs(void)
     process_mutex--;
 }
 
-INLINE void
+static INLINE void
 register_input_fd(int fd)
 {
 #ifdef HAVE_X11
@@ -142,7 +142,7 @@ register_input_fd(int fd)
 #endif
 }
 
-INLINE void
+static INLINE void
 deregister_input_fd(int fd)
 {
 #ifdef HAVE_X11
