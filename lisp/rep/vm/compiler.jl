@@ -762,9 +762,38 @@ that files which shouldn't be compiled aren't."
 ;; Source code transformations. These are basically macros that are only
 ;; used at compile-time.
 
-(put 'eval-when-compile 'comp-transform 'comp-trans-eval-when-compile)
+(put 'eval-when-compile 'compile-transform 'comp-trans-eval-when-compile)
 (defun comp-trans-eval-when-compile (form)
   (eval (nth 1 form)))
+
+(put 'if 'compile-transform 'comp-trans-if)
+(defun comp-trans-if (form)
+  (let
+      ((condition (nth 1 form))
+       (then-form (nth 2 form))
+       (else-forms (nthcdr 3 form)))
+    (if (null else-forms)
+	(list 'cond (list condition then-form))
+      (list 'cond (list condition then-form) (cons 't else-forms)))))
+
+(put 'and 'compile-transform 'comp-trans-and)
+(defun comp-trans-and (form)
+  (setq form (cdr form))
+  (let
+      (list slot)
+    (while form
+      (if slot
+	  (progn
+	    (setcdr slot (cons (list 'cond (list (car form))) nil))
+	    (setq slot (car (cdr (car (cdr slot))))))
+	(setq list (list 'cond (list (car form)))
+	      slot (car (cdr list))))
+      (setq form (cdr form)))
+    list))
+
+(put 'or 'compile-transform 'comp-trans-or)
+(defun comp-trans-or (form)
+  (cons 'cond (mapcar #'list (cdr form))))
 
 
 ;; Functions which compile non-standard functions (ie special-forms)
