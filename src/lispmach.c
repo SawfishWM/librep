@@ -312,6 +312,7 @@ fetch:
 			tmp2 = cmd_cons(RET_POP, tmp2);
 		    TOP = VSUBRNFUN(tmp)(tmp2);
 		    break;
+
 		case V_Cons:
 		    tmp2 = sym_nil;
 		    POPN(-arg);
@@ -338,14 +339,55 @@ fetch:
 			/* I can't be bothered to go to all the hassle
 			   of doing this here, it's going to be slow
 			   anyway so just pass it to funcall.  */
-			TOP = funcall(TOP, tmp2);
+			TOP = funcall(TOP, tmp2, FALSE);
 		    else
-		    {
-			cmd_signal(sym_invalid_function, LIST_1(TOP));
-			goto error;
-		    }
+			goto invalid;
 		    break;
-		default:
+
+		case V_Compiled:
+		    tmp2 = sym_nil;
+		    POPN(-arg);
+		    while(arg--)
+			tmp2 = cmd_cons(RET_POP, tmp2);
+		    if(!COMPILED_MACRO_P(tmp))
+		    {
+			VALUE bindings;
+			struct Lisp_Call lc;
+			lc.next = lisp_call_stack;
+			lc.fun = TOP;
+			lc.args = tmp2;
+			lc.args_evalled_p = sym_t;
+			lisp_call_stack = &lc;
+
+			bindings = bindlambdalist(VVECTI(tmp, COMPILED_LAMBDA),
+						  tmp2, FALSE);
+			if(bindings != LISP_NULL)
+			{
+			    GC_root gc_bindings;
+			    PUSHGC(gc_bindings, bindings);
+			    TOP = cmd_jade_byte_code
+				    (VVECTI(tmp, COMPILED_CODE),
+				     VVECTI(tmp, COMPILED_CONSTANTS),
+				     MAKE_INT(COMPILED_STACK(tmp)));
+			    POPGC;
+			    unbind_symbols(bindings);
+			    if(TOP == LISP_NULL
+			       && throw_value != LISP_NULL
+			       && (VCAR(throw_value) == sym_defun))
+			    {
+				TOP = VCDR(throw_value);
+				throw_value = LISP_NULL;
+			    }
+			}
+			else
+			    goto error;
+			lisp_call_stack = lc.next;
+		    }
+		    else
+			goto invalid;
+		    break;
+
+		default: invalid:
 		    cmd_signal(sym_invalid_function, LIST_1(TOP));
 		    goto error;
 		}
@@ -1167,10 +1209,62 @@ will be signalled.
 	return sym_t;
 }
 
+_PR VALUE cmd_make_byte_code_subr(VALUE args);
+DEFUN("make-byte-code-subr", cmd_make_byte_code_subr, subr_make_byte_code_subr, (VALUE args), V_SubrN, DOC_make_byte_code_subr) /*
+::doc:make_byte_code_subr::
+make-byte-code-subr ARGS CODE CONSTANTS STACK [DOC] [INTERACTIVE] [MACROP]
+
+Return an object that can be used as the function value of a symbol.
+::end:: */
+{
+    int len = list_length(args);
+    Lisp_Compiled *obj;
+
+    if(len < 4)
+	return signal_missing_arg(len + 1);
+    
+    obj = VCOMPILED(cmd_make_vector(MAKE_INT(COMPILED_NSLOTS), sym_nil));
+    if(obj != LISP_NULL)
+    {
+	obj->car = (obj->car & ~CELL8_TYPE_MASK) | V_Compiled;
+	if(!LISTP(VCAR(args)))
+	    return signal_arg_error(VCAR(args), 1);
+	VVECTI(obj, COMPILED_LAMBDA) = VCAR(args); args = VCDR(args);
+	if(!STRINGP(VCAR(args)))
+	    return signal_arg_error(VCAR(args), 2);
+	VVECTI(obj, COMPILED_CODE) = VCAR(args); args = VCDR(args);
+	if(!VECTORP(VCAR(args)))
+	    return signal_arg_error(VCAR(args), 2);
+	VVECTI(obj, COMPILED_CONSTANTS) = VCAR(args); args = VCDR(args);
+	if(!INTP(VCAR(args)))
+	    return signal_arg_error(VCAR(args), 2);
+	VVECTI(obj, COMPILED_STACK_FLAGS) = VCAR(args); args = VCDR(args);
+
+	if(CONSP(args))
+	{
+	    VVECTI(obj, COMPILED_DOC) = VCAR(args); args = VCDR(args);
+	    if(CONSP(args))
+	    {
+		VVECTI(obj, COMPILED_INTERACTIVE) = VCAR(args);
+		args = VCDR(args);
+		if(CONSP(args) && !NILP(VCAR(args)))
+		{
+		    VVECTI(obj, COMPILED_STACK_FLAGS)
+			= MAKE_INT(VINT(VVECTI(obj, COMPILED_STACK_FLAGS))
+				   | LCFF_IS_MACRO);
+		}
+	    }
+	}
+    }
+    return VAL(obj);
+}
+			     
+
 void
 lispmach_init(void)
 {
     ADD_SUBR(subr_jade_byte_code);
     ADD_SUBR(subr_validate_byte_code);
+    ADD_SUBR(subr_make_byte_code_subr);
     INTERN(bytecode_error); ERROR(bytecode_error);
 }
