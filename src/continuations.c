@@ -250,8 +250,8 @@ struct rep_thread_struct {
     repv env, structure;
     int lock;
     struct timeval run_at;
-    rep_bool (*poll)(rep_thread *t, repv arg);
-    repv poll_arg;
+    rep_bool (*poll)(rep_thread *t, void *arg);
+    void *poll_arg;
     repv exit_val;
 };
 
@@ -996,7 +996,7 @@ new_thread (repv name)
     t->car = rep_thread_type;
     t->name = name;
     t->poll = 0;
-    t->poll_arg = Qnil;
+    t->poll_arg = 0;
     t->exit_val = rep_NULL;
     t->next_alloc = threads;
     threads = t;
@@ -1104,7 +1104,7 @@ thread_yield (void)
 
 static void
 thread_suspend (rep_thread *t, u_long msecs,
-		rep_bool (*poll)(rep_thread *t, repv arg), repv poll_arg)
+		rep_bool (*poll)(rep_thread *t, void *arg), void *poll_arg)
 {
     rep_barrier *root = t->cont->root;
     assert (!(t->car & TF_SUSPENDED));
@@ -1295,7 +1295,6 @@ mark_thread (repv obj)
     rep_MARKVAL (THREAD (obj)->env);
     rep_MARKVAL (THREAD (obj)->structure);
     rep_MARKVAL (THREAD (obj)->name);
-    rep_MARKVAL (THREAD (obj)->poll_arg);
     rep_MARKVAL (THREAD (obj)->exit_val);
 }
 
@@ -1579,8 +1578,7 @@ runnable threads, then sleep until the next thread becomes runnable.
     if (th == Qnil)
 	th = Fcurrent_thread (Qnil);
     rep_DECLARE1 (th, THREADP);
-    thread_suspend (THREAD (th), rep_INTP (msecs) ? rep_INT (msecs) : 0,
-		    0, Qnil);
+    thread_suspend (THREAD (th), rep_INTP (msecs) ? rep_INT (msecs) : 0, 0, 0);
     return Qnil;
 #else
     return rep_signal_arg_error (th, 1);
@@ -1589,9 +1587,10 @@ runnable threads, then sleep until the next thread becomes runnable.
 
 #ifdef WITH_CONTINUATIONS
 static rep_bool
-thread_join_poller (rep_thread *t, repv arg)
+thread_join_poller (rep_thread *t, void *arg)
 {
-    return (THREAD (arg)->car & TF_EXITED) ? rep_TRUE : rep_FALSE;
+    rep_thread *th = arg;
+    return (th->car & TF_EXITED) ? rep_TRUE : rep_FALSE;
 }
 #endif
 
@@ -1614,7 +1613,7 @@ the last form it evaluated, else return DEFAULT-VALUE.
 	rep_PUSHGC (gc_th, th);
 	thread_suspend (THREAD (self),
 			rep_INTP (msecs) ? rep_INT (msecs) : 0,
-			thread_join_poller, th);
+			thread_join_poller, THREAD (th));
 	rep_POPGC;
 	if ((THREAD (th)->car & TF_EXITED) && THREAD (th)->exit_val)
 	    return THREAD (th)->exit_val;
