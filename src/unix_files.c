@@ -256,6 +256,8 @@ sys_directory_file_name(VALUE file)
     {
 	if(len == 0)
 	    return VAL(&dot);
+	else if(len == 1)
+	    return file;
 	else
 	    /* Chop the trailing "/" */
 	    return string_dupn(VSTR(file), len - 1);
