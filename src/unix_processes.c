@@ -219,8 +219,13 @@ proc_notification(void)
 static rep_bool
 check_for_zombies(void)
 {
+#if 0
+    /* XXX It seems that under some circumstances SIGCHLD signals can
+       XXX not get delivered? What am I doing wrong? Anyway, it's better
+       XXX to always check for now... */
     if(!got_sigchld)
 	return rep_FALSE;
+#endif
 
     got_sigchld = rep_FALSE;
     while(process_run_count > 0)

@@ -1,0 +1,8 @@
+*.la
+*.lo
+Makefile
+rep.h
+.libs
+repdoc
+rep
+rep-config

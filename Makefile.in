@@ -20,7 +20,7 @@
 
 top_builddir=.
 
-SUBDIRS = src lisp
+SUBDIRS = src lisp man
 
 all : build.h DOC.dir
 	set -e; for dir in $(SUBDIRS); do \

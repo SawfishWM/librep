@@ -29,7 +29,8 @@ version="0.0"
 makefile_template="Makefile.in:Makedefs.in"
 output_files="src/Makefile:Makedefs.in:src/Makefile.in\
  lisp/Makefile:Makedefs.in:lisp/Makefile.in\
- Makefile:Makedefs.in:Makefile.in"
+ Makefile:Makedefs.in:Makefile.in\
+ man/Makefile:Makedefs.in:man/Makefile.in"
 
 dnl Find the system type
 AC_CANONICAL_HOST

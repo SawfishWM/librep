@@ -5,10 +5,19 @@ exec_prefix=$2
 version=$3
 LIBS=$4
 
-libpath="-L${exec_prefix}"
-if echo "$LIBS" | fgrep -s -- -R; then
-  # assume that system needs -R for shared libraries
-  libpath="$libpath -R${exec_prefix}/lib"
+libpath="-L${exec_prefix}/lib"
+
+# Try to figure out which systems will require the -R option, libtool
+# seems to contain a line like the following (from solaris):
+#	hardcode_libdir_flag_spec="-R\$libdir"
+
+hardcode=`grep '^hardcode_libdir_flag_spec' ../libtool`
+
+if test "x${hardcode}" != "x"; then
+  libdir="${exec_prefix}/lib"
+  # Eval twice to remove the backslash
+  eval eval $hardcode
+  libpath="$libpath $hardcode_libdir_flag_spec"
 fi
 
 cat <<EOF
