@@ -50,7 +50,8 @@ extern repv Fthread_name (repv th);
 extern u_long rep_max_sleep_for (void);
 
 /* from datums.c */
-extern repv Fmake_datum (repv, repv, repv);
+extern repv Fmake_datum (repv, repv);
+extern repv Fdefine_datum_printer (repv, repv);
 extern repv Fdatum_ref (repv, repv);
 extern repv Fdatum_set (repv, repv, repv);
 extern repv Fhas_type_p (repv, repv);
@@ -514,6 +515,10 @@ extern repv rep_push_structure (const char *name);
 extern repv rep_pop_structure (repv old);
 extern repv rep_add_subr(rep_xsubr *, rep_bool);
 extern void rep_structure_exports_all (repv s, rep_bool status);
+
+/* from tuples.c */
+extern repv rep_make_tuple (repv car, repv a, repv b);
+extern void rep_mark_tuple (repv t);
 
 /* from values.c */
 extern repv Qafter_gc_hook;

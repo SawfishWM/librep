@@ -338,7 +338,7 @@ rep_kill(void)
 #endif
     rep_lispmach_kill();
     rep_db_kill();
-    rep_symbols_kill();
+    rep_tuples_kill();
     rep_values_kill();
     sys_memory_kill();
 }

@@ -109,9 +109,12 @@ extern void rep_structures_init (void);
 /* from symbols.c */
 extern int rep_pre_symbols_init(void);
 extern void rep_symbols_init(void);
-extern void rep_symbols_kill(void);
-extern int rep_allocated_symbols, rep_used_symbols;
 extern int rep_allocated_funargs, rep_used_funargs;
+
+/* from tuples.c */
+extern int rep_allocated_tuples, rep_used_tuples;
+extern void rep_sweep_tuples (void);
+extern void rep_tuples_kill(void);
 
 /* from values.c */
 extern int rep_type_cmp(repv, repv);
