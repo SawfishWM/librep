@@ -1,3 +1,9 @@
+1998-11-14  John Harper  <john@jsh.org>
+
+	* c-mode.jl (c-indent-pos): don't recognize a semi-colon as
+	terminating a statement unless (ignoring following whitespace)
+	it's followed by eol or a comment
+
 1998-11-11  John Harper  <john@dcs.warwick.ac.uk>
 
 	* tex-shell.jl (tex-shell-program, tex-shell-program-args): new

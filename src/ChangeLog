@@ -1,3 +1,7 @@
+1998-11-14  John Harper  <john@jsh.org>
+
+	* unix_main.c (handle_input): fixes to the input_pending stuff
+
 1998-11-12  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_main.c (sys_mark_input_pending): new function, records
