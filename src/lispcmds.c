@@ -1725,6 +1725,7 @@ path_error:
 	}
 	rep_POPGC; rep_POPGC;
 	rep_unbind_symbols (bindings);
+	Fclose_file (stream);
 
 	/* Loading succeeded. Look for an applicable item in
 	   the after-load-alist. */
