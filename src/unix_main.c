@@ -324,29 +324,33 @@ rep_unix_set_fd_cloexec(int fd)
 void
 rep_sig_restart(int sig, rep_bool flag)
 {
+#ifdef HAVE_SIGINTERRUPT
+    siginterrupt (sig, !flag);
+#else
     struct sigaction act;
     sigaction (sig, 0, &act);
     if(flag)
     {
-#ifdef SA_RESTART
+# ifdef SA_RESTART
 	act.sa_flags |= SA_RESTART;
-#else
-# ifdef SA_INTERRUPT
+# else
+#  ifdef SA_INTERRUPT
 	act.sa_flags &= ~SA_INTERRUPT;
+#  endif
 # endif
-#endif
     }
     else
     {
-#ifdef SA_RESTART
+# ifdef SA_RESTART
 	act.sa_flags &= ~SA_RESTART;
-#else
-# ifdef SA_INTERRUPT
+# else
+#  ifdef SA_INTERRUPT
 	act.sa_flags |= SA_INTERRUPT;
+#  endif
 # endif
-#endif
     }
     sigaction(sig, &act, 0);
+#endif /* !HAVE_SIGINTERRUPT */
 }
 
 /* Wait for input for no longer than TIMEOUT-MSECS for input fds defined
