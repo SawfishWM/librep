@@ -1627,16 +1627,13 @@ rep_lisp_prin(repv strm, repv obj)
     case rep_Funarg:
 	if (rep_STRINGP(rep_FUNARG(obj)->name))
 	{
-#ifdef HAVE_SNPRINTF
-	    snprintf(tbuf, sizeof(tbuf), "#<closure %s>", rep_STR(rep_FUNARG(obj)->name));
-#else
-	    sprintf(tbuf, "#<closure %s>", rep_STR(rep_FUNARG(obj)->name));
-#endif
+	    rep_stream_puts (strm, "#<closure ", -1, rep_FALSE);
+	    rep_stream_puts (strm, rep_STR(rep_FUNARG(obj)->name),
+			     -1, rep_FALSE);
+	    rep_stream_putc (strm, '>');
 	}
 	else
-	    strcpy (tbuf, "#<closure>");
-
-	rep_stream_puts(strm, tbuf, -1, rep_FALSE);
+	    rep_stream_puts(strm, "#<closure>", -1, rep_FALSE);
 	break;
 
     case rep_Void:
