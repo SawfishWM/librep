@@ -1204,36 +1204,6 @@ First evals FORM1 then FORMS, returns the value that FORM1 gave.
     return rep_signal_missing_arg(1);
 }
 
-DEFUN("while", Fwhile, Swhile, (repv args, repv tail_posn), rep_SF) /*
-::doc:while::
-while CONDITION FORMS...
-
-Eval CONDITION, if it is non-nil then execute FORMS and repeat the
-procedure, else return nil.
-::end:: */
-{
-    if(rep_CONSP(args))
-    {
-	rep_GC_root gc_args;
-	repv cond = rep_CAR(args), wval, body = rep_CDR(args);
-	rep_PUSHGC(gc_args, args);
-	while((wval = rep_eval(cond, Qnil)) && !rep_NILP(wval))
-	{
-	    rep_TEST_INT;
-	    if(rep_INTERRUPTP || !Fprogn(body, Qnil))
-	    {
-		wval = rep_NULL;
-		break;
-	    }
-	}
-	rep_POPGC;
-	if(!wval)
-	    return(rep_NULL);
-	return(Qnil);
-    }
-    return rep_signal_missing_arg(1);
-}
-
 DEFUN("cond", Fcond, Scond, (repv args, repv tail_posn), rep_SF) /*
 ::doc:cond::
 cond (CONDITION FORMS... ) ...
@@ -2246,7 +2216,6 @@ rep_lispcmds_init(void)
     rep_ADD_SUBR(Scopy_sequence);
     rep_ADD_SUBR(Selt);
     rep_ADD_SUBR(Sprog1);
-    rep_ADD_SUBR(Swhile);
     rep_ADD_SUBR(Scond);
     rep_ADD_SUBR(Scase);
     rep_ADD_SUBR(Sapply);
