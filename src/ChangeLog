@@ -1,3 +1,11 @@
+2000-02-04  John Harper  <john@dcs.warwick.ac.uk>
+
+	* tables.c (Fequal_hash): improved this to break off at a
+	certain depth of recursion, not to resort to eq hashing for
+	unknown types (use their type code instead), and don't use XOR
+	to combine cons hashes
+	(hash_value): do direct calls for all predefined hash functions
+
 2000-02-03  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lispmach.c: handle new binding mechanisms, new way of binding
