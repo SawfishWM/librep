@@ -74,8 +74,6 @@
 #include <ffi.h>
 #endif
 
-#ifdef HAVE_LIBFFI
-
 #if SIZEOF_VOID_P == SIZEOF_LONG
 # define rep_make_pointer(p) rep_make_long_uint ((unsigned long) p)
 # define rep_get_pointer(x)  (void *) rep_get_long_uint (x)
@@ -87,6 +85,8 @@
 #else
 # error "weird pointer size"
 #endif
+
+#ifdef HAVE_LIBFFI
 
 typedef struct rep_ffi_type_struct rep_ffi_type;
 typedef struct rep_ffi_alias_struct rep_ffi_alias;
