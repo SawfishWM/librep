@@ -9,22 +9,21 @@ dry_run=no
 
 # copy a .la file, editing the `dlname=' line to the new stem
 copy_la_file () {
-  la_src=$1; shift
-  la_dest=$1; shift
+  la_src="$1"; la_dest="$2"; shift 2
 
-  line=`grep '^dlname=' $la_src`
-  old_stem=`echo $la_src | sed -e 's|^.*\/\([^/]*\)\.[^/]*$|\1|'`
-  new_stem=`echo $la_dest | sed -e 's|^.*\/\([^/]*\)\.[^/]*$|\1|'`
+  line=`grep '^dlname=' "$la_src"`
+  old_stem=`echo "$la_src" | sed -e 's|^.*\/\([^/]*\)\.[^/]*$|\1|'`
+  new_stem=`echo "$la_dest" | sed -e 's|^.*\/\([^/]*\)\.[^/]*$|\1|'`
   new_line=`echo "$line" | sed -e "s/${old_stem}/${new_stem}/"`
 
-  sed -e 's/^'"$line"'$/'"$new_line"'/' < $la_src > $la_dest
+  sed -e 's/^'"$line"'$/'"$new_line"'/' < "$la_src" > "$la_dest"
 }
 
 # return the outermost directory of the filename
 prefix () {
-  case $1 in
+  case "$1" in
     */*)
-      echo $1 | sed -e 's|^\([^/]*\)/.*$|\1|'
+      echo "$1" | sed -e 's|^\([^/]*\)/.*$|\1|'
       ;;
     *)
       echo ""
@@ -34,26 +33,25 @@ prefix () {
 
 # return the filename without its outermost directory
 postfix () {
-  echo $1 | sed -e 's|^[^/]*/\(.*\)$|\1|'
+  echo "$1" | sed -e 's|^[^/]*/\(.*\)$|\1|'
 }
 
 # strip common leading directories from $2
 strip_common_prefix () {
-  str1=$1; shift
-  str2=$1; shift
-  pfx=`prefix $str1`; str1=`postfix $str1`
+  str1="$1"; str2="$2"; shift 2
+  pfx=`prefix "$str1"`; str1=`postfix "$str1"`
   while [ x"$pfx" != x ]; do
-    case $str2 in
+    case "$str2" in
       $pfx*)
-	str2=`postfix $str2`
+	str2=`postfix "$str2"`
 	;;
       *)
 	break
 	;;
     esac
-    pfx=`prefix $str1`; str1=`postfix $str1`
+    pfx=`prefix "$str1"`; str1=`postfix "$str1"`
   done
-  echo $str2
+  echo "$str2"
 }
 
 # turns `FOO/BAR/BAZ' into `FOO/BAR/libBAZ'
@@ -65,21 +63,21 @@ dosome () {
   destroot="$1"; src="$2"; dest="$3"; shift 3
 
   for g in `echo "${destroot}/${src}.*"`; do
-    if [ -r $g ]; then
-      suf=`echo $g | sed -e 's|^.*'${src}'\(.*\)$|\1|'`
+    if [ -r "$g" ]; then
+      suf=`echo "$g" | sed -e 's|^'"${destroot}/${src}"'\(.*\)$|\1|'`
       if [ $verbose = yes ]; then
 	echo "${src}${suf} -> ${dest}${suf}"
       fi
       if [ $dry_run = no ]; then
 	rm -f "${destroot}/${dest}${suf}"
-	case $suf in
+	case "$suf" in
 	  .la)
 	    copy_la_file "${destroot}/${src}${suf}" \
 		"${destroot}/${dest}${suf}"
 	    ;;
 	  *)
 	    # make sure links are relative to their own directory
-	    src=`strip_common_prefix $dest $src`
+	    src=`strip_common_prefix "$dest" "$src"`
 	    ln -s "${src}${suf}" "${destroot}/${dest}${suf}"
 	    ;;
 	esac
@@ -91,8 +89,8 @@ dosome () {
 doit () {
   destroot="$1"; shift
   for f in $*; do
-    src=`echo $f | sed -e 's/^\(.*\)#\(.*\)$/\1/'`
-    dest=`echo $f | sed -e 's/^\(.*\)#\(.*\)$/\2/'`
+    src=`echo "$f" | sed -e 's/^\(.*\)#\(.*\)$/\1/'`
+    dest=`echo "$f" | sed -e 's/^\(.*\)#\(.*\)$/\2/'`
     dosome "$destroot" "$src" "$dest"
 
     # libtool sometimes needs to prefix module libraries with a `lib'
@@ -104,20 +102,20 @@ doit () {
 while [ x"$1" != x ]; do
   case $1 in
     -l)
-      files=`find $2 -name '*.jl' -print`
+      files=`find "$2" -name '*.jl' -print`
       aliases=`grep '(define-structure-alias' $files |
         sed -e 's/^.*(define-structure-alias \([^ ]*\) \([^ ]*\)).*$/\2#\1/' |
 	tr . /`
-      doit $3 $aliases
+      doit "$3" $aliases
       shift 3
       ;;
 
     -c)
-      files=`find $2 -name '*.c' -print`
+      files=`find "$2" -name '*.c' -print`
       aliases=`grep '::alias:' $files |
         sed -e 's/^.*::alias:\([^ ]*\) \(.*\)::.*$/\2#\1/' |
 	tr . /`
-      doit $3 $aliases
+      doit "$3" $aliases
       shift 3
       ;;
 
