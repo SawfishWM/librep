@@ -56,7 +56,8 @@
 	       file-regular-p file-readable-p
 	       file-writable-p file-directory-p file-symlink-p file-owner-p
 	       file-nlinks file-size file-modes file-modes-as-string
-	       set-file-modes file-modtime directory-files))
+	       set-file-modes file-modtime directory-files
+	       read-symlink make-symlink))
     ;; All functions which only have a single file name (their first
     ;; argument). Expand the tilde expression then re-call OP.)
     (apply op (tilde-expand (car args)) (cdr args)))
