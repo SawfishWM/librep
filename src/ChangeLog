@@ -1,5 +1,17 @@
 2000-05-18  John Harper  <john@dcs.warwick.ac.uk>
 
+	* rep.h.in (rep_PTR_SIZED_INT_SIZEOF): new define, set by
+	configure (this used to be a sizeof () statement, but it's
+	needed at cpp-time now)
+
+	* rep_lisp.h (rep_CELL_ALIGNMENT): this is now set to the size
+	of the `repv' type (not hardcoded to 4). Apparently this is
+	needed for ia64
+
+	* main.c (check_configuration): function to check some of the
+	values supplied to configure, will suggest suitable values if
+	any are set wrongly
+
 	* main.c (rep_init_from_dump): switched order of calls to
 	rep_values_init () and rep_lisp_init ()
 
