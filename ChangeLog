@@ -1,3 +1,7 @@
+2000-12-03  John Harper  <jsh@eazel.com>
+
+	* configure.in: version 0.13.3
+
 2000-11-21  John Harper  <jsh@eazel.com>
 
 	* rules.mk.sh: rename repexecdir variable as repcommonexecdir

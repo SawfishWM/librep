@@ -3,6 +3,36 @@
 @appendix News
 @cindex News
 
+@heading 0.13.3
+
+@itemize @bullet
+
+@item Try to only export public symbols from @file{librep.so} and
+modules
+
+@item When expanding file names translate @samp{/..} to @samp{/}
+
+@item Set an upper bound on the allowed recursion depth when regexp
+matching, prevents the stack from overflowing in pathological cases
+
+@item Added optional second arg to @code{readline} function, a function
+to call to generate completions. The @code{rl-completion-generator}
+method of supplying this function is deprecated
+
+@item Fixed bugs when handling character-case in regexp module (Andrew
+Rodinoff)
+
+@item Added an @code{premature-end-of-stream} error. This is signalled
+instead of @code{end-of-stream} when reading characters in the middle
+of a syntax form. The @code{end-of-stream} error is only signalled when
+the end of the stream is reached before encountering anything other
+than whitespace characters
+
+@item Fixed bug of expanding declarations in the @code{define} macro
+expansion
+
+@end itemize
+
 
 @heading 0.13.2
 

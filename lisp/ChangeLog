@@ -1,3 +1,7 @@
+2000-12-03  John Harper  <jsh@eazel.com>
+
+	* version 0.13.3
+
 2000-11-27  John Harper  <jsh@eazel.com>
 
 	* scheme/data.jl: when defining `>' and similar predicates, use

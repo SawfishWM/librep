@@ -1,5 +1,7 @@
 2000-12-04  John Harper  <jsh@eazel.com>
 
+	* version 0.13.3
+
 	* symbols.c (Funintern): should use OB_NIL to mark end of
 	symbol buckets, not rep_NULL
 

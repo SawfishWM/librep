@@ -60,6 +60,8 @@ Outstanding bugs
 
  ! `random' only accepts its range as a fixnum
 
+   GMP 3 has suitable functions, but need to support GMP 2 (e.g. RH 6)
+
  ! it's legal to do (set foo 42) where the contents of foo has a
    lexical binding
 
@@ -79,6 +81,16 @@ Outstanding bugs
 
 General programming tasks:
 ==========================
+
+ + comparison of datums currently compares type id and contents
+
+   should be defined by programmer, e.g.:
+
+	(define-datum-comparer ID FUN)
+
+   by analogy with define-datum-discloser
+
+   (but do callers of rep_value_cmp () assume that it may GC?)
 
  + avoid spurious init-bind and unbind instructions
 
