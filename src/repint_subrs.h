@@ -24,6 +24,9 @@
 /* from continuations.c */
 extern void rep_continuations_init (void);
 
+/* from datums.c */
+extern void rep_datums_init (void);
+
 /* from files.c */
 extern void rep_files_init(void);
 extern void rep_files_kill(void);
@@ -35,6 +38,7 @@ extern void rep_find_init(void);
 extern void rep_find_kill(void);
 
 /* from lisp.c */
+extern repv rep_scm_t, rep_scm_f;
 extern repv rep_readl(repv, int *);
 extern repv rep_bind_lambda_list(repv lambdaList, repv argList,
 				 rep_bool eval_args, rep_bool eval_in_env);
@@ -81,6 +85,15 @@ extern int rep_default_regsublen(int, rep_regsubs *, char *, void *);
 /* from streams.c */
 extern void rep_streams_init(void);
 
+/* from structures.c */
+extern repv rep_default_structure, rep_specials_structure;
+extern repv F_structure_ref (repv, repv);
+extern repv F_structure_set (repv, repv, repv);
+extern repv F_external_structure_ref (repv, repv);
+extern repv rep_get_initial_special_value (repv sym);
+extern void rep_pre_structures_init (void);
+extern void rep_structures_init (void);
+
 /* from symbols.c */
 extern int rep_pre_symbols_init(void);
 extern void rep_symbols_init(void);
@@ -97,6 +110,11 @@ extern void rep_values_kill (void);
 extern void rep_dumped_init(char *file);
 
 #ifdef rep_HAVE_UNIX
+
+/* from unix_dl.c */
+extern repv rep_open_dl_library(repv file_name);
+extern void rep_mark_dl_data(void);
+extern void rep_kill_dl_libraries(void);
 
 /* from unix_main.c */
 extern repv rep_user_login_name(void);

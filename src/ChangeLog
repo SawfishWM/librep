@@ -1,3 +1,71 @@
+2000-04-07  John Harper  <john@dcs.warwick.ac.uk>
+
+	Many changes to give rep a module system:
+
+	* structures.c: new file, provides the first-class environment
+	objects needed to implement the module system, and the core of
+	the module system itself (mostly inspired by Scheme48)
+
+	* symbols.c: dereference global bindings through structures
+	(print_symbol): escape `#' characters
+	(Fdefvar): if first defvar for the symbol, call
+	rep_get_initial_special_value to try to forward any value set
+	by the user
+	(Fmark_symbol_defined): deleted
+	(Fset_const_variable, Fconst_variable_p): deleted, immutable
+	bindings are provided by structures.c
+	(Qnil, Qt): no longer made special
+
+	* rep_lisp.h (rep_funarg, struct rep_call_stack): added fields
+	to store the current structure
+	(rep_ADD_INTERNAL_SUBR): new macro, doesn't export the subr
+	(rep_symbol): removed the `value' field
+
+	* values.c (rep_gc_threshold): doubled to 200k
+	(rep_mark_value): updated for object changes
+
+	* unix_dl.c (rep_open_dl_library): return a repv result, the
+	structure provided by the dl if applicable
+
+	* main.c (rep_init_from_dump): call rep_structures_init () and
+	rep_datums_init ()
+	(rep_load_environment): handle the caller having a different
+	current structure than the default structure
+
+	* macros.c (Fmacroexpand): ENVIRONMENT is now a function to
+	call to do the actual expansion if non-nil; this also
+	simplifies the memoization
+
+	* lispmach.c (Fjade_byte_code): access globals in current
+	structure, deprecated OP_DSET, added OP_STRUCT_REF and
+	OP_SCM_TEST
+
+	* bytecodes.h (OP_STRUCT_REF, OP_SCM_TEST): new bytecodes
+
+	* lispcmds.c (Fload): removed the IN-CURRENT-ENV option;
+	filename suffixes are stored in a cons cell in %load-suffixes
+	in the current structure; return value of last loaded form
+	evaluated
+	(Ffeaturep, Fprovide, Frequire): moved to structures.c
+
+	* lisp.c (rep_readl): read foo#bar as (structure-ref foo bar)
+	(rep_readl, rep_scm_f, rep_scm_t): support scheme booleans
+	(rep_load_autoload): if the filename is a symbol, require that
+	module
+	(eval): increment and check recursion depth counter
+
+	* timers.c, tables.c, repsdbm.c, repgdbm.c, readline.c,
+	gettext.c: modularized -- these each create their own structure
+
+	* files.c (rep_call_file_handler): for now, dereference file
+	handler names in the default structure (should probably use a
+	separate namespace..)
+
+	* datums.c: unmodularized, now part of the core
+
+	* continuations.c: track addition of structure field to call
+	stack
+
 2000-04-06  John Harper  <john@dcs.warwick.ac.uk>
 
 	* values.c, lispmach.c, lisp.c: removed all min-stack stuff, an

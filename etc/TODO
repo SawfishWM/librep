@@ -6,6 +6,20 @@ TODO list for librep
 Bugs are marked !, things that should be done soon are marked +,
 and more long-term ideas are marked -
 
+modules
+=======
+
+ ! fix dump.jl
+
+ ! ref cache can thrash when switching structures quickly
+
+   also, the first level lookup of foo#bar isn't cached
+
+ ! autoload is kind of fucked
+
+   (you have to create the autoload stub in the module that the
+   function will get loaded into)
+
 
 Outstanding bugs
 ================
@@ -52,6 +66,20 @@ Outstanding bugs
 General programming tasks:
 ==========================
 
+ - the gc sucks
+
+   raising garbage-threshold to 200k helps, but gc still takes about
+   25% of cpu time for the gtk-glue.c build time
+
+   the current gc has a tradeoff between mark time and sweep time,
+   raising the threshold decreases cumulative mark time, but increases
+   sweep time. Increasing the threshold to 400k still reduces the
+   overall time, but only by about 4% over the 200k value
+
+   is it possible to add a good gc?
+
+   maybe add a compile time option to use the Boehm conservative gc?
+
  - remove special forms (replacing them with macros) where both
    possible and desirable
 
@@ -72,15 +100,6 @@ General programming tasks:
    Only do this for _heavily_ used bytecode subrs. Measure this by
    adding an extra vector slot, and counting the number of vm
    iterations
-
- - allow modules to run with customized environments, but for the
-   compiler to detect and handle this correctly
-
-   basically, it needs to work out when primitives have been redefined,
-   so as not to use the built-in compilers/transformations for them
-
-   It would probably be easier to just add a module system (the
-   scheme48 system looks good..)
 
  - Optimize compilation of case statements
 

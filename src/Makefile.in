@@ -21,9 +21,10 @@
 top_builddir=..
 VPATH=@top_srcdir@/src:.
 
-COMMON_SRCS =	continuations.c debug-buffer.c files.c find.c lisp.c \
+COMMON_SRCS =	continuations.c datums.c debug-buffer.c files.c find.c lisp.c \
 		lispcmds.c lispmach.c macros.c main.c message.c misc.c \
-		numbers.c regexp.c regsub.c streams.c symbols.c values.c
+		numbers.c regexp.c regsub.c streams.c structures.c \
+		symbols.c values.c
 UNIX_SRCS =	unix_dl.c unix_files.c unix_main.c unix_processes.c
 
 INSTALL_HDRS = rep.h rep_lisp.h rep_regexp.h rep_subrs.h
@@ -35,8 +36,8 @@ SDBM_SRCS = sdbm.c sdbm_pair.c sdbm_hash.c
 SDBM_OBJS = $(SDBM_SRCS:.c=.o)
 SDBM_LOBJS = $(SDBM_SRCS:.c=.lo)
 
-DL_SRCS = repsdbm.c timers.c gettext.c readline.c tables.c repgdbm.c datums.c
-DL_OBJS = sdbm.la timers.la gettext.la readline.la tables.la gdbm.la datums.la
+DL_SRCS = repsdbm.c timers.c gettext.c readline.c tables.c repgdbm.c
+DL_OBJS = sdbm.la timers.la gettext.la readline.la tables.la gdbm.la
 
 REP_SRCS =	rep.c
 REP_OBJS =	$(REP_SRCS:.c=.o)
@@ -58,7 +59,7 @@ rep : $(REP_OBJS) $(EXTRA_LIBOBJS) librep.la
 rep-remote : rep-remote.c
 
 rep-xgettext : rep-xgettext.jl rep
-	$(COMPILE_ENV) $(rep_prog) compiler -f compile-batch $< \
+	$(COMPILE_ENV) $(rep_prog) --batch -l compiler -f compile-batch $< \
 	  && mv $<c $@ && chmod +x $@
 
 install : all installdirs

@@ -94,8 +94,7 @@ License, this basically means that you can give it to anyone for any
 price as long as full source code is included; you also have the right
 to distribute modified copies in the same way. For the actual legalese
 see the file @file{COPYING} in the distribution (or
-@pxref{(emacs)Copying}). I reserve the right to use a different licence
-in future releases.
+@pxref{(emacs)Copying}).
 
 In case it isn't obvious, scripts written to use librep are not
 considered derived works, and therefore may be licensed however the

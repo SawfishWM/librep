@@ -1,3 +1,57 @@
+2000-04-07  John Harper  <john@dcs.warwick.ac.uk>
+
+	Many changes to support the new module system:
+
+	* init.jl: subsumes lisp.jl, defines all module syntax
+	(define-interface, structure, define-structure, etc..),
+	defconst now declares _lexically_ scoped constants
+
+	* rep-packages.jl: defines the various interfaces that the rep
+	package implements, plus other basic structures
+
+	* rep-repl.jl: implements the default repl, borrows Scheme48's
+	idea of using `,' to introduce meta-commands (e.g. to control
+	and inspect the state of the module system)
+
+	* rep.jl: use the new repl; try to work out when to `require'
+	and when to `load' command line options
+
+	* rep-autoload.jl, autoload.jl: split autoloading into two
+	parts, rep-autoload contains decls for the `rep' module,
+	autoload contains those for the default user module
+
+	* gaol.jl: modularized; uses an anonymous structure to create
+	the sandboxed environment
+
+	* bytecodes.jl, bytecode-defs.jl: split into two modules, no
+	longer exports op-FOO constants, instead a macro `(bytecode FOO)'
+
+	* compiler.jl, compiler-vars.jl, compiler-utils.jl,
+	compiler-src.jl, compiler-scheme.jl, compiler-rep.jl,
+	compiler-opt.jl, compiler-modules.jl, compiler-lap.jl,
+	compiler-inline.jl, compiler-const.jl, compiler-bindings.jl,
+	compiler-basic.jl, compiler-asm.jl: the compiler has now been
+	modularized; it also groks the module configuration forms, and
+	can compile for whatever base language (rep, scheme, ..?) a
+	module is actually using. Scheme support is currently minimal
+	(working but sub-optimal code)
+
+	* scheme.jl, scheme-utils.jl, scheme-syntax.jl, scheme-misc.jl,
+	scheme-data.jl: support for interpreting scheme code, any
+	modules with `(open scheme)' instead of `(open rep)' will find
+	a minimal r4rs scheme environment (without macros)
+
+	* tilde.jl, tar-file-handler.jl, remote.jl, remote-utils.jl,
+	remote-rep.jl, remote-rcp.jl, remote-ftp.jl: updated to use new
+	method of declaring file handlers (the define-file-handler
+	function)
+
+	* ring.jl, mutex.jl, memoize.jl, lisp-doc.jl, disassembler.jl,
+	date.jl, cgi-get.jl: modularized
+
+	* define.jl: macroexpand fully, then just scan through lambda
+	bodies
+
 2000-03-29  John Harper  <john@dcs.warwick.ac.uk>
 
 	* compiler.jl (compile-file): prevent top-level macro

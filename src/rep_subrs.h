@@ -49,6 +49,11 @@ extern repv Fthread_permit (void);
 extern repv Fthread_name (repv th);
 extern u_long rep_max_sleep_for (void);
 
+/* from datums.c */
+extern repv Fmake_datum (repv, repv, repv);
+extern repv Fdatum_ref (repv, repv);
+extern repv Fhas_type_p (repv, repv);
+
 /* from debug-buffer.c */
 extern void *rep_db_alloc(char *name, int size);
 extern void rep_db_free(void *db);
@@ -269,9 +274,6 @@ extern repv Fcall_hook(repv hook, repv arg_list, repv type);
 extern repv Fcatch(repv);
 extern repv Fthrow(repv, repv);
 extern repv Funwind_protect(repv);
-extern repv Ffeaturep(repv);
-extern repv Fprovide(repv);
-extern repv Frequire(repv, repv);
 
 /* from lispmach.c */
 extern int rep_unbind_object(repv item);
@@ -441,8 +443,6 @@ extern repv Fstreamp(repv arg);
 /* from symbols.c */
 extern repv (*rep_deref_local_symbol_fun)(repv sym);
 extern repv (*rep_set_local_symbol_fun)(repv sym, repv val);
-extern repv rep_add_subr(rep_xsubr *);
-extern repv rep_add_const_num(repv, long);
 extern void rep_intern_static(repv *, repv);
 extern repv rep_bind_symbol(repv, repv, repv);
 extern int rep_unbind_symbols(repv);
@@ -464,7 +464,6 @@ extern repv Fclosurep (repv arg);
 extern repv Fsymbol_value(repv, repv);
 extern repv Fdefvar(repv);
 extern repv Fset(repv, repv);
-extern repv Fmark_symbol_defined(repv);
 extern repv Fsetplist(repv, repv);
 extern repv Fsymbol_name(repv);
 extern repv Fdefault_value(repv, repv);
@@ -479,12 +478,24 @@ extern repv Fmakunbound(repv);
 extern repv Fget(repv, repv);
 extern repv Fput(repv, repv, repv);
 extern repv Fapropos(repv, repv, repv);
-extern repv Fset_const_variable(repv sym, repv stat);
-extern repv Fconst_variable_p(repv sym);
 extern repv Fspecial_variable_p(repv sym);
 extern repv Ftrace(repv sym);
 extern repv Funtrace(repv sym);
 extern repv Vobarray(repv val);
+
+/* from structures.c */
+extern repv rep_structure;
+extern repv Fstructure_ref (repv, repv);
+extern repv F_structure_name (repv);
+extern repv F_structurep (repv);
+extern repv Fmake_binding_immutable (repv);
+extern repv Fbinding_immutable_p (repv, repv);
+extern repv Ffeaturep(repv);
+extern repv Fprovide(repv);
+extern repv Frequire(repv);
+extern repv rep_push_structure (const char *name);
+extern repv rep_pop_structure (repv old);
+extern repv rep_add_subr(rep_xsubr *, rep_bool);
 
 /* from values.c */
 extern repv Qafter_gc_hook;
@@ -555,9 +566,6 @@ extern rep_bool rep_in_gc;
 
 /* from unix_dl.c */
 extern rep_bool rep_find_c_symbol(void *, char **, void **);
-extern void *rep_open_dl_library(repv file_name);
-extern void rep_mark_dl_data(void);
-extern void rep_kill_dl_libraries(void);
 extern void *rep_find_dl_symbol (repv feature, char *symbol);
 
 /* from unix_files.c */
