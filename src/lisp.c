@@ -443,7 +443,7 @@ read_symbol(repv strm, int *c_p)
 				radix = 0;
 			    break;
 
-			case '-':
+			case '-': case '+':
 			    if (!exponent)
 				goto do_default;
 			    break;
