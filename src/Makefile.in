@@ -64,7 +64,7 @@ ifeq ($(DUMPED_JADE), 1)
  CFLAGS := $(CFLAGS) -DDUMPED
  DUMP_FLAGS := @dump_flags@
  DUMPED_IN  := $(dumped_lisp_files)
- DUMPED_SRC := $(addprefix $(lispdir)/, $(addsuffix .jl, $(DUMPED_IN)))
+ DUMPED_SRC := $(addprefix ../lisp/, $(addsuffix .jl, $(DUMPED_IN)))
  DUMPED_CMP := $(DUMPED_SRC:.jl=.jlc)
  DUMPED_ASM := dumped.s
  DUMPED_OBJ := $(DUMPED_ASM:.s=.o)
@@ -89,8 +89,8 @@ jaded : jade_protos.h doc-strings.h $(OBJS) $(LIBOBJS)
 
 ifeq ($(DUMPED_JADE), 1)
 $(DUMPED_ASM) : $(DUMPED_CMP)
-	../jade/jade -geometry +0+0 -log-msgs -f sleep-window \
-	  -l dump -f dump-batch $(DUMP_FLAGS) -o $@ $(dumped_lisp_files) -q
+	JADELISPLIB=../lisp ../jade/jade -batch \
+	  -l dump -f dump-batch $(DUMP_FLAGS) -o $@ $(dumped_lisp_files)
 
 $(DUMPED_CMP) : $(DUMPED_SRC)
 	(cd $(top_srcdir)/lisp && $(MAKE) lisp)

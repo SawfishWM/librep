@@ -31,15 +31,10 @@ INSTALL_FILES = $(wildcard *.jl) $(wildcard *.jlc) $(wildcard *.jld) DOC
 all : lisp
 
 lisp :
-	$(COMPILE_ENV) $(jade_prog) -geometry +0+0 -log-msgs -no-rc \
-		-f sleep-window -l compiler -f compile-compiler -q
-	$(COMPILE_ENV) $(jade_prog) -geometry +0+0 -log-msgs -no-rc \
-		-f sleep-window -f compile-lisp-lib -q
-
-dumped :
-	$(COMPILE_ENV) $(jade_prog) -geometry +0+0 -log-msgs -no-rc \
-		-f sleep-window -l dump -f dump-batch -o $(DUMPED_OUT) \
-		$(DUMPED_SRCS) -q
+	$(COMPILE_ENV) $(jade_prog) -batch -log-msgs -no-rc \
+		-l compiler -f compile-compiler
+	$(COMPILE_ENV) $(jade_prog) -batch -log-msgs -no-rc \
+		-f compile-lisp-lib
 
 install : all installdirs
 	$(INSTALL_DATA) $(INSTALL_FILES) $(lispdir)
@@ -56,4 +51,4 @@ clean :
 realclean : clean
 	rm -f Makefile
 
-.PHONY : all lisp dumped install uninstall clean realclean
+.PHONY : all lisp install uninstall clean realclean
