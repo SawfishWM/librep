@@ -627,11 +627,49 @@ Return true if ARG is an unclosed socket object.
 
 DEFSTRING (inactive_socket, "Inactive socket");
 
+static rep_bool
+poll_for_input (int fd)
+{
+    fd_set inputs;
+    int ready;
+
+    FD_ZERO (&inputs);
+    FD_SET (fd, &inputs);
+    ready = select (FD_SETSIZE, 0, &inputs, 0, 0);
+
+    return ready == 1;
+}
+
+/* Returns the number of bytes actually written. */
+static u_int
+blocking_write (int fd, u_char *data, u_int bytes)
+{
+    u_int done = 0;
+
+    do {
+	int actual = write (fd, data + done, bytes - done);
+	if (actual < 0)
+	{
+	    if (errno == EAGAIN || errno == EWOULDBLOCK)
+	    {
+		if (!poll_for_input (fd))
+		    goto out;
+	    }
+	    else if (errno != EINTR)
+		goto out;
+	}
+	else
+	    done += actual;
+    } while (done < bytes);
+
+out:
+    return done;
+}
+
 static int
 socket_putc (repv stream, int c)
 {
     char data = c;
-    int actual;
 
     if (!SOCKET_IS_ACTIVE (SOCKET (stream)))
     {
@@ -639,11 +677,7 @@ socket_putc (repv stream, int c)
 	return 0;
     }
 
-again:
-    actual = write (SOCKET (stream)->sock, &data, 1);
-    if (actual < 0 && errno == EINTR)
-	goto again;
-    return POS (actual);
+    return blocking_write (SOCKET (stream)->sock, &data, 1);
 }
 
 static int
@@ -658,19 +692,7 @@ socket_puts (repv stream, void *data, int len, rep_bool is_lisp)
 	return 0;
     }
 
-    while (total < len)
-    {
-	int actual;
-    again:
-	actual = write (SOCKET (stream)->sock, buf + total, len - total);
-	if (actual < 0 && errno == EINTR)
-	    goto again;
-	if (actual < 0)
-	    break;
-	total += actual;
-    }
-
-    return total;
+    return blocking_write (SOCKET (stream)->sock, buf + total, len - total);
 }
 
 static void
