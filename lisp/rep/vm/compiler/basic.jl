@@ -51,7 +51,7 @@
 	  rep.vm.compiler.src
 	  rep.vm.compiler.inline
 	  rep.vm.compiler.lap
-	  rep.vm.compiler.opt
+	  rep.vm.peephole
 	  rep.vm.assembler)
 
   (defvar *compiler-write-docs* nil
