@@ -139,14 +139,10 @@ static void *
 x_dlsym (void *handle, char *sym)
 {
     void *ptr = 0;
-    char *tem = rep_alloc (strlen(sym) + 2);
-    if (tem != 0)
-    {
-	tem[0] = '_';
-	strcpy (tem + 1, sym);
-	ptr = dlsym (handle, tem);
-	free (tem);
-    }
+    char *tem = alloca (strlen(sym) + 2);
+    tem[0] = '_';
+    strcpy (tem + 1, sym);
+    ptr = dlsym (handle, tem);
     return ptr;
 }
 #endif
