@@ -739,7 +739,6 @@ again:
 	MARKVAL(VVIEW(val)->vw_DisplayOrigin);
 	MARKVAL(VVIEW(val)->vw_BlockS);
 	MARKVAL(VVIEW(val)->vw_BlockE);
-	MARKVAL(VVIEW(val)->vw_StatusOverride);
 	val = VAL(VVIEW(val)->vw_NextView);
 	if(val != 0 && !INTP(val) && !GC_MARKEDP(val) && !NILP(val))
 	    goto again;
