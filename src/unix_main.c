@@ -80,6 +80,8 @@ _PR void sys_misc_init(void);
 
 _PR bool same_files(u_char *, u_char *);
 _PR u_char *file_part(u_char *);
+_PR VALUE file_name_as_directory(VALUE file);
+_PR VALUE directory_file_name(VALUE dir);
 _PR VALUE lookup_errno(void);
 _PR long sys_file_length(u_char *);
 _PR u_long sys_time(void);
@@ -149,6 +151,33 @@ file_part(u_char *fname)
     if(tmp)
 	return(tmp + 1);
     return(fname);
+}
+
+VALUE
+file_name_as_directory(VALUE file)
+{
+    int len = STRING_LEN(file);
+    VALUE new = string_dupn(VSTR(file), len + 1);
+    if(new && STRINGP(new))
+    {
+	VSTR(new)[len] = '/';
+	VSTR(new)[len+1] = 0;
+    }
+    return new;
+}
+
+DEFSTRING(dot, ".");
+
+VALUE
+directory_file_name(VALUE dir)
+{
+    int len = STRING_LEN(dir);
+    if(len == 0)
+	/* A null string. */
+	return VAL(&dot);
+    else
+	/* Chop the trailing "/" */
+	return string_dupn(VSTR(dir), len - 1);
 }
 
 VALUE
@@ -471,6 +500,52 @@ to system.
     if(chmod(VSTR(file), VINT(modes)) == 0)
 	return(modes);
     return(signal_file_error(file));
+}
+
+_PR VALUE cmd_file_modes_as_string(VALUE modes);
+DEFUN("file-modes-as-string", cmd_file_modes_as_string,
+      subr_file_modes_as_string, (VALUE modes), V_Subr1,
+      DOC_file_modes_as_string) /*
+::doc:file_modes_as_string::
+file-modes-as-string MODES
+
+Returns a ten character string describing the attributes represented by
+integer MODES (from the file-modes function).
+::end:: */
+{
+    VALUE string;
+    DECLARE1(modes, INTP);
+    string = cmd_make_string(MAKE_INT(10), MAKE_INT('-'));
+    if(string != LISP_NULL && STRINGP(string))
+    {
+	ulong perms = VINT(modes);
+	int i;
+	char c = '-';
+	if(S_ISDIR(perms))	    c = 'd';
+	else if(S_ISLNK(perms))	    c = 'l';
+	else if(S_ISBLK(perms))	    c = 'b';
+	else if(S_ISCHR(perms))	    c = 'c';
+	else if(S_ISFIFO(perms))    c = 'c';
+	else if(S_ISSOCK(perms))    c = '|';
+	VSTR(string)[0] = c;
+	for(i = 0; i < 3; i++)
+	{
+	    u_long xperms = perms >> ((2 - i) * 3);
+	    if(xperms & 4)
+		VSTR(string)[1+i*3] = 'r';
+	    if(xperms & 2)
+		VSTR(string)[2+i*3] = 'w';
+	    c = (xperms & 1) ? 'x' : 0;
+	    if(perms & (04000 >> i))
+	    {
+		static char extra_bits[3] = { 'S', 'S', 'T' };
+		c = extra_bits[i] | ((c & 0x20) ^ 0x20);
+	    }
+	    if(c != 0)
+		VSTR(string)[3+i*3] = c;
+	}
+    }
+    return string;
 }
 
 u_long
@@ -1016,6 +1091,7 @@ sys_misc_init(void)
     ADD_SUBR(subr_file_size);
     ADD_SUBR(subr_file_modes);
     ADD_SUBR(subr_set_file_modes);
+    ADD_SUBR(subr_file_modes_as_string);
     ADD_SUBR(subr_file_modtime);
     ADD_SUBR(subr_file_name_absolute_p);
     ADD_SUBR(subr_directory_files);
