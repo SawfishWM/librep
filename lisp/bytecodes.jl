@@ -45,8 +45,8 @@
 ;;; stack needed is calculated by the compiler.
 
 ;; Instruction set version
-(defconst bytecode-major 8)
-(defconst bytecode-minor 2)
+(defconst bytecode-major 9)
+(defconst bytecode-minor 0)
 
 ;; Opcodes
 (defconst op-call 0x08)			;call (stk[n] stk[n-1] ... stk[0])
@@ -57,8 +57,16 @@
 (defconst op-setq 0x20)			;sets sym n (in c-v) to stk[0]; pop
 (defconst op-list 0x28)			;makes top n items into a list
 (defconst op-bind 0x30)			;bind constant n to stk[0], pops stk
+(defconst op-refn 0x38)
+(defconst op-setn 0xe8)
+(defconst op-refg 0xe0)
+(defconst op-setg 0xd8)
+(defconst op-bindspec 0xd0)
 
-(defconst op-last-with-args 0x37)
+(defconst op-last-with-args 0x3f)
+
+(defconst op-first-with-args-2 0xd0)
+(defconst op-last-with-args-2 0xef)
 
 (defconst op-ref 0x40)			;replace symbol with it's value
 (defconst op-set 0x41)
@@ -219,7 +227,7 @@
    -1   nil nil nil nil nil nil nil	;0x20
    nil nil nil nil nil nil nil nil
    -1  nil nil nil nil nil nil nil	;0x30
-   nil nil nil nil nil nil nil nil
+   +1  nil nil nil nil nil nil nil
    0   -1  -1  0   0   0   +1  0	;0x40
    -1  +1  +1  -1  0   0   -1  -1
    -1  -1  -1  -1  0   0   -1  0	;0x50
@@ -238,10 +246,10 @@
    nil nil  0  nil -1  -2   0   0
    nil nil nil nil nil nil nil nil	;0xc0
    nil nil nil nil nil nil nil nil
-   nil nil nil nil nil nil nil nil	;0xd0
-   nil nil nil nil nil nil nil nil
-   nil nil nil nil nil nil nil nil	;0xe0
-   nil nil nil nil nil nil nil nil
+   -1  nil nil nil nil nil nil nil	;0xd0
+   -1  nil nil nil nil nil nil nil
+   +1  nil nil nil nil nil nil nil	;0xe0
+   -1  nil nil nil nil nil nil nil
    nil nil nil nil nil nil nil nil	;0xf0
    -1  nil nil 0   -1  -1  nil nil])
 
@@ -265,10 +273,10 @@
 ;; list of instructions that can be safely deleted if their result
 ;; isn't actually required
 (defvar comp-side-effect-free-insns
-  (list* op-refq op-ref op-nth op-nthcdr op-aref op-length op-add
-	 op-neg op-sub op-mul op-div op-rem op-lnot op-not op-lor
-	 op-land op-num-eq op-num-noteq op-gt op-ge op-lt op-le op-inc
-	 op-dec op-lsh op-boundp op-get op-reverse op-assoc
+  (list* op-refq op-refn op-refg op-ref op-nth op-nthcdr op-aref
+	 op-length op-add op-neg op-sub op-mul op-div op-rem op-lnot
+	 op-not op-lor op-land op-num-eq op-num-noteq op-gt op-ge op-lt
+	 op-le op-inc op-dec op-lsh op-boundp op-get op-reverse op-assoc
 	 op-assq op-rassoc op-rassq op-last op-copy-sequence op-lxor
 	 op-max op-min op-mod op-make-closure op-enclose
 	 comp-varref-free-insns))
@@ -281,4 +289,5 @@
 (defvar comp-jmp-insns (cons op-jmp comp-conditional-jmp-insns))
 
 ;; list of instructions that reference the vector of constants
-(defvar comp-insns-with-constants (list op-push op-refq op-setq op-bind))
+(defvar comp-insns-with-constants (list op-push op-refq op-setq
+					op-refg op-setg op-bind op-bindspec))
