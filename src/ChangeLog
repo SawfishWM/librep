@@ -1,3 +1,12 @@
+Sat Jun  6 16:09:35 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* views.c (cmd_view_position): new function, return the
+	position in the window of a specified view
+	(cmd_find_view_by_pos): include status line in view
+	(cmd_translate_pos_to_view): do boundary checks, return nil if
+	the position isn't in the specified view, return t if it's in
+	the status line
+
 Thu Jun  4 14:52:49 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* find.c (mystrcmp, mystrrstrn, mystrrchrn): deleted these

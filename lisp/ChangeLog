@@ -1,3 +1,10 @@
+Sat Jun  6 16:11:57 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* edit.jl (mouse-pos): add a check with posp
+	(goto-mouse): return nil or t a la translate-pos-to-view
+	(mouse-select): handle selecting a status line
+	(mouse-select-drag): allow dragging status line to resize views
+
 Fri Jun  5 10:21:32 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rm-restrict.jl (rm-rule-symbol): made into a macro
