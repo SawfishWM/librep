@@ -1,3 +1,9 @@
+1998-08-06  John Harper  <john@dcs.warwick.ac.uk>
+
+	* buffers.c, debug-buffer.c, lisp.c, streams.c, symbols.c,
+	unix_processes.c, views.c, windows.c: if possible, replace all
+	unsafe uses of sprintf and vsprintf with snprintf and vsnprintf
+
 1998-08-02  John Harper  <john@dcs.warwick.ac.uk>
 
 	* buffers.c, edit.h: tx_FileName and tx_CanonicalFileName are
