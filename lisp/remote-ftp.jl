@@ -167,7 +167,7 @@ file types.")
   (let
       ((process (make-process (lambda (data)
 				(remote-ftp-output-filter session data))
-			      'remote-ftp-sentinel
+			      remote-ftp-sentinel
 			      nil ftp-program
 			      (append remote-ftp-args
 				      (list (aref session remote-ftp-host))))))
@@ -214,7 +214,7 @@ file types.")
 (defun remote-ftp-close-all ()
   "Close all running FTP subprocesses."
   (interactive)
-  (mapc 'remote-ftp-close-session remote-ftp-sessions))
+  (mapc remote-ftp-close-session remote-ftp-sessions))
 
 (defun remote-ftp-get-session-by-process (process)
   (catch 'return
