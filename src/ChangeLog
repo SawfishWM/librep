@@ -1,3 +1,11 @@
+Mon Apr 27 10:51:34 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* symbols.c (kill-all-local-variables): obey the
+	`permanent-local' property of symbols
+
+	* views.c (make_view): when copying the vw_BufferList, actually
+	make a _copy_ using copy-sequence not just copy the pointer
+
 Sun Apr 26 19:23:28 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* views.c (make_view): minor changes to how we set up the view

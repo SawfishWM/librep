@@ -1,5 +1,8 @@
 Mon Apr 27 10:21:09 1998  John Harper  <john@dcs.warwick.ac.uk>
 
+	* buffers.jl (buffer-file-modtime): has permanent-local
+	property
+
 	* cvs.jl (cvs-commit-callback, cvs-revert-filenames): files
 	should revert after being committed now
 

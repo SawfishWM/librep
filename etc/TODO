@@ -12,6 +12,9 @@ Last modified: April 7, 1998
 Outstanding bugs
 ================
 
+ ! need to unify last-save-time and buffer-file-modtime variables
+   (aren't they the same thing?)
+
  ! How does the return function work with open-coded functions? Not
    very well probably..
 
