@@ -139,7 +139,7 @@ safe-interpreter.la : safemach.lo
 	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -avoid-version -module -o $@ \
 	 $^ -rpath $(repexecdir)
 
-.libexec :
+.libexec : $(DL_OBJS)
 	$(SHELL) $(srcdir)/fake-libexec
 
 clean :
