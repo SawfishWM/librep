@@ -95,12 +95,12 @@ a file name. Add's `/' characters between each PART if necessary.
 	while(CONSP(args) && STRINGP(VCAR(args)))
 	{
 	    if(add_file_part(buf, VSTR(VCAR(args)), 512) == 0)
-		return(NULL);
+		return LISP_NULL;
 	    args = VCDR(args);
 	}
 	return(string_dup(buf));
     }
-    return(null_string);
+    return VAL(null_string);
 }
 
 _PR VALUE cmd_file_name_equal(VALUE file1, VALUE file2);
@@ -145,7 +145,7 @@ of that command.
 ::end:: */
 {
     DECLARE1(command, STRINGP);
-    return(make_number(system(VSTR(command))));
+    return(MAKE_INT(system(VSTR(command))));
 }
 
 _PR VALUE cmd_substring(VALUE string, VALUE start, VALUE end);
@@ -160,18 +160,18 @@ All indices start at zero.
 {
     int slen;
     DECLARE1(string, STRINGP);
-    DECLARE2(start, NUMBERP);
+    DECLARE2(start, INTP);
     slen = STRING_LEN(string);
-    if(VNUM(start) > slen)
+    if(VINT(start) > slen)
 	return(signal_arg_error(start, 2));
-    if(NUMBERP(end))
+    if(INTP(end))
     {
-	if((VNUM(end) > slen) || (VNUM(end) < VNUM(start)))
+	if((VINT(end) > slen) || (VINT(end) < VINT(start)))
 	    return(signal_arg_error(end, 3));
-	return(string_dupn(VSTR(string) + VNUM(start), VNUM(end) - VNUM(start)));
+	return(string_dupn(VSTR(string) + VINT(start), VINT(end) - VINT(start)));
     }
     else
-	return(string_dupn(VSTR(string) + VNUM(start), slen - VNUM(start)));
+	return(string_dupn(VSTR(string) + VINT(start), slen - VINT(start)));
 }
 
 _PR VALUE cmd_beep(void);
@@ -229,7 +229,7 @@ balance-brackets OPEN-STRING CLOSE-STRING STRING
     s = VSTR(string) - 1;
     while((s = strpbrk(s + 1, VSTR(close))))
 	cnt--;
-    return(make_number(cnt));
+    return(MAKE_INT(cnt));
 }
 
 _PR VALUE cmd_amiga_p(void);
@@ -287,7 +287,10 @@ Returns the name of a unique file.
     if(tmpnam(buf))
 	return string_dup(buf);
     else
-	return signal_file_error(MKSTR("Can't create temporary file name"));
+    {
+	static DEFSTRING(no_temp, "Can't create temporary file name");
+	return signal_file_error(VAL(no_temp));
+    }
 }
 
 _PR VALUE cmd_make_completion_string(VALUE args);
@@ -300,7 +303,7 @@ make-completion-string EXISTING [POSSIBLE | POSSIBLE...]
     int matchlen = 0, origlen;
     VALUE arg;
     if(!CONSP(args))
-	return(NULL);
+	return LISP_NULL;
     arg = VCAR(args);
     DECLARE1(arg, STRINGP);
     orig = VSTR(arg);
@@ -360,10 +363,11 @@ DEFUN("current-time", cmd_current_time, subr_current_time, (void), V_Subr0, DOC_
 ::doc:current_time::
 current-time
 
-Return some number denoting the current system time.
+Return a value denoting the current system time. This will be a cons cell
+containing two numbers, the low 24 bits, and the higher bits.
 ::end:: */
 {
-    return(make_number(sys_time()));
+    return(MAKE_LONG_INT(sys_time()));
 }
 
 _PR VALUE cmd_current_time_string(void);
@@ -380,7 +384,20 @@ Returns a human-readable string defining the current date and time.
     str = ctime(&tim);
     if(str)
 	return(string_dupn(str, strlen(str) - 1));
-    return(NULL);
+    return LISP_NULL;
+}
+
+_PR VALUE cmd_time_later_p(VALUE t1, VALUE t2);
+DEFUN("time-later-p", cmd_time_later_p, subr_time_later_p, (VALUE t1, VALUE t2), V_Subr2, DOC_time_later_p) /*
+::doc:time_later_p::
+time-later-p TIME-STAMP1 TIME-STAMP2
+
+Returns t when TIME-STAMP1 refers to a later time than TIME-STAMP2.
+::end:: */
+{
+    DECLARE1(t1, LONG_INTP);
+    DECLARE2(t2, LONG_INTP);
+    return VLONG_INT(t1) > VLONG_INT(t2) ? sym_t : sym_nil;
 }
 
 _PR VALUE cmd_major_version_number(void);
@@ -389,13 +406,7 @@ DEFUN("major-version-number", cmd_major_version_number, subr_major_version_numbe
 major-version-number
 ::end:: */
 {
-    static VALUE major_version_number;
-    if(!major_version_number)
-    {
-	major_version_number = make_number(MAJOR);
-	mark_static(&major_version_number);
-    }
-    return(major_version_number);
+    return MAKE_INT(MAJOR);
 }
 
 _PR VALUE cmd_minor_version_number(void);
@@ -404,13 +415,7 @@ DEFUN("minor-version-number", cmd_minor_version_number, subr_minor_version_numbe
 minor-version-number
 ::end:: */
 {
-    static VALUE minor_version_number;
-    if(!minor_version_number)
-    {
-	minor_version_number = make_number(MINOR);
-	mark_static(&minor_version_number);
-    }
-    return(minor_version_number);
+    return MAKE_INT(MINOR);
 }
 
 _PR VALUE cmd_version_string(void);
@@ -421,7 +426,8 @@ version-string
 Return a string identifying the current version of Jade.
 ::end:: */
 {
-    return MKSTR(VERSSTRING);
+    static DEFSTRING(vers_string, VERSSTRING);
+    return VAL(vers_string);
 }
 
 _PR VALUE cmd_getenv(VALUE name);
@@ -447,9 +453,9 @@ misc_init(void)
     ADD_SUBR(subr_file_name_concat);
     ADD_SUBR(subr_file_name_equal);
     ADD_SUBR(subr_expand_file_name);
-    ADD_SUBR(subr_system);
+    ADD_SUBR_INT(subr_system);
     ADD_SUBR(subr_substring);
-    ADD_SUBR(subr_beep);
+    ADD_SUBR_INT(subr_beep);
     ADD_SUBR(subr_file_name_nondirectory);
     ADD_SUBR(subr_file_name_directory);
     ADD_SUBR(subr_balance_brackets);
@@ -460,6 +466,7 @@ misc_init(void)
     ADD_SUBR(subr_make_completion_string);
     ADD_SUBR(subr_current_time);
     ADD_SUBR(subr_current_time_string);
+    ADD_SUBR(subr_time_later_p);
     ADD_SUBR(subr_major_version_number);
     ADD_SUBR(subr_minor_version_number);
     ADD_SUBR(subr_version_string);
