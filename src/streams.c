@@ -369,7 +369,6 @@ stream_putc(VALUE stream, int c)
 		    str_free(w->w_Message);
 		    w->w_Message = s;
 		    w->w_Flags |= WINFF_MESSAGE;
-		    w->w_MiniBuf->vw_Flags |= VWFF_FORCE_REFRESH;
 		}
 	    }
 	    else
@@ -507,7 +506,6 @@ stream_puts(VALUE stream, void *data, int bufLen, bool isValString)
 		    w->w_Message = s;
 		    w->w_MessageLen = newlen;
 		    w->w_Flags |= WINFF_MESSAGE;
-		    w->w_MiniBuf->vw_Flags |= VWFF_FORCE_REFRESH;
 		}
 	    }
 	    else
