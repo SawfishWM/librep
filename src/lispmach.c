@@ -61,10 +61,8 @@ char *alloca ();
 # define THREADED_VM 1
 #endif
 
-/* Define this to cache top-of-stack in a register */
-#ifndef __i386__
-# define CACHE_TOS 1
-#endif
+/* Define this to cache top-of-stack in a register (not usually worth it) */
+#undef CACHE_TOS
 
 DEFSYM(run_byte_code, "run-byte-code");
 DEFSYM(bytecode_error, "bytecode-error");
@@ -417,22 +415,22 @@ list_ref (repv list, int elt)
 #ifdef __mips__
 #define PC_REG asm("$16")
 #define SP_REG asm("$17")
-#define TOS_REG asm("$18")
+#define SLOTS_REG asm("$18")
 #endif
 #ifdef __sparc__
 #define PC_REG asm("%l0")
 #define SP_REG asm("%l1")
-#define TOS_REG asm("%l2")
+#define SLOTS_REG asm("%l2")
 #endif
 #ifdef __alpha__
 #ifdef __CRAY__
 #define PC_REG asm("r9")
 #define SP_REG asm("r10")
-#define TOS_REG asm("r11")
+#define SLOTS_REG asm("r11")
 #else
 #define PC_REG asm("$9")
 #define SP_REG asm("$10")
-#define TOS_REG asm("$11")
+#define SLOTS_REG asm("$11")
 #endif
 #endif
 #ifdef __i386__
@@ -442,12 +440,12 @@ list_ref (repv list, int elt)
 #if defined(PPC) || defined(_POWER) || defined(_IBMR2)
 #define PC_REG asm("26")
 #define SP_REG asm("27")
-#define TOS_REG asm("28")
+#define SLOTS_REG asm("28")
 #endif
 #ifdef __hppa__
 #define PC_REG asm("%r18")
 #define SP_REG asm("%r17")
-#define TOS_REG asm("%r16")
+#define SLOTS_REG asm("%r16")
 #endif
 #ifdef __mc68000__
 #define PC_REG asm("a5")
@@ -456,19 +454,8 @@ list_ref (repv list, int elt)
 #ifdef __arm__
 #define PC_REG asm("r9")
 #define SP_REG asm("r8")
-#define TOS_REG asm("r7")
+#define SLOTS_REG asm("r7")
 #endif
-#endif
-
-#if defined (TOS_REG) && !defined (CACHE_TOS)
-# if !defined (PC_REG)
-#  define PC_REG TOS_REG
-# elif !defined (SP_REG)
-#  define SP_REG TOS_REG
-# elif !defined (BP_REG)
-#  define BP_REG TOS_REG
-# endif
-# undef TOS_REG
 #endif
 
 #ifndef PC_REG
@@ -479,6 +466,9 @@ list_ref (repv list, int elt)
 #endif
 #ifndef BP_REG
 #define BP_REG
+#endif
+#ifndef SLOTS_REG
+#define SLOTS_REG
 #endif
 #ifndef TOS_REG
 #define TOS_REG
@@ -548,6 +538,7 @@ again: {
     register u_char *pc PC_REG;
     register repv *stackp SP_REG;
     register repv *bindp BP_REG;
+    register repv *slotp SLOTS_REG;
 #ifdef CACHE_TOS
     register repv tos TOS_REG;
 #endif
@@ -563,6 +554,7 @@ again: {
     /* Initialize the various virtual registers */
     stackp = stack; RELOAD;
     bindp = bindstack;
+    slotp = slots;
     impurity = 0;
     pc = rep_STR(code);
 
@@ -933,42 +925,42 @@ again: {
 
 	BEGIN_INSN (OP_SLOT_REF_0)
 	    assert (s_stkreq > 0);
-	    PUSH(slots[0]);
+	    PUSH(slotp[0]);
 	    assert (TOP != 0);
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_SLOT_REF_1)
 	    assert (s_stkreq > 1);
-	    PUSH(slots[1]);
+	    PUSH(slotp[1]);
 	    assert (TOP != 0);
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_SLOT_REF_2)
 	    assert (s_stkreq > 2);
-	    PUSH(slots[2]);
+	    PUSH(slotp[2]);
 	    assert (TOP != 0);
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_SLOT_REF_3)
 	    assert (s_stkreq > 3);
-	    PUSH(slots[3]);
+	    PUSH(slotp[3]);
 	    assert (TOP != 0);
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_SLOT_REF_4)
 	    assert (s_stkreq > 4);
-	    PUSH(slots[4]);
+	    PUSH(slotp[4]);
 	    assert (TOP != 0);
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_SLOT_REF_5)
 	    assert (s_stkreq > 5);
-	    PUSH(slots[5]);
+	    PUSH(slotp[5]);
 	    assert (TOP != 0);
 	    SAFE_NEXT;
 	END_INSN
@@ -976,7 +968,7 @@ again: {
 	BEGIN_INSN (OP_SLOT_REF_6)
 	    arg = FETCH;
 	    assert (s_stkreq > arg);
-	    tmp = slots[arg];
+	    tmp = slotp[arg];
 	    PUSH(tmp);
 	    assert (TOP != 0);
 	    SAFE_NEXT;
@@ -985,7 +977,7 @@ again: {
 	BEGIN_INSN (OP_SLOT_REF_7)
 	    FETCH2 (arg);
 	    assert (s_stkreq > arg);
-	    tmp = slots[arg];
+	    tmp = slotp[arg];
 	    PUSH (tmp);
 	    assert (TOP != 0);
 	    SAFE_NEXT;
@@ -993,51 +985,51 @@ again: {
 
 	BEGIN_INSN (OP_SLOT_SET_0)
 	    assert (s_stkreq > 0);
-	    POP1 (slots[0]);
+	    POP1 (slotp[0]);
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_SLOT_SET_1)
 	    assert (s_stkreq > 1);
-	    POP1 (slots[1]);
+	    POP1 (slotp[1]);
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_SLOT_SET_2)
 	    assert (s_stkreq > 2);
-	    POP1 (slots[2]);
+	    POP1 (slotp[2]);
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_SLOT_SET_3)
 	    assert (s_stkreq > 3);
-	    POP1 (slots[3]);
+	    POP1 (slotp[3]);
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_SLOT_SET_4)
 	    assert (s_stkreq > 4);
-	    POP1 (slots[4]);
+	    POP1 (slotp[4]);
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_SLOT_SET_5)
 	    assert (s_stkreq > 5);
-	    POP1 (slots[5]);
+	    POP1 (slotp[5]);
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_SLOT_SET_6)
 	    arg = FETCH;
 	    assert (s_stkreq > arg);
-	    POP1 (slots[arg]);
+	    POP1 (slotp[arg]);
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_SLOT_SET_7)
 	    FETCH2 (arg);
 	    assert (s_stkreq > arg);
-	    POP1 (slots[arg]);
+	    POP1 (slotp[arg]);
 	    SAFE_NEXT;
 	END_INSN
 
