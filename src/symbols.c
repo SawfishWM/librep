@@ -623,6 +623,103 @@ rep_unbind_functions (repv count)
 
 /* More lisp functions */
 
+DEFUN("defvar", Fdefvar, Sdefvar, (repv args), rep_SF) /*
+::doc:Sdefvar::
+defvar NAME DEFAULT-VALUE [DOC-STRING]
+
+Define a variable called NAME whose standard value is DEFAULT-
+VALUE. If NAME is already bound to a value (that's not an autoload
+definition) it is left as it is.
+
+If the symbol NAME is marked buffer-local the *default value* of the
+variable will be set (if necessary) not the local value.
+::end:: */
+{
+    if(rep_CONSP(args) && rep_CONSP(rep_CDR(args)))
+    {
+	int spec;
+	rep_GC_root gc_args;
+	repv sym = rep_CAR(args), val;
+	repv tmp = Fdefault_boundp(sym);
+	if(!tmp)
+	    return rep_NULL;
+	rep_PUSHGC(gc_args, args);
+	val = Feval(rep_CAR(rep_CDR(args)));
+	rep_POPGC;
+	if(!val)
+	    return rep_NULL;
+	if(!rep_NILP(tmp))
+	{
+	    /* Variable is bound, see if it's an autoload defn to overwrite. */
+	    if(rep_CONSP(rep_SYM(sym)->value)
+	       && rep_CAR(rep_SYM(sym)->value) == Qautoload)
+		tmp = Qnil;
+	}
+
+	/* Only allowed to defvar in restricted environments
+	   if the symbol hasn't yet been defvar'd */
+	spec = search_special_environment (sym);
+	if (spec == 0 && (rep_SYM(sym)->car & rep_SF_DEFVAR))
+	    return Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
+
+	/* Only set the [default] value if its not boundp or
+	   the definition is weak */
+	if(rep_NILP(tmp) || (rep_SYM(sym)->car & rep_SF_WEAK))
+	{
+	    if(rep_CELL8_TYPEP(rep_SYM(sym)->value, rep_Var))
+		rep_VARFUN(rep_SYM(sym)->value)(val);
+	    else
+		rep_SYM(sym)->value = val;
+	}
+
+	rep_SYM(sym)->car |= rep_SF_SPECIAL | rep_SF_DEFVAR;
+
+	if (spec == 0)
+	{
+	    /* defvar'ing an undefvar'd variable from a restricte
+	       environment sets it as weak, and adds it to the env */
+
+	    rep_SYM(sym)->car |= rep_SF_WEAK;
+	    rep_CDR(rep_special_env) = Fcons (sym, rep_CDR(rep_special_env));
+	}
+	else if (rep_CDR(rep_special_env) == Qt
+		 && (rep_SYM(sym)->car & rep_SF_WEAK))
+	{
+	    /* defvar'ing a weak variable from an unrestricted
+	       environment removes the weak status, but marks
+	       it as `was weak, but now strong'. This prevents
+	       exploits such as:
+
+			[restricted special environment]
+			(setq special-var "/bin/rm")
+
+			[unrestricted environment]
+			(defvar special-var "ls")
+
+			[back in restricted environment]
+			(setq special-var "/bin/rm")
+			   --> error
+
+	       Setting the variable the first time (since it's
+	       unbound) adds it to the restricted environment,
+	       but defvar'ing effectively removes it */
+
+	    rep_SYM(sym)->car &= ~rep_SF_WEAK;
+	    rep_SYM(sym)->car |= rep_SF_WEAK_MOD;
+	}
+
+	if(rep_CONSP(rep_CDR(rep_CDR(args))))
+	{
+	    if (!Fput(sym, Qvariable_documentation,
+		      rep_CAR(rep_CDR(rep_CDR(args)))))
+		return rep_NULL;
+	}
+	return sym;
+    }
+    else
+	return rep_signal_missing_arg(rep_CONSP(args) ? 2 : 1);
+}
+
 DEFUN("symbol-value", Fsymbol_value, Ssymbol_value, (repv sym, repv no_err), rep_Subr2) /*
 ::doc:Ssymbol-value::
 symbol-value SYMBOL
@@ -1530,6 +1627,7 @@ rep_symbols_init(void)
     rep_ADD_SUBR(Sset_variable_environment);
     rep_ADD_SUBR(Sset_function_environment);
     rep_ADD_SUBR(Sset_special_environment);
+    rep_ADD_SUBR(Sdefvar);
     rep_ADD_SUBR(Ssymbol_value);
     rep_ADD_SUBR_INT(Sset);
     rep_ADD_SUBR(Ssetplist);
