@@ -1,3 +1,11 @@
+2002-10-07  John Harper  <jsh@unfactored.org>
+
+	* numbers.c (Fplus, Fminus, Fdivide, Fmultiply, Fmin, Fmax,
+	Flogior, Flogxor, Flogand, Fgcd): rewritten as SubrV
+
+	* lispcmds.c (Fnum_eq, Fnum_noteq, Fgtthan, Fltthan, Fgethan,
+	Fltthan): rewritten as SubrV
+
 2002-10-05  John Harper  <jsh@unfactored.org>
 
 	* rep_lisp.h, lispmach.h, lisp.c: support rep_SubrV functions

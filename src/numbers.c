@@ -1237,6 +1237,29 @@ rep_number_foldl (repv args, repv (*op)(repv, repv))
 	    : rep_signal_missing_arg (1));
 }
 
+static inline repv
+number_foldv (int argc, repv *argv, repv (*op) (repv, repv))
+{
+    repv sum;
+    int i;
+
+    if (argc < 1)
+	return rep_signal_missing_arg (1);
+    if (!rep_NUMERICP (argv[0]))
+	return rep_signal_arg_error (argv[0], 1);
+
+    sum = argv[0];
+    for (i = 1; i < argc; i++)
+    {
+	if (!rep_NUMERICP (argv[i]))
+	    return rep_signal_arg_error (argv[i], i + 1);
+
+	sum = op (sum, argv[i]);
+    }
+
+    return sum;
+}
+
 repv
 rep_integer_foldl (repv args, repv (*op)(repv, repv))
 {
@@ -1260,6 +1283,29 @@ rep_integer_foldl (repv args, repv (*op)(repv, repv))
 	    : rep_signal_missing_arg (1));
 }
 
+static inline repv
+integer_foldv (int argc, repv *argv, repv (*op) (repv, repv))
+{
+    repv sum;
+    int i;
+
+    if (argc < 1)
+	return rep_signal_missing_arg (1);
+    if (!rep_INTEGERP (argv[0]))
+	return rep_signal_arg_error (argv[0], 1);
+
+    sum = argv[0];
+    for (i = 1; i < argc; i++)
+    {
+	if (!rep_INTEGERP (argv[i]))
+	    return rep_signal_arg_error (argv[i], i + 1);
+
+	sum = op (sum, argv[i]);
+    }
+
+    return sum;
+}
+
 repv
 rep_foldl (repv args, repv (*op)(repv, repv))
 {
@@ -1278,6 +1324,24 @@ rep_foldl (repv args, repv (*op)(repv, repv))
 	return sum;
     }
     return rep_signal_missing_arg (1);
+}
+
+static inline repv
+foldv (int argc, repv *argv, repv (*op) (repv, repv))
+{
+    repv sum;
+    int i;
+
+    if (argc < 1)
+	return rep_signal_missing_arg (1);
+
+    sum = argv[0];
+    for (i = 1; i < argc; i++)
+    {
+	sum = op (sum, argv[i]);
+    }
+
+    return sum;
 }
 
 repv
@@ -1725,20 +1789,20 @@ rep_integer_gcd (repv x, repv y)
     return out;
 }
 
-DEFUN("+", Fplus, Splus, (repv args), rep_SubrN) /*
+DEFUN("+", Fplus, Splus, (int argc, repv *argv), rep_SubrV) /*
 ::doc:rep.lang.math#+::
 + NUMBERS...
 
 Adds all NUMBERS together. If no arguments are given returns 0.
 ::end:: */
 {
-    if (args == Qnil)
+    if (argc == 0)
 	return rep_MAKE_INT (0);
     else
-	return rep_number_foldl (args, rep_number_add);
+	return number_foldv (argc, argv, rep_number_add);
 }
 
-DEFUN("-", Fminus, Sminus, (repv args), rep_SubrN) /*
+DEFUN("-", Fminus, Sminus, (int argc, repv *argv), rep_SubrV) /*
 ::doc:rep.lang.math#-::
 - NUMBER [NUMBERS...]
 
@@ -1746,39 +1810,40 @@ Either returns the negation of NUMBER or the value of NUMBER minus
 NUMBERS
 ::end:: */
 {
-    if (args == Qnil)
+    if (argc == 0)
 	return rep_signal_missing_arg (1);
-    else if (!rep_CONSP (rep_CDR (args)))
-	return rep_number_neg (rep_CAR (args));
+    else if (argc == 1)
+	return rep_number_neg (argv[0]);
     else
-	return rep_number_foldl (args, rep_number_sub);
+	return number_foldv (argc, argv, rep_number_sub);
 }
 
-DEFUN("*", Fproduct, Sproduct, (repv args), rep_SubrN) /*
+DEFUN("*", Fproduct, Sproduct, (int argc, repv *argv), rep_SubrV) /*
 ::doc:rep.lang.math#*::
 * NUMBERS...
 
 Multiplies all NUMBERS together. If no numbers are given returns 1.
 ::end:: */
 {
-    if (args == Qnil)
+    if (argc == 0)
 	return rep_MAKE_INT (1);
     else
-	return rep_number_foldl (args, rep_number_mul);
+	return number_foldv (argc, argv, rep_number_mul);
 }
 
-DEFUN("/", Fdivide, Sdivide, (repv args), rep_SubrN) /*
+DEFUN("/", Fdivide, Sdivide, (int argc, repv *argv), rep_SubrV) /*
 ::doc:rep.lang.math#/::
 / NUMBERS...
 
 Divides NUMBERS (in left-to-right order).
 ::end:: */
 {
-    if (args == Qnil)
+    if (argc == 0)
 	return rep_signal_missing_arg (1);
-    else if (!rep_CONSP (rep_CDR (args)))
-	return rep_number_div (rep_MAKE_INT (1), rep_CAR (args));
-    return rep_number_foldl (args, rep_number_div);
+    else if (argc == 1)
+	return rep_number_div (rep_MAKE_INT (1), argv[0]);
+    else
+	return number_foldv (argc, argv, rep_number_div);
 }
 
 DEFUN("remainder", Fremainder, Sremainder, (repv n1, repv n2), rep_Subr2) /*
@@ -1921,37 +1986,37 @@ Returns the bitwise logical `not' of NUMBER.
     return rep_number_lognot (num);
 }
 
-DEFUN("logior", Flogior, Slogior, (repv args), rep_SubrN) /*
+DEFUN("logior", Flogior, Slogior, (int argc, repv *argv), rep_SubrV) /*
 ::doc:rep.lang.math#logior::
 logior NUMBERS...
 
 Returns the bitwise logical `inclusive-or' of its arguments.
 ::end:: */
 {
-    if (args == Qnil)
+    if (argc == 0)
 	return rep_MAKE_INT (0);
     else
-	return rep_number_foldl (args, rep_number_logior);
+	return number_foldv (argc, argv, rep_number_logior);
 }
 
-DEFUN("logxor", Flogxor, Slogxor, (repv args), rep_SubrN) /*
+DEFUN("logxor", Flogxor, Slogxor, (int argc, repv *argv), rep_SubrV) /*
 ::doc:rep.lang.math#logxor::
 logxor NUMBERS...
 
 Returns the bitwise logical `exclusive-or' of its arguments.
 ::end:: */
 {
-    return rep_number_foldl (args, rep_number_logxor);
+    return number_foldv (argc, argv, rep_number_logxor);
 }
 
-DEFUN("logand", Flogand, Slogand, (repv args), rep_SubrN) /*
+DEFUN("logand", Flogand, Slogand, (int argc, repv *argv), rep_SubrV) /*
 ::doc:rep.lang.math#logand::
 logand NUMBERS...
 
 Returns the bitwise logical `and' of its arguments.
 ::end:: */
 {
-    return rep_number_foldl (args, rep_number_logand);
+    return number_foldv (argc, argv, rep_number_logand);
 }
 
 DEFUN("eql", Feql, Seql, (repv arg1, repv arg2), rep_Subr2) /*
@@ -2492,7 +2557,7 @@ signalled (mathematically should return a complex number).
     return out;
 }
 
-DEFUN("gcd", Fgcd, Sgcd, (repv args), rep_SubrN) /*
+DEFUN("gcd", Fgcd, Sgcd, (int argc, repv *argv), rep_SubrV) /*
 ::doc:rep.lang.math#gcd::
 gcd ...
 
@@ -2500,15 +2565,15 @@ Return the greatest common divisor of the integer arguments. The result
 is always non-negative. Returns 0 with arguments.
 ::end:: */
 {
-    if (args == Qnil)
+    if (argc == 0)
 	return rep_MAKE_INT (0);
-    else if (rep_CONSP (args) && rep_CDR (args) == Qnil)
+    else if (argc == 1)
     {
-	rep_DECLARE1 (rep_CAR (args), rep_INTEGERP);
-	return rep_integer_gcd (rep_CAR (args), rep_CAR (args));
+	rep_DECLARE1 (argv[0], rep_INTEGERP);
+	return rep_integer_gcd (argv[0], argv[0]);
     }
     else
-	return rep_integer_foldl (args, rep_integer_gcd);
+	return integer_foldv (argc, argv, rep_integer_gcd);
 }
 
 DEFUN("numberp", Fnumberp, Snumberp, (repv arg), rep_Subr1) /*
@@ -2707,7 +2772,7 @@ Return the denominator of rational number X.
     return rep_make_float (y, inexact);
 }
 
-DEFUN("max", Fmax, Smax, (repv args), rep_SubrN) /*
+DEFUN("max", Fmax, Smax, (int argc, repv *argv), rep_SubrV) /*
 ::doc:rep.lang.math#max::
 max ARGS...
 
@@ -2716,10 +2781,10 @@ arguments. When comparing numbers, any inexact arguments cause the
 result to be inexact.
 ::end:: */
 {
-    return rep_foldl (args, rep_number_max);
+    return foldv (argc, argv, rep_number_max);
 }
 
-DEFUN("min", Fmin, Smin, (repv args), rep_SubrN) /*
+DEFUN("min", Fmin, Smin, (int argc, repv *argv), rep_SubrV) /*
 ::doc:rep.lang.math#min::
 min ARGS...
 
@@ -2728,7 +2793,7 @@ arguments. When comparing numbers, any inexact arguments cause the
 result to be inexact.
 ::end:: */
 {
-    return rep_foldl (args, rep_number_min);
+    return foldv (argc, argv, rep_number_min);
 }
 
 DEFUN("string->number", Fstring_to_number,

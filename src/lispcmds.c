@@ -1015,10 +1015,12 @@ a character or a list or vector of characters.
 	return rep_null_string ();
 
     /* Allocate the string. */
+
     string = rep_make_string (length + 1);
     ptr = rep_STR (string);
 
-    /* Pass2: copy in the data */
+    /* Pass 2: copy in the data */
+
     for (i = 0; i < argc; i++)
     {
 	elt = argv[i];
@@ -1637,35 +1639,23 @@ Returns t if STRING1 is `less' than STRING2, ignoring case.
     return *s2 ? Qt : Qnil;
 }
 
-
 #define APPLY_COMPARISON(op)				\
-    if(rep_CONSP(args) && rep_CONSP(rep_CDR(args)))	\
+    int i, sign;					\
+    if (argc < 2)					\
+	return rep_signal_missing_arg (argc + 1);	\
+    for (i = 1; i < argc; i++)				\
     {							\
-	repv pred = rep_CAR(args);			\
-	int i = 2;					\
-	args = rep_CDR(args);				\
-	while(rep_CONSP(args))				\
-	{						\
-	    int sign;					\
-	    repv tem = rep_CAR (args);			\
-	    if (rep_NUMBERP (pred) || rep_NUMBERP (tem)) \
-		sign = rep_compare_numbers (pred, tem);	\
-	    else					\
-		sign = rep_value_cmp(pred, tem);	\
-	    if(!(sign op 0)) 				\
-		return Qnil;				\
-	    pred = tem;					\
-	    args = rep_CDR(args);			\
-	    i++;					\
-	    rep_TEST_INT;				\
-	    if(rep_INTERRUPTP)				\
-		return(rep_NULL);			\
-	}						\
-	return Qt;					\
+	repv a = argv[i-1], b = argv[i];		\
+	if (rep_NUMBERP (a) || rep_NUMBERP (b))		\
+	    sign = rep_compare_numbers (a, b);		\
+	else						\
+	    sign = rep_value_cmp (a, b);		\
+	if (!(sign op 0))				\
+	    return Qnil;				\
     }							\
-    return rep_signal_missing_arg(rep_CONSP(args) ? 2 : 1);
+    return Qt;
 
-DEFUN("=", Fnum_eq, Snum_eq, (repv args), rep_SubrN) /*
+DEFUN("=", Fnum_eq, Snum_eq, (int argc, repv *argv), rep_SubrV) /*
 ::doc:rep.data#=::
 = ARG1 ARG2 [ARG3 ...]
 
@@ -1677,7 +1667,7 @@ ignored.)
     APPLY_COMPARISON(==)
 }
 
-DEFUN("/=", Fnum_noteq, Snum_noteq, (repv args), rep_SubrN) /*
+DEFUN("/=", Fnum_noteq, Snum_noteq, (int argc, repv *argv), rep_SubrV) /*
 ::doc:rep.data#:/=::
 /= ARG1 ARG2 ...
 
@@ -1686,14 +1676,11 @@ Returns t if each value is different from every other value. (Using
 ignored.)
 ::end:: */
 {
-    repv ret = Fnum_eq (args);
-    if (ret)
-	return ret == Qnil ? Qt : Qnil;
-    else
-	return rep_NULL;
+    repv ret = Fnum_eq (argc, argv);
+    return !ret ? rep_NULL : ret == Qnil ? Qt : Qnil;
 }
 
-DEFUN(">", Fgtthan, Sgtthan, (repv args), rep_SubrN) /*
+DEFUN(">", Fgtthan, Sgtthan, (int argc, repv *argv), rep_SubrV) /*
 ::doc:rep.data#>::
 > ARG1 ARG2 [ARG3 ...]
 
@@ -1705,7 +1692,7 @@ strings, positions, marks, etc as well.
     APPLY_COMPARISON(>)
 }
 
-DEFUN(">=", Fgethan, Sgethan, (repv args), rep_SubrN) /*
+DEFUN(">=", Fgethan, Sgethan, (int argc, repv *argv), rep_SubrV) /*
 ::doc:rep.data#>=::
 >= ARG1 ARG2 [ARG3 ...]
 
@@ -1716,7 +1703,7 @@ isn't limited to numbers, it can do strings, positions, marks, etc as well.
     APPLY_COMPARISON(>=)
 }
 
-DEFUN("<", Fltthan, Sltthan, (repv args), rep_SubrN) /*
+DEFUN("<", Fltthan, Sltthan, (int argc, repv *argv), rep_SubrV) /*
 ::doc:rep.data#<::
 < ARG1 ARG2 [ARG3 ...]
 
@@ -1727,7 +1714,7 @@ numbers, it can do strings, positions, marks, etc as well.
     APPLY_COMPARISON(<)
 }
 
-DEFUN("<=", Flethan, Slethan, (repv args), rep_SubrN) /*
+DEFUN("<=", Flethan, Slethan, (int argc, repv *argv), rep_SubrV) /*
 ::doc:rep.data#<=::
 <= ARG1 ARG2 [ARG3 ...]
 

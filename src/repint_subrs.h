@@ -64,6 +64,12 @@ extern repv Fnconc_ (int argc, repv *argv);
 extern repv Fappend (int argc, repv *argv);
 extern repv Fvector (int argc, repv *argv);
 extern repv Fconcat (int, repv *);
+extern repv Fnum_eq (int, repv *);
+extern repv Fnum_noteq (int, repv *);
+extern repv Fgtthan (int, repv *);
+extern repv Fgethan (int, repv *);
+extern repv Fltthan (int, repv *);
+extern repv Flethan (int, repv *);
 
 /* from lispmach.c */
 extern repv Qbytecode_error;
@@ -94,6 +100,16 @@ extern void rep_misc_init(void);
 extern repv rep_parse_number (char *buf, u_int len, u_int radix,
 			      int sign, u_int type);
 extern void rep_numbers_init (void);
+extern repv Fplus(int, repv *);
+extern repv Fminus(int, repv *);
+extern repv Fproduct(int, repv *);
+extern repv Fdivide(int, repv *);
+extern repv Flogior(int, repv *);
+extern repv Flogxor(int, repv *);
+extern repv Flogand(int, repv *);
+extern repv Fmax(int, repv *);
+extern repv Fmin(int, repv *);
+extern repv Fgcd (int, repv *);
 
 /* from origin.c */
 extern rep_bool rep_record_origins;
