@@ -108,7 +108,7 @@ static int process_run_count;
 static volatile bool got_sigchld;
 
 _PR bool proc_periodically(void);
-static void read_from_one_fd(struct Proc *pr, int fd, bool cursor_on);
+static void read_from_one_fd(struct Proc *pr, int fd);
 static void read_from_process(int);
 _PR int	 write_to_process(VALUE, u_char *, int);
 _PR void proc_mark(VALUE);
@@ -171,7 +171,6 @@ proc_notification(void)
 {
     if(!notify_chain)
 	return(FALSE);
-    cursor(curr_vw, CURS_OFF);
     while(notify_chain != NULL)
     {
 	struct Proc *pr = notify_chain;
@@ -180,8 +179,7 @@ proc_notification(void)
 	if(pr->pr_NotifyFun && !NILP(pr->pr_NotifyFun))
 	    funcall(pr->pr_NotifyFun, sym_nil, FALSE);
     }
-    cursor(curr_vw, CURS_ON);
-    return(TRUE);
+    return TRUE;
 }
 
 /* Checks if any of my children are zombies, takes appropriate action. */
@@ -254,14 +252,12 @@ proc_periodically(void)
 /* Read data from FD out of PROC. If necessary it will handle
    clean up and notification. */
 static void
-read_from_one_fd(struct Proc *pr, int fd, bool cursor_on)
+read_from_one_fd(struct Proc *pr, int fd)
 {
     VALUE stream = ((fd != pr->pr_Stdout)
 		    ? pr->pr_ErrorStream : pr->pr_OutputStream);
     u_char buf[1025];
     int actual;
-    if(cursor_on)
-	cursor(curr_vw, CURS_OFF);
     do {
 	if((actual = read(fd, buf, 1024)) > 0)
 	{
@@ -290,8 +286,6 @@ read_from_one_fd(struct Proc *pr, int fd, bool cursor_on)
 	    pr->pr_Stdout = 0;
 	}
     }
-    if(cursor_on)
-	cursor(curr_vw, CURS_ON);
 }
 
 static void
@@ -302,9 +296,7 @@ read_from_process(int fd)
     while(pr)
     {
 	if(PR_ACTIVE_P(pr) && (pr->pr_Stdout == fd || pr->pr_Stderr == fd))
-	{
-	    read_from_one_fd(pr, fd, TRUE);
-	}
+	    read_from_one_fd(pr, fd);
 	pr = pr->pr_Next;
     }
 }
