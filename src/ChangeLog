@@ -1,3 +1,7 @@
+1999-08-03  John Harper  <john@dcs.warwick.ac.uk>
+
+	* version 0.1
+
 1999-07-29  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_main.c (rep_sig_restart): make syscalls restart or not
