@@ -80,6 +80,9 @@ extern void rep_macros_init (void);
 #ifndef HAVE_STPCPY
 extern char *stpcpy(char *, const char *);
 #endif
+#ifndef HAVE_STRNCASECMP
+extern int strncasecmp (const char *s1, const char *s2, size_t n);
+#endif
 extern void rep_misc_init(void);
 
 /* from numbers.c */
