@@ -57,6 +57,7 @@ usage(void)
 	"    -v           print version/revision details\n"
 	"    -log-msgs    print all messages to standard-error as well\n"
 	"and LISP-OPTIONS are,\n"
+	"    -no-rc       don't load .jaderc or site-init files\n"
 	"    -f FUNCTION  call the Lisp function FUNCTION\n"
 	"    -l FILE      load the file of Lisp forms called FILE\n"
 	"    -q           quit\n"
