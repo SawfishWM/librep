@@ -377,6 +377,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 						  RET_POP);
 		    break;
 		}
+		signal_arg_error(tmp, 1);
 		goto error;
 	    }
 	}
@@ -493,6 +494,10 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		    TOP = make_number(VNUM(TOP) + VNUM(tmp));
 		    break;
 		}
+		if(NUMBERP(tmp))
+		    signal_arg_error(TOP, 2);
+		else
+		    signal_arg_error(tmp, 1);
 		goto error;
 
 	    case OP_NEG:
@@ -501,6 +506,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		    TOP = make_number(-VNUM(TOP));
 		    break;
 		}
+		signal_arg_error(TOP, 1);
 		goto error;
 
 	    case OP_SUB:
@@ -510,6 +516,10 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		    TOP = make_number(VNUM(TOP) - VNUM(tmp));
 		    break;
 		}
+		if(NUMBERP(tmp))
+		    signal_arg_error(TOP, 2);
+		else
+		    signal_arg_error(tmp, 1);
 		goto error;
 
 	    case OP_MUL:
@@ -519,6 +529,10 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		    TOP = make_number(VNUM(TOP) * VNUM(tmp));
 		    break;
 		}
+		if(NUMBERP(tmp))
+		    signal_arg_error(TOP, 2);
+		else
+		    signal_arg_error(tmp, 1);
 		goto error;
 
 	    case OP_DIV:
@@ -528,6 +542,10 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		    TOP = make_number(VNUM(TOP) / VNUM(tmp));
 		    break;
 		}
+		if(NUMBERP(tmp))
+		    signal_arg_error(TOP, 2);
+		else
+		    signal_arg_error(tmp, 1);
 		goto error;
 
 	    case OP_MOD:
@@ -537,6 +555,10 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		    TOP = make_number(VNUM(TOP) % VNUM(tmp));
 		    break;
 		}
+		if(NUMBERP(tmp))
+		    signal_arg_error(TOP, 2);
+		else
+		    signal_arg_error(tmp, 1);
 		goto error;
 
 	    case OP_LNOT:
@@ -545,6 +567,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		    TOP = make_number(~VNUM(TOP));
 		    break;
 		}
+		signal_arg_error(TOP, 1);
 		goto error;
 
 	    case OP_NOT:
@@ -561,6 +584,10 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		    TOP = make_number(VNUM(TOP) | VNUM(tmp));
 		    break;
 		}
+		if(NUMBERP(tmp))
+		    signal_arg_error(TOP, 2);
+		else
+		    signal_arg_error(tmp, 1);
 		goto error;
 
 	    case OP_LXOR:
@@ -570,6 +597,10 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		    TOP = make_number(VNUM(TOP) ^ VNUM(tmp));
 		    break;
 		}
+		if(NUMBERP(tmp))
+		    signal_arg_error(TOP, 2);
+		else
+		    signal_arg_error(tmp, 1);
 		goto error;
 
 	    case OP_LAND:
@@ -579,6 +610,10 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		    TOP = make_number(VNUM(TOP) & VNUM(tmp));
 		    break;
 		}
+		if(NUMBERP(tmp))
+		    signal_arg_error(TOP, 2);
+		else
+		    signal_arg_error(tmp, 1);
 		goto error;
 
 	    case OP_EQUAL:
@@ -641,6 +676,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		    TOP = make_number(VNUM(TOP) + 1);
 		    break;
 		}
+		signal_arg_error(TOP, 1);
 		goto error;
 
 	    case OP_DEC:
@@ -649,6 +685,7 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		    TOP = make_number(VNUM(TOP) - 1);
 		    break;
 		}
+		signal_arg_error(TOP, 1);
 		goto error;
 
 	    case OP_LSH:
@@ -859,7 +896,10 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		/* one arg: buffer. */
 		tmp = RET_POP;
 		if(!BUFFERP(tmp))
+		{
+		    signal_arg_error(tmp, 1);
 		    goto error;
+		}
 		tmp = VAL(swap_buffers_tmp(curr_vw, VTX(tmp)));
 		bindstack = cmd_cons(cmd_cons(tmp, VAL(curr_vw)), bindstack);
 		break;
@@ -891,7 +931,10 @@ of byte code. See the functions `compile-file', `compile-directory' and
 	    case OP_BIND_WINDOW:
 		tmp = RET_POP;
 		if(!WINDOWP(tmp) || !VWIN(tmp)->w_Window)
+		{
+		    signal_arg_error(tmp, 1);
 		    goto error;
+		}
 		bindstack = cmd_cons(VAL(curr_win), bindstack);
 		curr_win = VWIN(tmp);
 		curr_vw = curr_win->w_CurrVW;
@@ -908,7 +951,10 @@ of byte code. See the functions `compile-file', `compile-directory' and
 		tmp = RET_POP;
 		if(!VIEWP(tmp) || !VVIEW(tmp)->vw_Win
 		   || !VVIEW(tmp)->vw_Win->w_Window)
+		{
+		    signal_arg_error(tmp, 1);
 		    goto error;
+		}
 		bindstack = cmd_cons(VAL(curr_vw), bindstack);
 		curr_vw = VVIEW(tmp);
 		curr_win = VVIEW(tmp)->vw_Win;
