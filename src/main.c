@@ -30,6 +30,9 @@ _PR bool on_idle(long since_last_event);
 _PR bool handle_input_exception(VALUE *result_p);
 _PR void main_init(void);
 
+_PR void *common_db;
+void *common_db;
+
 _PR StrMem main_strmem;
 StrMem main_strmem;
 
@@ -128,6 +131,8 @@ main(int argc, char **argv)
 	return 10;
     sm_init(&main_strmem);
 
+    common_db = db_alloc("common", 4096);
+
     pre_values_init();
     pre_sys_init();
     if(pre_symbols_init())
@@ -168,7 +173,6 @@ inner_main(int argc, char **argv)
     edit_init();
     find_init();
     extent_init();
-    faces_init();
     glyphs_init();
     keys_init();
     main_init();
@@ -182,10 +186,12 @@ inner_main(int argc, char **argv)
     windows_init();
     sys_misc_init();
     sys_windows_init();
+
 #ifdef HAVE_SUBPROCESSES
     proc_init();
 #endif
-    if(get_main_options(&argc, &argv) && first_buffer())
+
+    if(faces_init() && get_main_options(&argc, &argv) && first_buffer())
     {
 	VALUE arg, res;
 	if((arg = string_dup(init_script))
@@ -200,39 +206,42 @@ inner_main(int argc, char **argv)
 		rc = VINT(VCDR(throw_value));
 	    else
 		rc = 0;
+	    throw_value = 0;
+	}
+    }
+
+    if(throw_value && VCAR(throw_value) == sym_error)
+    {
+	/* If quitting due to an error, print the error cell if
+	   at all possible. */
+	VALUE stream = cmd_stderr_file();
+	VALUE old_tv = throw_value;
+	throw_value = LISP_NULL;
+	if(stream && FILEP(stream))
+	{
+	    fputs("error--> ", stderr);
+	    cmd_prin1(VCDR(old_tv), stream);
+	    fputc('\n', stderr);
 	}
 	else
-	{
-	    /* If quitting due to an error, print the error cell if
-	       at all possible. */
-	    VALUE stream;
-	    VALUE old_tv = throw_value;
-	    throw_value = LISP_NULL;
-	    if(old_tv && VCAR(old_tv) == sym_error
-	       && (stream = cmd_stderr_file())
-	       && FILEP(stream))
-	    {
-		fputs("error--> ", stderr);
-		cmd_prin1(VCDR(old_tv), stream);
-		fputc('\n', stderr);
-	    }
-	    else
-		fputs("jade: error in initialisation script\n", stderr);
-	    throw_value = old_tv;
-	}
-#ifdef HAVE_DYNAMIC_LOADING
-	kill_dl_libraries();
-#endif
-#ifdef HAVE_SUBPROCESSES
-        proc_kill();
-#endif
-	windows_kill();
-	views_kill();
-	buffers_kill();
-	find_kill();
-	glyphs_kill();
-	files_kill();
+	    fputs("jade: error in initialisation\n", stderr);
+	throw_value = old_tv;
     }
+
+#ifdef HAVE_DYNAMIC_LOADING
+    kill_dl_libraries();
+#endif
+
+#ifdef HAVE_SUBPROCESSES
+    proc_kill();
+#endif
+
+    windows_kill();
+    views_kill();
+    buffers_kill();
+    find_kill();
+    glyphs_kill();
+    files_kill();
     db_kill();
     return rc;
 }
