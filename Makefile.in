@@ -68,10 +68,10 @@ uninstall :
 	rm -f $(DESTDIR)$(repcommonexecdir)/libtool
 	rm -f $(DESTDIR)$(aclocaldir)/rep.m4
 
-DOC : repdoc
+DOC : src/repdoc
 	src/repdoc DOC `find $(top_srcdir) -name '*.c' -print`
 
-repdoc :
+src/repdoc :
 	( cd src && $(MAKE) repdoc )
 
 NEWS : man/news.texi
