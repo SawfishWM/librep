@@ -38,6 +38,24 @@
 
 #define _GNU_SOURCE
 
+/* AIX requires this to be the first thing in the file.  */
+#include <config.h>
+#ifdef __GNUC__
+# define alloca __builtin_alloca
+#else
+# if HAVE_ALLOCA_H
+#  include <alloca.h>
+# else
+#  ifdef _AIX
+ #pragma alloca
+#  else
+#   ifndef alloca /* predefined by HP cc +Olibcalls */
+char *alloca ();
+#   endif
+#  endif
+# endif
+#endif
+
 #include "repint.h"
 
 #include <string.h>
@@ -522,6 +540,43 @@ are available returns nil.
     if((rc = rep_stream_getc(stream)) != EOF)
 	return(rep_MAKE_INT(rc));
     return(Qnil);
+}
+
+DEFUN("read-chars", Fread_chars, Sread_chars,
+      (repv stream, repv count), rep_Subr2) /*
+::doc:Sread-chars::
+read-chars STREAM COUNT
+
+Read upto COUNT characters from the input stream STREAM, returning a
+string containing the characters. If EOF is read before reading COUNT
+characters, the returned string will contain the characters read up to
+that point. If no characters are read, nil will be returned.
+::end:: */
+{
+    u_char *buf;
+    int len;
+    rep_DECLARE2(count, rep_INTP);
+    buf = alloca (rep_INT(count));
+    if(rep_FILEP(stream) && rep_LOCAL_FILE_P(stream))
+    {
+	/* Special case for local file streams. */
+	len = fread (buf, sizeof (u_char), rep_INT(count),
+		     rep_FILE(stream)->file.fh);
+    }
+    else
+    {
+	int c;
+	len = 0;
+	while (len < rep_INT(count)
+	       && (c = rep_stream_getc (stream)) != EOF)
+	{
+	    buf[len++] = c;
+	}
+    }
+    if (len > 0)
+	return rep_string_dupn (buf, len);
+    else
+	return Qnil;
 }
 
 DEFUN("read-line", Fread_line, Sread_line, (repv stream), rep_Subr1) /*
@@ -1016,6 +1071,7 @@ rep_streams_init(void)
     rep_INTERN(format_hooks_alist);
     rep_ADD_SUBR(Swrite);
     rep_ADD_SUBR(Sread_char);
+    rep_ADD_SUBR(Sread_chars);
     rep_ADD_SUBR(Sread_line);
     rep_ADD_SUBR(Scopy_stream);
     rep_ADD_SUBR(Sread);
