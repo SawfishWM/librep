@@ -1,5 +1,17 @@
 2001-06-14  John Harper  <jsh@pixelslut.com>
 
+	* numbers.c (rep_parse_number): don't call mpz_init_set_str ()
+	on BUF since it may not be zero-terminated. Instead copy the
+	string to the stack and terminate it there
+
+	* rep-md5.c: new module, rep.util.md5. Exports two functions
+	currently, md5-string and md5-local-file.
+
+	* fake-libexec, Makefile.in: build rep.util.md5 module
+
+	* md5.c, md5.h: MD5 message digest implementation. Taken from
+	GNU textutils-1.22 (originally written by Ulrich Drepper)
+
 	* misc.c (Fcrypt): new function, wrapper for crypt(3) if it's
 	available
 

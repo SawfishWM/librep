@@ -975,7 +975,10 @@ rep_parse_number (char *buf, u_int len, u_int radix, int sign, u_int type)
 	{
 	    z = make_number (rep_NUMBER_BIGNUM);
 #ifdef HAVE_GMP
-	    if (mpz_init_set_str (z->z, buf, radix) == 0)
+	    copy = alloca (len + 1);
+	    memcpy (copy, buf, len);
+	    copy[len] = 0;
+	    if (mpz_init_set_str (z->z, copy, radix) == 0)
 	    {
 		if (sign < 0)
 		    mpz_neg (z->z, z->z);
