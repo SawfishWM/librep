@@ -442,12 +442,10 @@ wait_for_input(fd_set *inputs, u_long timeout_msecs)
 }
 
 /* Handle the READY fds with pending input (defined by fdset INPUTS).
-   If CALLBACK is non-null, only invoke this function for inputs
-   whose callback function == CALLBACK. Return true if the display
-   might require updating. Returns immediately if a Lisp error has
-   occurred. */
+   Return true if the display might require updating. Returns immediately
+   if a Lisp error has occurred. */
 static rep_bool
-handle_input(fd_set *inputs, int ready, void *callback)
+handle_input(fd_set *inputs, int ready)
 {
     static long idle_period;
     rep_bool refreshp = rep_FALSE;
@@ -463,18 +461,15 @@ handle_input(fd_set *inputs, int ready, void *callback)
 	    if(FD_ISSET(i, inputs))
 	    {
 		ready--;
-		if(!callback || ((void *) input_actions[i]) == callback)
+		if(FD_ISSET(i, &input_pending))
 		{
-		    if(FD_ISSET(i, &input_pending))
-		    {
-			FD_CLR(i, &input_pending);
-			input_pending_count--;
-		    }
-		    if(input_actions[i] != NULL)
-		    {
-			input_actions[i](i);
-			refreshp = rep_TRUE;
-		    }
+		    FD_CLR(i, &input_pending);
+		    input_pending_count--;
+		}
+		if(input_actions[i] != NULL)
+		{
+		    input_actions[i](i);
+		    refreshp = rep_TRUE;
 		}
 	    }
 	}
@@ -511,7 +506,7 @@ rep_event_loop(void)
 
 	memcpy(&copy, &input_fdset, sizeof(copy));
 	ready = wait_for_input(&copy, rep_input_timeout_secs * 1000);
-	refreshp = handle_input(&copy, ready, 0);
+	refreshp = handle_input(&copy, ready);
 
 	/* Check for exceptional conditions. */
 	if(rep_throw_value != rep_NULL)
@@ -551,26 +546,67 @@ rep_sit_for(u_long timeout_msecs)
 }
 
 /* Wait TIMEOUT_MSECS for input, ignoring any input fds that would
-   invoke any callback function except CALLBACK. Return the number of
-   input fds serviced. */
+   invoke any callback function except CALLBACKS. Return Qnil if any
+   input was serviced, Qt if the timeout expired, rep_NULL for an error. */
 repv
-rep_accept_input(u_long timeout_msecs, void *callback)
+rep_accept_input_for_callbacks (u_long timeout_msecs, int ncallbacks,
+				void (**callbacks)(int))
 {
     fd_set copy;
     int ready, i;
     FD_ZERO(&copy);
     for(i = 0; i < FD_SETSIZE; i++)
     {
-	if(FD_ISSET(i, &input_fdset) && ((void *)input_actions[i]) == callback)
-	    FD_SET(i, &copy);
+	if(FD_ISSET(i, &input_fdset))
+	{
+	    int j;
+	    for (j = 0; j < ncallbacks; j++)
+	    {
+		if (input_actions[i] == callbacks[j])
+		{
+		    FD_SET(i, &copy);
+		    break;
+		}
+	    }
+	}
     }
     ready = wait_for_input(&copy, timeout_msecs);
     if(ready > 0 && !rep_INTERRUPTP)
-	handle_input(&copy, ready, callback);
+	handle_input(&copy, ready);
     if(rep_INTERRUPTP)
 	return rep_NULL;
     else
 	return ready > 0 ? Qnil : Qt;
+}
+
+/* Wait TIMEOUT_MSECS for input from the NFDS file descriptors stored in FDS.
+   Return Qnil if any input was serviced, Qt if the timeout expired, rep_NULL
+   for an error. */
+repv
+rep_accept_input_for_fds (u_long timeout_msecs, int nfds, int *fds)
+{
+    fd_set copy;
+    int ready, i;
+    FD_ZERO(&copy);
+    for(i = 0; i < nfds; i++)
+    {
+	if(FD_ISSET(fds[i], &input_fdset))
+	    FD_SET(fds[i], &copy);
+    }
+    ready = wait_for_input(&copy, timeout_msecs);
+    if(ready > 0 && !rep_INTERRUPTP)
+	handle_input(&copy, ready);
+    if(rep_INTERRUPTP)
+	return rep_NULL;
+    else
+	return ready > 0 ? Qnil : Qt;
+}
+
+/* obsolete, for compatibility only */
+repv
+rep_accept_input(u_long timeout_msecs, void (*callback)(int))
+{
+    return rep_accept_input_for_callbacks (timeout_msecs, 1, &callback);
 }
 
 rep_bool
