@@ -48,14 +48,14 @@ install : librep.info installdirs
 	for f in librep.info*; do \
 	  $(INSTALL_DATA) $$f $(DESTDIR)$(infodir); \
 	done
-	-install-info --info-dir=$(DESTDIR)$(infodir)/dir librep.info
+	-install-info --info-dir=$(DESTDIR)$(infodir) librep.info
 
 installdirs : mkinstalldirs
 	$(SHELL) $< $(DESTDIR)$(infodir)
 
 uninstall :
 	rm -f $(DESTDIR)$(infodir)/librep.info*
-	-install-info --remove --info-dir=$(DESTDIR)$(infodir)/dir librep.info
+	-install-info --remove --info-dir=$(DESTDIR)$(infodir) librep.info
 
 clean :
 	rm -f *~ librep.info* librep.?? librep.???
