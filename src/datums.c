@@ -26,6 +26,7 @@
 
 #define _GNU_SOURCE
 
+#define rep_DEFINE_QNIL 1
 #include "repint.h"
 
 static int datum_type;
@@ -39,8 +40,8 @@ static repv printer_alist;
 #define DATUM_ID(x) (rep_TUPLE(x)->a)
 #define DATUM_VALUE(x) (rep_TUPLE(x)->b)
 
-/* This is no longer a symbol, but a datum representing () and false */
-repv Qnil;
+/* This is what Qnil points to */
+rep_tuple rep_eol_datum;
 
 
 /* type hooks */
@@ -159,10 +160,13 @@ rep_pre_datums_init (void)
 					datum_print, datum_print,
 					0, rep_mark_tuple,
 					0, 0, 0, 0, 0, 0, 0);
-    Qnil = rep_make_tuple (datum_type, rep_NULL, rep_NULL);
-    DATUM_ID (Qnil) = Qnil;
-    DATUM_VALUE (Qnil) = Qnil;
-    rep_mark_static (&Qnil);
+
+    /* Including CELL_MARK_BIT means we don't have to worry about
+       GC; the cell will never get remarked, and it's not on any
+       allocation lists to get swept up from. */
+    rep_eol_datum.car = datum_type | rep_CELL_STATIC_BIT | rep_CELL_MARK_BIT;
+    rep_eol_datum.a = rep_VAL (&rep_eol_datum);
+    rep_eol_datum.b = rep_VAL (&rep_eol_datum);
 }
 
 void

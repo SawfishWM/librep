@@ -867,6 +867,25 @@ typedef struct rep_gc_n_roots {
 #define rep_INTERRUPTP (rep_throw_value != rep_NULL)
 
 
+/* End-of-list / false value
+
+   The canonical method of getting '() is to access the `Qnil' variable.
+
+   But we know that that currently points to `rep_eol_datum'. So avoid
+   lots of global variable referencing by hardcoding that value for
+   library-internal code. */
+
+extern repv Qnil;
+
+#ifdef rep_INTERNAL
+  extern rep_tuple rep_eol_datum;
+# ifdef rep_DEFINE_QNIL
+    repv Qnil = rep_VAL (&rep_eol_datum);
+# endif
+# define Qnil rep_VAL(&rep_eol_datum)
+#endif
+
+
 /* Storing timestamps */
 
 #define rep_MAKE_TIME(time) \
