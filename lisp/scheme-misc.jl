@@ -37,9 +37,7 @@
 	    close-output-port
 
 	    read read-char peek-char eof-object?
-	    write display newline write-char
-	    
-	    load)
+	    write display newline write-char load)
 
   ((open rep scheme-utils)
    (access rep))
@@ -100,9 +98,8 @@
 	  (proc file)
 	(close-file file))))
 
-  ;; XXX this is bogus
-  (define input-port? (make-predicate streamp))
-  (define output-port? (make-predicate streamp))
+  (define input-port? (make-predicate input-stream-p))
+  (define output-port? (make-predicate output-stream-p))
 
   (define (current-input-port) standard-input)
   (define (current-output-port) standard-output)
@@ -136,11 +133,10 @@
       (end-of-stream eof-object)))
 
   (define (read-char &optional port)
-    (or ((structure-ref rep read-char) (or port standard-input))
-     eof-object))
+    (or (rep#read-char (or port standard-input)) eof-object))
 
   (define (peek-char &optional port)
-    (error "peek-char is unimplemented"))	;XXX
+    (or (rep#peek-char (or port standard-input)) eof-object))
 
   (define (eof-object? obj) (eq obj eof-object))
 
@@ -160,6 +156,8 @@
 
 ;;; system interface
 
-  ;; use rep's load function
+  (define (load filename)
+    ;; `t' arg means not to search load-path
+    (rep#load filename nil t))
 
   (setq %load-suffixes '(".scm" ".scmc")))
