@@ -70,6 +70,15 @@
 
 /* General configuration options */
 
+/* Define if dynamic loading is available */
+#undef HAVE_DYNAMIC_LOADING
+
+/* Define if <dlfcn.h> is available */
+#undef HAVE_DLFCN_H
+
+/* Define to suffix of dynamically loaded files */
+#undef DYNAMIC_FILE_SUFFIX
+
 /* Define if pseudo terminals are available */
 #undef HAVE_PTYS
 

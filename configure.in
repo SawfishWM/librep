@@ -26,6 +26,7 @@ AC_CONFIG_HEADER(config.h)
 version="4.0"
 jadedir='${datadir}/jade'
 lispdir='${jadedir}/${version}/lisp'
+jadeexecdir='${libexecdir}/jade/${version}'
 
 output_files="man/Makefile jade/Makefile:src/Makefile.in\
  lib/Makefile:lib-src/Makefile.in lisp/Makefile Makefile"
@@ -55,6 +56,7 @@ AC_PROG_GCC_TRADITIONAL
 dnl Checks for libraries.
 AC_CHECK_LIB(nsl, xdr_void)
 AC_CHECK_LIB(socket, bind)
+AC_CHECK_LIB(dl, dlopen)
 
 dnl Checks for header files.
 AC_PATH_XTRA
@@ -63,6 +65,12 @@ AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
 AC_CHECK_HEADERS(fcntl.h sys/ioctl.h sys/time.h sys/utsname.h unistd.h siginfo.h memory.h stropts.h termios.h)
+
+dnl Check for dynamic loading; currently only <dlfcn.h> with dlopen() etc
+AC_CHECK_HEADER(dlfcn.h,
+[AC_DEFINE(HAVE_DLFCN_H)
+ AC_DEFINE(HAVE_DYNAMIC_LOADING)
+ AC_DEFINE(DYNAMIC_FILE_SUFFIX, ".so")])
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -150,6 +158,7 @@ AC_DEFINE(HAVE_UNIX)
 dnl Nonstandard exported symbols
 AC_SUBST(version)
 AC_SUBST(jadedir)
+AC_SUBST(jadeexecdir)
 AC_SUBST(lispdir)
 AC_SUBST(opt_enable_dumped)
 AC_SUBST(dumped_lisp_files)
