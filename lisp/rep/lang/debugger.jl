@@ -40,7 +40,8 @@
   (defun debug-rep ()
     (let
 	((print-escape t))
-      (format standard-error "<%d> %S\n" (fluid depth) (fluid obj))
+      (when (fluid depth)
+	(format standard-error "<%d> %S\n" (fluid depth) (fluid obj)))
       (while t
 	(let
 	    ((input (readline "rep-db? "))
@@ -108,10 +109,7 @@ commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM',
     (format standard-error "<%d> => %S\n" debug-depth debug-val))
 
   (defun error-entry (error-list debug-frame-pointer)
-    (format standard-error "*** Error: %s: %S\n"
-	    (or (get (car error-list) 'error-message)
-		(car error-list)) (cdr error-list))
-    (backtrace 1)
+    (default-error-handler (car error-list) (cdr error-list))
     (catch 'debug
       (fluid-let ((frame-pointer debug-frame-pointer))
 	(debug-rep)
