@@ -170,8 +170,8 @@ AC_DEFINE(rep_HAVE_UNIX, 1)
 dnl We need to find an integer type that's big enough to store any pointer
 AC_MSG_CHECKING([for data type to store Lisp values])
 AC_ARG_WITH(value-type,
- [  --with-value-type=TYPE  Implicitly signed data type, as wide as a
-			   pointer. [TYPE=<probed>]], [],
+ [  --with-value-type=TYPE  Implicitly signed integer type, at least as wide
+			   as a pointer. [TYPE=<probed>] (see README)], [],
  [with_value_type="undef"])
 if test "${with_value_type}" = "undef"; then
   AC_TRY_RUN([main () { exit (!(sizeof (int) >= sizeof (void *)));}],
@@ -186,7 +186,7 @@ if test "${with_value_type}" = "undef"; then
 	     [with_value_type="long long int"])
 fi
 if test "${with_value_type}" = "undef"; then
-  AC_MSG_ERROR([can't find Lisp type; set --with-value-type])
+  AC_MSG_ERROR([can't find Lisp value type; set --with-value-type (see README)])
 fi
 AC_MSG_RESULT([${with_value_type}])
 AC_DEFINE_UNQUOTED(rep_PTR_SIZED_INT, ${with_value_type})
@@ -206,7 +206,7 @@ AC_MSG_RESULT([${rep_value_suffix}])
 AC_DEFINE_UNQUOTED(rep_PTR_SIZED_INT_SUFFIX, ${rep_value_suffix})
 
 dnl What's the printf integer conversion for this type?
-AC_MSG_CHECKING([for value printf conversion])
+AC_MSG_CHECKING([for value type printf conversion])
 case "${with_value_type}" in
   "long long int"|"long long")
     dnl other options would be L or q!?

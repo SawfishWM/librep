@@ -13,9 +13,12 @@ For more details see:
 
 	http://www.dcs.warwick.ac.uk/~john/sw/librep.html
 
-To compile this you'll need GNU make and (currently) GCC. Basically,
-just do `./configure ; make ; make install'. If you're building from
-the CVS sources, execute `aclocal ; autoconf' first.
+To compile this you'll need GNU make and (preferably) GCC. Basically,
+just do:
+
+	$ ./configure
+	$ make
+	$ make install
 
 
 Notes
@@ -42,3 +45,7 @@ there are two most likely required settings:
 If this option is set incorrectly (i.e. to an integer type that is too
 small) a run-time assertion will be triggered when the interpreter
 initialises itself.
+
+Also, if this option is set to anything but int, long, or long long,
+then the src/rep.h file will need to be edited for the constant suffix
+and printf conversion of the chosen type.
