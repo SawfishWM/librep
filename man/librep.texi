@@ -116,7 +116,7 @@ The public domain @code{sdbm} database library by Ozan Yigit.
 The backquote package from Emacs version 19, written by Rick Sladkey.
 
 @item
-The GNU @code{gettext} implementation for internalized message
+The GNU @code{gettext} implementation for internationalized message
 catalogues.
 @end itemize
 
@@ -155,7 +155,7 @@ Some of the features of @code{librep} are:
 
 @item Compiles to byte-code
 
-@item Scheme-like continuations
+@item First-class continuations
 
 @item Uses GNU MP for fast bignums/rationals
 

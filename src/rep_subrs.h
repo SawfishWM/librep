@@ -310,6 +310,7 @@ extern repv Qexit, Qquit, Qtop_level, Qcommand_line_args;
 extern repv Qbatch_mode, Qinterpreted_mode, Qprogram_name;
 extern repv Qerror_mode, Qinterrupt_mode;
 extern repv Frecursive_edit(void);
+extern repv rep_top_level_recursive_edit (void);
 extern repv Frecursion_depth(void);
 extern repv Fget_command_line_option (repv, repv);
 
