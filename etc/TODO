@@ -12,8 +12,6 @@ Last modified: April 7, 1998
 Outstanding bugs
 ================
 
- ! There needs to be a separate Meta-lookup for each display
-
  ! How does the return function work with open-coded functions? Not
    very well probably..
 
