@@ -117,16 +117,14 @@ typedef struct rep_continuation {
 #define rep_CONTIN(v)		((rep_continuation *)rep_PTR(v))
 #define rep_CONTINP(v)		rep_CELL16_TYPEP(v, rep_continuation_type)
 
-/* rep_init () will set this to an early stack pointer */
-char *rep_stack_bottom;
-
 /* the cell16 typecode allocated for continuation objects */
-int rep_continuation_type;
+static int rep_continuation_type;
 
 /* list of all allocated continuations */
 static rep_continuation *continuations;
 
 DEFSYM(continuation, "continuation");
+DEFSYM(callcc, "callcc");
 
 /* used while longjmp'ing to save accessing a local variable */
 static rep_continuation *invoked_continuation;
@@ -406,21 +404,18 @@ print (repv stream, repv obj)
 }
 
 
-/* continuations */
+/* dl hooks */
 
-void
-rep_continuations_init (void)
+repv
+rep_dl_init (void)
 {
     rep_continuation_type = rep_register_new_type ("continuation",
 						   rep_ptr_cmp, print, print, 
 						   sweep, mark,
 						   0, 0, 0, 0, 0, 0, 0);
     rep_INTERN(continuation);
+    rep_INTERN(callcc);
     rep_ADD_SUBR(Scall_cc);
     rep_ADD_SUBR(Sprimitive_invoke_continuation);
-}
-
-void
-rep_continuations_kill (void)
-{
+    return Qcallcc;
 }
