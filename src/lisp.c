@@ -1104,6 +1104,8 @@ rep_funcall(repv fun, repv arglist, rep_bool eval_args)
     rep_PUSHGC (gc_fun, fun);
     rep_PUSHGC (gc_args, arglist);
 
+    rep_MAY_YIELD;
+
     lc.fun = fun;
     lc.args = arglist;
     lc.args_evalled_p = eval_args ? Qnil : Qt;

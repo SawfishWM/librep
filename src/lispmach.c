@@ -1390,6 +1390,8 @@ again:
 		gc_stackbase.count = STK_USE;
 		Fgarbage_collect(Qt);
 	    }
+	    gc_stackbase.count = STK_USE;
+	    rep_MAY_YIELD;
 	    break;
 
 	default:
