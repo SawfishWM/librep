@@ -506,6 +506,26 @@ rep_directory_files(repv dir_name)
 }
 
 repv
+rep_read_symlink (repv file)
+{
+    char buf[PATH_MAX];
+    int len = readlink (rep_STR(file), buf, sizeof (buf));
+    if (len == -1)
+	return rep_signal_file_error (file);
+    else
+	return rep_string_dupn (buf, len);
+}
+
+repv
+rep_make_symlink (repv file, repv contents)
+{
+    if (symlink (rep_STR (contents), rep_STR (file)) == 0)
+	return Qt;
+    else
+	return rep_signal_file_error (file);
+}
+
+repv
 rep_getpwd(void)
 {
     char buf[PATH_MAX];

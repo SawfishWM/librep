@@ -78,6 +78,8 @@
    (set-file-modes NAME MODES)
    (file-modtime NAME)
    (directory-files NAME)
+   (read-symlink NAME)
+   (make-symlink NAME CONTENTS)
 
    ACCESS-TYPE is one of `read', `write' or `append'.
    WHENCE is one off `nil', `start', `end'. */
@@ -131,6 +133,8 @@ DEFSYM(set_file_modes, "set-file-modes");
 DEFSYM(file_modes_as_string, "file-modes-as-string");
 DEFSYM(file_modtime, "file-modtime");
 DEFSYM(directory_files, "directory-files");
+DEFSYM(read_symlink, "read-symlink");
+DEFSYM(make_symlink, "make-symlink");
 
 DEFSYM(start, "start");
 DEFSYM(end, "end");
@@ -176,6 +180,8 @@ enum file_ops {
     op_file_modes_as_string,
     op_file_modtime,
     op_directory_files,
+    op_read_symlink,
+    op_make_symlink,
 
     op_MAX
 };
@@ -1326,6 +1332,46 @@ The list is unsorted.
 				     Qdirectory_files, 1, dir);
 }
 
+DEFUN("read-symlink", Fread_symlink, Sread_symlink, (repv file), rep_Subr1) /*
+::doc:Sread-symlink::
+read-symlink FILENAME
+
+Return the string that is the contents of the symbolic link FILENAME. This
+string may be relative to the directory containing FILENAME.
+
+Signals an error if FILENAME isn't a symbolic link.
+::end:: */
+{
+    repv handler = rep_expand_and_get_handler(&file, op_read_symlink);
+    if(!handler)
+	return handler;
+    if(rep_NILP(handler))
+	return rep_read_symlink(file);
+    else
+	return rep_call_file_handler(handler, op_read_symlink,
+				     Qread_symlink, 1, file);
+}
+
+DEFUN("make-symlink", Fmake_symlink, Smake_symlink,
+      (repv file, repv contents), rep_Subr2) /*
+::doc:Smake-symlink::
+make-symlink FILENAME CONTENTS
+
+Create a symbolic link FILENAME pointing to the file called CONTENTS.
+CONTENTS may be relative to the directory containing FILENAME.
+::end:: */
+{
+    repv handler = rep_expand_and_get_handler(&file, op_make_symlink);
+    rep_DECLARE2(contents, rep_STRINGP);
+    if(!handler)
+	return handler;
+    if(rep_NILP(handler))
+	return rep_make_symlink(file, contents);
+    else
+	return rep_call_file_handler(handler, op_make_symlink,
+				     Qmake_symlink, 2, file, contents);
+}
+
 
 /* Utility functions */
 
@@ -1451,6 +1497,8 @@ rep_files_init(void)
     rep_INTERN(file_modes_as_string);
     rep_INTERN(file_modtime);
     rep_INTERN(directory_files);
+    rep_INTERN(read_symlink);
+    rep_INTERN(make_symlink);
 
     rep_INTERN(start); rep_INTERN(end);
     rep_INTERN(read); rep_INTERN(write); rep_INTERN(append);
@@ -1496,6 +1544,8 @@ rep_files_init(void)
     rep_ADD_SUBR(Sfile_modes_as_string);
     rep_ADD_SUBR(Sfile_modtime);
     rep_ADD_SUBR(Sdirectory_files);
+    rep_ADD_SUBR(Sread_symlink);
+    rep_ADD_SUBR(Smake_symlink);
 
     rep_ADD_SUBR(Sstdin_file);
     rep_ADD_SUBR(Sstdout_file);
