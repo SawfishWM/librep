@@ -21,6 +21,8 @@
 
 #include <config.h>
 
+#ifndef HAVE_REALPATH
+
 /* AIX requires this to be the first thing in the file.  */
 #ifdef __GNUC__
 # define alloca __builtin_alloca
@@ -204,3 +206,5 @@ error:
     free (rpath);
   return NULL;
 }
+
+#endif /* !HAVE_REALPATH */
