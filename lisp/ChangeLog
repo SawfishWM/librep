@@ -1,3 +1,32 @@
+Mon Jun  8 09:50:29 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* fill.jl (fill-area): another attempt at fixing this function,
+	I think I may have it now
+
+	* print.jl (print-build-shell-command): ensure that a local
+	file name is used when printing to a file
+
+	* edit.jl (yank-next): initially insert the second most
+	recently yanked item, not the first
+
+	* loadkeys.jl (numeric-arg, negative-arg, universal-arg):
+	progagate the last-command variable
+
+	* c-mode.jl (c-mode): adjust mode-defun-header slightly
+
+	* help.jl: deleted the help-buffer variable, find and
+	initialise the buffer dynamically to help gc
+
+	* buffers.jl (kill-current-buffer): new function
+
+	* mail-dir-summary.jl (mds-alias-buffer, mds-address-buffer):
+	deleted these variables; allow the buffers to be gc'd
+
+	* prompt.jl (y-or-n-p): use the original value of keymap-path
+	plus the special bindings
+
+	* buffers.jl (rename-buffer): new command
+
 Sun Jun  7 14:57:12 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* edit.jl (mouse-select-drag): preserve type of block when

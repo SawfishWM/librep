@@ -1,3 +1,16 @@
+Mon Jun  8 14:50:17 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp.c (read_symbol): don't accept `0x' as a hex. number
+
+	* lispcmds.c (cmd_mapc, cmd_mapcar): tidied up slightly
+
+	* lispmach.c (cmd_jade_byte_code): ensure that _all_ functions
+	that may end up calling Lisp code set the gc_stackbase slot
+
+	* lisp.c (funcall): always add the current function to the
+	backtrace stack. This simplifies gc protection, and provides
+	better Lisp debugging information
+
 Sat Jun  6 16:09:35 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* views.c (kill_view): new function to clean up an unused but
