@@ -1,4 +1,26 @@
+Tue Jun 16 12:02:50 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* buffers.jl (save-file-as, insert-file): change messages
+	slightly
+
 Sun Jun 14 11:58:46 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* remote-ftp.jl (remote-ftp-bad-msgs): added invalid command
+	message
+	(remote-ftp-invalidate-directory): wholesale invalidation of
+	the directory cache. Called by most commands
+
+	* remote-ftp.jl (remote-ftp-ls-format): new variable
+
+	* remote.jl (remote-file-regexp): only allow sensible
+	characters in user and host names
+
+	* remote-ftp.jl (remote-ftp-host-user-alist): map host names to
+	default users
+	(remote-ftp-default-user): username to use when unspecified
+	(remote-ftp-get-user): new function
+	(remote-ftp-output-filter): display raw hash marks
+	(remote-ftp-get-file-details): use `ls -la' not `dir'
 
 	* remote-ftp.jl: fix remote file copying
 
