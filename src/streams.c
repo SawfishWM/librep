@@ -902,13 +902,12 @@ FLAGS is a sequence of zero or more of the following characters,
 
 	-	Left justify substitution within field
 	^	Truncate substitution at size of field
+	0	Pad the field with zeros instead of spaces
 	+	For d, x, and o conversions, output a leading plus
 		 sign if ARG is positive
 	` '	(A space) For d, x, and o conversions, if the result
 		 doesn't start with a plus or minus sign, output a
 		 leading space
-	0	For d, x, and o conversions, pad the field with zeros
-		 instead of spaces
 
 The list of CONVERSIONS can be extended through the format-hooks-alist
 variable; the strings created by these extra conversions are formatted
@@ -953,6 +952,7 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 	if(c == '%')
 	{
 	    bool left_justify = FALSE, truncate_field = TRUE;
+	    bool pad_zeros = FALSE;
 	    char *flags_start, *flags_end;
 	    char *width_start, *width_end;
 	    int field_width = 0;
@@ -973,7 +973,10 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 		case '^':
 		    truncate_field = TRUE; break;
 
-		case '+': case ' ': case '0':
+		case '0':
+		    pad_zeros = TRUE; break;
+
+		case '+': case ' ':
 		    break;
 
 		default:
@@ -1043,7 +1046,7 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 			else
 			{
 			    len = MIN(field_width - len, sizeof(buf));
-			    memset(buf, ' ', len);
+			    memset(buf, !pad_zeros ? ' ' : '0', len);
 			    if(left_justify)
 				stream_puts(stream, VPTR(val), -1, TRUE);
 			    stream_puts(stream, buf, len, FALSE);
