@@ -1,3 +1,13 @@
+2000-09-28  John Harper  <john@dcs.warwick.ac.uk>
+
+	* fake-libexec: patch from John H. Palmieri
+	<palmieri@math.washington.edu> to link to libfoo.so as well as
+	foo.la (for Tru64?)
+
+2000-09-27  John Harper  <john@dcs.warwick.ac.uk>
+
+	* misc.c (strncasecmp): define if the system doesn't have it
+
 2000-09-24  John Harper  <john@dcs.warwick.ac.uk>
 
 	* find.c (rep_string_modified): new function, removes the

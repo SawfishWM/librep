@@ -1,3 +1,17 @@
+2000-09-27  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep/io/file-handlers/remote/ftp.jl (remote-ftp-get-file):
+	work around bug in `ls .' with my (wu) ftpd
+
+	* rep/system/pwd-prompt.jl: import rep.io.streams and
+	rep.lang.math
+
+2000-09-26  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep/lang/define.jl (define-scan-form): don't expand structure
+	or define-structure forms (any internal definitions they
+	contain should be treated as top-level within the structure)
+
 2000-09-24  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rep/data.jl (remove-if, remove-if-not): new functions
