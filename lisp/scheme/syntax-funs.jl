@@ -162,5 +162,5 @@
 
   (define (expand-define . args)
     (if (symbolp (car args))
-	(cons 'set! args)
+	(cons '\#define args)
       `(define ,(caar args) (lambda ,(cdar args) ,@(cdr args))))))

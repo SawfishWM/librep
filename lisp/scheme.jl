@@ -106,7 +106,7 @@
 			  write display newline write-char load
 
 			  ;; exported local kludges
-			  \#cond \#setq \#progn \#test \#lambda
+			  \#cond \#setq \#define \#progn \#test \#lambda
 			  backquote list* %load-suffixes)
   ((access rep)
    (open scheme.utils
@@ -114,9 +114,10 @@
 	 scheme.data
 	 scheme.misc))
 
-  (rep#setq \#cond rep#cond)
-  (rep#setq \#setq rep#setq)
-  (rep#setq \#progn rep#progn)
-  (rep#setq \#lambda rep#lambda)
-  (rep#setq backquote rep#backquote)
-  (rep#setq list* rep#list*))
+  (rep#%define \#cond rep#cond)
+  (rep#%define \#setq rep#setq)
+  (rep#%define \#define rep#%define)
+  (rep#%define \#progn rep#progn)
+  (rep#%define \#lambda rep#lambda)
+  (rep#%define backquote rep#backquote)
+  (rep#%define list* rep#list*))
