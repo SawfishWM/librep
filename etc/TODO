@@ -6,7 +6,7 @@ TODO list for Jade
 Bugs are marked !, things that should be done soon are marked +,
 and more long-term ideas are marked -
 
-Last modified: September 6, 1998
+Last modified: November 23, 1998
 
 
 Outstanding bugs
@@ -41,9 +41,14 @@ Outstanding bugs
    searching for `/\*(.|\n)*\*/' in a C file with reasonable large
    comments.
 
+ ! Some of the functions in keymap.jl, don't grok multiple prefix key
+   bindings to the same event
+
 
 General programming tasks:
 ==========================
+
+ + Add mouse-face and mouse-keymap extent properties
 
  + Allow redisplay to be preempted by input becoming available (test
    where in the redisplay algorithms though, in the diff, or the

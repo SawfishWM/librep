@@ -1,3 +1,33 @@
+1998-11-24  John Harper  <john@dcs.warwick.ac.uk>
+
+	* yacc-mode.jl, text-mode.jl, texinfo-mode.jl, tex-mode.jl,
+	summary.jl, shell.jl, sh-mode.jl, send-mail.jl, replace.jl,
+	read-mail.jl, rcs.jl, prompt.jl, perl-mode.jl, page-summary.jl,
+	modes.jl, mime-encode.jl, mail-dir-summary.jl, loadkeys.jl,
+	lisp.jl, lisp-mode.jl, keymap.jl, isearch.jl, info.jl, help.jl,
+	gdb.jl, fill.jl, dired.jl, diff.jl, debug.jl, cvs.jl,
+	c-mode.jl, asm-mode.jl, add-log.jl: updated for new key binding
+	methods
+
+	* ispell.jl (ispell-minor-mode): in the extents of misspelt
+	words, bind `C-c RET' and `LMB-Click2' to a command calling the
+	interactive ispell on the word
+
+1998-11-23  John Harper  <john@dcs.warwick.ac.uk>
+
+	* ispell.jl (ispell-strip-word): if a stripped prefix or suffix
+	doesn't match, assume it's a literal string including a hyphen
+
+1998-11-19  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rcs.jl (rcs-compare-revisions): when the new variable
+	rcs-diff-options is set to the symbol `visual', use the
+	diff-files command to visually display the differences
+
+1998-11-18  John Harper  <john@dcs.warwick.ac.uk>
+
+	* buffers.jl (insert-buffer): new command
+
 1998-11-14  John Harper  <john@jsh.org>
 
 	* c-mode.jl (c-indent-pos): don't recognize a semi-colon as

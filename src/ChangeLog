@@ -1,3 +1,19 @@
+1998-11-24  John Harper  <john@dcs.warwick.ac.uk>
+
+	* keys.c: big changes. No longer have the keymap-path variable,
+	instead we steal Emacs' notion of a set of active keymaps;
+	these include the variables global-keymap, and local-keymap,
+	the minor-mode-keymap-alist associating minor modes and their
+	keymaps, and the `keymap' extent properties of all extents
+	under the cursor (in reverse order of priority).
+	Also, when evaluating events, a command that is a symbol with
+	the function value `keymap' is used as a prefix key (keymap in
+	the value slot). Multiple bindings to the same prefix keys are
+	allowed, the union of their specified keymaps is used to
+	resolve the next event
+	(cmd_search_keymap): new function, scan a single keymap for a
+	binding of a specified event
+
 1998-11-20  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lists.c, lists.h: removed these files, nothing uses them
