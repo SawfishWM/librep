@@ -33,7 +33,7 @@ dnl implementation, AGE defines the first interface id also supported
 dnl (i.e. all interfaces between CURRENT-AGE and CURRENT are supported)
 libcurrent=8
 librevision=0
-libage=1
+libage=0
 libversion="$libcurrent:$librevision:$libage"
 
 makefile_template="Makefile.in:Makedefs.in"
@@ -97,6 +97,10 @@ AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
 AC_CHECK_HEADERS(fcntl.h sys/ioctl.h sys/time.h sys/utsname.h unistd.h siginfo.h memory.h stropts.h termios.h string.h limits.h argz.h locale.h nl_types.h malloc.h sys/param.h)
+
+dnl Check for GNU MP library and header files
+AC_CHECK_LIB(gmp, mpz_init, [], [AC_MSG_ERROR([Can't find libgmp])])
+AC_CHECK_HEADER(gmp.h, [], [AC_MSG_ERROR([Can't find gmp.h])])
 
 dnl Check for Doug Lea's malloc in libc, otherwise compile dlmalloc.c
 doug_lea_malloc=yes
@@ -380,6 +384,8 @@ if test "${with_stack_direction}" = unknown; then
     with_stack_direction=-1],
    [AC_MSG_RESULT([upwards])
     with_stack_direction=+1])
+fi
+if test "${with_stack_direction}" != unknown; then
   AC_DEFINE_UNQUOTED(STACK_DIRECTION, ${with_stack_direction})
 fi
 
