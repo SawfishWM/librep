@@ -568,6 +568,89 @@ _remove_ any terminating directory separator.
 }
 
 
+/* input handlers */
+
+struct input_handler {
+    struct input_handler *next;
+    int fd;
+    repv function;
+};
+
+static struct input_handler *input_handlers;
+
+static void
+input_handler_callback (int fd)
+{
+    struct input_handler *x;
+    for (x = input_handlers; x != 0; x = x->next)
+    {
+	if (x->fd == fd)
+	{
+	    rep_call_lisp0 (x->function);
+	    break;
+	}
+    }
+}    
+
+DEFUN("set-input-handler", Fset_input_handler, Sset_input_handler,
+      (repv file, repv function), rep_Subr2) /*
+::doc:Sset-input-handler::
+set-input-handler LOCAL-FILE FUNCTION
+
+Arrange for FUNCTION to be called whenever pending input is available
+on LOCAL-FILE. Note that this makes LOCAL-FILE do non-blocking input.
+::end:: */
+{
+    int fd;
+    rep_DECLARE(1, file, rep_FILEP(file) && rep_LOCAL_FILE_P(file));
+    fd = fileno(rep_FILE(file)->file.fh);
+    if (function != Qnil)
+    {
+	struct input_handler *x;
+	for (x = input_handlers; x != 0; x = x->next)
+	{
+	    if (x->fd == fd)
+	    {
+		x->function = function;
+		return function;
+	    }
+	}
+	x = rep_alloc (sizeof (struct input_handler));
+	x->next = input_handlers;
+	input_handlers = x;
+	x->fd = fd;
+	x->function = function;
+	rep_register_input_fd (fd, input_handler_callback);
+	return function;
+    }
+    else
+    {
+	struct input_handler **p;
+	for (p = &input_handlers; *p != 0; p = &((*p)->next))
+	{
+	    if ((*p)->fd == fd)
+	    {
+		struct input_handler *x = *p;
+		*p = x->next;
+		rep_deregister_input_fd (fd);
+		rep_free (x);
+	    }
+	}
+	return Qnil;
+    }
+}
+
+static void
+mark_input_handlers (void)
+{
+    struct input_handler *x;
+    for (x = input_handlers; x != 0; x = x->next)
+    {
+	rep_MARKVAL(x->function);
+    }
+}
+
+
 /* File structures */
 
 static repv
@@ -789,6 +872,7 @@ Signal that there will be no more I/O through the file object FILE.
 	return rep_unbound_file_error(file);
     if(rep_LOCAL_FILE_P(file))
     {
+	Fset_input_handler (file, Qnil);
 	if (!(rep_FILE(file)->car & rep_LFF_DONT_CLOSE))
 	    fclose(rep_FILE(file)->file.fh);
 	else
@@ -1518,6 +1602,8 @@ rep_files_init(void)
     rep_ADD_SUBR(Sfile_name_as_directory);
     rep_ADD_SUBR(Sdirectory_file_name);
 
+    rep_ADD_SUBR(Sset_input_handler);
+
     rep_ADD_SUBR(Sopen_file);
     rep_ADD_SUBR(Smake_file_from_stream);
     rep_ADD_SUBR(Sclose_file);
@@ -1555,7 +1641,7 @@ rep_files_init(void)
     /* Initialise the type information. */
     rep_register_type(rep_File, "file", rep_ptr_cmp,
 		  file_prin, file_prin, file_sweep,
-		  file_mark, 0, 0, 0, 0, 0, 0, 0);
+		  file_mark, mark_input_handlers, 0, 0, 0, 0, 0, 0);
 }
 
 void
