@@ -33,6 +33,9 @@
 
 (fset 'recursive-edit (symbol-function 'rep))
 
+;; Add the current directory to the load-path
+(setq load-path (cons "." load-path))
+
 ;; Install all autoload hooks. This is done last so that it works
 ;; when dumped. We load autoload.jl to ensure that we don't get a
 ;; compiled (and possibly out of date) version
