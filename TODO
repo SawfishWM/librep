@@ -154,6 +154,11 @@ General programming tasks:
 
    (there is now support for waking threads via polling)
 
+   [ I have a patch that adds support for threads to be woken when
+   one of a set of fds is available for writing and reading. It
+   also has a blocking I/O function that suspends the thread while
+   it blocks.. ]
+
  - add regression tests
 
    [ partially done, there is a test framework now, but only a couple
