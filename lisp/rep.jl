@@ -19,13 +19,11 @@
 ;;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 (defun rep ()
+  (require 'readline)
   (let
       (input)
     (while t
-      (write standard-output (if input "> " "rep? "))
-      (when (filep standard-output)
-	(flush-file standard-output))
-      (setq input (concat input (read-line standard-input)))
+      (setq input (concat input (readline (if input "> " "rep? "))))
       (condition-case data
 	  (progn
 	    (format standard-output "%S\n" (eval (read-from-string input)))

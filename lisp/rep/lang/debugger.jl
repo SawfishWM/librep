@@ -18,6 +18,7 @@
 ;;; along with Jade; see the file COPYING.  If not, write to
 ;;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
+(require 'readline)
 (provide 'debug)
 
 ;; Form stopped on
@@ -31,11 +32,8 @@
       ((print-escape t))
     (format standard-error "<%d> %S\n" debug-depth debug-obj)
     (while t
-      (write standard-error "rep-db? ")
-      (when (filep standard-error)
-	(flush-file standard-error))
       (let
-	  ((input (read-line standard-input))
+	  ((input (readline "rep-db? "))
 	   next-last)
 	(cond ((string-match "^\\s*n" input)
 	       (setq debug-last debug-next)
