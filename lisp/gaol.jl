@@ -63,8 +63,6 @@
 
 (defvar gaol-safe-features '(timers))
 
-(defvar gaol-safe-file-handlers '(tilde-file-handler))
-
 
 ;; building the actual environments
 
