@@ -52,7 +52,7 @@
 
 	  ;; init.jl
 	  defmacro defun defconst defsubst function let let* letrec
-	  if when unless or and setq-default define-value prog2
+	  if when unless or and setq-default define-value do prog2
 	  make-autoload autoload autoload-macro load-all
 	  eval-when-compile dynamic-wind make-guardian
 
