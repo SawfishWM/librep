@@ -885,7 +885,10 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 #else
 		    sprintf(buf,
 #endif
-			    fmt, rep_INTP(val) ? rep_INT(val) : (long)val);
+			    fmt,
+			    rep_INTP(val) ? rep_INT(val)
+			    : rep_LONG_INTP(val) ? rep_LONG_INT (val)
+			    : (long)val);
 		    rep_stream_puts(stream, buf, -1, rep_FALSE);
 		    break;
 
