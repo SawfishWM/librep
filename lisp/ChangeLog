@@ -1,3 +1,11 @@
+2001-07-28  John Harper  <jsh@pixelslut.com>
+
+	* rep/io/file-handlers/tilde.jl: fixed the logic for
+	substituting ~ for the user's home directory at initialization
+
+	* rep/lang/error-helper.jl (for-each-structure): ignore null
+	structures (possible if called while creating a structure?)
+
 2001-07-26  John Harper  <jsh@pixelslut.com>
 
 	* rep/util/repl.jl: don't print results that are #undefined

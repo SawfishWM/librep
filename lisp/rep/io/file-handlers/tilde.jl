@@ -95,5 +95,6 @@
     (when (string-looking-at (concat (quote-regexp
 				      (canonical-file-name
 				       (user-home-directory)))
-				     "?(.*)$") default-directory)
-      (setq-default default-directory (expand-last-match "~/\\1")))))
+				     "(/(.+))?$")
+			     (canonical-file-name default-directory))
+      (setq-default default-directory (expand-last-match "~/\\2")))))
