@@ -1,3 +1,7 @@
+2001-10-01  John Harper  <jsh@unfactored.org>
+
+	* version 0.15
+
 2001-09-15  John Harper  <jsh@unfactored.org>
 
 	* rep/www/cgi-get.jl (self-test): new function. Some test cases
