@@ -1535,6 +1535,49 @@ that files which shouldn't be compiled aren't."
     (comp-set-label end-label)))
 (put 'cond 'compile-fun comp-compile-cond)
 
+(defun comp-compile-case (form)
+  (let
+      ((end-label (comp-make-label)))
+    (setq form (cdr form))
+    (unless form
+      (comp-error "No key value in case statement"))
+    ;; XXX if key is constant optimise case away..
+    (comp-compile-form (car form))
+    (setq form (cdr form))
+    (comp-write-op op-dup)
+    (comp-inc-stack)
+    (while (consp form)
+      (unless (consp form)
+	(comp-error "Badly formed clause in case statement"))
+      (let
+	  ((cases (caar form))
+	   (forms (cdar form))
+	   (next-label (comp-make-label)))
+	(cond ((consp cases)
+	       (if (consp (cdr cases))
+		   ;; >1 possible case
+		   (progn
+		     (comp-compile-constant cases)
+		     (comp-write-op op-memq))
+		 ;; only one case, use eq
+		 (comp-compile-constant (car cases))
+		 (comp-write-op op-eq))
+	       (comp-dec-stack)
+	       (comp-compile-jmp op-jn next-label)
+	       (comp-dec-stack))
+	      ((not (eq cases t))
+	       (comp-error "Badly formed clause in case statement")))
+	(comp-compile-body forms)
+	(comp-dec-stack)
+	(comp-compile-jmp op-jmp end-label)
+	(comp-set-label next-label)
+	(setq form (cdr form))))
+    (comp-inc-stack)
+    (comp-set-label end-label)
+    (comp-write-op op-swap)
+    (comp-write-op op-pop)))
+(put 'case 'compile-fun comp-compile-case)
+
 (defun comp-compile-catch (form)
   (let
       ((catch-label (comp-make-label))
