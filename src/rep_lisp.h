@@ -584,7 +584,7 @@ typedef struct {
 #define VPROC(v)	((struct Proc *)VPTR(v))
 #define VWIN(v)		((WIN *)VPTR(v))
 #define VVIEW(v)	((VW *)VPTR(v))
-#define VGLYPHTAB(v)	((GlyphTable *)VPTR(v))
+#define VGLYPHTAB(v)	((glyph_table_t *)VPTR(v))
 	
 #define BUFFERP(v)	VCELL8_TYPEP(v, V_Buffer)
 #define MARKP(v)	VCELL8_TYPEP(v, V_Mark)
