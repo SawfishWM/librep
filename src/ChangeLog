@@ -1,3 +1,14 @@
+2000-05-16  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_dl.c (rep_open_dl_library): don't call Fprovide on
+	features that are provided by structures (since the structure
+	hasn't been imported yet)
+
+	* regexp.c (regnarrate, regprop): made non-static
+
+	* lisp.c (rep_handle_error): removed all code to print errors,
+	rely totally on Qerror_handler_function
+
 2000-05-15  John Harper  <john@dcs.warwick.ac.uk>
 
 	* numbers.c (string->number, number->string): implemented these

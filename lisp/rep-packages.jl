@@ -40,7 +40,8 @@
 
 (define-interface rep-interpreter-debug
   (export break step backtrace debug-frame-environment
-	  trace untrace debug-entry debug-error-entry))
+	  trace untrace debug-entry debug-error-entry
+	  default-error-handler))
 
 (define-interface rep-bytecode
   (export jade-byte-code validate-byte-code make-byte-code-subr))

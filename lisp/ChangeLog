@@ -1,3 +1,13 @@
+2000-05-16  John Harper  <john@dcs.warwick.ac.uk>
+
+	* debug.jl (error-entry): make this work again
+
+	* init.jl (default-error-handler): new function, stuffed into
+	error-handler-function
+
+	* rep.jl, rep-repl.jl: call default-error-handler or
+	error-handler-function to print errors
+
 2000-05-15  John Harper  <john@dcs.warwick.ac.uk>
 
 	* gaol.jl: added some more safe functions
