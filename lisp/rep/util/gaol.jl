@@ -65,7 +65,7 @@
       expand-last-match featurep filter fix-time
       format funcall function functionp garbage-collect gensym get
       get-output-stream-string getenv identity if integerp interactive
-      intern lambda last length let let* letrec list list* logand logior
+      intern lambda last length let let* letrec list list* listp logand logior
       lognot logxor lower-case-p lsh macroexpand macrop
       make-closure make-list make-string make-string-input-stream
       make-string-output-stream make-symbol make-vector
