@@ -559,6 +559,7 @@ rep_get_longlong_int (repv in)
 		out = bottom | (top << (CHAR_BIT * sizeof (long)));
 		if (sign < 0)
 		    out = -out;
+		mpz_clear (tem);
 		return out;
 	    }
 
