@@ -101,23 +101,6 @@ Returns ARG.
     return rep_signal_missing_arg(1);
 }
 
-DEFUN("function", Ffunction, Sfunction, (repv args), rep_SF) /*
-::doc:function::
-function ARG
-#'ARG
-
-If ARG is a symbol, dereference it, otherwise enclose it.
-::end:: */
-{
-    if(!rep_CONSP(args))
-	return rep_signal_missing_arg(1);
-    args = rep_CAR (args);
-    if (rep_SYMBOLP (args))
-	return Fsymbol_value (args, Qnil);
-    else
-	return Fmake_closure (args, Qnil);
-}
-
 DEFUN("lambda", Flambda, Slambda, (repv args), rep_SF) /*
 ::doc:lambda::
 lambda LAMBDA-LIST BODY...
@@ -167,6 +150,7 @@ code has not been compiled).
     if (Fset(name, Fcons (Qmacro, Fmake_closure (args, rep_SYM(name)->name))))
     {
 	rep_SYM(name)->car |= rep_SF_DEFVAR;
+	rep_macros_clear_history ();
 	return name;
     }
     else
@@ -1457,89 +1441,6 @@ undefined.
     return Qnil;
 }
 
-DEFUN("if", Fif, Sif, (repv args), rep_SF) /*
-::doc:if::
-if CONDITION THEN-FORM [ELSE-FORMS...]
-
-Evaluate CONDITION, if it is non-nil then evaluate THEN-FORM and return
-it's result. Otherwise do an implicit progn with the ELSE-FORMS returning
-its value.
-::end:: */
-{
-    rep_GC_root gc_args;
-    repv res;
-    if(!rep_CONSP(args))
-	return rep_signal_missing_arg(1);
-    rep_PUSHGC(gc_args, args);
-    res = Feval(rep_CAR(args));
-    rep_POPGC;
-    args = rep_CDR(args);
-    if(res != rep_NULL)
-    {
-	if (rep_CONSP(args))
-	{
-	    if(!rep_NILP(res))
-		res = Feval(rep_CAR(args));
-	    else
-		res = Fprogn(rep_CDR(args));
-	}
-	else
-	    res = Qnil;
-    }
-    return res;
-}
-
-DEFUN("and", Fand, Sand, (repv args), rep_SF) /*
-::doc:and::
-and FORMS...
-
-Evaluates each member of FORMS in turn, until one returns nil, and returns
-nil. If none return nil then the value of the last form evaluated is
-returned.
-::end:: */
-{
-    repv res = Qt;
-    rep_GC_root gc_args, gc_res;
-    rep_PUSHGC(gc_args, args);
-    rep_PUSHGC(gc_res, res);
-    while(res && rep_CONSP(args) && !rep_NILP(res))
-    {
-	res = Feval(rep_CAR(args));
-	args = rep_CDR(args);
-	rep_TEST_INT;
-	if(rep_INTERRUPTP)
-	    res = rep_NULL;
-    }
-    rep_POPGC;
-    rep_POPGC;
-    return res;
-}
-
-DEFUN("or", For, Sor, (repv args), rep_SF) /*
-::doc:or::
-or FORMS...
-
-Evaluates each member of FORMS in turn until one returns t, the result of
-which is returned. If none are t then return nil.
-::end:: */
-{
-    repv res = Qnil;
-    rep_GC_root gc_args, gc_res;
-    rep_PUSHGC(gc_args, args);
-    rep_PUSHGC(gc_res, res);
-    while(res && rep_CONSP(args) && rep_NILP(res))
-    {
-	res = Feval(rep_CAR(args));
-	args = rep_CDR(args);
-	rep_TEST_INT;
-	if(rep_INTERRUPTP)
-	    res = rep_NULL;
-    }
-    rep_POPGC;
-    rep_POPGC;
-    return res;
-}
-
 DEFUN("apply", Fapply, Sapply, (repv args), rep_SubrN) /*
 ::doc:apply::
 apply FUNCTION ARGS... ARG-LIST
@@ -2512,7 +2413,6 @@ void
 rep_lispcmds_init(void)
 {
     rep_ADD_SUBR(Squote);
-    rep_ADD_SUBR(Sfunction);
     rep_ADD_SUBR(Slambda);
     rep_ADD_SUBR(Sdefmacro);
     rep_ADD_SUBR(Sdefun);
@@ -2560,9 +2460,6 @@ rep_lispcmds_init(void)
     rep_ADD_SUBR(Swhile);
     rep_ADD_SUBR(Scond);
     rep_ADD_SUBR(Scase);
-    rep_ADD_SUBR(Sif);
-    rep_ADD_SUBR(Sand);
-    rep_ADD_SUBR(Sor);
     rep_ADD_SUBR(Sapply);
     rep_ADD_SUBR_INT(Sload);
     rep_ADD_SUBR(Snot);
