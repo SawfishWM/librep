@@ -671,7 +671,7 @@ static int	regrepeat(char *);
 
 #ifdef DEBUG
 int		regnarrate = 0;
-static char    *regprop(char *);
+char		*regprop(char *);
 #endif /* DEBUG */
 
 
@@ -1211,7 +1211,7 @@ regnext(char *p)
 
 #ifdef DEBUG
 
-static char    *regprop();
+char    *regprop();
 
 /*
  * - regdump - dump a regexp onto stdout in vaguely comprehensible form
@@ -1258,7 +1258,7 @@ regdump(rep_regexp *r)
 /*
  * - regprop - printable representation of opcode
  */
-static char    *
+char    *
 regprop(char *op)
 {
     register char  *p;
