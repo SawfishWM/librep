@@ -189,6 +189,7 @@
     (fluid-let ((macro-env (fluid default-macro-env))
 		(current-module (or name (fluid current-module)))
 		(current-structure (if name nil (fluid current-structure)))
+		(current-language (fluid current-language))
 		(open-modules (if (eq opened t)
 				  (fluid open-modules)
 				opened))
