@@ -821,6 +821,7 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 	{
 	    rep_bool left_justify = rep_FALSE, truncate_field = rep_FALSE;
 	    rep_bool pad_zeros = rep_FALSE;
+	    char leading_char = 0;
 	    int field_width = 0, precision = 0;
 	    char *tem;
 
@@ -869,8 +870,8 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 		case '0':
 		    pad_zeros = rep_TRUE; break;
 
-		    /* XXX these aren't actually implemented.. */
 		case '+': case ' ':
+		    leading_char = c;
 		    break;
 
 		default:
@@ -917,7 +918,7 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 
 		switch(c)
 		{
-		    int radix, len;
+		    int radix, len, actual_len;
 		    u_char buf[256], fmt[32], *ptr;
 
 		case 'c':
@@ -954,20 +955,39 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 		    len = rep_STRING_LEN (val);
 
 		string_out:
-		    if(field_width == 0 || len >= field_width)
+		    actual_len = len;
+		    if (leading_char)
 		    {
+			if (*ptr != '-')
+			    actual_len++;
+			else
+			    leading_char = 0;
+		    }
+		    if(field_width == 0 || actual_len >= field_width)
+		    {
+			if (leading_char)
+			    rep_stream_putc (stream, leading_char);
 			rep_stream_puts(stream, ptr, truncate_field
-					? field_width : len, rep_FALSE);
+					? (field_width - (leading_char != 0))
+					: len, rep_FALSE);
 		    }
 		    else
 		    {
-			len = MIN(field_width - len, sizeof(buf));
-			memset(buf, !pad_zeros ? ' ' : '0', len);
+			int slen = MIN(field_width - actual_len, sizeof(buf));
+			memset(buf, !pad_zeros ? ' ' : '0', slen);
 			if(left_justify)
-			    rep_stream_puts(stream, ptr, -1, rep_FALSE);
-			rep_stream_puts(stream, buf, len, rep_FALSE);
+			{
+			    if (leading_char)
+				rep_stream_putc (stream, leading_char);
+			    rep_stream_puts(stream, ptr, len, rep_FALSE);
+			}
+			rep_stream_puts(stream, buf, slen, rep_FALSE);
 			if(!left_justify)
-			    rep_stream_puts(stream, ptr, -1, rep_FALSE);
+			{
+			    if (leading_char)
+				rep_stream_putc (stream, leading_char);
+			    rep_stream_puts(stream, ptr, len, rep_FALSE);
+			}
 		    }
 		    if (free_str)
 			free (ptr);
