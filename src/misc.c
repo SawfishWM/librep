@@ -559,18 +559,18 @@ rep_misc_init(void)
     if (rep_beep_fun == 0)
 	rep_beep_fun = default_beep;
 
-    rep_INTERN(operating_system);
+    rep_INTERN_SPECIAL(operating_system);
 #ifdef rep_HAVE_UNIX
     rep_INTERN(unix);
     rep_SYM(Qoperating_system)->value = Qunix;
 #endif
 
-    rep_INTERN(process_environment);
+    rep_INTERN_SPECIAL(process_environment);
     rep_SYM(Qprocess_environment)->value = Qnil;
 
-    rep_INTERN(rep_version);
+    rep_INTERN_SPECIAL(rep_version);
     rep_SYM(Qrep_version)->value = rep_VAL(&rep_version_string);
-    rep_INTERN(rep_build_id);
+    rep_INTERN_SPECIAL(rep_build_id);
     rep_SYM(Qrep_build_id)->value = rep_VAL(&build_id_string);
 
     rep_ADD_SUBR_INT(Sbeep);
@@ -599,9 +599,9 @@ rep_misc_init(void)
     rep_ADD_SUBR(Schar_downcase);
     rep_ADD_SUBR(Ssystem);
 
-    rep_INTERN(upcase_table);
+    rep_INTERN_SPECIAL(upcase_table);
     rep_SYM(Qupcase_table)->value = rep_make_string(257);
-    rep_INTERN(downcase_table);
+    rep_INTERN_SPECIAL(downcase_table);
     rep_SYM(Qdowncase_table)->value = rep_make_string(257);
     for(i = 0; i < 256; i++)
     {
@@ -611,7 +611,7 @@ rep_misc_init(void)
     rep_STR(rep_SYM(Qupcase_table)->value)[256] = 0;
     rep_STR(rep_SYM(Qdowncase_table)->value)[256] = 0;
 
-    rep_INTERN(flatten_table);
+    rep_INTERN_SPECIAL(flatten_table);
     rep_SYM(Qflatten_table)->value = rep_make_string(12);
     for(i = 0; i < 10; i++)
 	rep_STR(rep_SYM(Qflatten_table)->value)[i] = i;

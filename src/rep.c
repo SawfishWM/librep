@@ -37,7 +37,7 @@ main(int argc, char **argv)
 	return 0;
     }
 
-    Fload(rep_string_dup("rep"), Qnil, Qnil, Qnil);
+    Fload(rep_string_dup("rep"), Qnil, Qnil, Qnil, Qnil);
 
     if(rep_throw_value && rep_CAR(rep_throw_value) == Qerror)
     {

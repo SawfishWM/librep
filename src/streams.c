@@ -87,18 +87,6 @@ top:
 	repv res;
 	rep_type *t;
 
-    case rep_File:
-	if(rep_NILP(rep_FILE(stream)->name))
-	    return rep_unbound_file_error(stream);
-	else if(rep_LOCAL_FILE_P(stream))
-	    c = getc(rep_FILE(stream)->file.fh);
-	else
-	{
-	    stream = rep_FILE(stream)->file.stream;
-	    goto top;
-	}
-	break;
-
     case rep_Cons:
 	res = rep_CAR(stream);
 	if(rep_INTP(res) && rep_STRINGP(rep_CDR(stream)))
@@ -123,12 +111,27 @@ top:
 	break;
 
     case rep_Symbol:
+    case rep_Funarg:
     function:
 	if((res = rep_call_lisp0(stream)) && rep_INTP(res))
 	    c = rep_INT(res);
 	break;
 
     default:
+	if (rep_FILEP(stream))
+	{
+	    if(rep_NILP(rep_FILE(stream)->name))
+		return rep_unbound_file_error(stream);
+	    else if(rep_LOCAL_FILE_P(stream))
+		c = getc(rep_FILE(stream)->file.fh);
+	    else
+	    {
+		stream = rep_FILE(stream)->file.stream;
+		goto top;
+	    }
+	    break;
+	}
+
 	t = rep_get_data_type(rep_TYPE(stream));
 	if (t->getc != 0)
 	    c = (t->getc)(stream);
@@ -158,16 +161,6 @@ top:
 	repv tmp;
 	rep_type *t;
 
-    case rep_File:
-	if(rep_LOCAL_FILE_P(stream))
-	    c = ungetc(c, rep_FILE(stream)->file.fh);
-	else
-	{
-	    stream = rep_FILE(stream)->file.stream;
-	    goto top;
-	}
-	break;
-
     case rep_Cons:
 	tmp = rep_CAR(stream);
 	if(rep_INTP(tmp) && rep_STRINGP(rep_CDR(stream)))
@@ -189,6 +182,7 @@ top:
 	break;
 
     case rep_Symbol:
+    case rep_Funarg:
     function:
 	tmp = rep_MAKE_INT(c);
 	if((tmp = rep_call_lisp1(stream, tmp)) && !rep_NILP(tmp))
@@ -196,6 +190,17 @@ top:
 	break;
 
     default:
+	if (rep_FILEP(stream))
+	{
+	    if(rep_LOCAL_FILE_P(stream))
+		c = ungetc(c, rep_FILE(stream)->file.fh);
+	    else
+	    {
+		stream = rep_FILE(stream)->file.stream;
+		goto top;
+	    }
+	    break;
+	}
 	t = rep_get_data_type(rep_TYPE(stream));
 	if (t->ungetc != 0)
 	    (t->ungetc)(stream, c);
@@ -217,21 +222,6 @@ top:
 	int len;
 	u_char tmps[2];
 	rep_type *t;
-
-    case rep_File:
-	if(rep_NILP(rep_FILE(stream)->name))
-	    return rep_unbound_file_error(stream);
-	else if(rep_LOCAL_FILE_P(stream))
-	{
-	    if(putc(c, rep_FILE(stream)->file.fh) != EOF)
-		rc = 1;
-	}
-	else
-	{
-	    stream = rep_FILE(stream)->file.stream;
-	    goto top;
-	}
-	break;
 
     case rep_Cons:
 	args = rep_CAR(stream);
@@ -269,6 +259,7 @@ top:
 	break;
 
     case rep_Symbol:
+    case rep_Funarg:
     function:
 	if(stream == Qt)
 	{
@@ -283,6 +274,22 @@ top:
 	break;
 
     default:
+	if (rep_FILEP(stream))
+	{
+	    if(rep_NILP(rep_FILE(stream)->name))
+		return rep_unbound_file_error(stream);
+	    else if(rep_LOCAL_FILE_P(stream))
+	    {
+		if(putc(c, rep_FILE(stream)->file.fh) != EOF)
+		    rc = 1;
+	    }
+	    else
+	    {
+		stream = rep_FILE(stream)->file.stream;
+		goto top;
+	    }
+	    break;
+	}
 	t = rep_get_data_type(rep_TYPE(stream));
 	if (t->putc != 0)
 	    rc = (t->putc)(stream, c);
@@ -310,18 +317,6 @@ top:
 	repv args, res, new;
 	int len, newlen;
 	rep_type *t;
-
-    case rep_File:
-	if(rep_NILP(rep_FILE(stream)->name))
-	    return rep_unbound_file_error(stream);
-	else if(rep_LOCAL_FILE_P(stream))
-	    rc = fwrite(buf, 1, bufLen, rep_FILE(stream)->file.fh);
-	else
-	{
-	    stream = rep_FILE(stream)->file.stream;
-	    goto top;
-	}
-	break;
 
     case rep_Cons:
 	args = rep_CAR(stream);
@@ -362,6 +357,7 @@ top:
 	break;
 
     case rep_Symbol:
+    case rep_Funarg:
     function:
 	if(stream == Qt)
 	{
@@ -386,6 +382,19 @@ top:
 	break;
 
     default:
+	if (rep_FILEP(stream))
+	{
+	    if(rep_NILP(rep_FILE(stream)->name))
+		return rep_unbound_file_error(stream);
+	    else if(rep_LOCAL_FILE_P(stream))
+		rc = fwrite(buf, 1, bufLen, rep_FILE(stream)->file.fh);
+	    else
+	    {
+		stream = rep_FILE(stream)->file.stream;
+		goto top;
+	    }
+	    break;
+	}
 	t = rep_get_data_type(rep_TYPE(stream));
 	if (t->puts != 0)
 	    rc = (t->puts)(stream, data, bufLen, isValString);
@@ -1045,16 +1054,15 @@ Returns t if ARG is a stream.
 	repv car, cdr;
 	rep_type *t;
 
-    case rep_File:
     case rep_Symbol:
+    case rep_Funarg:
 	res = Qt;
 	break;
 
     case rep_Cons:
 	car = rep_CAR(arg);
 	cdr = rep_CDR(arg);
-	if((car == Qlambda)
-	   || (rep_INTP(car) && rep_STRINGP(cdr)))
+	if(rep_INTP(car) && rep_STRINGP(cdr))
 	    res = Qt;
 	else
 	{
@@ -1065,9 +1073,14 @@ Returns t if ARG is a stream.
 	break;
 
     default:
-	t = rep_get_data_type(rep_TYPE(arg));
-	if ((t->putc && t->puts) || (t->getc && t->ungetc))
+	if (rep_FILEP(arg))
 	    res = Qt;
+	else
+	{
+	    t = rep_get_data_type(rep_TYPE(arg));
+	    if ((t->putc && t->puts) || (t->getc && t->ungetc))
+		res = Qt;
+	}
     }
     return(res);
 }
@@ -1075,7 +1088,7 @@ Returns t if ARG is a stream.
 void
 rep_streams_init(void)
 {
-    rep_INTERN(format_hooks_alist);
+    rep_INTERN_SPECIAL(format_hooks_alist);
     rep_ADD_SUBR(Swrite);
     rep_ADD_SUBR(Sread_char);
     rep_ADD_SUBR(Sread_chars);

@@ -234,7 +234,7 @@ rep_init(char *prog_name, int *argc, char ***argv,
 
 	if(get_main_options(prog_name, argc, argv, sys_usage))
 	{
-	    repv res = Fload(init_script, Qnil, Qnil, Qnil);
+	    repv res = Fload(init_script, Qnil, Qnil, Qnil, Qnil);
 	    if (res != rep_NULL)
 		return;
 	}
@@ -256,7 +256,7 @@ rep_init(char *prog_name, int *argc, char ***argv,
 	    fputc('\n', stderr);
 	}
 	else
-	    fputs("jade: error in initialisation\n", stderr);
+	    fputs("rep: error in initialisation\n", stderr);
 	rep_throw_value = old_tv;
 	rep_POPGC;
     }
@@ -426,16 +426,16 @@ rep_main_init(void)
     rep_INTERN(quit);
     rep_INTERN(exit);
     rep_INTERN(top_level);
-    rep_INTERN(command_line_args);
-    rep_INTERN(idle_hook);
-    rep_INTERN(batch_mode);
+    rep_INTERN_SPECIAL(command_line_args);
+    rep_INTERN_SPECIAL(idle_hook);
+    rep_INTERN_SPECIAL(batch_mode);
     rep_SYM(Qbatch_mode)->value = Qnil;
-    rep_INTERN(interpreted_mode);
+    rep_INTERN_SPECIAL(interpreted_mode);
     rep_SYM(Qinterpreted_mode)->value = Qnil;
     rep_ADD_SUBR(Sget_command_line_option);
-    rep_INTERN(program_name);
-    rep_INTERN(error_mode);
+    rep_INTERN_SPECIAL(program_name);
+    rep_INTERN_SPECIAL(error_mode);
     rep_SYM(Qerror_mode)->value = Qnil;
-    rep_INTERN(interrupt_mode);
+    rep_INTERN_SPECIAL(interrupt_mode);
     rep_SYM(Qinterrupt_mode)->value = Qnil;
 }
