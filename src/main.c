@@ -246,6 +246,7 @@ rep_init_from_dump(char *prog_name, int *argc, char ***argv,
 	rep_streams_init();
 	rep_files_init();
 	rep_datums_init();
+	rep_fluids_init();
 	rep_sys_os_init();
 
 	/* XXX Assumes that argc is on the stack. I can't think of
