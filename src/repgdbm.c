@@ -152,7 +152,7 @@ gdbm-delete DBM KEY
 
 DEFUN("gdbm-walk", Fgdbm_walk, Sgdbm_walk, (repv fun, repv dbm), rep_Subr2) /*
 ::doc:rep.io.db.gdbm#gdbm-walk::
-gdbm-walk DBM FUN
+gdbm-walk FUN DBM
 ::end:: */
 {
     rep_GC_root gc_dbm, gc_fun;

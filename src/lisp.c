@@ -781,9 +781,10 @@ read_str(repv strm, int *c_p)
 static repv
 skip_chars (repv stream, const char *str, repv ret, int *ptr)
 {
+    int c;
     while (*str != 0)
     {
-	int c = rep_stream_getc (stream);
+	c = rep_stream_getc (stream);
 	if (c != *str++)
 	{
 	    char buf[256];
@@ -795,8 +796,22 @@ skip_chars (repv stream, const char *str, repv ret, int *ptr)
 	    return signal_reader_error (Qinvalid_read_syntax, stream, buf);
 	}
     }
-    *ptr = rep_stream_getc (stream);
-    return ret;
+
+    c = rep_stream_getc (stream);
+    switch (c)
+    {
+    case EOF:
+    case ' ': case '\t': case '\n': case '\f': case '\r':
+    case '(': case ')': case '[': case ']':
+    case '\'': case '"': case ';': case ',':
+    case '`':
+	*ptr = c;
+	return ret;
+
+    default:
+	return signal_reader_error (Qinvalid_read_syntax, stream,
+				    "expected end of token");
+    }
 }
 
 /* Using the above readlisp*() functions this classifies each type

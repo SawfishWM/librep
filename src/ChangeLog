@@ -1,3 +1,17 @@
+2001-10-19  John Harper  <jsh@unfactored.org>
+
+	* repgdbm.c (Fgdbm_walk): fixed doc string
+
+	* readline.c (match_paren): should return an int, not void
+	(pointed out by Karl M. Hegbloom <karlheg@microsharp.com>)
+
+	* librep.sym: removed Fdebug_frame_environment,
+	Fdebug_inner_frame and Fdebug_outer_frame
+
+	* lisp.c (skip_chars): don't accept, say, `#!keyX' when asked
+	for `#!key'; check that the input character after the end of
+	the asked for characters is a token delimiter
+
 2001-10-03  John Harper  <jsh@unfactored.org>
 
 	* version 0.15.1

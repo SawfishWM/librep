@@ -62,9 +62,6 @@ Fcurrent_time_string
 Fcurrent_utime
 Fdatum_ref
 Fdatum_set
-Fdebug_frame_environment
-Fdebug_inner_frame
-Fdebug_outer_frame
 Fdefault_boundp
 Fdefault_value
 Fdefine_datum_printer
