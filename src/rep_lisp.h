@@ -412,34 +412,34 @@ typedef struct lisp_vector {
 #define VECTOR_WRITABLE_P(v) (!VCELL8_STATIC_P(v))
 
 
-/* Compiled Lisp functions; this is a constant-sized vector. */
-
-#define COMPILED_LAMBDA		0	/* lambda list */
-#define COMPILED_CODE		1	/* byte-code string */
-#define COMPILED_CONSTANTS	2	/* constant vector */
-#define COMPILED_STACK_FLAGS	3	/* int: stack depth (0->15) and
-					        flags (16->?) */
-#define COMPILED_DOC		4	/* doc string */
-#define COMPILED_INTERACTIVE	5	/* interactive spec */
-#define COMPILED_NSLOTS		6
-
-typedef struct {
-    VALUE car;
-    struct lisp_vector *next;
-    VALUE array[COMPILED_NSLOTS];
-} Lisp_Compiled;
-
-/* Definition is a macro, not a defun */
-#define LCFF_IS_MACRO	    (1 << 16)
-
-#define COMPILED_MACRO_P(v) \
-    (VINT(VVECTI(v, COMPILED_STACK_FLAGS)) & LCFF_IS_MACRO)
-
-#define COMPILED_STACK(v) \
-    (VINT(VVECTI(v, COMPILED_STACK_FLAGS)) & 0xffff)
+/* Compiled Lisp functions; this is a vector. Some of these definitions
+   are probably hard coded into lispmach.c */
 
 #define COMPILEDP(v)	    VCELL8_TYPEP(v, V_Compiled)
-#define VCOMPILED(v)	    ((Lisp_Compiled *)VPTR(v))
+#define VCOMPILED(v)	    ((Lisp_Vector *)VPTR(v))
+
+/* First element is lambda list. */
+#define COMPILED_LAMBDA(v)	VVECTI(v, 0)
+
+/* Second is byte-code string */
+#define COMPILED_CODE(v)	VVECTI(v, 1)
+
+/* Third is constant vector */
+#define COMPILED_CONSTANTS(v)	VVECTI(v, 2)
+
+/* Fourth is an integer, low 16 bits is stack usage bit 16=macrop */
+#define COMPILED_STACK(v)	(VINT(VVECTI(v, 3)) & 0x0ffff)
+#define COMPILED_MACRO_P(v)	(VINT(VVECTI(v, 3)) & 0x10000)
+
+#define COMPILED_MIN_SLOTS	4
+
+/* Optional fifth element is documentation. */
+#define COMPILED_DOC(v)		((VVECT_LEN(v) >= 5) ? VVECTI(v, 4) : sym_nil)
+
+/* Optional sixth element is interactive specification. */
+#define COMPILED_INTERACTIVE(v) ((VVECT_LEN(v) >= 6) ? VVECTI(v, 5) : sym_nil)
+
+#define COMPILED_WRITABLE_P(v) VECTOR_WRITABLE_P(v)
 
 
 /* Positions */
