@@ -231,4 +231,6 @@
 (autoload 'tex-view "tex-shell" t)
 (autoload 'tex-show-print-queue "tex-shell" t)
 (autoload 'page-summary "page-summary" t)
+(autoload 'ispell-add-word-to-dictionary "ispell" t)
+(autoload 'ispell-add-word-for-session "ispell" t)
 ;;; ::autoload-end::

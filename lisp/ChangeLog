@@ -1,3 +1,14 @@
+1998-11-24  John Harper  <john@jsh.org>
+
+	* help.jl (describe-function): once more run
+	substitute-command-keys over the documentation
+
+	* ispell.jl: in misspelt words, bind `C-c C-a' to add the word
+	to the personal dictionary, and `C-c C-s' to accept the word
+	for the rest of the Ispell session
+	(ispell-add-word-for-session, ispell-save-dictionary): new
+	commands
+
 1998-11-24  John Harper  <john@dcs.warwick.ac.uk>
 
 	* yacc-mode.jl, text-mode.jl, texinfo-mode.jl, tex-mode.jl,
