@@ -794,7 +794,8 @@ typedef struct rep_gc_n_roots {
 #define rep_INTERN_SPECIAL(x) 					\
     do {							\
 	rep_intern_static (& Q ## x, rep_VAL(& str_ ## x));	\
-	rep_SYM(Q ## x)->car |= rep_SF_SPECIAL | rep_SF_DEFVAR;	\
+	Fmake_variable_special (Q ## x);			\
+	rep_SYM(Q ## x)->car |= rep_SF_DEFVAR;			\
     } while (0)
 
 /* Add an error string called err_X for symbol stored in QX */
