@@ -1,3 +1,10 @@
+2000-05-23  John Harper  <john@dcs.warwick.ac.uk>
+
+	* bytecodes.h, lispmach.c (OP_TEST_SCM, OP_TEST_SCM_F): new
+	instructions
+
+	* rep.c: updated usage text for new options
+
 2000-05-22  John Harper  <john@dcs.warwick.ac.uk>
 
 	* numbers.c (Fstring_to_number): return Qnil if the string

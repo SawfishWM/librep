@@ -10,7 +10,7 @@ and more long-term ideas are marked -
 Outstanding bugs
 ================
 
- ! make with-fluids use open barriers
+ ! the scheme module fails some of the guile test.scm cases
 
  ! document in manual: records, queues, datums, (declare ..)
 
@@ -33,7 +33,11 @@ Outstanding bugs
    Xerox scheme closes all macros in the `initial environment', this
    would provide consistency, but would break existing code
 
-   also, macro memoization is very brittle
+ ! macro memoization loses
+
+   e.g. if same (eq) expression is expanded in different structures
+
+   OTOH, there is little or no chance of this ever happening
 
  ! no way to export variables from C code
 

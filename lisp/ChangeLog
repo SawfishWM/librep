@@ -1,3 +1,32 @@
+2000-05-23  John Harper  <john@dcs.warwick.ac.uk>
+
+	* scheme-misc.jl (eof-object?): fixed to return #f or #t
+
+	* compiler-scheme.jl: code and properties to piggyback the rep
+	compiler for predicates that just needs boolean results translated
+
+	* compiler-opt.jl: delete `test-scm[-f]; scm-test' pairs of
+	instructions
+
+	* bytecodes.jl, bytecode-defs.jl, disassembler.jl (test-scm,
+	test-scm-f): new instructions, map from rep booleans to scheme
+	booleans
+
+	* rep.jl: option aliases: --call -> -f, --load -> -l, --quit -> -q
+	New option --scheme,-s to load a file of Scheme code	
+
+	* scheme.jl, scheme-misc.jl: export %load-suffixes
+
+	* scheme-syntax.jl (delay): don't use `rep#lambda' in
+	expansion, probably not available in caller's environment
+
+	* scheme-misc.jl (write-char): use `rep#write', not `write'
+	(load): removed this definition, must use the subr (so the file
+	is loaded in the caller's environment..)
+
+	* compiler-modules.jl (compile-module-body): remember to create
+	a binding of `current-language'
+
 2000-05-22  John Harper  <john@dcs.warwick.ac.uk>
 
 	* scheme-syntax.jl (cond): now expands into an `if' chain, this
