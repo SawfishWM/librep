@@ -9,6 +9,8 @@
 ;;;	3. Replace car-safe with car (car always safe in Jade)
 ;;;	4. Remove autoload cookies since Jade doesn't allow
 ;;;	   autoloaded macros
+;;;	5. Remove the use of (` X) for `X, (, X) for ,X and (,@ X)
+;;;	   for ,@X since Jade will parse the normal syntax correctly
 
 ;;; Copyright (C) 1990, 1992, 1994 Free Software Foundation, Inc.
 
@@ -39,18 +41,6 @@
 
 (provide 'backquote)
 
-;; A few advertised variables that control which symbols are used
-;; to represent the backquote, unquote, and splice operations.
-
-(defvar backquote-backquote-symbol '\`
-  "*Symbol used to represent a backquote or nested backquote (e.g. `).")
-
-(defvar backquote-unquote-symbol ',
-  "*Symbol used to represent an unquote (e.g. `,') inside a backquote.")
-
-(defvar backquote-splice-symbol ',@
-  "*Symbol used to represent a splice (e.g. `,@') inside a backquote.")
-
 (defmacro backquote (arg)
   "Argument STRUCTURE describes a template to build.
 
@@ -66,10 +56,6 @@ b              => (ba bb bc)		; assume b has this value
 
 Vectors work just like lists.  Nested backquotes are permitted."
   (cdr (backquote-process arg)))
-
-;; GNU Emacs has no reader macros
-
-(fset '\` (symbol-function 'backquote))
 
 ;; backquote-process returns a dotted-pair of a tag (0, 1, or 2) and
 ;; the backquote-processed structure.  0 => the structure is
@@ -93,11 +79,11 @@ Vectors work just like lists.  Nested backquotes are permitted."
     (cons 0 (if (or (null s) (eq s t) (not (symbolp s)))
 		s
 	      (list 'quote s))))
-   ((eq (car s) backquote-unquote-symbol)
+   ((eq (car s) 'backquote-unquote)
     (cons 1 (nth 1 s)))
-   ((eq (car s) backquote-splice-symbol)
+   ((eq (car s) 'backquote-splice)
     (cons 2 (nth 1 s)))
-   ((eq (car s) backquote-backquote-symbol)
+   ((eq (car s) 'backquote)
     (backquote-process (cdr (backquote-process (nth 1 s)))))
    (t
     (let ((rest s)
@@ -112,8 +98,8 @@ Vectors work just like lists.  Nested backquotes are permitted."
       ;; If there are any at the end, they go in LIST, likewise.
       (while (consp rest)
 	;; Turn . (, foo) into (,@ foo).
-	(if (eq (car rest) backquote-unquote-symbol)
-	    (setq rest (list (list backquote-splice-symbol (nth 1 rest)))))
+	(if (eq (car rest) 'backquote-unquote)
+	    (setq rest (list (list 'backquote-splice (nth 1 rest)))))
 	(setq item (backquote-process (car rest)))
 	(cond
 	 ((= (car item) 2)
@@ -138,7 +124,7 @@ Vectors work just like lists.  Nested backquotes are permitted."
       ;; Turn LISTS into a form that produces the combined list. 
       (setq expression
 	    (if (or (cdr lists)
-		    (eq (car (car lists)) backquote-splice-symbol))
+		    (eq (car (car lists)) 'backquote-splice))
 		(cons 'append (nreverse lists))
 	      (car lists)))
       ;; Tack on any initial elements.
@@ -171,7 +157,7 @@ Vectors work just like lists.  Nested backquotes are permitted."
 	  (let ((use-list* (or (cdr heads)
 			       (and (consp (car heads))
 				    (eq (car (car heads))
-					backquote-splice-symbol)))))
+					'backquote-splice)))))
 	    (cons (if use-list* 'list* 'cons)
 		  (append heads (list tail))))
 	tail))
