@@ -382,8 +382,13 @@ rep_open_dl_library(repv file_name)
 		}
 	    }
 
-	    if (x->feature_sym != Qnil)
+	    if (x->feature_sym != Qnil && x->structure == Qnil)
+	    {
+		/* only `provide' the feature if there's no
+		   associated structure (since we haven't actually
+		   imported it) */
 		Fprovide (x->feature_sym);
+	    }
 	}
     }
 out:
