@@ -1,3 +1,8 @@
+2000-01-26  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lisp-doc.jl (describe-variable): remove reference to
+	current-buffer (not used anyway)
+
 2000-01-24  John Harper  <john@dcs.warwick.ac.uk>
 
 	* compiler.jl (comp-compile-case): support the new `case'
