@@ -384,7 +384,7 @@ list_ref (repv list, int elt)
  &&TAG(OP_FLUID_SET), &&TAG(OP_FLUID_BIND), &&TAG(OP_MEMQL), &&TAG(OP_NUM_EQ), /*C0*/		\
  &&TAG(OP_TEST_SCM), &&TAG(OP_TEST_SCM_F), &&TAG(OP__DEFINE), &&TAG(OP_SPEC_BIND),		\
  &&TAG(OP_SET), &&TAG(OP_REQUIRED_ARG), &&TAG(OP_OPTIONAL_ARG), &&TAG(OP_REST_ARG), /*C8*/	\
- &&TAG(OP_NOT_ZERO_P), &&TAG(OP_KEYWORD_ARG), &&TAG_DEFAULT, &&TAG_DEFAULT,				\
+ &&TAG(OP_NOT_ZERO_P), &&TAG(OP_KEYWORD_ARG), &&TAG(OP_OPTIONAL_ARG_WITH_DEFAULT), &&TAG(OP_KEYWORD_ARG_WITH_DEFAULT),	\
 												\
  &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, /*D0*/	\
  &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT,		\
@@ -2004,6 +2004,7 @@ again: {
 	    int i;
 	    POP1 (tmp);
 	    tmp2 = Qnil;
+	do_keyword_arg:
 	    for (i = argptr; i < argc - 1; i += 2)
 	    {
 		if (argv[i] == tmp && argv[i+1] != rep_NULL)
@@ -2015,6 +2016,17 @@ again: {
 	    }
 	    PUSH (tmp2);
 	    SAFE_NEXT;
+	END_INSN
+
+	BEGIN_INSN (OP_OPTIONAL_ARG_WITH_DEFAULT)
+	    POP1 (tmp);
+	    PUSH ((argptr < argc) ? argv[argptr++] : tmp);
+	    SAFE_NEXT;
+	END_INSN
+
+	BEGIN_INSN (OP_KEYWORD_ARG_WITH_DEFAULT)
+	    POP2 (tmp2, tmp);
+	    goto do_keyword_arg;
 	END_INSN
 
 	/* Jump instructions follow */

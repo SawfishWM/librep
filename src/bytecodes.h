@@ -264,6 +264,8 @@
 #define OP_NOT_ZERO_P 0xcc
 
 #define OP_KEYWORD_ARG 0xcd
+#define OP_OPTIONAL_ARG_WITH_DEFAULT 0xce
+#define OP_KEYWORD_ARG_WITH_DEFAULT 0xcf
 
 
 /* Jump opcodes */
