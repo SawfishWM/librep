@@ -45,8 +45,8 @@
 ;;; stack needed is calculated by the compiler.
 
 ;; Instruction set version
-(defconst bytecode-major 2)
-(defconst bytecode-minor 5)
+(defconst bytecode-major 3)
+(defconst bytecode-minor 0)
 
 ;; Opcodes
 (defconst op-call 0x08)			;call (stk[n] stk[n-1] ... stk[0])
@@ -112,16 +112,16 @@
 (defconst op-numberp 0x70)
 (defconst op-stringp 0x71)
 (defconst op-vectorp 0x72)
-(defconst op-catch-kludge 0x73)
+(defconst op-catch 0x73)
 (defconst op-throw 0x74)
-(defconst op-unwind-pro 0x75)
-;(defconst op-un-unwind-pro 0x76)
+(defconst op-binderr 0x75)
+(defconst op-unused1 0x76)
 (defconst op-fboundp 0x77)
 (defconst op-boundp 0x78)
 (defconst op-symbolp 0x79)
 (defconst op-get 0x7a)
 (defconst op-put 0x7b)
-(defconst op-error-pro 0x7c)
+(defconst op-errorpro 0x7c)
 (defconst op-signal 0x7d)
 (defconst op-return 0x7e)
 (defconst op-reverse 0x7f)		;new 12/7/94
@@ -167,16 +167,18 @@
 (defconst op-pos 0xbc)			;new 20-12-97
 (defconst op-posp 0xbd)
 
-(defconst op-last-before-jmps 0xf8)
+(defconst op-last-before-jmps 0xf7)
 
 ;; All jmps take two-byte arguments
+(defconst op-ejmp 0xf8)			;if (pop[1]) goto error-handler,
+					; else jmp x
+(defconst op-jpn 0xf9)			;if stk[0] nil, pop and jmp x
+(defconst op-jpt 0xfa)			;if stk[0] t, pop and jmp x
 (defconst op-jmp 0xfb)			;jmp to x
 (defconst op-jn 0xfc)			;pop the stack, if nil, jmp x
 (defconst op-jt 0xfd)			;pop the stack, if t, jmp x
 (defconst op-jnp 0xfe)			;if stk[0] nil, jmp x, else pop
 (defconst op-jtp 0xff)			;if stk[0] t, jmp x, else pop
-(defconst op-jpn 0xf9)			;if stk[0] nil, pop and jmp x
-(defconst op-jpt 0xfa)			;if stk[0] t, pop and jmp x
 
 (defconst comp-max-1-byte-arg 5)	;max arg held in 1-byte instruction
 (defconst comp-max-2-byte-arg 0xff)	;max arg held in 2-byte instruction

@@ -38,8 +38,8 @@
    "mul" "div" "rem" "lnot" "not" "lor" "land"
    "equal" "eq" "num-eq" "num-not-eq" "gt" "ge" "lt" "le"	; 0x60
    "inc" "dec" "lsh" "zerop" "null" "atom" "consp" "listp"
-   "numberp" "stringp" "vectorp" "catch-kludge" "throw" "unwind-pro" "<obsolete>" "fboundp"	; 0x70
-   "boundp" "symbolp" "get" "put" "error-pro" "signal" "return" "reverse"
+   "numberp" "stringp" "vectorp" "catch" "throw" "binderr" nil "fboundp"	; 0x70
+   "boundp" "symbolp" "get" "put" "errorpro" "signal" "return" "reverse"
    "nreverse" "assoc" "assq" "rassoc" "rassq" "last" "mapcar" "mapc" ; 0x80
    "member" "memq" "delete" "delq" "delete-if" "delete-if-not" "copy-sequence" "sequencep"
    "functionp" "special-form-p" "subrp" "eql" "lxor" "max" "min" nil ; 0x90
@@ -55,7 +55,7 @@
    nil nil nil nil nil nil nil nil	 ; 0xe0
    nil nil nil nil nil nil nil nil
    nil nil nil nil nil nil nil nil	 ; 0xf0
-   nil "jpn\t%d" "jpt\t%d" "jmp\t%d" "jn\t%d" "jt\t%d" "jnp\t%d" "jtp\t%d" ])
+   "ejmp\t%d" "jpn\t%d" "jpt\t%d" "jmp\t%d" "jn\t%d" "jt\t%d" "jnp\t%d" "jtp\t%d" ])
 
 ;;;###autoload
 (defun disassemble-fun (fun &optional stream)
