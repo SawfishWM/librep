@@ -22,7 +22,7 @@ top_builddir=.
 
 SUBDIRS = src lisp man
 
-all : build.h DOC.dir
+all : build.h rules.mk DOC.dir
 	set -e; for dir in $(SUBDIRS); do \
 	  [ -d $$dir ] && ( cd $$dir && $(MAKE) $@ ); \
  	done
@@ -31,11 +31,17 @@ build.h : build-info config.status
 	$(top_srcdir)/build-info $(host_type) $(version) \
 	  '$(repdir)' '$(replispdir)' '$(repexecdir)' '$(repdocfile)' >$@
 
-install : installdirs
+rules.mk : rules.mk.sh config.status
+	$(SHELL) $(top_srcdir)/rules.mk.sh '$(repdir)' \
+	  '$(repexecdir)' '$(repdocfile)' >$@
+
+install : all installdirs
 	set -e; for dir in $(SUBDIRS); do \
 	  ( cd $$dir && $(MAKE) $@ ); \
 	done
 	$(INSTALL_DATA) DOC.* $(repdir)/$(version)
+	$(INSTALL_PROGRAM) libtool $(repexecdir)
+	$(INSTALL_DATA) rules.mk $(repexecdir)
 
 installdirs : $(top_srcdir)/mkinstalldirs
 	$(SHELL) $(top_srcdir)/mkinstalldirs $(repdir)/$(version) $(bindir)
@@ -72,7 +78,7 @@ realclean :
 	  [ -d $$dir ] && ( cd $$dir && $(MAKE) $@ ); \
 	done
 	rm -f config.cache config.h config.log config.status Makefile libtool
-	rm -f *~ NEWS DOC.* TAGS build.h
+	rm -f *~ NEWS DOC.* TAGS build.h rules.mk
 
 TAGS :
 	etags --language=c `find . -name '*.[ch]' -print` \
