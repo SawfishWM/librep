@@ -33,6 +33,14 @@ accessed on specific hosts.")
 (defvar remote-default-backend 'ftp
   "Backend used for otherwise unspecified hosts.")
 
+(defvar remote-host-user-alist nil
+  "Alist of (HOST-REGEXP . USER-NAME) matching host names to usernames.
+Only used when no username is given in a filename.")
+
+(defvar remote-default-user (user-login-name)
+  "Default username to use for file-transfer when none is specified, either
+explicitly, or by the remote-ftp-host-user-alist variable.")
+
 ;; Remote filename syntax
 (defvar remote-file-regexp "^/(([a-zA-Z0-9._-]+)@)?([a-zA-Z0-9._-]+):")
 
@@ -89,15 +97,20 @@ accessed on specific hosts.")
 			   'remote-backend)))
 	  (funcall backend split op args))))))))
 
+(defun remote-get-user (host)
+  (or (cdr (assoc-regexp host remote-host-user-alist)) remote-default-user))
+
 ;; Return (USER-OR-NIL HOST FILE)
 (defun remote-split-filename (filename)
   (unless (string-match remote-file-regexp filename)
     (error "Malformed remote file specification: %s" filename))
-  (list
-   (and (match-start 2)
-	(substring filename (match-start 2) (match-end 2)))
-   (substring filename (match-start 3) (match-end 3))
-   (substring filename (match-end))))
+  (let
+      ((host (substring filename (match-start 3) (match-end 3)))
+       (file (substring filename (match-end))))
+    (list
+     (and (match-start 2)
+	  (substring filename (match-start 2) (match-end 2)))
+     host file)))
 
 ;; Create a remote file name. USER may be nil
 (defun remote-join-filename (user host file)
