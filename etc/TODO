@@ -102,10 +102,6 @@ General programming tasks:
    file? Generate our own magic cookie at server startup? Just allow
    certain hosts and deny others?...
 
- - Allow dynamic linking and unlinking of C modules (each module would
-   only be allowed to define Lisp functions?). This could be useful for
-   providing specialised code that can't be written in Lisp..
-
  - In the Lisp VM replace the `bindstack' list with a vector. Means
    that the compiler will need to track the binding depth as well as
    the stack depth.

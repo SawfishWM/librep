@@ -1,3 +1,16 @@
+1998-07-03  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispcmds.c (dl-load-path, exec-directory): new variables for
+	dynamic loading
+	(cmd_load): support for dynamic loading (search dl-path after
+	exhausting load-path)
+	* unix_defs.h (EXEC_DIR): new definition
+	* unix_dl.c: new file, use dlopen() for dynamic loading
+	* values.c (cmd_garbage_collect): call mark_dl_data
+
+	* lisp.h (DEFUN, DEFUN_INT, ADD_SUBR, ADD_SUBR_INT): cleaned up
+	a bit
+
 1998-07-01  John Harper  <john@dcs.warwick.ac.uk>
 
 	* find.c (mark_cached_regexps): fixed bug in chopping the list
