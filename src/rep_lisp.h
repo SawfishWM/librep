@@ -650,12 +650,6 @@ struct Lisp_Call {
 #define DECLARE4(x,t) DECLARE(4,x,t)
 #define DECLARE5(x,t) DECLARE(5,x,t)
 
-#define ARG1	(find_member_by_index(args, 1))
-#define ARG2	(find_member_by_index(args, 2))
-#define ARG3	(find_member_by_index(args, 3))
-#define ARG4	(find_member_by_index(args, 4))
-#define ARG(n)	(find_member_by_index(args, n))
-
 
 /* Macros for interrupt handling */
 
