@@ -698,7 +698,10 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 		    int actual;
 		    fd_set inputs;
 		    bool done_out = FALSE, done_err = FALSE, exited = FALSE;
-		    int interrupt_count = 0, post_exit_count = 0;
+		    int interrupt_count = 0;
+#ifdef KLUDGE_SYNCHRONOUS_OUTPUT
+		    int post_exit_count = 0;
+#endif
 
 		    FD_ZERO(&inputs);
 		    FD_SET(pr->pr_Stdout, &inputs);
@@ -784,6 +787,12 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 				}
 			    }
 			}
+#ifdef KLUDGE_SYNCHRONOUS_OUTPUT
+			/* This still doesn't work. The best way to
+			   solve this problem is to move the onus to
+			   the caller. If a command is called which
+			   spawns on its streams, they should be
+			   redirected somewhere safe beforehand. */
 
 			/* The next two statements are a bit kludgey.
 
@@ -804,6 +813,7 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 				      &pr->pr_ExitStatus,
 				      WNOHANG) == pr->pr_Pid)
 			    exited = TRUE;
+#endif
 		    }
 		    if(!exited)
 			waitpid(pr->pr_Pid, &pr->pr_ExitStatus, 0);
