@@ -1,3 +1,8 @@
+1998-09-08  John Harper  <john@dcs.warwick.ac.uk>
+
+	* ispell.jl: first attempt at interacting with Ispell,
+	currently two commands `ispell-region' and `ispell-buffer'
+
 1998-09-07  John Harper  <john@dcs.warwick.ac.uk>
 
 	* info.jl (info-highlight-buffer): end highlighted menu entries

@@ -220,4 +220,6 @@
 (autoload 'diff-auto-save "diff" t)
 (autoload 'diff-buffers "diff" t)
 (autoload 'diff-display "diff")
+(autoload 'ispell-region "ispell" t)
+(autoload 'ispell-buffer "ispell" t)
 ;;; ::autoload-end::
