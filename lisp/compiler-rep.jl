@@ -75,7 +75,14 @@
 
 ;;; pass 1 support
 
-  (defun pass-1 (form)
+  (defun pass-1 (forms)
+    (let loop ((rest forms)
+	       (out '()))
+      (if (null rest)
+	  (nreverse out)
+	(loop (cdr rest) (cons (do-pass-1 (car rest)) out)))))
+
+  (defun do-pass-1 (form)
     (unless (or (memq (car form) top-level-unexpanded)
 		(memq (car form) top-level-compiled))
       (setq form (compiler-macroexpand
@@ -127,7 +134,7 @@
 	 (eval (nth 1 form))))
 
       ((progn)
-       (setq form (cons 'progn (mapcar pass-1 (cdr form))))))
+       (setq form (cons 'progn (mapcar do-pass-1 (cdr form))))))
 
     form)
 
@@ -136,23 +143,18 @@
 
 ;;; pass 2 support
 
-  (defun pass-2 (form)
-    (cond ((eq (car form) 'progn)
-	   (setq form (cons 'progn (mapcar pass-2 (cdr form)))))
-	  ((memq (car form) top-level-unexpanded)
-	   (setq form (compile-top-level-form form)))
-	  ((memq (car form) top-level-compiled)
-	   (setq form (compile-form form))))
-    form)
+  (defun pass-2 (forms)
+    (let loop ((rest forms)
+	       (out '()))
+      (if (null rest)
+	  (nreverse out)
+	(loop (cdr rest) (cons (do-pass-2 (car rest)) out)))))
 
-  (put 'rep 'compiler-pass-2 pass-2)
-
-  ;; Compile a form which occurred at the `top-level' into a byte code form.
-  ;; defuns, defmacros, defvars, etc... are treated specially.
-  ;; require forms are evaluated before being output uncompiled; this is so
-  ;; any macros are brought in before they're used.
-  (defun compile-top-level-form (form)
+  (defun do-pass-2 (form)
     (case (car form)
+      ((progn)
+       (cons 'progn (mapcar do-pass-2 (cdr form))))
+
       ((defun)
        (let ((tmp (assq (nth 1 form) (fluid macro-env))))
 	 (let-fluids ((current-fun (nth 1 form)))
@@ -230,7 +232,11 @@
 
       ((eval-when-compile) nil)
 
-      (t form)))
+      (t (if (memq (car form) top-level-compiled)
+	     (compile-form form)
+	   form))))
+
+  (put 'rep 'compiler-pass-2 pass-2)
 
 
 ;;; Source code transformations. These are basically macros that are only
