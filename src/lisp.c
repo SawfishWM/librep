@@ -807,7 +807,10 @@ rep_readl(repv strm, register int *c_p)
 		    repv vec = read_vector(strm, c_p);
 		    if(vec != rep_NULL)
 		    {
-			if(rep_VECT_LEN(vec) >= rep_COMPILED_MIN_SLOTS)
+			if(rep_VECT_LEN(vec) >= rep_COMPILED_MIN_SLOTS
+			   && rep_STRINGP (rep_COMPILED_CODE (vec))
+			   && rep_VECTORP (rep_COMPILED_CONSTANTS (vec))
+			   && rep_INTP (rep_COMPILED_STACK (vec)))
 			{
 			    rep_COMPILED(vec)->car = (rep_COMPILED(vec)->car
 						   & ~rep_CELL8_TYPE_MASK)
@@ -1537,6 +1540,7 @@ again:
 	result = rep_NULL;
 
 end:
+    assert (result != rep_NULL || rep_throw_value != rep_NULL);
     rep_POP_CALL(lc);
     rep_POPGC; rep_POPGC; rep_POPGC;
     rep_lisp_depth--;
