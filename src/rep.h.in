@@ -55,10 +55,6 @@ typedef int rep_bool;
    changing on 64-bit machines.. */
 #undef rep_PTR_SIZED_INT_BITS
 
-/* If you define this statically allocated Lisp strings will be
-   coded in GCC's asm statement to allow better code generation. */
-#undef rep_INLINE_STATIC_STRINGS
-
 
 /* Other public includes */
 
