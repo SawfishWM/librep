@@ -928,10 +928,10 @@ rep_readl(repv strm, register int *c_p)
 		}
 		/* fall through */
 
-	    case 't':
-	    case 'f':
+	    case 't': case 'T':
+	    case 'f': case 'F':
 		init_scm_booleans ();
-		form = (*c_p == 't') ? rep_scm_t : rep_scm_f;
+		form = (tolower (*c_p) == 't') ? rep_scm_t : rep_scm_f;
 		*c_p = rep_stream_getc (strm);
 		return form;
 
