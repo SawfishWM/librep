@@ -244,6 +244,51 @@ See also `setq'. Returns the value of the last FORM."
 
 ;; Misc syntax
 
+;; I could have written this using named let, but since rep currently
+;; doesn't have a tail-recursive interpreter (only a compiler), using
+;; `while' may be more useful..
+(defmacro do (vars test . body)
+  "do VARS (TEST EXPR...) BODY...
+
+`do' is an iteration construct; VARS specifies a set of variable
+bindings to be created, how they are initialized and how they are
+updated on each iteration. TEST specifies the termination condition of
+the loop, any EXPR... forms are evaluated immediately prior to exiting
+the `do' construct. The BODY... forms specify the side effecting body
+of the loop.
+
+VARS is a list of variable clauses, each of which has the structure
+`(VARIABLE INIT STEP)' where VARIABLE is the name of a variable, INIT
+defines the initial value of its binding, and STEP defines how the next
+value of the binding is computed. An alternative form is `(VARIABLE
+INIT)', in this case the value of the binding does not change across
+loop iterations.
+
+Each iteration begins by evaluating TEST, if the result is `nil', then
+the BODY... expressions are evaluated, and the variables bound to new
+locations initialized to the results of evaluating the associated STEP
+forms.
+
+If the result of evaluating TEST is non-`nil' then the EXPR... forms
+are evaluated, and the `do' construct returns the value of the last
+EXPR form evaluated.
+
+(do ((vec (make-vector 5))
+     (i 0 (1+ i)))
+    ((= i 5) vec)
+  (aset vec i i)) => [0 1 2 3 4]"
+
+  (let ((tem (gensym)))
+    `(let ,tem ,(mapcar (lambda (var)
+			  (list (car var) (cadr var))) vars)
+       (if ,(car test)
+	   (progn ,@(cdr test))
+	 ,@body
+	 (,tem ,@(mapcar (lambda (var)
+			   (if (cddr var)
+			       (caddr var)
+			     (car var))) vars))))))
+
 (defmacro prog2 args
   "prog2 FORM1 FORM2 [FORMS...]
 
