@@ -37,12 +37,13 @@ SDBM_OBJS = $(SDBM_SRCS:.c=.o)
 SDBM_LOBJS = $(SDBM_SRCS:.c=.lo)
 
 DL_SRCS = repsdbm.c timers.c gettext.c readline.c tables.c repgdbm.c \
-	  record-profile.c safemach.c
+	  record-profile.c safemach.c sockets.c
 DL_OBJS = sdbm.la timers.la gettext.la readline.la tables.la gdbm.la \
-	  record-profile.la safe-interpreter.la
+	  record-profile.la safe-interpreter.la sockets.la
 DL_DSTS = rep/io/db/sdbm.la rep/io/timers.la rep/i18n/gettext.la \
 	  rep/io/readline.la rep/data/tables.la rep/io/db/gdbm.la \
-	  rep/lang/record-profile.la rep/vm/safe-interpreter.la
+	  rep/lang/record-profile.la rep/vm/safe-interpreter.la \
+	  rep/io/sockets.la
 DL_DIRS = rep rep/io rep/io/db rep/i18n rep/data rep/lang rep/vm
 
 REP_SRCS = rep.c
@@ -136,6 +137,10 @@ readline.la : readline.lo
 	 $^ $(READLINE_LIBS) -rpath $(repexecdir)
 
 safe-interpreter.la : safemach.lo
+	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -avoid-version -module -o $@ \
+	 $^ -rpath $(repexecdir)
+
+sockets.la : sockets.lo
 	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -avoid-version -module -o $@ \
 	 $^ -rpath $(repexecdir)
 

@@ -631,6 +631,7 @@ extern u_long rep_time(void);
 extern rep_long_long rep_utime (void);
 extern void (*rep_register_input_fd_fun)(int fd, void (*callback)(int fd));
 extern void (*rep_deregister_input_fd_fun)(int fd);
+extern void rep_add_event_loop_callback (rep_bool (*callback)(void));
 extern void rep_sleep_for(long secs, long msecs);
 extern void rep_register_input_fd(int fd, void (*callback)(int fd));
 extern void rep_deregister_input_fd(int fd);
