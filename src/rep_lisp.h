@@ -710,7 +710,9 @@ struct Lisp_Call {
    in the documentation file. */
 #define DEFUN(name,fsym,ssym,args,type,docindex)			\
     DEFSTRING(CONCAT(ssym, __name), name);				\
-    Lisp_XSubr ALIGN_CELL ssym = { type, fsym, LISP_NULL,		\
+    extern VALUE fsym args;						\
+    Lisp_XSubr ALIGN_CELL ssym = { type, fsym,				\
+				   VAL(&CONCAT(ssym, __name)),		\
 				   MAKE_INT(docindex), LISP_NULL }; 	\
     VALUE fsym args
 
@@ -718,24 +720,18 @@ struct Lisp_Call {
 #define DEFUN_INT(name,fsym,ssym,args,type,docindex,interactive)	\
     DEFSTRING(CONCAT(ssym, __name), name);				\
     DEFSTRING(CONCAT(ssym, __int), interactive);			\
-    Lisp_XSubr ALIGN_CELL ssym = { type, fsym, LISP_NULL,		\
-				   MAKE_INT(docindex), LISP_NULL };	\
+    extern VALUE fsym args;						\
+    Lisp_XSubr ALIGN_CELL ssym = { type, fsym,				\
+				   VAL(&CONCAT(ssym, __name)), 		\
+				   MAKE_INT(docindex),			\
+				   VAL(&CONCAT(ssym, __int)) };		\
     VALUE fsym args
 
 /* Add a subroutine */    
-#define ADD_SUBR(subr) 				\
-    do {					\
-	subr.name = VAL(&CONCAT(subr, __name));	\
-	add_subr(&subr);			\
-    } while (0)
+#define ADD_SUBR(subr) add_subr(&subr)
 
 /* Add an interactive subroutine */    
-#define ADD_SUBR_INT(subr)				\
-    do {						\
-	subr.name = VAL(&CONCAT(subr, __name));		\
-	subr.int_spec = VAL(&CONCAT(subr, __int));	\
-	add_subr(&subr);				\
-    } while (0)
+#define ADD_SUBR_INT(subr) ADD_SUBR(subr)
 
 /* Declare a symbol stored in variable sym_X. */
 #define DEFSYM(x, name) \
