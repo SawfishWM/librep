@@ -1185,18 +1185,6 @@ that files which shouldn't be compiled aren't."
 ;; Source code transformations. These are basically macros that are only
 ;; used at compile-time.
 
-(defun comp-trans-setq-default (form)
-  (let
-      (lst)
-    (setq form (cdr form))
-    (while form
-      (unless (consp (cdr form))
-	(comp-error "Odd number of args to setq-default"))
-      (setq lst (cons `(set-default ',(car form) ,(nth 1 form)) lst))
-      (setq form (nthcdr 2 form)))
-    (cons 'progn (nreverse lst))))
-(put 'setq-default 'compile-transform comp-trans-setq-default)
-
 (defun comp-trans-setq (form)
   (let
       (lst)
