@@ -90,13 +90,13 @@ COMPILE_ENV = REPLISPDIR=$(top_builddir)/lisp \
 
 # Rule for libtool controlled C objects
 %.lo : %.c
-	$(LIBTOOL) $(CC) -c $(CPPFLAGS) $(CFLAGS) $<
+	$(LIBTOOL) --mode=compile $(CC) -c $(CPPFLAGS) $(CFLAGS) $<
 
 # Rule for dlopen'able C objects
 %.la : %.c
-	$(LIBTOOL) $(CC) -c $(CPPFLAGS) $(CFLAGS) $<
-	$(LIBTOOL) $(CC) -avoid-version -module $(CPPFLAGS) $(CFLAGS) \
-	  -o $@ $*.lo -rpath $(repexecdir)
+	$(LIBTOOL) --mode=compile $(CC) -c $(CPPFLAGS) $(CFLAGS) $<
+	$(LIBTOOL) --mode=link $(CC) -avoid-version -module $(CPPFLAGS) \
+	  $(CFLAGS) -o $@ $*.lo -rpath $(repexecdir)
 
 # Build dependancy files from C source files.
 .%.d : %.c
