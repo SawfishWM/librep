@@ -19,16 +19,22 @@
 ;;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 (defun rep ()
-  (while t
-    (condition-case error-data
-	(progn
-	  (write standard-output "? ")
-	  (flush-file standard-output)
-	  (format standard-output " => %S\n" (eval (read standard-input))))
-      (end-of-stream
-       (throw 'quit 0))
-      (error
-       (format standard-output "error--> %S\n" error-data)))))
+  (let
+      (input)
+    (while t
+      (write standard-output (if input "> " "rep? "))
+      (when (filep standard-output)
+	(flush-file standard-output))
+      (setq input (concat input (read-line standard-input)))
+      (condition-case data
+	  (progn
+	    (format standard-output "%S\n" (eval (read-from-string input)))
+	    (setq input nil))
+	(end-of-stream
+	 (unless (and input (not (string= "" input)))
+	   (throw 'quit 0)))
+	(error
+	 (format standard-output "error--> %S\n" data))))))
 
 (fset 'recursive-edit (symbol-function 'rep))
 
