@@ -27,8 +27,10 @@
 	    make-repl
 	    repl-struct
 	    repl-pending
+	    repl-eval
 	    repl-iterate
-	    repl-completions)
+	    repl-completions
+	    define-repl-command)
 
     (open rep
 	  rep.structures
