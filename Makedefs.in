@@ -88,7 +88,7 @@ HAVE_UNIX=@HAVE_UNIX@
 # Rule for dlopen'able C objects
 lib%.la : %.c
 	$(LIBTOOL) $(CC) -c $(CPPFLAGS) $(CFLAGS) $<
-	$(LIBTOOL) gcc -export-dynamic -module $(CPPFLAGS) $(CFLAGS) \
+	$(LIBTOOL) gcc -module $(CPPFLAGS) $(CFLAGS) \
 	  -o $@ $*.lo -rpath $(repexecdir)
 
 # Build dependancy files from C source files.
