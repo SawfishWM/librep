@@ -184,7 +184,7 @@
 			      (comp-lexically-pure t)
 			      (comp-lambda-name name)
 			      (comp-lambda-args args))
-			   (comp-note-bindings vars)
+			   (comp-note-bindings (reverse vars))
 			   (compile-form (cons (or sequencer 'progn) body))))
 	  (make-byte-code-subr args (nth 1 form) (nth 2 form) (nth 3 form)
 			       (and (not comp-write-docs) doc) interactive))))))
