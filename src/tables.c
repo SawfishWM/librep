@@ -31,7 +31,7 @@
 # include <memory.h>
 #endif
 
-typedef rep_PTR_SIZED_INT hash_value;
+typedef unsigned rep_PTR_SIZED_INT hash_value;
 
 typedef struct node_struct node;
 struct node_struct {
@@ -133,11 +133,11 @@ table_print (repv stream, repv arg)
 
 /* hash functions */
 
-static inline repv
+static inline hash_value
 hash_string (register u_char *ptr)
 {
-    register u_long value = 0;
-    while(*ptr != 0)
+    register hash_value value = 0;
+    while (*ptr != 0)
 	value = (value * 33) + *ptr++;
     return rep_MAKE_INT (TRUNC (value));
 }
@@ -156,7 +156,8 @@ DEFUN("symbol-hash", Fsymbol_hash, Ssymbol_hash, (repv sym), rep_Subr1)
 
 DEFUN("eq-hash", Feq_hash, Seq_hash, (repv value), rep_Subr1)
 {
-    return rep_MAKE_INT (TRUNC (value));
+    hash_value hv = value;
+    return rep_MAKE_INT (TRUNC (hv));
 }
 
 /* XXX This is probably _very_ sub-optimal.. */
@@ -176,7 +177,7 @@ DEFUN("equal-hash", Fequal_hash, Sequal_hash, (repv x, repv n_), rep_Subr2)
     }
     else if (rep_VECTORP (x) || rep_COMPILEDP (x))
     {
-	repv hash = 0;
+	hash_value hash = 0;
 	int i = MIN (n, rep_VECT_LEN (x));
 	while (i-- > 0)
 	{
@@ -190,9 +191,15 @@ DEFUN("equal-hash", Fequal_hash, Sequal_hash, (repv x, repv n_), rep_Subr2)
     else if (rep_SYMBOLP (x))
 	return Fsymbol_hash (x);
     else if (rep_INTP (x))
-	return rep_MAKE_INT (TRUNC (rep_INT (x)));
+    {
+	hash_value hash = rep_INT (x);
+	return rep_MAKE_INT (TRUNC (hash));
+    }
     else if (rep_NUMBERP (x))
-	return rep_MAKE_INT (TRUNC (rep_get_long_uint (x)));
+    {
+	hash_value hash = rep_get_long_uint (x);
+	return rep_MAKE_INT (TRUNC (hash));
+    }
     else
 	return rep_MAKE_INT (rep_TYPE (x) * 255);
 }
