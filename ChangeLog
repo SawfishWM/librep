@@ -1,3 +1,10 @@
+2000-07-15  John Harper  <john@dcs.warwick.ac.uk>
+
+	* configure.in: added `--without-gmp' and
+	`--disable-continuations' options
+
+	* config.h.in: added HAVE_STRTOLL, WITH_GMP, WITH_CONTINUATIONS
+
 2000-07-13  John Harper  <john@dcs.warwick.ac.uk>
 
 	* configure.in: redirect stderr to /dev/null when trying to run

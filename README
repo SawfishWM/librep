@@ -74,3 +74,22 @@ at runtime, the libraries they wrap must also be shared libraries on
 most systems. This means that the installed libgdm must be shared, and
 if compiling with readline support, so must libreadline
 
+
+cut-down version
+----------------
+
+The configure script accepts the following options to build restricted
+versions of librep. The resulting library is binary-compatible with the
+normal version.
+
+  --without-gmp
+
+    Don't use GNU MP for bignums. Use `long long' as biggest integer
+    type (if available, else just `long'). No support for exact
+    rationals, thus (/ 1 2) => 0.5 not 1/2
+
+  --disable-continuations
+
+    Don't include support for call/cc or multi-threading. This may be
+    useful for machines with non-linear stacks (old crays?)
+

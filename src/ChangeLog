@@ -1,3 +1,53 @@
+2000-07-16  John Harper  <john@dcs.warwick.ac.uk>
+
+	* numbers.c: check for overflow when using rep_longlong as
+	makeshift bignums. Convert to flonums when they overflow
+
+2000-07-15  John Harper  <john@dcs.warwick.ac.uk>
+
+	Work to allow alternative bytecode interpreters to be used:
+
+	* lisp.c (rep_bytecode_interpreter): deleted
+
+	* structures.c (F_make_structure): inherit `apply_bytecode'
+	field from current structure (or use default bytecode
+	interpreter if no current structure)
+	(F_structure_install_vm): new function
+
+	* lispmach.c (vm): when calling bytecode, check if calling the
+	same virtual machine or a different one
+	(Frun_byte_code): when called with a structure as first arg,
+	install the vm into that structure
+
+	* repint.h (rep_struct): moved `exclusion' and `export_all'
+	flags into the car. Added `apply_bytecode' field -- the
+	bytecode interpreter to use for functions with this structure
+	in their closure
+	(rep_USE_FUNARG, rep_USE_DEFAULT_ENV, rep_PUSH_CALL,
+	rep_POP_CALL): don't need to handle bytecode interpreter now
+
+	* rep_lisp.h (rep_FF_NO_BYTE_CODE): deleted
+
+	* symbols.c (Fmake_closure): don't set NO_BYTE_CODE flag
+
+2000-07-15  John Harper  <john@dcs.warwick.ac.uk>
+
+	* symbols.c (symbol_print): stop `+' and `-' symbols being
+	escaped
+
+	* Makefile.in: make rep-config depend on Makefile
+
+	* lisp.c (rep_call_lispn): was checking for
+	`rep_bytecode_interpreter == 0' too early
+
+	* continuations.c: only include call/cc and threading if
+	preprocessor macro `WITH_CONTINUATIONS' is defined
+
+	* numbers.c: only include bignum/rational support if
+	preprocessor macro `WITH_GMP' is defined. Else use `long long'
+	for non-fixnum integers, and flonums for everything else.
+	(Doesn't check for overflow from long long)
+
 2000-07-14  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lispcmds.c (Fraise_exception): this replaces Fthrow as most

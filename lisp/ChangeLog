@@ -1,3 +1,11 @@
+2000-07-16  John Harper  <john@dcs.warwick.ac.uk>
+
+	* gaol.jl (gaol-safe-functions): added more safe functions
+
+2000-07-15  John Harper  <john@dcs.warwick.ac.uk>
+
+	* gaol.jl (make-gaol): install a null virtual machine
+
 2000-07-14  John Harper  <john@dcs.warwick.ac.uk>
 
 	* compiler-utils.jl (declare-inline): handler for `(declare
