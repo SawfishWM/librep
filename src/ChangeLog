@@ -1,3 +1,20 @@
+2000-07-21  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_files.c (rep_structure_file): new function, do the
+	structure-name -> file-name conversion (currently: `tr . /')
+
+	* structures.c (Fintern_structure): convert the structure name
+	to a file name before trying to load it
+
+	* structures.c: renamed all the %foo functions as foo (except
+	for %structure-ref, since it may return #<void>). Updated all
+	callers
+
+	* structures.c (rep_alias_structure): new function, create an
+	extra name for the current structure
+	(rep_push_structure_name): new version of rep_push_structure
+	that accepts a lisp string or symbol
+
 2000-07-20  John Harper  <john@dcs.warwick.ac.uk>
 
 	* version 0.12.4

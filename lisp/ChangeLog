@@ -1,3 +1,17 @@
+2000-07-21  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep-repl.jl, rep-packages.jl, init.jl, gaol.jl,
+	symbol-table.jl: updated for removal of `%' from some function
+	names
+
+	* init.jl (define-structure-alias): new macro
+
+	* compiler.jl, compiler-utils.jl, compiler-scheme.jl,
+	compiler-rep.jl, compiler-opt.jl, compiler-modules.jl,
+	compiler-inline.jl, compiler-basic.jl: reorganized some modules
+
+	* compiler.jl (compile-directory): Recurse into subdirectories
+
 2000-07-20  John Harper  <john@dcs.warwick.ac.uk>
 
 	* version 0.12.4

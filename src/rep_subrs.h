@@ -496,16 +496,15 @@ extern repv Vobarray(repv val);
 
 /* from structures.c */
 extern repv rep_structure;
-extern repv Fstructure_ref (repv, repv);
-extern repv F_structure_name (repv);
-extern repv F_structurep (repv);
 extern repv Fmake_binding_immutable (repv);
 extern repv Fbinding_immutable_p (repv, repv);
 extern repv Ffeaturep(repv);
 extern repv Fprovide(repv);
 extern repv Frequire(repv);
+extern repv rep_push_structure_name (repv name);
 extern repv rep_push_structure (const char *name);
 extern repv rep_pop_structure (repv old);
+extern void rep_alias_structure (repv name);
 extern repv rep_add_subr(rep_xsubr *, rep_bool);
 extern void rep_structure_exports_all (repv s, rep_bool status);
 

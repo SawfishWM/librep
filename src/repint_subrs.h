@@ -100,12 +100,12 @@ extern void rep_streams_init(void);
 /* from structures.c */
 extern repv rep_default_structure, rep_specials_structure;
 extern rep_struct_node *rep_search_imports (rep_struct *s, repv var);
-extern repv F_make_structure (repv, repv, repv, repv);
+extern repv Fmake_structure (repv, repv, repv, repv);
 extern repv F_structure_ref (repv, repv);
-extern repv F_structure_set (repv, repv, repv);
-extern repv F_structure_bound_p (repv, repv);
-extern repv F_external_structure_ref (repv, repv);
-extern repv F_intern_structure (repv);
+extern repv Fstructure_set (repv, repv, repv);
+extern repv Fstructure_bound_p (repv, repv);
+extern repv Fexternal_structure_ref (repv, repv);
+extern repv Fintern_structure (repv);
 extern repv rep_get_initial_special_value (repv sym);
 extern void rep_pre_structures_init (void);
 extern void rep_structures_init (void);
@@ -139,6 +139,9 @@ extern void rep_dumped_init(char *file);
 extern repv rep_open_dl_library(repv file_name);
 extern void rep_mark_dl_data(void);
 extern void rep_kill_dl_libraries(void);
+
+/* from unix_files.c */
+extern repv rep_structure_file (repv in);
 
 /* from unix_main.c */
 extern repv rep_user_login_name(void);
