@@ -1352,10 +1352,13 @@ Evaluates FORM and returns its value.
 	if(dbargs)
 	{
 	    GC_root gc_dbargs;
+	    struct saved_regexp_data re_data;
 	    PUSHGC(gc_dbargs, dbargs);
+	    push_regexp_data(&re_data);
 	    single_step_flag = FALSE;
-	    if((dbres = funcall(sym_debug_entry, dbargs, FALSE))
-	       && CONSP(dbres))
+	    dbres = funcall(sym_debug_entry, dbargs, FALSE);
+	    pop_regexp_data();
+	    if (dbres != LISP_NULL && CONSP(dbres))
 	    {
 		switch(VINT(VCAR(dbres)))
 		{
@@ -1385,9 +1388,11 @@ Evaluates FORM and returns its value.
 		{
 		    if(VSYM(sym_debug_exit)->function)
 		    {
+			push_regexp_data(&re_data);
 			VCAR(dbargs) = result;
 			if(!(dbres = funcall(sym_debug_exit, dbargs, FALSE)))
 			    result = LISP_NULL;
+			pop_regexp_data();
 		    }
 		}
 	    }
