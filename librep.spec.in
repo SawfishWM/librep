@@ -11,6 +11,7 @@ Packager: John Harper <john@dcs.warwick.ac.uk>
 Buildroot: /var/tmp/%{name}-root
 BuildPrereq: gmp-devel gdbm-devel readline-devel texinfo
 PreReq: /sbin/install-info
+Requires: gdbm >= 1.8
 
 %description
 This is a lightweight Lisp environment for UNIX. It contains a Lisp
@@ -80,6 +81,7 @@ fi
 %{_libexecdir}/rep/%{_target_platform}/libtool
 %{_libexecdir}/rep/%{_target_platform}/rules.mk
 %{_libexecdir}/rep/%{_target_platform}/install-aliases
+%{_libexecdir}/rep/%{_target_platform}/rep_config.h
 %{_datadir}/aclocal/rep.m4
 
 %changelog
