@@ -1,3 +1,14 @@
+1998-10-02  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rcs.jl (rcs-call-callback): don't truncate the log message at
+	the cursor position, use all the buffer (less any trailing
+	newlines) 
+
+	* buffers.jl (read-file-into-buffer): assume that the
+	read-file-hook, if successful, sets default-directory
+	* gzip.jl, dired-hooks.jl: the functions put in the
+	read-file-hook now set the default-directory
+
 1998-10-01  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rcs.jl (rcs-process, rcs-output-buffer): deleted these
