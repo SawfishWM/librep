@@ -87,6 +87,20 @@ rep_time(void)
     return time(0);
 }
 
+rep_long_long
+rep_utime (void)
+{
+    rep_long_long t;
+#ifdef HAVE_GETTIMEOFDAY
+    struct timeval time;
+    gettimeofday (&time, 0);
+    t = ((rep_long_long) time.tv_sec * 1000000) + time.tv_usec;
+#else
+    t = (rep_long_long) rep_time () * 1000000;
+#endif
+    return t;
+}
+
 void
 rep_sleep_for(long secs, long msecs)
 {
