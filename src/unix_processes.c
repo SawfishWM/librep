@@ -163,6 +163,7 @@ DEFSTRING(dev_null, "/dev/null");
 DEFSTRING(dot, ".");
 DEFSTRING(not_local, "Need a local file");
 DEFSTRING(forkstr, "fork");
+DEFSTRING(nosig, "Unknown signal");
 
 
 
@@ -1278,6 +1279,175 @@ PROCESS.
     return(res);
 }
 
+DEFUN("signal-process", Fsignal_process, Ssignal_process,
+      (repv proc, repv sig, repv grp), rep_Subr3) /*
+::doc:Ssignal_process::
+signal-process PROCESS SIGNAL [SIGNAL-GROUP]
+
+Sends the signal SIGNAL to the process PROCESS. If SIGNAL-GROUP is
+non-nil also continues the processes in the process group of PROCESS.
+
+PROCESS may be either a Lisp process object, or an integer giving the
+process-id of a process (not necessarily started by rep).
+
+SIGNAL may either be a numeric signal, or a symbol naming a signal, i.e.
+the symbol `INT' for the UNIX SIGINT signal.
+::end:: */
+{
+    static const struct {
+	const char *name;
+	int sig;
+    } signals[] = {
+#ifdef SIGFPE
+	{ "FPE", SIGFPE },
+#endif
+#ifdef SIGILL
+	{ "ILL", SIGILL },
+#endif
+#ifdef SIGSEGV
+	{ "SEGV", SIGSEGV },
+#endif
+#ifdef SIGBUS
+	{ "BUS", SIGBUS },
+#endif
+#ifdef SIGABRT
+ 	{ "ABRT", SIGABRT },
+#endif
+#ifdef SIGIOT
+	{ "IOT", SIGIOT },
+#endif
+#ifdef SIGTRAP
+	{ "TRAP", SIGTRAP },
+#endif
+#ifdef SIGEMT
+	{ "EMT", SIGEMT },
+#endif
+#ifdef SIGSYS
+	{ "SYS", SIGSYS },
+#endif
+#ifdef SIGTERM
+	{ "TERM", SIGTERM },
+#endif
+#ifdef SIGINT
+	{ "INT", SIGINT },
+#endif
+#ifdef SIGQUIT
+	{ "QUIT", SIGQUIT },
+#endif
+#ifdef SIGKILL
+	{ "KILL", SIGKILL },
+#endif
+#ifdef SIGHUP
+	{ "HUP", SIGHUP },
+#endif
+#ifdef SIGALRM
+	{ "ALRM", SIGALRM },
+#endif
+#ifdef SIGVTALRM
+	{ "VTALRM", SIGVTALRM },
+#endif
+#ifdef SIGPROF
+	{ "PROF", SIGPROF },
+#endif
+#ifdef SIGIO
+	{ "IO", SIGIO },
+#endif
+#ifdef SIGURG
+	{ "URG", SIGURG },
+#endif
+#ifdef SIGPOLL
+	{ "POLL", SIGPOLL },
+#endif
+#ifdef SIGCHLD
+	{ "CHLD", SIGCHLD }, { "CLD", SIGCHLD },
+#endif
+#ifdef SIGCONT
+	{ "CONT", SIGCONT },
+#endif
+#ifdef SIGSTOP
+	{ "STOP", SIGSTOP },
+#endif
+#ifdef SIGTSTP
+	{ "TSTP", SIGTSTP },
+#endif
+#ifdef SIGTTIN
+	{ "TTIN", SIGTTIN },
+#endif
+#ifdef SIGTTOU
+	{ "TTOU", SIGTTOU },
+#endif
+#ifdef SIGPIPE
+	{ "PIPE", SIGPIPE },
+#endif
+#ifdef SIGLOST
+	{ "LOST", SIGLOST },
+#endif
+#ifdef SIGXCPU
+	{ "XCPU", SIGXCPU },
+#endif
+#ifdef SIGXFSZ
+	{ "XFSZ", SIGXFSZ },
+#endif
+#ifdef SIGUSR1
+	{ "USR1", SIGUSR1 },
+#endif
+#ifdef SIGUSR2
+	{ "USR2", SIGUSR2 },
+#endif
+#ifdef SIGWINCH
+	{ "WINCH", SIGWINCH },
+#endif
+#ifdef SIGINFO
+	{ "INFO", SIGINFO },
+#endif
+	{ 0 }
+    };
+
+    int signal = -1;
+
+    rep_DECLARE(1, proc, PROCESSP(proc) || rep_INTP(proc));
+    rep_DECLARE(2, sig, rep_INTP(sig) || rep_SYMBOLP(sig));
+
+    if (rep_INTP(sig))
+	signal = rep_INT(sig);
+    else
+    {
+	char *s = rep_STR(rep_SYM(sig)->name);
+	int i;
+	for (i = 0; signals[i].name != 0; i++)
+	{
+	    if (strcmp (s, signals[i].name) == 0)
+	    {
+		signal = signals[i].sig;
+		break;
+	    }
+	}
+	if (signal == -1)
+	    return Fsignal (Qerror, rep_list_2 (rep_VAL(&nosig), sig));
+    }
+
+    if (rep_INTP(proc) && rep_INT(proc) > 0)
+    {
+	struct Proc *pr = process_chain;
+	while (pr != 0 && pr->pr_Pid != rep_INT(proc))
+	    pr = pr->pr_Next;
+	if (pr != 0)
+	    proc = rep_VAL(pr);
+    }
+
+    if (PROCESSP(proc))
+	return do_signal_command (proc, signal, grp);
+    else
+    {
+	int r;
+	if (grp != Qnil)
+	    r = kill (- rep_INT(proc), signal);
+	else
+	    r = kill (rep_INT(proc), signal);
+	return (r == 0) ? Qt : Qnil;
+    }
+}
+
 DEFUN("process-exit-status", Fprocess_exit_status, Sprocess_exit_status, (repv proc), rep_Subr1) /*
 ::doc:Sprocess-exit-status::
 process-exit-status PROCESS
@@ -1696,6 +1866,7 @@ rep_proc_init(void)
     rep_ADD_SUBR(Skill_process);
     rep_ADD_SUBR(Sstop_process);
     rep_ADD_SUBR(Scontinue_process);
+    rep_ADD_SUBR(Ssignal_process);
     rep_ADD_SUBR(Sprocess_exit_status);
     rep_ADD_SUBR(Sprocess_exit_value);
     rep_ADD_SUBR(Sprocess_id);
