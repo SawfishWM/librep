@@ -37,7 +37,8 @@
 	    close-output-port
 
 	    read read-char peek-char eof-object?
-	    write display newline write-char load)
+	    write display newline write-char
+	    load %load-suffixes)
 
   ((open rep scheme-utils)
    (access rep))
@@ -154,12 +155,8 @@
     (rep#write (or port standard-output) #\newline))
 
   (define (write-char char &optional port)
-    (write (rep#or port standard-output) char))
+    (rep#write (rep#or port standard-output) char))
 
 ;;; system interface
-
-  (define (load filename)
-    ;; `t' arg means not to search load-path
-    (rep#load filename nil t))
 
   (setq %load-suffixes '(".scm" ".scmc")))
