@@ -52,11 +52,13 @@ char *alloca ();
 # define THREADED_VM 1
 #endif
 
+DEFSYM(run_byte_code, "run-byte-code");
 DEFSYM(bytecode_error, "bytecode-error");
-DEFSYM(jade_byte_code, "jade-byte-code");
 DEFSTRING(err_bytecode_error, "Invalid byte code version");
 DEFSTRING(unknown_op, "Unknown lisp opcode");
 
+static repv vm (repv code, repv consts, repv frame,
+		int v_stkreq, int b_stkreq);
 
 /* Helper functions
 
@@ -67,6 +69,13 @@ DEFSTRING(unknown_op, "Unknown lisp opcode");
 
    The speedup from this (_not_ inlining everything) is _huge_ */
 
+static inline repv
+list_tail (repv list, int n)
+{
+    while (n-- > 0)
+	list = rep_CDR (list);
+    return list;
+}
 
 /* Unbind one level of the BIND-STACK and return the new head of the stack.
    Each item in the BIND-STACK may be one of:
@@ -77,30 +86,34 @@ DEFSTRING(unknown_op, "Unknown lisp opcode");
 
    returns the number of dynamic bindings removed */
 static inline int
-inline_unbind_object(repv item)
+inline_unbind_object (repv item)
 {
-    if(rep_INTP(item))
+    if (rep_INTP (item))
     {
 	/* A set of symbol bindings (let or let*). */
-	return rep_unbind_symbols(item);
+	int lexicals = rep_LEX_BINDINGS (item);
+	int specials = rep_SPEC_BINDINGS (item);
+	rep_env = list_tail (rep_env, lexicals);
+	rep_special_bindings = list_tail (rep_special_bindings, specials);
+	return specials;
     }
-    if(rep_CONSP(item))
+    else if (rep_CONSP (item))
     {
-	if (rep_CAR(item) == Qerror)
+	if (rep_CAR (item) == Qerror)
 	    return 0;
 	else
 	{
-	    rep_type *t = rep_get_data_type(rep_TYPE(rep_CAR(item)));
+	    rep_type *t = rep_get_data_type (rep_TYPE (rep_CAR (item)));
 	    if (t->unbind != 0)
-		t->unbind(item);
+		t->unbind (item);
 	    return 1;
 	}
     }
     else
     {
-	rep_type *t = rep_get_data_type(rep_TYPE(item));
+	rep_type *t = rep_get_data_type (rep_TYPE (item));
 	if (t->unbind != 0)
-	    t->unbind(item);
+	    t->unbind (item);
 	return 1;
     }
 }
@@ -136,7 +149,7 @@ snap_environment (int count)
     register repv ptr = rep_env;
     while (count-- > 0)
 	ptr = rep_CDR(ptr);
-    return rep_CAR(ptr);
+    return ptr;
 }
 
 static repv
@@ -291,8 +304,8 @@ list_ref (repv list, int elt)
  &&TAG0(OP_SETQ), &&TAG0(OP_SETQ), &&TAG1(OP_SETQ), &&TAG2(OP_SETQ),				\
  &&TAG0(OP_LIST), &&TAG0(OP_LIST), &&TAG0(OP_LIST), &&TAG0(OP_LIST), /*28*/			\
  &&TAG0(OP_LIST), &&TAG0(OP_LIST), &&TAG1(OP_LIST), &&TAG2(OP_LIST),				\
- &&TAG0(OP_BIND), &&TAG0(OP_BIND), &&TAG0(OP_BIND), &&TAG0(OP_BIND), /*30*/			\
- &&TAG0(OP_BIND), &&TAG0(OP_BIND), &&TAG1(OP_BIND), &&TAG2(OP_BIND),				\
+ &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, /*30*/			\
+ &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT,				\
  &&TAG0(OP_REFN), &&TAG0(OP_REFN), &&TAG0(OP_REFN), &&TAG0(OP_REFN), /*38*/			\
  &&TAG0(OP_REFN), &&TAG0(OP_REFN), &&TAG1(OP_REFN), &&TAG2(OP_REFN),				\
 												\
@@ -301,7 +314,7 @@ list_ref (repv list, int elt)
  &&TAG(OP_POP), &&TAG(OP_NIL), &&TAG(OP_T), &&TAG(OP_CONS), /*48*/				\
  &&TAG(OP_CAR), &&TAG(OP_CDR), &&TAG(OP_RPLACA), &&TAG(OP_RPLACD),				\
  &&TAG(OP_NTH), &&TAG(OP_NTHCDR), &&TAG(OP_ASET), &&TAG(OP_AREF), /*50*/			\
- &&TAG(OP_LENGTH), &&TAG(OP_EVAL), &&TAG(OP_ADD), &&TAG(OP_NEG),				\
+ &&TAG(OP_LENGTH), &&TAG(OP_BIND), &&TAG(OP_ADD), &&TAG(OP_NEG),				\
  &&TAG(OP_SUB), &&TAG(OP_MUL), &&TAG(OP_DIV), &&TAG(OP_REM), /*58*/				\
  &&TAG(OP_LNOT), &&TAG(OP_NOT), &&TAG(OP_LOR), &&TAG(OP_LAND),					\
 												\
@@ -336,7 +349,7 @@ list_ref (repv list, int elt)
  &&TAG(OP_MAKE_CLOSURE), &&TAG(OP_UNBINDALL_0), &&TAG(OP_CLOSUREP), &&TAG(OP_POP_ALL),		\
 												\
  &&TAG(OP_FLUID_SET), &&TAG(OP_FLUID_BIND), &&TAG(OP_MEMQL), &&TAG(OP_NUM_EQ), /*C0*/		\
- &&TAG(OP_TEST_SCM), &&TAG(OP_TEST_SCM_F), &&TAG_DEFAULT, &&TAG_DEFAULT,					\
+ &&TAG(OP_TEST_SCM), &&TAG(OP_TEST_SCM_F), &&TAG_DEFAULT, &&TAG_DEFAULT,			\
  &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, /*C8*/				\
  &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT,					\
 												\
@@ -424,20 +437,53 @@ list_ref (repv list, int elt)
 
 DEFSTRING(max_depth, "max-lisp-depth exceeded, possible infinite recursion?");
 
-DEFUN("jade-byte-code", Fjade_byte_code, Sjade_byte_code,
-      (repv code, repv consts, repv stkreq, repv frame), rep_Subr4) /*
-::doc:jade-byte-code::
-jade-byte-code CODE-STRING CONST-VEC MAX-STACK [FRAME]
+static repv
+make_bytecode_frame (int lambda, int nargs, repv *args)
+{
+    repv env = rep_env;
+    int i;
 
-Evaluates the string of byte codes CODE-STRING, the constants that it
-references are contained in the vector CONST-VEC. MAX-STACK is a number
-defining how much stack space is required to evaluate the code.
+    int min_args = lambda & 0xfff;
+    int max_args = min_args + ((lambda >> 12) & 0xfff);
+    int rest_arg = lambda >> 24;
 
-Do *not* attempt to call this function manually, the lisp file `compiler.jl'
-contains a simple compiler which translates files of lisp forms into files
-of byte code. See the functions `compile-file', `compile-directory' and
-`compile-lisp-lib' for more details.
-::end:: */
+    if (nargs < min_args)
+	return Fsignal (Qmissing_arg, rep_LIST_1 (rep_MAKE_INT (nargs + 1)));
+
+    if (rest_arg)
+    {
+	repv tem = Qnil;
+	for (i = nargs - 1; i >= max_args; i--)
+	    tem = Fcons (args[i], tem);
+	env = Fcons (tem, env);
+    }
+
+    for (i = max_args - 1; i >= min_args; i--)
+	env = Fcons (i < nargs ? args[i] : Qnil, env);
+    for (i = min_args - 1; i >= 0; i--)
+	env = Fcons (args[i], env);
+
+    rep_env = env;
+    return rep_MAKE_INT (max_args + (rest_arg ? 1 : 0));
+}
+
+#define APPLY(subr, nargs, args)					\
+    vm (rep_COMPILED_CODE (subr), rep_COMPILED_CONSTANTS (subr),	\
+	make_bytecode_frame (rep_INT (rep_COMPILED_LAMBDA (subr)),	\
+			     nargs, args),				\
+	rep_INT (rep_COMPILED_STACK (subr)) & 0xffff,			\
+	rep_INT (rep_COMPILED_STACK (subr)) >> 16)
+
+repv
+rep_apply_bytecode (repv subr, int nargs, repv *args)
+{
+    assert (rep_COMPILEDP (subr));
+    assert (rep_INTP (rep_COMPILED_LAMBDA (subr)));
+    return APPLY (subr, nargs, args);
+}
+
+static repv
+vm (repv code, repv consts, repv frame, int v_stkreq, int b_stkreq)
 {
     rep_GC_root gc_code, gc_consts;
     /* The `gcv_N' field is only filled in with the stack-size when there's
@@ -448,7 +494,9 @@ of byte code. See the functions `compile-file', `compile-directory' and
        (including non-variable bindings). */
     int impurity;
 
-    rep_DECLARE3(stkreq, rep_INTP);
+    /* APPLY macro doesn't check this.. */
+    if (frame == rep_NULL)
+	return rep_NULL;
 
     if(++rep_lisp_depth > rep_max_lisp_depth)
     {
@@ -468,13 +516,13 @@ again_stack: {
 #if defined (__GNUC__)
     /* Using GCC's variable length auto arrays is better for this since
        the stack space is freed when leaving the containing scope */
-    repv stack[(rep_INT (stkreq) & 0xffff) + 1];
-    repv bindstack[(rep_INT (stkreq) >> 16) + 1];
+    repv stack[v_stkreq + 1];
+    repv bindstack[b_stkreq + 1];
 #else
     /* Otherwise just use alloca (). When tail-calling we'll only
        allocate a new stack if the current is too small. */
-    repv *stack = alloca(sizeof(repv) * ((rep_INT(stkreq) & 0xffff) + 1));
-    repv *bindstack = alloca(sizeof(repv) * ((rep_INT(stkreq) >> 16) + 1));
+    repv *stack = alloca(sizeof(repv) * (v_stkreq + 1));
+    repv *bindstack = alloca(sizeof(repv) * (b_stkreq + 1));
 #endif
 
     /* Make sure that even when the stack has no entries, the TOP
@@ -652,23 +700,14 @@ again:
 		tmp2 = Qnil;
 		if (rep_CONSP(tmp))
 		{
+		    /* a call to intepreted code, just cons up the args
+		       and send it to the interpreter.. */
 		    POPN(-arg);
 		    while (arg--)
 			tmp2 = Fcons (RET_POP, tmp2);
-		    lc.args = tmp2;
-		    if(was_closed && rep_CAR(tmp) == Qlambda)
-			TOP = rep_eval_lambda(tmp, tmp2, rep_FALSE, rep_FALSE);
-		    else if(rep_CAR(tmp) == Qautoload)
-		    {
-			/* I can't be bothered to go to all the hassle
-			   of doing this here, it's going to be slow
-			   anyway so just pass it to rep_funcall.  */
-			rep_POP_CALL(lc);
-			TOP = rep_funcall(TOP, tmp2, rep_FALSE);
-			NEXT;
-		    }
-		    else
-			goto invalid;
+		    rep_POP_CALL (lc);
+		    TOP = rep_funcall(TOP, tmp2, rep_FALSE);
+		    NEXT;
 		}
 		else if (was_closed && rep_COMPILEDP(tmp))
 		{
@@ -679,16 +718,7 @@ again:
 
 		    if (impurity != 0 || *pc != OP_RETURN)
 		    {
-			bindings = (rep_bind_lambda_list_1
-				    (rep_COMPILED_LAMBDA(tmp), stackp+1, arg));
-			if(bindings != rep_NULL)
-			{
-			    TOP = (rep_bytecode_interpreter
-				   (rep_COMPILED_CODE(tmp),
-				    rep_COMPILED_CONSTANTS(tmp),
-				    rep_COMPILED_STACK(tmp),
-				    bindings));
-			}
+			TOP = APPLY (tmp, arg, stackp+1);
 		    }
 		    else
 		    {
@@ -704,11 +734,11 @@ again:
 			   bindings; these were unbound when switching
 			   environments.. */
 
-			bindings = (rep_bind_lambda_list_1
-				    (rep_COMPILED_LAMBDA(tmp), stackp+1, arg));
+			bindings = (make_bytecode_frame
+				    (rep_INT (rep_COMPILED_LAMBDA(tmp)),
+				     arg, stackp+1));
 			if(bindings != rep_NULL)
 			{
-			    int o_req_s, o_req_b;
 			    int n_req_s, n_req_b;
 
 			    /* set up parameters */
@@ -721,12 +751,11 @@ again:
 			    /* do the goto, after deciding if the
 			       current stack allocation is sufficient. */
 			    n_req_s = rep_INT (rep_COMPILED_STACK (tmp)) & 0xffff;
-			    n_req_b = (rep_INT (rep_COMPILED_STACK (tmp)) >> 16) + 1;
-			    o_req_s = rep_INT(stkreq) & 0xffff;
-			    o_req_b = (rep_INT(stkreq) >> 16) + 1;
-			    if (n_req_s > o_req_s || n_req_b > o_req_b)
+			    n_req_b = rep_INT (rep_COMPILED_STACK (tmp)) >> 16;
+			    if (n_req_s > v_stkreq || n_req_b > b_stkreq)
 			    {
-				stkreq = rep_COMPILED_STACK(tmp);
+				v_stkreq = n_req_s;
+				b_stkreq = n_req_b;
 				goto again_stack;
 			    }
 			    else
@@ -804,10 +833,9 @@ again:
 	    SAFE_NEXT;
 	END_INSN
 
-	BEGIN_INSN_WITH_ARG (OP_BIND)
-	    tmp = rep_VECT(consts)->array[arg];
+	BEGIN_INSN (OP_BIND)
 	    tmp2 = RET_POP;
-	    rep_env = Fcons (Fcons (tmp, tmp2), rep_env);
+	    rep_env = Fcons (tmp2, rep_env);
 	    BIND_TOP = rep_MARK_LEX_BINDING (BIND_TOP);
 	    SAFE_NEXT;
 	END_INSN
@@ -824,28 +852,41 @@ again:
 	END_INSN
 
 	BEGIN_INSN_WITH_ARG (OP_REFN)
-	    tmp = snap_environment (arg);
-	    PUSH(rep_CDR(tmp));
+	    PUSH (rep_CAR (snap_environment (arg)));
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN_WITH_ARG (OP_SETN)
-	    tmp = snap_environment (arg);
-	    rep_CDR(tmp) = RET_POP;
+	    rep_CAR (snap_environment (arg)) = RET_POP;
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN_WITH_ARG (OP_REFG)
-	    tmp = F_structure_ref (rep_structure,
-				   rep_VECT(consts)->array[arg]);
-	    if (!rep_VOIDP(tmp))
+	    /* this code expanded from F_structure_ref () and lookup ()
+	       in structures.c */
+	    rep_struct *s = rep_STRUCTURE (rep_structure);
+	    repv var = rep_VECT(consts)->array[arg];
+	    rep_struct_node *n;
+	    if (s->total_buckets != 0)
 	    {
-		PUSH(tmp);
+		for (n = s->buckets[rep_STRUCT_HASH (var, s->total_buckets)];
+		     n != 0; n = n->next)
+		{
+		    if (n->symbol == var)
+		    {
+			PUSH (n->binding);
+			SAFE_NEXT;
+		    }
+		}
+	    }
+	    n = rep_search_imports (s, var);
+	    if (n != 0)
+	    {
+		PUSH (n->binding);
 		SAFE_NEXT;
 	    }
-	    /* fallback */
-	    PUSH(Fsymbol_value(rep_VECT(consts)->array[arg], Qnil));
-	    NEXT;
+	    Fsignal (Qvoid_value, rep_LIST_1 (var));
+	    HANDLE_ERROR;
 	END_INSN
 
 	BEGIN_INSN_WITH_ARG (OP_SETG)
@@ -971,11 +1012,6 @@ again:
 
 	BEGIN_INSN (OP_LENGTH)
 	    CALL_1(Flength);
-	END_INSN
-
-	BEGIN_INSN (OP_EVAL)
-	    SYNC_GC;
-	    CALL_1(Feval);
 	END_INSN
 
 	BEGIN_INSN (OP_ADD)
@@ -1303,32 +1339,21 @@ again:
 	END_INSN
 
 	BEGIN_INSN (OP_ERRORPRO)
-	    /* This should be called with three values on the stack.
+	    /* This should be called with two values on the stack.
 		1. conditions of the error handler
 		2. rep_throw_value of the exception
-		3. symbol to bind the error data to (or nil)
 
 	       This function pops (1) and tests it against the error
 	       in (2). If they match it sets (2) to nil, and binds the
-	       error data to the symbol in (3). */
+	       error data to the next lexical slot. */
 	    tmp = RET_POP;
 	    if(rep_CONSP(TOP) && rep_CAR(TOP) == Qerror
 	       && rep_compare_error(rep_CDR(TOP), tmp))
 	    {
-		repv tobind;
 		/* The handler matches the error. */
 		tmp = rep_CDR(TOP);	/* the error data */
-		tmp2 = stackp[-1];	/* the symbol to bind to */
-		if(rep_SYMBOLP(tmp2) && !rep_NILP(tmp2))
-		{
-		    tobind = rep_bind_symbol(Qnil, tmp2, tmp);
-		    if (rep_SYM(tmp2)->car & rep_SF_SPECIAL)
-			impurity++;
-		}
-		else
-		    /* Placeholder to allow simple unbinding */
-		    tobind = Qnil;
-		BIND_PUSH (tobind);
+		rep_env = Fcons (tmp, rep_env);
+		BIND_PUSH(rep_MARK_LEX_BINDING (rep_NEW_FRAME));
 		TOP = Qnil;
 	    }
 	    NEXT;
@@ -1860,8 +1885,8 @@ again:
 	    RETURN;
 	}
 #ifdef CHECK_STACK_USAGE
-        assert (STK_USE <= (rep_INT(stkreq) & 0xffff));
-        assert (BIND_USE <= (rep_INT(stkreq) >> 16) + 1);
+        assert (STK_USE <= v_stkreq);
+        assert (BIND_USE <= b_stkreq + 1);
 #endif
 	SAFE_NEXT;
     }
@@ -1875,6 +1900,19 @@ quit:
     rep_lisp_depth--;
     rep_POPGCN; rep_POPGCN; rep_POPGC; rep_POPGC;
     return code;
+}
+
+DEFUN("run-byte-code", Frun_byte_code, Srun_byte_code,
+      (repv code, repv consts, repv stkreq), rep_Subr3)
+{
+    int v_stkreq, b_stkreq;
+
+    rep_DECLARE3(stkreq, rep_INTP);
+
+    v_stkreq = rep_INT (stkreq) & 0xffff;
+    b_stkreq = rep_INT (stkreq) >> 16;
+
+    return vm (code, consts, Qnil, v_stkreq, b_stkreq);
 }
 
 DEFUN("validate-byte-code", Fvalidate_byte_code, Svalidate_byte_code, (repv bc_major, repv bc_minor), rep_Subr2) /*
@@ -1907,7 +1945,7 @@ Return an object that can be used as the function value of a symbol.
     if(len < rep_COMPILED_MIN_SLOTS)
 	return rep_signal_missing_arg(len + 1);
     
-    if(!rep_CONSP(rep_CAR(args)) && !rep_SYMBOLP(rep_CAR(args)))
+    if(!rep_INTP(rep_CAR(args)))
 	return rep_signal_arg_error(rep_CAR(args), 1);
     obj[0] = rep_CAR(args); args = rep_CDR(args);
     if(!rep_STRINGP(rep_CAR(args)))
@@ -1949,8 +1987,8 @@ Return an object that can be used as the function value of a symbol.
 void
 rep_lispmach_init(void)
 {
-    rep_ADD_SUBR(Sjade_byte_code);
-    rep_INTERN(jade_byte_code);
+    rep_INTERN(run_byte_code);
+    rep_ADD_SUBR(Srun_byte_code);
     rep_ADD_SUBR(Svalidate_byte_code);
     rep_ADD_SUBR(Smake_byte_code_subr);
     rep_INTERN(bytecode_error); rep_ERROR(bytecode_error);
