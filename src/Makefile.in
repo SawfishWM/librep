@@ -51,15 +51,15 @@ INTL_OBJS=$(INTL_OBJS_@USE_INCLUDED_LIBINTL@)
 all : librep.la $(DL_OBJS) rep rep-config rep-remote rep-xgettext
 
 librep.la : $(OBJS) $(LIBOBJS) $(ALLOCA)
-	$(LIBTOOL) $(CC) $(LDFLAGS) -version-info $(libversion) \
+	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -version-info $(libversion) \
 	  -o $@ $^ -rpath $(libdir)
 
 rep : $(REP_OBJS) $(EXTRA_LIBOBJS) librep.la
-	$(LIBTOOL) $(CC) -export-dynamic $(CPPFLAGS) $(CFLAGS) -o $@ \
+	$(LIBTOOL) --mode=link $(CC) -export-dynamic $(CPPFLAGS) $(CFLAGS) -o $@ \
 	  $(REP_OBJS) librep.la $(EXTRA_LIBOBJS) $(LIBS) $(GMP_LIBS)
 
 srep : $(REP_OBJS) $(EXTRA_LIBOBJS) librep.la
-	$(LIBTOOL) $(CC) -static -export-dynamic $(CPPFLAGS) $(CFLAGS) -o $@ \
+	$(LIBTOOL) --mode=link $(CC) -static -export-dynamic $(CPPFLAGS) $(CFLAGS) -o $@ \
 	  $(REP_OBJS) librep.la $(EXTRA_LIBOBJS) $(LIBS) $(GMP_LIBS)
 
 rep-remote : rep-remote.c
@@ -69,15 +69,15 @@ rep-xgettext : rep-xgettext.jl rep
 	  && mv $<c $@ && chmod +x $@
 
 install : all installdirs
-	$(LIBTOOL) $(INSTALL_PROGRAM) librep.la $(DESTDIR)${libdir}
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) librep.la $(DESTDIR)${libdir}
 	$(LIBTOOL) -n --finish $(DESTDIR)${libdir}
-	$(LIBTOOL) $(INSTALL_PROGRAM) -m 755 rep $(DESTDIR)${bindir}
-	$(LIBTOOL) $(INSTALL_PROGRAM) -m 755 repdoc $(DESTDIR)${bindir}
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) -m 755 rep $(DESTDIR)${bindir}
+	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) -m 755 repdoc $(DESTDIR)${bindir}
 	$(INSTALL_SCRIPT) -m 755 rep-config $(DESTDIR)${bindir}
 	$(INSTALL_SCRIPT) -m 755 rep-xgettext $(DESTDIR)${bindir}
 	$(INSTALL_PROGRAM) -m 755 rep-remote $(DESTDIR)${bindir}
 	for dl in $(DL_OBJS); do \
-	  $(LIBTOOL) $(INSTALL_PROGRAM) $$dl $(DESTDIR)${repexecdir}; \
+	  $(LIBTOOL) --mode=install $(INSTALL_PROGRAM) $$dl $(DESTDIR)${repexecdir}; \
 	done
 	printf "\nrep_open_globally=yes\n" >>$(DESTDIR)${repexecdir}/gettext.la
 	for i in $(INSTALL_HDRS); do \
@@ -101,29 +101,29 @@ uninstall :
 	for i in $(INSTALL_HDRS); do \
 	  rm $(DESTDIR)$(includedir)/$$i; \
 	done
-	
+
 rep-config : rep-config.sh Makefile
 	$(SHELL) $< "${prefix}" "${libdir}" "${version}" \
 	  "${LDFLAGS} ${LIBS} ${GMP_LIBS}" "${repcommonexecdir}">$@
 	chmod +x $@
 
 repdoc : repdoc.o
-	$(LIBTOOL) $(CC) $(LDFLAGS) -o $@ $^ $(GDBM_LIBS)
+	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -o $@ $^ $(GDBM_LIBS)
 
 sdbm.la : $(SDBM_LOBJS) repsdbm.lo
-	$(LIBTOOL) $(CC) $(LDFLAGS) -avoid-version -module -o $@ \
+	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -avoid-version -module -o $@ \
 	 $(SDBM_LOBJS) repsdbm.lo -rpath $(repexecdir)
 
 gdbm.la : repgdbm.lo
-	$(LIBTOOL) $(CC) $(LDFLAGS) -avoid-version -module -o $@ \
+	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -avoid-version -module -o $@ \
 	 $^ $(GDBM_LIBS) -rpath $(repexecdir)
 
 gettext.la : gettext.lo
-	$(LIBTOOL) $(CC) $(LDFLAGS) -avoid-version -module -o $@ \
+	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -avoid-version -module -o $@ \
 	 $^ $(INTL_OBJS) -rpath $(repexecdir)
 
 readline.la : readline.lo
-	$(LIBTOOL) $(CC) $(LDFLAGS) -avoid-version -module -o $@ \
+	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -avoid-version -module -o $@ \
 	 $^ $(READLINE_LIBS) -rpath $(repexecdir)
 
 clean :
@@ -134,4 +134,4 @@ realclean : clean
 	rm -f .*.d Makefile rep.h dump.out dumped.s rep-config
 	rm -rf .libs
 
-include $(SRCS:%.c=.%.d) $(DL_SRCS:%.c=.%.d) $(REP_SRCS:%.c=.%.d)
+-include $(SRCS:%.c=.%.d) $(DL_SRCS:%.c=.%.d) $(REP_SRCS:%.c=.%.d)
