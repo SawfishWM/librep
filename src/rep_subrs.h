@@ -164,7 +164,7 @@ extern repv Vmax_lisp_depth(repv val);
 /* from lispcmds.c */
 extern repv Qor, Qand;
 extern repv Qload_path, Qafter_load_alist, Qlisp_lib_directory;
-extern repv Qdl_load_path, Qdl_load_reloc_now, Qprovide;
+extern repv Qdl_load_path, Qdl_load_reloc_now, Qprovide, Qfeatures;
 extern repv Qsite_lisp_directory, Qdocumentation_file, Qdocumentation_files;
 extern repv Fquote(repv);
 extern repv Fdefmacro(repv);

@@ -39,6 +39,7 @@ DEFSYM(load_path, "load-path");
 DEFSYM(dl_load_path, "dl-load-path");
 DEFSYM(after_load_alist, "after-load-alist");
 DEFSYM(provide, "provide");
+DEFSYM(features, "features");
 DEFSYM(rep_directory, "rep-directory");
 DEFSYM(lisp_lib_directory, "lisp-lib-directory");
 DEFSYM(site_lisp_directory, "site-lisp-directory");
@@ -2767,6 +2768,8 @@ rep_lispcmds_init(void)
     rep_ADD_SUBR(Swith_object);
 
     rep_INTERN(provide);
+    rep_INTERN_SPECIAL(features);
+    Fset (Qfeatures, Qnil);
 
     rep_INTERN_SPECIAL(rep_directory);
     if(getenv("REPDIR") != 0)
