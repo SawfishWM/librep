@@ -68,7 +68,7 @@ char *alloca ();
 
 DEFSYM(run_byte_code, "run-byte-code");
 DEFSYM(bytecode_error, "bytecode-error");
-DEFSTRING(err_bytecode_error, "Invalid byte code version");
+DEFSTRING(err_bytecode_error, "Byte-code error");
 DEFSTRING(unknown_op, "Unknown lisp opcode");
 
 static repv vm (repv code, repv consts, int argc, repv *argv,
@@ -2185,7 +2185,12 @@ executed. If not, an error will be signalled.
     if(!rep_INTP(bc_major) || !rep_INTP(bc_minor)
        || rep_INT(bc_major) != BYTECODE_MAJOR_VERSION
        || rep_INT(bc_minor) > BYTECODE_MINOR_VERSION)
-	return Fsignal(Qbytecode_error, Qnil);
+    {
+	DEFSTRING (err, "File needs recompiling for current virtual machine");
+	return Fsignal (Qbytecode_error,
+			rep_LIST_2 (rep_VAL (&err),
+				    Fsymbol_value (Qload_filename, Qt)));
+    }
     else
 	return Qt;
 }
