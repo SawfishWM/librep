@@ -1,5 +1,10 @@
 2000-09-04  John Harper  <john@dcs.warwick.ac.uk>
 
+	* librep.spec.in: added `--with-extra-cflags=-fstrength-reduce'
+	to configure. RH force -fno-strength-reduce on i386, this leads
+	to too much register pressure in the vm, spilling one of the
+	fixed regs..
+
 	* configure.in: version to 0.13pre1
 
 2000-09-01  John Harper  <john@dcs.warwick.ac.uk>
