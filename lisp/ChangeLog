@@ -1,3 +1,12 @@
+2000-05-31  John Harper  <john@dcs.warwick.ac.uk>
+
+	* init.jl (with-object): new macro, uses call-with-object
+	* compiler-rep.jl (with-object): flushed compiler for this
+	special form
+	* disassembler.jl, bytecode-defs.jl (bindobj): flushed this insn
+
+	* init.jl (prog1): new macro, in terms of lambda
+
 2000-05-30  John Harper  <john@dcs.warwick.ac.uk>
 
 	* init.jl (while): new macro, basic tail-recursive definition

@@ -248,8 +248,6 @@ extern repv Fconcat(repv);
 extern repv Flength(repv);
 extern repv Fcopy_sequence(repv);
 extern repv Felt(repv, repv);
-extern repv Fprog1(repv, repv);
-extern repv Fwhile(repv, repv);
 extern repv Fcond(repv, repv);
 extern repv Fapply(repv);
 extern repv Fload(repv file, repv noerr_p, repv nopath_p,
@@ -285,8 +283,6 @@ extern repv Fthrow(repv, repv);
 extern repv Funwind_protect(repv, repv);
 
 /* from lispmach.c */
-extern int rep_unbind_object(repv item);
-extern repv rep_bind_object(repv obj);
 extern repv Qbytecode_error;
 extern repv Fvalidate_byte_code(repv bc_major, repv bc_minor);
 extern repv Fmake_byte_code_subr(repv args);

@@ -1,3 +1,14 @@
+2000-05-31  John Harper  <john@dcs.warwick.ac.uk>
+
+	* bytecodes.h, lispmach.c (OP_BINDOBJ): flushed
+	* lispmach.c: no longer worry about object bindings, so removed
+	rep_[un]bind_object
+
+	* continuations.c (Fcall_with_object): do object binding
+	locally (rep_[un]bind_object are gone)
+
+	* lispcmds.c (Fprog1, Fwith_object): removed, now in lisp
+
 2000-05-30  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lispcmds.c (Fwhile): removed, now in lisp

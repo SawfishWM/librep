@@ -106,8 +106,7 @@ General programming tasks:
 
    The current (29-3-99) list of special forms is:
 
-   case catch cond condition-case defvar lambda prog1 progn quote setq
-   unwind-protect with-object
+   case catch cond condition-case defvar lambda progn quote setq unwind-protect
 
  - subrs can't be called tail recursively (e.g. call/cc apply ..?)
 
