@@ -668,27 +668,28 @@ DEFUN("defvar", Fdefvar, Sdefvar, (repv args, repv tail_posn), rep_SF) /*
 ::doc:defvar::
 defvar NAME DEFAULT-VALUE [DOC-STRING]
 
-Define a variable called NAME whose standard value is DEFAULT-
+Define a special variable called NAME whose standard value is DEFAULT-
 VALUE. If NAME is already bound to a value (that's not an autoload
-definition) it is left as it is.
+definition) it is left as it is, otherwise DEFAULT-VALUE is evaluated
+and the special value of NAME is bound to the result.
 
-If the symbol NAME is marked buffer-local the *default value* of the
-variable will be set (if necessary) not the local value.
+If DOC-STRING is given, and is a string, it will be used to set the
+`documentation' property of the symbol NAME.
+
+(If the symbol NAME is marked buffer-local the default value of the
+variable will be set (if necessary) not the local value.)
 ::end:: */
 {
     if(rep_CONSP(args) && rep_CONSP(rep_CDR(args)))
     {
 	int spec;
-	rep_GC_root gc_args;
 	repv sym = rep_CAR(args), val;
+	rep_bool need_to_eval;
 	repv tmp = Fdefault_boundp(sym);
 	if(!tmp)
 	    return rep_NULL;
-	rep_PUSHGC(gc_args, args);
-	val = Feval(rep_CAR(rep_CDR(args)));
-	rep_POPGC;
-	if(!val)
-	    return rep_NULL;
+	val = rep_CAR(rep_CDR(args));
+	need_to_eval = rep_TRUE;
 	if(!rep_NILP(tmp))
 	{
 	    /* Variable is bound, see if it's an autoload defn to overwrite. */
@@ -721,6 +722,7 @@ variable will be set (if necessary) not the local value.
 	    if (tem)
 	    {
 		val = tem;
+		need_to_eval = rep_FALSE;
 		tmp = Qnil;
 	    }
 	}
@@ -732,6 +734,16 @@ variable will be set (if necessary) not the local value.
 	       && !(rep_SYM(sym)->car & rep_SF_WEAK_MOD)
 	       && rep_SPECIAL_ENV == Qt))
 	{
+	    if (need_to_eval)
+	    {
+		rep_GC_root gc_sym, gc_args;
+		rep_PUSHGC (gc_sym, sym);
+		rep_PUSHGC (gc_args, args);
+		val = Feval (val);
+		rep_POPGC; rep_POPGC;
+		if (!val)
+		    return rep_NULL;
+	    }
 	    Fstructure_define (rep_specials_structure, sym, val);
 	}
 
