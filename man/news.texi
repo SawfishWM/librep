@@ -18,6 +18,10 @@ and @code{nil} (denotes the current event loop).
 @item @code{SIGINT}, @code{SIGHUP} and @code{SIGTERM} signals should
 now be caught more successfully.
 
+@item Added a new directory to @code{dl-load-path}:
+@samp{@var{libexecdir}/rep/@var{arch}} to contain third-party shared
+libraries.
+
 @end itemize
 
 
