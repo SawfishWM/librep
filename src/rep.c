@@ -17,16 +17,16 @@ usage (void)
     fputs ("\n\
     FILE		load the Lisp file FILE (from the cwd if possible,\n\
 			 implies --batch mode)\n\
-
+\n\
     --call FUNCTION	call the Lisp function FUNCTION\n\
-    --f FUNCTION
-
+    --f FUNCTION\n\
+\n\
     --load FILE		load the file of Lisp forms called FILE\n\
-    -l FILE
-
+    -l FILE\n\
+\n\
     --scheme FILE	load the file of Scheme forms called FILE\n\
     -s FILE		 (implies --batch mode)\n\
-
+\n\
     --version		print version details\n\
     --no-rc		don't load rc or site-init files\n\
     --quit, -q		terminate the interpreter process\n",
