@@ -204,10 +204,23 @@ sys_canonical_file_name(VALUE file)
 {
     char buf[PATH_MAX];
     if(realpath(VSTR(file), buf) != 0)
-	return string_dup(buf);
+    {
+	bool slashed = (VSTR(file)[strlen(VSTR(file)) - 1] == '/');
+	int len = strlen(buf);
+	if (slashed && buf[len-1] != '/')
+	{
+	    buf[len++] = '/';
+	    buf[len] = 0;
+	}
+	else if(!slashed && len > 0 && buf[len-1] == '/')
+	    buf[len--] = 0;
+	return string_dupn(buf, len);
+    }
     else
+    {
 	/* Bail out */
 	return file;
+    }
 }
 
 VALUE
