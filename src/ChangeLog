@@ -1,3 +1,8 @@
+Mon May 18 09:21:33 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispcmds.c (cmd_delete_if, cmd_delete_if_not): added gc
+	protection to these functions; how long have they been unsafe?
+
 Sun May 17 19:50:36 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* housekeeping.c (adjust_marks_split_y): fix this again, maybe
