@@ -1,3 +1,22 @@
+1999-03-23  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_processes.c (rep_sigchld_fun): new hook, called by the
+	sigchld handler
+
+	* repsdbm.c (rep_dl_init): set a rep_dl_feature value
+
+	* unix_dl.c (struct dl_lib_info): new field `feature_sym', a
+	symbol noting the feature provided by this library
+	(find_dl_by_feature): new function
+	(rep_open_dl_library): if a symbol `rep_dl_feature' exists in
+	the opened object, it's assumed to contain the name of the
+	feature provided by this object, Fprovide is called
+	(rep_find_dl_symbol): new function, given a feature and a
+	symbol name, return the address
+
+	* main.c (Frecursive_edit): update the rep_recurse_depth
+	variable here now
+
 1999-03-19  John Harper  <john@dcs.warwick.ac.uk>
 
 	* main.c (rep_event_loop_fun): new hook, allows the standard

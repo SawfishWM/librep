@@ -464,6 +464,7 @@ extern rep_bool rep_find_c_symbol(void *, char **, void **);
 extern void *rep_open_dl_library(repv file_name);
 extern void rep_mark_dl_data(void);
 extern void rep_kill_dl_libraries(void);
+extern void *rep_find_dl_symbol (repv feature, char *symbol);
 
 /* from unix_files.c */
 extern repv rep_lookup_errno(void);
@@ -530,6 +531,8 @@ extern repv Funix_print_allocations(void);
 
 /* from unix_processes.c */
 extern repv Qpipe, Qpty;
+extern void (*rep_sigchld_fun) (void);
+extern rep_bool rep_proc_periodically(void);
 extern repv Fmake_process(repv stream, repv fun, repv dir,
 			   repv prog, repv args);
 extern repv Fstart_process(repv arg_list);
