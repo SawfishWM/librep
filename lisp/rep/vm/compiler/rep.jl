@@ -155,7 +155,7 @@
     (case (car form)
       ((defun)
        (let ((tmp (assq (nth 1 form) (fluid macro-env))))
-	 (fluid-let ((current-fun (nth 1 form)))
+	 (let-fluids ((current-fun (nth 1 form)))
 	   (when tmp
 	     (rplaca tmp nil)
 	     (rplacd tmp nil))
@@ -167,7 +167,7 @@
        (let
 	   ((code (compile-lambda (cons 'lambda (nthcdr 2 form)) (nth 1 form)))
 	    (tmp (assq (nth 1 form) (fluid macro-env))))
-	 (fluid-let ((current-fun (nth 1 form)))
+	 (let-fluids ((current-fun (nth 1 form)))
 	   (if tmp
 	       (rplacd tmp (make-closure code))
 	     (compiler-error
@@ -389,10 +389,10 @@
   (defun compile-let* (form &optional return-follows)
     (let
 	((lst (car (cdr form))))
-      (fluid-let ((spec-bindings (fluid spec-bindings))
-		  (lex-bindings (fluid lex-bindings))
-		  (lexically-pure (fluid lexically-pure))
-		  (lambda-name (fluid lambda-name)))
+      (let-fluids ((spec-bindings (fluid spec-bindings))
+		   (lex-bindings (fluid lex-bindings))
+		   (lexically-pure (fluid lexically-pure))
+		   (lambda-name (fluid lambda-name)))
 	(emit-insn (bytecode init-bind))
 	(increment-b-stack)
 	(while (consp lst)
@@ -421,10 +421,10 @@
   (defun compile-letrec (form &optional return-follows)
     (let
 	((bindings (car (cdr form))))
-      (fluid-let ((spec-bindings (fluid spec-bindings))
-		  (lex-bindings (fluid lex-bindings))
-		  (lexically-pure (fluid lexically-pure))
-		  (lambda-name (fluid lambda-name)))
+      (let-fluids ((spec-bindings (fluid spec-bindings))
+		   (lex-bindings (fluid lex-bindings))
+		   (lexically-pure (fluid lexically-pure))
+		   (lambda-name (fluid lambda-name)))
 	(emit-insn (bytecode init-bind))
 	(increment-b-stack)
 	;; create the bindings, should really be to void values, but use nil..
@@ -447,10 +447,10 @@
 	(decrement-b-stack))))
   (put 'letrec 'rep-compile-fun compile-letrec)
 
-  (defun compile-fluid-let (form)
+  (defun compile-let-fluids (form)
     (let ((bindings (cadr form))
 	  (body (cddr form)))
-      (fluid-let ((lexically-pure nil))
+      (let-fluids ((lexically-pure nil))
 	;; compile each fluid, value pair onto the stack
 	(mapc (lambda (cell)
 		(compile-form-1 (car cell))
@@ -463,7 +463,7 @@
 	(compile-body body)
 	(emit-insn (bytecode unbind))
 	(decrement-b-stack))))
-  (put 'fluid-let 'rep-compile-fun compile-fluid-let)
+  (put 'let-fluids 'rep-compile-fun compile-let-fluids)
 
   (defun compile-defun (form)
     (remember-function (nth 1 form) (nth 2 form))
@@ -608,7 +608,7 @@
 	((catch-label (make-label))
 	 (start-label (make-label))
 	 (end-label (make-label)))
-    (fluid-let ((lexically-pure nil))
+    (let-fluids ((lexically-pure nil))
 
       ;;		jmp start
       (emit-jmp-insn (bytecode jmp) start-label)
@@ -646,7 +646,7 @@
 	((cleanup-label (make-label))
 	 (start-label (make-label))
 	 (end-label (make-label)))
-    (fluid-let ((lexically-pure nil))
+    (let-fluids ((lexically-pure nil))
 
       ;;		jmp start
       (emit-jmp-insn (bytecode jmp) start-label)
@@ -693,7 +693,7 @@
 	 (start-label (make-label))
 	 (end-label (make-label))
 	 (handlers (nthcdr 3 form)))
-    (fluid-let ((lexically-pure nil))
+    (let-fluids ((lexically-pure nil))
 
       ;;		jmp start
       ;; cleanup:
@@ -702,9 +702,9 @@
 
       (increment-stack)		;reach here with one item on stack
       (if (consp handlers)
-	  (fluid-let ((spec-bindings (fluid spec-bindings))
-		      (lex-bindings (fluid lex-bindings))
-		      (lambda-name (fluid lambda-name)))
+	  (let-fluids ((spec-bindings (fluid spec-bindings))
+		       (lex-bindings (fluid lex-bindings))
+		       (lambda-name (fluid lambda-name)))
 	    (if (nth 1 form)
 		(let ((var (nth 1 form)))
 		  (when (spec-bound-p var)

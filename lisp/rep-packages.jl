@@ -102,7 +102,7 @@
 	  digit-char-p alphanumericp space-char-p char-upcase char-downcase
 	  complete-string upcase-table downcase-table flatten-table
 
-	  make-fluid fluid fluid-set with-fluids fluid-let
+	  make-fluid fluid fluid-set with-fluids let-fluids
 
 	  ;; init.jl
 	  setcar setcdr string= string< nop identity interactive _

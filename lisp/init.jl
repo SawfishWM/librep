@@ -165,7 +165,7 @@ functions."
 	     (cond ((consp x) (cons 'setq x))
 		   (t (list 'setq x nil)))) bindings)))
 
-(defmacro fluid-let (bindings . body)
+(defmacro let-fluids (bindings . body)
   (let ((fluids nil)
 	(values nil))
     (mapc (lambda (x)

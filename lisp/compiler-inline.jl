@@ -131,10 +131,10 @@
 	 (args-left (car out))
 	 (bind-stack (cdr out)))
 
-      (fluid-let ((spec-bindings (fluid spec-bindings))
-		  (lex-bindings (fluid lex-bindings))
-		  (lexically-pure (fluid lexically-pure))
-		  (lambda-name (fluid lambda-name)))
+      (let-fluids ((spec-bindings (fluid spec-bindings))
+		   (lex-bindings (fluid lex-bindings))
+		   (lexically-pure (fluid lexically-pure))
+		   (lambda-name (fluid lambda-name)))
 
 	;; Set up the body for compiling, skip any interactive form or
 	;; doc string
@@ -173,10 +173,10 @@
 	((out (push-inline-args arg-spec args nil test-variable-ref))
 	 (args-left (car out))
 	 (bind-stack (cdr out)))
-      (fluid-let ((spec-bindings (fluid spec-bindings))
-		  (lex-bindings (fluid lex-bindings))
-		  (lexically-pure (fluid lexically-pure))
-		  (lambda-name (fluid lambda-name)))
+      (let-fluids ((spec-bindings (fluid spec-bindings))
+		   (lex-bindings (fluid lex-bindings))
+		   (lexically-pure (fluid lexically-pure))
+		   (lambda-name (fluid lambda-name)))
 	(if (catch 'foo
 	      (mapc (lambda (var)
 		      (when (binding-captured-p var)

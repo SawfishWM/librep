@@ -222,9 +222,9 @@ we would like. This is due to the view of folded functions as
   (let
       ((temp-file (make-temp-name))
        src-file dst-file body header form)
-    (fluid-let ((current-file file-name)
-		(spec-bindings nil)
-		(lex-bindings nil))
+    (let-fluids ((current-file file-name)
+		 (spec-bindings nil)
+		 (lex-bindings nil))
     (unwind-protect
 	(progn
 	  (message (concat "Compiling " file-name "...") t)
@@ -358,11 +358,11 @@ that files which shouldn't be compiled aren't."
 (defun compile-function (function)
   "Compiles the body of the function FUNCTION."
   (interactive "aFunction to compile:")
-  (fluid-let ((defuns nil)
-	      (defvars nil)
-	      (defines nil)
-	      (current-fun function)
-	      (output-stream nil))
+  (let-fluids ((defuns nil)
+	       (defvars nil)
+	       (defines nil)
+	       (current-fun function)
+	       (output-stream nil))
   (let
       ((body (closure-function function)))
     (unless (bytecodep body)
@@ -375,13 +375,13 @@ that files which shouldn't be compiled aren't."
 (defun compile-form (form)
   "Compile the Lisp form FORM into a byte code form."
 
-  (fluid-let ((constant-alist '())
-	      (constant-index 0)
-	      (current-stack 0)
-	      (max-stack 0)
-	      (current-b-stack 0)
-	      (max-b-stack 0)
-	      (intermediate-code '()))
+  (let-fluids ((constant-alist '())
+	       (constant-index 0)
+	       (current-stack 0)
+	       (max-stack 0)
+	       (current-b-stack 0)
+	       (max-b-stack 0)
+	       (intermediate-code '()))
 
     ;; Do the high-level compilation
     (compile-form-1 form t)

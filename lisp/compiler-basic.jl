@@ -219,7 +219,7 @@
       (let
 	  ((vars (get-lambda-vars args)))
 	(mapc test-variable-bind vars)
-	(when (setq form (fluid-let
+	(when (setq form (let-fluids
 			     ((spec-bindings (fluid spec-bindings))
 			      (lex-bindings (fluid lex-bindings))
 			      (lexically-pure t)

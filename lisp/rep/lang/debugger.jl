@@ -110,9 +110,9 @@ commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM',
 
   (defun entry (debug-obj debug-depth debug-frame-pointer)
     (catch 'debug
-      (fluid-let ((obj debug-obj)
-		  (depth debug-depth)
-		  (frame-pointer debug-frame-pointer))
+      (let-fluids ((obj debug-obj)
+		   (depth debug-depth)
+		   (frame-pointer debug-frame-pointer))
 	(debug-rep))))
 
   (defun exit (debug-val debug-depth debug-frame-pointer)
@@ -121,7 +121,7 @@ commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM',
   (defun error-entry (error-list debug-frame-pointer)
     (default-error-handler (car error-list) (cdr error-list))
     (catch 'debug
-      (fluid-let ((frame-pointer debug-frame-pointer))
+      (let-fluids ((frame-pointer debug-frame-pointer))
 	(debug-rep)
 	nil)))
 
