@@ -1,5 +1,9 @@
 1999-10-28  John Harper  <john@dcs.warwick.ac.uk>
 
+	* rep-config.sh: expect ${libdir} as second argument, not
+	${exec_prefix}
+	* Makefile.in: pass ${libdir} to rep-config.sh
+
 	* rep_lisp.h: comment out use of #warning, doesn't work on
 	solaris cc
 
