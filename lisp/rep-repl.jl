@@ -177,12 +177,6 @@
 	 (mapc compile-module args))))
 (put 'compile 'repl-help "[STRUCT ...]")
 
-(put 'doc 'repl-command
-     (lambda (arg)
-       (require 'lisp-doc)
-       (describe-function arg)))
-(put 'doc 'repl-help "PROCEDURE")
-
 (put 'new 'repl-command
      (lambda (name)
        (%make-structure nil (lambda ()
@@ -228,3 +222,32 @@ enter a meta-command prefixed by a `,' character.\n")
 	 (write standard-output #\newline))))
 
 (put 'quit 'repl-command (lambda () (throw 'quit 0)))
+
+(put 'describe 'repl-command
+     (lambda (name)
+       (require 'lisp-doc)
+       (let* ((value (%eval-in-structure
+		      name (%intern-structure *repl-in-struct*)))
+	      (doc (documentation name value)))
+	 (write standard-output #\newline)
+	 (describe-value value name)
+	 (write standard-output #\newline)
+	 (when doc
+	   (format standard-output "%s\n\n" doc)))))
+(put 'describe 'repl-help "SYMBOL")
+
+(put 'apropos 'repl-command
+     (lambda (re)
+       (require 'lisp-doc)
+       (let ((funs (apropos re (lambda (x)
+				 (condition-case nil
+				     (progn
+				       (%eval-in-structure
+					x (%intern-structure *repl-in-struct*))
+				       t)
+				   (void-value nil))))))
+	 (mapc (lambda (x)
+		 (let* ((val (%eval-in-structure
+			      x (%intern-structure *repl-in-struct*))))
+		   (describe-value val x))) funs))))
+(put 'apropos 'repl-help "\"REGEXP\"")
