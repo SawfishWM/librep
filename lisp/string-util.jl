@@ -63,3 +63,17 @@
       ((new (copy-sequence x)))
     (aset new 0 (char-upcase (aref new 0)))
     new))
+
+;;;###autoload
+(defun mapconcat (fun sequence separator)
+  "Call FUN for each member of SEQUENCE, concatenating the results. Between
+each pair of results, insert SEPARATOR. Return the resulting string." 
+  (let ((len (length sequence)))
+    (if (= len 0)
+	""
+      (let loop ((i 1)
+		 (frags (list (fun (elt sequence 0)))))
+	(if (= i len)
+	    (apply concat (nreverse frags))
+	  (loop (1+ i) (cons (fun (elt sequence i))
+			     (cons separator frags))))))))
