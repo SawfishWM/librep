@@ -1,5 +1,8 @@
 1998-12-01  John Harper  <john@dcs.warwick.ac.uk>
 
+	* latin-1.jl (insert-latin-1-character): new function, entry of
+	latin 1 chars by name
+
 	* tex-mode.jl (tex-mode, latex-mode, plain-tex-mode): fix
 	documentation strings
 

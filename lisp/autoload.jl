@@ -60,6 +60,7 @@
 (autoload 'lazy-bind-keys "keymap")
 (autoload 'map-keymap "keymap")
 (autoload 'latin-1-mode "latin-1" t)
+(autoload 'insert-latin-1-character "latin-1" t)
 (autoload 'lisp-mode "lisp-mode" t)
 (autoload 'eval-sexp "lisp-mode" t)
 (autoload 'eval-insert-sexp "lisp-mode" t)
