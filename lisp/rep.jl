@@ -46,19 +46,18 @@
 
 ;; Load site specific initialisation. Errors here are trapped since
 ;; they're probably not going to result in an unusable state
-(if (not (member "--no-rc" command-line-args))
-    (condition-case error-data
-	(progn
-	  ;; First the site-wide stuff
-	  (load-all "site-init")
-	  ;; Now try to interpret the user's startup file, or failing that
-	  ;; the default.jl file providing site-wide user options
-	  (or
-	   (load (concat (user-home-directory) ".reprc") t t)
-	   (load "rep-default" t)))
-      (error
-       (format (stderr-file) "error in local config--> %S\n" error-data)))
-  (setq command-line-args (delete "--no-rc" command-line-args)))
+(unless (get-command-line-option "--no-rc")
+  (condition-case error-data
+      (progn
+	;; First the site-wide stuff
+	(load-all "site-init")
+	;; Now try to interpret the user's startup file, or failing that
+	;; the default.jl file providing site-wide user options
+	(or
+	 (load (concat (user-home-directory) ".reprc") t t)
+	 (load "rep-default" t)))
+    (error
+     (format (stderr-file) "error in local config--> %S\n" error-data))))
 
 ;; Use all arguments which are left.
 (let
