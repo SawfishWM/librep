@@ -507,11 +507,22 @@ match data.
 	tx = VAL(curr_vw->vw_Tx);
     if(check_line(VTX(tx), pos))
     {
-	char first = VSTR(str)[0];
+	char first[3];
 	long len = STRING_LEN(str);
 	Pos start;
 	COPY_VPOS(&start, pos);
-	while(buffer_strchr(VTX(tx), &start, first))
+	if(!NILP(nocasep))
+	{
+	    first[0] = tolower(VSTR(str)[0]);
+	    first[1] = toupper(VSTR(str)[0]);
+	    first[2] = 0;
+	}
+	else
+	{
+	    first[0] = VSTR(str)[0];
+	    first[1] = 0;
+	}
+	while(buffer_strpbrk(VTX(tx), &start, first))
 	{
 	    Pos end = start;
 	    if(buffer_compare_n(VTX(tx), &end, VSTR(str), len,
@@ -547,11 +558,22 @@ match data.
 	tx = VAL(curr_vw->vw_Tx);
     if(check_line(VTX(tx), pos))
     {
-	char first = VSTR(str)[0];
+	char first[3];
 	long len = STRING_LEN(str);
 	Pos start;
 	COPY_VPOS(&start, pos);
-	while(buffer_reverse_strchr(VTX(tx), &start, first))
+	if(!NILP(nocasep))
+	{
+	    first[0] = tolower(VSTR(str)[0]);
+	    first[1] = toupper(VSTR(str)[0]);
+	    first[2] = 0;
+	}
+	else
+	{
+	    first[0] = VSTR(str)[0];
+	    first[1] = 0;
+	}
+	while(buffer_reverse_strpbrk(VTX(tx), &start, first))
 	{
 	    Pos end = start;
 	    if(buffer_compare_n(VTX(tx), &end, VSTR(str), len,
