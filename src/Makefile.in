@@ -40,6 +40,10 @@ DL_OBJS = libsdbm.la libtimers.la libgettext.la libreadline.la
 REP_SRCS =	rep.c
 REP_OBJS =	$(REP_SRCS:.c=.o)
 
+INTL_OBJS_yes=../intl/*.lo
+INTL_OBJS_no=
+INT_OBJS=$(INTL_OBJS_@USE_INCLUDED_LIBINTL@)
+
 all : libxsdbm.la librep.la $(DL_OBJS) rep rep-config rep-remote rep-xgettext
 
 libxsdbm.la : $(SDBM_OBJS)
@@ -70,6 +74,7 @@ install : all installdirs
 	for dl in $(DL_OBJS); do \
 	  $(LIBTOOL) $(INSTALL_PROGRAM) $$dl $(DESTDIR)${repexecdir}; \
 	done
+	printf "\nrep_open_globally=yes\n" >>$(DESTDIR)${repexecdir}/libgettext.la
 	for i in $(INSTALL_HDRS); do \
 	  $(INSTALL_DATA) $$i $(DESTDIR)$(includedir); \
 	done
@@ -91,7 +96,7 @@ uninstall :
 	for i in $(INSTALL_HDRS); do \
 	  rm $(DESTDIR)$(includedir)/$$i; \
 	done
-
+	
 rep-config : rep-config.sh
 	$(SHELL) $< "${prefix}" "${libdir}" "${version}" "${LIBS}" "${repcommonexecdir}" >$@
 	chmod +x $@
@@ -105,7 +110,7 @@ libsdbm.la : $(SDBM_OBJS) repsdbm.lo
 
 libgettext.la : gettext.lo
 	$(LIBTOOL) $(CC) $(LDFLAGS) -module -o $@ \
-	 $^ ../intl/*.lo -rpath $(repexecdir)
+	 $^ $(INTL_OBJS) -rpath $(repexecdir)
 
 libreadline.la : readline.lo
 	$(LIBTOOL) $(CC) $(LDFLAGS) -module -o $@ \
