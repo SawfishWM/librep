@@ -221,9 +221,9 @@
        (ash (aref remote-rep-hex-map (aref string (+ point 5))) 8)
        (ash (aref remote-rep-hex-map (aref string (+ point 4))) 12)
        (ash (aref remote-rep-hex-map (aref string (+ point 3))) 16)
-       (ash (aref remote-rep-hex-map (aref string (+ point 2))) 24)
-       (ash (aref remote-rep-hex-map (aref string (+ point 1))) 28)
-       (ash (aref remote-rep-hex-map (aref string point)) 7))))
+       (ash (aref remote-rep-hex-map (aref string (+ point 2))) 20)
+       (ash (aref remote-rep-hex-map (aref string (+ point 1))) 24)
+       (ash (aref remote-rep-hex-map (aref string point)) 28))))
 
 ;; returns nil or STRING
 (defun remote-rep-read-string (string point)
@@ -474,7 +474,7 @@
 		(throw 'exit dir-entry)))
 	  (aref session remote-rep-dircache))))
 
-(defun remote-rep-get-file-details (session filename)
+(defun remote-rep-get-file (session filename)
   (let
       ((dir (file-name-directory filename))
        (base (file-name-nondirectory filename))
@@ -527,7 +527,20 @@
       (mapc #'(lambda (f)
 		(when (string= (aref f remote-rep-file-name) base)
 		  (throw 'return f)))
-	    (aref entry remote-rep-cache-entries)))))
+	    (aref entry remote-rep-cache-entries))
+      nil)))
+
+;; similar to remote-rep-get-file, but symbolic links are followed
+(defun remote-rep-lookup-file (session file)
+  (let
+      ((file-struct (remote-rep-get-file session file)))
+    (while (and file-struct
+		(eq (aref file-struct remote-rep-file-type) 'symlink))
+      (let
+	  ((link (remote-rep-read-symlink session file)))
+	(setq file (expand-file-name link (file-name-directory file)))
+	(setq file-struct (remote-rep-get-file session file))))
+    file-struct))
 
 (defun remote-rep-dircache-callback (cache-entry session output point)
   (catch 'done
@@ -616,7 +629,7 @@
 (defun remote-rep-handler (split-name op args)
   (cond
    ((eq op 'canonical-file-name)
-    ;; XXX chase symbolic links
+    ;; XXX implement this by resolving symlinks
     (car args))
    ((filep (car args))
     ;; Operations on file handles
@@ -647,7 +660,10 @@
 		       (make-temp-name)))
 	 (session (remote-rep-open-host (nth 1 split-name) (car split-name))))
       (remote-rep-get session (nth 2 split-name) local-name)
-      (unless (eq op 'copy-file-to-local-fs)
+      (if (eq op 'copy-file-to-local-fs)
+	  (set-file-modes local-name (remote-rep-handler split-name
+							 'file-modes
+							 (list (car args))))
 	(unwind-protect
 	    (funcall op local-name)
 	  (delete-file local-name)))
@@ -663,7 +679,9 @@
 	(apply op local-name (cdr args)))
       (unwind-protect
 	  (remote-rep-put session local-name (nth 2 split-name))
-	(unless (eq op 'copy-file-from-local-fs)
+	(if (eq op 'copy-file-from-local-fs)
+	    (remote-rep-chmod
+	     session (file-modes local-name) (nth 2 split-name))
 	  (delete-file local-name)))
       t))
    ((eq op 'copy-file)
@@ -697,7 +715,7 @@
 	(let
 	    ;; XXX this assumes local/remote have same naming structure!
 	    ((dir (file-name-as-directory file-name)))
-	  (remote-rep-get-file-details session dir)
+	  (remote-rep-lookup-file session dir)
 	  (mapcar #'(lambda (f)
 		      (aref f remote-rep-file-name))
 		  (aref (remote-rep-dir-cached-p session dir)
@@ -734,7 +752,9 @@
 	  local-fh))
        (t
 	(let
-	    ((file (remote-rep-get-file-details session file-name)))
+	    ((file (if (eq op 'file-symlink-p)
+		       (remote-rep-get-file session file-name)
+		     (remote-rep-lookup-file session file-name))))
 	  (cond
 	   ((eq op 'file-exists-p)
 	    file)
