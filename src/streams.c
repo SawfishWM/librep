@@ -1092,7 +1092,6 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 	}
     }
 
-end_of_input:
     if (last_fmt != fmt - 1)
 	rep_stream_puts (stream, last_fmt, fmt - last_fmt - 1, rep_FALSE);
     if (make_string)

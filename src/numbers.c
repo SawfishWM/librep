@@ -2943,7 +2943,9 @@ generator is seeded with the current time of day.
 
     if (arg == Qt)
     {
-	random_seed (time (0));
+	u_long seed = time (0);
+	seed = (seed << 8) | (rep_getpid () & 0xff);
+	random_seed (seed);
 	return Qt;
     }
 

@@ -82,6 +82,12 @@ rep_lookup_errno(void)
 }
 
 u_long
+rep_getpid (void)
+{
+    return getpid ();
+}
+
+u_long
 rep_time(void)
 {
     return time(0);

@@ -1,3 +1,12 @@
+2002-02-13  John Harper  <jsh@unfactored.org>
+
+	* numbers.c (Frandom): when seeding, factor in the pid of the
+	process as well as the current time
+
+	* unix_main.c (rep_getpid): new function
+
+	* streams.c (Fformat): deleted unused end_of_input label
+
 2001-12-21  John Harper  <jsh@unfactored.org>
 
 	* rep.c: call setlocale (LC_ALL, "") at startup. Patch from
