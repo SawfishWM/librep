@@ -109,7 +109,7 @@ regsub(lasttype, matches, source, dest, data)
 	    else if(lasttype == reg_tx)
 	    {
 		TX *tx = data;
-		if(matches->tx.startp[no] != NULL)
+		if(matches->tx.startp[no] != LISP_NULL)
 		{
 		    if(check_section(tx, &matches->tx.startp[no],
 				     &matches->tx.endp[no]))
@@ -183,7 +183,7 @@ regsublen(lasttype, matches, source, data)
 	    else if(lasttype == reg_tx)
 	    {
 		TX *tx = data;
-		if(matches->tx.startp[no] != NULL)
+		if(matches->tx.startp[no] != LISP_NULL)
 		{
 		    if(check_section(tx, &matches->tx.startp[no],
 				     &matches->tx.endp[no]))
