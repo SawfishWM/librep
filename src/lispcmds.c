@@ -1441,7 +1441,7 @@ research:
 		    }
 		}
 	    }
-	    if(!trying_dl && name == Qnil)
+	    if(!trying_dl && name == Qnil && no_suffix_p)
 	    {
 		/* Try without a suffix */
 		repv tem = load_file_exists_p (dir);
