@@ -62,7 +62,7 @@
 	    (setq bind-stack (cons (cons lambda-list args-left) bind-stack))
 	    (setq args-left 0))
 	   ((consp lambda-list)
-	    (if (memq (car lambda-list) '(&optional &rest &aux))
+	    (if (memq (car lambda-list) '(&optional &rest))
 		(setq state (car lambda-list))
 	      (cond
 	       ((eq state 'required)
@@ -81,10 +81,7 @@
 		(setq bind-stack (cons (cons (car lambda-list) args-left)
 				       bind-stack)
 		      args-left 0
-		      state '&aux))
-	       ((eq state '&aux)
-		(setq bind-stack (cons (cons (car lambda-list) nil)
-				       bind-stack)))))))
+		      state '*done*))))))
 	  (setq lambda-list (cdr lambda-list)))
 	(when (> args-left 0)
 	  (compiler-warning
