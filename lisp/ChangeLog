@@ -1,3 +1,19 @@
+1998-10-30  John Harper  <john@dcs.warwick.ac.uk>
+
+	* prompt.jl (prompt-for-lisp): kludge to use lisp-complete-sexp
+	for completion
+
+	* lisp.jl: add two entries to the format-hooks-alist, `D' and
+	`F' for file-name-directory and file-name-nondirectory
+	respectively
+
+	* modes.jl (auto-mode-alist): add latex-mode entry
+	* tex-mode.jl (latex-mode): derivative of tex-mode, called when
+	the buffer looks to contain LaTeX source
+
+	* tex-shell.jl: initial (very basic) attempt at running TeX in
+	a subshell
+
 1998-10-29  John Harper  <john@dcs.warwick.ac.uk>
 
 	* completion.jl (complete-at-point, show-completions): these

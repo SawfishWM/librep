@@ -225,4 +225,5 @@
 (autoload 'mime-encode-attach-file "mime-encode" t)
 (autoload 'mime-encode-attach-buffer "mime-encode" t)
 (autoload-variable 'mime-encode-keymap "mime-encode")
+(autoload 'tex-file "tex-shell" t)
 ;;; ::autoload-end::
