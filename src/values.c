@@ -906,7 +906,6 @@ again:
 	rep_MARKVAL(rep_FUNARG(val)->name);
 	rep_MARKVAL(rep_FUNARG(val)->env);
 	rep_MARKVAL(rep_FUNARG(val)->special_env);
-	rep_MARKVAL(rep_FUNARG(val)->fh_env);
 	rep_MARKVAL(rep_FUNARG(val)->structure);
 	val = rep_FUNARG(val)->fun;
 	if (val && !rep_GC_MARKEDP(val))
@@ -953,7 +952,7 @@ collection is triggered when the editor is idle.
     return rep_handle_var_int(val, &rep_idle_gc_threshold);
 }
 
-DEFUN_INT("garbage-collect", Fgarbage_collect, Sgarbage_collect, (repv noStats), rep_Subr1, "") /*
+DEFUN_INT("garbage-collect", Fgarbage_collect, Sgarbage_collect, (repv stats), rep_Subr1, "") /*
 ::doc:garbage-collect::
 garbage-collect
 
@@ -1026,7 +1025,6 @@ last garbage-collection is greater than `garbage-threshold'.
 	rep_MARKVAL(lc->args);
 	rep_MARKVAL(lc->saved_env);
 	rep_MARKVAL(lc->saved_special_env);
-	rep_MARKVAL(lc->saved_fh_env);
 	rep_MARKVAL(lc->saved_structure);
 	/* don't bother marking `args_evalled_p' it's always `nil' or `t'  */
 	lc = lc->next;
@@ -1066,20 +1064,23 @@ last garbage-collection is greater than `garbage-threshold'.
 
     Fcall_hook (Qafter_gc_hook, Qnil, Qnil);
 
-    if(rep_NILP(noStats))
+    if(stats != Qnil)
     {
-	return(rep_list_4(Fcons(rep_MAKE_INT(used_cons),
+	return rep_list_5(Fcons(rep_MAKE_INT(used_cons),
 				rep_MAKE_INT(allocated_cons - used_cons)),
-		      Fcons(rep_MAKE_INT(rep_used_symbols),
-			    rep_MAKE_INT(rep_allocated_symbols
-					 - rep_used_symbols)),
-		      rep_list_3(rep_MAKE_INT(used_strings),
-				 rep_MAKE_INT(allocated_strings),
-				 rep_MAKE_INT(allocated_string_bytes)),
-		      rep_MAKE_INT(used_vector_slots)));
+			  Fcons(rep_MAKE_INT(rep_used_symbols),
+				rep_MAKE_INT(rep_allocated_symbols
+					     - rep_used_symbols)),
+			  rep_list_3(rep_MAKE_INT(used_strings),
+				     rep_MAKE_INT(allocated_strings),
+				     rep_MAKE_INT(allocated_string_bytes)),
+			  rep_MAKE_INT(used_vector_slots),
+			  Fcons(rep_MAKE_INT(rep_used_funargs),
+				rep_MAKE_INT(rep_allocated_funargs
+					     - rep_used_funargs)));
     }
-
-    return(Qt);
+    else
+	return Qt;
 }
 
 
