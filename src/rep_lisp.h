@@ -76,6 +76,10 @@
 #define MAKE_INT(x)	(((x) << VALUE_INT_SHIFT) \
 			 | VALUE_IS_CONS_OR_INT | VALUE_IS_INT)
 
+/* Assuming we're using 32 bit VALUEs. */
+#define LISP_MAX_INT	((1 << 28) - 1)
+#define LISP_MIN_INT	(-(1 << 28))
+
 /* Store anything needing >24 bits (future expansion and all that),
    in a cons cell, as one 24 bit, and one eight bit quantity. */
 #define MAKE_LONG_INT(x) \
