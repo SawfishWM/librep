@@ -21,6 +21,7 @@
 (message "Initialising; wait..." t)
 
 (load "lisp")
+(load "backquote")
 (load "loadkeys")
 (load "windows")
 (load "buffers")
