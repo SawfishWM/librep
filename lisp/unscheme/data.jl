@@ -71,7 +71,7 @@
     ((open rep)
      (access rep))
 
-  (defconst #f nil)
+  (defconst #f ())
   (defconst #t t)
 
 ;;; equivalence
@@ -80,7 +80,7 @@
   (define eq? eq)
   (define equal? equal)
 
-  (define (boolean? obj) (and (memq obj '(nil t #f #t)) #t))
+  (define (boolean? obj) (and (memq obj '(() t #f #t)) #t))
 
 ;;; pairs (cons cells)
 
@@ -115,12 +115,8 @@
 
 ;;; symbols
 
-  ;; XXX The test for () is because rep represents that as the symbol
-  ;; XXX `nil'. This will cause problems since (symbol? 'nil) => #f
-  ;; XXX But I think that's better than (symbol? '()) => #t  :-(
-
   (define (symbol? arg)
-    (cond ((memq arg '(nil #f #t)) #f)
+    (cond ((memq arg '(#f #t)) #f)
 	  ((symbolp arg) #t)
 	  (t #f)))
     

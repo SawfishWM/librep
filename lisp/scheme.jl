@@ -28,7 +28,6 @@
 
 ;;   (eq? 'FOO 'foo) => #f, guile also fails here
 ;;   `(..) => (backquote ..) not (quasiquote ..)
-;;   (symbol? 'nil) => #f, not #t (so that (symbol? '()) => #f)
 ;;   no separate character type
 ;;   reader doesn't handle numbers like: 15#
 

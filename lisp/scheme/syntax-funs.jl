@@ -141,7 +141,7 @@
   (define (expand-letrec bindings . body)
     (let ((vars (mapcar car bindings))
 	  (setters (mapcar (lambda (x) `(set! ,@x)) bindings))
-	  (initial (make-list (length bindings) ''nil)))
+	  (initial (make-list (length bindings) ''())))
       `((lambda ,vars ,@setters ,@body) ,@initial)))
 
   (define (expand-do vars test . body)

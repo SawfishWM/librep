@@ -27,11 +27,10 @@
 
 ;; The various aberrations that have been introduced are:
 
-;;  #f => nil
-;;  '() => nil
+;;  #f => ()
+;;  #t => t
 ;;  (eq? #f '()) => #t
-;;  (boolean? 'nil) => #t
-;;  (symbol? 'nil) => #f
+;;  (boolean? '()) => #t
 ;;  (list? #f) => #t
 ;;  (eq? 'FOO 'foo) => #f
 ;;  no separate character type
