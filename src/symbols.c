@@ -147,23 +147,28 @@ symbol_print(repv strm, repv obj)
     u_char *buf = alloca (rep_STRING_LEN (rep_SYM (obj)->name) * 2);
     register u_char *out = buf;
     register u_char *s;
+    rep_bool seen_digit = rep_FALSE;
 
     s = rep_STR (rep_SYM (obj)->name);
     switch (*s++)
     {
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
+	seen_digit = rep_TRUE;
+
     case '-': case '+': case '.':
 
     pass1:
 	switch (*s++)
 	{
 	case 0:
-	    *out++ = '\\';
+	    if (seen_digit)
+		*out++ = '\\';
 	    break;
 
 	case '0': case '1': case '2': case '3': case '4':
 	case '5': case '6': case '7': case '8': case '9':
+	    seen_digit = rep_TRUE;
 	case '/': case '.':
 	    goto pass1;
 	}
@@ -362,8 +367,6 @@ current environment.
     funarg_freelist = rep_FUNARG (f->car);
     rep_data_after_gc += sizeof (rep_funarg);
     f->car = rep_Funarg;
-    if (rep_bytecode_interpreter != rep_apply_bytecode)
-	f->car |= rep_FF_NO_BYTE_CODE;
     f->fun = fun;
     f->name = name;
     f->env = rep_env;
