@@ -22,7 +22,7 @@
 #define BYTECODES_H
 
 #define BYTECODE_MAJOR_VERSION 2
-#define BYTECODE_MINOR_VERSION 2
+#define BYTECODE_MINOR_VERSION 3
 
 /* Number of bits encoded in each extra opcode forming the argument. */
 #define ARG_SHIFT    8
@@ -179,12 +179,14 @@
 #define OP_MOD 0xbb			/* push (mod pop[1] pop[2]) */
 
 
-#define OP_LAST_BEFORE_JMPS 0xfa
+#define OP_LAST_BEFORE_JMPS 0xf8
 
+#define OP_JPN 0xf9			/* if (not stk[0]) pop; jmp pc[0,1] */
+#define OP_JPT 0xfa			/* if stk[0] pop; jmp pc[0,1] */
 #define OP_JMP 0xfb			/* jmp pc[0,1] */
 #define OP_JN 0xfc			/* if (not pop[1]) jmp pc[0,1] */
 #define OP_JT 0xfd			/* if pop[1] jmp pc[0,1] */
-#define OP_JNP 0xfe			/* if (not stk[0]) pop else jmp */
-#define OP_JTP 0xff			/* if stk[0] pop else jmp */
+#define OP_JNP 0xfe			/* if (not stk[0]) jmp else pop */
+#define OP_JTP 0xff			/* if stk[0] jmp else pop */
 
 #endif /* BYTECODES_H */
