@@ -24,6 +24,8 @@ exec rep "$0" "$@"
 (defvar *current-file* nil)
 (defvar *found-strings* nil)		;list of (STRING FILES...)
 
+(defvar *write-c-file* nil)
+
 (defun parse (filename)
   (let
       ((file (open-file filename 'read)))
@@ -78,6 +80,10 @@ exec rep "$0" "$@"
 	   (mapc (lambda (f)
 		   (scan-list f)) (cdr form)))
 
+	  ((eq (car form) 'case)
+	   (mapc (lambda (f)
+		   (scan-list (cdr f))) (cdr form)))
+
 	  ((eq (car form) 'condition-case)
 	   (mapc (lambda (handler)
 		   (scan-list (cdr handler))) (nthcdr 2 form)))
@@ -124,23 +130,42 @@ exec rep "$0" "$@"
 	  (let ((string (car x))
 		(files (cdr x)))
 	    (mapc (lambda (f)
-		    (format standard-output "#: %s\n" f)) files)
+		    (format standard-output "%s %s %s\n"
+			    (if *write-c-file* "  /*" "#:")
+			    f (if *write-c-file* "*/" ""))) files)
 	    (let*
 		((print-escape 'newlines)
 		 (out (format nil "%S" string))
 		 (point 0))
-	      (while (and (< point (length out))
-			  (string-match "\\\\n" out point))
-		(setq out (concat (substring out 0 (match-start)) "\\n\"\n\""
-				  (substring out (match-end))))
-		(setq point (+ (match-end) 3)))
-	      (format standard-output "msgid %s\nmsgstr \"\"\n\n" out))))
+	      (if *write-c-file*
+		  (format standard-output "  _(%s);\n\n" out)
+		(while (and (< point (length out))
+			    (string-match "\\\\n" out point))
+		  (setq out (concat (substring out 0 (match-start)) "\\n\"\n\""
+				    (substring out (match-end))))
+		  (setq point (+ (match-end) 3)))
+		(format standard-output "msgid %s\nmsgstr \"\"\n\n" out)))))
 	(nreverse *found-strings*)))
 
 
 ;; entry point
 
-(format standard-output "\
+(when (or (get-command-line-option "-c") (get-command-line-option "--c"))
+  (setq *write-c-file* t))
+(when (or (get-command-line-option "-p") (get-command-line-option "--pot"))
+  (setq *write-c-file* nil))
+
+(if *write-c-file*
+    (write standard-output "\
+/* SOME DESCRIPTIVE TITLE */
+/* This file is intended to be parsed by xgettext.
+ * It is not intended to be compiled.
+ */
+
+#if 0
+void some_function_name() {\n\n")
+
+  (format standard-output "\
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR Free Software Foundation, Inc.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
@@ -156,7 +181,7 @@ msgstr \"\"
 \"MIME-Version: 1.0\\n\"
 \"Content-Type: text/plain; charset=CHARSET\\n\"
 \"Content-Transfer-Encoding: ENCODING\\n\"\n\n"
-	(current-time-string nil "%Y-%m-%d %H:%M%z"))
+	  (current-time-string nil "%Y-%m-%d %H:%M%z")))
 
 (while command-line-args
   (let
@@ -164,6 +189,11 @@ msgstr \"\"
     (setq command-line-args (cdr command-line-args))
     (parse file)))
 (output-all)
+
+(when *write-c-file*
+  (write standard-output "\
+}
+#endif\n"))
 
 ;; Local variables:
 ;; major-mode: lisp-mode
