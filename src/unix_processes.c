@@ -1732,6 +1732,7 @@ void
 rep_proc_kill(void)
 {
     struct Proc *pr;
+    signal(SIGCHLD, SIG_DFL);
     pr = process_chain;
     while(pr)
     {
@@ -1740,5 +1741,4 @@ rep_proc_kill(void)
 	pr = nxt;
     }
     process_chain = NULL;
-    signal(SIGCHLD, SIG_IGN);
 }
