@@ -1,3 +1,7 @@
+1999-11-19  John Harper  <john@dcs.warwick.ac.uk>
+
+	* gettext.c: all gettext functions are now prefixed by gnu_
+
 1999-11-18  John Harper  <john@dcs.warwick.ac.uk>
 
 	* lispcmds.c (Fstring_equal, Fstring_lessp): case-insensitive
