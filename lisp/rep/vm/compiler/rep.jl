@@ -557,7 +557,9 @@
 	       'misc "Unreachable forms after nil in cond statement")))
 	   (t
 	    ;; non t-or-nil condition
-	    (compile-form-1 (car subl))
+	    (compile-form-1 (car subl) (and return-follows
+					    (null (cdr subl))
+					    (null (cdr form))))
 	    (decrement-stack)
 	    (if (consp (cdr subl))
 		;; Something besides the condition
