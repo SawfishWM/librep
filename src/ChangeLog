@@ -1,4 +1,10 @@
+1999-09-15  John Harper  <john@dcs.warwick.ac.uk>
+
+	* unix_files.c (rep_file_modes_as_string): change ulong to u_long
+
 1999-09-14  John Harper  <john@dcs.warwick.ac.uk>
+
+	* version 0.6
 
 	* unix_processes.c (rep_system): construct environ from
 	process-environment as with start-process and call-process

@@ -435,7 +435,7 @@ rep_file_modes_as_string(repv file)
     repv string = Fmake_string(rep_MAKE_INT(10), rep_MAKE_INT('-'));
     if(st != 0 && string && rep_STRINGP(string))
     {
-	ulong perms = st->st_mode;
+	u_long perms = st->st_mode;
 	int i;
 	char c = '-';
 	if(S_ISDIR(perms))	    c = 'd';
