@@ -1,3 +1,8 @@
+2001-02-13  John Harper  <jsh@eazel.com>
+
+	* rep.jl (debug-entry, debug-exit, debug-error-entry): declare
+	using defvar
+
 2001-02-12  John Harper  <jsh@eazel.com>
 
 	* rep/data/string-util.jl (string-upper-case-p,

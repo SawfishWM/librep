@@ -70,5 +70,6 @@
 (require 'rep.lang.backquote)
 (require 'rep.io.file-handlers.tilde)
 
-(setq debug-entry (make-autoload 'debug-entry "rep/lang/debugger"))
-(setq debug-error-entry (make-autoload 'debug-error-entry "rep/lang/debugger"))
+(defvar debug-entry (make-autoload 'debug-entry "rep/lang/debugger"))
+(defvar debug-exit)
+(defvar debug-error-entry (make-autoload 'debug-error-entry "rep/lang/debugger"))
