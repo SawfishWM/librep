@@ -6382,6 +6382,9 @@ until it has parsed a whole object. This stream could be a file, a
 function, or even a string; the @code{read} function does not need to
 differentiate.
 
+Unless otherwise stated, all functions and variables described in the
+following sections are exported by the @code{rep.io.streams} module.
+
 @defun streamp arg
 Return true if @var{arg} is a stream.
 @end defun
@@ -6855,6 +6858,8 @@ will be called in turn.
 
 The names of hooks of this type will normally end in @code{-hook}.
 
+These functions are exported by the @code{rep.system} module.
+
 @defun add-hook hook function #!optional at-end
 This function adds a new function @var{function} to the list of
 functions installed in the (list) hook @var{hook} (a symbol).
@@ -6916,6 +6921,9 @@ used to represent files which have been opened for reading or writing
 Names of files are represented by strings, the syntax of file names is
 defined by the underlying operating system: @code{librep} simply treats
 it as a string.
+
+Unless otherwise stated, all functions and variables described in the
+following sections are exported by the @code{rep.io.files} module.
 
 @menu
 * File Names::                  Files are named by a string
@@ -7610,6 +7618,9 @@ to the Lisp system; data can be sent to the @code{stdin} channel and
 any output from the process is automatically written to a specified
 Lisp output stream.
 
+Unless otherwise stated, all functions and variables described in the
+following sections are exported by the @code{rep.io.processes} module.
+
 @menu
 * Process Objects::             Lisp objects associated with subprocesses
 * Asynchronous Processes::      Subprocesses running in parallel
@@ -7960,6 +7971,8 @@ Note that this function is only distinct to
 application, or an extension has been loaded that provides an event
 loop (such as the @code{gtk} binding). In this case other input forms,
 such as user input, for example, can preempt the timeout.
+
+This function is exported by the @code{rep.system} module.
 @end defun
 
 @xref{Streams}.
@@ -8250,6 +8263,8 @@ beginning of the line.
 @cindex Matching strings
 @cindex String matching
 
+These functions are exported by the @code{rep.regexp} module.
+
 @defun quote-regexp string
 Return a version of @var{string}, such that when used as a regexp, it
 will match the original contents of @var{string} verbatim, and nothing
@@ -8368,6 +8383,20 @@ Note that double backslashes are required due to the read syntax of
 strings (@pxref{Strings}).
 @end defun
 
+@defun string-replace regexp template string
+Returns the string created by replacing all matches of @var{regexp} in
+@var{string} with the result of expanding @var{template} using the
+@code{expand-last-match} function.
+
+@lisp
+(string-replace "-" "_" "foo-bar-baz")
+    @result{} "foo_bar_baz"
+
+(string-replace "&(optional|rest)" "#!\\1" "(a &optional b &rest c)")
+    @result{} "(a #!optional b #!rest c)"
+@end lisp
+@end defun
+
 
 @node Time and Date, i18n, Regular Expressions, The language
 @section Time and Date
@@ -8391,13 +8420,14 @@ This section describes how time and date values are handled in
 @cindex Date and time, timestamps
 
 As in UNIX, @code{librep} measures time as the number of seconds since
-January 1st, 1970 (known as the @dfn{epoch}). However, since integers
-only store 30 bits of information, timestamps can not be kept as single
-numbers. Instead a pair of integers is used, stored in a cons cell.
+January 1st, 1970 (known as the @dfn{epoch}). For historical reasons
+rep stores timestamps as a pair of integers, using a cons cell.
 
 The first integer records the number of whole days since the epoch, the
 second records the number of seconds since the start of the day (in
 universal time).
+
+These function are exported by the @code{rep.system} module:
 
 @defun current-time
 Return the number of seconds since the epoch, in a cons-cell.
@@ -8411,8 +8441,8 @@ Return the number of seconds since the epoch, in a cons-cell.
 @defun fix-time timestamp
 Ensure that the two parts of @var{timestamp} (a pair or integers) are
 consistent, simply that the number of seconds is less than the number
-of seconds in a whole day. If not, the timestamp is adjusted to fix
-this.
+of seconds in a whole day. If not, the timestamp is adjusted to meet
+this constraint.
 @end defun
 
 @defun time-later-p timestamp-1 timestamp-2
@@ -8421,6 +8451,27 @@ Returns true if @var{timestamp-1} is later than @var{timestamp-2}.
 
 On the plus side, this scheme won't wrap around as quickly as UNIX's
 @code{time_t} will ;-)
+
+The @code{rep.util.time} module also provides some functions for
+manipulating timestamps:
+
+@defun time->seconds timestamp
+Convert @var{timestamp} to an integer, the number of seconds since the
+epoch that it represents.
+@end defun
+
+@defun seconds->time seconds
+Convert from an integer @var{seconds} to a timestamp object.
+@end defun
+
+@defun time- timestamp-1 timestamp-2
+Return the number of seconds difference between @var{timestamp-1} and
+@var{timestamp-2}.
+@end defun
+
+@defvr Constant seconds-per-day
+The number of seconds in a 24-hour day.
+@end defvr
 
 
 @node Formatting Dates, Parsing Dates, Timestamps, Time and Date
@@ -8663,6 +8714,8 @@ code.
 @section System Information
 @cindex System information
 
+These definitions are all exported by the @code{rep.system} module.
+
 @defvar operating-system
 A symbol naming the current operating system. The only current option
 is @code{unix}.
@@ -8698,6 +8751,8 @@ rep-version
 @node User Information, Environment Variables, System Information, The language
 @section User Information
 @cindex User information
+
+These functions are exported by the @code{rep.system} module.
 
 @defun user-login-name
 This function returns a string containing the login name of the user.
@@ -8737,6 +8792,8 @@ returned string will be as returned by @code{file-name-as-directory}
 @node Environment Variables, String Functions, User Information, The language
 @section Environment Variables
 @cindex Environment variables
+
+These functions are exported by the @code{rep.system} module.
 
 @defun getenv variable-name
 This function returns the value (a string) of the environment variable
@@ -8868,6 +8925,8 @@ Return the resulting string.
 Pause for a @var{seconds} (plus the optional @var{milliseconds}
 component) long period of time. Input becoming available will
 @emph{not} break the sleep (@pxref{Process I/O}).
+
+This function is exported by the @code{rep.system} module.
 @end defun
 
 
@@ -8898,6 +8957,8 @@ Displays a one-line message, the string @var{message}. If
 @var{display-now}, every effort will be made to display the message as
 soon as possible, possibly before the next scheduled screen update (if
 applicable).
+
+This function is exported by the @code{rep.system} module.
 @end defun
 
 
@@ -8916,7 +8977,7 @@ The list of unused command line arguments, in their original order.
 @end defvar
 
 The @code{get-command-line-option} function may be used to scan this
-list of arguments.
+list of arguments. The @code{rep.system} module exports this function.
 
 @defun get-command-line-option option #!optional requires-arg
 Returns t if @var{option} was specified on the command line
