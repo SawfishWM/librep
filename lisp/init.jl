@@ -71,4 +71,4 @@
 	(set-current-buffer (open-file arg))))
     (setq command-line-args (cdr command-line-args))))
 
-(princ "ok." t)
+(message (version-and-build-string))
