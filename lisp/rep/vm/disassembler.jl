@@ -117,14 +117,11 @@
 	      (format stream "Interactive spec: %S\n" spec))
 	    (when doc
 	      (format stream "Doc string: %S\n" doc)))
-	  (if (zerop (logand (aref arg 3) 0x10000))
-	      ;; Not a macro
-	      (setq stack (aref arg 3))
-	    (format stream "[This is a macro definition]\n")
-	    (setq stack (logand (aref arg 3) 0xffff))))))
+	  (setq stack (aref arg 3)))))
       (when (zerop depth)
-	(format stream "%d bytes, %d constants, and %d stack slots\n"
-		(length code-string) (length consts) stack))
+	(format stream "%d bytes, %d constants, and (%d,%d) stack slots\n"
+		(length code-string) (length consts)
+		(logand stack 0xffff) (ash stack -16)))
       (let
 	  ((i 0)
 	   (indent (make-string depth))
