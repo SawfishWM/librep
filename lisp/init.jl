@@ -254,9 +254,6 @@ See also `setq'. Returns the value of the last FORM."
 
 ;; Misc syntax
 
-;; I could have written this using named let, but since rep currently
-;; doesn't have a tail-recursive interpreter (only a compiler), using
-;; `while' may be more useful..
 (defmacro do (vars test . body)
   "do VARS (TEST EXPR...) BODY...
 
