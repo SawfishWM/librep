@@ -18,6 +18,8 @@
 ;;; along with Jade; see the file COPYING.  If not, write to
 ;;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
+(provide 'tilde)
+
 (defun tilde-expand (file-name)
   (if (string-looking-at "~([^/]*)/?" file-name)
       (concat
