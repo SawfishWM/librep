@@ -21,15 +21,44 @@
 #define _GNU_SOURCE
 
 #include "repint.h"
+#include <assert.h>
+#include <string.h>
 
 #ifdef HAVE_DYNAMIC_LOADING
 
-#ifdef HAVE_DLFCN_H
+#if defined (HAVE_DLFCN_H)
 # include <dlfcn.h>
+# if ! defined (RTLD_LAZY)
+#  if defined (DL_LAZY)
+#   define RTLD_LAZY DL_LAZY
+#  else
+#   define RTLD_LAZY 0
+#  endif
+# endif
+# if ! defined (RTLD_NOW)
+#  if defined (DL_NOW)
+#   define RTLD_NOW DL_NOW
+#  else
+#   define RTLD_NOW 0
+#  endif
+# endif
 #endif
 
-#include <assert.h>
-#include <string.h>
+#elif defined (HAVE_DL_H)
+# include <dl.h>
+# if ! defined (BIND_IMMEDIATE)
+#  define BIND_IMMEDIATE 0
+# endif
+# if ! defined (BIND_DEFERRED)
+#  define BIND_DEFERRED 0
+# endif
+# if ! defined (BIND_NONFATAL)
+#  define BIND_NONFATAL 0
+# endif
+# if ! defined (DYNAMIC_PATH)
+#  define DYNAMIC_PATH 0
+# endif
+#endif
 
 struct dl_lib_info {
     struct dl_lib_info *next;
@@ -39,6 +68,24 @@ struct dl_lib_info {
 };
 
 static struct dl_lib_info *dl_list;
+
+#if !defined (HAVE_DLOPEN) && defined (HAVE_SHL_LOAD)
+static inline void *
+dlsym (void *handle, char *sym)
+{
+    void *addr;
+    if (shl_findsym (&handle, sym, TYPE_UNDEFINED, &addr) == 0)
+	return addr;
+    else
+	return 0;
+}
+
+static inline void
+dlclose (void *handle)
+{
+    shl_unload (handle);
+}
+#endif
 
 static struct dl_lib_info *
 find_dl(repv file)
@@ -124,12 +171,27 @@ rep_open_dl_library(repv file_name)
 	    rep_xsubr **functions;
 	    repv (*init_func)(repv);
 	    repv *feature_sym;
-	    void *handle = dlopen(dlname,
-				  rep_SYM(Qdl_load_reloc_now)->value == Qnil
-				  ? RTLD_LAZY : RTLD_NOW);
+	    void *handle;
+
+#if defined (HAVE_DLOPEN)
+	    handle = dlopen(dlname,
+			    rep_SYM(Qdl_load_reloc_now)->value == Qnil
+			    ? RTLD_LAZY : RTLD_NOW);
+#elif defined (HAVE_SHL_LOAD)
+	    handle = shl_load (dlname,
+			       (rep_SYM(Qdl_load_reloc_now)->value == Qnil
+				? BIND_DEFERRED : BIND_IMMEDIATE)
+			       | BIND_NONFATAL | DYNAMIC_PATH, 0L);
+#endif
+
 	    if(handle == 0)
 	    {
-		char *err = dlerror();
+		char *err;
+#ifdef HAVE_DLERROR
+		err = dlerror();
+#else
+		err = "unknown dl error";
+#endif
 		if(err != 0)
 		    Fsignal(Qerror, rep_LIST_1(rep_string_dup(err)));
 		return 0;
