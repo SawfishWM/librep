@@ -505,9 +505,18 @@ inlined_search_special_environment (repv sym)
 }
 
 static int
-search_special_environment (repv sym)
+search_special_environment__ (repv sym)
 {
     return inlined_search_special_environment (sym);
+}
+
+static inline int
+search_special_environment (repv sym)
+{
+    if (rep_SPECIAL_ENV == Qt)
+	return -1;
+    else
+	return search_special_environment__ (sym);
 }
 
 repv
