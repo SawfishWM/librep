@@ -45,6 +45,10 @@
 ;;; objects can be generated in the text segment of the binary, with very
 ;;; little modification needed to the Lisp system itself.
 
+;;; Currently, the following forms are recognised as [possibly] containing
+;;; static definitions: defun, defmacro, defvar, defconst,
+;;; make-variable-buffer-local, put.
+
 (defvar dump-verbosely t
   "When t output the reference graph as text to a file dump-verbosely-file
 for the entire set of dumped files.")
@@ -332,22 +336,25 @@ the lisp-lib-dir with .jlc as its suffix."
    (t
     nil)))
 
-;; Return the label or integer that is the constant value of FORM (given
-;; that FORM is a constant)
-(defun dump-constant-value (form)
+;; Return the Lisp object that is the value of the constant FORM
+(defun dump-get-constant (form)
   (cond
    ((or (integerp form) (stringp form)
 	(vectorp form) (bytecodep form)
 	(eq form t) (eq form nil))
     ;; Self-evaluating types
-    (if (integerp form)
-	form
-      (dump-get-label (dump-add-constant form))))
+    form)
    ((consp form)
     ;; only quote or function
-    (if (integerp (nth 1 form))
-	(nth 1 form)
-      (dump-get-label (dump-add-constant (nth 1 form)))))))
+    (nth 1 form))))
+
+;; Return the label or integer that is the constant value of FORM (given
+;; that FORM is a constant)
+(defun dump-constant-value (form)
+  (setq form (dump-get-constant form))
+  (if (integerp form)
+      form
+    (dump-get-label (dump-add-constant form))))
 
 ;; For all symbol cells in LIST that have a plist property, add its value
 ;; as a constant
@@ -400,12 +407,25 @@ the lisp-lib-dir with .jlc as its suffix."
 	(dump-state-put sym 'variable-documentation (nth 3 form))))))
 
 (defun dump-make-variable-buffer-local (form)
-  (if (and (eq (car (car (nthcdr 1 form))) 'quote)
-	   (symbolp (nth 1 (car (nthcdr 1 form)))))
-      (let
-	  ((sym (dump-add-constant (nth 1 (car (nthcdr 1 form))))))
-	(dump-add-state sym 'buffer-local t))
-    (dump-add-non-constant form)))
+  (let
+      ((sym (nth 1 form)))
+    (if (not (dump-constant-p sym))
+	(dump-add-non-constant form)
+      (setq sym (dump-add-constant (dump-get-constant sym)))
+      (dump-add-state sym 'buffer-local t))))
+
+(defun dump-put (form)
+  (let
+      ((sym (nth 1 form))
+       (prop (nth 2 form))
+       (value (nth 3 form)))
+    (if (not (and (dump-constant-p sym)
+		  (dump-constant-p prop)
+		  (dump-constant-p value)))
+	(dump-add-non-constant form)
+      (setq sym (dump-add-constant (dump-get-constant sym)))
+      (dump-state-put sym (dump-get-constant prop)
+		      (dump-constant-value value)))))
 
 (put 'defun 'dump-function 'dump-defun)
 (put 'defmacro 'dump-function 'dump-defmacro)
@@ -413,6 +433,7 @@ the lisp-lib-dir with .jlc as its suffix."
 (put 'defconst 'dump-function 'dump-defconst)
 (put 'make-variable-buffer-local 'dump-function
      'dump-make-variable-buffer-local)
+(put 'put 'dump-function 'dump-put)
 
 
 ;; Assembler output
