@@ -1,3 +1,10 @@
+1999-10-23  John Harper  <john@dcs.warwick.ac.uk>
+
+	* lispmach.c: some more small optimisations
+
+	* unix_processes.c (rep_system): fix child termination on being
+	unable to exec /bin/sh
+
 1999-10-21  John Harper  <john@dcs.warwick.ac.uk>
 
 	* streams.c (Fformat): revert the long-int printing, since it
