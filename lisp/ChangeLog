@@ -1,3 +1,13 @@
+Mon May  4 12:12:22 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* cvs.jl (cvs-update-file-list): call cvs-after-update-hook on
+	completion
+	(cvs-undo-modification): ensure that buffers aren't reloaded
+	until _after_ the update has completed
+
+	* info.jl: use the buffer-status-id to display the current node
+	name, not the mode-name
+
 Sun May  3 12:22:27 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* read-mail.jl (rm-next-page, rm-previous-page): detect top and

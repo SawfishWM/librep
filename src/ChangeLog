@@ -1,3 +1,9 @@
+Mon May  4 12:12:53 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* views.c (update_status_buffer): changed the layout of the
+	status line again; also some kludgey attempts at catching
+	buffer overruns
+
 Sun May  3 12:20:21 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* views.c (update_status_buffer): pad the gap between the
