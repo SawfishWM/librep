@@ -31,6 +31,12 @@
 
 /* #define GC_MONITOR_STK */
 
+/* #define DEBUG_GC */
+
+#ifdef DEBUG_GC
+static int debug_gc = 0;
+#endif
+
 
 /* Type handling */
 
@@ -736,6 +742,15 @@ last garbage-collection is greater than `garbage-threshold'.
 
     rep_in_gc = rep_TRUE;
 
+#ifdef DEBUG_GC
+    if (debug_gc)
+    {
+	repv stream = Fstderr_file ();
+	rep_stream_puts (stream, "\n ** garbage collection:", -1, rep_FALSE);
+	Fbacktrace (stream);
+    }
+#endif
+
     /* mark static objects */
     for(i = 0; i < next_static_root; i++)
 	rep_MARKVAL(*static_roots[i]);
@@ -799,6 +814,14 @@ last garbage-collection is greater than `garbage-threshold'.
 #ifdef GC_MONITOR_STK
     fprintf(stderr, "gc: stack usage = %d\n",
 	    ((int)&dummy) - (int)gc_stack_high_tide);
+#endif
+
+#ifdef DEBUG_GC
+    if (debug_gc)
+    {
+	repv stream = Fstderr_file ();
+	rep_stream_putc (stream, '\n');
+    }
 #endif
 
     if(rep_NILP(noStats))
