@@ -21,6 +21,25 @@
 ;; This file is loaded right at the beginning of the initialisation
 ;; procedure.
 
+(defvar dumped-lisp-libraries nil
+  "When a dumped binary is being executed, a list of the names of all Lisp
+libraries that were dumped.")
+
+;; A list of the dumped libraries whose .jld files have been autoloaded
+(defvar dumped-loaded-libraries nil)
+
+
+;; Function decls
+
+(defmacro defsubst (&rest decl)
+  "Defines a function that will be compiled inline to any functions that
+call it. Otherwise exactly the same as defun."
+  ;; These actions are also hard-coded into dump.jl
+  (list 'prog1
+	(cons 'defun decl)
+	(list 'put (list 'quote (car decl))
+	      ''compile-fun ''comp-compile-inline-function)))
+
 
 ;; Convenient conditional macros, all defined using cond
 
@@ -146,11 +165,14 @@ is 0)."
 ;; Some function pseudonyms
 (defmacro setcar (&rest args)
   (cons 'rplaca args))
+
 (defmacro setcdr (&rest args)
   (cons 'rplacd args))
+
 (defmacro string= (&rest args)
   (cons 'equal args))
 (fset 'string-equal-p (symbol-function 'string=))
+
 (defmacro string< (&rest args)
   (cons '< args))
 (fset 'string-less-p (symbol-function 'string<))
