@@ -63,7 +63,7 @@
   ;; list, don't macroexpand the form before compiling.
   (define top-level-unexpanded
     '(defun defmacro defvar defconst defsubst require define-value
-      declare eval-when-compile))
+      declare eval-when-compile define-structure structure))
 
   ;; setup properties to tell the compiler where to look for symbols
   ;; in the `rep'  package
@@ -76,11 +76,17 @@
 ;;; pass 1 support
 
   (defun pass-1 (forms)
-    (let loop ((rest forms)
+    ;; merge adjacent progn forms
+    (let loop ((rest (mapcar do-pass-1 forms))
 	       (out '()))
-      (if (null rest)
-	  (nreverse out)
-	(loop (cdr rest) (cons (do-pass-1 (car rest)) out)))))
+      (cond ((null rest)
+	     (nreverse out))
+
+	    ((and (eq (caar out) 'progn) (eq (caar rest) 'progn))
+	     (rplaca out (nconc (car out) (cdar rest)))
+	     (loop (cdr rest) out))
+
+	    (t (loop (cdr rest) (cons (car rest) out))))))
 
   (defun do-pass-1 (form)
     (unless (or (memq (car form) top-level-unexpanded)
@@ -134,7 +140,11 @@
 	 (eval (nth 1 form))))
 
       ((progn)
-       (setq form (cons 'progn (mapcar do-pass-1 (cdr form))))))
+       (setq form (cons 'progn (pass-1 (cdr form)))))
+
+      ;; put bare forms into progns so they can be merged in pass-1
+      (t (unless (memq (car form) top-level-unexpanded)
+	   (setq form (list 'progn form)))))
 
     form)
 
@@ -152,9 +162,6 @@
 
   (defun do-pass-2 (form)
     (case (car form)
-      ((progn)
-       (cons 'progn (mapcar do-pass-2 (cdr form))))
-
       ((defun)
        (let ((tmp (assq (nth 1 form) (fluid macro-env))))
 	 (let-fluids ((current-fun (nth 1 form)))
@@ -862,11 +869,18 @@
     (decrement-stack))
   (put 'make-closure 'rep-compile-fun compile-make-closure)
 
+  (defun get-form-opcode (form)
+    (cond ((symbolp form) (get form 'rep-compile-opcode))
+	  ;; must be a structure-ref
+	  ((eq (car form) 'structure-ref)
+	   (get (caddr form) 'rep-compile-opcode))
+	  (t (compiler-error "unknown opcode for form: %s" form))))
+
   ;; Instruction with no arguments
   (defun compile-0-args (form)
     (when (cdr form)
       (compiler-warning "All parameters to %s ignored" (car form)))
-    (emit-insn (get (car form) 'rep-compile-opcode))
+    (emit-insn (get-form-opcode (car form)))
     (increment-stack))
 
   ;; Instruction taking 1 arg on the stack
@@ -875,7 +889,7 @@
       (compiler-warning
        "More than one parameter to %s; rest ignored" (car form)))
     (compile-form-1 (nth 1 form))
-    (emit-insn (get (car form) 'rep-compile-opcode)))
+    (emit-insn (get-form-opcode (car form))))
 
   ;; Instruction taking 2 args on the stack
   (defun compile-2-args (form)
@@ -884,7 +898,7 @@
        "More than two parameters to %s; rest ignored" (car form)))
     (compile-form-1 (nth 1 form))
     (compile-form-1 (nth 2 form))
-    (emit-insn (get (car form) 'rep-compile-opcode))
+    (emit-insn (get-form-opcode (car form)))
     (decrement-stack))
 
   ;; Instruction taking 3 args on the stack
@@ -895,14 +909,14 @@
     (compile-form-1 (nth 1 form))
     (compile-form-1 (nth 2 form))
     (compile-form-1 (nth 3 form))
-    (emit-insn (get (car form) 'rep-compile-opcode))
+    (emit-insn (get-form-opcode (car form)))
     (decrement-stack 2))
 
   ;; Compile a form `(OP ARG1 ARG2 ARG3 ...)' into as many two argument
   ;; instructions as needed (PUSH ARG1; PUSH ARG2; OP; PUSH ARG3; OP; ...)
   (defun compile-binary-op (form)
     (let
-	((opcode (get (car form) 'rep-compile-opcode)))
+	((opcode (get-form-opcode (car form))))
       (setq form (cdr form))
       (unless (>= (length form) 2)
 	(compiler-error "Too few args to binary operator" form))
@@ -921,7 +935,7 @@
       (compiler-error "Too few args to relation" form))
      ((= (length form) 3)
       (let
-	  ((opcode (get (car form) 'rep-compile-opcode)))
+	  ((opcode (get-form-opcode (car form))))
 	;; Simple case, only two arguments, i.e. `(OP ARG1 ARG2)' into:
 	;;  PUSH ARG1; PUSH ARG2; OP;
 	(compile-form-1 (nth 1 form))
