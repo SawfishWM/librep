@@ -45,7 +45,7 @@
 ;;; stack needed is calculated by the compiler.
 
 ;; Instruction set version
-(defconst bytecode-major 5)
+(defconst bytecode-major 6)
 (defconst bytecode-minor 0)
 
 ;; Opcodes
@@ -54,7 +54,7 @@
 					; function with the result.
 (defconst op-push 0x10)			;pushes constant # n
 (defconst op-refq 0x18)			;pushes val of symbol n (in c-v)
-(defconst op-setq 0x20)			;sets symbol n (in c-v) to stk[0]
+(defconst op-setq 0x20)			;sets sym n (in c-v) to stk[0]; pop
 (defconst op-list 0x28)			;makes top n items into a list
 (defconst op-bind 0x30)			;bind constant n to stk[0], pops stk
 
@@ -158,7 +158,8 @@
 (defconst op-pushi-minus-1 0x9d)
 (defconst op-pushi-minus-2 0x9e)
 (defconst op-pushi 0x9f)
-(defconst op-pushi-pair 0xa0)
+(defconst op-pushi-pair-neg 0xa0)
+(defconst op-pushi-pair-pos 0xa1)
 
 (defconst op-bindobj 0xb0)
 (defconst op-swap2 0xba)
@@ -180,3 +181,87 @@
 (defconst comp-max-1-byte-arg 5)	;max arg held in 1-byte instruction
 (defconst comp-max-2-byte-arg 0xff)	;max arg held in 2-byte instruction
 (defconst comp-max-3-byte-arg 0xffff)	;max arg help in 3-byte instruction
+
+
+;; Description of instruction set for when optimising
+
+;; list of instructions that always have a 1-byte argument following them
+(defvar comp-two-byte-insns (list op-pushi))
+
+;; list of instructions that always have a 2-byte argument following them
+(defvar comp-three-byte-insns (list op-pushi-pair-neg op-pushi-pair-pos
+				    op-ejmp op-jpn op-jpt op-jmp op-jn op-jt
+				    op-jnp op-jtp))
+
+;; maps from each instruction to the effect they have on the stack pointer.
+;; i.e. +1 means the instruction always increases the net stack position
+;; by one
+(defvar comp-insn-stack-delta
+  [nil nil nil nil nil nil nil nil	;0x00
+   nil nil nil nil nil nil nil nil
+   +1  nil nil nil nil nil nil nil	;0x10
+   +1  nil nil nil nil nil nil nil
+   -1   nil nil nil nil nil nil nil	;0x20
+   nil nil nil nil nil nil nil nil
+   -1  nil nil nil nil nil nil nil	;0x30
+   nil nil nil nil nil nil nil nil
+   0   -1  0   -1  0   0   +1  0	;0x40
+   -1  +1  +1  -1  0   0   -1  -1
+   -1  -1  -1  -1  0   0   -1  0	;0x50
+   -1  -1  -1  -1  0   0   -1  -1
+   -1  -1  -1  -1  -1  -1  -1  -1	;0x60
+   0   0   -1  0   0   0   0   0
+   0   0   0   nil -1  -1  nil 0	;0x70
+   0   0   -1  -2  -1  -1  nil 0
+   0   -1  -1  -1  -1  0   -1  -1	;0x80
+   -1  -1  -1  -1  -1  -1  0   0
+   0   0   0   -1  -1  -1  -1  -1	;0x90
+   0   0   +1  +1  +1  +1  +1  +1
+   +1  +1 nil nil nil nil nil nil	;0xa0
+   nil nil nil nil nil nil nil nil
+   -1  -1  0   0   0   0   -1  0	;0xb0
+   -1  0   0   -1  -1  0   nil nil
+   nil nil nil nil nil nil nil nil	;0xc0
+   nil nil nil nil nil nil nil nil
+   nil nil nil nil nil nil nil nil	;0xd0
+   nil nil nil nil nil nil nil nil
+   nil nil nil nil nil nil nil nil	;0xe0
+   nil nil nil nil nil nil nil nil
+   nil nil nil nil nil nil nil nil	;0xf0
+   -1  nil nil 0   -1  -1  nil nil])
+
+;; list of instructions pushing a single constant onto the stack
+(defvar comp-constant-insns
+  (list op-push op-nil op-t op-pushi-0 op-pushi-1 op-pushi-2
+	op-pushi-minus-1 op-pushi-minus-2 op-pushi
+	op-pushi-pair-neg op-pushi-pair-pos))
+
+;; list of instructions that are both side-effect free and don't reference
+;; any variables. Also none of these may ever raise exceptions
+(defvar comp-varref-free-insns
+  (list* op-dup op-cons op-car op-cdr op-eq op-equal op-zerop op-null
+	 op-atom op-consp op-listp op-numberp op-stringp op-vectorp
+	 op-symbolp op-sequencep op-functionp op-special-form-p
+	 op-subrp op-eql op-macrop op-bytecodep
+	 comp-constant-insns))
+
+;; list of instructions that can be safely deleted if their result
+;; isn't actually required
+(defvar comp-side-effect-free-insns
+  (list* op-refq op-ref op-fref op-nth op-nthcdr op-aref op-length op-add
+	 op-neg op-sub op-mul op-div op-rem op-lnot op-not op-lor
+	 op-land op-num-eq op-num-noteq op-gt op-ge op-lt op-le op-inc
+	 op-dec op-lsh op-fboundp op-boundp op-get op-reverse op-assoc
+	 op-assq op-rassoc op-rassq op-last op-copy-sequence op-lxor
+	 op-max op-min op-mod
+	 comp-varref-free-insns))
+
+;; list of all conditional jumps
+(defvar comp-conditional-jmp-insns
+  (list op-jpn op-jpt op-jn op-jt op-jnp op-jtp))
+
+;; list of all jump instructions
+(defvar comp-jmp-insns (cons op-jmp comp-conditional-jmp-insns))
+
+;; list of instructions that reference the vector of constants
+(defvar comp-insns-with-constants (list op-push op-refq op-setq op-bind))
