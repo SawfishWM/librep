@@ -1,5 +1,18 @@
 2000-01-12  John Harper  <john@dcs.warwick.ac.uk>
 
+	* memoize.jl (memoize-function): wrap a function with a cache
+	(needs a hash-table implementation to be useful..)
+
+	* tar-file-handler.jl: use a guardian to allow finalization of
+	file handles
+
+	* remote.jl (remote-register-file-handle): new function, uses a
+	guardian and a function in the after-gc-hook to correctly
+	finalize open remote files when they are garbage collected
+
+	* remote-ftp.jl, remote-rep.jl: register file handles for
+	finalization
+
 	* lisp.jl (make-guardian): new function, a means for protecting
 	objects from being deallocated when they have no references
 

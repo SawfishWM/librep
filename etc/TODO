@@ -17,11 +17,6 @@ Outstanding bugs
  ! Putting a breakpoint in a .jaderc file doesn't work correctly; the
    debugger is entered, but the commands don't work
 
- ! non-local file handles aren't finalised correctly when they're
-   garbage collected, they're simply deallocated without calling
-   close-file on them (this could be construed a ``feature'' rather
-   than a bug?)
-
  ! It's relatively easy to blow the stack when regexp matching. Try
    searching for `/\*(.|\n)*\*/' in a C file with reasonable large
    comments.
@@ -29,15 +24,11 @@ Outstanding bugs
  ! If a compiled file FOO.jlc is made from source file FOO, but FOO is
    newer, load doesn't notice, and loads the invalid FOO.jlc
 
- ! Reenable dumped Lisp files
-
-   I also removed the autoload magic for dumped files..
-
 
 General programming tasks:
 ==========================
 
- + Test defsubst declared functions when dumped
+ - Implement weak-pairs or equivalent
 
  - In the Lisp VM replace the `bindstack' list with a vector. Means
    that the compiler will need to track the binding depth as well as
