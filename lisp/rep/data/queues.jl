@@ -41,6 +41,7 @@
   (define type-id (cons))
 
   (define-datum-printer type-id (lambda (q stream)
+				  (declare (unused q))
 				  (write stream "#<queue>")))
 
   (define (make-queue)

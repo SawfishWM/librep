@@ -107,7 +107,8 @@
 	    (unless (or (cell-tagged-p 'referenced (car new))
 			(cell-tagged-p 'no-location (car new))
 			(cell-tagged-p 'maybe-unused (car new)))
-	      (compiler-warning 'unused "Unused variable: %s" (caar new))))))))
+	      (compiler-warning
+	       'unused "unused variable `%s'" (caar new))))))))
 
   ;; note that symbol VAR has been bound
   (define (note-binding var #!optional without-location)

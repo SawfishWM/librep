@@ -226,6 +226,7 @@
   (or (eq (aref session remote-rep-status) 'success)
       (signal 'file-error
 	      (list (aref session remote-rep-error)
+		    type
 		    (format nil "%s@%s %s"
 			    (aref session remote-rep-user)
 			    (aref session remote-rep-host) args)))))

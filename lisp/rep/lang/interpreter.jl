@@ -489,7 +489,9 @@ DATA)' while the handler is evaluated (these are the arguments given to
 		   (or (get err 'error-message) err)
 		   (mapconcat (lambda (x)
 				(format nil "%s" x)) data ", ")))
+  ;; XXX ugh.. so kludgey..
   (open-structures '(rep.lang.error-helper))
+  (declare (bound error-helper))
   (error-helper err data))
 
 (defvar error-handler-function default-error-handler)
@@ -553,6 +555,7 @@ of THUNK) each function will be called exactly once."
 (defmacro eval-when-compile (form)
   "FORM is evaluated at compile-time *only*. The evaluated value is inserted
 into the compiled program. When interpreted, nil is returned."
+  (declare (unused form))
   nil)
 
 ;; Hide interactive decls

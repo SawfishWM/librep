@@ -216,6 +216,9 @@ we would like. This is due to the view of folded functions as
 
 ;;; Top level entrypoints
 
+(define (report-progress filename)
+  (message (format nil "(compiling %s)" filename) t))
+
 (defun compile-file (file-name)
   "Compiles the file of jade-lisp code FILE-NAME into a new file called
 `(concat FILE-NAME ?c)' (ie, `foo.jl' => `foo.jlc')."
@@ -228,35 +231,34 @@ we would like. This is due to the view of folded functions as
        (lambda ()
 	 (unwind-protect
 	     (progn
-	       (message (concat "Compiling " file-name "...") t)
 	       (when (setq src-file (open-file file-name 'read))
 		 (unwind-protect
-		     (progn
-		       ;; Read the file
+		     ;; Read the file, ensuring we record line numbers
+		     (call-with-lexical-origins
+		      (lambda ()
+			;; First check for `#! .. !#' at start of file
+			(if (and (= (read-char src-file) ?#)
+				 (= (read-char src-file) ?!))
+			    (let ((out (make-string-output-stream))
+				  tem)
+			      (write out "#!")
+			      (catch 'done
+				(while (setq tem (read-char src-file))
+				  (write out tem)
+				  (when (and (= tem ?!)
+					     (setq tem (read-char src-file)))
+				    (write out tem)
+				    (when (= tem ?#)
+				      (throw 'done t)))))
+			      (setq header (get-output-stream-string out)))
+			  (seek-file src-file 0 'start))
 
-		       ;; First check for `#! .. !#' at start of file
-		       (if (and (= (read-char src-file) ?#)
-				(= (read-char src-file) ?!))
-			   (let ((out (make-string-output-stream))
-				 tem)
-			     (write out "#!")
-			     (catch 'done
-			       (while (setq tem (read-char src-file))
-				 (write out tem)
-				 (when (and (= tem ?!)
-					    (setq tem (read-char src-file)))
-				   (write out tem)
-				   (when (= tem ?#)
-				     (throw 'done t)))))
-			     (setq header (get-output-stream-string out)))
-			 (seek-file src-file 0 'start))
-
-		       ;; Scan for top-level definitions in the file.
-		       ;; Also eval require forms (for macro defs)
-		       (condition-case nil
-			   (while t
-			     (setq body (cons (read src-file) body)))
-			 (end-of-stream)))
+			;; Scan for top-level definitions in the file.
+			;; Also eval require forms (for macro defs)
+			(condition-case nil
+			    (while t
+			      (setq body (cons (read src-file) body)))
+			  (end-of-stream))))
 		   (close-file src-file))
 		 (setq body (compile-module-body (nreverse body) t t))
 		 (when (setq dst-file (open-file temp-file 'write))
@@ -309,6 +311,7 @@ EXCLUDE-RE may be a regexp matching files which shouldn't be compiled."
 		     (let* ((c-name (concat abs-file ?c)))
 		       (when (or force-p (not (file-exists-p c-name))
 				 (file-newer-than-file-p abs-file c-name))
+			 (report-progress abs-file)
 			 (compile-file abs-file))))))))
 	(directory-files dir-name))
   t)
@@ -348,6 +351,7 @@ that files which shouldn't be compiled aren't."
 			 lisp-lib-directory)))
 	      (when (or (not (file-exists-p (concat file ?c)))
 			(file-newer-than-file-p file (concat file ?c)))
+		(report-progress file)
 		(compile-file file))))
 	  sources)))
   

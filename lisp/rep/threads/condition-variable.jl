@@ -41,6 +41,7 @@
   (define (condition-variable-p arg) (has-type-p arg key))
 
   (define-datum-printer key (lambda (arg stream)
+			      (declare (unused arg))
 			      (write stream "#<condition-variable>")))
 
   (define (cv-ref cv) (datum-ref cv key))

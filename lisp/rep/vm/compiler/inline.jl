@@ -68,11 +68,12 @@
 	      ((#!optional &optional) (setq state 'optional))
 	      ((#!rest &rest) (setq state 'rest))
 	      ;; XXX implement keyword params
-	      ((#!key) (compiler-error "Can't inline #!key parameters"))
+	      ((#!key) (compiler-error "can't inline `#!key' parameters"))
 	      (t (case state
 		   ((required)
 		    (if (zerop args-left)
-			(compiler-error "Required arg missing" (car lambda-list))
+			(compiler-error "required arg `%s' missing"
+					(car lambda-list))
 		      (setq bind-stack (cons (car lambda-list) bind-stack)
 			    args-left (1- args-left))))
 		   ((optional)
@@ -93,7 +94,8 @@
 	  (setq lambda-list (cdr lambda-list)))
 	(when (> args-left 0)
 	  (compiler-warning 'parameters
-	   "%d unused parameters to lambda expression" args-left))
+	   "%d unused %s to lambda expression"
+	   args-left (if (= args-left 1) "parameter" "parameters")))
 	(cons args-left bind-stack))))
 
   (defun pop-inline-args (bind-stack args-left setter)
@@ -128,8 +130,8 @@
     (when (>= (fluid-set inline-depth (1+ (fluid inline-depth)))
 	      max-inline-depth)
       (fluid-set inline-depth 0)
-      (compiler-error (format nil "Won't inline more than %d nested functions"
-			      max-inline-depth)))
+      (compiler-error "can't inline more than %d nested functions"
+		      max-inline-depth))
     (let*
 	((lambda-list (nth 1 fun))
 	 (body (nthcdr 2 fun))

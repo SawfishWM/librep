@@ -1,3 +1,35 @@
+2001-08-07  John Harper  <jsh@pixelslut.com>
+
+	* rep/lang/define.jl (define-scan-body): only return new list
+	structure if it's different to the original. This prevents line
+	number information being discarded needlessly
+
+	* rep/lang/debugger.jl: much improved. Supports line numbers
+	(with emacs style embedded cookies), better backtraces, etc..
+
+	* rep/user.jl: support --rep-debug option -- launches into the
+	debugger
+
+	* rep/data/ring.jl, rep/data/queues.jl: 
+	* rep/io/file-handlers/remote/rep.jl,
+	rep/io/file-handlers/remote/ftp.jl: 
+	* rep/lang/interpreter.jl: 
+	* rep/threads/condition-variable.jl: 
+	* rep/util/repl.jl:
+	* scheme/misc.jl, scheme/data.jl: 
+	* unscheme/misc.jl, unscheme/data.jl:
+
+	Declarations to silence compiler warnings about unused
+	parameters
+
+	* rep/vm/compiler.jl: 
+	* rep/vm/compiler/utils.jl, rep/vm/compiler/scheme.jl,
+	rep/vm/compiler/rep.jl, rep/vm/compiler/modules.jl,
+	rep/vm/compiler/inline.jl, rep/vm/compiler/bindings.jl,
+	rep/vm/compiler/basic.jl: 
+
+	Better error reporting, including (gasp) line numbers
+
 2001-08-02  John Harper  <jsh@pixelslut.com>
 
 	* rep/threads/condition-variable.jl (condition-variable-wait):

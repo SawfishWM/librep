@@ -81,11 +81,17 @@
 	      (setq result x))))
 	result)))
 
-  (define (eval form . env) (rep#eval form))
+  (define (eval form . env)
+    (declare (unused env))
+    (rep#eval form))
 
   ;; XXX support these (and in the above)
-  (define (scheme-report-environment version) #f)
-  (define (null-environment version) #f)
+  (define (scheme-report-environment version)
+    (declare (unused version))
+    #f)
+  (define (null-environment version)
+    (declare (unused version))
+    #f)
   (define (interaction-environment) #f)
 
 ;;; input and output
@@ -133,6 +139,7 @@
   (define eof-object (make-datum nil 'scheme-eof-object))
   (define-datum-printer 'scheme-eof-object
 			(lambda (x s)
+			  (declare (unused x))
 			  (rep.io.streams#write s "#<scheme-eof>")))
 
   (define (read #!optional port)

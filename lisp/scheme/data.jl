@@ -137,7 +137,9 @@
 ;;; numbers
 
   (define number? (make-predicate numberp))
-  (define (complex? obj) #t)
+  (define (complex? obj)
+    (declare (unused obj))
+    #t)
   (define real? (make-predicate realp))
   (define rational? (make-predicate rationalp))
   (define integer? (make-predicate integerp))
@@ -158,6 +160,7 @@
   (define even? (make-predicate evenp))
 
   (define (rationalize x y)
+    (declare (unused x y))
     (error "rationalize is unimplemented"))
 
   (define string->number (make-nil-predicate rep#string->number))

@@ -27,6 +27,7 @@
 
     (export current-file
 	    current-fun
+	    current-form
 	    lambda-records
 	    lambda-name lambda-args lambda-depth lambda-bindings
 	    lambda-bp lambda-sp
@@ -64,6 +65,7 @@ their position in that file.")
 
   (define current-file (make-fluid))		;the file being compiled
   (define current-fun (make-fluid))		;the function being compiled
+  (define current-form (make-fluid))		;the current cons-like form
 
   (define-record-type :assembly
     (make-assembly code max-stack max-b-stack slots)
@@ -136,7 +138,7 @@ their position in that file.")
 	   (lambda-label tem))))
 
   ;; Compile one form so that its value ends up on the stack when interpreted
-  (defun compile-form-1 (form #!optional return-follows in-tail-slot)
+  (defun compile-form-1 (form #!key return-follows in-tail-slot)
     (cond
      ((eq form '())
       (emit-insn '(push ()))
@@ -163,69 +165,70 @@ their position in that file.")
 	  (emit-varref form in-tail-slot)
 	  (increment-stack)))))
 
-     ((consp form)
-      (let ((new (source-code-transform form)))
-	(if (consp new)
-	    (setq form new)
-	  (compile-form-1 new)
-	  (setq form nil)))
-      (unless (null form)
-	;; A subroutine application of some sort
-	(let (fun)
-	  (cond
-	   ;; Check if there's a special handler for this function
-	   ((and (variable-ref-p (car form))
-		 (setq fun (get-procedure-handler
-			    (car form) 'compiler-handler-property)))
-	    (fun form return-follows))
-
-	   (t
-	    ;; Expand macros
-	    (test-function-call (car form) (length (cdr form)))
-	    (if (not (eq (setq fun (compiler-macroexpand
-				    form macroexpand-pred)) form))
-		;; The macro did something, so start again
-		(compile-form-1 fun return-follows)
-	      ;; No special handler, so do it ourselves
-	      (setq fun (car form))
+       ((consp form)
+	(let-fluids ((current-form form))
+	  (let ((new (source-code-transform form)))
+	    (if (consp new)
+		(setq form new)
+	      (compile-form-1 new)
+	      (setq form nil)))
+	  (unless (null form)
+	    ;; A subroutine application of some sort
+	    (let (fun)
 	      (cond
-	       ;; XXX assumes usual rep binding of `lambda'
-	       ((and (consp fun) (eq (car fun) 'lambda))
-		;; An inline lambda expression
-		(compile-lambda-inline (car form) (cdr form)
-				       nil return-follows))
+	       ;; Check if there's a special handler for this function
+	       ((and (variable-ref-p (car form))
+		     (setq fun (get-procedure-handler
+				(car form) 'compiler-handler-property)))
+		(fun form return-follows))
 
-	       ;; Assume a normal function call
-
-	       ((inlinable-call-p fun return-follows)
-		;; an inlinable tail call
-		(note-binding-referenced fun t)
-		(compile-tail-call (find-lambda fun) (cdr form))
-		;; fake it, the next caller will pop the (non-existant)
-		;; return value
-		(increment-stack))
-
-	       ((and (symbolp fun)
-		     (cdr (assq fun (fluid inline-env)))
-		     (not (find-lambda fun)))
-		;; A call to a function that should be open-coded
-		(compile-lambda-inline (cdr (assq fun (fluid inline-env)))
-				       (cdr form) nil return-follows fun))
 	       (t
-		(compile-form-1 fun nil (inlinable-call-p fun return-follows))
-		(setq form (cdr form))
-		(let
-		    ((i 0))
-		  (while (consp form)
-		    (compile-form-1 (car form))
-		    (setq i (1+ i)
-			  form (cdr form)))
-		  (emit-insn `(call ,i))
-		  (note-function-call-made)
-		  (decrement-stack i))))))))))
-     (t
-      ;; Not a variable reference or a function call; so what is it?
-      (compile-constant form))))
+		;; Expand macros
+		(test-function-call (car form) (length (cdr form)))
+		(if (not (eq (setq fun (compiler-macroexpand
+					form macroexpand-pred)) form))
+		    ;; The macro did something, so start again
+		    (compile-form-1 fun #:return-follows return-follows)
+		  ;; No special handler, so do it ourselves
+		  (setq fun (car form))
+		  (cond
+		   ;; XXX assumes usual rep binding of `lambda'
+		   ((and (consp fun) (eq (car fun) 'lambda))
+		    ;; An inline lambda expression
+		    (compile-lambda-inline (car form) (cdr form)
+					   nil return-follows))
+
+		   ;; Assume a normal function call
+
+		   ((inlinable-call-p fun return-follows)
+		    ;; an inlinable tail call
+		    (note-binding-referenced fun t)
+		    (compile-tail-call (find-lambda fun) (cdr form))
+		    ;; fake it, the next caller will pop the (non-existant)
+		    ;; return value
+		    (increment-stack))
+
+		   ((and (symbolp fun)
+			 (cdr (assq fun (fluid inline-env)))
+			 (not (find-lambda fun)))
+		    ;; A call to a function that should be open-coded
+		    (compile-lambda-inline (cdr (assq fun (fluid inline-env)))
+					   (cdr form) nil return-follows fun))
+		   (t
+		    (compile-form-1
+		     fun #:in-tail-slot (inlinable-call-p fun return-follows))
+		    (setq form (cdr form))
+		    (let ((i 0))
+		      (while (consp form)
+			(compile-form-1 (car form))
+			(setq i (1+ i)
+			      form (cdr form)))
+		      (emit-insn `(call ,i))
+		      (note-function-call-made)
+		      (decrement-stack i)))))))))))
+       (t
+	;; Not a variable reference or a function call; so what is it?
+	(compile-constant form))))
 
   ;; Compile a list of forms, the last form's evaluated value is left on
   ;; the stack. If the list is empty nil is pushed.
@@ -238,7 +241,8 @@ their position in that file.")
 	(if (and (null (cdr body)) (constant-function-p (car body)) name)
 	    ;; handle named lambdas specially so we track name of current fun
 	    (compile-lambda-constant (constant-function-value (car body)) name)
-	  (compile-form-1 (car body) (if (cdr body) nil return-follows)))
+	  (compile-form-1
+	   (car body) #:return-follows (if (cdr body) nil return-follows)))
 	(when (cdr body)
 	  (emit-insn '(pop))
 	  (decrement-stack))
@@ -268,7 +272,7 @@ their position in that file.")
        ;; Do the high-level compilation
        (when start-label
 	 (fix-label start-label))
-       (compile-form-1 form t)
+       (compile-form-1 form #:return-follows t)
        (emit-insn '(return))
        (let ((asm (get-assembly)))
 	 (allocate-bindings asm)

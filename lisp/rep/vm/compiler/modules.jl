@@ -82,7 +82,7 @@
 
   (define (find-structure name)
     (or (intern-structure name)
-	(compiler-error "Unable to open module" name)))
+	(compiler-error "unable to fund module `%s'" name)))
 
   ;; return t if the module called STRUCT exports a variable called VAR
   (defun module-exports-p (struct var)
@@ -269,7 +269,7 @@
 	    ((intern-structure feature)
 	     (fluid-set open-modules (cons feature (fluid open-modules))))
 
-	    (t (compiler-warning "Unable to require `%s'" feature)))))
+	    (t (compiler-warning "unable to require `%s'" feature)))))
 
   ;; XXX enclose macro defs in the *user-structure*, this is different
   ;; to with interpreted code
@@ -302,7 +302,7 @@
 	      (if (get struct 'compiler-module)
 		  (progn
 		    (or (intern-structure (get struct 'compiler-module))
-			(compiler-error "Can't load module"
+			(compiler-error "unable to load module `%s'"
 					(get struct 'compiler-module)))
 		    (fluid-set current-language struct)
 		    (throw 'out))))
@@ -399,9 +399,11 @@
 	 (var (nth 2 form)))
       (or (memq struct (fluid accessed-modules))
 	  (memq struct (fluid open-modules))
-	  (compiler-error "Referencing non-accessible structure" struct))
+	  (compiler-error
+	   "referencing non-accessible structure `%s'" struct))
       (or (module-exports-p struct var)
-	  (compiler-error "Referencing non-exported variable" struct var))
+	  (compiler-error
+	   "referencing private variable `%s#%s'" struct var))
       (compile-constant struct)
       (compile-constant var)
       (emit-insn '(structure-ref))

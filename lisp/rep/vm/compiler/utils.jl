@@ -30,7 +30,6 @@
 	    const-env inline-env
 	    defuns defvars defines
 	    output-stream
-	    compiler-message
 	    compiler-error
 	    compiler-warning
 	    compiler-deprecated
@@ -78,7 +77,10 @@
 
 ;;; Message output
 
-  (defun compiler-message (fmt #!rest args)
+  (define last-current-file t)
+  (define last-current-fun t)
+
+  (define (ensure-output-stream)
     (when (null (fluid output-stream))
       (if (or batch-mode (not (featurep 'jade)))
 	  (fluid-set output-stream (stdout-file))
@@ -91,20 +93,48 @@
 		 (and (bufferp (fluid output-stream))
 		      (not (eq (current-buffer) (fluid output-stream))))))
       (goto-buffer (fluid output-stream))
-      (goto (end-of-buffer)))
-    (when (fluid current-fun)
-      (format (fluid output-stream) "%s: " (fluid current-fun)))
-    (apply format (fluid output-stream) fmt args))
+      (goto (end-of-buffer))))
+
+  (define (abbreviate-file file)
+    (let ((c-dd (file-name-as-directory
+		 (canonical-file-name default-directory)))
+	  (c-file (canonical-file-name file)))
+      (if (string-head-eq c-file c-dd)
+	  (substring c-file (length c-dd))
+	file)))
+
+  (define (file-prefix #!optional form)
+    (unless form
+      (setq form (fluid current-form)))
+    (let ((origin (and form (lexical-origin form))))
+      (cond (origin
+	     (format nil "%s:%d: "
+		     (abbreviate-file (car origin)) (cdr origin)))
+	    ((fluid current-file)
+	     (format nil "%s: " (abbreviate-file (fluid current-file))))
+	    (t ""))))
+
+  (defun compiler-message (fmt #!key form #!rest args)
+    (ensure-output-stream)
+    (unless (and (eq last-current-fun (fluid current-fun))
+		 (eq last-current-file (fluid current-file)))
+      (if (fluid current-fun)
+	  (format (fluid output-stream) "%sIn function `%s':\n"
+		  (file-prefix form) (fluid current-fun))
+	(format (fluid output-stream) "%sAt top-level:\n" (file-prefix form))))
+    (apply format (fluid output-stream)
+	   (concat "%s" fmt #\newline) (file-prefix form) args)
+    (setq last-current-fun (fluid current-fun))
+    (setq last-current-file (fluid current-file)))
 
   (put 'compile-error 'error-message "Compilation mishap")
-  (defun compiler-error (text #!rest data)
-    (signal 'compile-error (cons (format nil "%s: %s" (fluid current-fun) text)
-				 data)))
+  (defun compiler-error (fmt #!key form #!rest data)
+    (apply compiler-message fmt #:form form data)
+    (signal 'compile-error (list (apply format nil fmt data))))
 
-  (defun compiler-warning (type fmt #!rest args)
+  (defun compiler-warning (type fmt #!key form #!rest args)
     (when (memq type *compiler-warnings*)
-      (apply compiler-message fmt args)
-      (write (fluid output-stream) "\n")))
+      (apply compiler-message (concat "warning: " fmt) #:form form args)))
 
   (define deprecated-seen '())
 
@@ -125,7 +155,8 @@
 	(when (and cell (not (cdr cell)))
 	  (rplacd cell (list* 'lambda args body)))))
     (if (assq name (fluid defuns))
-	(compiler-warning 'misc "Multiply defined function or macro: %s" name)
+	(compiler-warning
+	 'misc "function or macro `%s' defined more than once" name)
       (let
 	  ((count (vector 0 nil nil)) ;required, optional, rest
 	   (keys '())
@@ -162,17 +193,18 @@
   (defun remember-variable (name)
     (cond ((memq name (fluid defines))
 	   (compiler-error
-	    "Variable %s was previously declared lexically" name))
+	    "variable `%s' was previously declared lexically" name))	;
 	  ((memq name (fluid defvars))
-	   (compiler-warning 'misc "Multiply defined variable: %s" name))
+	   (compiler-warning 'misc "variable `%s' defined more than once" name))
 	  (t
 	   (fluid-set defvars (cons name (fluid defvars))))))
 
   (defun remember-lexical-variable (name)
     (cond ((memq name (fluid defvars))
-	   (compiler-error "Variable %s was previously declared special" name))
+	   (compiler-error "variable `%s' was previously declared special" name))
 	  ((memq name (fluid defines))
-	   (compiler-warning 'misc "Multiply defined lexical variable: %s" name))
+	   (compiler-warning
+	    'misc "lexical variable `%s' defined more than once" name))
 	  (t
 	   (fluid-set defines (cons name (fluid defines))))))
 
@@ -186,20 +218,20 @@
 	       (null (assq name (fluid defuns)))
 	       (not (compiler-boundp name)))
       (compiler-warning
-       'bindings "Reference to undeclared free variable: %s" name)))
+       'bindings "referencing undeclared free variable `%s'" name)))
 
   ;; Test that binding to variable NAME appears valid
   (defun test-variable-bind (name)
     (cond ((assq name (fluid defuns))
 	   (compiler-warning
-	    'shadowing "Binding to %s shadows function" name))
+	    'shadowing "binding to `%s' shadows function" name))
 	  ((has-local-binding-p name)
 	   (compiler-warning
-	    'shadowing "Binding to %s shadows earlier binding" name))
+	    'shadowing "binding to `%s' shadows earlier binding" name))
 	  ((and (compiler-boundp name)
 		(functionp (compiler-symbol-value name)))
 	   (compiler-warning
-	    'shadowing "Binding to %s shadows pre-defined value" name))))
+	    'shadowing "binding to `%s' shadows pre-defined value" name))))
 
   ;; Test a call to NAME with NARGS arguments
   ;; XXX functions in comp-fun-bindings aren't type-checked
@@ -230,7 +262,7 @@
 			  (memq name (fluid defines))
 			  (locate-variable name))
 		(compiler-warning
-		 'misc "Call to undeclared function: %s" name))
+		 'misc "calling undeclared function `%s'" name))
 	    (let
 		((required (nth 1 decl))
 		 (optional (nth 2 decl))
@@ -238,12 +270,13 @@
 		 (keys (nth 4 decl)))
 	      (if (< nargs required)
 		  (compiler-warning
-		   'parameters "%d arguments required by %s; %d supplied"
-		   required name nargs)
+		   'parameters "%d %s required by `%s'; %d supplied"
+		   required (if (= required 1) "argument" "arguments")
+		   name nargs)
 		(when (and (null rest) (null keys)
 			   (> nargs (+ required (or optional 0))))
 		  (compiler-warning
-		   'parameters "Too many arguments to %s (%d given, %d used)"
+		   'parameters "too many arguments to `%s' (%d given, %d used)"
 		   name nargs (+ required (or optional 0)))))))))))
 
 
@@ -339,7 +372,8 @@
 	  (let ((handler (get (or (car clause) clause) 'compiler-decl-fun)))
 	    (if handler
 		(handler clause)
-	      (compiler-warning 'misc "unknown declaration" clause)))) form))
+	      (compiler-warning 'misc "unknown declaration: `%s'" clause))))
+	form))
 
 (defun declare-inline (form)
   (mapc (lambda (name)

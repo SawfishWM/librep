@@ -46,6 +46,7 @@
   (define key (cons))
 
   (define-datum-printer key (lambda (d s)
+			      (declare (unused d))
 			      (write s "#<ring>")))
 
   ;; A ring buffer of size N is defined by a vector with N+2 slots; the

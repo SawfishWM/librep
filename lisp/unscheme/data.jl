@@ -132,7 +132,9 @@
 ;;; numbers
 
   (define number? numberp)
-  (define (complex? obj) #t)
+  (define (complex? obj)
+    (declare (unused obj))
+    #t)
   (define real? realp)
   (define rational? rationalp)
   (define integer? integerp)
@@ -147,6 +149,7 @@
   (define even? evenp)
 
   (define (rationalize x y)
+    (declare (unused x y))
     (error "rationalize is unimplemented"))
 
 ;;; characters

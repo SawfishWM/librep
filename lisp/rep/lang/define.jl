@@ -68,9 +68,9 @@
 	    (car new-body)
 	  (cons 'progn new-body))))))
 
-(defmacro define-scan-body (body)
-  `(mapcar (lambda (f)
-	     (define-scan-form f)) ,body))
+(defun define-scan-body (body)
+  (let ((new (mapcar define-scan-form body)))
+    (if (equal new body) body new)))
 
 (defun define-macroexpand-1 (form)
   (if (memq (car form) (fluid define-bound-vars))

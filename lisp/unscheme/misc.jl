@@ -81,8 +81,12 @@
 	result)))
 
   ;; XXX support these
-  (define (scheme-report-environment version) nil)
-  (define (null-environment version) nil)
+  (define (scheme-report-environment version)
+    (declare (unused version))
+    nil)
+  (define (null-environment version)
+    (declare (unused version))
+    nil)
   (define (interaction-environment) nil)
 
 ;;; input and output
@@ -130,6 +134,7 @@
   (define eof-object (make-datum nil 'scheme-eof-object))
   (define-datum-printer 'scheme-eof-object
 			(lambda (x s)
+			  (declare (unused x))
 			  (rep.io.streams#write s "#<scheme-eof>")))
 
   (define (read #!optional port)

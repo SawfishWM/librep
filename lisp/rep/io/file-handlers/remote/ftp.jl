@@ -609,6 +609,7 @@ file types.")
 		(lambda (#!rest args)
 		  (apply
 		   (lambda (cache-entry session output point line-end)
+		     (declare (unused session line-end))
 		     (let
 			 ((file-struct (remote-ftp-parse-ls-l output point)))
 		       (when file-struct
