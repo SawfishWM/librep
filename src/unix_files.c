@@ -64,6 +64,8 @@ _PR VALUE sys_file_name_as_directory(VALUE file);
 _PR VALUE sys_directory_file_name(VALUE file);
 _PR VALUE sys_delete_file(VALUE file);
 _PR VALUE sys_rename_file(VALUE old, VALUE new);
+_PR VALUE sys_make_directory(VALUE dir);
+_PR VALUE sys_delete_directory(VALUE dir);
 _PR VALUE sys_copy_file(VALUE src, VALUE dst);
 _PR VALUE sys_file_readable_p(VALUE file);
 _PR VALUE sys_file_writable_p(VALUE file);
@@ -267,7 +269,7 @@ sys_directory_file_name(VALUE file)
 VALUE
 sys_delete_file(VALUE file)
 {
-    if(remove(VSTR(file)) == 0)
+    if(unlink(VSTR(file)) == 0)
 	return sym_t;
     else
 	return signal_file_error(file);
@@ -280,6 +282,24 @@ sys_rename_file(VALUE old, VALUE new)
 	return sym_t;
     else
 	return signal_file_error(list_2(old, new));
+}
+
+VALUE
+sys_make_directory(VALUE dir)
+{
+    if(mkdir(VSTR(dir), S_IRWXU | S_IRWXG | S_IRWXO) == 0)
+	return sym_t;
+    else
+	return signal_file_error(dir);
+}
+
+VALUE
+sys_delete_directory(VALUE dir)
+{
+    if(rmdir(VSTR(dir)) == 0)
+	return sym_t;
+    else
+	return signal_file_error(dir);
 }
 
 VALUE
@@ -426,12 +446,11 @@ sys_set_file_modes(VALUE file, VALUE modes)
 VALUE
 sys_file_modes_as_string(VALUE file)
 {
-    VALUE modes, string;
-    modes = sys_file_modes(file);
-    string = cmd_make_string(MAKE_INT(10), MAKE_INT('-'));
-    if(INTP(modes) && string != LISP_NULL && STRINGP(string))
+    struct stat *st = stat_file(file);
+    VALUE string = cmd_make_string(MAKE_INT(10), MAKE_INT('-'));
+    if(st != 0 && string && STRINGP(string))
     {
-	ulong perms = VINT(modes);
+	ulong perms = st->st_mode;
 	int i;
 	char c = '-';
 	if(S_ISDIR(perms))	    c = 'd';
