@@ -60,6 +60,11 @@
    If this isn't set I don't think that dumping works (currently) */
 #undef INLINE_STATIC_STRINGS
 
+/* Comment this out to get messages telling you when garbage collection
+   takes place. In general gc is fast enough not to be too noticeable
+   (the exception to this is when jade has been swapped out) */
+#define NO_GC_MSG 1
+
 
 /* General configuration options */
 
