@@ -1,3 +1,8 @@
+1998-09-08  John Harper  <john@dcs.warwick.ac.uk>
+
+	* extent.c (extent_cmp): only compare the two objects if they
+	have the same type (i.e. both extents)
+
 1998-09-06  John Harper  <john@dcs.warwick.ac.uk>
 
 	* main.c (get_main_options): added `-batch' option

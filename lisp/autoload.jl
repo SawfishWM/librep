@@ -222,4 +222,7 @@
 (autoload 'diff-display "diff")
 (autoload 'ispell-region "ispell" t)
 (autoload 'ispell-buffer "ispell" t)
+(autoload 'ispell-highlight-misspellings "ispell" t)
+(autoload 'ispell-minor-mode "ispell" t)
+(autoload 'ispell-set-dictionary "ispell" t)
 ;;; ::autoload-end::

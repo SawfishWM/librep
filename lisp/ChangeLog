@@ -1,5 +1,8 @@
 1998-09-08  John Harper  <john@dcs.warwick.ac.uk>
 
+	* ispell.jl (ispell-minor-mode): spell-checking in idle-time
+	(ispell-set-dictionary): new command
+
 	* ispell.jl: first attempt at interacting with Ispell,
 	currently two commands `ispell-region' and `ispell-buffer'
 
