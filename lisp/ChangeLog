@@ -1,3 +1,12 @@
+Fri May  8 13:03:43 1998  John Harper  <john@dcs.warwick.ac.uk>
+
+	* windows.jl (other-view): only enlarge an existing view when
+	the desired size is less than its current size
+
+	* cvs.jl (cvs-show-output-buffer): only call shrink-view-if-..
+	when the real current buffer isn't the *cvs* buffer to avoid an
+	annoying effect
+
 Wed May  6 16:23:46 1998  John Harper  <john@dcs.warwick.ac.uk>
 
 	* rcs.jl, rcs-hooks.jl, dired.jl, dired-hooks.jl: use autoload
