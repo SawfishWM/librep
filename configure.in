@@ -31,8 +31,8 @@ output_files="man/Makefile jade/Makefile:src/Makefile.in\
  lib/Makefile:lib-src/Makefile.in lisp/Makefile Makefile"
 
 opt_enable_dumped=0
-dumped_lisp_files="lisp backquote windows buffers modes edit prompt replace\
- isearch lisp-mode c-mode text-mode fill"
+dumped_lisp_files="lisp backquote tilde windows buffers modes edit prompt\
+ replace isearch lisp-mode c-mode text-mode fill"
 
 AC_ARG_ENABLE(swap-del-bs,
 [  --enable-swap-del-bs	  Swap the meaning of Delete and Backspace
@@ -40,6 +40,9 @@ AC_ARG_ENABLE(swap-del-bs,
 [AC_DEFINE(SWAP_DELETE_KEYS)])
 AC_ARG_ENABLE(dumped, [  --enable-dumped	  Dump LISP files into the jaded binary],
 [if `test "$enableval" != "no"`; then opt_enable_dumped=1; fi])
+
+dnl Find the system type; this isn't crucial
+AC_CANONICAL_HOST
 
 dnl Checks for programs.
 AC_PROG_CC
@@ -77,14 +80,15 @@ AC_CHECK_FUNCS(getcwd gethostname select socket strcspn strerror strstr strtol p
 dnl Custom tests
 
 dnl If using GCC and it doesn't look as though the cflags have been
-dnl set explicitly, add some warning options
+dnl set explicitly, add some warning options. Turn off implicit-int
+dnl warnings since the X11 includes on Solaris generate a lot of these
 if `test "x${GCC}" = "xyes" -a "x$CFLAGS" = "x-g -O2"`; then
-  CFLAGS="${CFLAGS} -Wall -Wmissing-prototypes"
+  CFLAGS="${CFLAGS} -Wall -Wmissing-prototypes -Wno-implicit-int"
 fi
 
 dnl Does <unistd.h> declare char **environ?
 AC_MSG_CHECKING([whether unistd.h declares environ])
-AC_EGREP_HEADER(environ, unistd.h,
+AC_TRY_COMPILE([#include <unistd.h>], [char **foo = environ;],
 [AC_MSG_RESULT([yes])],
 [AC_DEFINE(ENVIRON_UNDECLARED) AC_MSG_RESULT([no])])
 
