@@ -389,6 +389,7 @@ do_readlink (int argc, char **argv)
     if (length != -1)
     {
 	send_success ();
+	buf[length] = 0;
 	send_string (buf);
     }
     else
