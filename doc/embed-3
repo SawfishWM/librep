@@ -1,0 +1,49 @@
+Date: Wed, 16 Feb 2000 16:46:33 GMT
+From: John Harper <john@dcs.warwick.ac.uk>
+To: "Mikolaj J. Habryn" <dichro-mail-f851b1b1@rcpt.to>
+Subject: Re: embedding librep
+
+Mikolaj J. Habryn writes:
+|>>>>> "JH" == John Harper <john@dcs.warwick.ac.uk> writes:
+|
+|    JH> Frecursive_edit is rep's built-in
+|    JH> event loop (you use rep_register_input_fd to register a
+|    JH> function to be called when data arrives on a particular fd,
+|    JH> e.g. sawmill's X connection)
+|
+|    JH> after this function exits, so will sawmill
+|
+|  I'm not sure I understand the causal relationship - is that last
+|fact due to the exit condition for sawmill being leaving the event
+|loop?
+
+Yes, I think so. Sawmill won't leave the top-level event loop (the
+event loop may be called recursively), until it's time to exit (this is
+done by executing (throw 'quit FOO) from within the event loop)
+
+|Or would it be possible to set up some context here, *not* call the
+|event loop, return from rep_call_with_barrier, and then later call 
+|functions (or just invoke the event loop) in the sawmill context
+|(presumably using rep_call_with_barrier again)?
+
+This should work fine. The barrier around inner_main () is probably not
+necessary in this case, though it's a good idea to leave it there.
+
+(Barriers are used to control the weird control-flow patterns that may
+be introduced by the use of continuations. A continuation is a copy of
+the stack that may be used (possibly multiple times) to switch control
+to a previous context. A bit like C's setjmp/longjmp, except that you
+can jump into stack frames that have *already exited*!
+
+An open barrier just provides notification when the position on the
+stack it represents is entered or exited, a closed barrier (like the
+one around inner_main) actually _prevents_ continuations being used to
+pass that stack position. Closed barriers are also used to group
+threads. (there are more details in src/continuations.c)
+
+The reason you need to worry about this is because your C code is
+probably not going to like being reentered multiple times (but with
+different heap states), so you need to use closed barriers to prevent
+this happening..)
+
+

@@ -10,6 +10,8 @@ and more long-term ideas are marked -
 Outstanding bugs
 ================
 
+ ! doc strings are limited to 1k
+
  ! ((call/cc call/cc) (call/cc call/cc)) can't be interrupted, and it
    eats all memory
 
