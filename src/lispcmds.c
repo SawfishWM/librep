@@ -2347,10 +2347,10 @@ Returns t if ARG is a function (ie, a symbol or a list whose car is the
 symbol `lambda'
 ::end:: */
 {
-    if(rep_SYMBOLP(arg))
+    while (rep_SYMBOLP(arg) && !rep_INTERRUPTP)
     {
-	if(!(arg = rep_SYM(arg)->function))
-	    return(Qnil);
+	arg = Fsymbol_function (arg, Qt);
+	rep_TEST_INT;
     }
     switch(rep_TYPE(arg))
     {
@@ -2382,9 +2382,11 @@ macrop ARG
 Returns t if ARG is a macro.
 ::end:: */
 {
-    if(rep_SYMBOLP(arg)
-       && (arg = rep_SYM(arg)->function) == rep_NULL)
-	return Qnil;
+    while (rep_SYMBOLP(arg) && !rep_INTERRUPTP)
+    {
+	arg = Fsymbol_function (arg, Qt);
+	rep_TEST_INT;
+    }
     if(rep_CONSP(arg) && rep_CAR(arg) == Qmacro)
 	return Qt;
     else
@@ -2398,10 +2400,10 @@ special-form-p ARG
 Returns t if ARG is a special-form.
 ::end:: */
 {
-    if(rep_SYMBOLP(arg))
+    while (rep_SYMBOLP(arg) && !rep_INTERRUPTP)
     {
-	if(!(arg = rep_SYM(arg)->function))
-	     return(Qnil);
+	arg = Fsymbol_function (arg, Qt);
+	rep_TEST_INT;
     }
     if(rep_TYPEP(arg, rep_SF))
 	return(Qt);
@@ -2455,15 +2457,9 @@ Returns the name (a string) associated with SUBR.
     if(rep_SYMBOLP(subr))
     {
 	if(rep_NILP(useVar))
-	{
-	    if(rep_SYM(subr)->function)
-		subr = rep_SYM(subr)->function;
-	}
+	    subr = Fsymbol_function (subr, Qt);
 	else
-	{
-	    if(rep_SYM(subr)->value)
-		subr = rep_SYM(subr)->value;
-	}
+	    subr = Fsymbol_value (subr, Qt);
     }
     switch(rep_TYPE(subr))
     {
