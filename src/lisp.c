@@ -1039,19 +1039,24 @@ rep_load_autoload(repv funarg)
 
 	fun = Fsymbol_value (fun, Qnil);
 
-	/* Magically replace one closure by another without
-	   losing eq-ness */
-	if (fun && rep_FUNARGP(fun))
+	if (fun != rep_NULL)
 	{
-	    rep_FUNARG(funarg)->fun = rep_FUNARG(fun)->fun;
-	    rep_FUNARG(funarg)->name = rep_FUNARG(fun)->name;
-	    rep_FUNARG(funarg)->env = rep_FUNARG(fun)->env;
-	    rep_FUNARG(funarg)->special_env = rep_FUNARG(fun)->special_env;
-	    rep_FUNARG(funarg)->fh_env = rep_FUNARG(fun)->fh_env;
+	    /* Magically replace one closure by another without
+	       losing eq-ness */
+	    tmp = fun;
+	    if (rep_CONSP(tmp) && rep_CAR(tmp) == Qmacro)
+		tmp = rep_CDR(tmp);
+	    if (rep_FUNARGP(tmp))
+	    {
+		rep_FUNARG(funarg)->fun = rep_FUNARG(tmp)->fun;
+		rep_FUNARG(funarg)->name = rep_FUNARG(tmp)->name;
+		rep_FUNARG(funarg)->env = rep_FUNARG(tmp)->env;
+		rep_FUNARG(funarg)->special_env = rep_FUNARG(tmp)->special_env;
+		rep_FUNARG(funarg)->fh_env = rep_FUNARG(tmp)->fh_env;
+	    }
+	    else
+		rep_FUNARG(funarg)->fun = Qnil;
 	}
-	else
-	    rep_FUNARG(funarg)->fun = Qnil;
-
 	return fun;
     }
     else
@@ -1249,12 +1254,10 @@ again:
 	{
 	    /* A macro. This could occur if autoloading from
 	       a macro definition. Try to accommodate.. */
-	    if(!eval_args)
-		/* Args already evaluated. Can't expand the macro */
-		goto invalid;
-	    result = Fmacroexpand(Fcons(lc.fun, arglist), Qnil);
-	    if(result != rep_NULL)
-		result = Feval(result);
+	    if(eval_args)
+		goto invalid;		/* can't expand from evaluated args */
+	    fun = lc.fun = rep_CDR(fun);
+	    goto again;
 	}
 	else if(closure && car == Qautoload)
 	{
