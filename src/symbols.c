@@ -499,7 +499,7 @@ search_environment (repv sym)
     return Qnil;
 }
 
-/* this is also in lispmach.c */
+/* this is also in lispmach.c and fluids.c */
 static inline repv
 inlined_search_special_bindings (repv sym)
 {

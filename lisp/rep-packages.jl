@@ -101,6 +101,8 @@
 	  digit-char-p alphanumericp space-char-p char-upcase char-downcase
 	  complete-string
 
+	  make-fluid fluid fluid-set with-fluids fluid-let
+
 	  ;; init.jl
 	  setcar setcdr string= string< nop identity interactive
 	  caar cdar cadr cddr caaar cdaar cadar cddar caadr cdadr caddr

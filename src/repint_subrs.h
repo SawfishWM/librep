@@ -38,6 +38,9 @@ extern void rep_mark_regexp_data(void);
 extern void rep_find_init(void);
 extern void rep_find_kill(void);
 
+/* from fluids.c */
+extern void rep_fluids_init (void);
+
 /* from lisp.c */
 extern repv rep_scm_t, rep_scm_f;
 extern repv rep_readl(repv, int *);

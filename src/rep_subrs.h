@@ -148,6 +148,12 @@ extern repv Fquote_regexp(repv str);
 extern repv Fregexp_cache_control(repv limit);
 extern void rep_regerror(char *err);
 
+/* from fluids.c */
+extern repv Fmake_fluid (repv);
+extern repv Ffluid_ref (repv);
+extern repv Ffluid_set (repv, repv);
+extern repv Fwith_fluids (repv, repv, repv);
+
 /* from lisp.c */
 extern repv rep_load_autoload(repv);
 extern repv rep_funcall(repv fun, repv arglist, rep_bool eval_args);
