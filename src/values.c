@@ -750,7 +750,10 @@ again:
     case V_Mark:
 	GC_SET_CELL(val);
 	if(!MARK_RESIDENT_P(VMARK(val)))
+	{
 	    MARKVAL(VMARK(val)->file);
+	    MARKVAL(VMARK(val)->canon_file);
+	}
 	else
 	{
 	    /* TXs don't get marked here. They should still be able to
