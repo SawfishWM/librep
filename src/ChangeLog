@@ -1,3 +1,11 @@
+1999-07-07  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep-remote.c (do_readlink): don't assume the output of
+	readlink() is null-terminated
+
+	* streams.c (Fcopy_stream): fixed this when the buffer
+	overflows (was dropping every 512th character)
+
 1999-07-06  John Harper  <john@dcs.warwick.ac.uk>
 
 	* unix_processes.c: new process-connection-type: `socketpair'

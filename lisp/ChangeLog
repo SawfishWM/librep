@@ -1,4 +1,13 @@
+1999-07-07  John Harper  <john@dcs.warwick.ac.uk>
+
+	* remote-rep.jl (remote-rep-read-length): fix this for large
+	numbers
+
 1999-07-06  John Harper  <john@dcs.warwick.ac.uk>
+
+	* remote-rep.jl, remote-ftp.jl (remote-rep-lookup-file,
+	remote-ftp-lookup-file): new functions, chase symbolic links
+	until the actual file is found
 
 	* remote-rep.jl: new file, mostly copied from remote-ftp, but
 	uses the rep-remote program (rsh'd onto the remote host) for
