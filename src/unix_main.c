@@ -247,11 +247,17 @@ static void (*input_actions[FD_SETSIZE])(int);
 static fd_set input_pending;
 static int input_pending_count;
 
+void (*rep_register_input_fd_fun)(int fd, void (*callback)(int fd)) = 0;
+void (*rep_deregister_input_fd_fun)(int fd) = 0;
+
 void
 rep_register_input_fd(int fd, void (*callback)(int fd))
 {
     FD_SET(fd, &input_fdset);
     input_actions[fd] = callback;
+
+    if (rep_register_input_fd_fun != 0)
+	(*rep_register_input_fd_fun) (fd, callback);
 
     rep_unix_set_fd_cloexec(fd);
 }
@@ -261,6 +267,9 @@ rep_deregister_input_fd(int fd)
 {
     FD_CLR(fd, &input_fdset);
     input_actions[fd] = NULL;
+
+    if (rep_deregister_input_fd_fun != 0)
+	(*rep_deregister_input_fd_fun) (fd);
 }
 
 void
@@ -420,7 +429,6 @@ repv
 rep_event_loop(void)
 {
     repv result = Qnil;
-    rep_recurse_depth++;
 
     if (rep_redisplay_fun != 0)
 	(*rep_redisplay_fun)();
@@ -439,7 +447,7 @@ rep_event_loop(void)
 	if(rep_throw_value != rep_NULL)
 	{
 	    if(rep_handle_input_exception(&result))
-		goto end;
+		return result;
 	    else
 		refreshp = rep_TRUE;
 	}
@@ -454,8 +462,6 @@ rep_event_loop(void)
 #endif
     }
 
-end:
-    rep_recurse_depth--;
     return result;
 }
 
