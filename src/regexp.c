@@ -35,7 +35,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#define DEBUG
+#undef DEBUG
 
 /*
  * Utility definitions.
@@ -155,7 +155,7 @@ rep_regcomp(char *exp)
 
 	/* Starting-point info. */
 	if (OP(scan) == EXACTLY)
-	    r->regstart = *OPERAND(scan);
+	    r->regstart = UCHARAT(OPERAND(scan));
 	else if (OP(scan) == BOL)
 	    r->reganch++;
 
@@ -711,8 +711,8 @@ rep_regexec2(rep_regexp *prog, char *string, int eflags)
 	s = string;
 	if(regnocase)
 	{
-	    mat[0] = tolower(prog->regmust[0]);
-	    mat[1] = toupper(prog->regmust[0]);
+	    mat[0] = tolower(UCHARAT(prog->regmust));
+	    mat[1] = toupper(UCHARAT(prog->regmust));
 	    while ((s = strpbrk(s, mat)) != NULL)
 	    {
 		if(strncasecmp(s, prog->regmust, prog->regmlen) == 0)
@@ -892,7 +892,7 @@ regmatch(char *prog)
 		if(regnocase)
 		{
 		    /* Inline the first character, for speed. */
-		    if(toupper(*opnd) != toupper(*reginput))
+		    if(toupper(UCHARAT(opnd)) != toupper(UCHARAT(reginput)))
 			return (0);
 		    len = strlen(opnd);
 		    if(len > 1 && strncasecmp(opnd, reginput, len) != 0)
@@ -998,7 +998,7 @@ regmatch(char *prog)
 	    break;
 	case STAR:
 	case PLUS:{
-		register char	nextch;
+		register u_char	nextch;
 		register int	no;
 		register char  *save;
 		register int	min;
@@ -1009,7 +1009,7 @@ regmatch(char *prog)
 		 */
 		nextch = '\0';
 		if (OP(next) == EXACTLY)
-		    nextch = *OPERAND(next);
+		    nextch = UCHARAT(OPERAND(next));
 		if(regnocase)
 		    nextch = toupper(nextch);
 		min = (OP(scan) == STAR) ? 0 : 1;
@@ -1018,7 +1018,7 @@ regmatch(char *prog)
 		while (no >= min) {
 		    /* If it could work, try it. */
 		    if (nextch == '\0'
-			|| (regnocase ? toupper(*reginput)
+			|| (regnocase ? toupper(UCHARAT(reginput))
 			    : *reginput) == nextch)
 			if (nested_regmatch(next))
 			    return (1);
@@ -1031,7 +1031,7 @@ regmatch(char *prog)
 	    break;
 	case NGSTAR:
 	case NGPLUS:{
-		register char	nextch;
+		register u_char	nextch;
 		register int	no;
 		register char  *save;
 		register int	max;
@@ -1042,7 +1042,7 @@ regmatch(char *prog)
 		 */
 		nextch = '\0';
 		if (OP(next) == EXACTLY)
-		    nextch = *OPERAND(next);
+		    nextch = UCHARAT(OPERAND(next));
 		if(regnocase)
 		    nextch = toupper(nextch);
 		no = (OP(scan) == NGSTAR) ? 0 : 1;
@@ -1052,7 +1052,7 @@ regmatch(char *prog)
 		    reginput = save + no;
 		    /* If it could work, try it. */
 		    if (nextch == '\0'
-			|| (regnocase ? toupper(*reginput)
+			|| (regnocase ? toupper(UCHARAT(reginput))
 			    : *reginput) == nextch)
 			if (nested_regmatch(next))
 			    return (1);
@@ -1063,49 +1063,49 @@ regmatch(char *prog)
 	    }
 	    break;
 	case WORD:
-	    if (*reginput != '_' && !isalnum ((int)*reginput))
+	    if (*reginput != '_' && !isalnum (UCHARAT(reginput)))
 		return 0;
 	    reginput++;
 	    break;
 	case NWORD:
-	    if (*reginput == '_' || isalnum ((int)*reginput))
+	    if (*reginput == '_' || isalnum (UCHARAT(reginput)))
 		return 0;
 	    reginput++;
 	    break;
 	case WSPC:
-	    if (!isspace ((int)*reginput))
+	    if (!isspace (UCHARAT(reginput)))
 		return 0;
 	    reginput++;
 	    break;
 	case NWSPC:
-	    if (isspace ((int)*reginput))
+	    if (isspace (UCHARAT(reginput)))
 		return 0;
 	    reginput++;
 	    break;
 	case DIGI:
-	    if (!isdigit ((int)*reginput))
+	    if (!isdigit (UCHARAT(reginput)))
 		return 0;
 	    reginput++;
 	    break;
 	case NDIGI:
-	    if (isdigit ((int)*reginput))
+	    if (isdigit (UCHARAT(reginput)))
 		return 0;
 	    reginput++;
 	    break;
 	case WEDGE:
 	    if (reginput == regbol || *reginput == '\0'
-		|| ((reginput[-1] == '_' || isalnum ((int)reginput[-1]))
-		    && (*reginput != '_' && !isalnum ((int)*reginput)))
-		|| ((reginput[-1] != '_' && !isalnum ((int)reginput[-1]))
-		    && (*reginput == '_' || isalnum ((int)*reginput))))
+		|| ((reginput[-1] == '_' || isalnum (UCHARAT(reginput - 1)))
+		    && (*reginput != '_' && !isalnum (UCHARAT(reginput))))
+		|| ((reginput[-1] != '_' && !isalnum (UCHARAT(reginput - 1)))
+		    && (*reginput == '_' || isalnum (UCHARAT(reginput)))))
 		break;
 	    return 0;
 	case NWEDGE:
 	    if (!(reginput == regbol || *reginput == '\0'
-		  || ((reginput[-1] == '_' || isalnum ((int)reginput[-1]))
-		      && (*reginput != '_' && !isalnum ((int)*reginput)))
-		  || ((reginput[-1] != '_' && !isalnum ((int)reginput[-1]))
-		      && (*reginput == '_' || isalnum ((int)*reginput)))))
+		  || ((reginput[-1] == '_' || isalnum (UCHARAT(reginput - 1)))
+		      && (*reginput != '_' && !isalnum (UCHARAT(reginput))))
+		  || ((reginput[-1] != '_' && !isalnum (UCHARAT(reginput - 1)))
+		      && (*reginput == '_' || isalnum (UCHARAT(reginput))))))
 		break;
 	    return 0;
 	case END:
@@ -1147,7 +1147,7 @@ regrepeat(char *p)
     case EXACTLY:
 	if(regnocase)
 	{
-	    while(toupper(*opnd) == toupper(*scan)) {
+	    while(toupper(UCHARAT(opnd)) == toupper(UCHARAT(scan))) {
 		scan++;
 	    }
 	}
@@ -1169,32 +1169,32 @@ regrepeat(char *p)
 	}
 	break;
     case WORD:
-	while (*scan != '\0' && (*scan == '_' || isalnum ((int)*scan))) {
+	while (*scan != '\0' && (*scan == '_' || isalnum (UCHARAT(scan)))) {
 	    scan++;
 	}
 	break;
     case NWORD:
-	while (*scan != '\0' && (*scan != '_' && !isalnum ((int)*scan))) {
+	while (*scan != '\0' && (*scan != '_' && !isalnum (UCHARAT(scan)))) {
 	    scan++;
 	}
 	break;
     case WSPC:
-	while (*scan != '\0' && isspace ((int)*scan)) {
+	while (*scan != '\0' && isspace (UCHARAT(scan))) {
 	    scan++;
 	}
 	break;
     case NWSPC:
-	while (*scan != '\0' && !isspace ((int)*scan)) {
+	while (*scan != '\0' && !isspace (UCHARAT(scan))) {
 	    scan++;
 	}
 	break;
     case DIGI:
-	while (*scan != '\0' && isdigit ((int)*scan)) {
+	while (*scan != '\0' && isdigit (UCHARAT(scan))) {
 	    scan++;
 	}
 	break;
     case NDIGI:
-	while (*scan != '\0' && !isdigit ((int)*scan)) {
+	while (*scan != '\0' && !isdigit (UCHARAT(scan))) {
 	    scan++;
 	}
 	break;

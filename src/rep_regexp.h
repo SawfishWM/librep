@@ -30,7 +30,7 @@ typedef struct rep_regexp {
 	rep_regtype lasttype;
 	rep_regsubs matches;
 
-	char regstart;		/* Internal use only. */
+	u_char regstart;	/* Internal use only. */
 	char reganch;		/* Internal use only. */
 	char *regmust;		/* Internal use only. */
 	int regmlen;		/* Internal use only. */
