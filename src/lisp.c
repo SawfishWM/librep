@@ -1417,7 +1417,8 @@ Evaluates FORM and returns its value.
 
     {
 	repv dbres;
-	repv dbargs = Fcons(obj, Fcons(rep_MAKE_INT(DbDepth), Qnil));
+	repv dbargs = rep_list_3(obj, rep_MAKE_INT(DbDepth),
+				 rep_box_pointer (rep_call_stack));
 	if(dbargs)
 	{
 	    rep_GC_root gc_dbargs;
@@ -1906,7 +1907,8 @@ handler.
 	rep_single_step_flag = rep_FALSE;
 	rep_PUSHGC(gc_on_error, on_error);
 	tmp = rep_funcall(Fsymbol_value (Qdebug_error_entry, Qt),
-			  Fcons(errlist, Qnil), rep_FALSE);
+			  rep_list_2(errlist, rep_box_pointer (rep_call_stack)),
+			  rep_FALSE);
 	rep_POPGC;
 	Fset(Qdebug_on_error, on_error);
 	if(tmp && (tmp == Qt))
@@ -2109,6 +2111,24 @@ ARGLIST had been evaluated or not before being put into the stack.
     return Qt;
 }
 
+DEFUN("debug-frame-environment", Fdebug_frame_environment,
+      Sdebug_frame_environment, (repv pointer), rep_Subr1)
+{
+    struct rep_Call *fp = rep_call_stack;
+    struct rep_Call *ptr = rep_unbox_pointer (pointer);
+    rep_DECLARE(1, pointer, ptr != 0);
+    while (fp != 0 && fp != ptr)
+	fp = fp->next;
+    if (fp != 0)
+    {
+	return rep_list_3 (fp->saved_env,
+			   fp->saved_special_env,
+			   fp->saved_fh_env);
+    }
+    else
+	return Qnil;
+}
+
 DEFUN("max-lisp-depth", Vmax_lisp_depth, Smax_lisp_depth, (repv val), rep_Var) /*
 ::doc:max-lisp-depth::
 The maximum number of times that rep_funcall can be called recursively.
@@ -2144,6 +2164,7 @@ rep_lisp_init(void)
     rep_ADD_SUBR(Scondition_case);
     rep_ADD_SUBR(Sbacktrace);
     rep_ADD_SUBR(Smax_lisp_depth);
+    rep_ADD_SUBR(Sdebug_frame_environment);
 
     /* Stuff for error-handling */
     rep_INTERN(error_message);
