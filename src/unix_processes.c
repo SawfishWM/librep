@@ -778,10 +778,10 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 			timeout.tv_sec = 1;
 			timeout.tv_usec = 0;
 
-			rep_sigchld_restart(rep_FALSE);
+			rep_sig_restart(SIGCHLD, rep_FALSE);
 			number = select(FD_SETSIZE, &copy, NULL,
 					NULL, &timeout);
-			rep_sigchld_restart(rep_TRUE);
+			rep_sig_restart(SIGCHLD, rep_TRUE);
 
 			rep_TEST_INT_SLOW;
 			if(rep_INTERRUPTP)
@@ -1892,9 +1892,9 @@ rep_system (char *command)
 	    }
 	    timeout.tv_sec = 1;
 	    timeout.tv_usec = 0;
-	    rep_sigchld_restart (rep_FALSE);
+	    rep_sig_restart (SIGCHLD, rep_FALSE);
 	    select (FD_SETSIZE, NULL, NULL, NULL, &timeout);
-	    rep_sigchld_restart (rep_TRUE);
+	    rep_sig_restart (SIGCHLD, rep_TRUE);
 	    switch (waitpid(pid, &status, WNOHANG))
 	    {
 	    case 0:
@@ -1908,33 +1908,6 @@ rep_system (char *command)
 	    }
 	} while (1);
     }
-}
-
-/* Turns on or off restarted system calls */
-void
-rep_sigchld_restart(rep_bool flag)
-{
-    if(flag)
-    {
-#ifdef SA_RESTART
-	chld_sigact.sa_flags |= SA_RESTART;
-#else
-# ifdef SA_INTERRUPT
-	chld_sigact.sa_flags &= ~SA_INTERRUPT;
-# endif
-#endif
-    }
-    else
-    {
-#ifdef SA_RESTART
-	chld_sigact.sa_flags &= ~SA_RESTART;
-#else
-# ifdef SA_INTERRUPT
-	chld_sigact.sa_flags |= SA_INTERRUPT;
-# endif
-#endif
-    }
-    sigaction(SIGCHLD, &chld_sigact, NULL);
 }
 
 void
