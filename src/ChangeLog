@@ -1,3 +1,16 @@
+2001-07-17  John Harper  <jsh@pixelslut.com>
+
+	* rep-remote.c (do_readdir): output mode in decimal not octal
+	(since the 0nn octal read syntax was deprecated in rep)
+
+	* unix_files.c (rep_canonical_file_name): don't preserve
+	trailing slashes, always remove any trailing slashes. Also if
+	realpath () fails (e.g. the file doesn't exist), delete
+	trailing slashes before returning the input
+
+	* unix_files.c (rep_file_size): use rep_make_long_uint () to
+	create the returned value, instead of always using a fixnum
+
 2001-07-15  John Harper  <jsh@pixelslut.com>
 
 	* rep_lisp.h: only do the `#define Qnil &rep_eol_datum'

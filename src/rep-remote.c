@@ -438,7 +438,7 @@ do_readdir (int argc, char **argv)
 	    {
 		*ptr++ = '[';
 		ptr = quote_string (ptr, de->d_name);
-		ptr += sprintf (ptr, " %ld (%ld . %ld) %s 0%lo \"",
+		ptr += sprintf (ptr, " %ld (%ld . %ld) %s %ld \"",
 				(long)st.st_size,
 				st.st_mtime / 86400, st.st_mtime % 86400,
 				S_ISREG (st.st_mode) ? "file"
