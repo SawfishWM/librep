@@ -108,10 +108,9 @@ AC_ARG_WITH(gmp,
 ])
 AC_CHECK_HEADER(gmp.h,
     AC_MSG_CHECKING([for mpz_init in -lgmp])
-    _libs=$LIBS LIBS="$LIBS -lgmp"
-    AC_TRY_LINK([#include <gmp.h>], [mpz_t foo; mpz_init (foo);],
-        [LIBS=$_libs GMP_LIBS="-lgmp -lm" AC_MSG_RESULT(yes)],
-	AC_MSG_ERROR([Cannot find GMP library])),
+    AC_CHECK_LIB(gmp, mpz_init, GMP_LIBS="-lgmp -lm",
+        AC_CHECK_LIB(gmp, __gmpz_init, GMP_LIBS="-lgmp -lm",
+            AC_MSG_ERROR(Cannot find GMP library))),
     AC_MSG_ERROR([Cannot find GMP header]))
 AC_SUBST(GMP_LIBS)
 
