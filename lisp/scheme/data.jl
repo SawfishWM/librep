@@ -48,7 +48,7 @@
 	    tan asin acos atan sqrt expt exact->inexact
 	    inexact->exact string->number number->string
 	    
-	    char=? char<? char>? char<=? char>=?
+	    char? char=? char<? char>? char<=? char>=?
 	    char-ci=? char-ci<? char-ci>? char-ci<=?
 	    char-ci>=? char-alphabetic? char-numeric?
 	    char-whitespace? char-upper-case?
@@ -163,7 +163,7 @@
 ;;; numbers
 
   (define number? (make-predicate numberp))
-  (define (complex? obj) #f)
+  (define (complex? obj) #t)
   (define real? (make-predicate realp))
   (define rational? (make-predicate rationalp))
   (define integer? (make-predicate integerp))
@@ -192,7 +192,11 @@
   (define (rationalize x y)
     (error "rationalize is unimplemented"))
 
+  (define string->number (make-nil-predicate rep#string->number))
+
 ;;; characters
+
+  (define char? (make-predicate fixnump))
 
   (define char=? =)
   (define char<? <)
