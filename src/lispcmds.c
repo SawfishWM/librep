@@ -115,7 +115,7 @@ If ARG is a symbol, dereference it, otherwise enclose it.
     if (rep_SYMBOLP (args))
 	return Fsymbol_value (args, Qnil);
     else
-	return Fmake_closure (rep_CAR(args), Qnil);
+	return Fmake_closure (args, Qnil);
 }
 
 DEFUN("lambda", Flambda, Slambda, (repv args), rep_SF) /*
