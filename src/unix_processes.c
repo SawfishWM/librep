@@ -1910,8 +1910,6 @@ rep_proc_init(void)
     /* Is this necessary?? Better safe than core-dumped ;-)  */
     signal(SIGPIPE, SIG_IGN);
 
-    setpgid(0, 0);
-
     rep_INTERN(pipe);
     rep_INTERN(pty);
     rep_ADD_SUBR(Smake_process);
