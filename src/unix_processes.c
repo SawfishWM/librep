@@ -318,8 +318,8 @@ check_for_zombies(void)
 
 /* Called by the event loop after each event or timeout. Returns true
    if the display should be updated. */
-rep_bool
-rep_proc_periodically(void)
+static rep_bool
+proc_periodically(void)
 {
     rep_bool rc = check_for_zombies();
     if(proc_notification())
@@ -2071,6 +2071,7 @@ rep_proc_init(void)
 					  mark_active_processes,
 					  0, 0, proc_putc, proc_puts, 0, 0);
     rep_register_process_input_handler (read_from_process);
+    rep_add_event_loop_callback (proc_periodically);
 }
 
 void
