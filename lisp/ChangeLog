@@ -1,3 +1,12 @@
+1999-06-09  John Harper  <john@dcs.warwick.ac.uk>
+
+	* rep.jl (rep): don't use `read' to read an entire form at
+	once, instead use `read-line' to read strings until there's
+	enough to parse a whole form
+
+	* pwd-prompt.jl (pwd-prompt): fixed to actually delete the
+	line-terminating newline, also print a newline before exiting
+
 1999-06-06  John Harper  <john@dcs.warwick.ac.uk>
 
 	* compiler.jl: generate an intermediate form between Lisp forms
