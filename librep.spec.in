@@ -25,7 +25,7 @@ deficiencies, with features from Common Lisp and Scheme.
 %package devel
 Summary: librep include files and link libraries
 Group: Development/Languages
-Requires: %{name}
+Requires: %{name} = @version@
 
 %description devel
 Link libraries and C header files for librep development.
