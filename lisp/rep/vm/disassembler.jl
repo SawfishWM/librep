@@ -63,7 +63,7 @@
   (interactive "aFunction to disassemble:")
   (let
       (code-string consts stack
-       (print-escape 'newlines))
+       (print-escape t))
     (unless stream
       (if (featurep 'jade)
 	  (progn
