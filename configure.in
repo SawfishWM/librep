@@ -344,6 +344,13 @@ esac
 AC_MSG_RESULT([${rep_value_conv}])
 AC_DEFINE_UNQUOTED(rep_PTR_SIZED_INT_CONV, "${rep_value_conv}")
 
+dnl Check if `long long int' is available
+AC_MSG_CHECKING([for long long int])
+AC_TRY_COMPILE([],[long long int foo = 42;],
+	       [AC_MSG_RESULT(yes)
+		AC_DEFINE(rep_HAVE_LONG_LONG,1)],
+	       [AC_MSG_RESULT(no)])
+
 dnl This is the malloc granularity. It's unlikely that anything has
 dnl less alignment than the default value of four bytes
 AC_ARG_WITH(malloc-alignment,
