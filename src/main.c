@@ -270,12 +270,16 @@ repv
 rep_load_environment (repv file)
 {
     repv res = Qnil;
+    rep_GC_root gc_file;
+
+    rep_PUSHGC (gc_file, file);
     if (rep_dumped_non_constants != rep_NULL)
 	res = Feval (rep_dumped_non_constants);
     if (res != rep_NULL)
 	res = Fload (init_script, Qnil, Qnil, Qnil, Qnil);
     if (res != rep_NULL && rep_STRINGP(file))
 	res = Fload (file, Qnil, Qnil, Qnil, Qnil);
+    rep_POPGC;
 
     return res;
 }
