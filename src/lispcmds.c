@@ -1417,7 +1417,7 @@ research:
 	    if(dir == rep_NULL || !rep_STRINGP(dir))
 		goto path_error;
 
-	    if(!no_suffix_p)
+	    if(trying_dl || !no_suffix_p)
 	    {
 		repv tem;
 		int i = 1;
@@ -1468,7 +1468,7 @@ research:
 		    }
 		}
 	    }
-	    if(name == Qnil)
+	    if(!trying_dl && name == Qnil)
 	    {
 		/* Try without a suffix */
 		repv tem = load_file_exists_p (dir);
