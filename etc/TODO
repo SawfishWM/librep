@@ -31,6 +31,15 @@ Outstanding bugs
 
  ! `random' only accepts its range as a fixnum
 
+ ! unwind-protect may not evaluate it's cleanup forms, consider:
+
+   (call/cc (lambda (exit)
+	      (unwind-protect
+		  (exit)
+		(message "Foo!"))))
+   
+   Just call this a [mis-] feature for now..
+
 
 General programming tasks:
 ==========================
