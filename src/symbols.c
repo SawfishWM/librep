@@ -37,7 +37,7 @@ char *alloca ();
 #endif
 
 #include "jade.h"
-#include "jade_protos.h"
+#include <lib/jade_protos.h>
 #include "regexp.h"
 
 #include <string.h>
@@ -1033,6 +1033,7 @@ permanent (i.e. their `permanent-local' property is unset or non-nil.)
 	    list = next;
 	}
     }
+    tx_kill_local_variables(VTX(tx));
     return tx;
 }
 

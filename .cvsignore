@@ -8,3 +8,4 @@ config.cache
 config.h
 config.log
 configure
+Makedefs

@@ -19,12 +19,13 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "jade.h"
-#include "jade_protos.h"
+#include <lib/jade_protos.h>
 
 #ifdef HAVE_DYNAMIC_LOADING
 
 _PR void *open_dl_library(VALUE file_name);
 _PR void mark_dl_data(void);
+_PR void kill_dl_libraries(void);
 
 #ifdef HAVE_DLFCN_H
 # include <dlfcn.h>
@@ -32,18 +33,18 @@ _PR void mark_dl_data(void);
 
 #include <assert.h>
 
-struct dl_info {
-    struct dl_info *next;
+struct dl_lib_info {
+    struct dl_lib_info *next;
     VALUE file_name;
     void *handle;
 };
 
-static struct dl_info *dl_list;
+static struct dl_lib_info *dl_list;
 
-static struct dl_info *
+static struct dl_lib_info *
 find_dl(VALUE file)
 {
-    struct dl_info *x = dl_list;
+    struct dl_lib_info *x = dl_list;
     assert(STRINGP(file));
     while(x != 0)
     {
@@ -58,10 +59,11 @@ find_dl(VALUE file)
 void *
 open_dl_library(VALUE file_name)
 {
-    struct dl_info *x = find_dl(file_name);
+    struct dl_lib_info *x = find_dl(file_name);
     if(x == 0)
     {
 	Lisp_XSubr **functions;
+	VALUE (*init_func)(VALUE);
 	void *handle = dlopen(VSTR(file_name), RTLD_LAZY);
 	if(handle == 0)
 	{
@@ -70,7 +72,7 @@ open_dl_library(VALUE file_name)
 		cmd_signal(sym_error, LIST_1(string_dup(err)));
 	    return 0;
 	}
-	x = str_alloc(sizeof(struct dl_info));
+	x = str_alloc(sizeof(struct dl_lib_info));
 	if(x == 0)
 	{
 	    mem_error();
@@ -78,6 +80,19 @@ open_dl_library(VALUE file_name)
 	}
 	x->file_name = file_name;
 	x->handle = handle;
+
+	init_func = dlsym(handle, "jade_init");
+	if(init_func != 0)
+	{
+	    VALUE ret = init_func(file_name);
+	    if(ret == LISP_NULL)
+	    {
+		/* error. abort abort.. */
+		str_free(x);
+		dlclose(handle);
+		return 0;
+	    }
+	}
 
 	functions = dlsym(handle, "jade_subrs");
 	if(functions != 0)
@@ -90,7 +105,7 @@ open_dl_library(VALUE file_name)
 	}
 
 	x->next = dl_list;
-	dl_list = x->next;
+	dl_list = x;
     }
     return x;
 }
@@ -98,7 +113,7 @@ open_dl_library(VALUE file_name)
 void
 mark_dl_data(void)
 {
-    struct dl_info *x = dl_list;
+    struct dl_lib_info *x = dl_list;
     while(x != 0)
     {
 	MARKVAL(x->file_name);
@@ -106,4 +121,21 @@ mark_dl_data(void)
     }
 }
 
+void
+kill_dl_libraries(void)
+{
+    struct dl_lib_info *x = dl_list;
+    dl_list = 0;
+    while(x != 0)
+    {
+	struct dl_lib_info *next = x->next;
+	void (*exit_func)(void) = dlsym(x->handle, "jade_kill");
+	if(exit_func != 0)
+	    exit_func();
+	dlclose(x->handle);
+	str_free(x);
+	x = next;
+    }
+}
+	
 #endif /* HAVE_DYNAMIC_LOADING */

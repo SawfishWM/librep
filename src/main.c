@@ -19,7 +19,7 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "jade.h"
-#include "jade_protos.h"
+#include <lib/jade_protos.h>
 #include "revision.h"
 
 #include <string.h>
@@ -178,7 +178,6 @@ inner_main(int argc, char **argv)
     undo_init();
     views_init();
     windows_init();
-    server_init();
     sys_misc_init();
     sys_windows_init();
 #ifdef HAVE_SUBPROCESSES
@@ -219,10 +218,12 @@ inner_main(int argc, char **argv)
 		fputs("jade: error in initialisation script\n", stderr);
 	    throw_value = old_tv;
 	}
+#ifdef HAVE_DYNAMIC_LOADING
+	kill_dl_libraries();
+#endif
 #ifdef HAVE_SUBPROCESSES
         proc_kill();
 #endif
-	server_kill();
 	windows_kill();
 	views_kill();
 	buffers_kill();

@@ -19,7 +19,7 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "jade.h"
-#include "jade_protos.h"
+#include <lib/jade_protos.h>
 
 #include <string.h>
 #include <stdlib.h>

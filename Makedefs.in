@@ -1,0 +1,75 @@
+# Makedefs.in -- input for the common Makefile definitions
+# Copyright (C) 1998 John Harper <john@dcs.warwick.ac.uk>
+# $Id$
+#
+# This file is part of Jade.
+#
+# Jade is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+#
+# Jade is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Jade; see the file COPYING.  If not, write to
+# the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
+
+version=@version@
+SHELL=/bin/sh
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+datadir=@datadir@
+bindir=@bindir@
+includedir=@includedir@
+infodir=@infodir@
+libdir=@libdir@
+libexecdir=@libexecdir@
+localstatedir=@localstatedir@
+mandir=@mandir@
+sharedstatedir=@sharedstatedir@
+
+jadedir=@jadedir@
+lispdir=@lispdir@
+dumped_lisp_files=@dumped_lisp_files@
+enable_dumped=@opt_enable_dumped@
+jadeexecdir=@jadeexecdir@
+host_type=@host@
+
+CC=@CC@
+CPPFLAGS=-DHAVE_CONFIG_H -I. -I$(top_srcdir)/src -I../lib -I.. @CPPFLAGS@
+CFLAGS=@CFLAGS@ @X_CFLAGS@
+DL_CFLAGS=@DL_CFLAGS@
+LDFLAGS=@LDFLAGS@
+LIBS=@LIBS@
+LIBOBJS=@LIBOBJS@ @ALLOCA@
+X11LIBS=@X_PRE_LIBS@ -lX11 @X_LIBS@ @X_EXTRA_LIBS@
+dynsuffix=@dynamic_file_suffix@
+
+INSTALL=@INSTALL@
+INSTALL_DATA=@INSTALL_DATA@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+
+HAVE_X11=@HAVE_X11@
+HAVE_UNIX=@HAVE_UNIX@
+
+.PHONY: clean realclean install
+
+%.o : %.c
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) -DJADE -DJADE_DIR=$(jadedir) \
+	  -DJADE_EXEC_DIR=$(jadeexecdir) -o $@ $<
+
+% : %.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -DJADE -DJADE_DIR=$(jadedir) \
+	  -DJADE_EXEC_DIR=$(jadeexecdir) -o $@ $< $(LIBS)
+
+%.$(dynsuffix) : %.c
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(DL_CFLAGS) -DJADE -DJADE_DL -o $@ $<
+
+# This rule builds dependancy files from C source files.
+.%.d : %.c
+	$(SHELL) -ec '$(CC) -MM $(CPPFLAGS) $< | sed '\''s/$*\.o/& .$*\.d/g'\'' > $@'

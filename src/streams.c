@@ -37,7 +37,7 @@
    restriction is respected. */
 
 #include "jade.h"
-#include "jade_protos.h"
+#include <lib/jade_protos.h>
 #include "regexp.h"
 
 #include <string.h>

@@ -18,42 +18,10 @@
 # along with Jade; see the file COPYING.  If not, write to
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-version=@version@
-SHELL=/bin/sh
+include ../Makedefs
 
-prefix=@prefix@
-exec_prefix=@exec_prefix@
-datadir=@datadir@
 top_srcdir=@top_srcdir@
 srcdir=@srcdir@
-bindir=@bindir@
-includedir=@includedir@
-infodir=@infodir@
-libdir=@libdir@
-libexecdir=@libexecdir@
-localstatedir=@localstatedir@
-mandir=@mandir@
-sharedstatedir=@sharedstatedir@
-
-jadedir=@jadedir@
-lispdir=@lispdir@
-dumped_lisp_files=@dumped_lisp_files@
-enable_dumped=@opt_enable_dumped@
-jadeexecdir=@jadeexecdir@
-
-CC=@CC@
-CPPFLAGS=@CPPFLAGS@
-CFLAGS=$(CPPFLAGS) @CFLAGS@ @X_CFLAGS@
-LDFLAGS=@LDFLAGS@
-LIBS=@LIBS@
-LIBOBJS=@LIBOBJS@ @ALLOCA@
-X11LIBS=@X_PRE_LIBS@ -lX11 @X_LIBS@ @X_EXTRA_LIBS@
-JADE_LIBS=$(LIBOBJS) $(LIBS)
-JADECLIENT_LIBS=$(LIBS)
-
-HAVE_X11=@HAVE_X11@
-HAVE_UNIX=@HAVE_UNIX@
-
 VPATH=@top_srcdir@/src:@top_srcdir@/lib-src:../lib:.
 
 # Check if we're building a dumped binary
@@ -74,8 +42,7 @@ COMMON_HDRS =	jade.h edit.h lisp.h value.h keys.h stringmem.h \
 X11_SRCS =	x11_keys.c x11_main.c x11_misc.c x11_windows.c
 X11_HDRS =	x11_defs.h x11_windowsys.h
 
-UNIX_SRCS =	lists.c unix_dl.c unix_files.c unix_main.c unix_processes.c \
-		unix_server.c
+UNIX_SRCS =	lists.c unix_dl.c unix_files.c unix_main.c unix_processes.c
 UNIX_HDRS =	unix_defs.h
 
 SRCS = $(COMMON_SRCS)
@@ -105,30 +72,20 @@ ifeq ($(DUMPED_JADE), 1)
 endif
 
 ifneq ($(HAVE_X11), 0)
-JADE_LIBS += $(X11LIBS)
+ LIBS += $(X11LIBS)
 endif
 
-.c.o :
-	$(CC) -c $(CFLAGS) -DJADE -DJADE_DIR=$(jadedir) \
-	  -DJADE_EXEC_DIR=$(jadeexecdir) -DHAVE_CONFIG_H \
-	  -I. -I../lib -I.. -o $@ $<
-
-.PHONY: clean realclean
-
 ifeq ($(DUMPED_JADE), 0)
- all : jade jadeclient
+ all : jade
 else
  all : jaded
 endif
 
 jade : jade_protos.h doc-strings.h $(OBJS) $(LIBOBJS)
-	$(CC) $(LDFLAGS) -o jade $(OBJS) $(JADE_LIBS)
+	$(CC) $(LDFLAGS) -o jade $(OBJS) $(LIBOBJS) $(LIBS)
 
 jaded : jade_protos.h doc-strings.h $(OBJS) $(LIBOBJS)
-	$(CC) $(LDFLAGS) -o jaded $(OBJS) $(JADE_LIBS)
-
-jadeclient : unix_client.o
-	$(CC) $(LDFLAGS) -o $@ $^ $(JADECLIENT_LIBS)
+	$(CC) $(LDFLAGS) -o jaded $(OBJS) $(LIBOBJS) $(LIBS)
 
 ifeq ($(DUMPED_JADE), 1)
 $(DUMPED_ASM) : $(DUMPED_CMP)
@@ -143,55 +100,7 @@ clean :
 	rm -f *~ *.o build.h core
 
 realclean : clean
-	rm -f jade jaded jadeclient makedoc stripproto Makefile
-ifeq ($(DUMPED_JADE), 1)
+	rm -f .*.d jade jaded jadeclient makedoc stripproto Makefile
 	rm -f dump.out dumped.s
-endif
 
-buffers.o	: $(HDRS)
-commands.o	: $(HDRS)
-debug-buffer.o	: $(HDRS)
-edit.o		: $(HDRS)
-editcommands.o	: $(HDRS)
-files.o		: $(HDRS)
-find.o		: $(HDRS)
-glyphs.o	: $(HDRS)
-housekeeping.o	: $(HDRS)
-io.o		: $(HDRS)
-keys.o		: $(HDRS)
-lisp.o		: $(HDRS)
-lispcmds.o	: $(HDRS)
-lispmach.o	: $(HDRS) bytecodes.h
-main.o		: $(HDRS)
-misc.o		: $(HDRS) build.h
-movement.o	: $(HDRS)
-redisplay.o	: $(HDRS)
-streams.o	: $(HDRS)
-stringmem.o	: $(HDRS)
-symbols.o	: $(HDRS)
-undo.o		: $(HDRS)
-values.o	: $(HDRS)
-views.o		: $(HDRS)
-windows.o	: $(HDRS)
-
-regerror.o	: $(HDRS) regprog.h regmagic.h
-regexp.o	: $(HDRS) regprog.h regmagic.h
-regsub.o	: $(HDRS) regprog.h regmagic.h
-regjade.o	: $(HDRS) regprog.h regmagic.h
-
-ifneq ($(HAVE_X11), 0)
- x11_keys.o	: $(HDRS)
- x11_main.o	: $(HDRS)
- x11_misc.o	: $(HDRS)
- x11_render.o	: $(HDRS)
- x11_windows.o	: $(HDRS)
-endif
-
-ifneq ($(HAVE_UNIX), 0)
- unix_client.o	: $(HDRS)
- unix_dl.o	: $(HDRS)
- unix_files.o	: $(HDRS)
- unix_main.o	: $(HDRS)
- unix_processes.o : $(HDRS)
- unix_server.o	: $(HDRS)
-endif
+include $(SRCS:%.c=.%.d)

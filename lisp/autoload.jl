@@ -190,4 +190,7 @@
 (autoload 'define-rule "rm-restrict" t)
 (autoload 'rm-archive-folder "rm-output" t)
 (autoload 'auto-compression-mode "gzip" t)
+(autoload 'server-open-p "server-dl")
+(autoload 'server-open "server-dl" t)
+(autoload 'server-reply "server-dl" t)
 ;;; ::autoload-end::

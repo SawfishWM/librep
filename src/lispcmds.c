@@ -19,7 +19,7 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "jade.h"
-#include "jade_protos.h"
+#include <lib/jade_protos.h>
 
 #include <string.h>
 #include <stdlib.h>
@@ -1630,7 +1630,7 @@ research:
 	    char **suffixes;
 
 #ifdef HAVE_DYNAMIC_LOADING
-	    static char *dl_suffixes[1] = { DYNAMIC_FILE_SUFFIX };
+	    static char *dl_suffixes[1] = { "." DYNAMIC_FILE_SUFFIX };
 	    suffixes = (trying_dl) ? dl_suffixes : lisp_suffixes;
 	    if(trying_dl)
 		i = 0;

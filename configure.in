@@ -22,6 +22,7 @@ AC_REVISION($Revision$)
 
 AC_INIT(src/jade.h)
 AC_CONFIG_HEADER(config.h)
+AC_CONFIG_AUX_DIR(etc)
 
 version="4.0"
 jadedir='${datadir}/jade'
@@ -29,7 +30,7 @@ lispdir='${jadedir}/${version}/lisp'
 jadeexecdir='${libexecdir}/jade/${version}'
 
 output_files="man/Makefile jade/Makefile:src/Makefile.in\
- lib/Makefile:lib-src/Makefile.in lisp/Makefile Makefile"
+ lib/Makefile:lib-src/Makefile.in lisp/Makefile Makedefs Makefile"
 
 opt_enable_dumped=0
 dumped_lisp_files="lisp backquote tilde windows buffers modes edit prompt\
@@ -70,7 +71,9 @@ dnl Check for dynamic loading; currently only <dlfcn.h> with dlopen() etc
 AC_CHECK_HEADER(dlfcn.h,
 [AC_DEFINE(HAVE_DLFCN_H)
  AC_DEFINE(HAVE_DYNAMIC_LOADING)
- AC_DEFINE(DYNAMIC_FILE_SUFFIX, ".so")])
+ dynamic_file_suffix="so"
+ DL_CFLAGS=${DL_CFLAGS:-"-fpic -shared"}
+ AC_DEFINE(DYNAMIC_FILE_SUFFIX, "so")])
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -165,6 +168,8 @@ AC_SUBST(dumped_lisp_files)
 AC_SUBST(dump_flags)
 AC_SUBST(HAVE_UNIX)
 AC_SUBST(HAVE_X11)
+AC_SUBST(dynamic_file_suffix)
+AC_SUBST(DL_CFLAGS)
 
 dnl Build all files
 AC_OUTPUT(${output_files})

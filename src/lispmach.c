@@ -37,7 +37,7 @@ char *alloca ();
 #endif
 
 #include "jade.h"
-#include "jade_protos.h"
+#include <lib/jade_protos.h>
 #include "bytecodes.h"
 
 #include <assert.h>

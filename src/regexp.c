@@ -25,7 +25,7 @@
 
 #ifdef JADE
 #include "jade.h"
-#include "jade_protos.h"
+#include <lib/jade_protos.h>
 #endif
 
 /* Lots of changes for Jade. See the file README.regexp for more details */
