@@ -109,8 +109,8 @@ struct Proc
 };
 
 /* Status is two bits above the type code (presently 8->9) */
-#define PR_ACTIVE  (1 << (rep_CELL8_TYPE_BITS + 0))	/* active, may be stopped */
-#define PR_STOPPED (2 << (rep_CELL8_TYPE_BITS + 1))	/* stopped */
+#define PR_ACTIVE  (1 << (rep_CELL16_TYPE_BITS + 0))	/* active, may be stopped */
+#define PR_STOPPED (2 << (rep_CELL16_TYPE_BITS + 1))	/* stopped */
 #define PR_DEAD    0
 #define PR_RUNNING PR_ACTIVE
 
@@ -137,7 +137,7 @@ DEFSYM(socketpair, "socketpair");
     ((p)->pr_ConnType == Qsocketpair)
 
 #define VPROC(v)	((struct Proc *)rep_PTR(v))
-#define PROCESSP(v)	rep_CELL8_TYPEP(v, rep_Process)
+#define PROCESSP(v)	rep_CELL16_TYPEP(v, process_type)
 
 /* Handy debugging macro */
 #if 0
@@ -149,6 +149,8 @@ DEFSYM(socketpair, "socketpair");
 static struct Proc *process_chain;
 static struct Proc *notify_chain;
 static int process_run_count;
+
+static int process_type;
 
 /* Set to rep_TRUE by the SIGCHLD handler */
 static volatile rep_bool got_sigchld;
@@ -1037,7 +1039,7 @@ If the DIR parameter is nil it will be inherited from the
     {
 	rep_GC_root gc_pr;
 	rep_data_after_gc += sizeof (struct Proc);
-	VPROC(pr)->pr_Car = rep_Process;
+	VPROC(pr)->pr_Car = process_type;
 	VPROC(pr)->pr_Next = process_chain;
 	process_chain = VPROC(pr);
 	VPROC(pr)->pr_NotifyNext = NULL;
@@ -1978,9 +1980,11 @@ rep_proc_init(void)
     rep_ADD_SUBR(Sactive_processes);
     rep_ADD_SUBR(Saccept_process_output);
 
-    rep_register_type(rep_Process, "subprocess", rep_ptr_cmp, proc_prin, proc_prin,
-		  proc_sweep, proc_mark, mark_active_processes,
-		  0, 0, proc_putc, proc_puts, 0, 0);
+    process_type = rep_register_new_type ("subprocess", rep_ptr_cmp,
+					  proc_prin, proc_prin,
+					  proc_sweep, proc_mark,
+					  mark_active_processes,
+					  0, 0, proc_putc, proc_puts, 0, 0);
 }
 
 void
