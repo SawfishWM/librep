@@ -1,3 +1,21 @@
+1998-12-21  John Harper  <john@dcs.warwick.ac.uk>
+
+	* modes.jl (auto-mode-alist): made .sty suffix use tex-mode
+
+	* diff.jl: some fixes for handling narrowed buffers
+
+	* ispell.jl (ispell-idle-function): minor fix to identifying
+	the region to scan (when the buffer is narrowed)
+
+1998-12-16  John Harper  <john@dcs.warwick.ac.uk>
+
+	* cvs.jl (cvs-add): new argument WITH-LOG, controlling whether
+	or not to prompt for a log message before adding the file
+
+1998-12-15  John Harper  <john@dcs.warwick.ac.uk>
+
+	* mime-encode.jl: fix keymap autoloading problem
+
 1998-12-09  John Harper  <john@dcs.warwick.ac.uk>
 
 	* miranda.jl (miranda): take program arguments from variable
