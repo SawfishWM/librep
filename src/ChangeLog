@@ -1,3 +1,8 @@
+2005-04-07  John Harper  <jsh@unfactored.org>
+
+	* unix_processes.c: patch from Eric Mangold
+	<teratorn@world-net.net> to add close-process function
+
 2005-04-02  John Harper  <jsh@unfactored.org>
 
 	* ffi.c: support FFI_TYPE_LONGDOUBLE == FFI_TYPE_DOUBLE

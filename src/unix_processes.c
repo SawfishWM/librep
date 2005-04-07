@@ -1117,6 +1117,20 @@ If the DIR parameter is nil it will be inherited from the
 	return rep_mem_error();
 }
 
+DEFUN("close-process", Fclose_process,
+      Sclose_process, (repv proc), rep_Subr1) /*
+::doc:rep.io.processes#close-process::
+close-processes [PROCESS]
+
+Closes the stdin, stdout, and stderr streams of the asynchronous process-
+object PROCESS.
+::end:: */
+{
+    rep_DECLARE1(proc, PROCESSP);
+    close_proc_files(VPROC(proc));
+    return(Qnil); 
+}
+
 DEFUN("start-process", Fstart_process, Sstart_process, (repv arg_list), rep_SubrN) /*
 ::doc:rep.io.processes#start-process::
 start-process [PROCESS] [PROGRAM] [ARGS...]
@@ -2072,6 +2086,7 @@ rep_proc_init(void)
     rep_INTERN(socketpair);
 
     tem = rep_push_structure ("rep.io.processes");
+    rep_ADD_SUBR(Sclose_process);
     rep_ADD_SUBR(Smake_process);
     rep_ADD_SUBR(Sstart_process);
     rep_ADD_SUBR(Scall_process);
