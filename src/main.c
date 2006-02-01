@@ -157,6 +157,11 @@ get_main_options(char *prog_name, int *argc_p, char ***argv_p)
     return rep_TRUE;
 }
 
+/* GCC 4 helpfully inlines this function and breaks the stack check. */
+#if __GNUC__ >= 4
+static void check_configuration (int *stack_low) __attribute__ ((noinline));
+#endif
+
 static void
 check_configuration (int *stack_low)
 {
