@@ -558,7 +558,7 @@ AC_ARG_WITH(stack-direction,
  [with_stack_direction=unknown])
 if test "${with_stack_direction}" = unknown; then
   case ${host_cpu} in
-    sparc|i?86)
+    sparc|i?86|powerpc)
       AC_MSG_RESULT([assuming downwards])
       with_stack_direction="-1"
       ;;
@@ -593,7 +593,7 @@ AC_DEFINE_UNQUOTED(rep_VERSION, "${version}")
 AC_DEFINE_UNQUOTED(rep_INTERFACE, ${libcurrent})
 
 dnl Hacks for libintl
-AM_LC_MESSAGES
+gt_LC_MESSAGES
 VERSION="$version"
 PACKAGE="librep"
 DATADIRNAME="share"

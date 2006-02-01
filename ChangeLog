@@ -1,3 +1,8 @@
+2006-01-31  John Harper  <jsh@unfactored.org>
+
+	* configure.in: fixed test for LC_MESSAGES to use new autoconf
+	macro (gt_LC_MESSAGES not AM_LC_MESSAGES)
+
 2003-11-24  John Harper  <jsh@unfactored.org>
 
 	* configure.in: version 0.17, bumped library revision
