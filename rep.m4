@@ -4,7 +4,7 @@ dnl
 dnl AM_PATH_REP([MINIMUM_VERSION])
 dnl Test for librep, define REP_VERSION, REP_CFLAGS, REP_LIBS and REP_EXECDIR
 dnl
-AC_DEFUN(AM_PATH_REP,
+AC_DEFUN([AM_PATH_REP],
 [dnl
   AC_ARG_WITH(rep_prefix,[  --with-rep-prefix=PFX   Prefix where rep is installed (optional)],
 	      [rep_prefix="$withval"], [rep_prefix=""])
