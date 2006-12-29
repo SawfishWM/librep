@@ -252,6 +252,7 @@ to re-enable it.
     t->function = fun;
     t->secs = rep_get_long_int (secs);
     t->msecs = rep_get_long_int (msecs);
+    fix_time (&t->secs, &t->msecs);
     t->next_alloc = allocated_timers;
     allocated_timers = t;
     insert_timer (t);
@@ -290,6 +291,7 @@ duration. Otherwise, the existing values are preserved.
     {
 	TIMER(timer)->secs = rep_get_long_int (secs);
 	TIMER(timer)->msecs = rep_get_long_int (msecs);
+	fix_time (&TIMER (timer)->secs, &TIMER (timer)->msecs);
     }
     insert_timer (TIMER(timer));
     return timer;
