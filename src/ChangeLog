@@ -1,3 +1,10 @@
+2007-01-01  John Harper  <jsh@apple.com>
+
+	* timers.c (fix_time): fix this function for ms == 1000 (from
+	Michal Jaegermann)
+
+	* rep-remote.c: need to include <sys/types.h>
+
 2006-12-29  John Harper  <jsh@unfactored.org>
 
 	* timers.c: use fix_time () to validate initial secs/msecs

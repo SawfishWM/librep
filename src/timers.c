@@ -128,7 +128,7 @@ fix_time (long *secs, long *msecs)
 	*msecs += 1000;
 	(*secs)--;
     }
-    while (*msecs > 1000)
+    while (*msecs >= 1000)
     {
 	*msecs -= 1000;
 	(*secs)++;
