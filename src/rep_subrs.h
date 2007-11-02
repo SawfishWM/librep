@@ -616,6 +616,7 @@ extern void rep_print_allocations(void);
 #endif
 
 extern void (*rep_redisplay_fun)(void);
+extern int (*rep_wait_for_input_fun)(fd_set *inputs, u_long timeout_msecs);
 extern int rep_input_timeout_secs;
 extern repv Funix_print_allocations(void);
 

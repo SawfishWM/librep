@@ -1,4 +1,9 @@
-2007-01-01  John Harper  <jsh@apple.com>
+2007-11-02  John Harper  <jsh@unfactored.org>
+
+	* src/rep_subrs.h, src/unix_main.c: allow apps to override body
+	of wait_for_input ()
+
+2007-01-01  John Harper  <jsh@unfactored.org>
 
 	* timers.c (fix_time): fix this function for ms == 1000 (from
 	Michal Jaegermann)
@@ -41,7 +46,7 @@
 	* sockets.c: use socklen_t instead of size_t where appropriate,
 	fixes warnings on 64 bit systems
 
-2003-12-06  John Harper  <jsh@apple.com>
+2003-12-06  John Harper  <jsh@unfactored.org>
 
 	* librep.sym: added Fexport_binding to the list
 

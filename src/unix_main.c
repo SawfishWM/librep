@@ -60,6 +60,7 @@
 #endif
 
 void (*rep_redisplay_fun)(void);
+int (*rep_wait_for_input_fun)(fd_set *inputs, u_long timeout_msecs);
 int rep_input_timeout_secs = 1;
 
 
@@ -429,6 +430,11 @@ wait_for_input(fd_set *inputs, u_long timeout_msecs)
 	    return count;
 	}
     }
+
+    /* Allow embedders to override this part of the function. */
+
+    if (rep_wait_for_input_fun != 0)
+	return (*rep_wait_for_input_fun) (inputs, timeout_msecs);
 
     /* Break the timeout into one-second chunks, then check for
        interrupt between each call to select. */
