@@ -334,7 +334,7 @@ read_from_one_fd(struct Proc *pr, int fd)
 {
     repv stream = ((fd != pr->pr_Stdout)
 		    ? pr->pr_ErrorStream : pr->pr_OutputStream);
-    u_char buf[1025];
+    char buf[1025];
     int actual;
     do {
 	if((actual = read(fd, buf, 1024)) > 0)
@@ -380,7 +380,7 @@ read_from_process(int fd)
 }
 
 static int
-write_to_process(repv pr, u_char *buf, int bufLen)
+write_to_process(repv pr, char *buf, int bufLen)
 {
     int act = 0;
     if(!PROCESSP(pr))
@@ -556,7 +556,7 @@ child_build_environ (void)
    stdin connected to the file SYNC_INPUT. Otherwise this function returns
    immediately after starting the process.  */
 static rep_bool
-run_process(struct Proc *pr, char **argv, u_char *sync_input)
+run_process(struct Proc *pr, char **argv, char *sync_input)
 {
     rep_bool rc = rep_FALSE;
     if(PR_DEAD_P(pr))
@@ -806,7 +806,7 @@ run_process(struct Proc *pr, char **argv, u_char *sync_input)
 		else
 		{
 		    /* Run synchronously.  */
-		    u_char buf[1025];
+		    char buf[1025];
 		    int actual;
 		    fd_set inputs;
 		    rep_bool done_out = rep_FALSE, done_err = rep_FALSE;
@@ -1020,7 +1020,7 @@ static void
 proc_prin(repv strm, repv obj)
 {
     struct Proc *pr = VPROC(obj);
-    u_char buf[40];
+    char buf[40];
     rep_stream_puts(strm, "#<process", -1, rep_FALSE);
     if(PR_RUNNING_P(pr))
     {
@@ -1051,7 +1051,7 @@ static int
 proc_putc(repv stream, int c)
 {
     char tmps[2];
-    tmps[0] = (u_char)c;
+    tmps[0] = (char)c;
     tmps[1] = 0;
     return write_to_process(stream, tmps, 1);
 }
@@ -1059,7 +1059,7 @@ proc_putc(repv stream, int c)
 static int
 proc_puts(repv stream, void *data, int len, rep_bool is_lisp)
 {
-    u_char *buf = is_lisp ? rep_STR(data) : data;
+    char *buf = is_lisp ? rep_STR(data) : data;
     return write_to_process(stream, buf, len);
 }
 

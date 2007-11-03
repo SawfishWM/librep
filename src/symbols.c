@@ -149,9 +149,9 @@ static void
 symbol_print(repv strm, repv obj)
 {
     /* output a maximum of 2n chars for a symbol name of length n */
-    u_char *buf = alloca (rep_STRING_LEN (rep_SYM (obj)->name) * 2);
-    register u_char *out = buf;
-    register u_char *s;
+    char *buf = alloca (rep_STRING_LEN (rep_SYM (obj)->name) * 2);
+    register char *out = buf;
+    register char *s;
     rep_bool seen_digit = rep_FALSE;
 
     if (rep_SYMBOL_LITERAL_P (obj))
@@ -188,7 +188,7 @@ symbol_print(repv strm, repv obj)
     s = rep_STR (rep_SYM (obj)->name);
     while (1)
     {
-	u_char c = *s++;
+	char c = *s++;
 	switch (c)
 	{
 	case 0:
@@ -227,7 +227,7 @@ rep_intern_static(repv *symp, repv name)
 }
 
 static inline u_long
-hash(u_char *str)
+hash(char *str)
 {
     register u_long value = 0;
     while(*str)

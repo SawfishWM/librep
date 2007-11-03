@@ -1,5 +1,16 @@
 2007-11-02  John Harper  <jsh@unfactored.org>
 
+	* values.c, lispmach.h, unix_processes.c, rep-md5.c, streams.c,
+	message.c, lisp.c, numbers.c, rep-remote.c, gettext.c,
+	regexp.c, unix_dl.c, rep_subrs.h, sockets.c, rep_lisp.h,
+	unix_main.c, unix_files.c, rep_regexp.h, tables.c, lispcmds.c,
+	find.c, main.c, symbols.c, misc.c: fix about a thousand
+	compiler warnings by doing s/u_char/char/ in a number of places
+	(in some other places cast back to u_char* to correctly convert
+	characters to integers)
+
+2007-11-02  John Harper  <jsh@unfactored.org>
+
 	* src/rep_subrs.h, src/unix_main.c: allow apps to override body
 	of wait_for_input ()
 

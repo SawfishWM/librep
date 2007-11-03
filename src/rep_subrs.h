@@ -317,7 +317,7 @@ enum rep_message {
 extern void (*rep_message_fun)(enum rep_message fn, ...);
 
 /* from misc.c */
-extern u_char *rep_str_dupn(const u_char *old, int len);
+extern char *rep_str_dupn(const char *old, int len);
 extern void (*rep_beep_fun)(void);
 extern repv Qoperating_system, Qwindow_system, Qprocess_environment;
 extern repv Qbuild_id_string;
@@ -541,11 +541,11 @@ extern void rep_print_val(repv, repv);
 extern repv rep_null_string(void);
 extern repv rep_box_string (char *ptr, long len);
 extern repv rep_make_string(long);
-extern repv rep_string_dupn(const u_char *, long);
-extern repv rep_string_dup(const u_char *);
-extern repv rep_concat2(u_char *, u_char *);
-extern repv rep_concat3(u_char *, u_char *, u_char *);
-extern repv rep_concat4(u_char *s1, u_char *s2, u_char *s3, u_char *s4);
+extern repv rep_string_dupn(const char *, long);
+extern repv rep_string_dup(const char *);
+extern repv rep_concat2(char *, char *);
+extern repv rep_concat3(char *, char *, char *);
+extern repv rep_concat4(char *s1, char *s2, char *s3, char *s4);
 extern rep_bool rep_set_string_len(repv, long);
 extern repv rep_list_1(repv);
 extern repv rep_list_2(repv, repv);

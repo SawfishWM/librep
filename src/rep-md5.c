@@ -28,10 +28,10 @@
 #include "md5.h"
 
 static repv
-digest_to_repv (u_char digest[16])
+digest_to_repv (char digest[16])
 {
     static const char hex_digits[16] = "0123456789abcdef";
-    u_char hex_digest[32];
+    char hex_digest[32];
     int i;
 
     /* Currently rep has no interface to create bignums directly,
@@ -57,7 +57,7 @@ stored in STRING. This integer will have no more than 128 significant
 bits.
 ::end:: */
 {
-    u_char digest[16];
+    char digest[16];
 
     rep_DECLARE1 (data, rep_STRINGP);
 
@@ -78,7 +78,7 @@ the local filing system). The returned integer will have no more than
 ::end:: */
 {
     FILE *fh;
-    u_char digest[16];
+    char digest[16];
 
     rep_DECLARE1 (file, rep_STRINGP);
 

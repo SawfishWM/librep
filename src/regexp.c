@@ -998,7 +998,7 @@ regmatch(char *prog)
 	    break;
 	case STAR:
 	case PLUS:{
-		register u_char	nextch;
+		register char	nextch;
 		register int	no;
 		register char  *save;
 		register int	min;
@@ -1031,7 +1031,7 @@ regmatch(char *prog)
 	    break;
 	case NGSTAR:
 	case NGPLUS:{
-		register u_char	nextch;
+		register char	nextch;
 		register int	no;
 		register char  *save;
 		register int	max;

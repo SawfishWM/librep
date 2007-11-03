@@ -369,7 +369,7 @@ typedef struct rep_string_struct {
     repv car;
 
     /* Pointer to the (zero-terminated) characters */
-    u_char *data;
+    char *data;
 } rep_string;
 
 #define rep_STRING_LEN_SHIFT	8
@@ -393,7 +393,7 @@ typedef struct rep_string_struct {
     rep_ALIGN_CELL(static const rep_string v) = {	\
 	((sizeof(s) - 1) << rep_STRING_LEN_SHIFT)	\
 	| rep_CELL_STATIC_BIT | rep_String,		\
-	(u_char *)s					\
+	(char *)s					\
     }
 
 #define rep_STR(v)	(rep_STRING(v)->data)

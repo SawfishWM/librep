@@ -35,44 +35,44 @@ default_message (enum rep_message fn, ...)
     switch (fn)
     {
 	int len;
-	u_char *msg;
+	char *msg;
 	u_long *old_lenp;
-	u_char **old_msgp;
+	char **old_msgp;
 
     case rep_messagen:
-	msg = (u_char *)va_arg(args, u_char *);
+	msg = (char *)va_arg(args, char *);
 	len = (int)va_arg(args, int);
 	fwrite(msg, 1, len, stderr);
 	fputc('\n', stderr);
 	break;
 
     case rep_message:
-	msg = (u_char *)va_arg(args, u_char *);
+	msg = (char *)va_arg(args, char *);
 	fputs (msg, stderr);
 	fputc ('\n', stderr);
 	break;
 
     case rep_messagef:
-	msg = (u_char *)va_arg(args, u_char *);
+	msg = (char *)va_arg(args, char *);
 	vfprintf (stderr, msg, args);
 	fputc ('\n', stderr);
 	break;
 
     case rep_save_message:
-	old_msgp = (u_char **)va_arg(args, u_char **);
+	old_msgp = (char **)va_arg(args, char **);
 	old_lenp = (u_long *)va_arg(args, u_long *);
 	*old_msgp = ""; *old_lenp = 0;
 	break;
 
     case rep_append_message:
-	msg = (u_char *)va_arg(args, u_char *);
+	msg = (char *)va_arg(args, char *);
 	len = (int)va_arg(args, int);
 	fwrite(msg, len, 1, stderr);
 	fputc('\n', stderr);
 	break;
 
     case rep_reset_message: 		/* (void) */
-    case rep_restore_message:		/* (u_char *msg, u_long len) */
+    case rep_restore_message:		/* (char *msg, u_long len) */
     case rep_redisplay_message:		/* (void) */
 	break;
     }

@@ -278,7 +278,7 @@ rep_make_string(long len)
 }
 
 repv
-rep_string_dupn(const u_char *src, long slen)
+rep_string_dupn(const char *src, long slen)
 {
     rep_string *dst = rep_STRING(rep_make_string(slen + 1));
     if(dst != NULL)
@@ -290,13 +290,13 @@ rep_string_dupn(const u_char *src, long slen)
 }
 
 repv
-rep_string_dup(const u_char *src)
+rep_string_dup(const char *src)
 {
     return rep_string_dupn(src, strlen(src));
 }
 
 repv
-rep_concat2(u_char *s1, u_char *s2)
+rep_concat2(char *s1, char *s2)
 {
     int len = strlen(s1) + strlen(s2);
     repv res = rep_make_string(len + 1);
@@ -305,7 +305,7 @@ rep_concat2(u_char *s1, u_char *s2)
 }
 
 repv
-rep_concat3(u_char *s1, u_char *s2, u_char *s3)
+rep_concat3(char *s1, char *s2, char *s3)
 {
     int len = strlen(s1) + strlen(s2) + strlen(s3);
     repv res = rep_make_string(len + 1);
@@ -314,7 +314,7 @@ rep_concat3(u_char *s1, u_char *s2, u_char *s3)
 }
 
 repv
-rep_concat4(u_char *s1, u_char *s2, u_char *s3, u_char *s4)
+rep_concat4(char *s1, char *s2, char *s3, char *s4)
 {
     int len = strlen(s1) + strlen(s2) + strlen(s3) + strlen(s4);
     repv res = rep_make_string(len + 1);

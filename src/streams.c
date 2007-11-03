@@ -92,7 +92,7 @@ rep_stream_getc(repv stream)
 	{
 	    if (rep_INT(res) < rep_STRING_LEN(rep_CDR(stream)))
 	    {
-		c = (int) rep_STR(rep_CDR(stream))[rep_INT(res)];
+		c = (int) ((u_char *)rep_STR(rep_CDR(stream)))[rep_INT(res)];
 		rep_CAR(stream) = rep_MAKE_INT(rep_INT(res) + 1);
 	    }
 	    else
@@ -223,7 +223,7 @@ top:
     {
 	repv args, res, new;
 	int len;
-	u_char tmps[2];
+	char tmps[2];
 	rep_type *t;
 
     case rep_Cons:
@@ -244,7 +244,7 @@ top:
 		rep_CDR(stream) = rep_MAKE_INT (newlen);
 		args = new;
 	    }
-	    rep_STR (args)[len] = (u_char) c;
+	    ((u_char *)rep_STR (args))[len] = (u_char) c;
 	    rep_STR (args)[len+1] = 0;
 	    rep_set_string_len (args, len + 1);
 	    rc = 1;
@@ -265,7 +265,7 @@ top:
     case rep_Symbol:
 	if (stream == Qt)
 	{
-	    tmps[0] = (u_char) c;
+	    tmps[0] = (char) c;
 	    tmps[1] = 0;
 	    if (rep_message_fun != 0)
 		(*rep_message_fun) (rep_append_message, tmps, 1);
@@ -323,7 +323,7 @@ bottom:
 int
 rep_stream_puts(repv stream, void *data, int bufLen, rep_bool isValString)
 {
-    u_char *buf;
+    char *buf;
     int rc = -1;
 
     if(stream == Qnil && !(stream = Fsymbol_value (Qstandard_output, Qnil)))
@@ -457,7 +457,7 @@ bottom:
 int
 rep_stream_read_esc (repv stream, int *c_p)
 {
-    u_char c;
+    char c;
     switch (*c_p)
     {
     case 'n':
@@ -621,14 +621,14 @@ characters, the returned string will contain the characters read up to
 that point. If no characters are read, nil will be returned.
 ::end:: */
 {
-    u_char *buf;
+    char *buf;
     int len;
     rep_DECLARE2 (count, rep_INTP);
     buf = alloca (rep_INT (count));
     if (rep_FILEP (stream) && rep_LOCAL_FILE_P (stream))
     {
 	/* Special case for local file streams. */
-	len = fread (buf, sizeof (u_char), rep_INT (count),
+	len = fread (buf, sizeof (char), rep_INT (count),
 		     rep_FILE (stream)->file.fh);
 
 	/* XXX one possibility is to scan for newlines in the buffer.. */
@@ -656,7 +656,7 @@ read-line STREAM
 Read one line of text from STREAM.
 ::end:: */
 {
-    u_char buf[400];
+    char buf[400];
     if (rep_FILEP(stream) && rep_LOCAL_FILE_P (stream))
     {
 	/* Special case for file streams. We can read a line in one go.	 */
@@ -667,11 +667,11 @@ Read one line of text from STREAM.
     }
     else
     {
-	u_char *bufp = buf;
+	char *bufp = buf;
 	int len = 0, c;
 	while ((c = rep_stream_getc (stream)) != EOF)
 	{
-	    *bufp++ = (u_char) c;
+	    *bufp++ = (char) c;
 	    len++;
 	    if ((len >= sizeof (buf) - 1) || (c == '\n'))
 		break;
@@ -691,7 +691,7 @@ read. Returns the number of characters copied.
 ::end:: */
 {
     int len = 0, c;
-    u_char buf[BUFSIZ+1];
+    char buf[BUFSIZ+1];
     int i = 0;
     while ((c = rep_stream_getc (source)) != EOF)
     {
@@ -842,11 +842,11 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 `S' conversion, (or the `s' conversion when the ARG isn't a string).
 ::end:: */
 {
-    u_char *fmt, *last_fmt;
+    char *fmt, *last_fmt;
     rep_bool make_string;
     repv stream, format, extra_formats = rep_NULL;
     rep_GC_root gc_stream, gc_format, gc_args, gc_extra_formats;
-    u_char c;
+    char c;
     int this_arg = 0;
 
     if (!rep_CONSP (args))
@@ -980,7 +980,7 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 		switch (c)
 		{
 		    int radix, len, actual_len;
-		    u_char buf[256], *ptr;
+		    char buf[256], *ptr;
 
 		case 'c':
 		    rep_stream_putc (stream, rep_INT (val));

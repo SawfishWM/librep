@@ -134,7 +134,7 @@ table_print (repv stream, repv arg)
 /* hash functions */
 
 static inline hash_value
-hash_string (register u_char *ptr)
+hash_string (register char *ptr)
 {
     register hash_value value = 0;
     while (*ptr != 0)

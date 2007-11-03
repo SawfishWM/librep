@@ -875,7 +875,7 @@ can only contain characters (ie, integers).
 	if(rep_INT(index) < rep_STRING_LEN(array))
 	{
 	    rep_DECLARE3(new, rep_INTP);
-	    rep_STR(array)[rep_INT(index)] = (u_char)rep_INT(new);
+	    ((u_char *)rep_STR(array))[rep_INT(index)] = (u_char)rep_INT(new);
 	    rep_string_modified (array);
 	    return(new);
 	}
@@ -909,7 +909,7 @@ can be a vector or a string. INDEX starts at zero.
     if(rep_STRINGP(array))
     {
 	if(rep_INT(index) < rep_STRING_LEN(array))
-	    return(rep_MAKE_INT(rep_STR(array)[rep_INT(index)]));
+	    return(rep_MAKE_INT(((u_char *)rep_STR(array))[rep_INT(index)]));
     }
     else if(rep_VECTORP(array) || rep_COMPILEDP(array))
     {
@@ -936,7 +936,7 @@ INITIAL-repv, or to space if INITIAL-VALUE is not given.
     res = rep_make_string(rep_INT(len) + 1);
     if(res)
     {
-	memset(rep_STR(res), rep_INTP(init) ? (u_char)rep_INT(init) : ' ', rep_INT(len));
+	memset(rep_STR(res), rep_INTP(init) ? (char)rep_INT(init) : ' ', rep_INT(len));
 	rep_STR(res)[rep_INT(len)] = 0;
     }
     return(res);
@@ -978,7 +978,7 @@ a character or a list or vector of characters.
 {
     u_int length;
     repv elt, string;
-    u_char *ptr;
+    char *ptr;
     int i;
 
     /* Pass 1. calculate the length of the new string. */
@@ -1582,7 +1582,7 @@ Returns t if STRING2 matches the beginning of STRING1, ie,
    => nil
 ::end:: */
 {
-    u_char *s1, *s2;
+    char *s1, *s2;
     rep_DECLARE1(str1, rep_STRINGP);
     rep_DECLARE2(str2, rep_STRINGP);
     s1 = rep_STR(str1);
@@ -1604,7 +1604,7 @@ string-equal STRING1 STRING2
 Returns t if STRING1 and STRING2 are the same, ignoring case.
 ::end:: */
 {
-    u_char *s1, *s2;
+    char *s1, *s2;
     rep_DECLARE1(str1, rep_STRINGP);
     rep_DECLARE2(str2, rep_STRINGP);
     s1 = rep_STR(str1);
@@ -1625,7 +1625,7 @@ string-lessp STRING1 STRING2
 Returns t if STRING1 is `less' than STRING2, ignoring case.
 ::end:: */
 {
-    u_char *s1, *s2;
+    char *s1, *s2;
     rep_DECLARE1(str1, rep_STRINGP);
     rep_DECLARE2(str2, rep_STRINGP);
     s1 = rep_STR(str1);

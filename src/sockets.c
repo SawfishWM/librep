@@ -166,7 +166,7 @@ static void
 client_socket_output (int fd)
 {
     rep_socket *s = socket_for_fd (fd);
-    u_char buf[1025];
+    char buf[1025];
     int actual;
 
     DB (("client_socket_output for %d\n", fd));
@@ -655,7 +655,7 @@ poll_for_input (int fd)
 
 /* Returns the number of bytes actually written. */
 static u_int
-blocking_write (rep_socket *s, u_char *data, u_int bytes)
+blocking_write (rep_socket *s, char *data, u_int bytes)
 {
     u_int done = 0;
 
@@ -700,7 +700,7 @@ socket_putc (repv stream, int c)
 static int
 socket_puts (repv stream, void *data, int len, rep_bool is_lisp)
 {
-    u_char *buf = is_lisp ? rep_STR(data) : data;
+    char *buf = is_lisp ? rep_STR(data) : data;
     return blocking_write (SOCKET (stream), buf, len);
 }
 

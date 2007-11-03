@@ -216,7 +216,7 @@ rep_user_home_directory(repv user)
 repv
 rep_system_name(void)
 {
-    u_char buf[256];
+    char buf[256];
     struct hostent *h;
 
     static repv system_name;
@@ -246,7 +246,7 @@ rep_system_name(void)
 	    system_name = rep_string_dup(*aliases ? *aliases : h->h_name);
 	}
 	else
-	    system_name = rep_string_dup((u_char *)h->h_name);
+	    system_name = rep_string_dup((char *)h->h_name);
     }
     else
 	system_name = rep_string_dup(buf);

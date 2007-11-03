@@ -106,7 +106,7 @@ read_char (void)
 static void
 send_long (long value)
 {
-    u_char lbuf[10];
+    char lbuf[10];
     sprintf (lbuf, "%08lx", value);
     if (write (1, lbuf, 8) != 8)
 	x_perror ("send_long");
@@ -115,7 +115,7 @@ send_long (long value)
 static long
 read_long ()
 {
-    u_char lbuf[10];
+    char lbuf[10];
     if (read (0, lbuf, 8) != 8)
 	x_perror ("read_long");
     lbuf[8] = 0;
@@ -131,7 +131,7 @@ send_string (char *string)
 	x_perror ("send_string");
 }
 
-static u_char *
+static char *
 read_string ()
 {
     long length = read_long ();
@@ -155,8 +155,8 @@ send_errno (int error)
     send_string (strerror (error));
 }
 
-static u_char *
-quote_string (u_char *out, u_char *in)
+static char *
+quote_string (char *out, char *in)
 {
     char c;
     *out++ = '"';
@@ -204,8 +204,8 @@ gid_name (gid_t gid)
     return (gr != 0) ? gr->gr_name : 0;
 }
 
-static u_char *
-output_mode_string (u_char *out, u_long perms)
+static char *
+output_mode_string (char *out, u_long perms)
 {
     int i;
     char c = '-';
@@ -256,7 +256,7 @@ do_get (int argc, char **argv)
 	    send_long (size);
 	    while (size > 0)
 	    {
-		u_char buf[BUFSIZ];
+		char buf[BUFSIZ];
 		int this = (size > BUFSIZ ? BUFSIZ : size);
 		this = fread (buf, 1, this, fh);
 		if (this == 0)
@@ -286,7 +286,7 @@ do_put (int argc, char **argv)
 	long todo = size;
 	while (todo > 0)
 	{
-	    u_char buf[BUFSIZ];
+	    char buf[BUFSIZ];
 	    int this = (todo > BUFSIZ ? BUFSIZ : todo);
 	    this = read (0, buf, this);
 	    if (this < 0)
@@ -358,7 +358,7 @@ do_cp (int argc, char **argv)
 	    if(fstat(srcf, &statb) == 0)
 		chmod(argv[1], statb.st_mode);
 	    do {
-		u_char buf[BUFSIZ];
+		char buf[BUFSIZ];
 		int wr;
 		rd = read(srcf, buf, BUFSIZ);
 		if(rd < 0)
@@ -438,9 +438,9 @@ do_readdir (int argc, char **argv)
 
 	       suitable for Lisp reading. */
 
-	    u_char nambuf[PATH_MAX];
+	    char nambuf[PATH_MAX];
 	    struct stat st;
-	    u_char buf[3*PATH_MAX], *ptr = buf;
+	    char buf[3*PATH_MAX], *ptr = buf;
 	    strcpy (nambuf, dirname);
 	    strcat (nambuf, de->d_name);
 	    if (lstat (nambuf, &st) == 0)

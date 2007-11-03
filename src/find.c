@@ -440,7 +440,7 @@ character `\'. If the STRING does not contain any regexp meta-characters
 it is returned as-is (un-copied).
 ::end:: */
 {
-    u_char *buf, *s;
+    char *buf, *s;
     int buflen = 128, slen, i = 0;
     rep_bool quoted = rep_FALSE;
     repv res = rep_NULL;
@@ -452,12 +452,12 @@ it is returned as-is (un-copied).
 	goto error;
     while(slen-- > 0)
     {
-	u_char c;
+	char c;
 	/* Ensure string is long enough, this saves doing this twice. */
 	if(i + 2 >= buflen)
 	{
 	    int newlen = buflen * 2;
-	    u_char *newbuf = rep_alloc(newlen);
+	    char *newbuf = rep_alloc(newlen);
 	    if(!newbuf)
 		goto error;
 	    memcpy(newbuf, buf, i);

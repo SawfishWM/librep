@@ -122,10 +122,10 @@ strncasecmp (const char *s1, const char *s2, size_t n)
 }
 #endif
 
-u_char *
-rep_str_dupn(const u_char *old, int len)
+char *
+rep_str_dupn(const char *old, int len)
 {
-    u_char *new = rep_alloc(len + 1);
+    char *new = rep_alloc(len + 1);
     if(new)
     {
 	memcpy(new, old, len);
@@ -163,7 +163,7 @@ in the set of all strings in LIST which also match TEMPLATE. If FOLD-CASE
 is t, all matching ignores character case.
 ::end:: */
 {
-    u_char *orig, *match = NULL;
+    char *orig, *match = NULL;
     int matchlen = 0, origlen;
 
     rep_DECLARE1(existing, rep_STRINGP);
@@ -177,14 +177,14 @@ is t, all matching ignores character case.
 	repv arg = rep_CAR(arg_list);
 	if(rep_STRINGP(arg))
 	{
-	    u_char *tmp = rep_STR(arg);
+	    char *tmp = rep_STR(arg);
 	    if((rep_NILP(fold)
 		? strncmp (orig, tmp, origlen)
 		: strncasecmp (orig, tmp, origlen)) == 0)
 	    {
 		if(match)
 		{
-		    u_char *tmp2 = match + origlen;
+		    char *tmp2 = match + origlen;
 		    tmp += origlen;
 		    while(*tmp2 && *tmp)
 		    {
@@ -428,12 +428,12 @@ Note that the STRING really is modified, no copy is made!
     tablen = rep_STRING_LEN(table);
     if(!rep_STRING_WRITABLE_P(string))
 	return(rep_signal_arg_error(string, 1));
-    str = rep_STR(string);
+    str = (u_char *)rep_STR(string);
     slen = rep_STRING_LEN(string);
     while(slen-- > 0)
     {
 	register u_char c = *str;
-	*str++ = (c < tablen) ? rep_STR(table)[c] : c;
+	*str++ = (c < tablen) ? ((u_char *)rep_STR(table))[c] : c;
     }
     rep_string_modified (string);
     return(string);
@@ -648,8 +648,8 @@ rep_misc_init(void)
 
 	for(i = 0; i < 256; i++)
 	{
-	    rep_STR(up)[i] = toupper(i);
-	    rep_STR(down)[i] = tolower(i);
+	    ((u_char *)rep_STR(up))[i] = toupper(i);
+	    ((u_char *)rep_STR(down))[i] = tolower(i);
 	}
 	rep_STR(up)[256] = 0;
 	rep_STR(down)[256] = 0;
@@ -664,7 +664,7 @@ rep_misc_init(void)
 	repv flatten = rep_make_string (12);
 
 	for(i = 0; i < 10; i++)
-	    rep_STR(flatten)[i] = i;
+	    ((u_char *)rep_STR(flatten))[i] = i;
 	rep_STR(flatten)[10] = ' ';
 	rep_STR(flatten)[11] = 0;
 

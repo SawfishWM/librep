@@ -50,7 +50,7 @@ DEFUN("gettext", Fgettext, Sgettext, (repv in), rep_Subr1)
     rep_DECLARE1(in, rep_STRINGP);
 
     out = gnu_gettext (rep_STR(in));
-    if (out == 0 || (u_char *) out == rep_STR(in))
+    if (out == 0 || (char *) out == rep_STR(in))
 	return in;
     else
 	return rep_string_dup (out);

@@ -415,7 +415,7 @@ read_symbol(repv strm, int *c_p, repv obarray)
     static size_t buflen = 240;
 
     repv result;
-    u_char *buf;
+    char *buf;
     int c = *c_p;
     int i = 0;
 
@@ -726,9 +726,9 @@ read_str(repv strm, int *c_p)
     repv result;
     int buflen = 128;
     int c = rep_stream_getc(strm);
-    u_char *buf = rep_alloc(buflen);
-    register u_char *cur = buf;
-    u_char *bufend = buf + buflen;
+    char *buf = rep_alloc(buflen);
+    register char *cur = buf;
+    char *bufend = buf + buflen;
     if(buf)
     {
 	while((c != EOF) && (c != '"'))
@@ -736,7 +736,7 @@ read_str(repv strm, int *c_p)
 	    if(cur == bufend)
 	    {
 		register int newbuflen = buflen * 2;
-		register u_char *newbuf = rep_alloc(newbuflen);
+		register char *newbuf = rep_alloc(newbuflen);
 		if(newbuf)
 		{
 		    memcpy(newbuf, buf, cur - buf);
@@ -756,7 +756,7 @@ read_str(repv strm, int *c_p)
 		    /* escaped newline is ignored */
  		    c = rep_stream_getc(strm);
 		else
-		    *cur++ = (u_char)rep_stream_read_esc(strm, &c);
+		    *cur++ = (char)rep_stream_read_esc(strm, &c);
 	    }
 	    else
 	    {
@@ -2144,7 +2144,7 @@ rep_lisp_prin(repv strm, repv obj)
 
     switch(rep_TYPE(obj))
     {
-	u_char tbuf[40];
+	char tbuf[40];
 	int j;
 	int print_length;
 	repv tem;
@@ -2274,10 +2274,10 @@ void
 rep_string_print(repv strm, repv obj)
 {
     int len = rep_STRING_LEN(obj);
-    u_char *s = rep_STR(obj);
-    u_char buf[BUFSIZ];
+    char *s = rep_STR(obj);
+    char buf[BUFSIZ];
     int bufptr = 0;
-    u_char c;
+    char c;
 
 #define OUT(c)							\
     do {							\

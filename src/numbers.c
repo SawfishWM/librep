@@ -473,6 +473,8 @@ coerce (repv in, int type)
     default:
 	abort ();
     }
+    /* not reached. */
+    return rep_NULL;
 }
 
 static inline void
@@ -2809,7 +2811,7 @@ number is parsed from that base, otherwise base 10 is assumed.
     int sign = 1;
     int force_exactness = 0;
     int radix;
-    u_char *ptr;
+    char *ptr;
     repv ret;
 
     rep_DECLARE1 (string, rep_STRINGP);

@@ -68,7 +68,7 @@
 
 DEFSTRING(dot, ".");
 
-static inline u_char *
+static inline char *
 file_part(char *name)
 {
     char *tmp = strrchr(name, '/');
@@ -229,7 +229,7 @@ rep_canonical_file_name(repv file)
 repv
 rep_file_name_nondirectory(repv file)
 {
-    u_char *tem = file_part(rep_STR(file));
+    char *tem = file_part(rep_STR(file));
     return tem == rep_STR(file) ? file : rep_string_dup(tem);
 }
 
@@ -334,7 +334,7 @@ rep_copy_file(repv src, repv dst)
 	    if(fstat(srcf, &statb) == 0)
 		chmod(rep_STR(dst), statb.st_mode);
 	    do {
-		u_char buf[BUFSIZ];
+		char buf[BUFSIZ];
 		int wr;
 		rd = read(srcf, buf, BUFSIZ);
 		if(rd < 0)

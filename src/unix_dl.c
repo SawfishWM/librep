@@ -259,7 +259,7 @@ rep_intern_dl_library (repv file_name)
 	    if (strncmp("dlname='", buf, sizeof("dlname='") - 1) == 0)
 	    {
 		char *ptr = buf + sizeof("dlname='") - 1;
-		u_char *base;
+		char *base;
 		char *end = strchr(ptr, '\'');
 		if (end != 0 && end > ptr)
 		{

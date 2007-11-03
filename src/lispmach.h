@@ -191,7 +191,7 @@ list_ref (repv list, int elt)
     do {					\
 	ASSERT (STK_USE <= v_stkreq);		\
 	ASSERT (BIND_USE <= b_stkreq + 1);	\
-	ASSERT ((pc - rep_STR (code)) < rep_STRING_LEN (code)); \
+	ASSERT (((char *)pc - rep_STR (code)) < rep_STRING_LEN (code)); \
     } while (0)
 
 #ifdef BYTECODE_PROFILE
@@ -593,7 +593,7 @@ again: {
     bindp = bindstack;
     slotp = slots;
     impurity = 0;
-    pc = rep_STR(code);
+    pc = (u_char *) rep_STR(code);
 
     /* Start of the VM fetch-execute sequence. */
     {
@@ -2178,7 +2178,7 @@ again: {
 
 	BEGIN_INSN (OP_JMP)
 	do_jmp:
-	    pc = rep_STR(code) + ((pc[0] << ARG_SHIFT) | pc[1]);
+	    pc = (u_char *) rep_STR(code) + ((pc[0] << ARG_SHIFT) | pc[1]);
 
 	    /* Test if an interrupt occurred... */
 	    rep_TEST_INT;
@@ -2247,7 +2247,7 @@ again: {
 		    RELOAD;
 		    PUSH(rep_throw_value);
 		    rep_throw_value = rep_NULL;
-		    pc = rep_STR(code) + rep_INT(rep_CAR(item));
+		    pc = (u_char *) rep_STR(code) + rep_INT(rep_CAR(item));
 		    impurity--;
 		    SAFE_NEXT;
 		}

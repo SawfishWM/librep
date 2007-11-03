@@ -183,7 +183,7 @@ check_configuration (int *stack_low)
     {
 	fprintf (stderr,
 	" ** error: --with-value-sizeof is incorrect; it should be %d\n",
-		 sizeof (rep_PTR_SIZED_INT));
+		 (int) sizeof (rep_PTR_SIZED_INT));
 	exit (10);
     }
 
