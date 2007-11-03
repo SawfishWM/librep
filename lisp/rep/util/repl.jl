@@ -1,6 +1,6 @@
 #| repl.jl -- rep input loop
 
-   $Id$
+   $Id: repl.jl,v 1.50 2004/10/07 05:03:54 jsh Exp $
 
    Copyright (C) 2000 John Harper <john@dcs.warwick.ac.uk>
 
@@ -50,6 +50,13 @@
 
   (define (repl-eval form)
     (eval form (intern-structure (repl-struct (fluid current-repl)))))
+
+  (define (repl-boundp x)
+    (condition-case nil
+	(progn
+	  (repl-eval x)
+	  t)
+      (void-value nil)))
 
   ;; returns t if repl should run again
   (define (repl-iterate repl input)
@@ -135,13 +142,12 @@
 	  (write standard-output #\newline)))))
 
   (define (completion-generator w)
-    (apropos (concat #\^ (quote-regexp w))
-	     (lambda (x)
-	       (condition-case nil
-		   (progn
-		     (repl-eval x)
-		     t)
-		 (void-value nil)))))
+    ;; Either a special command or unquote.
+    (if (string-head-eq w ",")
+	(mapcar (lambda (x) (concat "," (symbol-name x)))
+		(apropos (concat #\^ (quote-regexp (substring w 1)))
+			 (lambda (x) (assq x repl-commands))))
+      (apropos (concat #\^ (quote-regexp w)) repl-boundp)))
 
   (define (repl-completions repl word)
     (let-fluids ((current-repl repl))
@@ -404,12 +410,7 @@ commands may be abbreviated to their unique leading characters.\n\n")
    'apropos
    (lambda (re)
      (require 'rep.lang.doc)
-     (let ((funs (apropos re (lambda (x)
-			       (condition-case nil
-				   (progn
-				     (repl-eval x)
-				     t)
-				 (void-value nil))))))
+     (let ((funs (apropos re repl-boundp)))
        (mapc (lambda (x)
 	       (describe-value (repl-eval x) x)) funs)))
    "\"REGEXP\"")

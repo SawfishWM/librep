@@ -1,3 +1,8 @@
+2007-11-02  John Harper  <jsh@unfactored.org>
+
+	* rep/util/repl.jl: integrated patch from Timo Korvola to do
+	meta command completion (scavenged from sawfish list archives)
+
 2004-10-06  John Harper  <jsh@unfactored.org>
 
 	* rep/util/repl.jl: added ,compile-file command
