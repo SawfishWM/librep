@@ -19,7 +19,9 @@
 	* src/unix_files.c: Trim trailing '/' to mkdir(2) since some 
 			OSes fail the call otherwise (NetBSD patch)
 	
-	* src/rep-xgettext.jl: use correct shebang (NetBSD patch)
+	* src/rep-xgettext.jl: use correct shebang (ALT-Linux patch)
+
+	* man/news.texi: add {define-special-variable} (Ubuntu patch)
 
 2006-06-02  John Harper  <jsh@unfactored.org>
 

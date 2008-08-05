@@ -216,7 +216,7 @@ forthcoming releases)
 @item New functions in @code{rep.data} module, @code{list->vector} and
 @code{vector->list}
 
-@item New macro @code{define-special-form}. A combination of
+@item New macro @code{define-special-variable}. A combination of
 @code{defvar} and @code{setq} -- it always makes the variable special
 and it always sets it to the given value
 
