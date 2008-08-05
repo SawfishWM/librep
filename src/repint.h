@@ -104,8 +104,8 @@ struct rep_struct_node_struct {
     rep_struct_node *next;
     repv symbol;
     repv binding;
-    u_int is_constant : 1;
-    u_int is_exported : 1;
+    unsigned int is_constant : 1;
+    unsigned int is_exported : 1;
 };
 
 /* structure encapsulating a single namespace */

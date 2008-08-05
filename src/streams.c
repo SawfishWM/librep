@@ -92,7 +92,7 @@ rep_stream_getc(repv stream)
 	{
 	    if (rep_INT(res) < rep_STRING_LEN(rep_CDR(stream)))
 	    {
-		c = (int) ((u_char *)rep_STR(rep_CDR(stream)))[rep_INT(res)];
+		c = (int) ((unsigned char *)rep_STR(rep_CDR(stream)))[rep_INT(res)];
 		rep_CAR(stream) = rep_MAKE_INT(rep_INT(res) + 1);
 	    }
 	    else
@@ -244,7 +244,7 @@ top:
 		rep_CDR(stream) = rep_MAKE_INT (newlen);
 		args = new;
 	    }
-	    ((u_char *)rep_STR (args))[len] = (u_char) c;
+	    ((unsigned char *)rep_STR (args))[len] = (unsigned char) c;
 	    rep_STR (args)[len+1] = 0;
 	    rep_set_string_len (args, len + 1);
 	    rc = 1;

@@ -875,7 +875,7 @@ can only contain characters (ie, integers).
 	if(rep_INT(index) < rep_STRING_LEN(array))
 	{
 	    rep_DECLARE3(new, rep_INTP);
-	    ((u_char *)rep_STR(array))[rep_INT(index)] = (u_char)rep_INT(new);
+	    ((unsigned char *)rep_STR(array))[rep_INT(index)] = (unsigned char)rep_INT(new);
 	    rep_string_modified (array);
 	    return(new);
 	}
@@ -909,7 +909,7 @@ can be a vector or a string. INDEX starts at zero.
     if(rep_STRINGP(array))
     {
 	if(rep_INT(index) < rep_STRING_LEN(array))
-	    return(rep_MAKE_INT(((u_char *)rep_STR(array))[rep_INT(index)]));
+	    return(rep_MAKE_INT(((unsigned char *)rep_STR(array))[rep_INT(index)]));
     }
     else if(rep_VECTORP(array) || rep_COMPILEDP(array))
     {
@@ -976,7 +976,7 @@ Concatenates all ARGS... into a single string, each argument can be a string,
 a character or a list or vector of characters.
 ::end:: */
 {
-    u_int length;
+    unsigned int length;
     repv elt, string;
     char *ptr;
     int i;
