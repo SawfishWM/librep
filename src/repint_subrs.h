@@ -97,8 +97,8 @@ extern int strncasecmp (const char *s1, const char *s2, size_t n);
 extern void rep_misc_init(void);
 
 /* from numbers.c */
-extern repv rep_parse_number (char *buf, u_int len, u_int radix,
-			      int sign, u_int type);
+extern repv rep_parse_number (char *buf, unsigned int len, unsigned int radix,
+			      int sign, unsigned int type);
 extern void rep_numbers_init (void);
 extern repv Fplus(int, repv *);
 extern repv Fminus(int, repv *);

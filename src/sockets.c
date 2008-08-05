@@ -654,10 +654,10 @@ poll_for_input (int fd)
 }
 
 /* Returns the number of bytes actually written. */
-static u_int
-blocking_write (rep_socket *s, char *data, u_int bytes)
+static unsigned int
+blocking_write (rep_socket *s, char *data, unsigned int bytes)
 {
-    u_int done = 0;
+    unsigned int done = 0;
 
     if (!SOCKET_IS_ACTIVE (s))
     {

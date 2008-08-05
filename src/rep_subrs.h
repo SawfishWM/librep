@@ -47,7 +47,7 @@ extern repv Fall_threads (repv depth);
 extern repv Fthread_forbid (void);
 extern repv Fthread_permit (void);
 extern repv Fthread_name (repv th);
-extern u_long rep_max_sleep_for (void);
+extern unsigned long rep_max_sleep_for (void);
 
 /* from datums.c */
 extern repv Fmake_datum (repv, repv);
@@ -347,9 +347,9 @@ extern repv Fchar_upcase(repv);
 extern repv Fchar_downcase(repv);
 
 /* from numbers.c */
-extern repv rep_make_long_uint (u_long in);
+extern repv rep_make_long_uint (unsigned long in);
 extern repv rep_make_long_int (long in);
-extern u_long rep_get_long_uint (repv in);
+extern unsigned long rep_get_long_uint (repv in);
 extern long rep_get_long_int (repv in);
 extern repv rep_make_longlong_int (rep_long_long in);
 extern rep_long_long rep_get_longlong_int (repv in);
@@ -510,7 +510,7 @@ extern repv rep_dumped_non_constants;
 extern int rep_guardian_type;
 extern repv rep_box_pointer (void *p);
 void *rep_unbox_pointer (repv v);
-extern void rep_register_type(u_int code, char *name,
+extern void rep_register_type(unsigned int code, char *name,
 			      int (*compare)(repv, repv),
 			      void (*princ)(repv, repv),
 			      void (*print)(repv, repv),
@@ -521,7 +521,7 @@ extern void rep_register_type(u_int code, char *name,
 			      int (*putc)(repv, int),
 			      int (*puts)(repv, void *, int, rep_bool),
 			      repv (*bind)(repv), void (*unbind)(repv));
-extern u_int rep_register_new_type(char *name,
+extern unsigned int rep_register_new_type(char *name,
 				   int (*compare)(repv, repv),
 				   void (*princ)(repv, repv),
 				   void (*print)(repv, repv),
@@ -534,7 +534,7 @@ extern u_int rep_register_new_type(char *name,
 				   int (*puts)(repv, void *, int, rep_bool),
 				   repv (*bind)(repv),
 				   void (*unbind)(repv));
-extern rep_type *rep_get_data_type(u_int code);
+extern rep_type *rep_get_data_type(unsigned int code);
 extern int rep_value_cmp(repv, repv);
 extern void rep_princ_val(repv, repv);
 extern void rep_print_val(repv, repv);
@@ -575,12 +575,12 @@ extern void *rep_find_dl_symbol (repv feature, char *symbol);
 
 /* from unix_files.c */
 extern repv rep_lookup_errno(void);
-extern u_long rep_file_length(repv file);
+extern unsigned long rep_file_length(repv file);
 
 /* from unix_main.c */
-extern u_long rep_time(void);
+extern unsigned long rep_time(void);
 extern rep_long_long rep_utime (void);
-extern u_long rep_getpid (void);
+extern unsigned long rep_getpid (void);
 extern void (*rep_register_input_fd_fun)(int fd, void (*callback)(int fd));
 extern void (*rep_deregister_input_fd_fun)(int fd);
 extern void rep_add_event_loop_callback (rep_bool (*callback)(void));
@@ -594,18 +594,18 @@ extern void rep_unix_set_fd_blocking(int fd);
 extern void rep_unix_set_fd_cloexec(int fd);
 extern void rep_sig_restart(int sig, rep_bool flag);
 extern repv rep_event_loop(void);
-extern repv rep_sit_for(u_long timeout_msecs);
-extern repv rep_accept_input_for_callbacks (u_long timeout_msecs,
+extern repv rep_sit_for(unsigned long timeout_msecs);
+extern repv rep_accept_input_for_callbacks (unsigned long timeout_msecs,
 					    int ncallbacks,
 					    void (**callbacks)(int));
-extern repv rep_accept_input_for_fds (u_long timeout_msecs,
+extern repv rep_accept_input_for_fds (unsigned long timeout_msecs,
 				      int nfds, int *fds);
-extern repv rep_accept_input(u_long timeout_msecs, void (*callback)(int));
+extern repv rep_accept_input(unsigned long timeout_msecs, void (*callback)(int));
 extern rep_bool rep_poll_input(int fd);
 
 #ifdef DEBUG_SYS_ALLOC
-extern void *rep_alloc(u_int length);
-extern void *rep_realloc(void *ptr, u_int length);
+extern void *rep_alloc(unsigned int length);
+extern void *rep_realloc(void *ptr, unsigned int length);
 extern void rep_free(void *ptr);
 extern void rep_print_allocations(void);
 #else
@@ -616,7 +616,7 @@ extern void rep_print_allocations(void);
 #endif
 
 extern void (*rep_redisplay_fun)(void);
-extern int (*rep_wait_for_input_fun)(fd_set *inputs, u_long timeout_msecs);
+extern int (*rep_wait_for_input_fun)(fd_set *inputs, unsigned long timeout_msecs);
 extern int rep_input_timeout_secs;
 extern repv Funix_print_allocations(void);
 

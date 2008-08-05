@@ -528,7 +528,7 @@ promote_dup (repv *n1p, repv *n2p)
 }
 
 repv
-rep_make_long_uint (u_long in)
+rep_make_long_uint (unsigned long in)
 {
     if (in < rep_LISP_MAX_INT)
 	return rep_MAKE_INT (in);
@@ -561,7 +561,7 @@ rep_make_long_int (long in)
     }
 }
 
-u_long
+unsigned long
 rep_get_long_uint (repv in)
 {
     if (rep_INTP (in))
@@ -579,11 +579,11 @@ rep_get_long_uint (repv in)
 
 #ifdef HAVE_GMP
 	case rep_NUMBER_RATIONAL:
-	    return (u_long) mpq_get_d (rep_NUMBER(in,q));
+	    return (unsigned long) mpq_get_d (rep_NUMBER(in,q));
 #endif
 
 	case rep_NUMBER_FLOAT:
-	    return (u_long) rep_NUMBER(in,f);
+	    return (unsigned long) rep_NUMBER(in,f);
 	}
     }
     else if (rep_CONSP (in)
@@ -639,8 +639,8 @@ rep_make_longlong_int (rep_long_long in)
 #ifdef HAVE_GMP
 	int sign = (in < 0) ? -1 : 1;
 	unsigned rep_long_long uin = (sign < 0) ? -in : in;
-	u_long bottom = (u_long) uin;
-	u_long top = (u_long) (uin >> (CHAR_BIT * sizeof (long)));
+	unsigned long bottom = (unsigned long) uin;
+	unsigned long top = (unsigned long) (uin >> (CHAR_BIT * sizeof (long)));
 	rep_number_z *z = make_number (rep_NUMBER_BIGNUM);
 	mpz_init_set_ui (z->z, bottom);
 	if (top != 0)
@@ -861,7 +861,7 @@ static const signed int map[] = {
 
 #ifndef HAVE_GMP
 static rep_bool
-parse_integer_to_float (char *buf, u_int len, u_int radix,
+parse_integer_to_float (char *buf, unsigned int len, unsigned int radix,
 			int sign, double *output)
 {
     double value = 0.0;
@@ -901,7 +901,7 @@ parse_integer_to_float (char *buf, u_int len, u_int radix,
     } while (0)
 
 repv
-rep_parse_number (char *buf, u_int len, u_int radix, int sign, u_int type)
+rep_parse_number (char *buf, unsigned int len, unsigned int radix, int sign, unsigned int type)
 {
     if (len == 0)
 	goto error;
@@ -915,7 +915,7 @@ rep_parse_number (char *buf, u_int len, u_int radix, int sign, u_int type)
 	rep_number_f *f;
 	char *tem, *copy, *old_locale;
 	double d;
-	u_int bits;
+	unsigned int bits;
 
     case 0:
 	switch (radix)
@@ -1529,7 +1529,7 @@ rep_number_div (repv x, repv y)
 	else
 	{
 #ifdef HAVE_GMP
-	    u_long uy = (rep_INT (y) < 0 ? - rep_INT (y) : rep_INT (y));
+	    unsigned long uy = (rep_INT (y) < 0 ? - rep_INT (y) : rep_INT (y));
 	    rep_number_q *q = make_number (rep_NUMBER_RATIONAL);
 	    mpq_init (q->q);
 	    mpq_set_si (q->q, rep_INT (x), uy);
@@ -2932,7 +2932,7 @@ ensure_random_state (void)
 }
 
 static void
-random_seed (u_long seed)
+random_seed (unsigned long seed)
 {
     ensure_random_state ();
     gmp_randseed_ui (random_state, seed);
@@ -2969,7 +2969,7 @@ random_new (repv limit_)
 #endif
 
 static void
-random_seed (u_long seed)
+random_seed (unsigned long seed)
 {
     srand (seed);
 }
@@ -3023,7 +3023,7 @@ generator is seeded with the current time of day.
 
     if (arg == Qt)
     {
-	u_long seed = time (0);
+	unsigned long seed = time (0);
 	seed = (seed << 8) | (rep_getpid () & 0xff);
 	random_seed (seed);
 	return Qt;
