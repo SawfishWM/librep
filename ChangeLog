@@ -1,3 +1,11 @@
+2008-07-05  Christopher Bratusek <nano-master@gmx.de>
+	* MAINTAINERS: I'm the new maintainer
+
+	* BUGS
+	* HACKING: updated information
+
+	* configure.in: bump version to 0.17.1
+
 2006-06-02  John Harper  <jsh@unfactored.org>
 
 	* rep.m4: fix for newer m4, from Michal Jaegermann

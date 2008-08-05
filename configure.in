@@ -1,6 +1,6 @@
 dnl  Process this file with autoconf to produce a configure script.
 dnl  Copyright (C) 1998 John Harper <john@dcs.warwick.ac.uk>
-dnl  $Id$
+dnl  $Id: configure.in,v 1.146 2006/02/01 05:47:41 jsh Exp $
 dnl
 dnl  This file is part of librep.
 dnl
@@ -18,13 +18,13 @@ dnl  You should have received a copy of the GNU General Public License
 dnl  along with librep; see the file COPYING.  If not, write to
 dnl  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-AC_REVISION($Revision$)
+AC_REVISION($Revision: 1.146 $)
 
 AC_INIT(src/rep_subrs.h)
 AC_CONFIG_HEADER(config.h src/rep_config.h)
 
 dnl Release versioning info
-version="0.17"
+version="0.17.1"
 
 dnl libtool versioning info: `CURRENT:REVISION:AGE'. CURRENT is the
 dnl current interface id, REVISION is the version number of this
