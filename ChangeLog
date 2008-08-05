@@ -23,6 +23,8 @@
 
 	* man/news.texi: add {define-special-variable} (Ubuntu patch)
 
+	* rules.mk.sh: add --tag CC to libtool (Ubuntu patch)
+
 2006-06-02  John Harper  <jsh@unfactored.org>
 
 	* rep.m4: fix for newer m4, from Michal Jaegermann

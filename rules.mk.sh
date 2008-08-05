@@ -12,7 +12,7 @@ repdir=$repdir
 repcommonexecdir=$repcommonexecdir
 rpath_repcommonexecdir=$repcommonexecdir
 
-rep_LIBTOOL=\$(repcommonexecdir)/libtool
+rep_LIBTOOL=\$(repcommonexecdir)/libtool --tag CC
 rep_INSTALL_ALIASES=\$(repcommonexecdir)/install-aliases
 
 # use this like:
