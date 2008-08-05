@@ -1,6 +1,6 @@
 # Makefile.in for Jade version 4
 # Copyright (C) 1998 John Harper <john@dcs.warwick.ac.uk>
-# $Id$
+# $Id: Makefile.in,v 1.33 2003/09/04 05:57:43 jsh Exp $
 #
 # This file is part of Jade.
 #
@@ -60,6 +60,8 @@ install : all installdirs
 	@echo "if this fails, install it manually in a suitable location"
 	@echo "---------------------------------------------------------"
 	-$(INSTALL_DATA) $(top_srcdir)/rep.m4 $(DESTDIR)$(aclocaldir)
+	
+	$(INSTALL_DATA) $(top_srcdir)/librep.pc $(DESTDIR)$(libdir)/pkgconfig/
 
 installdirs : mkinstalldirs
 	$(SHELL) $< $(DESTDIR)$(repdir)/$(version) \
@@ -78,6 +80,7 @@ uninstall :
 	rm -f $(DESTDIR)$(repcommonexecdir)/libtool
 	rm -f $(DESTDIR)$(emacssitelispdir)/rep-debugger.el
 	rm -f $(DESTDIR)$(aclocaldir)/rep.m4
+	rm -f $(DESTDIR)$(libdir)/pkgconfig/librep.pc
 
 doc-strings : src/repdoc
 	src/repdoc doc-strings `find $(top_srcdir) -name '*.c' -print`
