@@ -572,7 +572,7 @@ vm (repv code, repv consts, int argc, repv *argv,
     
     /* Jump to this label when tail-calling */
 again: {
-    register unsigned char *pc PC_REG;
+    register u_char *pc PC_REG;
     register repv *stackp SP_REG;
     register repv *bindp BP_REG;
     register repv *slotp SLOTS_REG;
@@ -593,7 +593,7 @@ again: {
     bindp = bindstack;
     slotp = slots;
     impurity = 0;
-    pc = (unsigned char *) rep_STR(code);
+    pc = (u_char *) rep_STR(code);
 
     /* Start of the VM fetch-execute sequence. */
     {
@@ -601,7 +601,7 @@ again: {
 	static void *cfa__[256] = { JUMP_TABLE };
 	register void **cfa CFA_REG = cfa__;
 #endif
-	unsigned int arg;
+	u_int arg;
 	repv tmp, tmp2;
 
 	BEGIN_DISPATCH
@@ -2178,7 +2178,7 @@ again: {
 
 	BEGIN_INSN (OP_JMP)
 	do_jmp:
-	    pc = (unsigned char *) rep_STR(code) + ((pc[0] << ARG_SHIFT) | pc[1]);
+	    pc = (u_char *) rep_STR(code) + ((pc[0] << ARG_SHIFT) | pc[1]);
 
 	    /* Test if an interrupt occurred... */
 	    rep_TEST_INT;
@@ -2247,7 +2247,7 @@ again: {
 		    RELOAD;
 		    PUSH(rep_throw_value);
 		    rep_throw_value = rep_NULL;
-		    pc = (unsigned char *) rep_STR(code) + rep_INT(rep_CAR(item));
+		    pc = (u_char *) rep_STR(code) + rep_INT(rep_CAR(item));
 		    impurity--;
 		    SAFE_NEXT;
 		}

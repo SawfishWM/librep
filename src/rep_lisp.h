@@ -238,7 +238,7 @@ typedef struct {
 typedef struct rep_type_struct {
     struct rep_type_struct *next;
     char *name;
-    unsigned int code;
+    u_int code;
 
     /* Compares two values, rc is similar to strcmp() */
     int (*compare)(repv val1, repv val2);

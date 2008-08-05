@@ -226,10 +226,10 @@ rep_intern_static(repv *symp, repv name)
 	abort();
 }
 
-static inline unsigned long
+static inline u_long
 hash(char *str)
 {
-    register unsigned long value = 0;
+    register u_long value = 0;
     while(*str)
 	value = (value * 33) + *str++;
     return(value);

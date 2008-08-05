@@ -85,7 +85,7 @@ stat_file(repv file)
 	return 0;
 }
 
-unsigned long
+u_long
 rep_file_length(repv file)
 {
     struct stat *st = stat_file(file);
@@ -466,7 +466,7 @@ rep_file_modes_as_string(repv file)
     repv string = Fmake_string(rep_MAKE_INT(10), rep_MAKE_INT('-'));
     if(st != 0 && string && rep_STRINGP(string))
     {
-	unsigned long perms = st->st_mode;
+	u_long perms = st->st_mode;
 	int i;
 	char c = '-';
 	if(S_ISDIR(perms))	    c = 'd';
@@ -478,7 +478,7 @@ rep_file_modes_as_string(repv file)
 	rep_STR(string)[0] = c;
 	for(i = 0; i < 3; i++)
 	{
-	    unsigned long xperms = perms >> ((2 - i) * 3);
+	    u_long xperms = perms >> ((2 - i) * 3);
 	    if(xperms & 4)
 		rep_STR(string)[1+i*3] = 'r';
 	    if(xperms & 2)

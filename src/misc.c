@@ -223,7 +223,7 @@ containing (DAYS . SECONDS), the number of DAYS since the epoch, and the
 number of seconds since the start of the day (universal time).
 ::end:: */
 {
-    unsigned long time = rep_time();
+    u_long time = rep_time();
     return rep_MAKE_TIME(time);
 }
 
@@ -246,7 +246,7 @@ Ensure that the two parts of TIMESTAMP are mutually consistent. If not
 TIMESTAMP is altered. Returns TIMESTAMP.
 ::end:: */
 {
-    unsigned long timestamp;
+    u_long timestamp;
     rep_DECLARE1(time, rep_TIMEP);
     timestamp = rep_GET_TIME(time);
     rep_CAR(time) = rep_MAKE_INT(timestamp / 86400);
@@ -298,7 +298,7 @@ time-later-p TIME-STAMP1 TIME-STAMP2
 Returns t when TIME-STAMP1 refers to a later time than TIME-STAMP2.
 ::end:: */
 {
-    unsigned long time1, time2;
+    u_long time1, time2;
     rep_DECLARE1(t1, rep_TIMEP);
     rep_DECLARE2(t2, rep_TIMEP);
     time1 = rep_GET_TIME(t1);
@@ -422,18 +422,18 @@ Note that the STRING really is modified, no copy is made!
 ::end:: */
 {
     int tablen, slen;
-    register unsigned char *str;
+    register u_char *str;
     rep_DECLARE1(string, rep_STRINGP);
     rep_DECLARE2(table, rep_STRINGP);
     tablen = rep_STRING_LEN(table);
     if(!rep_STRING_WRITABLE_P(string))
 	return(rep_signal_arg_error(string, 1));
-    str = (unsigned char *)rep_STR(string);
+    str = (u_char *)rep_STR(string);
     slen = rep_STRING_LEN(string);
     while(slen-- > 0)
     {
-	register unsigned char c = *str;
-	*str++ = (c < tablen) ? ((unsigned char *)rep_STR(table))[c] : c;
+	register u_char c = *str;
+	*str++ = (c < tablen) ? ((u_char *)rep_STR(table))[c] : c;
     }
     rep_string_modified (string);
     return(string);
@@ -648,8 +648,8 @@ rep_misc_init(void)
 
 	for(i = 0; i < 256; i++)
 	{
-	    ((unsigned char *)rep_STR(up))[i] = toupper(i);
-	    ((unsigned char *)rep_STR(down))[i] = tolower(i);
+	    ((u_char *)rep_STR(up))[i] = toupper(i);
+	    ((u_char *)rep_STR(down))[i] = tolower(i);
 	}
 	rep_STR(up)[256] = 0;
 	rep_STR(down)[256] = 0;
@@ -664,7 +664,7 @@ rep_misc_init(void)
 	repv flatten = rep_make_string (12);
 
 	for(i = 0; i < 10; i++)
-	    ((unsigned char *)rep_STR(flatten))[i] = i;
+	    ((u_char *)rep_STR(flatten))[i] = i;
 	rep_STR(flatten)[10] = ' ';
 	rep_STR(flatten)[11] = 0;
 

@@ -192,8 +192,8 @@ struct rep_barrier_struct {
     rep_thread *head, *tail;
     rep_thread *susp_head, *susp_tail;
     short depth;
-    unsigned int closed : 1;
-    unsigned int targeted : 1;		/* may contain continuations */
+    u_int closed : 1;
+    u_int targeted : 1;		/* may contain continuations */
 };
 
 /* List of all currently active barriers (on the current stack) */
@@ -737,7 +737,7 @@ primitive_call_cc (repv (*callback)(rep_continuation *, void *), void *data,
 	save_stack (c);
 
 	DB (("call/cc: saved %p; real_size=%lu (%u)\n",
-	     c, (unsigned long) c->real_size, rep_stack_bottom - c->stack_top));
+	     c, (u_long) c->real_size, rep_stack_bottom - c->stack_top));
 
 	ret = callback (c, data);
 
@@ -1113,7 +1113,7 @@ thread_yield (void)
 }
 
 static void
-thread_suspend (rep_thread *t, unsigned long msecs,
+thread_suspend (rep_thread *t, u_long msecs,
 		rep_bool (*poll)(rep_thread *t, void *arg), void *poll_arg)
 {
     rep_barrier *root = t->cont->root;
@@ -1148,7 +1148,7 @@ thread_suspend (rep_thread *t, unsigned long msecs,
 	thread_invoke ();
 }
 
-unsigned long
+u_long
 rep_max_sleep_for (void)
 {
     rep_barrier *root = root_barrier;
@@ -1404,7 +1404,7 @@ DEFUN("continuation-callable-p", Fcontinuation_callable_p,
     return rep_signal_arg_error (cont, 1);
 }
 
-unsigned long
+u_long
 rep_max_sleep_for (void)
 {
     return UINT_MAX;

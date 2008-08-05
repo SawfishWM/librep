@@ -132,7 +132,7 @@ rep_string_modified (repv string)
 static void
 mark_cached_regexps(void)
 {
-    unsigned long total = 0;
+    u_long total = 0;
     struct cached_regexp *x = cached_regexps, *xp = 0;
     while(x != 0 && total < regexp_cache_limit)
     {

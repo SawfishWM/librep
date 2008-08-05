@@ -179,7 +179,7 @@ pass the value of the `macro-environment' variable to this parameter.
     if (form != rep_NULL)
     {
 	/* Cache for future use */
-	unsigned int hash = HIST_HASH_FN(input);
+	u_int hash = HIST_HASH_FN(input);
 	history[hash] = Fcons (Fcons (input, form), history[hash]);
     }
 

@@ -60,7 +60,7 @@
 #endif
 
 void (*rep_redisplay_fun)(void);
-int (*rep_wait_for_input_fun)(fd_set *inputs, unsigned long timeout_msecs);
+int (*rep_wait_for_input_fun)(fd_set *inputs, u_long timeout_msecs);
 int rep_input_timeout_secs = 1;
 
 
@@ -82,13 +82,13 @@ rep_lookup_errno(void)
 #endif
 }
 
-unsigned long
+u_long
 rep_getpid (void)
 {
     return getpid ();
 }
 
-unsigned long
+u_long
 rep_time(void)
 {
     return time(0);
@@ -400,7 +400,7 @@ rep_proc_periodically (void)
    actual fds defined by the fdset INPUTS. Return zero if the timeout
    was reached. */
 static int
-wait_for_input(fd_set *inputs, unsigned long timeout_msecs)
+wait_for_input(fd_set *inputs, u_long timeout_msecs)
 {
     fd_set copy;
     int ready = -1;
@@ -440,10 +440,10 @@ wait_for_input(fd_set *inputs, unsigned long timeout_msecs)
        interrupt between each call to select. */
     do {
 	struct timeval timeout;
-	unsigned long max_sleep = rep_max_sleep_for ();
-	unsigned long this_timeout_msecs = MIN (timeout_msecs,
+	u_long max_sleep = rep_max_sleep_for ();
+	u_long this_timeout_msecs = MIN (timeout_msecs,
 					 rep_input_timeout_secs * 1000);
-	unsigned long actual_timeout_msecs = MIN (this_timeout_msecs, max_sleep);
+	u_long actual_timeout_msecs = MIN (this_timeout_msecs, max_sleep);
 
 	timeout.tv_sec = actual_timeout_msecs / 1000;
 	timeout.tv_usec = (actual_timeout_msecs % 1000) * 1000;
@@ -571,7 +571,7 @@ rep_event_loop(void)
 }
 
 repv
-rep_sit_for(unsigned long timeout_msecs)
+rep_sit_for(u_long timeout_msecs)
 {
     fd_set copy;
     int ready;
@@ -589,7 +589,7 @@ rep_sit_for(unsigned long timeout_msecs)
    invoke any callback function except CALLBACKS. Return Qnil if any
    input was serviced, Qt if the timeout expired, rep_NULL for an error. */
 repv
-rep_accept_input_for_callbacks (unsigned long timeout_msecs, int ncallbacks,
+rep_accept_input_for_callbacks (u_long timeout_msecs, int ncallbacks,
 				void (**callbacks)(int))
 {
     fd_set copy;
@@ -623,7 +623,7 @@ rep_accept_input_for_callbacks (unsigned long timeout_msecs, int ncallbacks,
    Return Qnil if any input was serviced, Qt if the timeout expired, rep_NULL
    for an error. */
 repv
-rep_accept_input_for_fds (unsigned long timeout_msecs, int nfds, int *fds)
+rep_accept_input_for_fds (u_long timeout_msecs, int nfds, int *fds)
 {
     fd_set copy;
     int ready, i;
@@ -644,7 +644,7 @@ rep_accept_input_for_fds (unsigned long timeout_msecs, int nfds, int *fds)
 
 /* obsolete, for compatibility only */
 repv
-rep_accept_input(unsigned long timeout_msecs, void (*callback)(int))
+rep_accept_input(u_long timeout_msecs, void (*callback)(int))
 {
     return rep_accept_input_for_callbacks (timeout_msecs, 1, &callback);
 }
@@ -674,7 +674,7 @@ struct alloc_data {
 static struct alloc_data *allocations;
 
 void *
-rep_alloc(unsigned int length)
+rep_alloc(u_int length)
 {
     void *mem;
     length += SIZEOF_ALLOC_DATA;
@@ -696,7 +696,7 @@ rep_alloc(unsigned int length)
 }
 
 void *
-rep_realloc(void *ptr, unsigned int length)
+rep_realloc(void *ptr, u_int length)
 {
     void *mem;
     length += SIZEOF_ALLOC_DATA;

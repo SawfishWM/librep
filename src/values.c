@@ -77,11 +77,11 @@ DEFSYM(after_gc_hook, "after-gc-hook");
 #define TYPE_HASH_SIZE 32
 #define TYPE_HASH(type) (((type) >> 1) & (TYPE_HASH_SIZE-1))
 
-static unsigned int next_free_type = 0;
+static u_int next_free_type = 0;
 static rep_type *data_types[TYPE_HASH_SIZE];
 
 void
-rep_register_type(unsigned int code, char *name,
+rep_register_type(u_int code, char *name,
 		  int (*compare)(repv, repv),
 		  void (*princ)(repv, repv),
 		  void (*print)(repv, repv),
@@ -119,7 +119,7 @@ rep_register_type(unsigned int code, char *name,
     data_types[TYPE_HASH(code)] = t;
 }
 
-unsigned int
+u_int
 rep_register_new_type(char *name,
 		      int (*compare)(repv, repv),
 		      void (*princ)(repv, repv),
@@ -134,7 +134,7 @@ rep_register_new_type(char *name,
 		      repv (*bind)(repv),
 		      void (*unbind)(repv))
 {
-    unsigned int code;
+    u_int code;
     assert(next_free_type != 256);
     code = (next_free_type++ << rep_CELL16_TYPE_SHIFT) | rep_CELL_IS_8 | rep_CELL_IS_16;
     rep_register_type(code, name, compare, princ, print,
@@ -144,7 +144,7 @@ rep_register_new_type(char *name,
 }
 
 rep_type *
-rep_get_data_type(unsigned int code)
+rep_get_data_type(u_int code)
 {
     rep_type *t = data_types[TYPE_HASH(code)];
     while (t != 0 && t->code != code)

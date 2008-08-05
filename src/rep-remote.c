@@ -205,7 +205,7 @@ gid_name (gid_t gid)
 }
 
 static char *
-output_mode_string (char *out, unsigned long perms)
+output_mode_string (char *out, u_long perms)
 {
     int i;
     char c = '-';
@@ -219,7 +219,7 @@ output_mode_string (char *out, unsigned long perms)
     out[0] = c;
     for(i = 0; i < 3; i++)
     {
-	unsigned long xperms = perms >> ((2 - i) * 3);
+	u_long xperms = perms >> ((2 - i) * 3);
 	if(xperms & 4)
 	    out[1+i*3] = 'r';
 	if(xperms & 2)
@@ -251,7 +251,7 @@ do_get (int argc, char **argv)
 	FILE *fh = fopen (argv[0], "r");
 	if (fh != 0)
 	{
-	    unsigned long size = st.st_size;
+	    u_long size = st.st_size;
 	    send_success ();
 	    send_long (size);
 	    while (size > 0)
