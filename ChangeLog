@@ -6,6 +6,10 @@
 
 	* configure.in: bump version to 0.17.1
 
+	* librep.spec.in: update the spec file
+
+	* autogen.sh: add --force --copy to libtoolize flags
+
 2006-06-02  John Harper  <jsh@unfactored.org>
 
 	* rep.m4: fix for newer m4, from Michal Jaegermann

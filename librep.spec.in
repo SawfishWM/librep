@@ -3,11 +3,11 @@ Name: librep
 Version: @version@
 Release: 1
 Summary: An embeddable LISP environment
-Copyright: GPL
+License: GPL
 Group: Development/Languages
 Source: http://download.sourceforge.net/librep/librep-%{version}.tar.gz
 URL: http://librep.sourceforge.net/
-Packager: John Harper <john@dcs.warwick.ac.uk>
+Packager: Christopher Bratusek <nano-master@gmx.de>
 Buildroot: /var/tmp/%{name}-root
 BuildPrereq: gmp-devel gdbm-devel readline-devel texinfo
 PreReq: /sbin/install-info
