@@ -1,9 +1,8 @@
-#! /bin/sh
-exec rep "$0" "$@"
+#! /usr/bin/rep
 !#
 
 ;; rep-xgettext.jl -- extract i18n strings from lisp scripts
-;; $Id$
+;; $Id: rep-xgettext.jl,v 1.8 2000/08/03 16:17:09 john Exp $
 
 ;; This file is part of librep.
 
