@@ -21,11 +21,11 @@
 	
 	* src/rep-xgettext.jl: use correct shebang (ALT-Linux patch)
 
-	* man/news.texi: add {define-special-variable} (Ubuntu patch)
+	* man/news.texi: add {define-special-variable} (Debian patch)
 
-	* rules.mk.sh: add --tag CC to libtool (Ubuntu patch)
+	* rules.mk.sh: add --tag CC to libtool (Debian patch)
 
-	* src/main.c: replace a static void with a void (Ubuntu patch)
+	* src/main.c: replace a static void with a void (Debian patch)
 
 2006-06-02  John Harper  <jsh@unfactored.org>
 
