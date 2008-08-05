@@ -162,7 +162,7 @@ get_main_options(char *prog_name, int *argc_p, char ***argv_p)
 static void check_configuration (int *stack_low) __attribute__ ((noinline));
 #endif
 
-static void
+void
 check_configuration (int *stack_low)
 {
     int stack_high;
