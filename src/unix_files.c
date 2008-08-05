@@ -303,6 +303,12 @@ rep_rename_file(repv old, repv new)
 repv
 rep_make_directory(repv dir)
 {
+    int len = rep_STRING_LEN(dir);
+
+    /* Trim trailing '/' to mkdir(2) since some OSes fail the call otherwise */
+    if (*(rep_STR(dir) + len - 1) == '/')
+	dir = rep_string_dupn(rep_STR(dir), len - 1);
+
     if(mkdir(rep_STR(dir), S_IRWXU | S_IRWXG | S_IRWXO) == 0)
 	return Qt;
     else
