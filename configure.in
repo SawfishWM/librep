@@ -622,6 +622,43 @@ AC_CHECK_FUNC(_nl_msg_cat_cntr,
 dnl Build all files. Makes sure rules.mk is rebuild each time
 AC_OUTPUT(${output_files}, [rm -f rules.mk])
 
+gmpversion=`ls /usr/lib/libgmp.so.?.?* | sed -e 's/.*so.//g'`
+gdbmversion=`ls /usr/lib/libgdbm.so.?.?* | sed -e 's/.*so.//g'`
+readlineversion=`ls /lib/libreadline.so.?.?* | sed -e 's/.*so.//g'`
+ffiversion=`ls /usr/lib/libffi.so.?.?* | sed -e 's/.*so.//g'`
+ccversion=`$CC --version | grep gcc | gawk '{ print $4 }'`
+
+echo "
+  == == == == == == == == == == == == ==
+  
+  librep:	$version
+
+  == == == == == == == == == == == == ==
+  
+  compiler:	$CC  "
+
+if [[ $ccversion != "" ]]; then
+	echo "  cc-version:	$ccversion"
+fi
+
+if [[ $with_gmp == yes ]]; then
+	echo "  libgmp:	$gmpversion"
+fi
+
+echo "  libgdbm:	$gdbmversion"
+
+if [[ $with_readline == yes ]]; then
+	echo "  readline: 	$readlineversion"
+fi
+
+if [[ $with_ffi == yes ]]; then
+	echo "  libffi:	$ffiversion"
+fi
+
+echo "  
+  == == == == == == == == == == == == ==
+"
+
 dnl If it doesn't look like GNU Make is being used, give a friendly warning
 tem=`make --version -f /dev/null 2>&1 | grep GNU`
 if test "x$tem" = "x"; then
