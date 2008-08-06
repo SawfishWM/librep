@@ -2,6 +2,8 @@
 	* Makedefs.in: add --no-split to makeinfo (FreeBSD patch)
 
 	* configure.in: print usefull things at the end
+		- add --enable-paranoia
+			(compile with paranoia CFLAGS)
 
 2008-08-05  Christopher Bratusek <nano-master@gmx.de>
 	* MAINTAINERS: I'm the new maintainer
