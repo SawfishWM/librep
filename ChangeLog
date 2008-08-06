@@ -1,3 +1,6 @@
+2008-08-06  Christopher Bratusek <nano-master@gmx.de>
+	* Makedefs.in: add --no-split to makeinfo (FreeBSD patch)
+
 2008-08-05  Christopher Bratusek <nano-master@gmx.de>
 	* MAINTAINERS: I'm the new maintainer
 

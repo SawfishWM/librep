@@ -1,6 +1,6 @@
 # Makedefs.in -- input for the common Makefile definitions
 # Copyright (C) 1998 John Harper <john@dcs.warwick.ac.uk>
-# $Id$
+# $Id: Makedefs.in,v 1.35 2003/09/04 05:57:43 jsh Exp $
 #
 # This file is part of Jade.
 #
@@ -67,7 +67,7 @@ INSTALL_DATA=@INSTALL_DATA@
 INSTALL_PROGRAM=@INSTALL_PROGRAM@
 INSTALL_SCRIPT=@INSTALL_SCRIPT@
 
-MAKEINFO = makeinfo
+MAKEINFO = makeinfo --no-split
 MAKEINFOFLAGS =
 TEXI2DVI = texi2dvi
 TEXI2PDF = texi2pdf
