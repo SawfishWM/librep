@@ -3,6 +3,16 @@
 @appendix News
 @cindex News
 
+@heading 0.17.1
+
+@itemize @bullet
+
+@item started code-cleanup. enough to compile sawfish with CFLAGS="-Wall -ansi -pedantic"
+
+@item added a .pc file
+
+@item serveral small fixups
+
 @heading 0.17
 
 @itemize @bullet

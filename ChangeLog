@@ -2,7 +2,9 @@
 	* src/rep_subrs.h: another fixup. lets us compile
 		sawfish with paranoia cflags and seems not
 		to break anything.
-	
+
+	* man/nes.texi: updated NEWS
+
 2008-08-06  Christopher Bratusek <nano-master@gmx.de>
 	* Makedefs.in: add --no-split to makeinfo (FreeBSD patch)
 
