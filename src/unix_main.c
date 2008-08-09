@@ -60,7 +60,7 @@
 #endif
 
 void (*rep_redisplay_fun)(void);
-int (*rep_wait_for_input_fun)(fd_set *inputs, unsigned long timeout_msecs);
+long (*rep_wait_for_input_fun)(void *inputs, unsigned long timeout_msecs);
 int rep_input_timeout_secs = 1;
 
 
