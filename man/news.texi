@@ -13,6 +13,8 @@
 
 @item serveral small fixups
 
+@end itemize
+
 @heading 0.17
 
 @itemize @bullet
