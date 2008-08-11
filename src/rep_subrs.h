@@ -23,7 +23,7 @@
 
 #include <stdarg.h>
 
-#define inline
+#include "../config.h"
 
 /* from continuations.c */
 extern int rep_thread_lock;

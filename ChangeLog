@@ -2,6 +2,9 @@
 	* src/dlmalloc.c: replace // comments with /* */
 
 	* src/rep_subrs.h: add #define inline
+	
+	* src/rep_subrs.h: add #include "../config.h" for
+		#define inline
 
 2008-08-08  Christopher Bratusek <nano-master@gmx.de>
 	* src/rep_subrs.h: another fixup. lets us compile
