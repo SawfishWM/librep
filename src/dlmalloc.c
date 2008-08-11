@@ -1004,9 +1004,9 @@ gAllocatedSize))
 				gAddressBase = gNextAddress =
 					(unsigned int)VirtualAlloc (new_address, new_size,
 												MEM_RESERVE, PAGE_NOACCESS);
-				// repeat in case of race condition
-				// The region that we found has been snagged 
-				// by another thread
+				/* repeat in case of race condition
+				 The region that we found has been snagged 
+				 by another thread */
 			}
 			while (gAddressBase == 0);
 
