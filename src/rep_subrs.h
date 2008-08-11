@@ -23,6 +23,8 @@
 
 #include <stdarg.h>
 
+#define inline
+
 /* from continuations.c */
 extern int rep_thread_lock;
 extern rep_bool rep_pending_thread_yield;
