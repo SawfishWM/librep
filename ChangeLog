@@ -1,3 +1,6 @@
+2008-08-13  Christopher Bratusek <nano-master@gmx.de>
+	* configure.in: AC_PROG_LIBTOOL not AM_PROG_LIBTOOL
+
 2008-08-11  Christopher Bratusek <nano-master@gmx.de>
 	* src/dlmalloc.c: replace // comments with /* */
 
