@@ -3,6 +3,10 @@
 
 	* autogen.sh: change accordingly
 
+	* .cvsignore
+	* */.cvsignore: add svn:ignore property and remove all
+	.cvsignore files
+
 2008-08-11  Christopher Bratusek <nano-master@gmx.de>
 	* src/dlmalloc.c: replace // comments with /* */
 
