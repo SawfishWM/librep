@@ -7,7 +7,7 @@ if [ -f configure.in ]; then
       autoheader || exit 1
     fi
   fi
-  if grep "AM_PROG_LIBTOOL" configure.in >/dev/null; then
+  if grep "A[MC]_PROG_LIBTOOL" configure.in >/dev/null; then
     echo "Running libtoolize"
     libtoolize --force --copy || exit 1
   fi
