@@ -31,8 +31,6 @@
 			(compile with paranoia CFLAGS)
 
 2008-08-05  Christopher Bratusek <nano-master@gmx.de>
-	* MAINTAINERS: I'm the new maintainer
-
 	* BUGS
 	* HACKING: updated information
 
