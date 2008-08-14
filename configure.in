@@ -24,7 +24,7 @@ AC_INIT(src/rep_subrs.h)
 AC_CONFIG_HEADER(config.h src/rep_config.h)
 
 dnl Release versioning info
-version="0.17.1"
+version="0.17.2"
 
 dnl libtool versioning info: `CURRENT:REVISION:AGE'. CURRENT is the
 dnl current interface id, REVISION is the version number of this

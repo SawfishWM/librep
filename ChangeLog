@@ -7,6 +7,8 @@
 	* */.cvsignore: add svn:ignore property and remove all
 	.cvsignore files
 
+	* configure.in: 0.17.1 released, bump to 0.17.2
+
 2008-08-11  Christopher Bratusek <nano-master@gmx.de>
 	* src/dlmalloc.c: replace // comments with /* */
 
