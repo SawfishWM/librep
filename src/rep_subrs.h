@@ -23,8 +23,6 @@
 
 #include <stdarg.h>
 
-#include "../config.h"
-
 /* from continuations.c */
 extern int rep_thread_lock;
 extern rep_bool rep_pending_thread_yield;
