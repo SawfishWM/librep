@@ -628,10 +628,6 @@ AC_CHECK_FUNC(_nl_msg_cat_cntr,
 dnl Build all files. Makes sure rules.mk is rebuild each time
 AC_OUTPUT(${output_files}, [rm -f rules.mk])
 
-gmpversion=`ls /usr/lib/libgmp.so.?.?* | sed -e 's/.*so.//g'`
-gdbmversion=`ls /usr/lib/libgdbm.so.?.?* | sed -e 's/.*so.//g'`
-readlineversion=`ls /lib/libreadline.so.?.?* | sed -e 's/.*so.//g'`
-ffiversion=`ls /usr/lib/libffi.so.?.?* | sed -e 's/.*so.//g'`
 ccversion=`$CC --version | grep gcc | gawk '{ print $4 }'`
 
 echo "
@@ -647,18 +643,18 @@ if [[ $ccversion != "" ]]; then
 	echo "  cc-version:	$ccversion"
 fi
 
-if [[ $with_gmp == yes ]]; then
-	echo "  libgmp:	$gmpversion"
+if [[ $with_gmp != no ]]; then
+	echo "  libgmp:	yes"
 fi
 
-echo "  libgdbm:	$gdbmversion"
+echo "  libgdbm:	yes"
 
-if [[ $with_readline == yes ]]; then
-	echo "  readline: 	$readlineversion"
+if [[ $with_readline != no ]]; then
+	echo "  readline: 	yes"
 fi
 
-if [[ $with_ffi == yes ]]; then
-	echo "  libffi:	$ffiversion"
+if [[ $with_ffi != no ]]; then
+	echo "  libffi:	yes"
 fi
 
 echo "  
