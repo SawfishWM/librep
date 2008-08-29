@@ -60,7 +60,7 @@ install : all installdirs
 	@echo "if this fails, install it manually in a suitable location"
 	@echo "---------------------------------------------------------"
 	-$(INSTALL_DATA) $(top_srcdir)/rep.m4 $(DESTDIR)$(aclocaldir)
-	
+	mkdir -p $(DESTDIR)$(libdir)/pkgconfig
 	$(INSTALL_DATA) $(top_srcdir)/librep.pc $(DESTDIR)$(libdir)/pkgconfig/
 
 installdirs : mkinstalldirs
