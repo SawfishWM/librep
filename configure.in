@@ -628,8 +628,6 @@ AC_CHECK_FUNC(_nl_msg_cat_cntr,
 dnl Build all files. Makes sure rules.mk is rebuild each time
 AC_OUTPUT(${output_files}, [rm -f rules.mk])
 
-ccversion=`$CC --version | grep gcc | gawk '{ print $4 }'`
-
 echo "
   == == == == == == == == == == == == ==
   
@@ -638,10 +636,6 @@ echo "
   == == == == == == == == == == == == ==
   
   compiler:	$CC  "
-
-if [[ $ccversion != "" ]]; then
-	echo "  cc-version:	$ccversion"
-fi
 
 if [[ $with_gmp != no ]]; then
 	echo "  libgmp:	yes"

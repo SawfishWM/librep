@@ -1,3 +1,6 @@
+2008-09-02  Christopher Bratusek <nano-master@gmx.de>
+	* configure.in: another fixup
+
 2008-08-29  Christopher Bratusek <nano-master@gmx.de>
 	* src/rep-subrs.h: replace the inclusion of config.h
 	with a ifdef doing what we want
