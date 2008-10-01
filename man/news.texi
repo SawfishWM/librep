@@ -11,6 +11,12 @@
 
 @item updated BUGS, HACKING and README
 
+@item define inline if undefined (fixes compiler warnings)
+
+@item create the destination directory for the .pc file before installing it
+
+@end itemize
+
 @heading 0.17.1
 
 @itemize @bullet
