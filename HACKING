@@ -1,6 +1,5 @@
 
-Please send all patches to the rep mailing list:
-<sawfish-list@gnome.org>.
+Please send all patches to either the BugZilla http://bugzilla.gnome.org or the mailing list: <sawfish-list@gnome.org>.
 
-When possible, please make patches in unified diff format (i.e. `diff -u').
+When possible, please make patches in unified diff format (i.e. 'iff -u' or use 'svn diff').
 

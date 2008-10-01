@@ -3,6 +3,14 @@
 @appendix News
 @cindex News
 
+@heading 0.17.2
+
+@itemize @bullet
+
+@item fixups for configure.in
+
+@item updated BUGS, HACKING and README
+
 @heading 0.17.1
 
 @itemize @bullet

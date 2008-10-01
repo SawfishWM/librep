@@ -16,6 +16,10 @@ For more details see:
 
 	http://librep.sourceforge.net/
 
+Browse the SVN tree at:
+
+	http://svn.gnome.org/viewvc/librep/
+
 To compile this you'll need GNU make, the GNU MP library (see below)
 and GNU dbm installed. Basically, just do:
 
@@ -23,6 +27,7 @@ and GNU dbm installed. Basically, just do:
 	$ make
 	$ make install
 
+(if building from the SVN tree use ./autogen.sh instead of ./configure)
 
 Notes
 =====
