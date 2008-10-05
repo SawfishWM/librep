@@ -1,3 +1,6 @@
+2008-10-05  Christopher Bratusek <nano-master@gmx.de>
+	* librep.spec.in: install the examples when building the rpm
+
 2008-10-01  Christopher Bratusek <nano-master@gmx.de>
 	* BUGS: updated
 

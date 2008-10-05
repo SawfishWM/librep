@@ -91,8 +91,12 @@ fi
 %{_libexecdir}/rep/%{_target_platform}/install-aliases
 %{_libexecdir}/rep/%{_target_platform}/rep_config.h
 %{_datadir}/aclocal/rep.m4
+%{_datadir}/doc/rep-gtk-@version@/*
 
 %changelog
+* Sun Oct 05 2008 Christopher Bratusek <nano-master@gmx.de
+- install the examples when building the rpm
+
 * Tue Jun 13 2000 John Harper <john@dcs.warwick.ac.uk>
 - use better macros
 
