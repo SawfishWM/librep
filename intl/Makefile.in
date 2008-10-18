@@ -77,7 +77,7 @@ DISTFILES.gettext = libintl.glibc intlh.inst.in
 .c.o:
 	$(COMPILE) $<
 .c.lo:
-	$(LIBTOOL) --mode=compile $(COMPILE) $<
+	$(LIBTOOL) --mode=compile --tag=CC $(COMPILE) $<
 
 INCLUDES = -I.. -I. -I$(top_srcdir)/intl -I$(top_srcdir)/lib
 
@@ -92,7 +92,7 @@ libintl.a: $(OBJECTS)
 	$(RANLIB) $@
 
 libintl.la: $(OBJECTS)
-	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -o $@ $(OBJECTS) \
+	$(LIBTOOL) --mode=link --tag=CC $(CC) $(LDFLAGS) -o $@ $(OBJECTS) \
 		   -version-info 1:0 -rpath $(libdir)
 
 ../po/cat-id-tbl.$lo: ../po/cat-id-tbl.c $(top_srcdir)/po/$(PACKAGE).pot

@@ -19,7 +19,7 @@ rep_INSTALL_ALIASES=\$(repcommonexecdir)/install-aliases
 # foo.la : foo.lo bar.lo
 #	\$(rep_DL_LD) link-opts...
 
-rep_DL_LD=\$(rep_LIBTOOL) --mode=link \$(CC) -avoid-version -module \
+rep_DL_LD=\$(rep_LIBTOOL) --mode=link --tag=CC \$(CC) -avoid-version -module \
 	  -rpath \$(rpath_repcommonexecdir)
 
 rep_DL_INSTALL=\$(rep_LIBTOOL) --mode=install \$(INSTALL)
@@ -27,6 +27,6 @@ rep_DL_UNINSTALL=\$(rep_LIBTOOL) --mode=uninstall rm
 
 # Rule for libtool controlled C objects
 %.lo : %.c
-	\$(rep_LIBTOOL) --mode=compile \$(CC) -c \$(CPPFLAGS) \$(CFLAGS) \$<
+	\$(rep_LIBTOOL) --mode=compile --tag=CC \$(CC) -c \$(CPPFLAGS) \$(CFLAGS) \$<
 
 EOF

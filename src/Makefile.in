@@ -1,6 +1,6 @@
 # Makefile.in -- input for the src directory's Makefile
 # Copyright (C) 1998 John Harper <john@dcs.warwick.ac.uk>
-# $Id$
+# $Id: Makefile.in,v 1.79 2003/12/06 18:23:31 jsh Exp $
 #
 # This file is part of Jade.
 #
@@ -56,16 +56,16 @@ INTL_OBJS=$(INTL_OBJS_@USE_INCLUDED_LIBINTL@)
 all : librep.la $(DL_OBJS) check-dl rep rep-config rep-remote rep-xgettext .libexec
 
 librep.la : $(OBJS) $(LIBOBJS) $(ALLOCA)
-	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) \
+	$(LIBTOOL) --mode=link --tag=CC $(CC) $(LDFLAGS) \
 	  -version-info $(libversion) -export-symbols $(srcdir)/librep.sym \
 	  -o $@ $^ -rpath $(libdir) $(LIBS) $(GMP_LIBS)
 
 rep : $(REP_OBJS) $(EXTRA_LIBOBJS) librep.la
-	$(LIBTOOL) --mode=link $(CC) -export-dynamic $(CPPFLAGS) $(CFLAGS) -o $@ \
+	$(LIBTOOL) --mode=link --tag=CC $(CC) -export-dynamic $(CPPFLAGS) $(CFLAGS) -o $@ \
 	  $(REP_OBJS) librep.la $(EXTRA_LIBOBJS) $(LIBS) $(GMP_LIBS)
 
 srep : $(REP_OBJS) $(EXTRA_LIBOBJS) librep.la
-	$(LIBTOOL) --mode=link $(CC) -static -export-dynamic $(CPPFLAGS) $(CFLAGS) -o $@ \
+	$(LIBTOOL) --mode=link --tag=CC $(CC) -static -export-dynamic $(CPPFLAGS) $(CFLAGS) -o $@ \
 	  $(REP_OBJS) librep.la $(EXTRA_LIBOBJS) $(LIBS) $(GMP_LIBS)
 
 rep-remote : rep-remote.c
@@ -132,7 +132,7 @@ rep-config : rep-config.sh Makefile
 	chmod +x $@
 
 repdoc : repdoc.o
-	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -o $@ $^ $(GDBM_LIBS)
+	$(LIBTOOL) --mode=link --tag=CC $(CC) $(LDFLAGS) -o $@ $^ $(GDBM_LIBS)
 
 sdbm.la : $(SDBM_LOBJS) repsdbm.lo
 	$(rep_DL_LD) $(LDFLAGS) -o $@ $^
