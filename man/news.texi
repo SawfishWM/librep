@@ -15,17 +15,41 @@
 
 @item create the destination directory for the .pc file before installing it
 
+@item fixed in issue with FreeBSD in numbers.c [FreeBSD patch]
+
+@item improved a function of numbers.c [FreeBSD patch]
+
+@item rep_file_fdopen has not been listed in librep.sym
+
+@item added --tag=CC to libtool in several places
+
+@item don't ignore $LDFLAGS upon build
+
+@item dropped some useless code in sdbm.c
+
+@item make sure inline is defined
+
 @end itemize
 
 @heading 0.17.1
 
 @itemize @bullet
 
-@item started code-cleanup. enough to compile sawfish with CFLAGS="-Wall -ansi -pedantic"
+@item started code-cleanup
 
 @item added a .pc file
 
-@item serveral small fixups
+@item added --no-split to makeinfo [FreeBSD patch]
+
+@item added --enable-paranoia to configure [compile with CFLAGS+="-Wall -ansi"]
+
+@item updated the spec file
+
+@item replaced a static void by a void in main.c [Debian patch]
+
+@item use correct shebang in rep-xgettext.jl [ALT-Linux patch]
+
+@item trim trailing / to mkdir(2) [NetBSD patch]
 
 @end itemize
 

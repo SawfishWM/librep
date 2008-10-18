@@ -15,6 +15,8 @@
 
 	* src/sdbm.c: drop some useless code [NetBSD patch]
 
+	* man/news.texi: updated
+
 2008-10-01  Christopher Bratusek <nano-master@gmx.de>
 	* BUGS: updated
 
