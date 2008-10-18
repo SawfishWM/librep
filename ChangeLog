@@ -10,6 +10,9 @@
 	* intl/Makefile.in
 	* rules.mk.sh: added --tag=CC to libtool in serveral places
 
+	* Makedefs.in
+	* src/Makefile.in: don't ignore $LDFLAGS upon build
+
 2008-10-01  Christopher Bratusek <nano-master@gmx.de>
 	* BUGS: updated
 

@@ -101,7 +101,7 @@ rep_LIBTOOL=@LIBTOOL@
 # Rule for dlopen'able C objects
 %.la : %.c
 	$(LIBTOOL) --mode=compile --tag=CC $(CC) -c $(CPPFLAGS) $(CFLAGS) $<
-	$(rep_DL_LD) $(CPPFLAGS) $(CFLAGS) -o $@ $*.lo
+	$(rep_DL_LD) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ $*.lo
 
 # Build dependancy files from C source files.
 .%.d : %.c

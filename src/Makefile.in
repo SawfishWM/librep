@@ -61,11 +61,11 @@ librep.la : $(OBJS) $(LIBOBJS) $(ALLOCA)
 	  -o $@ $^ -rpath $(libdir) $(LIBS) $(GMP_LIBS)
 
 rep : $(REP_OBJS) $(EXTRA_LIBOBJS) librep.la
-	$(LIBTOOL) --mode=link --tag=CC $(CC) -export-dynamic $(CPPFLAGS) $(CFLAGS) -o $@ \
+	$(LIBTOOL) --mode=link --tag=CC $(CC) -export-dynamic $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ \
 	  $(REP_OBJS) librep.la $(EXTRA_LIBOBJS) $(LIBS) $(GMP_LIBS)
 
 srep : $(REP_OBJS) $(EXTRA_LIBOBJS) librep.la
-	$(LIBTOOL) --mode=link --tag=CC $(CC) -static -export-dynamic $(CPPFLAGS) $(CFLAGS) -o $@ \
+	$(LIBTOOL) --mode=link --tag=CC $(CC) -static -export-dynamic $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ \
 	  $(REP_OBJS) librep.la $(EXTRA_LIBOBJS) $(LIBS) $(GMP_LIBS)
 
 rep-remote : rep-remote.c
