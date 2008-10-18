@@ -111,6 +111,11 @@ typedef struct {
 # endif
 #endif
 
+#ifdef __FreeBSD__
+#  define LONG_LONG_MIN LONG_MIN
+#  define LONG_LONG_MAX LONG_MAX
+#endif
+
 typedef struct {
     repv car;
 #ifdef HAVE_GMP
@@ -2693,13 +2698,14 @@ accuracy.
 #ifdef HAVE_GMP
     else
     {
-	rep_number_q *q;
+	double x, y;
+	rep_number_z *z;
 
-	q = make_number (rep_NUMBER_RATIONAL);
-	mpq_init (q->q);
-	mpq_set_d (q->q, rep_get_float (arg));
+	rationalize (arg, &x, &y);
+	z = make_number (rep_NUMBER_BIGNUM);
+	mpz_init_set_d (z->z, (x / y));
 
-	return maybe_demote (rep_VAL (q));
+	return maybe_demote (rep_VAL (z));
     }
 #else
     else
