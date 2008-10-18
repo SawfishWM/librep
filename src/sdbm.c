@@ -37,13 +37,6 @@ static char rcsid[] = "$Id$";
 #endif
 
 /*
- * externals
- */
-#ifndef sun
-extern int errno;
-#endif
-
-/*
  * forward
  */
 static int getdbit (SDBM *, long);
