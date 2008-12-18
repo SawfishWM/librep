@@ -201,7 +201,7 @@ if test "$with_readline" != "no"; then
 
   AC_CHECK_HEADER(readline/readline.h,
     AC_CHECK_LIB(readline, readline,[
-      READLINE_LIBS="-lreadline $tcap"
+      READLINE_LIBS=" -L/lib${libsuff} -lreadline $tcap"
       AC_DEFINE(HAVE_LIBREADLINE)], , $tcap))
 
   if test -z "$READLINE_LIBS"; then
