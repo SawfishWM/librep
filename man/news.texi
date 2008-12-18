@@ -20,6 +20,8 @@
 @item Fix compilation on PPC64 [Marcus Comstedt]
 
 @item Small fixup in src/fake-libexec [SuSE]
+
+@item No rpath in src/rep-config.sh [Fedora]
 @end itemize
 
 @heading 0.17.2
