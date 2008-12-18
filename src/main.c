@@ -548,6 +548,7 @@ rep_deprecated (rep_bool *seen, const char *desc)
     }
 }
 
+static void check_configuration (int *stack_low) __attribute__((noinline));
 static void
 rep_main_init(void)
 {

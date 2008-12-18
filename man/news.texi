@@ -14,6 +14,10 @@
 @item Improved librep.pc
 
 @item Updated librep.spec
+
+@item Add -L/lib${libsuff} to READLINE_LIBS [T2 Patch]
+
+@item Fix compilation on PPC64 [Marcus Comstedt]
 @end itemize
 
 @heading 0.17.2
