@@ -15,12 +15,6 @@ sitelispdir="$6"
 
 libpath="-L${libdir}"
 
-# So that we keep -R options where required
-if test -n "$hardcode_libdir_flag_spec"; then
-  eval flag=\"$hardcode_libdir_flag_spec\"
-  libpath="$libpath $flag"
-fi
-
 cat <<EOF
 #!/bin/sh
 
