@@ -13,6 +13,8 @@
 
 	* man/news.texi: Updated NEWS
 
+	* src/fake-libexec: small fixup [SuSE]
+
 2008-10-23  Christopher Bratusek <nano-master@gmx.de>
 	* configure.in: 0.17.2 snapshot released, bump to 0.17.3
 

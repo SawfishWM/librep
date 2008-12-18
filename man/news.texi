@@ -18,6 +18,8 @@
 @item Add -L/lib${libsuff} to READLINE_LIBS [T2 Patch]
 
 @item Fix compilation on PPC64 [Marcus Comstedt]
+
+@item Small fixup in src/fake-libexec [SuSE]
 @end itemize
 
 @heading 0.17.2
