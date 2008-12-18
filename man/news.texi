@@ -3,6 +3,19 @@
 @appendix News
 @cindex News
 
+@heading 0.17.3
+
+@itemize @bullet
+
+@item Updated MAINTAINERS
+
+@item Dropped rep.m4 - use librep.pc instead
+
+@item Improved librep.pc
+
+@item Updated librep.spec
+@end itemize
+
 @heading 0.17.2
 
 @itemize @bullet

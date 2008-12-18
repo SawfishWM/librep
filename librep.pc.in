@@ -1,7 +1,15 @@
+version=@version@
+host_type=@host@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 libdir=@libdir@
+libexecdir=@libexecdir@
+repexecdir=@repexecdir@
+repcommonexecdir=@repcommonexecdir@
 includedir=@includedir@
+
+Cflags: -I${includedir}/ -I${repcommonexecdir}/
+Libs: -I${libdir}/ -lrep
 
 Name: librep
 Description: librep - a lisp dialect

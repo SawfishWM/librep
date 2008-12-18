@@ -84,15 +84,19 @@ fi
 %{_bindir}/rep-xgettext
 %{_bindir}/repdoc
 %{_libdir}/librep.so
+%{_libdir}/pkgconfig/librep.pc
 %{_includedir}/rep.h
 %{_includedir}/rep_*.h
 %{_libexecdir}/rep/%{_target_platform}/libtool
 %{_libexecdir}/rep/%{_target_platform}/rules.mk
 %{_libexecdir}/rep/%{_target_platform}/install-aliases
 %{_libexecdir}/rep/%{_target_platform}/rep_config.h
-%{_datadir}/aclocal/rep.m4
 
 %changelog
+* Thu Dec 18 2008 Christopher Bratusek <nano-master@gmx.de>
+- rep.m4 no longer available
+- install librep.pc
+
 * Tue Jun 13 2000 John Harper <john@dcs.warwick.ac.uk>
 - use better macros
 
