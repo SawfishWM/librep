@@ -22,6 +22,8 @@
 @item Small fixup in src/fake-libexec [SuSE]
 
 @item No rpath in src/rep-config.sh [Fedora]
+
+@item Added ebuild [Harald van Dijk]
 @end itemize
 
 @heading 0.17.2

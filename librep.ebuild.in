@@ -1,0 +1,50 @@
+# based on librep-0.17-r2.ebuild
+
+inherit eutils libtool toolchain-funcs multilib autotools
+
+DESCRIPTION="Shared library implementing a Lisp dialect"
+HOMEPAGE="http://librep.sourceforge.net/"
+SRC_URI="mirror://sourceforge/${PN}/${P}.tar.bz2"
+
+LICENSE="GPL-2"
+SLOT="0"
+KEYWORDS="amd64"
+IUSE="readline"
+
+RDEPEND=">=sys-libs/gdbm-1.8.0
+	readline? ( sys-libs/readline )"
+DEPEND="${RDEPEND}
+	sys-apps/texinfo"
+
+src_unpack() {
+	unpack ${A}
+	cd "${S}"
+	eautoreconf
+	elibtoolize || die "elibtoolize failed"
+	epunt_cxx
+}
+
+src_compile() {
+	local myconf="$(use_with readline)"
+	use ppc && myconf="${myconf} --with-stack-direction=1"
+
+	# It seems that stack-direction=-1 for gcc-3.x and 1 for gcc-4.x on ia64
+	if use ia64 && [[ $(gcc-major-version) -ge 4 ]]; then
+		myconf="${myconf} --with-stack-direction=1"
+	fi
+
+	econf \
+		--libexecdir=/usr/$(get_libdir) \
+		--without-gmp \
+		--without-ffi \
+		${myconf} || die "configure failed"
+
+	LC_ALL=C emake || die "make failed"
+}
+
+src_install() {
+	make DESTDIR="${D}" install || die "make install failed"
+	dodoc AUTHORS BUGS ChangeLog NEWS README THANKS TODO TREE
+	docinto doc
+	dodoc doc/*
+}
