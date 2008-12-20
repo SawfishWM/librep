@@ -9,7 +9,7 @@ repcommonexecdir=@repcommonexecdir@
 includedir=@includedir@
 
 Cflags: -I${includedir}/ -I${repcommonexecdir}/
-Libs: -I${libdir}/ -lrep
+Libs: -I${libdir}/ -lrep -ldl -lcrypt -lgmp -lm
 
 Name: librep
 Description: librep - a lisp dialect
