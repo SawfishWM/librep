@@ -98,7 +98,8 @@ distclean :
 	  [ -d $$dir ] && ( cd $$dir && $(MAKE) $@ ) || exit 1; \
 	done
 	rm -f config.cache config.h config.log config.status Makefile libtool
-	rm -f *~ NEWS doc-strings TAGS build.h rules.mk librep.spec
+	rm -f *~ NEWS doc-strings TAGS build.h rules.mk librep.spec configure
+	rm -f configure.orig librep-$(version).ebuild
 
 realclean : distclean
 

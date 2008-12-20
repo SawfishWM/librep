@@ -4,6 +4,8 @@
 
 	* librep.pc.in: Complete Libs: Section 
 
+	* Makefile.in: upon distclean also remove the ebuild and configure
+
 2008-12-18  Christopher Bratusek <nano-master@gmx.de>
 	* rep.m4
 	* librep.pc.in: drop rep.m4, instead improve the .pc file
