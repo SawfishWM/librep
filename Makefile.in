@@ -99,7 +99,7 @@ distclean :
 	done
 	rm -f config.cache config.h config.log config.status Makefile libtool
 	rm -f *~ NEWS doc-strings TAGS build.h rules.mk librep.spec configure
-	rm -f configure.orig librep-$(version).ebuild
+	rm -f configure.orig librep-$(version).ebuild librep.pc
 
 realclean : distclean
 

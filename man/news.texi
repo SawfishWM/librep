@@ -24,6 +24,8 @@
 @item No rpath in src/rep-config.sh [Fedora]
 
 @item Added ebuild [Harald van Dijk]
+
+@item Improved Makefile's distclean rule
 @end itemize
 
 @heading 0.17.2
