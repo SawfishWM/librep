@@ -9,7 +9,7 @@ if [ -f configure.in ]; then
   fi
   if grep "A[MC]_PROG_LIBTOOL" configure.in >/dev/null; then
     echo "Running libtoolize"
-    libtoolize --force --copy || exit 1
+    libtoolize --force --copy --install || libtoolize --force --copy
   fi
   echo "Running aclocal $ACLOCAL_FLAGS"
   aclocal $ACLOCAL_FLAGS || exit 1

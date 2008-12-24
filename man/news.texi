@@ -26,6 +26,8 @@
 @item Added ebuild [Harald van Dijk]
 
 @item Improved Makefile's distclean rule
+
+@item Fix libtool syntax in autogen for libtool >2.2
 @end itemize
 
 @heading 0.17.2
