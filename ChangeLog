@@ -1,3 +1,12 @@
+2009-01-01  Christopher Bratusek <nano-master@gmx.de>
+	* autogen.sh: reworked
+
+	* m4: add m4 directory to shut up libtool 1.x
+
+	* configure.in: begin rework
+
+	* install-sh: don't ship this file
+
 2008-12-30  Christopher Bratusek <nano-master@gmx.de>
 	* librep.ebuild.in: don't leak copyright info and update keywords
 

@@ -19,9 +19,12 @@ dnl  along with librep; see the file COPYING.  If not, write to
 dnl  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 AC_REVISION($Revision: 1.146 $)
-
 AC_INIT(src/rep_subrs.h)
+
 AC_CONFIG_HEADER(config.h src/rep_config.h)
+AC_CONFIG_MACRO_DIR([m4])
+
+AM_PROG_LIBTOOL
 
 dnl Release versioning info
 version="0.17.3"

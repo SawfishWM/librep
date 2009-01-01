@@ -27,7 +27,9 @@
 
 @item Improved Makefile's distclean rule
 
-@item Fix libtool syntax in autogen for libtool >2.2
+@item Reworked autogen.sh
+
+@item Reworked configure.in
 @end itemize
 
 @heading 0.17.2
