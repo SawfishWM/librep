@@ -5,7 +5,7 @@ Release: 1
 Summary: An embeddable LISP environment
 License: GPL
 Group: Development/Languages
-Source: http://download.sourceforge.net/librep/librep-%{version}.tar.gz
+Source: http://download.sourceforge.net/librep/librep-%{version}.tar.bz2
 URL: http://librep.sourceforge.net/
 Packager: John Harper <john@dcs.warwick.ac.uk>
 Buildroot: /var/tmp/%{name}-root
@@ -93,6 +93,9 @@ fi
 %{_libexecdir}/rep/%{_target_platform}/rep_config.h
 
 %changelog
+* Fri Jan 02 2009 Christopher Bratusek <nano-master@gmx.de>
+- source archive is a .tar.bz2
+
 * Thu Dec 18 2008 Christopher Bratusek <nano-master@gmx.de>
 - rep.m4 no longer available
 - install librep.pc

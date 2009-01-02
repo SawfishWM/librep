@@ -1,3 +1,6 @@
+2009-01-02  Christopher Bratusek <nano-master@gmx.de>
+	* librep.spec.in: source-archive is .tar.bz2
+
 2009-01-01  Christopher Bratusek <nano-master@gmx.de>
 	* autogen.sh: reworked
 
