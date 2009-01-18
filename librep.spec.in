@@ -1,4 +1,3 @@
-
 Name: librep
 Version: @version@
 Release: 1
@@ -7,11 +6,9 @@ License: GPL
 Group: Development/Languages
 Source: http://download.sourceforge.net/librep/librep-%{version}.tar.bz2
 URL: http://librep.sourceforge.net/
-Packager: John Harper <john@dcs.warwick.ac.uk>
-Buildroot: /var/tmp/%{name}-root
-BuildPrereq: gmp-devel gdbm-devel readline-devel texinfo
-PreReq: /sbin/install-info
-Requires: gdbm >= 1.8
+Packager: Christopher Bratusek <zanghar@freenet.de>
+Buildroot: %{_tmppath}/%{name}-%{version}-%{release}-root
+BuildRequires: gmp-devel gdbm-devel readline-devel texinfo
 
 %description
 This is a lightweight Lisp environment for UNIX. It contains a Lisp
@@ -26,73 +23,77 @@ deficiencies, with features from Common Lisp and Scheme.
 %package devel
 Summary: librep include files and link libraries
 Group: Development/Languages
-Requires: %{name} = @version@
+Requires: %{name} = @version@, pkgconfig
 
 %description devel
 Link libraries and C header files for librep development.
+
+%package -n emacs-%{name}-el
+Group: System Environment/Libraries
+Summary: Emacs bindings for the librep main application
+
+%description -n emacs-%{name}-el
+The librep-emacs package contains the emacs related .el files so that librep
+nicely interacts and integrates into emacs.
 
 %prep
 %setup -q
 
 %build
 
-LC_ALL=""
-LINGUAS=""
-LANG=""
-export LC_ALL LINGUAS LANG
-
-%configure --with-readline --with-extra-cflags=-fstrength-reduce
-make host_type=%{_target_platform}
+%configure --with-readline --enable-shared --disable-rpath --libexecdir=%{_libdir}
+make %{?_smp_mflags}
 
 %install
-[ -n "$RPM_BUILD_ROOT" -a "$RPM_BUILD_ROOT" != / ] && rm -rf $RPM_BUILD_ROOT
-make install \
-    host_type=%{_target_platform} \
-    DESTDIR=$RPM_BUILD_ROOT \
-    aclocaldir=%{_datadir}/aclocal \
-    infodir=%{_infodir}
-gzip -9nf $RPM_BUILD_ROOT%{_infodir}/librep*
+rm -rf $RPM_BUILD_ROOT
+mkdir -p $RPM_BUILD_ROOT%{_libdir}/pkgconfig
+make install DESTDIR=$RPM_BUILD_ROOT
+
+%clean
+rm -rf $RPM_BUILD_ROOT
 
 %post
 /sbin/ldconfig
-/sbin/install-info %{_infodir}/librep.info.gz %{_infodir}/dir
+/sbin/install-info %{_infodir}/%{name}.info %{_infodir}/dir || :
 
 %preun
-if [ "$1" = 0 ]; then
-    /sbin/install-info --delete %{_infodir}/librep.info.gz %{_infodir}/dir
+if [ $1 = 0 ]; then
+    /sbin/install-info --delete %{_infodir}/%{name}.info %{_infodir}/dir || :
 fi
 
 %postun -p /sbin/ldconfig
 
-%clean
-[ -n "$RPM_BUILD_ROOT" -a "$RPM_BUILD_ROOT" != / ] && rm -rf $RPM_BUILD_ROOT
-
 %files
-%defattr(-,root,root)
-%doc NEWS README THANKS TODO BUGS
+%defattr(-,root,root,-)
+%doc NEWS README THANKS TODO BUGS TREE HACKING
+%dir %{_libdir}/rep/
 %{_bindir}/rep
 %{_bindir}/rep-remote
+%{_datadir}/rep/
+%{_infodir}/librep.info*
 %{_libdir}/librep.so.*
-%{_datadir}/rep/%{version}
-%{_libexecdir}/rep/%{version}/%{_target_platform}
-%{_infodir}/librep*
-%{_datadir}/emacs/site-lisp/rep-*
+%{_libdir}/rep/%{version}/%{_host}/
 
 %files devel
-%defattr(-,root,root)
+%defattr(-,root,root,-)
 %{_bindir}/rep-config
 %{_bindir}/rep-xgettext
 %{_bindir}/repdoc
-%{_libdir}/librep.so
+%{_datadir}/aclocal/rep.m4
+%{_includedir}/rep*.h
+%{_libdir}/rep/%{_host}/
 %{_libdir}/pkgconfig/librep.pc
-%{_includedir}/rep.h
-%{_includedir}/rep_*.h
-%{_libexecdir}/rep/%{_target_platform}/libtool
-%{_libexecdir}/rep/%{_target_platform}/rules.mk
-%{_libexecdir}/rep/%{_target_platform}/install-aliases
-%{_libexecdir}/rep/%{_target_platform}/rep_config.h
+%{_libdir}/librep.so
+%exclude %{_libdir}/librep.la
+
+%files -n emacs-%{name}-el
+%defattr(-,root,root,-)
+%{emacs_lispdir}/*.el
 
 %changelog
+* Sun Jan 18 2009 Christopher Bratusek <zanghar@freenet.de>
+- several updates
+
 * Fri Jan 02 2009 Christopher Bratusek <nano-master@gmx.de>
 - source archive is a .tar.bz2
 

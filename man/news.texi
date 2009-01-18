@@ -30,6 +30,8 @@
 @item Reworked autogen.sh
 
 @item Reworked configure.in
+
+@item Major rework of the spec-file
 @end itemize
 
 @heading 0.17.2
