@@ -79,7 +79,6 @@ fi
 %{_bindir}/rep-config
 %{_bindir}/rep-xgettext
 %{_bindir}/repdoc
-%{_datadir}/aclocal/rep.m4
 %{_includedir}/rep*.h
 %{_libdir}/rep/%{_host}/
 %{_libdir}/pkgconfig/librep.pc

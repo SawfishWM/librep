@@ -1,3 +1,10 @@
+2009-02-01  Christopher Bratusek <zanghar@freenet.de>
+	* MAINTAINERS: updated my mail address
+
+	* autogen.sh: work around an issue
+
+	* librep.spec.in: don't try to package non-existent rep.m4
+
 2009-01-18  Christopher Bratusek <zanghar@freenet.de>
 	* librep.spec.in: - update BuildRequires 
 	                  - merge changes from ritz's spec-file
