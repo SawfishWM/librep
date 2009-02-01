@@ -10,6 +10,12 @@ Packager: Christopher Bratusek <zanghar@freenet.de>
 Buildroot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: gmp-devel gdbm-devel readline-devel texinfo
 
+%if %($(pkg-config emacs) ; echo $?)
+%define emacs_lispdir %{_datadir}/emacs/site-lisp
+%else
+%define emacs_lispdir %(pkg-config emacs --variable sitepkglispdir)
+%endif
+
 %description
 This is a lightweight Lisp environment for UNIX. It contains a Lisp
 interpreter, byte-code compiler and virtual machine. Applications may
