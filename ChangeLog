@@ -1,3 +1,6 @@
+2009-02-02  Christopher Bratusek <zanghar@freenet.de>
+	* librep.pc.in: remove bogus entries
+
 2009-02-01  Christopher Bratusek <zanghar@freenet.de>
 	* MAINTAINERS: updated my mail address
 
