@@ -20,7 +20,7 @@ if [ -f configure.in ]; then
   if grep "AM_PROG_LIBTOOL" configure.in >/dev/null; then
     echo "Running libtoolize"
     lver=$(libtool --version | grep 1.5)
-    if [[ ${lver} != "" ]]; then
+    if [ "x${lver}" != "x" ]; then
 	    libtoolize --force --copy || exit 1
     else    libtoolize --force --copy --install || exit 1
     fi
