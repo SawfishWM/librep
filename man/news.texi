@@ -32,6 +32,8 @@
 @item Reworked configure.in
 
 @item Major rework of the spec-file
+
+@item Improvied configure's ending message
 @end itemize
 
 @heading 0.17.2

@@ -205,7 +205,7 @@ if test "$with_readline" != "no"; then
   AC_CHECK_HEADER(readline/readline.h,
     AC_CHECK_LIB(readline, readline,[
       READLINE_LIBS=" -L/lib${libsuff} -lreadline $tcap"
-      AC_DEFINE(HAVE_LIBREADLINE)], , $tcap))
+      AC_DEFINE(HAVE_LIBREADLINE)] found_readline=yes, , $tcap))
 
   if test -z "$READLINE_LIBS"; then
     if test "$with_readline_prefix" = "yes"; then
@@ -238,7 +238,7 @@ if test "$with_ffi" != "no"; then
     AC_DEFINE(HAVE_FFI_H)
     AC_CHECK_LIB(ffi, ffi_call,[
       FFI_LIBS="-lffi"
-      AC_DEFINE(HAVE_LIBFFI)]))
+      AC_DEFINE(HAVE_LIBFFI)] found_ffi=yes))
 
   if test -z "$FFI_LIBS"; then
     if test "$with_ffi_prefix" = "yes"; then
@@ -633,33 +633,47 @@ AC_OUTPUT(${output_files}, [rm -f rules.mk])
 
 mv librep.ebuild librep-$version.ebuild
 
+if test "$with_gmp" != "no" && test "$found_gmp" == "yes" ; then
+	with_gmp=yes
+else	with_gmp=no
+fi
+
+if test "$with_readline" != "no" && test "$found_readline" == "yes"; then
+	with_readline=yes
+else	with_readline=no
+fi
+
+if test "$with_libffi" != "no" && test "$found_ffi" == "yes"; then
+	with_ffi=yes
+else	with_ffi=no
+fi
+
 echo "
   == == == == == == == == == == == == ==
   
   librep:	$version
 
   == == == == == == == == == == == == ==
+
+  prefix:       $prefix
+  exec_prefix:  $exec_prefix
+  libdir:       $libdir
+  libexecdir:   $libexecdir
+
+  == == == == == == == == == == == == ==
   
   compiler:	$CC
-  cflags:	$CFLAGS $DEVELOPMENT_CFLAGS"
-
-if [[ $with_gmp != no ]]; then
-	echo "  libgmp:	yes"
-fi
-
-echo "  libgdbm:	yes"
-
-if [[ $with_readline != no ]]; then
-	echo "  readline: 	yes"
-fi
-
-if [[ $with_ffi != no ]]; then
-	echo "  libffi:	yes"
-fi
-
-echo "  
+  cflags:	$CFLAGS $DEVELOPMENT_CFLAGS
+  
   == == == == == == == == == == == == ==
-"
+
+  libgmp:	$with_gmp
+  libgdbm:	yes
+  readline:	$with_readline
+  libffi:	$with_ffi
+  
+  == == == == == == == == == == == == ==
+  "
 
 dnl If it doesn't look like GNU Make is being used, give a friendly warning
 tem=`make --version -f /dev/null 2>&1 | grep GNU`
