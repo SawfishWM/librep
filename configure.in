@@ -640,7 +640,8 @@ echo "
 
   == == == == == == == == == == == == ==
   
-  compiler:	$CC  "
+  compiler:	$CC
+  cflags:	$CFLAGS $DEVELOPMENT_CFLAGS"
 
 if [[ $with_gmp != no ]]; then
 	echo "  libgmp:	yes"
