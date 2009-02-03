@@ -52,8 +52,10 @@ make %{?_smp_mflags}
 
 %install
 rm -rf $RPM_BUILD_ROOT
-mkdir -p $RPM_BUILD_ROOT%{_libdir}/pkgconfig
+
 make install DESTDIR=$RPM_BUILD_ROOT
+
+rm -f $RPM_BUILD_ROOT%{_infodir}/dir
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -79,7 +81,6 @@ fi
 %{_infodir}/librep.info*
 %{_libdir}/librep.so.*
 %{_libdir}/rep/%{version}/%{_host}/
-%exclude %{_infodir}/dir
 
 %files devel
 %defattr(-,root,root,-)
