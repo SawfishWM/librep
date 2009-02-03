@@ -33,7 +33,9 @@
 
 @item Major rework of the spec-file
 
-@item Improvied configure's ending message
+@item Improved configure's ending message
+
+@item Fixed configure.in's templates for autoheader
 @end itemize
 
 @heading 0.17.2

@@ -1,356 +1,382 @@
-/* config.h.in -- config.h configure input
-   Copyright (C) 1998 John Harper <john@dcs.warwick.ac.uk>
-   $Id$
+/* config.h.in.  Generated from configure.in by autoheader.  */
 
-   This file is part of Jade.
-
-   Jade is free software; you can redistribute it and/or modify it
-   under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
-   any later version.
-
-   Jade is distributed in the hope that it will be useful, but
-   WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with Jade; see the file COPYING.  If not, write to
-   the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
-
-#ifndef CONFIG_H
-#define CONFIG_H
-
-
-/* librep-specific configuration; these are the things that aren't really
-   inferred automatically by configure. */
-
-/* If defined, this is the character which terminates the user's
-    real-name in the pw_gecos field of the passwd structure.  i.e. if
-    pw_gecos has something like "Real Name,SYS-ID" define it to a
-    comma (',') */
-#undef FULL_NAME_TERMINATOR
-
-/* Define this to track unfreed memory allocations */
-#undef DEBUG_SYS_ALLOC
-
-/* When defined, try to translate addresses to their symbols. */
-#undef DB_RESOLVE_SYMBOLS
-
-
-/* General configuration options */
-
-/* Define if dynamic loading is available */
-#undef HAVE_DYNAMIC_LOADING
-
-/* Define if <dlfcn.h> is available */
-#undef HAVE_DLFCN_H
-
-/* Define if names to dlsym () require underscore prefix */
-#undef DLSYM_NEED_USCORE
-
-/* Define if <dl.h> is available */
-#undef HAVE_DL_H
-
-/* Define if <sys/dl.h> is available */
-#undef HAVE_SYS_DL_H
-
-/* Define if RTLD_GLOBAL is broken on Tru64 UNIX */
-#undef BROKEN_RTLD_GLOBAL
-
-/* Define if pseudo terminals are available */
-#undef HAVE_PTYS
-
-/* Define if pseudo terminals should be opened through /dev/ptmx
-   followed by calls to grantpt, unlockpt and ptsname */
-#undef HAVE_DEV_PTMX
-
-/* Character of first pty, eg /dev/ptyX0.  */
-#undef FIRST_PTY_LETTER
-
-/* Define this when <unistd.h> doesn't declare environ, */
-#undef ENVIRON_UNDECLARED
-
-/* Define if using alloca.c.  */
-#undef C_ALLOCA
-
-/* Define to empty if the keyword does not work.  */
-#undef const
-
-/* Define as __inline if that's what the C compiler calls it.  */
-#undef inline
-
-/* Define to `long' if <sys/types.h> doesn't define.  */
-#undef off_t
-
-/* Define if you need to in order for stat and other things to work.  */
-#undef _POSIX_SOURCE
-
-/* Define to one of _getb67, GETB67, getb67 for Cray-2 and Cray-YMP systems.
-   This function is required for alloca.c support on those systems.  */
-#undef CRAY_STACKSEG_END
-
-/* Define if you have alloca, as a function or macro.  */
-#undef HAVE_ALLOCA
-
-/* Define if you have <alloca.h> and it should be used (not on Ultrix).  */
-#undef HAVE_ALLOCA_H
-
-/* Define if you don't have vprintf but do have _doprnt.  */
-#undef HAVE_DOPRNT
-
-/* Define if you have <sys/wait.h> that is POSIX.1 compatible.  */
-#undef HAVE_SYS_WAIT_H
-
-/* Define if you have the vprintf function.  */
-#undef HAVE_VPRINTF
-
-/* Define to `int' if <sys/types.h> doesn't define.  */
-#undef pid_t
-
-/* Define as the return type of signal handlers (int or void).  */
-#undef RETSIGTYPE
-
-/* Define to `unsigned' if <sys/types.h> doesn't define.  */
-#undef size_t
-
-/* Define if your locale.h file contains LC_MESSAGES.  */
-#undef HAVE_LC_MESSAGES
-
-/* If using the C implementation of alloca, define if you know the
-   direction of stack growth for your system; otherwise it will be
-   automatically deduced at run-time.
- STACK_DIRECTION > 0 => grows toward higher addresses
- STACK_DIRECTION < 0 => grows toward lower addresses
- STACK_DIRECTION = 0 => direction of growth unknown
- */
-#undef STACK_DIRECTION
-
-/* Define if you have the ANSI C header files.  */
-#undef STDC_HEADERS
-
-/* Define if you can safely include both <sys/time.h> and <time.h>.  */
-#undef TIME_WITH_SYS_TIME
-
-/* Define if <memory.h> exists */
-#undef HAVE_MEMORY_H
-#ifdef HAVE_MEMORY_H
-# define NEED_MEMORY_H		/* backwards compatibility */
-#endif
-
-/* Define if you have the getcwd function.  */
-#undef HAVE_GETCWD
-
-/* Define if you have the gethostname function.  */
-#undef HAVE_GETHOSTNAME
-
-/* Define if you have the strcspn function.  */
-#undef HAVE_STRCSPN
-
-/* Define if you have the strerror function.  */
-#undef HAVE_STRERROR
-
-/* Define if you have the strstr function.  */
-#undef HAVE_STRSTR
-
-/* Define if you have the strtol function.  */
-#undef HAVE_STRTOL
-
-/* Define if you have the psignal function.  */
-#undef HAVE_PSIGNAL
-
-/* Define if you have the strsignal function.  */
-#undef HAVE_STRSIGNAL
-
-/* Define if you have the snprintf function. */
-#undef HAVE_SNPRINTF
-
-/* Define if you have the grantpt (and ptsname and unlockpt) function. */
-#undef HAVE_GRANTPT
-
-/* Define if you have the getpagesize function. */
-#undef HAVE_GETPAGESIZE
-
-/* Define if you have the stpcpy function.  */
-#undef HAVE_STPCPY
-
-/* Define if you have the memchr function.  */
-#undef HAVE_MEMCHR
-
-/* Define if you have the lrand48() and srand48() functions */
-#undef HAVE_LRAND48
-
-/* Define if you have the setitimer() function */
-#undef HAVE_SETITIMER
-
-/* Define if you have the dlopen() function */
-#undef HAVE_DLOPEN
-
-/* Define if you have the dladdr() function */
-#undef HAVE_DLADDR
-
-/* Define if you have the dlerror() function */
-#undef HAVE_DLERROR
-
-/* Define if you have the shl_load() function */
-#undef HAVE_SHL_LOAD
-
-/* Define if you have realpath() */
-#undef HAVE_REALPATH
-
-/* Define if you have the __argz_count function.  */
-#undef HAVE___ARGZ_COUNT
-
-/* Define if you have the __argz_next function.  */
-#undef HAVE___ARGZ_NEXT
-
-/* Define if you have the __argz_stringify function.  */
-#undef HAVE___ARGZ_STRINGIFY
-
-/* Define if you have the munmap function.  */
-#undef HAVE_MUNMAP
-
-/* Define if you have the putenv function.  */
-#undef HAVE_PUTENV
-
-/* Define if you have the setenv function.  */
-#undef HAVE_SETENV
-
-/* Define if you have the setlocale function.  */
-#undef HAVE_SETLOCALE
-
-/* Define if you have the strchr function.  */
-#undef HAVE_STRCHR
-
-/* Define if you have the strcasecmp function.  */
-#undef HAVE_STRCASECMP
-
-/* Define if you have the strncasecmp function.  */
-#undef HAVE_STRNCASECMP
-
-/* Define if you have the strdup function.  */
-#undef HAVE_STRDUP
-
-/* Define if you have the siginterrupt function.  */
-#undef HAVE_SIGINTERRUPT
-
-/* Define if you have the gettimeofday function.  */
-#undef HAVE_GETTIMEOFDAY
-
-/* Define if you have the strtoll function. */
-#undef HAVE_STRTOLL
-
-/* Define if you have the strtoq function. */
-#undef HAVE_STRTOQ
-
-/* Define if you have the crypt function. */
-#undef HAVE_CRYPT
-
-/* Define if you have the <dirent.h> header file.  */
-#undef HAVE_DIRENT_H
-
-/* Define if you have the <fcntl.h> header file.  */
-#undef HAVE_FCNTL_H
-
-/* Define if you have the <ndir.h> header file.  */
-#undef HAVE_NDIR_H
-
-/* Define if you have the <sys/dir.h> header file.  */
-#undef HAVE_SYS_DIR_H
-
-/* Define if you have the <sys/ioctl.h> header file.  */
-#undef HAVE_SYS_IOCTL_H
-
-/* Define if you have the <sys/ndir.h> header file.  */
-#undef HAVE_SYS_NDIR_H
-
-/* Define if you have the <sys/time.h> header file.  */
-#undef HAVE_SYS_TIME_H
-
-/* Define if you have the <sys/utsname.h> header file.  */
-#undef HAVE_SYS_UTSNAME_H
-
-/* Define if you have the <unistd.h> header file.  */
-#undef HAVE_UNISTD_H
-
-/* Define if you have the <siginfo.h> header file.  */
-#undef HAVE_SIGINFO_H
-
-/* Define if you have the <stropts.h> header file.  */
-#undef HAVE_STROPTS_H
-
-/* Define if you have the <termios.h> header file.  */
-#undef HAVE_TERMIOS_H
-
-/* Define if you have the <string.h> header file.  */
-#undef HAVE_STRING_H
-
-/* Define if you have the <limits.h> header file.  */
-#undef HAVE_LIMITS_H
-
-/* Define if you have the <argz.h> header file.  */
-#undef HAVE_ARGZ_H
-
-/* Define if you have the <locale.h> header file.  */
-#undef HAVE_LOCALE_H
-
-/* Define if you have the <nl_types.h> header file.  */
-#undef HAVE_NL_TYPES_H
-
-/* Define if you have the <sys/param.h> header file.  */
-#undef HAVE_SYS_PARAM_H
-
-/* Define if you have the <malloc.h> header file.  */
-#undef HAVE_MALLOC_H
-
-/* Define if you have the nsl library (-lnsl).  */
-#undef HAVE_LIBNSL
-
-/* Define if you have the og library (-log).  */
-#undef HAVE_LIBOG
-
-/* Define if you have the socket library (-lsocket).  */
-#undef HAVE_LIBSOCKET
-
-/* Define if using Doug Lea's malloc */
-#undef DOUG_LEA_MALLOC
-
-/* Define if using libc's malloc */
-#undef LIBC_MALLOC
-
-/* Define if using r_alloc and friends */
-#undef USE_R_ALLOC
-
-/* Define to use the readline library. */
-#undef HAVE_LIBREADLINE
-
-/* Define if we have a broken gcc on alpha */
+/* Have broken alpha gcc */
 #undef BROKEN_ALPHA_GCC
 
-/* Define if using LIBC gettext */
-#undef LIBC_GETTEXT
+/* Broken rtld global */
+#undef BROKEN_RTLD_GLOBAL
 
-/* Define if you have the <libintl.h> header file. */
-#undef HAVE_LIBINTL_H
+/* Define to one of `_getb67', `GETB67', `getb67' for Cray-2 and Cray-YMP
+   systems. This function is required for `alloca.c' support on those systems.
+   */
+#undef CRAY_STACKSEG_END
 
-/* Define the sizes of long, long long and void * */
-#undef SIZEOF_LONG
-#undef SIZEOF_LONG_LONG
-#undef SIZEOF_VOID_P
+/* Define to 1 if using `alloca.c'. */
+#undef C_ALLOCA
 
-/* Define this if GMP is to be used. */
-#undef HAVE_GMP
+/* DB resolve symbols */
+#undef DB_RESOLVE_SYMBOLS
 
-/* The random number functions are only in gmp 3 */
-#undef HAVE_GMP_RANDINIT
+/* Debug sys alloc */
+#undef DEBUG_SYS_ALLOC
 
-/* Define if continuations / threading support should be built */
-#undef WITH_CONTINUATIONS
+/* Need dlsym uscore */
+#undef DLSYM_NEED_USCORE
 
-/* Define if <ffi.h> exists */
+/* Have doug lea malloc */
+#undef DOUG_LEA_MALLOC
+
+/* Env undeclared */
+#undef ENVIRON_UNDECLARED
+
+/* The first pty letter */
+#undef FIRST_PTY_LETTER
+
+/* Have Fullname Terminator */
+#undef FULL_NAME_TERMINATOR
+
+/* Define to 1 if you have `alloca', as a function or macro. */
+#undef HAVE_ALLOCA
+
+/* Define to 1 if you have <alloca.h> and it should be used (not on Ultrix).
+   */
+#undef HAVE_ALLOCA_H
+
+/* Define to 1 if you have the <argz.h> header file. */
+#undef HAVE_ARGZ_H
+
+/* Have crypt */
+#undef HAVE_CRYPT
+
+/* Have dev/ptmx */
+#undef HAVE_DEV_PTMX
+
+/* Define to 1 if you have the <dirent.h> header file, and it defines `DIR'.
+   */
+#undef HAVE_DIRENT_H
+
+/* Define to 1 if you have the `dladdr' function. */
+#undef HAVE_DLADDR
+
+/* Define to 1 if you have the `dlerror' function. */
+#undef HAVE_DLERROR
+
+/* Have dlfcn header */
+#undef HAVE_DLFCN_H
+
+/* Have dlopen */
+#undef HAVE_DLOPEN
+
+/* Have dl header */
+#undef HAVE_DL_H
+
+/* Define to 1 if you don't have `vprintf' but do have `_doprnt.' */
+#undef HAVE_DOPRNT
+
+/* Have dynamic Loading */
+#undef HAVE_DYNAMIC_LOADING
+
+/* Define to 1 if you have the <fcntl.h> header file. */
+#undef HAVE_FCNTL_H
+
+/* Have ffi header */
 #undef HAVE_FFI_H
 
-/* Define if libffi exists and works */
+/* Define to 1 if you have the `getcwd' function. */
+#undef HAVE_GETCWD
+
+/* Define to 1 if you have the `gethostname' function. */
+#undef HAVE_GETHOSTNAME
+
+/* Define to 1 if you have the `getpagesize' function. */
+#undef HAVE_GETPAGESIZE
+
+/* Define to 1 if you have the `gettimeofday' function. */
+#undef HAVE_GETTIMEOFDAY
+
+/* Have libgmp */
+#undef HAVE_GMP
+
+/* Have randinit in libgmp */
+#undef HAVE_GMP_RANDINIT
+
+/* Define to 1 if you have the `grantpt' function. */
+#undef HAVE_GRANTPT
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#undef HAVE_INTTYPES_H
+
+/* Define to 1 if you have the `dl' library (-ldl). */
+#undef HAVE_LIBDL
+
+/* Have libffi */
 #undef HAVE_LIBFFI
 
-#endif /* CONFIG_H */
+/* Define to 1 if you have the <libintl.h> header file. */
+#undef HAVE_LIBINTL_H
+
+/* Define to 1 if you have the `nsl' library (-lnsl). */
+#undef HAVE_LIBNSL
+
+/* Have libreadline */
+#undef HAVE_LIBREADLINE
+
+/* Define to 1 if you have the `socket' library (-lsocket). */
+#undef HAVE_LIBSOCKET
+
+/* Define to 1 if you have the <limits.h> header file. */
+#undef HAVE_LIMITS_H
+
+/* Define to 1 if you have the <locale.h> header file. */
+#undef HAVE_LOCALE_H
+
+/* Define to 1 if you have the `lrand48' function. */
+#undef HAVE_LRAND48
+
+/* Define to 1 if you have the <malloc.h> header file. */
+#undef HAVE_MALLOC_H
+
+/* Define to 1 if you have the <memory.h> header file. */
+#undef HAVE_MEMORY_H
+
+/* Define to 1 if you have a working `mmap' system call. */
+#undef HAVE_MMAP
+
+/* Define to 1 if you have the `munmap' function. */
+#undef HAVE_MUNMAP
+
+/* Define to 1 if you have the <ndir.h> header file, and it defines `DIR'. */
+#undef HAVE_NDIR_H
+
+/* Define to 1 if you have the <nl_types.h> header file. */
+#undef HAVE_NL_TYPES_H
+
+/* Define to 1 if you have the `psignal' function. */
+#undef HAVE_PSIGNAL
+
+/* Have ptys */
+#undef HAVE_PTYS
+
+/* Define to 1 if you have the `putenv' function. */
+#undef HAVE_PUTENV
+
+/* Define to 1 if you have the `realpath' function. */
+#undef HAVE_REALPATH
+
+/* Define to 1 if you have the `select' function. */
+#undef HAVE_SELECT
+
+/* Define to 1 if you have the `setenv' function. */
+#undef HAVE_SETENV
+
+/* Define to 1 if you have the `setitimer' function. */
+#undef HAVE_SETITIMER
+
+/* Define to 1 if you have the `setlocale' function. */
+#undef HAVE_SETLOCALE
+
+/* Have shlload */
+#undef HAVE_SHL_LOAD
+
+/* Define to 1 if you have the <siginfo.h> header file. */
+#undef HAVE_SIGINFO_H
+
+/* Define to 1 if you have the `siginterrupt' function. */
+#undef HAVE_SIGINTERRUPT
+
+/* Define to 1 if you have the `snprintf' function. */
+#undef HAVE_SNPRINTF
+
+/* Define to 1 if you have the `socket' function. */
+#undef HAVE_SOCKET
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#undef HAVE_STDINT_H
+
+/* Define to 1 if you have the <stdlib.h> header file. */
+#undef HAVE_STDLIB_H
+
+/* Define to 1 if you have the `stpcpy' function. */
+#undef HAVE_STPCPY
+
+/* Define to 1 if you have the `strcasecmp' function. */
+#undef HAVE_STRCASECMP
+
+/* Define to 1 if you have the `strchr' function. */
+#undef HAVE_STRCHR
+
+/* Define to 1 if you have the `strcspn' function. */
+#undef HAVE_STRCSPN
+
+/* Define to 1 if you have the `strdup' function. */
+#undef HAVE_STRDUP
+
+/* Define to 1 if you have the `strerror' function. */
+#undef HAVE_STRERROR
+
+/* Define to 1 if you have the <strings.h> header file. */
+#undef HAVE_STRINGS_H
+
+/* Define to 1 if you have the <string.h> header file. */
+#undef HAVE_STRING_H
+
+/* Define to 1 if you have the `strncasecmp' function. */
+#undef HAVE_STRNCASECMP
+
+/* Define to 1 if you have the <stropts.h> header file. */
+#undef HAVE_STROPTS_H
+
+/* Define to 1 if you have the `strsignal' function. */
+#undef HAVE_STRSIGNAL
+
+/* Define to 1 if you have the `strstr' function. */
+#undef HAVE_STRSTR
+
+/* Define to 1 if you have the `strtol' function. */
+#undef HAVE_STRTOL
+
+/* Define to 1 if you have the `strtoll' function. */
+#undef HAVE_STRTOLL
+
+/* Define to 1 if you have the `strtoq' function. */
+#undef HAVE_STRTOQ
+
+/* Define to 1 if you have the <sys/dir.h> header file, and it defines `DIR'.
+   */
+#undef HAVE_SYS_DIR_H
+
+/* Have sysdl header */
+#undef HAVE_SYS_DL_H
+
+/* Define to 1 if you have the <sys/ioctl.h> header file. */
+#undef HAVE_SYS_IOCTL_H
+
+/* Define to 1 if you have the <sys/ndir.h> header file, and it defines `DIR'.
+   */
+#undef HAVE_SYS_NDIR_H
+
+/* Define to 1 if you have the <sys/param.h> header file. */
+#undef HAVE_SYS_PARAM_H
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#undef HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/time.h> header file. */
+#undef HAVE_SYS_TIME_H
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#undef HAVE_SYS_TYPES_H
+
+/* Define to 1 if you have the <sys/utsname.h> header file. */
+#undef HAVE_SYS_UTSNAME_H
+
+/* Define to 1 if you have <sys/wait.h> that is POSIX.1 compatible. */
+#undef HAVE_SYS_WAIT_H
+
+/* Define to 1 if you have the <termios.h> header file. */
+#undef HAVE_TERMIOS_H
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#undef HAVE_UNISTD_H
+
+/* Define to 1 if you have the `vprintf' function. */
+#undef HAVE_VPRINTF
+
+/* Define to 1 if you have the `__argz_count' function. */
+#undef HAVE___ARGZ_COUNT
+
+/* Define to 1 if you have the `__argz_next' function. */
+#undef HAVE___ARGZ_NEXT
+
+/* Define to 1 if you have the `__argz_stringify' function. */
+#undef HAVE___ARGZ_STRINGIFY
+
+/* Have libc gettext */
+#undef LIBC_GETTEXT
+
+/* Have libc malloc */
+#undef LIBC_MALLOC
+
+/* Define to the address where bug reports for this package should be sent. */
+#undef PACKAGE_BUGREPORT
+
+/* Define to the full name of this package. */
+#undef PACKAGE_NAME
+
+/* Define to the full name and version of this package. */
+#undef PACKAGE_STRING
+
+/* Define to the one symbol short name of this package. */
+#undef PACKAGE_TARNAME
+
+/* Define to the version of this package. */
+#undef PACKAGE_VERSION
+
+/* Define as the return type of signal handlers (`int' or `void'). */
+#undef RETSIGTYPE
+
+/* The size of `long', as computed by sizeof. */
+#undef SIZEOF_LONG
+
+/* The size of `long long', as computed by sizeof. */
+#undef SIZEOF_LONG_LONG
+
+/* The size of `void *', as computed by sizeof. */
+#undef SIZEOF_VOID_P
+
+/* Have stack direction */
+#undef STACK_DIRECTION
+
+/* Define to 1 if you have the ANSI C header files. */
+#undef STDC_HEADERS
+
+/* Define to 1 if you can safely include both <sys/time.h> and <time.h>. */
+#undef TIME_WITH_SYS_TIME
+
+/* Have continuations */
+#undef WITH_CONTINUATIONS
+
+/* Define to empty if `const' does not conform to ANSI C. */
+#undef const
+
+/* Define to `__inline__' or `__inline' if that's what the C compiler
+   calls it, or to nothing if 'inline' is not supported under any name.  */
+#ifndef __cplusplus
+#undef inline
+#endif
+
+/* Define to `long int' if <sys/types.h> does not define. */
+#undef off_t
+
+/* Define to `int' if <sys/types.h> does not define. */
+#undef pid_t
+
+/* Have long long */
+#undef rep_HAVE_LONG_LONG
+
+/* Having Unix */
+#undef rep_HAVE_UNIX
+
+/* Rep interface */
+#undef rep_INTERFACE
+
+/* Have malloc alignment */
+#undef rep_MALLOC_ALIGNMENT
+
+/* Have ptr sized int */
+#undef rep_PTR_SIZED_INT
+
+/* Have ptr sized int conv */
+#undef rep_PTR_SIZED_INT_CONV
+
+/* Have ptr sized int sizeof */
+#undef rep_PTR_SIZED_INT_SIZEOF
+
+/* Have ptr sized suffix */
+#undef rep_PTR_SIZED_INT_SUFFIX
+
+/* Rep version */
+#undef rep_VERSION
+
+/* Define to `unsigned int' if <sys/types.h> does not define. */
+#undef size_t

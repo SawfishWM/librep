@@ -13,10 +13,10 @@ if [ -d m4 ]; then
 fi
 
 if [ -f configure.in ]; then
-#  if grep "AC_CONFIG_HEADER" configure.in >/dev/null; then
-#      echo "Running autoheader"
-#      autoheader || exit 1
-#  fi
+  if grep "AC_CONFIG_HEADER" configure.in >/dev/null; then
+      echo "Running autoheader"
+      autoheader || exit 1
+  fi
   if grep "AM_PROG_LIBTOOL" configure.in >/dev/null; then
     echo "Running libtoolize"
     lver=$(libtool --version | grep 1.5)

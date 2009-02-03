@@ -134,10 +134,10 @@ if test "$with_gmp" != "no"; then
           [GMP_LIBS="-lgmp -lm"; found_gmp=yes])])])
 
   if test "$found_gmp" = "yes"; then
-    AC_DEFINE(HAVE_GMP)
+    AC_DEFINE(HAVE_GMP, 1, [Have libgmp])
     _libs="$LIBS"
     LIBS="$LIBS $GMP_LIBS"
-    AC_CHECK_FUNC(__gmp_randinit, AC_DEFINE(HAVE_GMP_RANDINIT))
+    AC_CHECK_FUNC(__gmp_randinit, AC_DEFINE(HAVE_GMP_RANDINIT, 1, [Have randinit in libgmp]))
     LIBS="$_libs"
   elif test "$with_gmp" != "no"; then
     AC_MSG_ERROR([Can't find GMP (--without-gmp for cut-down non-GMP build)])
@@ -167,10 +167,10 @@ if test "$doug_lea_malloc" = "no"; then
   dnl We used to compile our own version of dlmalloc on most
   dnl platforms that didn't have it in their libc. But the list
   dnl of exceptions was growing too long..
-  AC_DEFINE(LIBC_MALLOC)
+  AC_DEFINE(LIBC_MALLOC, 1, [Have libc malloc])
 else
-  AC_DEFINE(DOUG_LEA_MALLOC)
-  AC_DEFINE(LIBC_MALLOC)
+  AC_DEFINE(DOUG_LEA_MALLOC, 1, [Have doug lea malloc])
+  AC_DEFINE(LIBC_MALLOC, 1, [Have libc malloc])
 fi
 
 dnl Check for readline
@@ -205,7 +205,7 @@ if test "$with_readline" != "no"; then
   AC_CHECK_HEADER(readline/readline.h,
     AC_CHECK_LIB(readline, readline,[
       READLINE_LIBS=" -L/lib${libsuff} -lreadline $tcap"
-      AC_DEFINE(HAVE_LIBREADLINE)] found_readline=yes, , $tcap))
+      AC_DEFINE(HAVE_LIBREADLINE, 1, [Have libreadline])] found_readline=yes, , $tcap))
 
   if test -z "$READLINE_LIBS"; then
     if test "$with_readline_prefix" = "yes"; then
@@ -235,10 +235,10 @@ if test "$with_ffi" != "no"; then
   fi ])
 
   AC_CHECK_HEADER(ffi.h,
-    AC_DEFINE(HAVE_FFI_H)
+    AC_DEFINE(HAVE_FFI_H, 1, [Have ffi header])
     AC_CHECK_LIB(ffi, ffi_call,[
       FFI_LIBS="-lffi"
-      AC_DEFINE(HAVE_LIBFFI)] found_ffi=yes))
+      AC_DEFINE(HAVE_LIBFFI, 1, [Have libffi])] found_ffi=yes))
 
   if test -z "$FFI_LIBS"; then
     if test "$with_ffi_prefix" = "yes"; then
@@ -252,14 +252,14 @@ fi
 AC_SUBST(FFI_LIBS)
 
 dnl Check for dynamic loading
-AC_CHECK_HEADER(dlfcn.h, [AC_DEFINE(HAVE_DLFCN_H)])
-AC_CHECK_HEADER(dl.h, [AC_DEFINE(HAVE_DL_H)])
-AC_CHECK_HEADER(sys/dl.h, [AC_DEFINE(HAVE_SYS_DL_H)])
+AC_CHECK_HEADER(dlfcn.h, [AC_DEFINE(HAVE_DLFCN_H, 1, [Have dlfcn header])])
+AC_CHECK_HEADER(dl.h, [AC_DEFINE(HAVE_DL_H, 1, [Have dl header])])
+AC_CHECK_HEADER(sys/dl.h, [AC_DEFINE(HAVE_SYS_DL_H, 1, [Have sysdl header])])
 dl_ok=no
-AC_CHECK_FUNC(dlopen, [AC_DEFINE(HAVE_DLOPEN) dl_ok=dl],
-    AC_CHECK_LIB(dl, dlopen, [AC_DEFINE(HAVE_DLOPEN) dl_ok=dl]))
-AC_CHECK_FUNC(shl_load, [AC_DEFINE(HAVE_SHL_LOAD) dl_ok=shl],
-    AC_CHECK_LIB(dld, shl_load, [AC_DEFINE(HAVE_DLOPEN) dl_ok=shl]))
+AC_CHECK_FUNC(dlopen, [AC_DEFINE(HAVE_DLOPEN, 1, [Have dlopen]) dl_ok=dl],
+    AC_CHECK_LIB(dl, dlopen, [AC_DEFINE(HAVE_DLOPEN, 1, [Have dlopen]) dl_ok=dl]))
+AC_CHECK_FUNC(shl_load, [AC_DEFINE(HAVE_SHL_LOAD, 1, [Have shlload]) dl_ok=shl],
+    AC_CHECK_LIB(dld, shl_load, [AC_DEFINE(HAVE_DLOPEN, 1, [Have dlopen]) dl_ok=shl]))
 
 if test $dl_ok = dl; then
   AC_MSG_CHECKING([for preceding underscore in symbols])
@@ -276,7 +276,7 @@ if test $dl_ok = dl; then
                   f2 = dlsym (handle, "_glib_underscore_test");
                 } return (!f2 || f1);
               }],
-              [AC_DEFINE(DLSYM_NEED_USCORE)
+              [AC_DEFINE(DLSYM_NEED_USCORE, 1, [Need dlsym uscore])
 	       AC_MSG_RESULT(yes)],
 	      [AC_MSG_RESULT(no)])
 
@@ -290,7 +290,7 @@ if test $dl_ok = dl; then
     *-dec-osf5*)
       AC_MSG_CHECKING([for broken RTLD_GLOBAL on Tru64])
       if /usr/sbin/sizer -v | grep -E -q -e 'UNIX [[TVX]]5\.0A?(-[[[:digit:]]]+)? '; then
-	  AC_DEFINE(BROKEN_RTLD_GLOBAL)
+	  AC_DEFINE(BROKEN_RTLD_GLOBAL, 1, [Broken rtld global])
 	  AC_MSG_RESULT(yes)
       else
 	  AC_MSG_RESULT(no)
@@ -300,7 +300,7 @@ if test $dl_ok = dl; then
 fi
 
 if test $dl_ok != no; then
-  AC_DEFINE(HAVE_DYNAMIC_LOADING)
+  AC_DEFINE(HAVE_DYNAMIC_LOADING, 1, [Have dynamic Loading])
 else
   AC_MSG_ERROR([can't figure out how to do dynamic loading])
 fi
@@ -323,7 +323,7 @@ AC_REPLACE_FUNCS(realpath)
 
 dnl check for crypt () function
 AC_CHECK_FUNC(crypt, [AC_DEFINE(HAVE_CRYPT)],
-    AC_CHECK_LIB(crypt, crypt, [AC_DEFINE(HAVE_CRYPT)
+    AC_CHECK_LIB(crypt, crypt, [AC_DEFINE(HAVE_CRYPT, 1, [Have crypt])
 			        LIBS="$LIBS -lcrypt"]))
 
 dnl Custom tests
@@ -376,15 +376,15 @@ AC_CACHE_CHECK([whether unistd.h declares environ], jade_cv_decl_environ,
   [jade_cv_decl_environ=yes],
   [jade_cv_decl_environ=no]))
 if test ${jade_cv_decl_environ} = no; then
-  AC_DEFINE(ENVIRON_UNDECLARED)
+  AC_DEFINE(ENVIRON_UNDECLARED, 1, [Env undeclared])
 fi
 
 dnl Are ptys available, and if so, how?
 AC_MSG_CHECKING([whether /dev/ptmx exists])
 if test -r /dev/ptmx; then
   AC_MSG_RESULT([yes])
-  AC_DEFINE(HAVE_PTYS)
-  AC_DEFINE(HAVE_DEV_PTMX)
+  AC_DEFINE(HAVE_PTYS, 1, [Have ptys])
+  AC_DEFINE(HAVE_DEV_PTMX, 1, [Have dev/ptmx])
 else
   AC_MSG_RESULT([no])
 fi
@@ -399,8 +399,8 @@ AC_CACHE_CHECK([whether /dev/ptyXN devices exist], jade_cv_sys_dev_pty,
    fi
  done)
 if test ${jade_cv_sys_dev_pty} != no; then
-  AC_DEFINE(HAVE_PTYS)
-  AC_DEFINE_UNQUOTED(FIRST_PTY_LETTER, '${jade_cv_sys_dev_pty}')
+  AC_DEFINE(HAVE_PTYS, 1, [Have ptys])
+  AC_DEFINE_UNQUOTED(FIRST_PTY_LETTER, '${jade_cv_sys_dev_pty}', [The first pty letter])
 fi
 
 dnl Try to find the aclocal directory for installation
@@ -421,18 +421,18 @@ AC_SUBST(aclocaldir)
 AC_ARG_ENABLE(continuations,
  [  --disable-continuations Don't include support for continuations
 			   or multi-threading],
- [if test "$enableval" != "no"; then AC_DEFINE(WITH_CONTINUATIONS) fi],
- [AC_DEFINE(WITH_CONTINUATIONS)])
+ [if test "$enableval" != "no"; then AC_DEFINE(WITH_CONTINUATIONS, 1, [Have continuations]) fi],
+ [AC_DEFINE(WITH_CONTINUATIONS, 1, [Have continuations])])
 
 AC_ARG_ENABLE(dballoc,
  [  --enable-dballoc	  Trace all memory allocations],
- [if test "$enableval" != "no"; then AC_DEFINE(DEBUG_SYS_ALLOC) fi])
+ [if test "$enableval" != "no"; then AC_DEFINE(DEBUG_SYS_ALLOC, 1, [Debug sys alloc]) fi])
 
 AC_ARG_ENABLE(dbsyms,
  [  --disable-dbsyms	  When writing debug output, don't translate
 			   addresses to symbol names],
- [if test "$enableval" != "no"; then AC_DEFINE(DB_RESOLVE_SYMBOLS) fi],
- [AC_DEFINE(DB_RESOLVE_SYMBOLS)])
+ [if test "$enableval" != "no"; then AC_DEFINE(DB_RESOLVE_SYMBOLS, 1, [DB resolve symbols]) fi],
+ [AC_DEFINE(DB_RESOLVE_SYMBOLS, 1, [DB resolve symbols])])
 
 AC_ARG_ENABLE(gprof,
  [  --enable-gprof	  Build for gprof (needs --enable-static)],
@@ -443,12 +443,12 @@ AC_ARG_ENABLE(full-name-terminator,
 			   file is terminated by first C character],
  [if test "$enableval" != "no"; then
    enableval="'$enableval'"
-   AC_DEFINE_UNQUOTED(FULL_NAME_TERMINATOR, $enableval)
+   AC_DEFINE_UNQUOTED(FULL_NAME_TERMINATOR, $enableval, [Have Fullname Terminator])
   fi])
 
 dnl Assumption for now
 HAVE_UNIX=1
-AC_DEFINE(rep_HAVE_UNIX, 1)
+AC_DEFINE(rep_HAVE_UNIX, 1, [Having Unix])
 
 dnl We need to find an integer type that's big enough to store any pointer
 AC_MSG_CHECKING([for data type to store Lisp values])
@@ -472,7 +472,7 @@ if test "${with_value_type}" = "undef"; then
   AC_MSG_ERROR([can't find Lisp value type; set --with-value-type (see README)])
 fi
 AC_MSG_RESULT([${with_value_type}])
-AC_DEFINE_UNQUOTED(rep_PTR_SIZED_INT, ${with_value_type})
+AC_DEFINE_UNQUOTED(rep_PTR_SIZED_INT, ${with_value_type}, [Have ptr sized int])
 
 dnl Find the size (in bits) of the chosen value type
 AC_MSG_CHECKING([for size of Lisp value type])
@@ -491,7 +491,7 @@ if test "${with_value_sizeof}" = "undef"; then
 	      [ with_value_sizeof=`cat conftestval`; rm -f conftestval])
 fi
 AC_MSG_RESULT([${with_value_sizeof} bytes])
-AC_DEFINE_UNQUOTED(rep_PTR_SIZED_INT_SIZEOF, ${with_value_sizeof})
+AC_DEFINE_UNQUOTED(rep_PTR_SIZED_INT_SIZEOF, ${with_value_sizeof}, [Have ptr sized int sizeof])
 
 dnl What's the suffix to get an integer constant of the above size?
 AC_MSG_CHECKING([for value type constant suffix])
@@ -505,7 +505,7 @@ case "${with_value_type}" in
     ;;
 esac
 AC_MSG_RESULT([${rep_value_suffix}])
-AC_DEFINE_UNQUOTED(rep_PTR_SIZED_INT_SUFFIX, ${rep_value_suffix})
+AC_DEFINE_UNQUOTED(rep_PTR_SIZED_INT_SUFFIX, ${rep_value_suffix}, [Have ptr sized suffix])
 
 dnl What's the printf integer conversion for this type?
 AC_MSG_CHECKING([for value type printf conversion])
@@ -522,7 +522,7 @@ case "${with_value_type}" in
     ;;
 esac
 AC_MSG_RESULT([${rep_value_conv}])
-AC_DEFINE_UNQUOTED(rep_PTR_SIZED_INT_CONV, "${rep_value_conv}")
+AC_DEFINE_UNQUOTED(rep_PTR_SIZED_INT_CONV, "${rep_value_conv}", [Have ptr sized int conv])
 
 dnl Check for size of some types
 AC_CHECK_SIZEOF(long)
@@ -530,7 +530,7 @@ AC_CHECK_SIZEOF(long long)
 AC_CHECK_SIZEOF(void *)
 
 if test "x$ac_cv_sizeof_long_long" != "x0"; then
-  AC_DEFINE(rep_HAVE_LONG_LONG,1)
+  AC_DEFINE(rep_HAVE_LONG_LONG, 1, [Have long long])
 fi
 
 dnl This is the malloc granularity. It's unlikely that anything has
@@ -540,7 +540,7 @@ AC_ARG_WITH(malloc-alignment,
  [  --with-malloc-alignment=BYTES Must be less than or equal to the alignment
 			   returned by the malloc function. [BYTES=N]], [],
  [with_malloc_alignment=${with_value_sizeof}])
-AC_DEFINE_UNQUOTED(rep_MALLOC_ALIGNMENT, ${with_malloc_alignment})
+AC_DEFINE_UNQUOTED(rep_MALLOC_ALIGNMENT, ${with_malloc_alignment}, [Have malloc alignment])
 
 dnl Check for gcc crashes on alpha (seems to be fixed in new snapshots, but
 dnl just to make it compile on all machines)
@@ -548,7 +548,7 @@ if test "x${GCC}" = "xyes"; then
   AC_MSG_CHECKING([for broken alpha gcc])
   AC_TRY_COMPILE([],[__builtin_return_address(1);],
 		 [AC_MSG_RESULT(no)],
-		 [AC_DEFINE(BROKEN_ALPHA_GCC,1)
+		 [AC_DEFINE(BROKEN_ALPHA_GCC, 1, [Have broken alpha gcc])
 		  AC_MSG_RESULT(yes)
 		  AC_MSG_WARN([Backtrace support will not be compiled])])
 fi
@@ -577,7 +577,7 @@ if test "${with_stack_direction}" = unknown; then
     with_stack_direction=+1])
 fi
 if test "${with_stack_direction}" != unknown; then
-  AC_DEFINE_UNQUOTED(STACK_DIRECTION, ${with_stack_direction})
+  AC_DEFINE_UNQUOTED(STACK_DIRECTION, ${with_stack_direction}, [Have stack direction])
 fi
 
 AC_ARG_ENABLE(paranoia,          [  --enable-paranoia       use wall, wno-error, ansi, pedantic compiler flags], [paranoia=$enableval],  [paranoia="no"])
@@ -598,8 +598,8 @@ AC_SUBST(emacssitelispdir)
 AC_SUBST(HAVE_UNIX)
 AC_SUBST(HAVE_X11)
 
-AC_DEFINE_UNQUOTED(rep_VERSION, "${version}")
-AC_DEFINE_UNQUOTED(rep_INTERFACE, ${libcurrent})
+AC_DEFINE_UNQUOTED(rep_VERSION, "${version}", [Rep version])
+AC_DEFINE_UNQUOTED(rep_INTERFACE, ${libcurrent}, [Rep interface])
 
 dnl Hacks for libintl
 gt_LC_MESSAGES
@@ -624,7 +624,7 @@ dnl If it looks like GNU gettext is in libc, don't compile a local copy
 USE_INCLUDED_LIBINTL=yes
 AC_SUBST(USE_INCLUDED_LIBINTL)
 AC_CHECK_FUNC(_nl_msg_cat_cntr,
- [AC_DEFINE(LIBC_GETTEXT)
+ [AC_DEFINE(LIBC_GETTEXT, 1, [Have libc gettext])
   AC_CHECK_HEADERS(libintl.h)
   USE_INCLUDED_LIBINTL=no])
 
