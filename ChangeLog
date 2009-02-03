@@ -1,6 +1,8 @@
 2009-02-03  Christopher Bratusek <zanghar@freenet.de>
 	* install-sh: added for libtool < 2.2
 
+	* librep.spec.in: don't try to package librep.a and %{_infodir}/dir
+
 2009-02-02  Christopher Bratusek <zanghar@freenet.de>
 	* librep.pc.in: remove bogus entries
 

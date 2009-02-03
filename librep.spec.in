@@ -79,6 +79,7 @@ fi
 %{_infodir}/librep.info*
 %{_libdir}/librep.so.*
 %{_libdir}/rep/%{version}/%{_host}/
+%exclude %{_infodir}/dir
 
 %files devel
 %defattr(-,root,root,-)
@@ -90,6 +91,7 @@ fi
 %{_libdir}/pkgconfig/librep.pc
 %{_libdir}/librep.so
 %exclude %{_libdir}/librep.la
+%exclude %{_libdir}/librep.a
 
 %files -n emacs-%{name}-el
 %defattr(-,root,root,-)
