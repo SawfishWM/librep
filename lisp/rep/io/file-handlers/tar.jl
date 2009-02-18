@@ -1,7 +1,7 @@
 ;; tar-file-handler.jl -- pretend that tar files are (read-only) directories
 ;; Copyright (C) 1999 John Harper <john@dcs.warwick.ac.uk>
 
-;; $Id$
+;; $Id: tar.jl,v 1.18 2001/03/22 21:43:45 jsh Exp $
 
 ;; This file is part of librep.
 
@@ -204,7 +204,7 @@
       (setq tarfh-pending-output (substring string point)))))
 
 (defun tarfh-parse-list (string point)
-  (when (string-looking-at tarfh-list-regexp string point)
+  (if (string-looking-at tarfh-list-regexp string point)
     (let
 	((mode-string (substring string (match-start 1) (match-end 1)))
 	 (user (substring string (match-start 2) (match-end 2)))
@@ -220,7 +220,8 @@
       (setq file-name (expand-file-name name ""))
       (vector name file-name size modtime
 	      (cdr (assq (aref mode-string 0) tarfh-list-type-alist))
-	      nil mode-string user group symlink))))
+	      nil mode-string user group symlink))
+	      (error "can't parse tar file listing line (GNU or Solaris tar required): %s" (substring string point))))
 
 (defun tarfh-file-get-modtime (file-struct)
   (when (stringp (aref file-struct tarfh-file-modtime))
@@ -398,7 +399,7 @@
 	   (tarfh-handler (car split) (cdr split) op args)))
 	(t
 	 (error "Unknown file op in TAR handler: %s %S" op args))))
-	
+
 (defun tarfh-handler (tarfile rel-file op args)
   (cond
    ((eq op 'canonical-file-name)

@@ -1,3 +1,6 @@
+2009-02-18  Christopher Bratusek <zanghar@freenet.de>
+	* lisp/rep/io/file-handlers/tar.jl: BSD-Tar is not supported by librep, give users a usefull warning message [Mark Diekhans]
+
 2009-02-03  Christopher Bratusek <zanghar@freenet.de>
 	* install-sh: added for libtool < 2.2
 

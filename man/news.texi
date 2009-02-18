@@ -36,6 +36,8 @@
 @item Improved configure's ending message
 
 @item Fixed configure.in's templates for autoheader
+
+@item BSD-Tar is not supported by librep, give users a usefull warning message [Mark Diekhans]
 @end itemize
 
 @heading 0.17.2
