@@ -1,3 +1,6 @@
+2009-03-05  Christopher Bratusek <zanghar@freenet.de>
+	* configure.in: 0.17.3 released, bump to 0.17.4
+
 2009-02-18  Christopher Bratusek <zanghar@freenet.de>
 	* lisp/rep/io/file-handlers/tar.jl: BSD-Tar is not supported by librep, give users a usefull warning message [Mark Diekhans]
 
