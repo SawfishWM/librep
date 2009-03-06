@@ -36,6 +36,7 @@ gnulocaledir = $(prefix)/share/locale
 gettextsrcdir = @datadir@/gettext/intl
 aliaspath = $(localedir):.
 subdir = intl
+datarootdir = @datarootdir@
 
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@

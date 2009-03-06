@@ -598,6 +598,8 @@ AC_SUBST(emacssitelispdir)
 AC_SUBST(HAVE_UNIX)
 AC_SUBST(HAVE_X11)
 
+AC_SUBST(datarootdir)
+
 AC_DEFINE_UNQUOTED(rep_VERSION, "${version}", [Rep version])
 AC_DEFINE_UNQUOTED(rep_INTERFACE, ${libcurrent}, [Rep interface])
 

@@ -3,6 +3,13 @@
 @appendix News
 @cindex News
 
+@heading 0.17.4
+
+@itemize @bullet
+
+@item Don't ignore datarootdir setting
+@end itemize
+
 @heading 0.17.3
 
 @itemize @bullet

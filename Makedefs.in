@@ -38,6 +38,7 @@ mandir=@mandir@
 sharedstatedir=@sharedstatedir@
 aclocaldir=@aclocaldir@
 emacssitelispdir=@emacssitelispdir@
+datarootdir=@datarootdir@
 
 host_type=@host@
 repdir=@repdir@
