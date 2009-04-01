@@ -8,6 +8,10 @@
 @itemize @bullet
 
 @item Don't ignore datarootdir setting
+
+@item Fixed an aclocal warning from configure.in
+
+@item Improved configures ending message
 @end itemize
 
 @heading 0.17.3
