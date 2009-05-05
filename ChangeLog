@@ -3,6 +3,8 @@
 	* man/librep.texi
 	* man/news.texi: 'Numbers' section is revised, mainly on machine dependence. Minor improvements [Teika]
 
+	* configure.in: small configures ending message update (from rep-gtk/sawfish)
+
 2009-03-24  Christopher Bratusek <zangahr@freenet.de>
 	* Makedefs.in: first define datarootdir then stuff that refers to it
 

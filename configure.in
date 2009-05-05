@@ -666,7 +666,11 @@ echo "
   
   compiler:	$CC
   cflags:	$CFLAGS $DEVELOPMENT_CFLAGS
-  
+  preprocessor: $CPP
+  cppflags:     $CPPFLAGS
+  ldflags:      $LDFLAGS
+  makeflags:    $MAKEFLAGS
+
   == == == == == == == == == == == == ==
 
   libgmp:	$with_gmp
