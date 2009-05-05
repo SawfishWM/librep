@@ -1,4 +1,9 @@
-2009-03-24  Christoher Bratusek <zangahr@freenet.de>
+2009-05-05  Christopher Bratusek <zanghar@freenet.de>
+	* man/lang.tex
+	* man/librep.texi
+	* man/news.texi: 'Numbers' section is revised, mainly on machine dependence. Minor improvements [Teika]
+
+2009-03-24  Christopher Bratusek <zangahr@freenet.de>
 	* Makedefs.in: first define datarootdir then stuff that refers to it
 
 	* man/news.texi: updated

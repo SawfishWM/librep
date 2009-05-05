@@ -12,6 +12,8 @@
 @item Fixed an aclocal warning from configure.in
 
 @item Improved configures ending message
+
+@item Doc update in 'Numbers' section. Lacking description on machine dependence is added.
 @end itemize
 
 @heading 0.17.3

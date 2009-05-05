@@ -5,8 +5,8 @@
 
 @set EDITION 1.2
 @set VERSION 0.13
-@set UPDATED 8 September 2000
-@set UPDATE-MONTH September 2000
+@set UPDATED 2 May 2009
+@set UPDATE-MONTH May 2009
 
 @ifinfo
 @dircategory Programming Languages

@@ -510,8 +510,8 @@ fragments may illustrate this,
     @result{} t
 @end lisp
 
-Note that the result of @code{eq} is undefined when called on two integer
-objects with the same value, see @code{eql}.
+Note that the result of @code{eq} is @emph{undefined} when called on
+two integer objects with the same value, see @code{eql}.
 @end defun
 
 @defun equal arg1 arg2
@@ -538,7 +538,7 @@ returns true, otherwise returns false.
 This function is a cross between @code{eq} and @code{equal}: if
 @var{arg1} and @var{arg2} are both numbers then the value of these
 numbers are compared. Otherwise it behaves in exactly the same manner
-as @code{eq} does.
+as @code{eq} does. See also the document of @code{=}. (@pxref{Comparison Predicates}.)
 
 @lisp
 (eql 3 3)
@@ -676,9 +676,46 @@ of the garbage collector.
 @cindex Numbers
 @cindex Integers
 
-@code{Librep} distinguishes between numbers that are represented
-exactly and numbers that may not be. This is similar to the Scheme
-dialect of Lisp. Quoting from the Scheme standard:
+@code{Librep} lacks exact number specification. The behavior depends
+on if it is compiled with gmp support or not. Of course, some
+feautures are not available without gmp@footnote{GMP, or GNU MP is a
+library which supports arbitrary precision arithmetic.}. 
+
+If it is compiled without gmp, then the size of integer type also
+depends on the platform. Size of integer is 30-bit signed at minimum.
+
+If portability is important, like sawfish, then you should expect the
+minimum. For more information, @xref{Types of Numbers}.
+
+For conversion of number from / to string, see @xref{String Functions}.
+
+@defun numberp object
+Returns true if @var{object} is a number.
+@end defun
+
+@menu
+* Types of Numbers::
+* Numeric Predicates::
+* Number Read Syntax::
+* Arithmetic Functions::
+* Integer Functions::
+* Rational Functions::
+* Real Number Functions::
+* Mathematical Functions::
+* Bitwise Functions::
+* Random Numbers::
+* Characters::
+@end menu
+
+@node Types of Numbers, Numeric Predicates, , Numbers
+@subsection Types of Numbers
+@cindex Types of Numbers
+@cindex Numbers, types
+@cindex Portability in Number
+
+First understand that librep distinguishes @code{exact} and
+@code{inexact} numbers. This is similar to the Scheme dialect of
+Lisp. Quoting from the Scheme standard:
 
 @quotation
 @dots{} numbers are either @emph{exact} or @emph{inexact}. A number is
@@ -689,16 +726,91 @@ ingredients, or if it was derived using inexact operations. Thus
 inexactness is a contagious property of a number.
 @end quotation
 
-Exact numbers include both integers and rational numbers, there is no
-theoretical limit to the range of the values that may be represented
-@footnote{However, depending on implementation restrictions, very large
-integers may be coerced to an inexact representation.}. Inexact numbers
-are currently implemented using double precision floating point values.
+@code{Librep} has three types of numbers: integer, rational, and
+float.
+
+With gmp, exact numbers include both integers and rational numbers.
+There is no theoretical limit to the range of the values that may be
+represented @footnote{However, depending on implementation
+restrictions, very large integers may be coerced to an inexact
+representation.}.
+
+Without gmp, only integer is exact. Rational numbers get approximated
+with float. On 32-bit system, integer is signed 30-bit (@emph{not} 32
+bits), and 62-bit on 64-bit system.
+
+Inexact numbers are currently implemented using double precision
+floating point values.
+
+When exact arguments are passed to functions which take float arguments,
+then they are automatically converted to float.
+
+Note that rep often handles integer overflow by converting the result
+from integer to float.
+
+@node Numeric Predicates, Number Read Syntax, Types of Numbers, Numbers
+@subsection Numeric Predicates
+@cindex Numeric predicates
+@cindex Numbers, predicates on
+@cindex Predicates on numbers
+
+Don't use @code{eq} for equality test of numbers. Instead, use
+@code{eql} or @code{equal}. See @ref{Equality Predicates}.
+
+For the documentation of the functions @code{=}, @code{/=}, @code{>},
+@code{<}, @code{>=}, @code{<=}, @code{max} and @code{min}, see
+@ref{Comparison Predicates}.
+
+@defun exactp object
+Returns true when @var{object} is an exact number.
+@end defun
+
+@defun inexactp object
+Returns true when @var{object} is an inexact number.
+@end defun
+
+@defun integerp object
+Returns true when @var{object} is an integer.
+@end defun
+
+@defun rationalp object
+Returns true when @var{object} is a rational number (including
+integers).
+@end defun
+
+@defun realp object
+Returns true when @var{object} is a real number.
+@end defun
+
+@defun oddp x
+Return true if @var{x} is an odd number.
+@end defun
+
+@defun evenp x
+Return true if @var{x} is an even number.
+@end defun
+
+@defun positivep x
+Return true if @var{x} is a number greater than zero.
+@end defun
+
+@defun negativep x
+Return true if @var{x} is a number less than zero.
+@end defun
+
+@defun zerop x
+Returns true if @var{x} is equal to zero.
+@end defun
+
+@node Number Read Syntax, Arithmetic Functions, Numeric Predicates, Numbers
+@subsection Number Read Syntax
+@cindex Number, Read Syntax
+@cindex Read Syntax of Numbers
 
 The read syntax of any number is:
-@code{[@var{pfx}@dots{}][@var{sgn}]@var{data}@dots{}}, where the
+@code{[@var{prefix}@dots{}][@var{sgn}]@var{data}@dots{}}, where the
 optional @var{sgn} is one of the characters @samp{-} or @samp{+},
-@var{data} is the representation of the number, and @var{pfx} is zero
+@var{data} is the representation of the number, and @var{prefix} is zero
 or more of the following prefix strings:
 
 @table @code
@@ -736,7 +848,8 @@ Examples of valid integer read syntaxes for the number 42 could be
 
 The representation of a rational number is two sequences of digits,
 separated by a @samp{/} character. For example, @samp{3/2} represents
-the rational number three divided by two. 
+the rational number three divided by two. It is supported without gmp too,
+but the read value is converted to float.
 
 Inexact numbers are parsed from one of two representations: decimal
 point form, which is simply a decimal number containing a decimal
@@ -752,24 +865,7 @@ decimal with a preceding minus sign if it is negative. Rational numbers
 are printed as two integers separated by a @samp{/} character. Inexact
 numbers are printed in their decimal form.
 
-@defun numberp object
-Returns true if @var{object} is a number.
-@end defun
-
-@menu
-* Arithmetic Functions::
-* Integer Functions::
-* Rational Functions:: 
-* Real Number Functions::
-* Mathematical Functions::
-* Bitwise Functions::
-* Numeric Predicates::
-* Random Numbers::
-* Characters::
-@end menu
-
-
-@node Arithmetic Functions, Integer Functions, , Numbers
+@node Arithmetic Functions, Integer Functions, Number Read Syntax, Numbers
 @subsection Arithmetic Functions
 @cindex Arithmetic Functions
 @cindex Numbers, arithmetic functions
@@ -896,6 +992,11 @@ Returns an inexact version of rational number @var{x}.
 @cindex Real number functions
 @cindex Numbers, real number functions
 
+@defun inexact->exact x
+Returns an exact representation of @var{x}. This may involve a loss of
+accuracy.
+@end defun
+
 @defun abs x
 Returns the magnitude of @var{x}.
 @end defun
@@ -904,6 +1005,11 @@ Returns the magnitude of @var{x}.
 Round @var{x} downwards to the nearest integer less than or equal to
 @var{x}.
 @end defun
+
+Four rounding functions are provided. With gmp, they return integer.
+Without gmp, they return float type, just like libc counterparts, to
+avoid overflow. You can convert it to integer with
+@code{inexact->exact}.
 
 @defun ceiling x
 Round @var{x} upwards to the nearest integer less than or equal to
@@ -919,16 +1025,14 @@ Round @var{x} to the nearest integer. Halfway cases are rounded to the
 nearest even integer.
 @end defun
 
-@defun inexact->exact x
-Returns an exact representation of @var{x}. This may involve a loss of
-accuracy.
-@end defun
 
 
 @node Mathematical Functions, Bitwise Functions, Real Number Functions, Numbers
 @subsection Mathematical Functions
 @cindex Mathematical functions
 @cindex Numbers, mathematical functions
+
+Functions below returns float type number.
 
 @defun exp x
 Return `e' (the base of natural logarithms) raised to the power
@@ -978,7 +1082,7 @@ error is signalled (mathematically should return a complex number).
 @end defun
 
 
-@node Bitwise Functions, Numeric Predicates, Mathematical Functions, Numbers
+@node Bitwise Functions, Random Numbers, Mathematical Functions, Numbers
 @subsection Bitwise Functions
 @cindex Bitwise functions
 @cindex Numbers, bitwise functions
@@ -1049,59 +1153,7 @@ This function inverts all the bits in @var{number}.
 @end defun
 
 
-@node Numeric Predicates, Random Numbers, Bitwise Functions, Numbers
-@subsection Numeric Predicates
-@cindex Numeric predicates
-@cindex Numbers, predicates on
-@cindex Predicates on numbers
-
-For the documentation of the functions @code{=}, @code{/=}, @code{>},
-@code{<}, @code{>=}, @code{<=}, @code{max} and @code{min}, see
-@ref{Comparison Predicates}.
-
-@defun exactp object
-Returns true when @var{object} is an exact number.
-@end defun
-
-@defun inexactp object
-Returns true when @var{object} is an inexact number.
-@end defun
-
-@defun integerp object
-Returns true when @var{object} is an integer.
-@end defun
-
-@defun rationalp object
-Returns true when @var{object} is a rational number (including
-integers).
-@end defun
-
-@defun realp object
-Returns true when @var{object} is a real number.
-@end defun
-
-@defun oddp x
-Return true if @var{x} is an odd number.
-@end defun
-
-@defun evenp x
-Return true if @var{x} is an even number.
-@end defun
-
-@defun positivep x
-Return true if @var{x} is a number greater than zero.
-@end defun
-
-@defun negativep x
-Return true if @var{x} is a number less than zero.
-@end defun
-
-@defun zerop x
-Returns true if @var{x} is equal to zero.
-@end defun
-
-
-@node Random Numbers, Characters, Numeric Predicates, Numbers
+@node Random Numbers, Characters, Bitwise Functions, Numbers
 @subsection Pseudo-Random Numbers
 @cindex Pseudo-random numbers
 @cindex Random numbers
@@ -8945,6 +8997,17 @@ the results. Between each pair of results, insert @var{separator}.
 Return the resulting string.
 @end defun
 
+@defun string->number string &optional radix
+Return the number represented by @var{string}. If @var{radix} is
+specified, the number is parsed from that base, otherwise base 10 is
+assumed.
+@end defun
+
+@defun number->string num &optional radix
+Return a string containing a printed representation of the number
+@var{num}. If @var{radix} is specified, print the number in that base,
+otherwise print it in base 10.
+@end defun
 
 @node Sleeping, Beeping, String Functions, The language
 @section Sleeping
