@@ -68,8 +68,6 @@
 
   ;; map languages to compiler modules
   (put 'rep 'compiler-module 'rep.vm.compiler.rep)
-  (put 'scheme 'compiler-module 'rep.vm.compiler.scheme)
-  (put 'unscheme 'compiler-module 'rep.vm.compiler.unscheme)
   (put 'no-lang 'compiler-module 'rep.vm.compiler.no-lang)
 
   ;; since we default to rep langauge..

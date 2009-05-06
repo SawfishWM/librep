@@ -3,6 +3,13 @@
 @appendix News
 @cindex News
 
+@heading 0.90.0
+
+@itemize @bullet
+
+@item Remove scheme and unscheme modules
+@end itemize
+
 @heading 0.17.4
 
 @itemize @bullet

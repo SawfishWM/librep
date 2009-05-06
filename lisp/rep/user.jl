@@ -51,13 +51,6 @@
 	      (setq arg (car command-line-args))
 	      (setq command-line-args (cdr command-line-args))
 	      (do-load arg))
-	     ((member arg '("-s" "--scheme"))
-	      (setq arg (car command-line-args))
-	      (setq command-line-args (cdr command-line-args))
-	      (setq batch-mode t)
-	      (if (file-exists-p arg)
-		  (structure () (open scheme) (load arg '() 1 1))
-		(structure () (open scheme) (load arg))))
 	     ((string= arg "--check")
 	      (require 'rep.test.framework)
 	      (run-self-tests-and-exit))
@@ -80,7 +73,6 @@ where OPTIONS are any of:
     --load FILE		load the file of Lisp forms called FILE
     -l FILE
 
-    --scheme FILE	load the file of Scheme forms called FILE
     -s FILE		 (implies --batch mode)
 
     --check		run self tests and exit

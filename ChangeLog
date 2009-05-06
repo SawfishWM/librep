@@ -1,6 +1,19 @@
 2009-05-06  Christopher Bratusek <zanghar@freenet.de>
 	* Makefile.in: remove tar target [Ritz]
 
+	* configure.in: 0.17.4 released, bump to 0.90.0
+
+	* lisp/scheme/
+	* lisp/scheme.jl
+	* lisp/unscheme/
+	* lisp/unscheme.jl
+	* lisp/rep/vm/compiler/scheme.jl
+	* lisp/rep/vm/compiler/unscheme.jl: removed
+
+	* lisp/rep/vm/compiler.jl
+	* lisp/rep/user.jl
+	* lisp/Makefile: updated
+
 2009-05-05  Christopher Bratusek <zanghar@freenet.de>
 	* man/lang.tex
 	* man/librep.texi
