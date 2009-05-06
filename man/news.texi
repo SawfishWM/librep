@@ -14,6 +14,8 @@
 @item Improved configures ending message
 
 @item Doc update in 'Numbers' section. Lacking description on machine dependence is added. [Teika]
+
+@item Remove tar target from Makefile [Ritz]
 @end itemize
 
 @heading 0.17.3

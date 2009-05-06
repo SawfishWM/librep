@@ -84,9 +84,6 @@ src/repdoc :
 NEWS : man/news.texi
 	( cd man && $(MAKE) ../NEWS )
 
-tar :
-	tar -zcT FILES -f librep.tar.gz
-
 clean :
 	-for dir in $(ALL_SUBDIRS); do \
 	  [ -d $$dir ] && ( cd $$dir && $(MAKE) $@ ) || exit 1; \
@@ -134,4 +131,4 @@ TAGS :
 	   --regex="/[ \t]+([ \t]*define-datum-printer[ \t]+'\([^ \t)]+\)/\1/"\
 		$$rep_files
 
-.PHONY: install uninstall tar nobak clean realclean TAGS tags distclean
+.PHONY: install uninstall nobak clean realclean TAGS tags distclean
