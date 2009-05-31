@@ -37,13 +37,14 @@ SDBM_OBJS = $(SDBM_SRCS:.c=.o)
 SDBM_LOBJS = $(SDBM_SRCS:.c=.lo)
 
 DL_SRCS = repsdbm.c timers.c gettext.c readline.c tables.c repgdbm.c \
-	  record-profile.c safemach.c sockets.c md5.c ffi.c
+	  record-profile.c safemach.c sockets.c md5.c ffi.c utf8.c
 DL_OBJS = sdbm.la timers.la gettext.la readline.la tables.la gdbm.la \
-	  record-profile.la safe-interpreter.la sockets.la md5.la ffi.la
+	  record-profile.la safe-interpreter.la sockets.la md5.la ffi.la \
+	  utf8.la
 DL_DSTS = rep/io/db/sdbm.la rep/io/timers.la rep/i18n/gettext.la \
 	  rep/io/readline.la rep/data/tables.la rep/io/db/gdbm.la \
 	  rep/lang/record-profile.la rep/vm/safe-interpreter.la \
-	  rep/io/sockets.la rep/util/md5.la rep/ffi.la
+	  rep/io/sockets.la rep/util/md5.la rep/ffi.la rep/util/utf8.la
 DL_DIRS = rep rep/io rep/io/db rep/i18n rep/data rep/lang rep/vm rep/util
 
 REP_SRCS = rep.c
@@ -153,6 +154,9 @@ sockets.la : sockets.lo
 	$(rep_DL_LD) $(LDFLAGS) -o $@ $^
 
 md5.la : md5.lo rep-md5.lo
+	$(rep_DL_LD) $(LDFLAGS) -o $@ $^
+
+utf8.la : utf8.lo
 	$(rep_DL_LD) $(LDFLAGS) -o $@ $^
 
 ffi.la : ffi.lo
