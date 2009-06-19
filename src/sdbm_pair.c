@@ -7,10 +7,6 @@
  * page-level routines
  */
 
-#ifndef lint
-static char rcsid[] = "$Id$";
-#endif
-
 #include "sdbm.h"
 #include "sdbm_tune.h"
 #include "sdbm_pair.h"

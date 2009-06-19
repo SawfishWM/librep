@@ -1,3 +1,8 @@
+2009-06-19  Christopher Bratusek <zanghar@freenet.de>
+	* src/unix_processes
+	* src/sdbm.c
+	* src/sdbm_pair.c: removed 3 unused variables
+
 2009-05-30  Christopher Bratusek <zanghar@freenet.de>
 	* src/utf8.c: added UTF-8 Support! [Wang Diancheng]
 

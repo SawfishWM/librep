@@ -472,7 +472,6 @@ static int
 get_pty(char *slavenam)
 {
 #if defined(HAVE_PTYS)
-    char c;
     int master;
 
 # if defined(HAVE_DEV_PTMX) && defined(HAVE_GRANTPT)
