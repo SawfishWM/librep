@@ -1,95 +1,35 @@
-/* This file some code come from glib:
- * utf8.c - Operations on UTF-8 strings
+/* utf8.c - Operations on UTF-8 strings
+ * Some codes in this file are borrowed from glib-2.x/glib/gutf8.c
  *
+ * Copyright (C) 1999 Tom Tromey
+ * Copyright (C) 2000 Red Hat, Inc.
  * Copyright (C) 2009 Wang Diancheng.
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2 of the License, or (at your option) any later version.
+ * This file is part of librep.
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the GNU
- * Lesser General Public License for more details.
+ * librep is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the
- * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.
+ * librep is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with librep; see the file COPYING.     If not, write to
+ * the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
  */
 
+// More functions for utf-8 are available in glib-x.y.z/glib/gutf8.c.
 
 #define _GNU_SOURCE
-
-#include <stdlib.h>
-#include <string.h>
 
 #include <config.h>
 #include "repint.h"
 
-#define UTF8_COMPUTE(Char, Mask, Len)					      \
-  if (Char < 128)							      \
-    {									      \
-      Len = 1;								      \
-      Mask = 0x7f;							      \
-    }									      \
-  else if ((Char & 0xe0) == 0xc0)					      \
-    {									      \
-      Len = 2;								      \
-      Mask = 0x1f;							      \
-    }									      \
-  else if ((Char & 0xf0) == 0xe0)					      \
-    {									      \
-      Len = 3;								      \
-      Mask = 0x0f;							      \
-    }									      \
-  else if ((Char & 0xf8) == 0xf0)					      \
-    {									      \
-      Len = 4;								      \
-      Mask = 0x07;							      \
-    }									      \
-  else if ((Char & 0xfc) == 0xf8)					      \
-    {									      \
-      Len = 5;								      \
-      Mask = 0x03;							      \
-    }									      \
-  else if ((Char & 0xfe) == 0xfc)					      \
-    {									      \
-      Len = 6;								      \
-      Mask = 0x01;							      \
-    }									      \
-  else									      \
-    Len = -1;
-
-#define UTF8_LENGTH(Char)              \
-  ((Char) < 0x80 ? 1 :                 \
-   ((Char) < 0x800 ? 2 :               \
-    ((Char) < 0x10000 ? 3 :            \
-     ((Char) < 0x200000 ? 4 :          \
-      ((Char) < 0x4000000 ? 5 : 6)))))
-   
-
-#define UTF8_GET(Result, Chars, Count, Mask, Len)			      \
-  (Result) = (Chars)[0] & (Mask);					      \
-  for ((Count) = 1; (Count) < (Len); ++(Count))				      \
-    {									      \
-      if (((Chars)[(Count)] & 0xc0) != 0x80)				      \
-	{								      \
-	  (Result) = -1;						      \
-	  break;							      \
-	}								      \
-      (Result) <<= 6;							      \
-      (Result) |= ((Chars)[(Count)] & 0x3f);				      \
-    }
-
-#define UNICODE_VALID(Char)                   \
-    ((Char) < 0x110000 &&                     \
-     (((Char) & 0xFFFFF800) != 0xD800) &&     \
-     ((Char) < 0xFDD0 || (Char) > 0xFDEF) &&  \
-     ((Char) & 0xFFFE) != 0xFFFE)
-   
-     
 static const char utf8_skip_data[256] = {
   1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
   1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
@@ -246,10 +186,10 @@ utf8_offset_to_pointer  (const char *str,
 }
 
 DEFUN("utf8-string-length", Futf8_string_length, Sutf8_string_length, (repv string), rep_Subr1) /*
-::doc:rep.util.utf8#length::
-length SEQUENCE
+::doc:rep.util.utf8#utf8-string-length::
+utf8-string-length STRING
 
-Returns the number of characters UTF-8 encoded STRING.
+Returns the number of characters in utf-8 encoded STRING.
 ::end:: */
 {
      rep_DECLARE1(string, rep_STRINGP);
@@ -260,9 +200,9 @@ DEFUN("utf8-substring", Futf8_substring, Sutf8_substring, (repv string, repv sta
 ::doc:rep.util.utf8#utf8-substring::
 utf8-substring STRING START [END]
 
-Returns the portion of STRING(a UTF-8 encoded string) starting at
+Returns the portion of STRING, encoded in utf-8, starting at
 character number START and ending at the character before END (or the
-end of the string is END is not given).  All indices start at zero.
+end of the string if END is not given). All indices start at zero.
 ::end:: */
 {
     int utf8len, slen;

@@ -1,3 +1,10 @@
+2009-06-30  Christopher Bratusek <zanghar@freenet.de>
+	* man/lang.texi: updated for rep.util.utf8 [Teika Kazura]
+
+	* src/lispcmds.c: fixed a typo [Teika Kazura]
+
+	* src/utf8.c: improved copyright notice, removed unused macros [Teika Kazura]
+
 2009-06-19  Christopher Bratusek <zanghar@freenet.de>
 	* src/unix_processes
 	* src/sdbm.c

@@ -947,7 +947,7 @@ DEFUN("substring", Fsubstring, Ssubstring, (repv string, repv start, repv end), 
 substring STRING START [END]
 
 Returns the portion of STRING starting at character number START and ending
-at the character before END (or the end of the string is END is not given).
+at the character before END (or the end of the string if END is not given).
 All indices start at zero.
 ::end:: */
 {

@@ -55,6 +55,7 @@ Miscellaneous features.
 * User Information::            The name of the user
 * Environment Variables::       Reading and writing the environment
 * String Functions::            Misc string manipulation
+* utf-8::                       utf-8 functions
 * Sleeping::                    Waiting for a period of time
 * Beeping::                     Making a ding! sound
 * Messages::                    Writing to the console
@@ -1192,6 +1193,8 @@ escape sequences see @ref{Strings}.
     @result{} 127
 @end lisp
 
+Functions below makes sence for ascii characters only.
+
 @defun alpha-char-p character
 This function returns true when @var{character} is one of the
 alphabetic characters.
@@ -2014,11 +2017,15 @@ they are all @code{()}.
 @node Strings, Array Functions, Vectors, Sequences
 @subsection Strings
 
-A string is a vector of characters (@pxref{Characters}), they are
+A string is a vector of characters (@pxref{Characters}). It is
 generally used for storing and manipulating pieces of text.
 @code{librep} puts no restrictions on the values which may be stored in
 a string---specifically, the null character (@samp{^@@}) may be
 stored with no problems.
+
+In librep, a string is a sequcene of raw bytes, and no encoding is
+assumed. Some special functions for utf-8 encoded strings are provided.
+See @xref{utf-8}.
 
 The read syntax of a string is a double quote character, followed by the
 contents of the string, the object is terminated by a second double quote
@@ -2129,6 +2136,9 @@ all characters until the end of the string are copied.
 (substring "xyzfoobar" 3)
     @result{} "foobar"
 @end lisp
+
+For utf-8 encoded strings, use @code{utf8-substring} instead
+(@pxref{utf-8}).
 @end defun
 
 @defun string= string1 string2
@@ -2241,6 +2251,9 @@ This function returns the length (an integer) of the sequence @var{sequence}.
 (length [x y])
     @result{} 2
 @end lisp
+
+For utf-8 encoded strings, use @code{utf8-string-length}
+(@pxref{utf-8}).
 @end defun
 
 @defun copy-sequence sequence
@@ -8903,7 +8916,7 @@ See also @ref{Process Objects} for the description of the
 @code{process-environment} variable.
 
 
-@node String Functions, Sleeping, Environment Variables, The language
+@node String Functions, utf-8, Environment Variables, The language
 @section String Functions
 @cindex String functions
 
@@ -9009,7 +9022,27 @@ Return a string containing a printed representation of the number
 otherwise print it in base 10.
 @end defun
 
-@node Sleeping, Beeping, String Functions, The language
+@node utf-8, Sleeping, String Functions, The language
+@section utf-8
+@cindex utf-8
+
+Some functions for utf-8 strings are available. 
+
+They assume that the string is encoded in utf-8. Otherwise, the 
+behavior is not defined.
+
+@defun utf8-string-length string
+Returns the number of characters of utf-8 encoded @var{string}.
+@end defun
+
+@defun utf8-substring string start @t{#!optional} end
+Returns the portion of @var{string}, encoded in utf-8, starting at
+character number @var{start} and ending at the character before
+@var{end} (or the end of the string if @var{end} is not given). All
+indices start at zero.
+@end defun
+
+@node Sleeping, Beeping, utf-8, The language
 @section Sleeping
 @cindex Sleeping
 
