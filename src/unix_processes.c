@@ -496,7 +496,7 @@ get_pty(char *slavenam)
        The FIRST_PTY_LETTER gives the first X to try. We try in the 
        sequence FIRST_PTY_LETTER, .., 'z', 'a', .., FIRST_PTY_LETTER.
        Is this worthwhile, or just over-zealous? */
-    c = FIRST_PTY_LETTER;
+    char c = FIRST_PTY_LETTER;
     do {
 	int i;
 	for(i = 0; i < 16; i++)

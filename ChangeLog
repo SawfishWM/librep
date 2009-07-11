@@ -1,3 +1,6 @@
+2009-07-11  Christopher Bratusek <zanghar@freenet.de>
+	* src/unix_processes.c: fix a definition
+
 2009-07-02  Christopher Bratusek <zanghar@freenet.de>
 	* configure.in: obligatory post-release version bump
 
