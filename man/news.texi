@@ -12,6 +12,8 @@
 @item Remove scheme and unscheme modules
 
 @item Going on with code-cleanup
+
+@item We do now correctly check for libffi
 @end itemize
 
 @heading 0.17.4

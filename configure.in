@@ -219,37 +219,17 @@ fi
 AC_SUBST(READLINE_LIBS)
 
 dnl Check for ffi
+FFI_MIN_VER=3.0
+
 AC_ARG_WITH(ffi,
  [  --with-ffi              Support for ffi
-  --without-ffi           Don't use ffi], [], [with_ffi=maybe])
+  --without-ffi           Don't use ffi], [], [with_ffi=yes])
 
 if test "$with_ffi" != "no"; then
-  dnl Save in case test with directory specified fails
-  _cppflags=${CPPFLAGS}
-  _ldflags=${LDFLAGS}
-  AC_ARG_WITH(ffi-prefix,
-  [  --with-ffi-prefix=DIR   path to ffi],
-  [ if test "$withval" != "no" -a "$withval" != "yes"; then
-    CPPFLAGS="${CPPFLAGS} -I$withval/include"
-    LDFLAGS="${LDFLAGS} -L$withval/lib"
-  fi ])
-
-  AC_CHECK_HEADER(ffi.h,
-    AC_DEFINE(HAVE_FFI_H, 1, [Have ffi header])
-    AC_CHECK_LIB(ffi, ffi_call,[
-      FFI_LIBS="-lffi"
-      AC_DEFINE(HAVE_LIBFFI, 1, [Have libffi])] found_ffi=yes))
-
-  if test -z "$FFI_LIBS"; then
-    if test "$with_ffi_prefix" = "yes"; then
-      AC_MSG_ERROR([Can't find libffi])
-    else
-      CPPFLAGS=${_cppflags}
-      LDFLAGS=${_ldflags}
-    fi
-  fi
+  PKG_CHECK_MODULES(LIBFFI, libffi >= $FFI_MIN_VER
+  ,found_ffi=yes
+  ,AC_MSG_ERROR([can't locate libffi]))
 fi
-AC_SUBST(FFI_LIBS)
 
 dnl Check for dynamic loading
 AC_CHECK_HEADER(dlfcn.h, [AC_DEFINE(HAVE_DLFCN_H, 1, [Have dlfcn header])])
@@ -621,6 +601,7 @@ AC_SUBST(INTLOBJS)
 AC_SUBST(GT_YES)
 AC_SUBST(GT_NO)
 AC_SUBST(l)
+AC_SUBST(LIBFFI_LIBS)
 
 dnl If it looks like GNU gettext is in libc, don't compile a local copy
 USE_INCLUDED_LIBINTL=yes

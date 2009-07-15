@@ -160,7 +160,7 @@ utf8.la : utf8.lo
 	$(rep_DL_LD) $(LDFLAGS) -o $@ $^
 
 ffi.la : ffi.lo
-	$(rep_DL_LD) $(LDFLAGS) -o $@ $^ $(FFI_LIBS)
+	$(rep_DL_LD) $(LDFLAGS) -o $@ $^ $(LIBFFI_LIBS)
 
 .libexec : $(DL_OBJS)
 	$(SHELL) $(srcdir)/fake-libexec
