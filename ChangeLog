@@ -1,3 +1,13 @@
+2009-07-24  Christopher Bratusek <zanghar@freenet.de>
+	* emulate-gnu-tar
+	* lisp/rep/io/file-handlers/tar.jl: added support for tar.xz and tar.lzma
+
+	* lisp/rep/io/file-handlers/tar.jl: improved regex for parsing tar output [Alexey I. Froloff]
+
+	* src/ffi.c: improved ffi-binding [Alexey I. Froloff]
+
+	* src/librep.sym: added some missing entries [Alexey I. Froloff]
+
 2009-07-15  Christopher Bratusek <zanghar@freenet.de>
 	* configure.in
 	* Makedefs.in

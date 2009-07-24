@@ -608,6 +608,7 @@ rep_input_timeout_secs
 rep_int_cell
 rep_integer_foldl
 rep_integer_gcd
+rep_intern_dl_library
 rep_intern_static
 rep_keyword_obarray
 rep_kill
@@ -621,6 +622,7 @@ rep_list_length
 rep_load_autoload
 rep_load_environment
 rep_localise_and_get_handler
+rep_lookup_dl_symbol
 rep_lookup_errno
 rep_make_float
 rep_make_long_int
@@ -658,6 +660,7 @@ rep_on_termination_fun
 rep_op_insert_file_contents
 rep_op_read_file_contents
 rep_op_write_buffer_contents
+rep_parse_number
 rep_pending_thread_yield
 rep_poll_input
 rep_pop_regexp_data
@@ -687,6 +690,7 @@ rep_regsub_fun
 rep_regsublen_fun
 rep_scm_f
 rep_scm_t
+rep_search_imports
 rep_set_local_symbol_fun
 rep_set_string_len
 rep_set_string_match
@@ -710,6 +714,7 @@ rep_string_modified
 rep_structure
 rep_structure_exports_all
 rep_structure_set_binds
+rep_structure_type
 rep_term_cell
 rep_test_int_counter
 rep_test_int_fun

@@ -3,6 +3,23 @@
 @appendix News
 @cindex News
 
+@heading 0.90.1
+
+@itemize @bullet
+
+@item Tar file-handler does now support XZ compressed tarballs
+
+@item Tar file-handler does now support LZMA compressed tarballs
+
+@item Improved regex for parsing tar output in the file-handler [Alexey I. Froloff]
+
+@item We do now correctly check for libffi
+
+@item Improved libffi-binding [Alexey I. Froloff]
+
+@item Updated librep.sym for missing entries [Alexey I. Froloff]
+@end itemize
+
 @heading 0.90.0
 
 @itemize @bullet
@@ -12,8 +29,6 @@
 @item Remove scheme and unscheme modules
 
 @item Going on with code-cleanup
-
-@item We do now correctly check for libffi
 @end itemize
 
 @heading 0.17.4

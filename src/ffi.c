@@ -72,6 +72,9 @@
 
 #ifdef HAVE_FFI_H
 #include <ffi.h>
+#ifndef ALIGN /* was in older ffi.h */
+#define ALIGN(v, a)  (((((unsigned) (v))-1) | ((a)-1))+1)
+#endif
 #endif
 
 #if SIZEOF_VOID_P == SIZEOF_LONG
@@ -150,10 +153,10 @@ static rep_ffi_interface **ffi_interfaces;
 static rep_bool
 ffi_types_equal_p (const rep_ffi_type *a, const rep_ffi_type *b)
 {
-    if (a->type != NULL && a->type == b->type)
-	return rep_TRUE;
     if (a->subtype != b->subtype)
 	return rep_FALSE;
+    if (a->type != NULL && a->type == b->type)
+	return rep_TRUE;
 
     switch (a->subtype)
     {
@@ -346,7 +349,7 @@ rep_ffi_marshal (unsigned int type_id, repv value, char *ptr)
 	    return ptr + sizeof (int64_t);
 
 	case FFI_TYPE_POINTER:
-	    *(void **)ptr = rep_get_pointer (value);
+	    *(void **)ptr = (rep_STRINGP(value)) ? rep_STR (value) : rep_get_pointer (value);
 	    return ptr + sizeof (void *);
 
 	case FFI_TYPE_STRUCT:		/* FIXME: */
@@ -592,7 +595,7 @@ DEFUN ("ffi-type", Fffi_type, Sffi_type,
 {
     rep_ffi_alias *s;
 
-    rep_DECLARE (1, base, rep_VALID_INTERFACE_P (base));
+    rep_DECLARE (1, base, rep_VALID_TYPE_P (base));
 
     s = rep_alloc (sizeof (rep_ffi_alias));
 

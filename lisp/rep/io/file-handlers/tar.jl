@@ -65,10 +65,12 @@
 ;; alist mapping file suffixes to GNU tar compression options
 (defvar tarfh-compression-modes '(("\\.t?gz$" . "--gzip")
 				  ("\\.(taz|Z)$" . "--compress")
-				  ("\\.bz2" . "--bzip2")))
+				  ("\\.bz2" . "--bzip2")
+				  ("\\.xz" . "--xz")
+				  ("\\.(lz|lzma)$" . "--lzma")))
 
 ;; Hairy regexp matching tar `--list --verbose' output
-(defvar tarfh-list-regexp (concat "([a-zA-Z-]+)\\s+(\\w+)/(\\w+)\\s+(\\d+)\\s+"
+(defvar tarfh-list-regexp (concat "([a-zA-Z-]+)\\s+(\\w+)/([a-zA-Z0-9_,]+)\\s+(\\d+)\\s+"
 				  ;; GNU tar output
 				  "([0-9-]+\\s+[0-9:]+"
 				  ;; solaris tar output

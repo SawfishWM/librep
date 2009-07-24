@@ -23,6 +23,8 @@ Supported options include:
 	--compress
 	--gzip
 	--bzip2
+	--xz
+	--lzma
 
 Supported commands include:
 
@@ -66,6 +68,14 @@ EOF
 
     --bzip2)
       compression_mode=bzip2
+      ;;
+
+    --xz)
+      compression_mode=xz
+      ;;
+
+    --lzma)
+      compression_mode=lzma
       ;;
 
     --file)
@@ -118,6 +128,14 @@ case "$compression_mode" in
 
   bzip2)
     input="bzip2 -d -c \"$tarfile\" |"
+    ;;
+
+  xz)
+    input="xz -d -c \"$tarfile\" |"
+    ;;
+
+  lzma)
+    input="lzma -d -c \"$tarfile\" |"
     ;;
 
   *)
