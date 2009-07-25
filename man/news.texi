@@ -18,6 +18,10 @@
 @item Improved libffi-binding [Alexey I. Froloff]
 
 @item Updated librep.sym for missing entries [Alexey I. Froloff]
+
+@item Fixed an incomplete definition
+
+@item Added -L$prefix to libs section of the .pc file
 @end itemize
 
 @heading 0.90.0
