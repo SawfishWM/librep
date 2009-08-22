@@ -7,6 +7,10 @@
 
 @itemize @bullet
 
+@item Properly terminate the rep interpreter [Jürgen Hötzel]
+
+@item Use readline history in interactive mode [Jürgen Hötzel]
+
 @item Tar file-handler does now support XZ compressed tarballs
 
 @item Tar file-handler does now support LZMA compressed tarballs
@@ -22,6 +26,8 @@
 @item Fixed an incomplete definition
 
 @item Added -L$prefix to libs section of the .pc file
+
+@item No C++ style comments in C code
 @end itemize
 
 @heading 0.90.0

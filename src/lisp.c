@@ -232,7 +232,7 @@ fast_getc (repv stream)
     else
 	return rep_stream_getc (stream);
 }
- 
+
 static repv
 signal_reader_error (repv type, repv stream, char *message)
 {
@@ -332,7 +332,7 @@ read_list(repv strm, register int *c_p)
 	case ']':
 	    *c_p = rep_stream_getc(strm);
 	    goto end;
-	    
+
 	case '.':
 	    *c_p = rep_stream_getc(strm);
 	    switch (*c_p)
@@ -851,7 +851,7 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 	case '(':
 	    return read_list(strm, c_p);
 
-	case '\'': case '`': 
+	case '\'': case '`':
 	    /* 'X => (quote X)
 	       `X => (backquote X) */
 	    form = Fcons(*c_p == '\'' ? Qquote : Qbackquote,
@@ -1393,7 +1393,7 @@ bind_lambda_list(repv lambdaList, repv argList)
 
     /* Evaluate arguments, and stick them in the evalled_args array */
     copy_to_vector (argList, argc, argv);
-   
+
     return bind_lambda_list_1 (lambdaList, argv, argc);
 }
 
@@ -2078,10 +2078,10 @@ rep_call_lispn (repv fun, int argc, repv *argv)
 	rep_PUSH_CALL (lc);
 	rep_USE_FUNARG (fun);
 	bc_apply = rep_STRUCTURE (rep_structure)->apply_bytecode;
-	if (bc_apply == 0)
+	/* if (bc_apply == 0) */
 	    ret = rep_apply_bytecode (rep_FUNARG (fun)->fun, argc, argv);
-	else
-	    ret = bc_apply (rep_FUNARG (fun)->fun, argc, argv);
+	/* else
+        ret = bc_apply (rep_FUNARG (fun)->fun, argc, argv); */
 	rep_POP_CALL (lc);
 	return ret;
     }
@@ -2500,7 +2500,7 @@ handler.
 	fprintf (stderr, "\nLisp backtrace:\n");
 	Fbacktrace (Fstderr_file());
 	fputs ("\n", stderr);
-    }	
+    }
 
     errlist = Fcons(error, data);
     on_error = Fsymbol_value(Qdebug_on_error, Qt);
@@ -2841,7 +2841,7 @@ rep_lisp_init(void)
     rep_term_cell = Fcons(Qterm_interrupt, Qnil);
     rep_mark_static(&rep_term_cell);
 
-    rep_INTERN_SPECIAL(print_escape); 
+    rep_INTERN_SPECIAL(print_escape);
     rep_INTERN_SPECIAL(print_length);
     rep_INTERN_SPECIAL(print_level);
     Fset (Qprint_escape, Qnil);

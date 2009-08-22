@@ -23,7 +23,7 @@
  *
  */
 
-// More functions for utf-8 are available in glib-x.y.z/glib/gutf8.c.
+/* More functions for utf-8 are available in glib-x.y.z/glib/gutf8.c. */
 
 #define _GNU_SOURCE
 
@@ -47,7 +47,7 @@ const char * const utf8_skip = utf8_skip_data;
 long
 utf8_strlen (const char *p,
 	     int       max);
-long    
+long
 utf8_pointer_to_offset (const char *str,
 			const char *pos);
 char *
@@ -58,9 +58,9 @@ utf8_offset_to_pointer  (const char *str,
  * @p: pointer to the start of a UTF-8 encoded string.
  * @max: the maximum number of bytes to examine. If @max
  *       is less than 0, then the string is assumed to be
- *       nul-terminated. If @max is 0, @p will not be examined and 
+ *       nul-terminated. If @max is 0, @p will not be examined and
  *       may be %NULL.
- * 
+ *
  * Returns the length of the string in characters.
  *
  * Return value: the length of the string in characters
@@ -74,7 +74,7 @@ utf8_strlen (const char *p,
 
   if(p == NULL || max == 0)
        return 0;
-  
+
   if (max < 0)
     {
       while (*p)
@@ -87,13 +87,13 @@ utf8_strlen (const char *p,
     {
       if (max == 0 || !*p)
         return 0;
-      
-      p = utf8_next_char (p);          
+
+      p = utf8_next_char (p);
 
       while (p - start < max && *p)
         {
           ++len;
-          p = utf8_next_char (p);          
+          p = utf8_next_char (p);
         }
 
       /* only do the last len increment if we got a complete
@@ -111,23 +111,23 @@ utf8_strlen (const char *p,
  * utf8_pointer_to_offset:
  * @str: a UTF-8 encoded string
  * @pos: a pointer to a position within @str
- * 
+ *
  * Converts from a pointer to position within a string to a integer
  * character offset.
  *
  * this function allows @pos to be before @str, and returns
  * a negative offset in this case.
- * 
+ *
  * Return value: the resulting character offset
  **/
-long    
+long
 utf8_pointer_to_offset (const char *str,
 			  const char *pos)
 {
   const char *s = str;
-  long offset = 0;    
+  long offset = 0;
 
-  if (pos < str) 
+  if (pos < str)
     offset = - utf8_pointer_to_offset (pos, str);
   else
     while (s < pos)
@@ -135,7 +135,7 @@ utf8_pointer_to_offset (const char *str,
 	s = utf8_next_char (s);
 	offset++;
       }
-  
+
   return offset;
 }
 
@@ -143,32 +143,32 @@ utf8_pointer_to_offset (const char *str,
  * utf8_offset_to_pointer:
  * @str: a UTF-8 encoded string
  * @offset: a character offset within @str
- * 
+ *
  * Converts from an integer character offset to a pointer to a position
  * within the string.
- * 
+ *
  * this function allows to pass a negative @offset to
  * step backwards. It is usually worth stepping backwards from the end
- * instead of forwards if @offset is in the last fourth of the string, 
+ * instead of forwards if @offset is in the last fourth of the string,
  * since moving forward is about 3 times faster than moving backward.
- * 
+ *
  * Return value: the resulting pointer
  **/
 char *
 utf8_offset_to_pointer  (const char *str,
-			   long        offset)    
+			   long        offset)
 {
   const char *s = str;
 
-  if (offset > 0) 
+  if (offset > 0)
     while (offset--)
       s = utf8_next_char (s);
   else
     {
       const char *s1;
 
-      /* This nice technique for fast backwards stepping 
-       * through a UTF-8 string was dubbed "stutter stepping" 
+      /* This nice technique for fast backwards stepping
+       * through a UTF-8 string was dubbed "stutter stepping"
        * by its inventor, Larry Ewing.
        */
       while (offset)

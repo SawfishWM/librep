@@ -19,7 +19,7 @@ int
 main(int argc, char **argv)
 {
     DEFSTRING (rep, "rep/user");
-
+    int exit_status;
     char *prog_name = *argv++;
     argc--;
 
@@ -32,5 +32,7 @@ main(int argc, char **argv)
     rep_call_with_barrier (rep_load_environment, rep_VAL (&rep),
 			   rep_TRUE, 0, 0, 0);
 
-    return rep_top_level_exit ();
+    exit_status = rep_top_level_exit ();
+    rep_kill();
+    return exit_status;
 }

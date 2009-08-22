@@ -43,6 +43,7 @@ static repv completion_fun;
 static repv completions;
 
 #ifdef HAVE_LIBREADLINE
+static char *history_file = NULL;
 static char *
 completion_generator (char *word, int state)
 {
@@ -229,6 +230,14 @@ rep_dl_init(void)
 #ifdef HAVE_LIBREADLINE
     rl_completion_entry_function = (void *) completion_generator;
     rl_basic_quote_characters = "\"";
+    if (isatty (0) && getenv("HOME"))
+    {
+      history_file=(char*) malloc((uint) strlen(getenv("HOME")) + (uint) strlen("/.rep_history") +2);
+      if (history_file) {
+       sprintf(history_file, "%s/.rep_history",getenv("HOME"));
+       read_history(history_file);
+      }
+    }
     init_bouncing_parens();
 #endif
     tem = rep_push_structure ("rep.io.readline");
@@ -237,3 +246,14 @@ rep_dl_init(void)
     rep_ADD_SUBR(Sreadline);
     return rep_pop_structure (tem);
 }
+
+#ifdef HAVE_LIBREADLINE
+void
+rep_dl_kill (void)
+{
+  if (history_file) {
+    write_history(history_file);
+    free(history_file);
+  }  
+}
+#endif
