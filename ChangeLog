@@ -1,3 +1,10 @@
+2009-08-25  Christopher Bratusek <zanghar@freenet.de>
+	* configure.in: post-release version bump to 0.90.2
+
+	* src/lisp.c: fixed an major defunct in prin1 + utf8 [Timo Korvola]
+
+	* src/streams.c: wrong description of formats %s and %S
+
 2009-08-22  Christopher Bratusek <zanghar@freenet.de>
 	* src/rep.c: properly terminate rep interpreter [Jürgen Hötzel]
 

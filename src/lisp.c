@@ -2277,7 +2277,7 @@ rep_string_print(repv strm, repv obj)
     char *s = rep_STR(obj);
     char buf[BUFSIZ];
     int bufptr = 0;
-    char c;
+    unsigned char c;
 
 #define OUT(c)							\
     do {							\
