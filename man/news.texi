@@ -3,6 +3,15 @@
 @appendix News
 @cindex News
 
+@heading 0.90.2
+
+@itemize @bullet
+
+@item Fixed a major defunct with prin1 + utf8 [Timo Korvola]
+
+@item Fixed descriptions of formats %s and %S in streams.c
+@end itemize
+
 @heading 0.90.1
 
 @itemize @bullet
