@@ -1,3 +1,6 @@
+2009-09-05  Christopher Bratusek <zanghar@freenet.de>
+	* librep.spec.in: improved [Kim B. Heino]
+
 2009-08-25  Christopher Bratusek <zanghar@freenet.de>
 	* configure.in: post-release version bump to 0.90.2
 

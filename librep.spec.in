@@ -1,6 +1,6 @@
 Name: librep
 Version: @version@
-Release: 1
+Release: 1%{?dist}
 Summary: An embeddable LISP environment
 License: GPL
 Group: Development/Languages
@@ -8,7 +8,7 @@ Source: http://download.sourceforge.net/librep/librep-%{version}.tar.bz2
 URL: http://librep.sourceforge.net/
 Packager: Christopher Bratusek <zanghar@freenet.de>
 Buildroot: %{_tmppath}/%{name}-%{version}-%{release}-root
-BuildRequires: gmp-devel gdbm-devel readline-devel texinfo
+BuildRequires: gmp-devel gdbm-devel readline-devel texinfo libffi-devel
 
 %if %($(pkg-config emacs) ; echo $?)
 %define emacs_lispdir %{_datadir}/emacs/site-lisp
@@ -99,6 +99,9 @@ fi
 %{emacs_lispdir}/*.el
 
 %changelog
+* Sat Sep 05 2009 Kim B. Heino <b@bbbs.net>
+- add dist-tag, update buildrequires
+
 * Sun Jan 18 2009 Christopher Bratusek <zanghar@freenet.de>
 - several updates
 
