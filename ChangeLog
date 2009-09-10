@@ -1,3 +1,8 @@
+2009-09-10  Christopher Bratusek <zanghar@freenet.de>
+	* configure.in: fallback to old ffi check if there's no libffi.pc [Vincent Untz]
+
+	* man/news.texi: updated
+
 2009-09-05  Christopher Bratusek <zanghar@freenet.de>
 	* librep.spec.in: improved [Kim B. Heino]
 
