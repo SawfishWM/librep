@@ -10,6 +10,8 @@
 @item Improved spec-file [Kim B. Heino]
 
 @item Fallback check for ffi, if there's no libffi.pc [Vincent Untz]
+
+@item Removed rep-config script (use librep.pc instead)
 @end itemize
 
 @heading 0.90.2

@@ -5,6 +5,9 @@
 			to prevent syntax highlighting errors (eg: in geany/vim)
 			small improvements in a test [FreeBSD]
 
+	* src/Makefile.in
+	* src/rep-config.sh: removed rep-config script (use librep.pc instead)
+
 2009-09-10  Christopher Bratusek <zanghar@freenet.de>
 	* configure.in: fallback to old ffi check if there's no libffi.pc [Vincent Untz]
 

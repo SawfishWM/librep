@@ -54,7 +54,7 @@ INTL_OBJS_yes=../intl/*.lo
 INTL_OBJS_no=
 INTL_OBJS=$(INTL_OBJS_@USE_INCLUDED_LIBINTL@)
 
-all : librep.la $(DL_OBJS) check-dl rep rep-config rep-remote rep-xgettext .libexec
+all : librep.la $(DL_OBJS) check-dl rep rep-remote rep-xgettext .libexec
 
 librep.la : $(OBJS) $(LIBOBJS) $(ALLOCA)
 	$(LIBTOOL) --mode=link --tag=CC $(CC) $(LDFLAGS) \
@@ -93,7 +93,6 @@ install : all installdirs
 	$(LIBTOOL) -n --finish $(DESTDIR)${libdir}
 	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) -m 755 rep $(DESTDIR)${bindir}
 	$(LIBTOOL) --mode=install $(INSTALL_PROGRAM) -m 755 repdoc $(DESTDIR)${bindir}
-	$(INSTALL_SCRIPT) -m 755 rep-config $(DESTDIR)${bindir}
 	$(INSTALL_SCRIPT) -m 755 rep-xgettext $(DESTDIR)${bindir}
 	$(INSTALL_PROGRAM) -m 755 rep-remote $(DESTDIR)${bindir}
 	$(foreach x,$(DL_DSTS),\
@@ -116,7 +115,6 @@ uninstall :
 	$(LIBTOOL) rm $(DESTDIR)${libdir}/librep.la
 	$(LIBTOOL) rm $(DESTDIR)${bindir}/rep
 	$(LIBTOOL) rm $(DESTDIR)${bindir}/repdoc
-	rm -f $(DESTDIR)${bindir}/rep-config
 	rm -f $(DESTDIR)${bindir}/rep-xgettext
 	rm -f $(DESTDIR)${bindir}/rep-remote
 	for dl in $(DL_DSTS); do \
@@ -125,12 +123,6 @@ uninstall :
 	for i in $(INSTALL_HDRS); do \
 	  rm $(DESTDIR)$(includedir)/$$i; \
 	done
-
-rep-config : rep-config.sh Makefile
-	$(SHELL) $< "${prefix}" "${libdir}" "${version}" \
-	  "${LDFLAGS} ${LIBS} ${GMP_LIBS}" "${repcommonexecdir}" \
-	  "${repdir}/site-lisp" >$@
-	chmod +x $@
 
 repdoc : repdoc.o
 	$(LIBTOOL) --mode=link --tag=CC $(CC) $(LDFLAGS) -o $@ $^ $(GDBM_LIBS)
@@ -170,7 +162,7 @@ clean :
 	rm -f repdoc core rep rep-remote srep
 
 distclean : clean
-	rm -f .*.d Makefile rep_config.h dump.out dumped.s rep-config
+	rm -f .*.d Makefile rep_config.h dump.out dumped.s
 	rm -rf .libs .libexec
 
 realclean : distclean

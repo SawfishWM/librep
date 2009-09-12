@@ -84,7 +84,6 @@ fi
 
 %files devel
 %defattr(-,root,root,-)
-%{_bindir}/rep-config
 %{_bindir}/rep-xgettext
 %{_bindir}/repdoc
 %{_includedir}/rep*.h
