@@ -1,3 +1,8 @@
+2009-09-12  Christopher Bratusek <zanghar@freenet.de>
+	* configure.in: s/can't/cannot/
+	                s/don't/do not/
+			-- to prevent syntax highlighting errors (eg: in geany/vim)
+
 2009-09-10  Christopher Bratusek <zanghar@freenet.de>
 	* configure.in: fallback to old ffi check if there's no libffi.pc [Vincent Untz]
 
