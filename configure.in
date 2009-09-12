@@ -622,17 +622,17 @@ AC_OUTPUT(${output_files}, [rm -f rules.mk])
 
 mv librep.ebuild librep-$version.ebuild
 
-if test "$with_gmp" != "no" && test "$found_gmp" == "yes" ; then
+if test "$with_gmp" != "no" && test "$found_gmp" = "yes" ; then
 	with_gmp=yes
 else	with_gmp=no
 fi
 
-if test "$with_readline" != "no" && test "$found_readline" == "yes"; then
+if test "$with_readline" != "no" && test "$found_readline" = "yes"; then
 	with_readline=yes
 else	with_readline=no
 fi
 
-if test "$with_libffi" != "no" && test "$found_ffi" == "yes"; then
+if test "$with_libffi" != "no" && test "$found_ffi" = "yes"; then
 	with_ffi=yes
 else	with_ffi=no
 fi
