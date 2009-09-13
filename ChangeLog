@@ -1,3 +1,6 @@
+2009-09-13  Christopher Bratusek <zanghar@freenet.de>
+	* librep.doap: added
+
 2009-09-12  Christopher Bratusek <zanghar@freenet.de>
 	* configure.in: bump version to 0.90.3
 	                s/can't/cannot/
