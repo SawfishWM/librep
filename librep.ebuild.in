@@ -24,6 +24,8 @@ DEPEND="${RDEPEND}
 src_unpack() {
 	unpack ${A}
 
+	cd "${S}"
+
 }
 
 src_compile() {
