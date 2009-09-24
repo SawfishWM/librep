@@ -11,19 +11,19 @@ SRC_URI="mirror://sourceforge/${PN}/${P}.tar.bz2"
 LICENSE="GPL-2"
 SLOT="0"
 KEYWORDS="alpha amd64 ia64 ppc sparc x86 ppc64"
-IUSE="readline"
+IUSE="readline gmp libffi emacs"
 
-RDEPEND=">=sys-libs/gdbm-1.8.0
-	readline? ( sys-libs/readline )"
+RDEPEND=">=sys-libs/gdbm-1.8.3
+	readline? ( sys-libs/readline )
+	gmp? ( dev-libs/gmp )
+	libffi? ( virtual/libffi )"
+
 DEPEND="${RDEPEND}
 	sys-apps/texinfo"
 
 src_unpack() {
 	unpack ${A}
-	cd "${S}"
-	eautoreconf
-	elibtoolize || die "elibtoolize failed"
-	epunt_cxx
+
 }
 
 src_compile() {
@@ -36,17 +36,21 @@ src_compile() {
 	fi
 
 	econf \
-		--libexecdir=/usr/$(get_libdir) \
-		--without-gmp \
-		--without-ffi \
+		--prefix=/usr \
+		$(use_with gmp) \
+		$(use_with libffi ffi) \
+		$(use_with readline) \
 		${myconf} || die "configure failed"
 
-	LC_ALL=C emake || die "make failed"
+	emake || die "make failed"
+
 }
 
 src_install() {
 	make DESTDIR="${D}" install || die "make install failed"
-	dodoc AUTHORS BUGS ChangeLog NEWS README THANKS TODO TREE
+
+	dodoc AUTHORS BUGS ChangeLog COPYING HACKING INSTALL MAINTAINERS README THANKS TODO TREE
 	docinto doc
 	dodoc doc/*
+
 }
