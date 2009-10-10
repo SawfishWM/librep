@@ -111,6 +111,7 @@ Ffile_regular_p
 Ffile_size
 Ffile_symlink_p
 Ffile_writable_p
+Ffile_executable_p
 Ffilep
 Ffilter
 Ffind_symbol
@@ -440,6 +441,7 @@ Qfile_regular_p
 Qfile_size
 Qfile_symlink_p
 Qfile_writable_p
+Qfile_executable_p
 Qflatten_table
 Qfluid
 Qflush_file

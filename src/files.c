@@ -126,6 +126,7 @@ DEFSYM(copy_file_to_local_fs, "copy-file-to-local-fs");
 DEFSYM(copy_file_from_local_fs, "copy-file-from-local-fs");
 DEFSYM(file_readable_p, "file-readable-p");
 DEFSYM(file_writable_p, "file-writable-p");
+DEFSYM(file_executable_p, "file-executable-p");
 DEFSYM(file_exists_p, "file-exists-p");
 DEFSYM(file_regular_p, "file-regular-p");
 DEFSYM(file_directory_p, "file-directory-p");
@@ -1209,6 +1210,24 @@ Returns t if the file called FILE-NAME is available for writing to.
 				     Qfile_writable_p, 1, file);
 }
 
+DEFUN("file-executable-p", Ffile_executable_p, Sfile_executable_p,
+		(repv file), rep_Subr1) /*
+::doc:rep.io.files#file-executable-p::
+file-executable-p FILE-NAME
+
+Returns t if the file called FILE-NAME is executable.
+::end:: */
+{
+    repv handler = rep_expand_and_get_handler(&file, op_file_executable_p);
+    if(!handler)
+	return handler;
+    if(rep_NILP(handler))
+	return rep_file_executable_p(file);
+    else
+	return rep_call_file_handler(handler, op_file_executable_p,
+			             Qfile_executable_p, 1, file);
+}
+
 DEFUN("file-exists-p", Ffile_exists_p, Sfile_exists_p,
       (repv file), rep_Subr1) /*
 ::doc:rep.io.files#file-exists-p::
@@ -1652,6 +1671,7 @@ rep_files_init(void)
     rep_INTERN(copy_file_from_local_fs);
     rep_INTERN(file_readable_p);
     rep_INTERN(file_writable_p);
+    rep_INTERN(file_executable_p);
     rep_INTERN(file_exists_p);
     rep_INTERN(file_regular_p);
     rep_INTERN(file_directory_p);
@@ -1707,6 +1727,7 @@ rep_files_init(void)
 
     rep_ADD_SUBR(Sfile_readable_p);
     rep_ADD_SUBR(Sfile_writable_p);
+    rep_ADD_SUBR(Sfile_executable_p);
     rep_ADD_SUBR(Sfile_exists_p);
     rep_ADD_SUBR(Sfile_regular_p);
     rep_ADD_SUBR(Sfile_directory_p);

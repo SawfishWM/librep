@@ -71,6 +71,7 @@ enum file_ops {
     op_copy_file_from_local_fs,
     op_file_readable_p,
     op_file_writable_p,
+    op_file_executable_p,
     op_file_exists_p,
     op_file_regular_p,
     op_file_directory_p,

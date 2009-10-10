@@ -1,3 +1,12 @@
+2009-10-10  Christopher Bratusek <zanghar@freenet.de>
+	* src/files.c
+	* src/repint.h
+	* src/repint_subrs.h
+	* src/rep_subrs.h: added file-executable-p function
+
+	* man/news.texi
+	* man/lang.texi: updated
+
 2009-09-24  Christopher Bratusek <zanghar@freenet.de>
 	* librep.ebuild.in: improved [Fuchur] [Christopher Bratusek]
 

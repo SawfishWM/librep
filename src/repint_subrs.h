@@ -202,6 +202,7 @@ extern repv rep_delete_directory(repv dir);
 extern repv rep_copy_file(repv src, repv dst);
 extern repv rep_file_readable_p(repv file);
 extern repv rep_file_writable_p(repv file);
+extern repv rep_file_executable_p(repv file);
 extern repv rep_file_exists_p(repv file);
 extern repv rep_file_regular_p(repv file);
 extern repv rep_file_directory_p(repv file);

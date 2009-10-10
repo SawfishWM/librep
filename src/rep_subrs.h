@@ -114,6 +114,7 @@ extern repv Fdelete_directory(repv);
 extern repv Fcopy_file(repv, repv);
 extern repv Ffile_readable_p(repv file);
 extern repv Ffile_writable_p(repv file);
+extern repv Ffile_executable_p(repv file);
 extern repv Ffile_exists_p(repv file);
 extern repv Ffile_regular_p(repv file);
 extern repv Ffile_directory_p(repv file);

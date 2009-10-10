@@ -379,6 +379,12 @@ rep_file_writable_p(repv file)
 }
 
 repv
+rep_file_executable_p(repv file)
+{
+    return access(rep_STR(file), X_OK) == 0 ? Qt : Qnil;
+}
+
+repv
 rep_file_exists_p(repv file)
 {
     return access(rep_STR(file), F_OK) == 0 ? Qt : Qnil;

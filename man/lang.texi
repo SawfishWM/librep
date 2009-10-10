@@ -7384,6 +7384,10 @@ Returns true when the file @var{file-name} is readable.
 Returns true when the file @var{file-name} is writable.
 @end defun
 
+@defun file-executable-p file-name
+Returns true when the file @var{file-name} is executable.
+@end defun
+
 @defun file-owner-p file-name
 Returns true when the ownership of the file @var{file-name} is
 the same as that of any files written by the editor.
