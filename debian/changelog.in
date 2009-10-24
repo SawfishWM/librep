@@ -1,0 +1,5 @@
+librep (@version@~@gitdate@-1nano) unstable; urgency=low
+
+  * New upstream GIT build
+
+ -- Christopher Roy Bratusek <zanghar@freenet.de>  Sat, 24 Oct 2009 21:46:20 +0200

@@ -18,6 +18,8 @@
 @item Removed rep-config script (use librep.pc instead)
 
 @item Added man-pages for @code{rep}, @code{repdoc}, @code{rep-remote} and @code{rep-xgettext} [Debian]
+
+@item Added debian packaging scripts based on the official ones
 @end itemize
 
 @heading 0.90.2

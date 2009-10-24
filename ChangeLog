@@ -1,9 +1,31 @@
 2009-10-24  Christopher Bratusek <zanghar@freenet.de>
+	* librep.spec.in
 	* man/Makefile.in
 	* man/rep.1
 	* man/repdoc.1
 	* man/rep-remote.1
 	* man/rep-xgettext.1: added man-pages from Debian
+
+	* debian/patches/00list
+	* debian/changelog.in
+	* debian/control
+	* debian/compat
+	* debian/copyright
+	* debian/librep9.install.standard
+	* debian/librep9.preinst
+	* debian/librep9.symbols
+	* debian/librep-dbg.links
+	* debian/librep-dev.install.standard
+	* debian/librep-dev.links
+	* debian/librep-dev.lintian-overrides 
+	* debian/librep-dev.preinst
+	* debian/README.source
+	* debian/rep-doc.info
+	* debian/rep-doc.install
+	* debian/rep.install
+	* debian/rep.links
+	* debian/rules
+	* debian/watch: added debian packaging scripts based on official one
 
 2009-10-10  Christopher Bratusek <zanghar@freenet.de>
 	* src/files.c

@@ -1,0 +1,9 @@
+#!/bin/sh -e
+
+if [ -d /usr/share/doc/librep-dev ]; then
+  rm -rf /usr/share/doc/librep-dev
+fi
+
+#DEBHELPER#
+
+exit 0

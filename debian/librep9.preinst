@@ -1,0 +1,9 @@
+#!/bin/sh -e
+
+if [ -L /usr/share/doc/librep9 ]; then
+  rm -f /usr/share/doc/librep9
+fi
+
+#DEBHELPER#
+
+exit 0

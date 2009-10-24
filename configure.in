@@ -43,7 +43,8 @@ output_files="src/Makefile:Makedefs.in:src/Makefile.in\
  lisp/Makefile:Makedefs.in:lisp/Makefile.in\
  Makefile:Makedefs.in:Makefile.in\
  man/Makefile:Makedefs.in:man/Makefile.in\
- intl/Makefile librep.spec librep.pc librep.ebuild"
+ intl/Makefile librep.spec librep.pc librep.ebuild
+ debian/changelog"
 
 dnl Find the system type
 AC_CANONICAL_HOST
@@ -572,6 +573,8 @@ if test $paranoia = "yes"; then
         CFLAGS+=" -Wall -ansi -pedantic"
 fi
 
+gitdate=`date +%y%m%d` 
+
 dnl Nonstandard exported symbols
 AC_SUBST(version)
 AC_SUBST(libversion)
@@ -581,6 +584,7 @@ AC_SUBST(repcommonexecdir)
 AC_SUBST(replispdir)
 AC_SUBST(repdocfile)
 AC_SUBST(emacssitelispdir)
+AC_SUBST(gitdate)
 AC_SUBST(HAVE_UNIX)
 AC_SUBST(HAVE_X11)
 
