@@ -78,6 +78,7 @@ fi
 %{_bindir}/rep
 %{_bindir}/rep-remote
 %{_datadir}/rep/
+%{_datadir}/man/man1/rep*.gz
 %{_infodir}/librep.info*
 %{_libdir}/librep.so.*
 %{_libdir}/rep/%{version}/%{_host}/
