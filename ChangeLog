@@ -1,3 +1,10 @@
+2009-10-24  Christopher Bratusek <zanghar@freenet.de>
+	* man/Makefile.in
+	* man/rep.1
+	* man/repdoc.1
+	* man/rep-remote.1
+	* man/rep-xgettext.1: added man-pages from Debian
+
 2009-10-10  Christopher Bratusek <zanghar@freenet.de>
 	* src/files.c
 	* src/repint.h

@@ -16,6 +16,8 @@
 @item Fallback check for ffi, if there's no libffi.pc [Vincent Untz]
 
 @item Removed rep-config script (use librep.pc instead)
+
+@item Added man-pages for @code{rep}, @code{repdoc}, @code{rep-remote} and @code{rep-xgettext} [Debian]
 @end itemize
 
 @heading 0.90.2
