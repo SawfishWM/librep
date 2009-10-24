@@ -6,9 +6,7 @@ Standards-Version: 3.8.2
 Build-Depends: texinfo (>= 4.11-2), debhelper (>= 7), libgmp3-dev (>= 4.1.4-8),
  libgdbm-dev, libreadline6-dev | libreadline5-dev, libncurses5-dev, libtool,
  dpatch, autotools-dev
-Homepage: http://librep.sourceforge.net/
-Vcs-Browser: http://git.debian.org/?p=collab-maint/librep.git
-Vcs-Git: git://git.debian.org/git/collab-maint/librep.git
+Homepage: http://sawfish.wikia.com/
 
 Package: rep
 Architecture: any
