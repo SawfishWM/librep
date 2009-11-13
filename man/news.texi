@@ -3,6 +3,13 @@
 @appendix News
 @cindex News
 
+@heading 0.90.4
+
+@itemize @bullet
+
+@item Fixups for OpenBSD [Jasper Lievisse Adriaanse]
+@end itemize
+
 @heading 0.90.3
 
 @itemize @bullet

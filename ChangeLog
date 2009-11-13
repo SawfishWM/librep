@@ -1,3 +1,9 @@
+2009-11-13  Christopher Bratusek <zanghar@freenet.de>
+	* configure.in: post-release version-bump to 0.90.4
+
+	* src/numbers.c
+	* src/repint.h: fixups for OpenBSD [Jasper Lievisse Adriaanse]
+
 2009-10-24  Christopher Bratusek <zanghar@freenet.de>
 	* librep.spec.in
 	* man/Makefile.in
