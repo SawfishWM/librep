@@ -47,7 +47,7 @@ nicely interacts and integrates into emacs.
 
 %build
 
-%configure --with-readline --enable-shared --disable-rpath --libexecdir=%{_libdir}
+%configure --with-readline --enable-shared --disable-rpath
 make %{?_smp_mflags}
 
 %install

@@ -1,3 +1,14 @@
+2009-12-05  Christopher Bratusek <zanghar@freenet.de>
+	* configure.in: bumped library version to 9.4.1
+
+	* configure.in
+	* librep.pc.in
+	* debian/rules
+	* librep.spec.in
+	* Makedefs.in: use $prefix/lib instead of $prefix/libexecdir to satisfy FHS
+
+	* man/news.texi: updated
+
 2009-11-13  Christopher Bratusek <zanghar@freenet.de>
 	* configure.in: post-release version-bump to 0.90.4
 

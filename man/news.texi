@@ -7,6 +7,10 @@
 
 @itemize @bullet
 
+@item Library version bumped to 9.4.1
+
+@item Use $prefix/lib instead of $prefix/libexec
+
 @item Fixups for OpenBSD [Jasper Lievisse Adriaanse]
 @end itemize
 

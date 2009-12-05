@@ -3,7 +3,6 @@ host_type=@host@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 libdir=@libdir@
-libexecdir=@libexecdir@
 repexecdir=@repexecdir@
 repcommonexecdir=@repcommonexecdir@
 includedir=@includedir@

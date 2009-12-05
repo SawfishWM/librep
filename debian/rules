@@ -48,7 +48,7 @@ configure-stamp: patch-stamp
 	cp /usr/share/libtool/config/config.guess .
 	cp /usr/share/libtool/config/config.sub .
 
-	./configure --prefix=/usr --libexecdir=/usr/lib --mandir=/usr/share/man \
+	./configure --prefix=/usr --mandir=/usr/share/man \
 	--build=$(DEB_BUILD_GNU_TYPE) --host=$(DEB_HOST_GNU_TYPE) \
 	--with-readline CFLAGS="$(CFLAGS)" $(ARCH_CONF)
 

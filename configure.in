@@ -33,9 +33,9 @@ dnl libtool versioning info: `CURRENT:REVISION:AGE'. CURRENT is the
 dnl current interface id, REVISION is the version number of this
 dnl implementation, AGE defines the first interface id also supported
 dnl (i.e. all interfaces between CURRENT-AGE and CURRENT are supported)
-libcurrent=13
+libcurrent=14
 librevision=0
-libage=4
+libage=5
 libversion="$libcurrent:$librevision:$libage"
 
 makefile_template="Makefile.in:Makedefs.in"
@@ -58,8 +58,8 @@ esac
 
 repdir='${datadir}/rep'
 replispdir='${repdir}/${version}/lisp'
-repexecdir='${libexecdir}/rep/${version}/${host_type}'
-repcommonexecdir='${libexecdir}/rep/${host_type}'
+repexecdir='${libdir}/rep/${version}/${host_type}'
+repcommonexecdir='${libdir}/rep/${host_type}'
 repdocfile='${repexecdir}/doc-strings'
 
 emacssitelispdir='${datadir}/emacs/site-lisp'
@@ -651,7 +651,6 @@ echo "
   prefix:       $prefix
   exec_prefix:  $exec_prefix
   libdir:       $libdir
-  libexecdir:   $libexecdir
 
   == == == == == == == == == == == == ==
   
