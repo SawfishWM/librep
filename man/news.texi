@@ -12,6 +12,8 @@
 @item Use $prefix/lib instead of $prefix/libexec
 
 @item Fixups for OpenBSD [Jasper Lievisse Adriaanse]
+
+@item Don't hardcode /usr in manpage installation path
 @end itemize
 
 @heading 0.90.3

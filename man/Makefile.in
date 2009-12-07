@@ -51,17 +51,17 @@ install : librep.info installdirs
 	-install-info --info-dir=$(DESTDIR)$(infodir) librep.info
 	for f in rep*.1; do \
 		gzip $$f -c > $$f.gz; \
-		$(INSTALL_DATA) $$f.gz $(DESTDIR)/usr/share/man/man1/; \
+		$(INSTALL_DATA) $$f.gz $(DESTDIR)$(prefix)/share/man/man1/; \
 	done
 
 installdirs : mkinstalldirs
 	$(SHELL) $< $(DESTDIR)$(infodir)
-	$(SHELL) $< $(DESTDIR)/usr/share/man/man1/
+	$(SHELL) $< $(DESTDIR)$(prefix)/share/man/man1/
 
 uninstall :
 	rm -f $(DESTDIR)$(infodir)/librep.info*
 	-install-info --remove --info-dir=$(DESTDIR)$(infodir) librep.info
-	rm -f $(DESTDIR)/usr/share/man/man1/rep*
+	rm -f $(DESTDIR)$(prefix)/share/man/man1/rep*
 
 clean :
 	rm -f *~ librep.info* librep.?? librep.??? rep*.1.gz
