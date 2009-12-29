@@ -1,3 +1,11 @@
+2009-12-29  Christopher Bratusek <zanghar@freenet.de>
+	* configure.in
+	* config.h.in
+	* src/dlmalloc.c: removed our own dlmalloc, as it breaks on several arches,
+	                  and is never in use since years [Kim B. Heino]
+
+	* man/news.texi: updated
+
 2009-12-07  Christopher Bratusek <zanghar@freenet.de>
 	* man/Makefile.in: don't hardcode /usr in manpage installation path
 

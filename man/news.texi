@@ -3,6 +3,15 @@
 @appendix News
 @cindex News
 
+@heading 0.90.5
+
+@itemize @bullet
+
+@item Our own implementation of dlmalloc is disabled since 2002, as it breaks
+sawfish on several architectures. From this version on, we don't ship it.
+[Kim B. Heino]
+@end itemize
+
 @heading 0.90.4
 
 @itemize @bullet
@@ -254,7 +263,7 @@ when compiling)
 
 @item The compiler enables line-numbering, and uses the information
 when it prints errors. It also prints errors in a more standard format
-(intended to mimic GCC), and distinguishes warnings from errors 
+(intended to mimic GCC), and distinguishes warnings from errors
 
 @item Debugger is much improved, and supports emacs-style emission of
 line number tokens. Use the included @file{rep-debugger.el} elisp code

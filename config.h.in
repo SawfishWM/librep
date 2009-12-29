@@ -23,9 +23,6 @@
 /* Need dlsym uscore */
 #undef DLSYM_NEED_USCORE
 
-/* Have doug lea malloc */
-#undef DOUG_LEA_MALLOC
-
 /* Env undeclared */
 #undef ENVIRON_UNDECLARED
 
@@ -287,9 +284,6 @@
 
 /* Have libc gettext */
 #undef LIBC_GETTEXT
-
-/* Have libc malloc */
-#undef LIBC_MALLOC
 
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT

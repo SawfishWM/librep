@@ -160,20 +160,6 @@ AC_CHECK_HEADER(gdbm.h,
     AC_MSG_ERROR(Cannot find GDBM header))
 AC_SUBST(GDBM_LIBS)
 
-dnl Check for Doug Lea's malloc in libc
-doug_lea_malloc=yes
-AC_CHECK_FUNC(malloc_get_state, , doug_lea_malloc=no)
-AC_CHECK_FUNC(malloc_set_state, , doug_lea_malloc=no)
-if test "$doug_lea_malloc" = "no"; then
-  dnl We used to compile our own version of dlmalloc on most
-  dnl platforms that didn't have it in their libc. But the list
-  dnl of exceptions was growing too long..
-  AC_DEFINE(LIBC_MALLOC, 1, [Have libc malloc])
-else
-  AC_DEFINE(DOUG_LEA_MALLOC, 1, [Have doug lea malloc])
-  AC_DEFINE(LIBC_MALLOC, 1, [Have libc malloc])
-fi
-
 dnl Check for readline
 AC_ARG_WITH(readline,
  [  --with-readline         support fancy command input editing
