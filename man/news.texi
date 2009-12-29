@@ -10,6 +10,8 @@
 @item Our own implementation of dlmalloc is disabled since 2002, as it breaks
 sawfish on several architectures. From this version on, we don't ship it.
 [Kim B. Heino]
+
+@item Improved the debian packaging scripts
 @end itemize
 
 @heading 0.90.4
