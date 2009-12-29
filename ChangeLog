@@ -6,6 +6,9 @@
 
 	* man/news.texi: updated
 
+	* configure.in
+	* debian/control.in: generate debian/control from template
+
 2009-12-07  Christopher Bratusek <zanghar@freenet.de>
 	* man/Makefile.in: don't hardcode /usr in manpage installation path
 

@@ -3,9 +3,16 @@ Section: lisp
 Priority: optional
 Maintainer: Christopher Roy Bratusek <zanghar@freenet.de>
 Standards-Version: 3.8.2
-Build-Depends: texinfo (>= 4.11-2), debhelper (>= 7), libgmp3-dev (>= 4.1.4-8),
- libgdbm-dev, libreadline6-dev | libreadline5-dev, libncurses5-dev, libtool,
- dpatch, autotools-dev
+Build-Depends: texinfo (>= 4.11-2),
+               debhelper (>= 7),
+               libgmp3-dev (>= 4.1.4-8),
+               libgdbm-dev,
+               libreadline6-dev | libreadline5-dev,
+               libncurses5-dev,
+               libtool,
+               dpatch,
+               autotools-dev,
+               libffi-dev (>= @FFI_MIN_VER@)
 Homepage: http://sawfish.wikia.com/
 
 Package: rep
