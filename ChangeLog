@@ -1,6 +1,7 @@
 2010-01-01  Christopher Bratusek <zanghar@freenet.de>
 	* debian/librep-dev.install
 	* librep.spec.in
+	* librep.pc.in
 	* src/Makefile.in: install headers to $includedir/rep/ instead of $includedir
 
 	* librep.pc.in: removed empty Requires: field
