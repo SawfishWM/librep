@@ -13,4 +13,3 @@ Libs: -L@libdir@ -lrep -lcrypt -lgmp -lm
 Name: librep
 Description: librep - a lisp dialect
 Version: @version@
-Requires: 
