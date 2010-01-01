@@ -1,4 +1,4 @@
-usr/include
+usr/include/rep
 usr/bin/repdoc
 usr/bin/rep-xgettext
 usr/lib/*.{so,la,a}

@@ -87,7 +87,7 @@ fi
 %defattr(-,root,root,-)
 %{_bindir}/rep-xgettext
 %{_bindir}/repdoc
-%{_includedir}/rep*.h
+%{_includedir}/rep/
 %{_libdir}/rep/%{_host}/
 %{_libdir}/pkgconfig/librep.pc
 %{_libdir}/librep.so

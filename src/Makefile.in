@@ -27,7 +27,7 @@ COMMON_SRCS =	continuations.c datums.c debug-buffer.c files.c find.c \
 		streams.c structures.c symbols.c tuples.c values.c weak-refs.c
 UNIX_SRCS =	unix_dl.c unix_files.c unix_main.c unix_processes.c
 
-INSTALL_HDRS = rep.h rep_lisp.h rep_regexp.h rep_subrs.h rep_gh.h
+INSTALL_HDRS = rep.h rep_lisp.h rep_regexp.h rep_subrs.h rep_gh.h rep_config.h
 
 SRCS = $(COMMON_SRCS) $(UNIX_SRCS)
 OBJS = $(SRCS:.c=.lo)
@@ -101,15 +101,14 @@ install : all installdirs
 	printf "\nrep_open_globally=yes\n" \
 	  >>$(DESTDIR)${repexecdir}/rep/i18n/gettext.la
 	for i in $(INSTALL_HDRS); do \
-	  $(INSTALL_DATA) $(srcdir)/$$i $(DESTDIR)$(includedir); \
+	  $(INSTALL_DATA) $(srcdir)/$$i $(DESTDIR)$(includedir)/rep/; \
 	done
-	$(INSTALL_DATA) rep_config.h $(DESTDIR)$(repcommonexecdir)
 	$(SHELL) $(top_srcdir)/install-aliases -c . $(DESTDIR)$(repexecdir)
 
 installdirs : mkinstalldirs
 	$(SHELL) $< $(DESTDIR)$(libdir) $(DESTDIR)$(bindir) \
 	  $(foreach x,$(DL_DIRS),$(DESTDIR)$(repexecdir)/$(x)) \
-	  $(DESTDIR)$(includedir)
+	  $(DESTDIR)$(includedir)/rep/
 
 uninstall :
 	$(LIBTOOL) rm $(DESTDIR)${libdir}/librep.la
@@ -120,9 +119,7 @@ uninstall :
 	for dl in $(DL_DSTS); do \
 	  $(LIBTOOL) rm $(DESTDIR)${repexecdir}/$$dl; \
 	done
-	for i in $(INSTALL_HDRS); do \
-	  rm $(DESTDIR)$(includedir)/$$i; \
-	done
+	rm -rf $(DESTDIR)$(includedir)/rep/; \
 
 repdoc : repdoc.o
 	$(LIBTOOL) --mode=link --tag=CC $(CC) $(LDFLAGS) -o $@ $^ $(GDBM_LIBS)
