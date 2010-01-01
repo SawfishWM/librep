@@ -12,6 +12,8 @@ sawfish on several architectures. From this version on, we don't ship it.
 [Kim B. Heino]
 
 @item Improved the debian packaging scripts
+
+@item Install headers to $includedir/rep/ instead of $includedir/
 @end itemize
 
 @heading 0.90.4
