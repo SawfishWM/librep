@@ -32,7 +32,7 @@ typedef int rep_bool;
 #define NULL 0
 #endif
 
-#include <rep_config.h>
+#include "rep_config.h"
 
 #ifdef rep_HAVE_LONG_LONG
 # define rep_long_long long long
