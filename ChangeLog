@@ -1,3 +1,10 @@
+2010-01-02  Christopher Bratusek <zanghar@freenet.de>
+	* autogen.sh: added --nocfg flag for not running configure afterwards
+
+	* librep.spec.in: improved [Kim B. Heino]
+
+	* man/news.texi: updated
+
 2010-01-01  Christopher Bratusek <zanghar@freenet.de>
 	* debian/librep-dev.install
 	* librep.spec.in

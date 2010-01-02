@@ -32,4 +32,6 @@ if [ -f configure.in ]; then
   autoconf $AUTOCONF_FLAGS || exit 1
 fi
 
-./configure "$@"
+if [ "${1}" != "--nocfg" ]; then
+	./configure "$@"
+fi

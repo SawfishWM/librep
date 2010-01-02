@@ -46,8 +46,8 @@ nicely interacts and integrates into emacs.
 %setup -q
 
 %build
-
-%configure --with-readline --enable-shared --disable-rpath
+./autogen.sh --nocfg
+%configure --with-readline --enable-shared
 make %{?_smp_mflags}
 
 %install
