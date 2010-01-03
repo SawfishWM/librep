@@ -12,6 +12,8 @@
 
 	* debian/control.in: removed debian-specific bits
 
+	* autogen.sh: call gitclean instead of distclean
+
 2010-01-02  Christopher Bratusek <zanghar@freenet.de>
 	* autogen.sh: added --nocfg flag for not running configure afterwards
 
