@@ -1,3 +1,6 @@
+2010-01-03  Christopher Bratusek <zanghar@freenet.de>
+	* debian/rules: don't remove config.{guess,sub} on rules/clean
+
 2010-01-02  Christopher Bratusek <zanghar@freenet.de>
 	* autogen.sh: added --nocfg flag for not running configure afterwards
 
