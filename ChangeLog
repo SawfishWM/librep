@@ -3,6 +3,8 @@
 
 	* librep.spec.in: don't call autogen.sh
 
+	* debian/changelog.in: s/+0200/+0100/
+
 2010-01-02  Christopher Bratusek <zanghar@freenet.de>
 	* autogen.sh: added --nocfg flag for not running configure afterwards
 
