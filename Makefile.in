@@ -135,4 +135,4 @@ TAGS :
 	   --regex="/[ \t]+([ \t]*define-datum-printer[ \t]+'\([^ \t)]+\)/\1/"\
 		$$rep_files
 
-.PHONY: install uninstall nobak clean realclean TAGS tags distclean
+.PHONY: install uninstall nobak clean gitclean TAGS tags distclean
