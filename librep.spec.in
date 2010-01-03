@@ -10,10 +10,10 @@ Packager: Christopher Bratusek <zanghar@freenet.de>
 Buildroot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: gmp-devel gdbm-devel readline-devel texinfo libffi-devel
 
-%if %($(pkg-config emacs) ; echo $?)
-%define emacs_lispdir %{_datadir}/emacs/site-lisp
+%if %{?_emacs_sitelispdir:1}%{!?_emacs_sitelispdir:0}
+%define emacs_lispdir %{_emacs_sitelispdir}
 %else
-%define emacs_lispdir %(pkg-config emacs --variable sitepkglispdir)
+%define emacs_lispdir %{_datadir}/emacs/site-lisp
 %endif
 
 %description
