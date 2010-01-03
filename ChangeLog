@@ -10,6 +10,8 @@
 		        `distclean', remove them on `gitclean'
 		       + call fakeroot debian/rules clean
 
+	* debian/control.in: removed debian-specific bits
+
 2010-01-02  Christopher Bratusek <zanghar@freenet.de>
 	* autogen.sh: added --nocfg flag for not running configure afterwards
 

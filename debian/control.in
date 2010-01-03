@@ -19,8 +19,6 @@ Package: rep
 Architecture: any
 Depends: ${shlibs:Depends}
 Suggests: rep-doc
-Conflicts: librep9 (<= 0.17.3-3)
-Replaces: librep9 (<= 0.17.3-3)
 Description: lisp command interpreter
  rep is a dialect of Lisp, designed to be used both as an extension
  language for applications and as a general purpose programming language.
@@ -84,9 +82,6 @@ Package: rep-doc
 Section: doc
 Architecture: all
 Depends: info | info-browser
-Conflicts: librep-doc
-Replaces: librep-doc
-Provides: librep-doc
 Description: documentation for the lisp command interpreter
  rep is a dialect of Lisp, designed to be used both as an extension
  language for applications and as a general purpose programming language.
