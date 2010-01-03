@@ -11,10 +11,13 @@
 sawfish on several architectures. From this version on, we don't ship it.
 [Kim B. Heino]
 
-@item Improved the debian and rpm packaging scripts
+@item Majorly improved the debian and rpm packaging scripts
 [Christopher Bratusek] [Kim B. Heino]
 
 @item Install headers to $includedir/rep/ instead of $includedir/
+[Christopher Bratusek]
+
+@item Autotools improvements (Makefile, autogen.sh & Co.)
 [Christopher Bratusek]
 @end itemize
 
