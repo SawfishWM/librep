@@ -19,6 +19,12 @@ sawfish on several architectures. From this version on, we don't ship it.
 
 @item Autotools improvements (Makefile, autogen.sh & Co.)
 [Christopher Bratusek]
+
+@item Added @code{file-gid-p} function for getting the gid of a file
+[Christopher Bratusek]
+
+@item Added @code{file-uid-p} function for getting the uid of a file
+[Christopher Bratusek]
 @end itemize
 
 @heading 0.90.4

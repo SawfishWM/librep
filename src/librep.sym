@@ -106,6 +106,8 @@ Ffile_name_directory
 Ffile_name_nondirectory
 Ffile_nlinks
 Ffile_owner_p
+Ffile_gid_p
+Ffile_uid_p
 Ffile_readable_p
 Ffile_regular_p
 Ffile_size
@@ -436,6 +438,8 @@ Qfile_name_directory
 Qfile_name_nondirectory
 Qfile_nlinks
 Qfile_owner_p
+Qfile_gid_p
+Qfile_uid_p
 Qfile_readable_p
 Qfile_regular_p
 Qfile_size

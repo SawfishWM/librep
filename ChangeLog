@@ -1,3 +1,11 @@
+2010-01-04  Christopher Bratusek <zanghar@freenet.de>
+	* debian/librep9.symbols
+	* src/repint.h
+	* src/repint_subrs.h
+	* src/files.c
+	* src/unix_files.c
+	* src/librep.sym: added file-uid-p and file-gid-p
+
 2010-01-03  Christopher Bratusek <zanghar@freenet.de>
 	* debian/rules: don't remove config.{guess,sub} on rules/clean
 

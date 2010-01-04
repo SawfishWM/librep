@@ -108,6 +108,8 @@ librep.so.9 librep9 #MINVER#
  Ffile_name_nondirectory@Base 0.17+svn20070119
  Ffile_nlinks@Base 0.17+svn20070119
  Ffile_owner_p@Base 0.17+svn20070119
+ Ffile_gid_p@Base 0.90.5~100104-1nano
+ Ffile_uid_p@Base 0.90.5~100104-1nano
  Ffile_readable_p@Base 0.17+svn20070119
  Ffile_regular_p@Base 0.17+svn20070119
  Ffile_size@Base 0.17+svn20070119
@@ -438,6 +440,8 @@ librep.so.9 librep9 #MINVER#
  Qfile_name_nondirectory@Base 0.17+svn20070119
  Qfile_nlinks@Base 0.17+svn20070119
  Qfile_owner_p@Base 0.17+svn20070119
+ Qfile_gid_p@Base 0.90.5~100104-1nano
+ Qfile_uid_p@Base 0.90.5~100104-1nano
  Qfile_readable_p@Base 0.17+svn20070119
  Qfile_regular_p@Base 0.17+svn20070119
  Qfile_size@Base 0.17+svn20070119

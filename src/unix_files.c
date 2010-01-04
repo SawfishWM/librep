@@ -432,6 +432,26 @@ rep_file_owner_p(repv file)
 }
 
 repv
+rep_file_gid_p(repv file)
+{
+    struct stat *st = stat_file(file);
+    if(st != 0)
+	return rep_MAKE_INT(st->st_gid & 07777); 
+    else
+	return Qnil;
+}
+
+repv
+rep_file_uid_p(repv file)
+{
+    struct stat *st = stat_file(file);
+    if(st != 0)
+	 return rep_MAKE_INT(st->st_uid & 07777);
+    else
+	 return Qnil;
+}
+
+repv
 rep_file_nlinks(repv file)
 {
     struct stat *st = stat_file(file);

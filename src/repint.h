@@ -85,6 +85,8 @@ enum file_ops {
     op_file_directory_p,
     op_file_symlink_p,
     op_file_owner_p,
+    op_file_gid_p,
+    op_file_uid_p,
     op_file_nlinks,
     op_file_size,
     op_file_modes,
