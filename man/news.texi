@@ -7,6 +7,22 @@
 
 @itemize @bullet
 
+@item Byte compiler bugfix in docstring loss [Teika Kazura]
+
+Practical effect: Previously, if a user byte-compile files, then the
+docstring is lost in sawfish-config. This is fixed.
+
+Details: Loss of docstring happened only if (1) byte compiler is not
+given @code{--write-docs}, so only byte-compilation by user (2) defvar
+is invoked within macro definition, including @code{defcustom} in
+Sawfish. Plain defvar was not affected by this bug.  It was because in
+'trans-defvar' in lisp/rep/vm/compiler/rep.jl, the docstring is stored
+in a wrong property @code{variable-documentation}. It is corrected to
+@code{documentation}.
+
+Symbol @code{variable-documentation} is not used elsewhere, including
+Sawfish and emacs' sawfish-mode.
+
 @item Our own implementation of dlmalloc is disabled since 2002, as it breaks
 sawfish on several architectures. From this version on, we don't ship it.
 [Kim B. Heino]
