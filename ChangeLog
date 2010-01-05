@@ -1,3 +1,66 @@
+2010-01-05  Teika Kazura <teika@lavabit.com>
+	* TODO
+	* intl/l10nflist.c
+	* lisp/rep/data.jl
+	* lisp/rep/data/trie.jl
+	* lisp/rep/io/file-handlers/remote/ftp.jl
+	* lisp/rep/io/file-handlers/remote/rcp.jl
+	* lisp/rep/io/file-handlers/remote/rep.jl
+	* lisp/rep/io/file-handlers/tar.jl
+	* lisp/rep/lang/doc.jl
+	* lisp/rep/lang/interpreter.jl
+	* lisp/rep/module-system.jl
+	* lisp/rep/threads/condition-variable.jl
+	* lisp/rep/threads/message-port.jl
+	* lisp/rep/util/date.jl
+	* lisp/rep/util/repl.jl
+	* lisp/rep/vm/compiler.jl
+	* lisp/rep/vm/compiler/basic.jl
+	* lisp/rep/vm/compiler/bindings.jl
+	* lisp/rep/vm/compiler/modules.jl
+	* lisp/rep/vm/compiler/rep.jl
+	* lisp/rep/vm/compiler/utils.jl
+	* lisp/rep/www/cgi-get.jl
+	* lisp/rep/www/quote-url.jl
+	* src/bytecodes.h
+	* src/continuations.c
+	* src/datums.c
+	* src/ffi.c
+	* src/files.c
+	* src/find.c
+	* src/fluids.c
+	* src/gettext.c
+	* src/lisp.c
+	* src/lispmach.c
+	* src/lispmach.h
+	* src/numbers.c
+	* src/readline.c
+	* src/record-profile.c
+	* src/rep-remote.c
+	* src/rep-xgettext.jl
+	* src/rep_gh.h
+	* src/rep_lisp.h
+	* src/rep_regexp.h
+	* src/repgdbm.c
+	* src/repint.h
+	* src/repsdbm.c
+	* src/safemach.c
+	* src/sockets.c
+	* src/structures.c
+	* src/symbols.c
+	* src/tables.c
+	* src/timers.c
+	* src/unix_files.c
+	* src/unix_main.c
+	* src/unix_processes.c
+	* src/values.c: Deleted ctrl-l
+
+	* man/interface.texi
+	* man/lang.texi: Minor doc improvements.
+
+	* lisp/rep/vm/compiler/rep.jl
+	* man/news.texi: Bugfix in byte compiler of lost docstring. See git log for the details.
+
 2010-01-03  Christopher Bratusek <zanghar@freenet.de>
 	* debian/rules: don't remove config.{guess,sub} on rules/clean
 
