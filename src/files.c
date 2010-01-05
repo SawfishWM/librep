@@ -160,7 +160,7 @@ int rep_op_write_buffer_contents = op_write_buffer_contents;
 int rep_op_read_file_contents = op_read_file_contents;
 int rep_op_insert_file_contents = op_insert_file_contents;
 
-
+
 
 DEFSYM (rep_io_file_handlers, "rep.io.file-handlers");
 
@@ -371,7 +371,7 @@ rep_localise_and_get_handler(repv *file_namep, int op)
     return handler;
 }
 
-
+
 /* File name handling */
 
 DEFUN("file-name-absolute-p", Ffile_name_absolute_p,
@@ -577,7 +577,7 @@ _remove_ any terminating directory separator.
 				     Qdirectory_file_name, 1, file);
 }
 
-
+
 /* input handlers */
 
 struct input_handler {
@@ -660,7 +660,7 @@ mark_input_handlers (void)
     }
 }
 
-
+
 /* File structures */
 
 static repv
@@ -803,7 +803,7 @@ Set the handler-specific data of file object FILE to DATA.
     return data;
 }
 
-
+
 /* Low level file handling Lisp functions */
 
 DEFUN("open-file", Fopen_file, Sopen_file,
@@ -1014,7 +1014,7 @@ DEFUN("set-file-ignore-errors", Fset_file_ignore_errors,
     return rep_undefined_value;
 }
 
-
+
 /* General file operations */
 
 DEFUN_INT("delete-file", Fdelete_file, Sdelete_file, (repv file_name),
@@ -1173,7 +1173,7 @@ Create a new copy of the file called SOURCE, as the file called DESTINATION.
     return res;
 }
     
-
+
 /* File attribute operations */
 
 DEFUN("file-readable-p", Ffile_readable_p, Sfile_readable_p,
@@ -1563,7 +1563,7 @@ CONTENTS may be relative to the directory containing FILENAME.
 				     Qmake_symlink, 2, file, contents);
 }
 
-
+
 /* Utility functions */
 
 repv
@@ -1668,7 +1668,7 @@ set-file-handler-environment ENV
     return Fstructure_define (structure, Qfh_env_key, env);
 }
 
-
+
 /* init */
 
 void

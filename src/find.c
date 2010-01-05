@@ -31,7 +31,7 @@
 void (*rep_regsub_fun)(int, rep_regsubs *, char *, char *, void *);
 int (*rep_regsublen_fun)(int, rep_regsubs *, char *, void *);
 
-
+
 /* Compiling regexps. */
 
 /* A linked list is used to store all recently-used regexps in MRU
@@ -172,7 +172,7 @@ release_cached_regexps(void)
     }
 }
 
-
+
 /* Storing regexp context. */
 	
 /* Storage for remembering where the last match was.
@@ -263,7 +263,7 @@ rep_pop_regexp_data(void)
     memcpy(&last_matches, &sd->matches, sizeof(rep_regsubs));
 }
 
-
+
 /* Simple string matching */
 
 DEFUN("string-match", Fstring_match, Sstring_match, (repv re, repv str, repv start, repv nocasep), rep_Subr4) /*

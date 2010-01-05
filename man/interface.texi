@@ -7,6 +7,10 @@
 @cindex librep internals
 @cindex Internals
 
+Sorry, to be written. Some informations can be found at
+@url{http://sawfish.wikia.com/wiki/Librep_Internals}.
+
+@ignore
 This chapter will document the internals of @code{librep}, including
 how to embed the interpreter into general applications, and how to
 write dynamically-loadable C libraries. Unfortunately most of it hasn't
@@ -60,3 +64,4 @@ been written. As always, the best reference is the source, Luke!
 @cindex Dynamically loaded libraries
 @cindex Libraries, shared
 
+@end ignore

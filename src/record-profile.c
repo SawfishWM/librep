@@ -66,7 +66,7 @@ static void (*chained_test_interrupt)(void);
 
 static int profile_interval = 10;		/* microseconds */
 
-
+
 /* SIGPROF handling */
 
 #ifdef HAVE_SETITIMER
@@ -100,7 +100,7 @@ clear_timer (void)
 #endif
 }
 
-
+
 /* profile recording */
 
 static void
@@ -157,7 +157,7 @@ test_interrupt (void)
     (*chained_test_interrupt) ();
 }
 
-
+
 /* interface */
 
 DEFUN ("start-profiler", Fstart_profiler, Sstart_profiler, (void), rep_Subr0)
@@ -189,7 +189,7 @@ DEFUN ("profile-interval", Fprofile_interval,
     return ret;
 }
 
-
+
 /* init */
 
 repv

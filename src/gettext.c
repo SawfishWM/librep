@@ -102,7 +102,7 @@ DEFUN("textdomain", Ftextdomain, Stextdomain, (repv dom), rep_Subr1)
     return out ? rep_string_dup (out) : Qnil;
 }
 
-
+
 
 /* DL hooks */
 

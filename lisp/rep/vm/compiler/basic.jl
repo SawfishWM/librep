@@ -90,7 +90,7 @@ their position in that file.")
   ;; list of lambda records
   (define lambda-stack (make-fluid))
 
-
+
 ;;; lambda management
 
   (define (find-lambda name)
@@ -113,7 +113,7 @@ their position in that file.")
   (define (current-lambda)
     (or (car (fluid lambda-stack)) (error "No current lambda!")))
 
-
+
 ;;; driver function
 
   ;; stop macroexpanding if we come across a function with a special handler
@@ -248,7 +248,7 @@ their position in that file.")
 	  (decrement-stack))
 	(setq body (cdr body)))))
 
-
+
 ;;; creating assembly code
 
   (define (call-with-initial-env thunk)
@@ -385,7 +385,7 @@ their position in that file.")
        (assemble-assembly-to-form
 	(compile-form-to-asm form (lambda-label (current-lambda)))))))
 
-
+
 ;;; compiling lambdas
 
   ;; From LST, `(lambda (ARGS) [DOC-STRING] BODY ...)' returns a byte-code

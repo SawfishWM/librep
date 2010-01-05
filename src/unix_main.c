@@ -63,7 +63,7 @@ void (*rep_redisplay_fun)(void);
 long (*rep_wait_for_input_fun)(void *inputs, unsigned long timeout_msecs);
 int rep_input_timeout_secs = 1;
 
-
+
 /* Support functions */
 
 #ifndef HAVE_STRERROR
@@ -254,7 +254,7 @@ rep_system_name(void)
     return system_name;
 }
 
-
+
 /* Main input loop */
 
 /* This is the set of fds we're waiting for input from. */
@@ -658,7 +658,7 @@ rep_poll_input(int fd)
     return wait_for_input(&in, 0);
 }
 
-
+
 /* Memory allocation; most of these are normally macros in unix_defs.h */
 
 #ifdef DEBUG_SYS_ALLOC
@@ -771,7 +771,7 @@ Output a list of all allocated memory blocks to standard error.
 }
 #endif
 
-
+
 /* Standard signal handlers */
 
 static volatile rep_bool in_fatal_signal_handler;
@@ -869,7 +869,7 @@ usr_signal_handler (int sig)
     signal (sig, usr_signal_handler);
 }    
 
-
+
 /* Initialisation */
 
 /* This function is called _before_ almost anything else; but

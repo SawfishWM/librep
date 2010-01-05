@@ -62,7 +62,7 @@
 only have two, lower order, digits. This is picked up automatically from
 the current year, i.e. 1997 -> \"19\", 2001 -> \"20\".")
 
-
+
 ;; Date parsing
 
   ;; Constants defining date structure fields

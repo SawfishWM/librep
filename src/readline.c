@@ -212,7 +212,7 @@ DEFUN("readline", Freadline, Sreadline,
 #endif
 }
 
-
+
 
 /* DL hooks */
 

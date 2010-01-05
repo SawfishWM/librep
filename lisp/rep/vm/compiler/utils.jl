@@ -76,7 +76,7 @@
   (defvar *compiler-warnings* '(unused bindings parameters misc deprecated))
   (define silence-compiler (make-fluid nil))
 
-
+
 ;;; Message output
 
   (define last-current-file t)
@@ -147,7 +147,7 @@
       (apply compiler-warning 'deprecated (concat "deprecated - " fmt) args)
       (setq deprecated-seen (cons id deprecated-seen))))
 
-
+
 ;;; Code to handle warning tests
 
   ;; Note that there's a function or macro NAME with lambda-list ARGS
@@ -283,7 +283,7 @@
 		   'parameters "too many arguments to `%s' (%d given, %d used)"
 		   name nargs (+ required (or optional 0)))))))))))
 
-
+
 ;;; stack handling
 
   ;; Increment the current stack size, setting the maximum stack size if
@@ -311,7 +311,7 @@
   (defun decrement-b-stack ()
     (fluid-set current-b-stack (1- (fluid current-b-stack))))
 
-
+
 
   ;; Remove all keywords from a lambda list ARGS, returning the list of
   ;; variables that would be bound (in the order they would be bound)
@@ -326,7 +326,7 @@
 	(setq args (cdr args)))
       (nreverse vars)))
 
-
+
 ;;; constant forms
 
 ;; Return t if FORM is a constant
@@ -368,7 +368,7 @@
 	((eq (car form) 'function)
 	 (nth 1 form))))
 
-
+
 ;;; declarations
 
 (defun note-declaration (form)

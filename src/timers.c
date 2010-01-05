@@ -80,7 +80,7 @@ static int pipe_fds[2];
 /* Contains SIGALRM */
 static sigset_t alrm_sigset;
 
-
+
 
 static RETSIGTYPE
 timer_signal_handler (int sig)
@@ -231,7 +231,7 @@ timer_fd_handler (int fd)
     rep_POPGCN;
 }
 
-
+
 /* Lisp interface */
 
 DEFUN("make-timer", Fmake_timer, Smake_timer,
@@ -297,7 +297,7 @@ duration. Otherwise, the existing values are preserved.
     return timer;
 }
 
-
+
 /* Type hooks */
 
 static void
@@ -354,7 +354,7 @@ timer_print (repv stream, repv arg)
     rep_stream_puts (stream, buf, -1, rep_FALSE);
 }
 
-
+
 /* DL hooks */
 
 repv

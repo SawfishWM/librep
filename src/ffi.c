@@ -939,7 +939,7 @@ DEFUN ("ffi-lookup-symbol", Fffi_lookup_symbol,
     return ptr != NULL ? rep_make_pointer (ptr) : Qnil;
 }
 
-
+
 /* dl hooks */
 
 DEFSYM (ffi_type_void, "ffi-type-void");

@@ -153,7 +153,7 @@
     (let-fluids ((current-repl repl))
       (completion-generator word)))
 
-
+
 ;;; module utils
 
   (define (module-exports-p name var)
@@ -170,7 +170,7 @@
 	      (get-structure (repl-struct (fluid current-repl))) name)
 	     (repl-struct (fluid current-repl)))))
 
-
+
 ;;; commands
 
   (define repl-commands '())

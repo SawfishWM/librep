@@ -203,7 +203,7 @@
 	   ;; It's not bound, so just update the global value
 	   (emit-insn `(refg ,form)))))
 
-
+
 ;; allocation of bindings, either on stack or in heap
 
   (define (heap-binding-p cell)
@@ -291,7 +291,7 @@
     (identify-captured-bindings asm (fluid lex-bindings))
     (allocate-bindings-1 asm (fluid lex-bindings)))
 
-
+
 ;; declarations
 
   ;; (declare (bound VARIABLE))

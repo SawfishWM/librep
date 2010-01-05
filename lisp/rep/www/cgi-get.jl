@@ -79,7 +79,7 @@
 	(setq frags (cons (substring string point) frags))
 	(apply concat (nreverse frags)))))
 
-
+
 ;; Tests
 
   (define (self-test)

@@ -71,7 +71,7 @@ int rep_guardian_type;
 
 DEFSYM(after_gc_hook, "after-gc-hook");
 
-
+
 /* Type handling */
 
 #define TYPE_HASH_SIZE 32
@@ -153,7 +153,7 @@ rep_get_data_type(unsigned int code)
     return t;
 }
 
-
+
 /* General object handling */
 
 /* Returns zero if V1 == V2, less than zero if V1 < V2, and greater than
@@ -206,7 +206,7 @@ rep_type_cmp(repv val1, repv val2)
     return !(rep_TYPE(val1) == rep_TYPE(val2));
 }
 
-
+
 /* Strings */
 
 static rep_string_block *string_block_chain;
@@ -406,7 +406,7 @@ rep_set_string_len(repv str, long len)
 	return rep_FALSE;
 }
 
-
+
 /* Misc */
 
 int
@@ -452,7 +452,7 @@ rep_unbox_pointer (repv v)
 	return 0;
 }
 
-
+
 /* Cons */
 
 rep_cons_block *rep_cons_block_chain;
@@ -585,7 +585,7 @@ rep_list_5(repv v1, repv v2, repv v3, repv v4, repv v5)
     return rep_LIST_5(v1, v2, v3, v4, v5);
 }
 
-
+
 /* Vectors */
 
 static rep_vector *vector_chain;
@@ -643,7 +643,7 @@ vector_cmp(repv v1, repv v2)
     return rc;
 }
 
-
+
 /* Guardians */
 
 static rep_guardian *guardians;
@@ -764,7 +764,7 @@ print_guardian (repv stream, repv obj)
     rep_stream_puts (stream, "#<guardian>", -1, rep_FALSE);
 }
 
-
+
 /* Garbage collection */
 
 static repv **static_roots;
@@ -1065,7 +1065,7 @@ last garbage-collection is greater than `garbage-threshold'.
 	return Qt;
 }
 
-
+
 void
 rep_pre_values_init(void)
 {
@@ -1152,7 +1152,7 @@ rep_values_kill(void)
     string_block_chain = NULL;
 }
 
-
+
 /* Support for dumped Lisp code */
 
 #ifdef ENABLE_BROKEN_DUMPING

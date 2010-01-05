@@ -172,7 +172,7 @@ DEFSTRING(not_local, "Need a local file");
 DEFSTRING(forkstr, "fork");
 DEFSTRING(nosig, "Unknown signal");
 
-
+
 
 static RETSIGTYPE
 sigchld_handler(int sig)

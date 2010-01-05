@@ -95,7 +95,7 @@ NAME is true, then it should be the symbol that is associated with VALUE."
 	    (format standard-output "\(%s%s\)\n" (or name value) arg-doc)
 	  (format standard-output "%s\n" (or name value))))))
 
-
+
 ;;; GDBM doc-file access
 
   (defun make-key (prefix name #!optional structure)
@@ -133,7 +133,7 @@ NAME is true, then it should be the symbol that is associated with VALUE."
 	    (gdbm-store db key value 'replace)
 	  (gdbm-close db)))))
 
-
+
 ;;; Accessing doc strings
 
   (defun documentation-property (#!optional structure)

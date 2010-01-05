@@ -43,7 +43,7 @@ static repv printer_alist;
 /* This is what Qnil points to */
 rep_tuple rep_eol_datum;
 
-
+
 /* type hooks */
 
 static int
@@ -79,7 +79,7 @@ datum_print (repv stream, repv arg)
     }
 }
 
-
+
 /* lisp functions */
 
 DEFUN ("make-datum", Fmake_datum,
@@ -150,7 +150,7 @@ created using the `make-datum' function).
     return (DATUMP (arg) && DATUM_ID (arg) == id) ? Qt : Qnil;
 }
 
-
+
 /* dl hooks */
 
 void

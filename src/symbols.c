@@ -95,7 +95,7 @@ repv rep_scm_t, rep_scm_f;
 
 repv rep_undefined_value;
 
-
+
 /* Symbol management */
 
 DEFUN("make-symbol", Fmake_symbol, Smake_symbol, (repv name), rep_Subr1) /*
@@ -349,7 +349,7 @@ Removes SYMBOL from OBARRAY (or the default). Use this with caution.
     return(sym);
 }
 
-
+
 /* Closures */
 
 DEFUN("make-closure", Fmake_closure, Smake_closure,
@@ -580,7 +580,7 @@ rep_call_with_closure (repv closure, repv (*fun)(repv arg), repv arg)
     return ret;
 }
 
-
+
 /* Symbol binding */
 
 repv
@@ -662,7 +662,7 @@ rep_add_binding_to_env (repv env, repv sym, repv value)
     return Fcons (Fcons (LEXTAG, Fcons (sym, value)), env);
 }
 
-
+
 /* More lisp functions */
 
 DEFUN("defvar", Fdefvar, Sdefvar, (repv args, repv tail_posn), rep_SF) /*

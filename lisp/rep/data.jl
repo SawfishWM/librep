@@ -74,7 +74,7 @@ returns false."
 (export-bindings '(assoc-regexp setcar setcdr string= string<
 		   member-if remove-if remove-if-not remove remq))
 
-
+
 ;; cons accessors
 
 (defun caar (x) (car (car x)))
@@ -113,7 +113,7 @@ returns false."
 		   caaadr cadadr caaddr cadddr cdaaar cddaar cdadar
 		   cdddar cdaadr cddadr cdaddr cddddr))
 
-
+
 ;; vector utils
 
 (defun vector->list (vec)
@@ -126,7 +126,7 @@ returns false."
 
 (export-bindings '(vector->list list->vector))
 
-
+
 ;; guardian wrapper
 
 (defun make-guardian ()
@@ -147,7 +147,7 @@ exist that have not already been returned."
 
 (export-bindings '(make-guardian))
 
-
+
 ;; autoloads
 
 (autoload 'string-upper-case-p "rep/data/string-util")

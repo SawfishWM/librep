@@ -38,7 +38,7 @@
  * If you write modifications of your own for GUILE, it is your choice
  * whether to permit this exception to apply to your modifications.
  * If you do not wish that, delete this exception notice.  */
-
+
 
 #ifndef REP_GH_H
 #define REP_GH_H

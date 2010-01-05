@@ -65,7 +65,6 @@
     '(defun defmacro defvar defconst defsubst %define require
       declare eval-when-compile define-structure structure))
 
-
 ;;; pass 1 support
 
   (defun pass-1 (forms) (add-progns (pass-1* forms)))
@@ -153,7 +152,6 @@
 
       form))
 
-
 ;;; pass 2 support
 
   (defun pass-2 (forms)
@@ -240,7 +238,6 @@
 	       (compile-form form)
 	     form)))))
 
-
 ;;; Source code transformations. These are basically macros that are only
 ;;; used at compile-time.
 
@@ -272,7 +269,7 @@
 	(add-documentation name nil (compiler-constant-value doc))
 	(setq doc nil))
       `(progn
-	 ,@(and doc (list `(put ',name 'variable-documentation ,doc)))
+	 ,@(and doc (list `(put ',name 'documentation ,doc)))
 	 (make-variable-special ',name)
 	 (unless (boundp ',name)
 	   (setq ,name ,value)))))
@@ -292,7 +289,6 @@
     `(not (= ,@(cdr form))))
   (put '/= 'rep-compile-transform trans-/=)
 
-
 ;;; Functions which compile non-standard functions (ie special-forms)
 
   ;; module compilers from compiler-modules
@@ -1064,7 +1060,6 @@
       ;; But that doesn't always evaluate all arguments..
       (compile-funcall (cons 'funcall form)))))
 
-
 ;;; Opcode properties for the generic instructions, in a progn for compiled
 ;;; speed
 

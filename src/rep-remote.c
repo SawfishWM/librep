@@ -73,7 +73,7 @@
 
 #define PROTOCOL_VERSION 1
 
-
+
 /* trivia */
 
 static void
@@ -238,7 +238,7 @@ output_mode_string (char *out, unsigned long perms)
     return out + 10;
 }
 
-
+
 /* commands */
 
 static void
@@ -476,7 +476,7 @@ do_readdir (int argc, char **argv)
 	send_errno (errno);
 }
 
-
+
 /* entry point */
 
 static void
