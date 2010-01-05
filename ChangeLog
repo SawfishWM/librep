@@ -1,3 +1,6 @@
+2010-01-05  Christopher Bratusek <zanghar@freenet.de>
+	* man/lang.texi: doc for file-uid-p file-gid-p
+
 2010-01-05  Teika Kazura <teika@lavabit.com>
 	* TODO
 	* intl/l10nflist.c
