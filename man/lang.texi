@@ -60,7 +60,6 @@ Miscellaneous features.
 * Beeping::                     Making a ding! sound
 * Messages::                    Writing to the console
 * Command Line Options::        Retrieving command line arguments
-* Shell Commands::              Executing shell commands
 * Timers::                      Asynchronous timers
 
 * Debugging::                   How to debug Lisp programs
@@ -3324,8 +3323,7 @@ defaults to false.
 
 If the @var{doc-string} argument is defined it is a string documenting
 @var{variable}. This string is then stored as the symbol's
-@code{variable-documentation} property and can be accessed by the
-@code{describe-variable} function.
+@code{documentation} property.
 
 @lisp
 (defvar *my-variable* '(x y)
@@ -5466,8 +5464,7 @@ is used.
 
 If no Lisp file can be found matching @var{program}, then each
 directory in the variable @code{dl-load-path} is searched for a
-@code{libtool} shared library called @file{@var{program}.la}
-(@pxref{Shared Libraries}).
+@code{libtool} shared library called @file{@var{program}.la}.
 @end defun
 
 @defvar load-filename
@@ -7727,6 +7724,7 @@ following sections are exported by the @code{rep.io.processes} module.
 * Process States::              Suspending subprocesses
 * Signalling Processes::        Sending signals to subprocesses
 * Process Information::         Information stored in a process object
+* Shell Commands::              Executing shell commands
 @end menu
 
 
@@ -7947,6 +7945,8 @@ Unlike asynchronous processes their is no choice between pipes and
 pseudo-terminals for connecting to a subprocess. Instead, it is
 possible to link the @code{stdin} channel of a synchronous process to a
 named file.
+
+For shell command invocation, see @xref{Shell Commands}.
 
 @defun call-process @t{#!optional} process input-file-name program @t{#!rest} args
 This function starts a process running on the process object
@@ -8188,7 +8188,7 @@ also be used to test whether a process with a particular pid is
 currently active, by using a signal with value zero.
 
 
-@node Process Information, , Signalling Processes, Processes
+@node Process Information, Shell Commands, Signalling Processes, Processes
 @subsection Process Information
 @cindex Process information
 
@@ -8218,6 +8218,36 @@ If no process has been run on @var{process-object}, or the process is currently
 in the running state false is returned.
 @end defun
 
+@node Shell Commands, , Process Information, Processes
+@section Executing Shell Commands
+@cindex Executing shell commands
+@cindex Shell commands, executing
+
+Convenient shell invocatino is possible, with its I/O going to the same
+places as the interpreter's.
+
+@defun system command
+Execute the shell command @var{command} synchronously, returning its
+exit status. An error will be signalled if the shell process could not
+be started.
+
+The @code{stdin}, @code{stdout} and @code{stderr} streams of the shell
+are left as in the interpreter process.
+
+The subprocesses environment is copied from the current value of the
+@code{process-environment} variable.
+@end defun
+
+Note that the exit status is @emph{not} the same as the return code of
+the command. It depends on the operating system, but under UNIX the
+return code can be found through right-shifting the exit status by
+eight bits. Low non-zero values represent that the process was killed
+by a signal.
+
+It is possible to interrupt a running shell process in the same way as
+with a normal synchronous process (@pxref{Synchronous Processes}).
+Interrupt the interpreter, it will send progressively harder-to-ignore
+signals to the child each interrupt, until it is eventually terminated.
 
 @node Regular Expressions, Time and Date, Processes, The language
 @section Regular Expressions
@@ -9091,7 +9121,7 @@ This function is exported by the @code{rep.system} module.
 @end defun
 
 
-@node Command Line Options, Shell Commands, Messages, The language
+@node Command Line Options, Timers, Messages, The language
 @section Command Line Options
 @cindex Command line options
 @cindex Options, command line
@@ -9134,42 +9164,7 @@ command-line-args
 @end lisp
 
 
-@node Shell Commands, Timers, Command Line Options, The language
-@section Executing Shell Commands
-@cindex Executing shell commands
-@cindex Shell commands, executing
-
-The subprocess handling of @code{librep} provides a comprehensive
-interface to starting and controlling external processes
-(@pxref{Processes}). However it can be overkill when all that is
-required is to invoke a shell command, with its I/O going to the same
-places as the interpreter's.
-
-@defun system command
-Execute the shell command @var{command} synchronously, returning its
-exit status. An error will be signalled if the shell process could not
-be started.
-
-The @code{stdin}, @code{stdout} and @code{stderr} streams of the shell
-are left as in the interpreter process.
-
-The subprocesses environment is copied from the current value of the
-@code{process-environment} variable.
-@end defun
-
-Note that the exit status is @emph{not} the same as the return code of
-the command. It depends on the operating system, but under UNIX the
-return code can be found through right-shifting the exit status by
-eight bits. Low non-zero values represent that the process was killed
-by a signal.
-
-It is possible to interrupt a running shell process in the same way as
-with a normal synchronous process (@pxref{Synchronous Processes}).
-Interrupt the interpreter, it will send progressively harder-to-ignore
-signals to the child each interrupt, until it is eventually terminated.
-
-
-@node Timers, Debugging, Shell Commands, The language
+@node Timers, Debugging, Command Line Options, The language
 @section Asynchronous Timers
 @cindex Asynchronous timers
 @cindex Timers, asynchronous
