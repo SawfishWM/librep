@@ -147,7 +147,7 @@ DEFSYM(local, "local");
 
 static rep_struct_node *lookup_or_add (rep_struct *s, repv var);
 
-
+
 /* cached lookups */
 
 #ifdef DEBUG
@@ -391,7 +391,7 @@ cache_flush (void)
 
 #endif /* !SINGLE_DM_CACHE */
 
-
+
 /* type hooks */
 
 static void
@@ -466,7 +466,7 @@ structure_print (repv stream, repv arg)
     }
 }
 
-
+
 /* utilities */
 
 /* Return true iff structure S exports a binding of symbol VAR that it
@@ -636,7 +636,7 @@ rep_search_imports (rep_struct *s, repv var)
     }
 }
 
-
+
 /* lisp functions */
 
 DEFUN("get-structure", Fget_structure,
@@ -1376,7 +1376,7 @@ DEFUN ("export-bindings", Fexport_bindings,
     return Qnil;
 }
 
-
+
 /* features */
 
 DEFUN("featurep", Ffeaturep, Sfeaturep, (repv feature), rep_Subr1) /*
@@ -1463,7 +1463,7 @@ loaded is either FILE (if given), or the print name of FEATURE.
     return Qt;
 }
 
-
+
 /* C interface for structure building */
 
 repv
@@ -1653,7 +1653,7 @@ rep_documentation_property (repv structure)
     return Fintern (rep_string_dup (buf), Qnil);
 }
 
-
+
 /* init */
 
 void

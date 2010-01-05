@@ -34,7 +34,7 @@
 	  rep.io.files
 	  rep.regexp)
 
-
+
 ;; tree nodes
 
   ;; each node is a list (node (CHAR . VALUE) ...) VALUE is typically
@@ -51,7 +51,7 @@
 	  (rplacd cell v)
 	(rplacd node (cons (cons key v) (cdr node))))))
 
-
+
 ;; trees of tokens
 
   (define make-trie make-node)
@@ -77,7 +77,7 @@
 	tree
       (trie-insert! (trie-insert-1! tree (car keys)) (cdr keys))))
 
-
+
 ;; string handling
 
   (defconst word-terminator eow)

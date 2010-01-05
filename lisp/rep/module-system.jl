@@ -34,7 +34,7 @@
 (%define %external-structure-ref external-structure-ref)
 (%define %alias-structure alias-structure)
 
-
+
 ;; module syntax
 
 (defmacro define-interface (name sig)
@@ -132,7 +132,7 @@ When read, the syntax `FOO#BAR' expands to `(structure-ref FOO BAR)'."
   (list '%external-structure-ref
 	(list 'quote struct-name) (list 'quote var-name)))
 
-
+
 ;; `%meta' structure used for configuring modules
 
 ;; helper definitions
@@ -162,7 +162,7 @@ When read, the syntax `FOO#BAR' expands to `(structure-ref FOO BAR)'."
   (structure-define meta-struct '%structure-exports-all structure-exports-all)
   (structure-define meta-struct '%current-structure current-structure))
 
-
+
 ;; exports
 
 (export-bindings '(define-interface structure define-structure

@@ -29,7 +29,7 @@ DEFSYM (fluid, "fluid");
 #define FLUIDP(x) rep_CONSP(x)
 #define FLUID_GLOBAL_VALUE(x) rep_CDR(x)
 
-
+
 /* from symbols.c */
 
 static inline repv
@@ -50,7 +50,7 @@ search_special_bindings (repv sym)
     return inlined_search_special_bindings (sym);
 }
 
-
+
 
 DEFUN ("make-fluid", Fmake_fluid, Smake_fluid, (repv value), rep_Subr1) /*
 ::doc:rep.lang.interpreter#make-fluid::
@@ -151,7 +151,7 @@ signalled.
     return ret;
 }
 
-
+
 
 void
 rep_fluids_init (void)

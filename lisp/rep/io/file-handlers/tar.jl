@@ -48,7 +48,7 @@
 ;; Before using any more tar options, make sure that the `emulate-gnu-tar'
 ;; script can support them.
 
-
+
 ;; configuration
 
 (defvar tarfh-gnu-tar-program "tar"
@@ -94,7 +94,7 @@
 ;; guards tarfh-created file handles
 (define tarfh-fh-guardian (make-guardian))
 
-
+
 ;; Interface to tar program
 
 (defun tarfh-check-tar-program ()
@@ -127,7 +127,7 @@
       (zerop (apply call-process process input-file
 		    tarfh-gnu-tar-program all-args)))))
 
-
+
 ;; extracting files (with caching)
 
 (define cached-file nil)		;name of file
@@ -166,7 +166,7 @@
 (add-hook 'idle-hook empty-file-cache)
 (add-hook 'before-exit-hook empty-file-cache)
 
-
+
 ;; directory caching
 
 (defconst tarfh-file-full-name 0)
@@ -361,7 +361,7 @@
 
 (add-hook 'after-gc-hook tarfh-after-gc)
 
-
+
 ;; file handler
 
 (defun tarfh-split-filename (name)

@@ -105,7 +105,7 @@ struct blocked_op {
 
 extern struct blocked_op *rep_blocked_ops[op_MAX];
 
-
+
 /* module system */
 
 typedef struct rep_struct_node_struct rep_struct_node;
@@ -156,7 +156,7 @@ extern int rep_structure_type;
 
 #define rep_STRUCT_HASH(x,n) (((x) >> 3) % (n))
 
-
+
 /* binding tracking */
 
 #define rep_MARK_LEX_BINDING(x)		(x + (1 << rep_VALUE_INT_SHIFT))
@@ -177,7 +177,7 @@ extern int rep_structure_type;
 	rep_structure = rep_default_structure;	\
     } while (0)
 
-
+
 /* call history */
 
 /* Keeps a backtrace of all lisp functions called. */
@@ -206,7 +206,7 @@ struct rep_Call {
 	rep_call_stack = (lc).next;	\
     } while (0)
 
-
+
 /* guardians */
 
 typedef struct rep_guardian_struct {
@@ -216,7 +216,7 @@ typedef struct rep_guardian_struct {
     repv inaccessible;
 } rep_guardian;
 
-
+
 /* cons' */
 
 #define rep_CONSBLK_SIZE	1022		/* ~8k */
@@ -232,7 +232,7 @@ typedef struct rep_cons_block_struct {
     rep_cons cons[rep_CONSBLK_SIZE];
 } rep_cons_block;
 
-
+
 /* prototypes */
 
 #include "repint_subrs.h"

@@ -300,7 +300,7 @@ fixup (char *addr, rep_continuation *c)
 
 static void thread_delete (rep_thread *t);
 
-
+
 /* barriers */
 
 /* Create a barrier (closed if CLOSED is true, open otherwise), then
@@ -447,7 +447,7 @@ common_ancestor (rep_barrier *current, rep_barrier **dest_hist, int dest_depth)
     return 0;
 }
 
-
+
 /* continuations */
 
 /* save the original stack for continuation C */
@@ -772,7 +772,7 @@ control immediately back to the statement following the call to the
     return primitive_call_cc (inner_call_cc, (void *) fun, 0);
 }
 
-
+
 /* threads */
 
 static inline void
@@ -1181,7 +1181,7 @@ rep_max_sleep_for (void)
     }
 }
 
-
+
 /* type hooks */
 
 static void
@@ -1412,7 +1412,7 @@ rep_max_sleep_for (void)
 
 #endif /* !WITH_CONTINUATIONS */
 
-
+
 /* misc lisp functions */
 
 /* Bind one object, returning the handle to later unbind by. */
@@ -1868,7 +1868,7 @@ Return the name of the thread THREAD.
 #endif
 }
 
-
+
 /* dl hooks */
 
 void

@@ -44,7 +44,7 @@
 
   (define-structure-alias remote-ftp rep.io.file-handlers.remote.ftp)
 
-
+
 ;; Configuration:
 
 (defvar ftp-program "ftp"
@@ -99,7 +99,7 @@ time.")
 (defvar remote-ftp-sessions nil
   "List of FTP structures defining all running FTP sessions.")
 
-
+
 ;; Output templates, mostly copied from ange-ftp..!
 
 (defvar remote-ftp-prompt-regexp "([Ff]tp> *)+"
@@ -144,7 +144,7 @@ FTP process should be abandoned, and a new session started.")
   "Alist associating characters in the first column of `ls -l' output with
 file types.")
 
-
+
 ;; ftp structure
 
 (defconst remote-ftp-host 0)
@@ -239,7 +239,7 @@ file types.")
 	    (and (eq (aref s remote-ftp-process) process) (throw 'return s)))
 	  remote-ftp-sessions)))
 
-
+
 ;; Communicating with ftp sessions
 
 (defun remote-ftp-write (session fmt arg-list)
@@ -409,7 +409,7 @@ file types.")
     (when remote-ftp-show-messages
       (write standard-output (substring string start end)))))
 
-
+
 ;; FTP commands
 
 ;; SESSION has been started, wait for the connection to
@@ -489,7 +489,7 @@ file types.")
     (remote-ftp-invalidate-directory
      session (file-name-directory file))))
 
-
+
 ;; Directory handling/caching
 
 (defconst remote-ftp-file-name 0)
@@ -660,7 +660,7 @@ file types.")
   (mapc (lambda (ses)
 	  (aset ses remote-ftp-dircache nil)) remote-ftp-sessions))
 
-
+
 ;; Password caching
 
 (defun remote-ftp-get-passwd (user host #!optional retrying)
@@ -686,7 +686,7 @@ file types.")
       (setq remote-ftp-passwd-alist (cons (cons joined passwd)
 					  remote-ftp-passwd-alist)))))
 
-
+
 ;; Backend handler
 
 (defun remote-ftp-handler (split-name op args)

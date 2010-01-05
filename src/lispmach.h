@@ -59,7 +59,7 @@ static repv vm (repv code, repv consts, int argc, repv *argv,
 # define inline_Fcons Fcons
 #endif
 
-
+
 /* Helper functions
 
    Note the careful use of inlining.. the icache is crucial, we want
@@ -148,7 +148,7 @@ search_special_bindings (repv sym)
 	    *s__++ = 0;			\
     } while (0)
 
-
+
 /* Lisp VM. */
 
 static maybe_inline repv

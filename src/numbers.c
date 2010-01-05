@@ -89,7 +89,7 @@ DEFSTRING(domain_error, "Domain error");
 # define HAVE_STRTOLL 1
 #endif
 
-
+
 /* Private type definitions */
 
 typedef struct {
@@ -153,7 +153,7 @@ typedef struct rep_number_block_struct {
 #define ZEROP(x) \
     (rep_INTP (x) ? (x) == rep_MAKE_INT (0) : Fzerop (x) != Qnil)
 
-
+
 /* number object handling */
 
 static rep_number_block *number_block_chain[3];
@@ -280,7 +280,7 @@ number_sweep(void)
     }
 }
 
-
+
 /* Promotion */
 
 static repv
@@ -1218,7 +1218,7 @@ number_prin (repv stream, repv obj)
     }
 }
 
-
+
 /* lisp functions */
 
 repv
@@ -2912,7 +2912,7 @@ in base 10.
 	return rep_box_string (out, strlen (out));
 }
 
-
+
 /* Random number generation */
 
 #if defined (HAVE_GMP) && defined (HAVE_GMP_RANDINIT) && __GNU_MP__ >= 4
@@ -3047,7 +3047,7 @@ generator is seeded with the current time of day.
     return random_new (limit);
 }
 
-
+
 /* init */
 
 void

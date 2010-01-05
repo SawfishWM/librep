@@ -186,7 +186,7 @@ Returns t if ARG is an gdbm object (created by `gdbm-open').
     return rep_DBMP(arg) ? Qt : Qnil;
 }
 
-
+
 
 static void
 dbm_mark (repv val)

@@ -33,7 +33,7 @@
 #define rep_CONCAT(x, y) rep_CONCAT__(x, y)
 #define rep_CONCAT__(x, y) x##y
 
-
+
 /* Lisp values. */
 
 /* A `repv' is a lisp value, perhaps a pointer to an object, but not a real
@@ -46,7 +46,7 @@ typedef unsigned rep_PTR_SIZED_INT repv;
 /* Get the integer constant X in the lisp value type */
 #define rep_VALUE_CONST(x) rep_CONCAT(x, rep_PTR_SIZED_INT_SUFFIX)
 
-
+
 /* Structure of Lisp objects and the pointers to them. */
 
 /* Bit definitions for repv pointers. The lowest bit is always zero
@@ -141,7 +141,7 @@ typedef unsigned rep_PTR_SIZED_INT repv;
     (rep_INTEGERP(v)							\
      || (rep_CONSP(v) && rep_INTP(rep_CAR(v)) && rep_INTP(rep_CDR(v))))
 
-
+
 /* Structure of a cell */
 
 typedef struct {
@@ -202,7 +202,7 @@ typedef struct {
 #define rep_SET_CELL16_TYPE(v, t) \
    (rep_PTR(v)->car = (rep_PTR(v)->car & rep_CELL16_TYPE_MASK) | (t))
 
-
+
 /* Structure of a cons cell, the only non-cell8 ptr type */
 
 typedef struct {
@@ -231,7 +231,7 @@ typedef struct {
     (! (rep_CONS(v) >= rep_dumped_cons_start \
 	&& rep_CONS(v) < rep_dumped_cons_end))
 
-
+
 /* Type data */
 
 /* Information about each type */
@@ -320,7 +320,7 @@ typedef struct rep_type_struct {
 /* true if V is of type T. */
 #define rep_TYPEP(v, t)	(rep_TYPE(v) == t)
 
-
+
 /* tuples, cells containing two values */
 
 typedef struct {
@@ -330,7 +330,7 @@ typedef struct {
 
 #define rep_TUPLE(v)		((rep_tuple *) rep_PTR (v))
 
-
+
 /* Numbers (private defs in numbers.c) */
 
 /* Is V a non-fixnum number? */
@@ -359,7 +359,7 @@ typedef rep_cell rep_number;
 #define rep_INTEGERP(v) \
     (rep_INTP(v) || (rep_NUMBERP(v) && rep_NUMBER_BIGNUM_P(v)))
 
-
+
 /* Strings */
 
 typedef struct rep_string_struct {
@@ -401,7 +401,7 @@ typedef struct rep_string_struct {
 /* Use this to get a newline into a DEFSTRING */
 #define rep_DS_NL "\n"
 
-
+
 /* Symbols */
 
 /* symbol object, actual allocated as a tuple */
@@ -453,7 +453,7 @@ typedef struct {
 
 #define rep_SYMBOL_LITERAL_P(v)	((rep_SYM(v)->car & rep_SF_LITERAL) != 0)
 
-
+
 /* Vectors */
 
 typedef struct rep_vector_struct {
@@ -475,7 +475,7 @@ typedef struct rep_vector_struct {
 
 #define rep_VECTOR_WRITABLE_P(v) (!rep_CELL_STATIC_P(v))
 
-
+
 /* Compiled Lisp functions; this is a vector. Some of these definitions
    are probably hard coded into lispmach.c */
 
@@ -501,7 +501,7 @@ typedef struct rep_vector_struct {
 #define rep_COMPILED_INTERACTIVE(v) ((rep_VECT_LEN(v) >= 5) \
 				     ? rep_VECTI(v, 4) : Qnil)
 
-
+
 /* Files */
 
 /* A file object.  */
@@ -542,7 +542,7 @@ typedef struct rep_file_struct {
 
 #define rep_LOCAL_FILE_P(v)	(rep_FILE(v)->handler == Qt)
 
-
+
 /* Built-in subroutines */
 
 /* Calling conventions are straightforward, returned value is result
@@ -591,7 +591,7 @@ typedef struct {
 #define rep_SUBRVFUN(v)	(rep_SUBR(v)->fun.funv)
 #define rep_SFFUN(v)	(rep_SUBR(v)->fun.fun2)
 
-
+
 /* Closures */
 
 typedef struct rep_funarg_struct {
@@ -607,13 +607,13 @@ typedef struct rep_funarg_struct {
 
 #define rep_FUNARG_WRITABLE_P(v) (!rep_CELL_STATIC_P(v))
 
-
+
 /* Guardians */
 
 #define rep_GUARDIAN(v)		((rep_guardian *) rep_PTR(v))
 #define rep_GUARDIANP(v)	rep_CELL16_TYPEP(v, rep_guardian_type)
 
-
+
 /* Other definitions */
 
 /* Macros for other types */
@@ -657,7 +657,7 @@ typedef struct rep_funarg_struct {
 #define rep_CADDDR(obj)         rep_CAR (rep_CDR (rep_CDR (rep_CDR (obj))))
 #define rep_CDDDDR(obj)         rep_CDR (rep_CDR (rep_CDR (rep_CDR (obj))))
 
-
+
 /* Garbage collection definitions */
 
 /* gc macros for cell8/16 values */
@@ -764,7 +764,7 @@ typedef struct rep_gc_n_roots {
 
 #endif
 
-
+
 /* Macros for declaring functions */
 
 /* Define a function named NAME (a string), whose function body will
@@ -817,7 +817,7 @@ typedef struct rep_gc_n_roots {
 #define rep_ERROR(x) \
     Fput(Q ## x, Qerror_message, rep_VAL(& err_ ## x))
 
-
+
 /* Macros for ensuring an object is of a certain type i.e. to ensure
    first arg `foo' is a string, rep_DECLARE1(foo, rep_STRINGP);  */
 
@@ -842,7 +842,7 @@ typedef struct rep_gc_n_roots {
 #define rep_DECLARE4_OPT(x,t) rep_DECLARE(4, x, (x) == Qnil || t(x))
 #define rep_DECLARE5_OPT(x,t) rep_DECLARE(5, x, (x) == Qnil || t(x))
 
-
+
 /* Macros for interrupt handling */
 
 #define rep_MAY_YIELD						\
@@ -890,7 +890,7 @@ typedef struct rep_gc_n_roots {
    should exit as soon as possible, returning rep_NULL. */
 #define rep_INTERRUPTP (rep_throw_value != rep_NULL)
 
-
+
 /* End-of-list / false value
 
    The canonical method of getting '() is to access the `Qnil' variable.
@@ -912,7 +912,7 @@ extern repv Qnil;
 # endif
 #endif
 
-
+
 /* Storing timestamps */
 
 #define rep_MAKE_TIME(time) \

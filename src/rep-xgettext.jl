@@ -24,7 +24,7 @@
 
 (defvar *write-c-file* nil)
 
-
+
 ;; entry point
 
 (when (get-command-line-option "--help")

@@ -79,7 +79,7 @@ defined. Returns the message, or false if no message could be read."
 	  (condition-variable-signal (port-condition port)))
       (release-mutex (port-mutex port)))))
 
-
+
 #| Test function:
 
   (define (test)

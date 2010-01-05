@@ -54,7 +54,7 @@ char *alloca ();
 
 DEFSYM(bytecode_error, "bytecode-error");
 
-
+
 /* pull in the generic interpreter */
 
 #ifdef BYTECODE_PROFILE
@@ -71,7 +71,7 @@ static int bytecode_profile[256];
 
 #include "lispmach.h"
 
-
+
 /* interface */
 
 repv

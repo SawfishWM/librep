@@ -56,7 +56,7 @@ internet drafts directory for a copy.")
 		      (string->number (expand-last-match "\\1") 16))
 		    string))
 
-
+
 ;; Tests
 
   (define (self-test)

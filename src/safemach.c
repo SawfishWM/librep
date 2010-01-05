@@ -42,7 +42,7 @@ char *alloca ();
 
 #include "repint.h"
 
-
+
 /* pull in the generic interpreter */
 
 #define BC_APPLY_SELF safe_apply_bytecode
@@ -63,7 +63,7 @@ static repv safe_apply_bytecode (repv subr, int nargs, repv *args);
 
 #include "lispmach.h"
 
-
+
 /* interface */
 
 static repv

@@ -73,7 +73,7 @@
   ;; since we default to rep langauge..
   (intern-structure 'rep.vm.compiler.rep)
 
-
+
 #| Notes:
 
 Modules
@@ -211,7 +211,7 @@ we would like. This is due to the view of folded functions as
 
 ;; so I need to do all those funky lexical scope optimisation now..
 
-
+
 ;;; Top level entrypoints
 
 (define (report-progress filename)

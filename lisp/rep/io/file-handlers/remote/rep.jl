@@ -37,7 +37,7 @@
 
   (define-structure-alias remote-rep rep.io.file-handlers.remote.rep)
 
-
+
 ;; Configuration
 
 ;; rsh doesn't ask for passwords when changing uids,
@@ -83,7 +83,7 @@
 			       (setq i (1+ i)))
 			     map))
 
-
+
 ;; session structure
 
 (defconst remote-rep-host 0)
@@ -180,7 +180,7 @@
 		 (throw 'return s)))
 	  remote-rep-sessions)))
 
-
+
 ;; Communicating with the remote process
 
 (defun remote-rep-write (session fmt #!rest args)
@@ -315,7 +315,7 @@
       (aset session remote-rep-callback nil)
       (setq remote-rep-sessions (delq session remote-rep-sessions)))))
 
-
+
 ;; Commands
 
 ;; SESSION has been started, wait for the connection to
@@ -461,7 +461,7 @@
       (aset session remote-rep-callback nil))
     remote-rep-link))
 
-
+
 ;; Directory handling/caching
 
 (defconst remote-rep-file-name 0)
@@ -611,7 +611,7 @@
   (mapc (lambda (ses)
 	  (aset ses remote-rep-dircache nil)) remote-rep-sessions))
 
-
+
 ;; Password caching
 
 (defun remote-rep-get-passwd (user host)
@@ -636,7 +636,7 @@
       (setq remote-rep-passwd-alist (cons (cons joined passwd)
 					  remote-rep-passwd-alist)))))
 
-
+
 ;; Backend handler
 
 (defun remote-rep-handler (split-name op args)

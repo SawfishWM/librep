@@ -6,7 +6,7 @@ TODO list for librep
 Bugs are marked !, things that should be done soon are marked +,
 and more long-term ideas are marked -
 
-
+
 Outstanding bugs
 ================
 
@@ -71,7 +71,7 @@ Outstanding bugs
    * 0xNN and 0NN integer syntaxes [0.13+]
    * &optional and &rest (replaced by #!optional and #!rest) [0.13+]
 
-
+
 General programming tasks:
 ==========================
 
@@ -235,7 +235,7 @@ General programming tasks:
    now the lisp is mostly lexically scoped, there should be much
    more potential for aggressive optimisation
 
-
+
 Manual tasks:
 =============
 

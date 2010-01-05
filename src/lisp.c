@@ -205,7 +205,7 @@ void (*rep_test_int_fun)(void) = default_test_int;
 
 static int current_frame_id (void);
 
-
+
 /* Reading */
 
 /* The `c' variable which keeps coming up is the lookahead character,
@@ -1125,7 +1125,7 @@ rep_readl (repv stream, int *c_p)
     return form;
 }
 
-
+
 /* Evaluating */
 
 /* Evaluates each element of `list' and builds them into a new list. */

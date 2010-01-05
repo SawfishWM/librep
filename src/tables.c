@@ -60,7 +60,7 @@ static table *all_tables;
 /* ensure X is +ve and in an int */
 #define TRUNC(x) (((x) << (rep_VALUE_INT_SHIFT+1)) >> (rep_VALUE_INT_SHIFT+1))
 
-
+
 /* type hooks */
 
 static void
@@ -130,7 +130,7 @@ table_print (repv stream, repv arg)
     rep_stream_putc (stream, '>');
 }
 
-
+
 /* hash functions */
 
 static inline hash_value
@@ -227,7 +227,7 @@ implies (= (equal-hash X) (equal-hash Y)).
 	return rep_MAKE_INT (rep_TYPE (x) * 255);
 }
 
-
+
 /* table functions */
 
 DEFUN("make-table", Fmake_table, Smake_table,
@@ -532,7 +532,7 @@ DEFUN("tables-after-gc", Ftables_after_gc, Stables_after_gc, (void), rep_Subr0)
     return Qnil;
 }
 
-
+
 /* dl hooks */
 
 repv

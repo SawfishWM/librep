@@ -63,7 +63,7 @@
 #define S_ISSOCK(mode)  (((mode) & S_IFMT) == S_IFSOCK)
 #endif
 
-
+
 /* Support functions */
 
 DEFSTRING(dot, ".");
@@ -95,7 +95,7 @@ rep_file_length(repv file)
 	return 0;
 }
 
-
+
 /* File ops */
 
 repv
@@ -591,7 +591,7 @@ rep_getpwd(void)
     }
 }
 
-
+
 /* module name conversion */
 
 repv

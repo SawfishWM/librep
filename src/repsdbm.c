@@ -194,7 +194,7 @@ Returns t if ARG is an sdbm object (created by `sdbm-open').
     return rep_DBMP(arg) ? Qt : Qnil;
 }
 
-
+
 
 static void
 dbm_mark (repv val)

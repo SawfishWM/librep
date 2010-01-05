@@ -312,7 +312,7 @@
 	    (fluid open-modules))
       (fluid-set current-language 'no-lang)))
 
-
+
 ;;; declarations
 
   ;; (declare (in-module STRUCT))
@@ -328,7 +328,7 @@
     (fluid-set current-language (cadr form)))
   (put 'language 'compiler-decl-fun declare-language)
 
-
+
 ;;; module compilers
 
   (defun compile-structure (form)
@@ -412,7 +412,7 @@
       (emit-insn '(structure-ref))
       (decrement-stack)))
 
-
+
 ;;; exported top-level functions
 
   (defun compile-function (function #!optional name)

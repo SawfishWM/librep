@@ -43,7 +43,7 @@
 
 (export-bindings '(nil t #F #T #undefined))
 
-
+
 ;; function syntax
 
 (%define defmacro
@@ -113,7 +113,7 @@ When applied to a symbol, the symbol's value is returned."
 (export-bindings '(defmacro defun defconst defsubst function
 		   %make-binding-immutable))
 
-
+
 ;; Binding syntax
 
 (defmacro let args
@@ -189,7 +189,7 @@ not the variables containing the fluids."
 
 (export-bindings '(let let* letrec let-fluids))
 
-
+
 ;; Conditional syntax
 
 (defmacro if (condition then #!rest else)
@@ -267,7 +267,7 @@ is returned from the `and' form."
 
 (export-bindings '(if case when unless or and))
 
-
+
 ;; set syntax
 
 (defmacro setq-default args
@@ -302,7 +302,7 @@ string associated with VARIABLE."
 
 (export-bindings '(setq-default define-special-variable))
 
-
+
 ;; Misc syntax
 
 (defmacro do (vars test . body)
@@ -397,7 +397,7 @@ of the possible declaration types.")
 
 (export-bindings '(do while prog1 prog2 with-object declare))
 
-
+
 ;; exception handling and syntax
 
 ;; Call and return value of THUNK with a catch for TAG
@@ -506,7 +506,7 @@ DATA)' while the handler is evaluated (these are the arguments given to
 		   call-with-error-handlers catch throw
 		   unwind-protect condition-case default-error-handler))
 
-
+
 ;; Function to allow easy creation of autoload stubs
 
 (defmacro make-autoload (symbol-form file . rest)
@@ -528,7 +528,7 @@ by loading FILE."
 
 (export-bindings '(make-autoload autoload autoload-macro))
 
-
+
 ;; some scheme compatibility functions
 
 (%define call-with-current-continuation call/cc)
@@ -548,7 +548,7 @@ of THUNK) each function will be called exactly once."
 
 (export-bindings '(call-with-current-continuation dynamic-wind))
 
-
+
 ;; misc
 
 (defun error (#!rest args)

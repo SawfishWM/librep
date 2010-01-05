@@ -76,7 +76,7 @@ struct rep_socket_struct {
 #define ACTIVE_SOCKET_P(x)	(SOCKETP (x) \
 				 && (SOCKET_IS_ACTIVE (SOCKET (x))))
 
-
+
 /* data structure management */
 
 static rep_socket *
@@ -159,7 +159,7 @@ socket_for_fd (int fd)
     abort ();
 }
 
-
+
 /* clients */
 
 static void
@@ -208,7 +208,7 @@ make_client_socket (int namespace, int style, void *addr, size_t length)
     return 0;
 }
 
-
+
 /* servers */
 
 static void
@@ -244,7 +244,7 @@ make_server_socket (int namespace, int style, void *addr, size_t length)
     return 0;
 }
 
-
+
 /* Unix domain sockets */
 
 static repv
@@ -328,7 +328,7 @@ socket as its only argument.
     return make_local_socket (addr, make_server_socket, callback, sentinel);
 }
 
-
+
 /* Internet domain sockets */
 
 static repv
@@ -413,7 +413,7 @@ socket as its only argument.
 			     make_server_socket, callback, sentinel);
 }
 
-
+
 /* Misc lisp functions */
 
 DEFUN ("close-socket", Fclose_socket, Sclose_socket, (repv sock), rep_Subr1) /*
@@ -635,7 +635,7 @@ Return true if ARG is an unclosed socket object.
     return (SOCKETP (arg) && SOCKET_IS_ACTIVE (SOCKET (arg))) ? Qt : Qnil;
 }
 
-
+
 /* type hooks */
 
 DEFSTRING (inactive_socket, "Inactive socket");
@@ -749,7 +749,7 @@ socket_print (repv stream, repv arg)
     rep_stream_puts (stream, "#<socket>", -1, rep_FALSE);
 }
 
-
+
 /* dl hooks */
 
 repv

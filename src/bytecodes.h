@@ -41,7 +41,7 @@
    first opcode is the high bits, the second the low bits. */
 #define OP_ARG_2BYTE 7
 
-
+
 /* Opcodes which have an argument encoded in them */
 
 #define OP_SLOT_REF 0x00
@@ -97,7 +97,7 @@
 
 #define OP_LAST_WITH_ARGS 0x3f
 
-
+
 /* Opcodes without arguments. */
 
 #define OP_REF 0x40			/* push (symbol-value pop) */
@@ -267,7 +267,7 @@
 #define OP_OPTIONAL_ARG_ 0xce
 #define OP_KEYWORD_ARG_ 0xcf
 
-
+
 /* Jump opcodes */
 
 #define OP_LAST_BEFORE_JMPS 0xf7
