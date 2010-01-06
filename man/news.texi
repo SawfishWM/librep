@@ -24,7 +24,7 @@ Symbol @code{variable-documentation} is not used elsewhere, including
 Sawfish and emacs' sawfish-mode.
 
 @item Our own implementation of dlmalloc is disabled since 2002, as it breaks
-sawfish on several architectures. From this version on, we don't ship it.
+librep on several architectures. From this version on, we don't ship it.
 [Kim B. Heino]
 
 @item Majorly improved the debian and rpm packaging scripts
