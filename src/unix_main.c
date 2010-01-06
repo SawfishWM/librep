@@ -559,12 +559,6 @@ rep_event_loop(void)
 
 	if(refreshp && rep_redisplay_fun != 0)
 	    (*rep_redisplay_fun)();
-
-#ifdef C_ALLOCA
-	/* Using the C implementation of alloca. So garbage collect
-	   anything below the current stack depth. */
-	alloca(0);
-#endif
     }
 
     return result;

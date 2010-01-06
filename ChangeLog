@@ -1,3 +1,12 @@
+2010-01-06  Christopher Bratusek <zanghar@freenet.de>
+	* src/alloca.c
+	* config.h.in
+	* configure.in
+	* src/Makefile.in
+	* src/main.c
+	* src/unix_main.c: removed our own implementation of alloca, use libcs instead
+	                   -- [Kim B. Heino]
+
 2010-01-05  Christopher Bratusek <zanghar@freenet.de>
 	* man/lang.texi: doc for file-uid-p file-gid-p
 

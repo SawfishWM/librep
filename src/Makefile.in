@@ -56,7 +56,7 @@ INTL_OBJS=$(INTL_OBJS_@USE_INCLUDED_LIBINTL@)
 
 all : librep.la $(DL_OBJS) check-dl rep rep-remote rep-xgettext .libexec
 
-librep.la : $(OBJS) $(LIBOBJS) $(ALLOCA)
+librep.la : $(OBJS) $(LIBOBJS)
 	$(LIBTOOL) --mode=link --tag=CC $(CC) $(LDFLAGS) \
 	  -version-info $(libversion) -export-symbols $(srcdir)/librep.sym \
 	  -o $@ $^ -rpath $(libdir) $(LIBS) $(GMP_LIBS)

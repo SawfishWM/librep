@@ -6,14 +6,6 @@
 /* Broken rtld global */
 #undef BROKEN_RTLD_GLOBAL
 
-/* Define to one of `_getb67', `GETB67', `getb67' for Cray-2 and Cray-YMP
-   systems. This function is required for `alloca.c' support on those systems.
-   */
-#undef CRAY_STACKSEG_END
-
-/* Define to 1 if using `alloca.c'. */
-#undef C_ALLOCA
-
 /* DB resolve symbols */
 #undef DB_RESOLVE_SYMBOLS
 
@@ -31,13 +23,6 @@
 
 /* Have Fullname Terminator */
 #undef FULL_NAME_TERMINATOR
-
-/* Define to 1 if you have `alloca', as a function or macro. */
-#undef HAVE_ALLOCA
-
-/* Define to 1 if you have <alloca.h> and it should be used (not on Ultrix).
-   */
-#undef HAVE_ALLOCA_H
 
 /* Define to 1 if you have the <argz.h> header file. */
 #undef HAVE_ARGZ_H

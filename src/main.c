@@ -493,12 +493,6 @@ Enter a new recursive-edit.
     ret = (*rep_event_loop_fun)();
     rep_recurse_depth--;
 
-#ifdef C_ALLOCA
-    /* Using the C implementation of alloca. So garbage collect
-       anything below the current stack depth. */
-    alloca(0);
-#endif
-
     return ret;
 }
 
