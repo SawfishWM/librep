@@ -5,7 +5,7 @@
 @cindex Lisp, the rep dialect
 @cindex rep, the Lisp dialect
 
-This chapter of the manual is a full guide to the librep Lisp
+This chapter of the manual is a guide to the librep Lisp
 programming language, including documentation for most of the built-in
 functions.
 
@@ -66,7 +66,8 @@ Miscellaneous features.
 * Tips::                        General ideas for @code{librep} programming
 @end menu
 
-This manual still fails to document the following functions: 
+This manual is still far from complete.
+Following functions are not documented, but they're not all:
 default-boundp,
 default-value,
 recursive-edit,
@@ -82,8 +83,7 @@ sdbm-rdonly,
 sdbm-store,
 sdbmp,
 set-default,
-setq-default,
-
+setq-default
 
 @node Intro, Data Types, , The language
 @section Introduction
@@ -351,7 +351,7 @@ functions. @xref{Symbols}.
 
 @item File
 A link to a notional file in the filing system. This file may be in the
-local filing system, or on a FTP server, or wherever. @xref{Files}. 
+local filing system, or on a FTP server, or wherever. @xref{Files}.
 
 @item Process
 An object through which processes may be created and controlled.
@@ -679,7 +679,7 @@ of the garbage collector.
 @code{Librep} lacks exact number specification. The behavior depends
 on if it is compiled with gmp support or not. Of course, some
 feautures are not available without gmp@footnote{GMP, or GNU MP is a
-library which supports arbitrary precision arithmetic.}. 
+library which supports arbitrary precision arithmetic.}.
 
 If it is compiled without gmp, then the size of integer type also
 depends on the platform. Size of integer is 30-bit signed at minimum.
@@ -876,7 +876,7 @@ returning a new number as their result. When given only exact
 arguments, an exact result will be returned.
 
 @defun + number1 @t{#!rest} numbers
-This functions adds its arguments then returns their sum. 
+This functions adds its arguments then returns their sum.
 @end defun
 
 @defun - number1 @t{#!rest} numbers
@@ -1937,10 +1937,10 @@ in Lisp by linking the cdr of the last cons cell in the list structure
 back to the beginning of the list.
 
 @example
- ----------------------------------- 
+ -----------------------------------
 |                                   |
  --> +-----+-----+   +-----+-----+  |
-     |  o  |  o----> |  o  |  o----- 
+     |  o  |  o----> |  o  |  o-----
      +--|--+-----+   +--|--+-----+
         |               |
          --> 1           --> 2
@@ -1960,7 +1960,7 @@ cell primitives (@code{cons}, @code{car}, @code{cdr}, @code{rplaca},
 
 Also note that infinite lists can't be printed. But note the
 @code{print-length} and @code{print-level} variables, see @ref{Output
-Functions}. 
+Functions}.
 
 
 @node Vectors, Strings, Lists, Sequences
@@ -2464,7 +2464,7 @@ example: labels in a compiler).
 
 @defun make-symbol print-name
 This function creates and returns a new, uninterned, symbol whose print
-name is the string @var{print-name}. Its value cell is void (undefined) 
+name is the string @var{print-name}. Its value cell is void (undefined)
 and it will have an empty property list.
 
 @lisp
@@ -3075,7 +3075,10 @@ example:
 @noindent
 Although @code{foo} is given a new binding this is not actually done
 until all the new values have been computed, hence @code{bar} is
-bound to the @emph{old} value of @code{foo}. 
+bound to the @emph{old} value of @code{foo}.
+
+The second form, @code{(let variable bindings body...)}, can be
+used to make a loop. (@pxref{Looping Structures})
 @end defmac
 
 @defmac let* bindings body-forms@dots{}
@@ -3384,7 +3387,7 @@ variable object @var{fluid} to @var{value}.
 @defun with-fluids fluids values thunk
 Call the zero parameter function @var{thunk} (and return the value that
 it returns) with new bindings created for each of the fluid variables
-specified in the list @var{fluids}. 
+specified in the list @var{fluids}.
 
 For each member of @var{fluids} the corresponding member of the
 @var{values} list provides the initial value of the new binding.
@@ -3493,7 +3496,7 @@ The general format of a lambda expression is:
 @noindent
 Where @var{lambda-list} is a list defining the formal parameters of the
 function, @var{doc} is an optional documentation string,
-@var{interactive-declaration} is only required by interactive commands 
+@var{interactive-declaration} is only required by interactive commands
 @footnote{Only used when @code{librep} is embedded within another
 application.} and @var{body-forms} is the sequence of forms making up
 the function body, evaluated using an implicit @code{progn}.
@@ -3652,8 +3655,8 @@ passes back to the caller.
 @cindex Defining functions
 @cindex Functions, defining
 
-Globally accessible functions are usually defined by the @code{defun}
-special form.
+Functions can be defined by the @code{defun} special form. However
+@code{define} is the more preferred way. (@pxref{Definitions}.)
 
 @defmac defun name lambda-list body-forms@dots{}
 @code{defun} initialises the function definition of the symbol
@@ -4117,9 +4120,10 @@ file).
 Previous sections of this document have described several special forms
 and macros for defining top-level functions and variables.
 @code{librep} also provides a higher-level method of creating these
-definitions, the @code{define} statement. @code{define} originates in
-the Scheme dialect of Lisp, it allows block-structured programs to be
-defined intuitively.
+definitions, the @code{define} statement. It allows block-structured
+programs to be defined intuitively.
+
+The @code{define} originates in the Scheme dialect of Lisp.
 
 The most basic use of @code{define} is very similar to @code{defun},
 e.g. the two following forms have exactly the same effect:
@@ -4132,8 +4136,9 @@ e.g. the two following forms have exactly the same effect:
 
 @noindent
 But note the different position of the parentheses. This is because
-@code{define} may also be used to define (lexical) variables. Hence the
-following is also equivalent:
+@code{define} may also be used to define (lexical)
+variables. (@pxref{Defining Variables}) Hence the following is also
+equivalent:
 
 @lisp
 (define foo (lambda (x) (1+ x)))
@@ -4191,22 +4196,25 @@ internal definitions into @code{letrec} statements.
 @section Modules
 @cindex Modules
 
-When creating large programs from many separate components, it is
-important to be able to encapsulate these components, such that the
-interfaces they present to other components are well defined, and the
-implementations of these interfaces may be modified without affecting
-any other components. To this end @code{rep} provides a @dfn{module
-system} for managing the scope of global definitions. This module
-system was inspired by the Scheme48, Xerox Scheme and Standard ML
+Rep provides a @dfn{module system} for managing the scope of global
+definitions, inspired by the Scheme48, Xerox Scheme and Standard ML
 module systems.
 
-Modules are known as @dfn{structures} and may be anonymous or named.
-Each structure specifies and implements an @dfn{interface}, essentially
-a list of names listing the definitions within that module that may be
-accessed by other modules. Each structure is a separate global
-namespace, with a number of variable bindings. Each closure contains a
-reference to the structure it was instantiated in, for accessing the
-bindings of any free variables referenced by that closure.
+What's modules in general? When writing a large program, it is
+important to break up it into separate components, or modules, and
+encapsulate, such that the interfaces they present to other components
+are well defined, and the implementations of these interfaces may be
+modified without affecting any other components.
+
+In rep, modules are known as @dfn{structures} and may be anonymous or
+named. Each structure is a separate global namespace, with a number
+of variable bindings. Each closure contains a reference to the
+structure it was instantiated in, for accessing the bindings of any
+free variables referenced by that closure.
+
+Each structure specifies and implements an @dfn{interface},
+essentially a list of names listing the definitions within that module
+that may be accessed by other modules.
 
 As well as specifying its name and interface, each module also lists
 the other modules whose bindings it may reference. Structures may
@@ -4315,8 +4323,6 @@ when read. Note that no whitespace is allowed between the three tokens.
 
 Note that to access the standard features of the @code{rep} language
 described in this manual, modules need to import the @code{rep} module.
-Alternatively, they may import the @code{scheme} module to load a
-minimal R4RS Scheme environment.
 
 Here is an example module definition, defining a module named
 @code{test} that exports two functions @code{foo} and @code{bar}.
@@ -4380,12 +4386,12 @@ Function}). This file should contain a @code{define-structure} form (as
 described in the previous section) as the last top-level form in the
 file.
 
-For backwards compatibility, the @code{require} function can also be
-used to import modules. If a module of the same name as the requested
-feature has already been loaded, then it is imported into the current
-module. Otherwise if a file is loaded that contains a module definition
-as its last top-level form, this module is imported into the current
-module. @xref{Features}.
+The @code{require} function can also be used to import modules. For
+the details, @xref{Features}.If a module of the same name as the
+requested feature has already been loaded, then it is imported into
+the current module. Otherwise if a file is loaded that contains a
+module definition as its last top-level form, this module is imported
+into the current module.
 
 
 @node Modules and Special Variables, , Module Loading, Modules
@@ -4403,7 +4409,7 @@ separate namespace. This means that modules defining special variables
 must take the necessary steps to avoid the names of these variables
 clashing with those declared in other modules@footnote{The usual
 convention is to prefix the variable name with a unique string derived
-from the module name.}. 
+from the module name.}.
 
 In fact, it is often advisable to avoid using special variables as much
 as possible, especially when writing modules of Lisp code. An
@@ -5416,21 +5422,26 @@ first the file is located then each top-level form contained by the file
 is read and evaluated in order.
 
 Each directory named by the variable @code{load-path} is searched until
-the file containing @var{program} is found. In each directory three
+the file containing @var{program} is found. In each directory two
 different file names are tried,
 
 @enumerate
 @item
-@var{program} with @samp{.jlc} appended to it. Files with a @samp{.jlc}
-suffix are usually compiled Lisp files. @xref{Compiled Lisp}.
+@var{program} with @samp{.jlc} appended to it. Files with a
+@samp{.jlc} suffix are usually compiled Lisp files. @xref{Compiled
+Lisp}.
+
+If it is older than a @samp{.jl} version of the same file (i.e. the
+source code is newer than the compiled version), a warning is
+displayed and the @samp{.jl} version is used instead.
 
 @item
 @var{program} with @samp{.jl} appended, most uncompiled Lisp programs are
 stored in files with names like this.
-
-@item
-@var{program} with no modifications.
 @end enumerate
+
+Notice that the file @var{program} with no modifications is @emph{not}
+loaded. If you want it, set @code{no-suffix} to non-nil.
 
 If none of these gives a result the next directory is searched in the
 same way, when all directories in @code{load-path} have been exhausted
@@ -5456,11 +5467,6 @@ the file from the current working directory.
 When true no @samp{.jlc} or @samp{.jl} suffixes are applied to
 the @var{program} argument when locating the file.
 @end table
-
-If a version of the program whose name ends in @samp{.jlc} is older than
-a @samp{.jl} version of the same file (i.e. the source code is newer than
-the compiled version) a warning is displayed and the @samp{.jl} version
-is used.
 
 If no Lisp file can be found matching @var{program}, then each
 directory in the variable @code{dl-load-path} is searched for a
@@ -5631,16 +5637,16 @@ to this function is normally one of the top-level forms in a file.
 @end lisp
 @end defun
 
-@defun require feature @t{#!optional} file
-Show that the caller is planning to use the feature @var{feature} (a symbol).
-This function will check the @code{features} variable to see if @var{feature}
-is already loaded, if so it will return immediately.
+@defun require feature
+Show that the caller is planning to use the feature @var{feature} (a
+symbol).  This function will check the @code{features} variable to see
+if @var{feature} is already loaded, if so it will return immediately.
 
-If @var{feature} is not present it will be loaded. If @var{file} is
-given it specifies the first argument to the @code{load} function, else
+If @var{feature} is not present it will be loaded. As the filename,
 the print name of the symbol @var{feature} is used, with any @samp{.}
 characters replaced by the operating system's directory separator
-(@pxref{Module Loading}).
+(@pxref{Module Loading}). If the file does not exist, then an error
+is signaled.
 
 @lisp
 ;;;; physics.jl -- the @code{physics} library
@@ -5656,6 +5662,7 @@ When called interactively the symbol @var{feature} is prompted for.
 Features may also be provided by modules, for more details @xref{Module
 Loading}.
 
+On failure, an error is signaled.
 
 @node Compiled Lisp, Datums, Loading, The language
 @section Compiled Lisp
@@ -6196,10 +6203,10 @@ Removes any occurrences of the object @var{arg} from the queue @var{q}.
 @cindex Records
 @cindex Data types, records
 
-@code{librep} provides a convenient means of defining structured data
-types, these types are known as @dfn{records}. Each record is a
-distinct data type, meaning that there will only be a single
-type-predicate matching objects of any individual record type.
+The @dfn{record} is a convenient means of defining structured data
+types which is similar to C struct. Each record is a distinct data
+type, meaning that there will only be a single type-predicate matching
+objects of any individual record type.
 
 All definitions documented in this section are provided by the
 @code{rep.data.records} module (@pxref{Modules}).
@@ -6220,10 +6227,10 @@ specified by the @var{fields@dots{}}, and a predicate function called
 
 The fields of the record are defined by the sequence of
 @code{(@var{field} @var{accessor} [@var{modifier}])} forms, each form
-describes a single field (named @var{field}, which may match one of the
-constructor arguments).
+describes a single field (named @var{field}, which may match one of
+the constructor arguments).
 
-For each field a function @var{accessor} will be defined that when
+The function @var{accessor} of each field will be defined that when
 applied to an argument of the record type, returns the value stored in
 the associated @var{field}. If the @var{modifier} name is defined a
 function will be defined of that name, that when applied to a record
@@ -6239,10 +6246,10 @@ Here is an example record definition:
 
 @lisp
 (define-record-type :pare
-  (kons x y)                         ; constructor
-  pare?                              ; predicate
-  (x kar set-kar!)                   ; fields w/ optional accessors
-  (y kdr))                           ;and modifiers
+  (kons x y)          ; constructor
+  pare?               ; predicate
+  (x kar set-kar!)    ; field @code{x}, its accessor and modifier
+  (y kdr))            ; field @code{y} is read-only.
 @end lisp
 
 @noindent
@@ -6264,9 +6271,9 @@ definition, the record type could be used as follows:
     @result{} 42
 @end lisp
 
-By default record objects print as the name of their type in angle
-brackets, e.g. for the above @code{pare} type, each object would print
-as the string @samp{#<:pare>}. This may be redefined using the
+Printed representation of record objects is the name of their type in
+angle brackets, e.g. for the above @code{pare} type, each object
+prints as the string @samp{#<:pare>}. This may be redefined using the
 @code{define-record-discloser} function.
 
 @defun define-record-discloser type discloser
@@ -6583,7 +6590,7 @@ otherwise it is assumed that all the characters were successful.
 
 @item @var{process}
 Writes to the standard input of the process object @var{process}. If
-@var{process} isn't running an error is signalled. @xref{Processes}. 
+@var{process} isn't running an error is signalled. @xref{Processes}.
 
 @item t
 Appends the character(s) to the end of the status line message.
@@ -8533,6 +8540,15 @@ Returns the string created by replacing all matches of @var{regexp} in
 @end lisp
 @end defun
 
+@defun string-split regexp string
+Return a list of substrings of @code{string}, each delimited by
+@code{regexp}.
+
+@lisp
+(string-split ":" "paths/are:often/seperated:by/colon")
+    @result{} ("paths/are/" "often/seperated" "by/colon")
+@end lisp
+@end defun
 
 @node Time and Date, i18n, Regular Expressions, The language
 @section Time and Date
@@ -8618,7 +8634,7 @@ The number of seconds in a 24-hour day.
 
 Given a timestamp value it is possible to format it as a string, in
 many different formats.
- 
+
 @defun current-time-string @t{#!optional} timestamp format
 Return a string defining @var{timestamp} according to the string
 @var{format}. If @var{timestamp} is undefined, the current time is
@@ -9068,9 +9084,9 @@ otherwise print it in base 10.
 @section utf-8
 @cindex utf-8
 
-Some functions for utf-8 strings are available. 
+Some functions for utf-8 strings are available.
 
-They assume that the string is encoded in utf-8. Otherwise, the 
+They assume that the string is encoded in utf-8. Otherwise, the
 behavior is not defined.
 
 @defun utf8-string-length string
@@ -9436,4 +9452,3 @@ For example,
 
 If you adhere to these standards the indentation functions provide by
 the Lisp mode will indent your comments to the correct depth.
-

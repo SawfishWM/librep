@@ -223,7 +223,7 @@
       (vector name file-name size modtime
 	      (cdr (assq (aref mode-string 0) tarfh-list-type-alist))
 	      nil mode-string user group symlink))
-	      (error "can't parse tar file listing line (GNU or Solaris tar required): %s" (substring string point))))
+    (error "can't parse tar file listing line (GNU or Solaris tar required): %s" (substring string point))))
 
 (defun tarfh-file-get-modtime (file-struct)
   (when (stringp (aref file-struct tarfh-file-modtime))

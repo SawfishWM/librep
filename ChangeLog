@@ -1,3 +1,8 @@
+2010-02-02  Teika Kazura <teika@lavabit.com>
+	* lisp/rep/io/file-handlers/tar.jl
+	* man/lang.texi
+	* man/news.texi:  Doc improvements. Describes 'string-split'. Correction in suffix handling of 'load'. Minor improvements in modules, cross references (let, define, defun), require and load.
+
 2010-01-24  Christopher Bratusek <zanghar@freenet.de>
 	* librep.spec.in: improved [Kim B. Heino]
 

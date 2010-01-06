@@ -9,6 +9,11 @@
 @item renamed @code{file-uid-p} to @code{file-uid} and @code{file-gid-p} to @code{file-gid}
 [Christopher Bratusek]
 
+@item Minor doc improvements [Teika Kazura]
+
+Describes function @code{string-split}. Correction in suffix handling
+of @code{load} function.
+
 @item improved specfile [Kim B. Heino]
 @end itemize
 
