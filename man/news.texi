@@ -27,7 +27,7 @@ Sawfish and emacs' sawfish-mode.
 librep on several architectures. From this version on, we don't ship it.
 [Kim B. Heino]
 
-@item Our own implementation of alloca is not needed, rely on libcs instead.
+@item Our own implementation of alloca/memcmp is not needed, rely on libcs instead.
 [Kim B. Heino]
 
 @item Majorly improved the debian and rpm packaging scripts

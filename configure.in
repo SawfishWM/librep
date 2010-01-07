@@ -287,6 +287,8 @@ AC_TYPE_SIZE_T
 AC_TYPE_SIGNAL
 
 dnl Checks for library functions.
+AC_FUNC_ALLOCA
+AC_FUNC_MEMCMP
 AC_FUNC_MMAP
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS(getcwd gethostname select socket strcspn strerror strstr stpcpy strtol psignal strsignal snprintf grantpt lrand48 getpagesize setitimer dladdr dlerror munmap putenv setenv setlocale strchr strcasecmp strncasecmp strdup __argz_count __argz_stringify __argz_next siginterrupt gettimeofday strtoll strtoq)
