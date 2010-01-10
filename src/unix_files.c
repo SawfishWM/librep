@@ -432,7 +432,7 @@ rep_file_owner_p(repv file)
 }
 
 repv
-rep_file_gid_p(repv file)
+rep_file_gid(repv file)
 {
     struct stat *st = stat_file(file);
     if(st != 0)
@@ -442,7 +442,7 @@ rep_file_gid_p(repv file)
 }
 
 repv
-rep_file_uid_p(repv file)
+rep_file_uid(repv file)
 {
     struct stat *st = stat_file(file);
     if(st != 0)

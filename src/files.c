@@ -132,8 +132,8 @@ DEFSYM(file_regular_p, "file-regular-p");
 DEFSYM(file_directory_p, "file-directory-p");
 DEFSYM(file_symlink_p, "file-symlink-p");
 DEFSYM(file_owner_p, "file-owner-p");
-DEFSYM(file_gid_p, "file-gid-p");
-DEFSYM(file_uid_p, "file-uid-p");
+DEFSYM(file_gid, "file-gid");
+DEFSYM(file_uid, "file-uid");
 DEFSYM(file_nlinks, "file-nlinks");
 DEFSYM(file_size, "file-size");
 DEFSYM(file_modes, "file-modes");
@@ -1322,40 +1322,40 @@ same as that of any files written by the editor.
 				     Qfile_owner_p, 1, file);
 }
 
-DEFUN("file-gid-p", Ffile_gid_p, Sfile_gid_p,
+DEFUN("file-gid", Ffile_gid, Sfile_gid,
 	(repv file), rep_Subr1) /*
-::doc::rep.io.files#file-gid-p::
-file-gid-p FILE-NAME
+::doc::rep.io.files#file-gid::
+file-gid FILE-NAME
 
 Returns the gid of the file called FILE-NAME
 ::end:: */
 {
-    repv handler = rep_expand_and_get_handler(&file, op_file_gid_p);
+    repv handler = rep_expand_and_get_handler(&file, op_file_gid);
     if (!handler)
 	 return handler;
     if(rep_NILP(handler))
-	 return rep_file_gid_p(file);
+	 return rep_file_gid(file);
     else
-	 return rep_call_file_handler(handler, op_file_gid_p,
-			              Qfile_gid_p, 1, file);
+	 return rep_call_file_handler(handler, op_file_gid,
+			              Qfile_gid, 1, file);
 }
 
-DEFUN("file-uid-p", Ffile_uid_p, Sfile_uid_p,
+DEFUN("file-uid", Ffile_uid, Sfile_uid,
 	(repv file), rep_Subr1) /*
-::doc::rep.io.files#file-uid-p::
-file-uid-p FILE-NAME
+::doc::rep.io.files#file-uid::
+file-uid FILE-NAME
 
 Returns the uid of the file called FILE-NAME
 ::end:: */
 {
-    repv handler = rep_expand_and_get_handler(&file, op_file_uid_p);
+    repv handler = rep_expand_and_get_handler(&file, op_file_uid);
     if (!handler)
 	 return handler;
     if (rep_NILP(handler))
-	 return rep_file_uid_p(file);
+	 return rep_file_uid(file);
     else
-	 return rep_call_file_handler(handler, op_file_uid_p,
-			 		Qfile_uid_p, 1, file);
+	 return rep_call_file_handler(handler, op_file_uid,
+			 		Qfile_uid, 1, file);
 }
 
 DEFUN("file-nlinks", Ffile_nlinks, Sfile_nlinks,
@@ -1715,8 +1715,8 @@ rep_files_init(void)
     rep_INTERN(file_directory_p);
     rep_INTERN(file_symlink_p);
     rep_INTERN(file_owner_p);
-    rep_INTERN(file_gid_p);
-    rep_INTERN(file_uid_p);
+    rep_INTERN(file_gid);
+    rep_INTERN(file_uid);
     rep_INTERN(file_nlinks);
     rep_INTERN(file_size);
     rep_INTERN(file_modes);
@@ -1773,8 +1773,8 @@ rep_files_init(void)
     rep_ADD_SUBR(Sfile_directory_p);
     rep_ADD_SUBR(Sfile_symlink_p);
     rep_ADD_SUBR(Sfile_owner_p);
-    rep_ADD_SUBR(Sfile_gid_p);
-    rep_ADD_SUBR(Sfile_uid_p);
+    rep_ADD_SUBR(Sfile_gid);
+    rep_ADD_SUBR(Sfile_uid);
     rep_ADD_SUBR(Sfile_nlinks);
     rep_ADD_SUBR(Sfile_size);
     rep_ADD_SUBR(Sfile_modes);

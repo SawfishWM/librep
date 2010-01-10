@@ -7390,11 +7390,11 @@ Returns true when the ownership of the file @var{file-name} is
 the same as that of any files written by the editor.
 @end defun
 
-@defun file-gid-p file-name
+@defun file-gid file-name
 Returns the gid of the file @var{file-name}, as integer.
 @end defun
 
-@defun file-uid-p file-name
+@defun file-uid file-name
 Returns the uid of the file @var{file-name}, as integer.
 @end defun
 

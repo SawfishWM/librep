@@ -1,3 +1,11 @@
+2010-01-10  Christopher Bratusek <zanghar@freenet.de>
+	* src/repint.h
+	* src/repint_subrs.h
+	* src/files.c
+	* src/unix_files.c: renamed file-uid-p to file-uid and file-gid-p to file-gid
+
+	* configure.in: version bump to 0.90.6
+
 2010-01-07  Christopher Bratusek <zanghar@freenet.de>
 	* src/memcmp.c
 	* configure.in: cleanup for yesterdays commit
