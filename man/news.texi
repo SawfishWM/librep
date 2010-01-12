@@ -3,8 +3,14 @@
 @appendix News
 @cindex News
 
-@heading 0.90.5
+@heading 0.90.6
+@itemize @bullet
 
+@item renamed @code{file-uid-p} to @code{file-uid} and @code{file-gid-p} to @code{file-gid}
+[Christopher Bratusek]
+@end itemize
+
+@heading 0.90.5
 @itemize @bullet
 
 @item Byte compiler bugfix in docstring loss [Teika Kazura]
