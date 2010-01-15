@@ -1,3 +1,6 @@
+2010-01-15  Christopher Bratusek <zanghar@freenet.de>
+	* Makefile.in: remove librep.pc upon distclean, not gitlcean
+
 2010-01-10  Christopher Bratusek <zanghar@freenet.de>
 	* src/repint.h
 	* src/repint_subrs.h
