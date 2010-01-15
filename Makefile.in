@@ -95,12 +95,12 @@ distclean :
 	  [ -d $$dir ] && ( cd $$dir && $(MAKE) $@ ) || exit 1; \
 	done
 	rm -f config.cache config.h config.log config.status Makefile libtool
-	rm -f *~ NEWS doc-strings TAGS build.h rules.mk configure.orig
+	rm -f *~ NEWS doc-strings TAGS build.h rules.mk configure.orig librep.pc
 
 gitclean : distclean
 	rm -f aclocal.m4 configure
 	rm -rf autom4te.cache
-	rm -f librep.spec librep.pc librep-*.ebuild
+	rm -f librep.spec librep-*.ebuild
 	-fakeroot debian/rules clean
 	rm -f debian/changelog debian/control
 
