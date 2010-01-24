@@ -2,13 +2,12 @@ Name: librep
 Version: @version@
 Release: 1%{?dist}
 Summary: An embeddable LISP environment
-License: GPL
+License: GPLv2+
 Group: Development/Languages
 Source: http://download.sourceforge.net/librep/librep-%{version}.tar.bz2
 URL: http://librep.sourceforge.net/
-Packager: Christopher Bratusek <zanghar@freenet.de>
 Buildroot: %{_tmppath}/%{name}-%{version}-%{release}-root
-BuildRequires: gmp-devel gdbm-devel readline-devel texinfo libffi-devel
+BuildRequires: gmp-devel, gdbm-devel, readline-devel, libffi-devel, texinfo
 
 %if %{?_emacs_sitelispdir:1}%{!?_emacs_sitelispdir:0}
 %define emacs_lispdir %{_emacs_sitelispdir}
@@ -27,9 +26,9 @@ of the elisp features while trying to remove some of the main
 deficiencies, with features from Common Lisp and Scheme.
 
 %package devel
-Summary: librep include files and link libraries
+Summary: Development files for librep
 Group: Development/Languages
-Requires: %{name} = @version@, pkgconfig
+Requires: %{name} = %{version}, pkgconfig
 
 %description devel
 Link libraries and C header files for librep development.
@@ -46,14 +45,14 @@ nicely interacts and integrates into emacs.
 %setup -q
 
 %build
-%configure --with-readline --enable-shared
+%configure --with-readline --enable-shared --disable-static
+sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
+sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
 make %{?_smp_mflags}
 
 %install
 rm -rf $RPM_BUILD_ROOT
-
 make install DESTDIR=$RPM_BUILD_ROOT
-
 rm -f $RPM_BUILD_ROOT%{_infodir}/dir
 
 %clean
@@ -77,8 +76,9 @@ fi
 %{_bindir}/rep
 %{_bindir}/rep-remote
 %{_datadir}/rep/
-%{_datadir}/man/man1/rep*.gz
-%{_infodir}/librep.info*
+%{_datadir}/man/man1/rep-remote.1.gz
+%{_datadir}/man/man1/rep.1.gz
+%{_infodir}/librep.info.gz
 %{_libdir}/librep.so.*
 %{_libdir}/rep/%{version}/%{_host}/
 
@@ -90,14 +90,18 @@ fi
 %{_libdir}/rep/%{_host}/
 %{_libdir}/pkgconfig/librep.pc
 %{_libdir}/librep.so
+%{_datadir}/man/man1/rep-xgettext.1.gz
+%{_datadir}/man/man1/repdoc.1.gz
 %exclude %{_libdir}/librep.la
-%exclude %{_libdir}/librep.a
 
 %files -n emacs-%{name}-el
 %defattr(-,root,root,-)
 %{emacs_lispdir}/*.el
 
 %changelog
+* Sun Jan 10 2010 Kim B. Heino <b@bbbs.net> - 0.90.6-1
+- fix devel package, fix rpmlint warnings
+
 * Sat Sep 05 2009 Kim B. Heino <b@bbbs.net>
 - add dist-tag, update buildrequires
 

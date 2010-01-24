@@ -21,13 +21,6 @@ RDEPEND=">=sys-libs/gdbm-1.8.3
 DEPEND="${RDEPEND}
 	sys-apps/texinfo"
 
-src_unpack() {
-	unpack ${A}
-
-	cd "${S}"
-
-}
-
 src_compile() {
 	local myconf="$(use_with readline)"
 	use ppc && myconf="${myconf} --with-stack-direction=1"

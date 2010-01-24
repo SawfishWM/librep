@@ -8,6 +8,8 @@
 
 @item renamed @code{file-uid-p} to @code{file-uid} and @code{file-gid-p} to @code{file-gid}
 [Christopher Bratusek]
+
+@item improved specfile [Kim B. Heino]
 @end itemize
 
 @heading 0.90.5
