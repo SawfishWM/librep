@@ -2040,26 +2040,26 @@ produce the next @emph{actual} character in the string.
 The following escape sequences are supported (all are shown without their
 leading backslash @samp{\} character).
 
-@table @samp
-@item n
+@table @asis
+@item @samp{n}
 A newline character.
 
-@item r
+@item @samp{r}
 A carriage return character.
 
-@item f
+@item @samp{f}
 A form feed character.
 
-@item t
+@item @samp{t}
 A TAB character.
 
-@item a
+@item @samp{a}
 A `bell' character (this is Ctrl-g).
 
-@item \
+@item @samp{\}
 A backslash character.
 
-@item ^@var{c}
+@item @samp{^@var{c}}
 The `control' code of the character @var{c}. This is calculated by toggling
 the seventh bit of the @emph{upper-case} version of @var{c}.
 
@@ -2070,14 +2070,19 @@ For example,
 \^@@            ;The NUL character (ASCII value 0)
 @end lisp
 
-@item 012
+@item @samp{012}
 The character whose ASCII value is the octal value @samp{012}. After the
 backslash character the Lisp reader reads up to three octal digits and
 combines them into one character.
 
-@item x12
+@item @samp{x12}
 The character whose ASCII value is the hexadecimal value @samp{12}, i.e.
 an @samp{x} character followed by one or two hex digits.
+
+@item Others
+If none of the above applies, the leading backslash is ignored. This
+is sometimes useful for editors syntax parsing, especially for
+punctuation characters.
 @end table
 
 @defun stringp object
@@ -2467,9 +2472,17 @@ This function creates and returns a new, uninterned, symbol whose print
 name is the string @var{print-name}. Its value cell is void (undefined)
 and it will have an empty property list.
 
+If you're unsure, use @code{intern} instead. (@pxref{Interning}.)
+
 @lisp
 (make-symbol "foo")
     @result{} foo
+
+(eq 'foo (make-symbol "foo"))
+    @result{} ()
+
+(eq 'foo (intern "foo"))
+    @result{} t
 @end lisp
 @end defun
 
@@ -4386,13 +4399,12 @@ Function}). This file should contain a @code{define-structure} form (as
 described in the previous section) as the last top-level form in the
 file.
 
-The @code{require} function can also be used to import modules. For
-the details, @xref{Features}.If a module of the same name as the
-requested feature has already been loaded, then it is imported into
-the current module. Otherwise if a file is loaded that contains a
-module definition as its last top-level form, this module is imported
-into the current module.
-
+The @code{require} function can also be used to import modules. In
+fact, @code{require} offers two distinct, but confusing
+functionalities; It loads the module to librep if unloaded. In
+addition, it imports that module to the current module, i.e. access
+the exported symbols, if not yet imported.  For the details,
+@xref{Features}.
 
 @node Modules and Special Variables, , Module Loading, Modules
 @subsection Modules and Special Variables
@@ -5011,6 +5023,11 @@ error message otherwise.
 (signal 'void-value '(some-symbol))
     @error{} Value as variable is void: some-symbol
 @end lisp
+@end defun
+
+@defun error template #!rest values
+Same as @code{(signal 'error @var{string})}, where @var{string}
+is a string formatted by @var{template} and @var{VALUES}. (@pxref{Formatted Output})
 @end defun
 
 @defvar debug-on-error
@@ -5642,11 +5659,13 @@ Show that the caller is planning to use the feature @var{feature} (a
 symbol).  This function will check the @code{features} variable to see
 if @var{feature} is already loaded, if so it will return immediately.
 
-If @var{feature} is not present it will be loaded. As the filename,
-the print name of the symbol @var{feature} is used, with any @samp{.}
-characters replaced by the operating system's directory separator
-(@pxref{Module Loading}). If the file does not exist, then an error
-is signaled.
+If @var{feature} is not present it will be loaded. If it is already
+loaded into librep, then it's imported in the current module. If not,
+the file which defines the module is searched and
+loaded(@pxref{Load Function}). As the filename, the print name of
+the symbol @var{feature} is used, with any @samp{.}  characters
+replaced by the operating system's directory separator (@pxref{Module
+Loading}). If the file does not exist, then an error is signaled.
 
 @lisp
 ;;;; physics.jl -- the @code{physics} library
@@ -5715,7 +5734,7 @@ which is returned.
 
 @lisp
 (compile-form '(setq foo bar))
-    @result{} (run-byte-code "F!" [bar foo] 2)
+    @result{} (run-byte-code "\030F!v" [bar foo] 2)
 @end lisp
 @end defun
 

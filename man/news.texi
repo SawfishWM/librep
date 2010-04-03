@@ -11,8 +11,9 @@
 
 @item Minor doc improvements [Teika Kazura]
 
-Describes function @code{string-split}. Correction in suffix handling
-of @code{load} function.
+Describes functions @code{signal} and @code{string-split}. Correction
+in suffix handling of @code{load} function. More details on the function
+@code{require}.
 
 @item improved specfile [Kim B. Heino]
 @end itemize
