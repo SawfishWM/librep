@@ -1,3 +1,13 @@
+2010-04-03  Teika Kazura <teika@lavabit.com>
+        * man/lang.texi
+        * man/news.texi: Doc.
+        More details on 'require'. Distinguishes import to module and
+        loading to librep.
+        Backslash as in ?\] is meaningless, but valid.
+        Function 'signal'.
+        Distinction between 'make-symbol' and 'intern'.
+        Deleted one control code (C-x).
+
 2010-02-02  Teika Kazura <teika@lavabit.com>
 	* lisp/rep/io/file-handlers/tar.jl
 	* man/lang.texi
