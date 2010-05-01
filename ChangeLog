@@ -1,3 +1,10 @@
+2010-05-01  Teika Kazura <teika@lavabit.com>
+	* man/news.texi
+	* Src/unix_processes.c: Process execution failure emits a better
+	message. It now shows the program name and arguments.
+
+	* man/lang.texi: Minor doc improvements.
+
 2010-04-03  Teika Kazura <teika@lavabit.com>
         * man/lang.texi
         * man/news.texi: Doc.
