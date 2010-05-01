@@ -5434,13 +5434,14 @@ the file, i.e. instantiating all function definitions, or whatever.
 @cindex Functions, loading
 
 @defun load program @t{#!optional} no-error no-path no-suffix
-This function loads the file containing the program called @var{program};
-first the file is located then each top-level form contained by the file
+This function loads the file containing the program called @var{program}.
+First the file is located, then evaluated, i.e., each top-level form
 is read and evaluated in order.
 
-Each directory named by the variable @code{load-path} is searched until
-the file containing @var{program} is found. In each directory two
-different file names are tried,
+If @var{program} is not an absolute path, each directory named by the
+variable @code{load-path} is searched until the file containing
+@var{program} is found. In each directory two different file names are
+tried,
 
 @enumerate
 @item
@@ -7039,6 +7040,9 @@ Names of files are represented by strings, the syntax of file names is
 defined by the underlying operating system: @code{librep} simply treats
 it as a string.
 
+Many functions described in this chapter signal an error on failure,
+though it's not stated explicitly.
+
 Unless otherwise stated, all functions and variables described in the
 following sections are exported by the @code{rep.io.files} module.
 
@@ -8543,6 +8547,9 @@ Substitute a single backslash character.
 
 Note that double backslashes are required due to the read syntax of
 strings (@pxref{Strings}).
+
+If you call @code{expand-last-match} after a failed match, the
+returned value is not predictable.
 @end defun
 
 @defun string-replace regexp template string
