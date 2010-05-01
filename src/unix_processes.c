@@ -735,7 +735,16 @@ run_process(struct Proc *pr, char **argv, char *sync_input)
 		signal (SIGPIPE, SIG_DFL);
 
 		execvp(argv[0], argv);
-		perror("child subprocess can't exec");
+		int i;
+		fprintf(stderr, "Can't exec: ");
+		for(i = 0; ; i++){
+		  if( argv[i] == NULL){
+		    break;
+		  }
+		  fprintf(stderr, "%s ", argv[i]);
+		}
+		fprintf(stderr, "\n");
+		perror(" ");
 		_exit(255);
 
 	    case -1:

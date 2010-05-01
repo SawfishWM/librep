@@ -16,6 +16,7 @@ in suffix handling of @code{load} function. More details on the function
 @code{require}.
 
 @item improved specfile [Kim B. Heino]
+@item Process execution failure emits better message. [Teika Kazura]
 @end itemize
 
 @heading 0.90.5
