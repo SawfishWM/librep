@@ -3,6 +3,8 @@
 @appendix News
 @cindex News
 
+@heading 0.90.7
+
 @heading 0.90.6
 @itemize @bullet
 
