@@ -1,3 +1,29 @@
+2010-06-26  Teika Kazura <teika@lavabit.com>
+	* lisp/rep/lang/interpreter.jl
+	* lisp/rep/vm/compiler/rep.jl
+	* man/lang.texi
+	* man/news.texi
+	* src/lisp.c: Backtrace and debugger option fix.
+	Previously, if 'backtrace-on-error' is t, then it is printed even if
+	it's inside of a 'condition-case'. Now, it doesn't. Similar for
+	'debug-on-error'.
+	However, this edit is not perfect, but does not bring in any new
+	inconvenience either. Read the news and the manual for the details.
+
+	* man/news.texi
+	* src/lisp.c: When you evaluate a closure, the module to which it
+	belongs is printed, too.
+
+	* librep.ebuild.in
+	* man/lang.texi
+	* man/news.texi
+	* src/repint.h
+	* src/structures.c: Doc.
+	Declared that ebuild is not an official one.
+	Internal 64-bit integer availability.
+	Improved 'let' and fluid description.
+	And so on.
+
 2010-05-01  Teika Kazura <teika@lavabit.com>
 	* man/news.texi
 	* Src/unix_processes.c: Process execution failure emits a better
