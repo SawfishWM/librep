@@ -1,8 +1,10 @@
 2010-06-26  Teika Kazura <teika@lavabit.com>
 	* lisp/rep/lang/interpreter.jl
-	* lisp/rep/vm/compiler/rep.jl
+	* lisp/rep/vm/bytecode-defs.jl
+ 	* lisp/rep/vm/compiler/rep.jl
 	* man/lang.texi
 	* man/news.texi
+	* src/bytecodes.h
 	* src/lisp.c: Backtrace and debugger option fix.
 	Previously, if 'backtrace-on-error' is t, then it is printed even if
 	it's inside of a 'condition-case'. Now, it doesn't. Similar for

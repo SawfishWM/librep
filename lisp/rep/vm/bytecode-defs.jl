@@ -35,8 +35,9 @@
     (open rep)
 
   ;; Instruction set version
+  ;; Don't forget to update the version number in src/bytecodes.h
   (defconst bytecode-major 11)
-  (defconst bytecode-minor 0)
+  (defconst bytecode-minor 1)
 
   ;; macro to get a named bytecode
   (defmacro bytecode (name)

@@ -8,21 +8,21 @@
 
 @item Important notice
 
-You have to byte compile all codes again. Otherwise they may emit many
-messages. In particular @file{sawfish-config} is likely to crash. It
-is due to the backtrace change described below.
+You have to byte compile all codes again.
 
 @item Half way improvement of @code{debug-on-error} and @code{backtrace-on-error} [Teika Kazura]
 
 Previously, setting these values to @code{t} triggered the debugger /
 the backtrace even if the error is signalled inside of
-@code{condition-case}. Now, they don't. Previous behavior can be
-obtained by setting them to a symbol @code{always}.
+@code{condition-case}. This behavior can be still obtained by setting
+them to a symbol @code{always}.
 
-The default value of @code{backtrace-on-error} is @code{t}.
-@emph{Please} notice that in this case, even if the error is not
-handled by an error handler, then the debugger / the backtrace is not
-invoked. It is not the best, but we can't improve it.
+Now, if they're @code{t}, the debugger / the backtrace is invoked only
+if the control is not inside of any @code{condition-case}. Notice that
+the condition is NOT if the error is actually handled by an error
+handler. It is not the best, but we can't improve it.
+
+The default value of @code{backtrace-on-error} is now @code{t}.
 
 @item When you evaluate a closure, the module to which it belongs is printed, too. [Teika kazura]
 

@@ -21,8 +21,10 @@
 #ifndef BYTECODES_H
 #define BYTECODES_H
 
+/* Don't forget to update the version number
+ * in lisp/rep/vm/bytecode-defs.jl, too. */
 #define BYTECODE_MAJOR_VERSION 11
-#define BYTECODE_MINOR_VERSION 0
+#define BYTECODE_MINOR_VERSION 1
 
 /* Number of bits encoded in each extra opcode forming the argument. */
 #define ARG_SHIFT    8
