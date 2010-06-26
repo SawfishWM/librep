@@ -5,10 +5,9 @@
 
 @heading 0.90.7
 @itemize @bullet
-@item Some documentation improvements [Teika kazura]
+@item When you evaluate a closure, the module to which it belongs is printed, too. [Teika kazura]
 
-Better explanation on @code{fluid} and @code{let}.
-
+@item Better documentation on ``fluid'' and @code{let}. [Teika kazura]
 @end itemize
 
 @heading 0.90.6

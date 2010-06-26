@@ -2245,12 +2245,29 @@ rep_lisp_prin(repv strm, repv obj)
 	}
 	else
 	{
+	  /* Anonimous function */
 #ifdef HAVE_SNPRINTF
 	    snprintf (tbuf, sizeof(tbuf), "%" rep_PTR_SIZED_INT_CONV "x", obj);
 #else
 	    sprintf (tbuf, "%" rep_PTR_SIZED_INT_CONV "x", obj);
 #endif
 	    rep_stream_puts (strm, tbuf, -1, rep_FALSE);
+
+	}
+
+	/* print structure name, too */
+	tem = rep_FUNARG(obj)->structure;
+	if (rep_STRUCTUREP(tem)){
+	  /*
+	   * I know spaces around "@" look untidy. But I hope this
+	   * prevents newbies from misunderstanding closure@some.module
+	   * is a valid read syntax.
+	   */
+	  rep_stream_puts (strm, " @ ", -1, rep_FALSE);
+
+	  rep_stream_puts (strm,
+			   rep_STR(Fsymbol_name(rep_STRUCTURE(tem)->name)),
+			   -1, rep_FALSE);
 	}
 	rep_stream_putc (strm, '>');
 	break;
