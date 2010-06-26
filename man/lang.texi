@@ -737,7 +737,9 @@ representation.}.
 
 Without gmp, only integer is exact. Rational numbers get approximated
 with float. On 32-bit system, integer is signed 30-bit (@emph{not} 32
-bits), and 62-bit on 64-bit system.
+bits), and 62-bit on 64-bit system.@footnote{Internally, unsigned 64-bit
+integer is supported too, and used in some cases. But this is not
+available to Lisp programmers.}
 
 Inexact numbers are currently implemented using double precision
 floating point values.
@@ -3011,7 +3013,7 @@ the current environment.
 * Void Variables::              Some variables have no values
 * Defining Variables::          How to define a variable before
                                   using it
-* Fluid Variables::             Another dynamic bindingd methodb
+* Fluid Variables::             Another dynamic binding method
 @end menu
 
 
@@ -3039,7 +3041,7 @@ when the stack is empty the value of the variable is void (@pxref{Void
 Variables}). Assigning a value to the variable (@pxref{Setting
 Variables}) overwrites the top value on the stack with a new value.
 When the value of the variable is required it is simply read from the
-top of the stack.
+top of the stack. See also @xref{Fluid Variables}.
 
 Apart from function applications there are two special forms which
 perform variable binding (i.e. creating local variables), @code{let}
@@ -3070,6 +3072,23 @@ to bind to that variable.
     @result{} (4 . ())
 foo
     @result{} 42        ;The original values is back
+
+;; More on scope.
+(define a 'outer)
+(define (foo) a)
+
+(define (bar)
+   (let ((a 'inner)) (foo)))
+
+(bar)
+   @result{} outer
+;; The let binding is newly established inside of bar,
+;; and foo doesn't see it.
+
+;; Difference to defvar.
+(defvar a 'outer)
+(bar)
+   @result{} inner ;; The scope of a is now dynamic.
 @end lisp
 
 No bindings are made until all new values have been computed. For
@@ -3090,7 +3109,7 @@ Although @code{foo} is given a new binding this is not actually done
 until all the new values have been computed, hence @code{bar} is
 bound to the @emph{old} value of @code{foo}.
 
-The second form, @code{(let variable bindings body...)}, can be
+The second form, @code{(let function bindings body...)}, can be
 used to make a loop. (@pxref{Looping Structures})
 @end defmac
 
@@ -3287,13 +3306,13 @@ reference the value of such a symbol will result in an error. It is
 possible for the most recent binding of a variable to be void even though
 the inactive bindings may have values.
 
-@defun boundp variable
-Returns true if the symbol @var{variable} has a value.
+@defun boundp symbol
+Returns true if @var{symbol} is bound to a variable.
 @end defun
 
-@defun makunbound variable
-This function makes the current binding of the symbol @var{variable} be
-void, then returns @var{variable}.
+@defun makunbound symbol
+This function makes the current binding of @var{symbol} as a variable be
+void, then returns @var{symbol}.
 
 @lisp
 (setq foo 42)
@@ -3310,7 +3329,6 @@ foo
     @error{} Value as variable is void: foo
 @end lisp
 @end defun
-
 
 @node Defining Variables, Fluid Variables, Void Variables, Variables
 @subsection Defining Variables
@@ -3430,8 +3448,19 @@ Here is an example code fragment using fluid variables and
 (let-fluids ((a 1)
              (b 2))
   (+ (fluid a) (fluid b))) @result{} 3
-@end lisp
 
+;; Compare with let.
+(define c 'outer)
+(define (foo) c)
+
+(define (bar)
+   (let ((c 'inner)) (foo)))
+
+(bar)
+   @result{} outer
+;; The let binding is newly established inside of bar,
+;; and foo doesn't see it.
+@end lisp
 
 @node Functions, Macros, Variables, The language
 @section Functions
@@ -4775,10 +4804,10 @@ returns the value of the last @var{expr} form evaluated.
 The ``named-let'' variant of the @code{let} form also provides a
 convenient looping construct.
 
-@defmac let variable bindings body@dots{}
+@defmac let function bindings body@dots{}
 This is the same as the @code{(let @var{bindings} @var{body}@dots{})}
 form described in @ref{Local Variables}, but within the
-@var{body}@dots{} forms, the symbol @var{variable} is bound to a
+@var{body}@dots{} forms, the symbol @var{fuction} is bound to a
 function whose parameters are the bound variables defined by
 @var{bindings} and whose body is the sequence of forms
 @var{body}@dots{}

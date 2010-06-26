@@ -124,7 +124,7 @@ typedef struct rep_struct_struct rep_struct;
 struct rep_struct_struct {
     repv car;
     rep_struct *next;
-    repv name;
+  repv name; /* symbol, not string */
     repv inherited;	/* exported symbols that have no local binding */
     int total_buckets, total_bindings;
     rep_struct_node **buckets;

@@ -4,6 +4,12 @@
 @cindex News
 
 @heading 0.90.7
+@itemize @bullet
+@item Some documentation improvements [Teika kazura]
+
+Better explanation on @code{fluid} and @code{let}.
+
+@end itemize
 
 @heading 0.90.6
 @itemize @bullet

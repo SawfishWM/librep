@@ -1,6 +1,11 @@
 # Copyright 1999-2008 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/dev-libs/librep/librep-@VERSION@.ebuild,v 1.11 2006/10/20 00:24:49 kloeri Exp $
+# $Header: $
+
+# This is *not* an official ebuild of any distributions.
+# After the configure script is run, required package versions are
+# filled in. But other than that, there's no guarantee this is a
+# correct ebuild.
 
 inherit eutils libtool toolchain-funcs multilib autotools
 

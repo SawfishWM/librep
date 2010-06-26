@@ -934,7 +934,7 @@ DEFUN ("structure-name", Fstructure_name,
 ::doc:rep.structures#structure-name::
 structure-name STRUCTURE
 
-Returns the name of structure object STRUCTURE.
+Returns the name (a symbol) of structure object STRUCTURE.
 ::end:: */
 {
     rep_DECLARE1 (structure, rep_STRUCTUREP);
@@ -1070,7 +1070,8 @@ DEFUN("intern-structure", Fintern_structure,
 intern-structure STRUCT-NAME
 
 Return the structure called STRUCT-NAME. If no such structure exists,
-attempt to load it.
+attempt to load it into the root structure, i.e. it's loaded, but
+the current module is not affected.
 ::end:: */
 {
     repv tem;
