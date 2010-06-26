@@ -5061,15 +5061,28 @@ is a string formatted by @var{template} and @var{VALUES}. (@pxref{Formatted Outp
 
 @defvar debug-on-error
 This variable is consulted by the function @code{signal}. If its value
-is either @code{t} or a list containing the @var{error-symbol} to
+is either non-nil or a list containing the @var{error-symbol} to
 @code{signal} as one of its elements, the Lisp debugger is entered.
 When the debugger exits the error is signalled as normal.
+
+More exactly, if it's a symbol @code{always} or a list, then the
+debugger is entered always. If some other non-nil value, then it's
+ignored if an error is signalled from the inside of
+@code{condition-case} described below. Notice that it's not checked if
+the error is actually handled by an error handler defined in
+@code{condition-case}.
+
+@lisp
+(setq backtrace-on-error t) ;; Ordinary usage.
+(setq backtrace-on-error '(void-value bad-arg)) 
+   ;; Enter debugger for only these two cases
+@end lisp
 @end defvar
 
 @defvar backtrace-on-error
-Similar to @code{debug-on-error}, but if an error is matched, the
-current backtrace is printed to the standard error stream, and control
-continues.
+Similar to @code{debug-on-error}, but instead of entering the
+debugger, the current backtrace is printed to the standard error
+stream, and control continues.
 @end defvar
 
 When you expect an error to occur and need to be able to regain control

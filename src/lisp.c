@@ -131,15 +131,15 @@ DEFSYM(debug_macros, "debug-macros");
 DEFSYM(error_handler_function, "error-handler-function"); /*
 ::doc:debug-on-error::
 When an error is signalled this variable controls whether or not to
-enter the Lisp debugger immediately. If the variable's value is t or a
+enter the Lisp debugger immediately. If the variable's value is non-nil or a
 list of symbols--one of which is the signalled error symbol--the
-debugger is entered.
+debugger is entered. Read info for the details.
 ::end::
 ::doc:backtrace-on-error::
 When an error is signalled this variable controls whether or not to
-print a backtrace immediately. If the variable's value is t or a list
-of symbols--one of which is the signalled error symbol--the debugger is
-entered.
+print the backtrace immediately. If the variable's value is non-nil or a list
+of symbols--one of which is the signalled error symbol--the backtrace
+is printed. Read info for the details.
 ::end::
 ::doc:debug-macros::
 When nil, the debugger isn't entered while expanding macro definitions.
@@ -169,6 +169,9 @@ The maximum number of list elements to print before abbreviating.
 ::doc:print-level::
 The number of list levels to descend when printing before abbreviating.
 ::end:: */
+
+DEFSYM(in_condition_case, "%in-condition-case");
+DEFSYM(always, "always");
 
 DEFSYM(load, "load");
 DEFSYM(require, "require");
@@ -1267,7 +1270,7 @@ bind_lambda_list_1 (repv lambdaList, repv *args, int nargs)
 	switch (state)
 	{
 	    repv key;
-            int i;
+	    int i;
 
 	case STATE_REQUIRED:
 	case STATE_OPTIONAL:
@@ -2081,7 +2084,7 @@ rep_call_lispn (repv fun, int argc, repv *argv)
 	/* if (bc_apply == 0) */
 	    ret = rep_apply_bytecode (rep_FUNARG (fun)->fun, argc, argv);
 	/* else
-        ret = bc_apply (rep_FUNARG (fun)->fun, argc, argv); */
+	ret = bc_apply (rep_FUNARG (fun)->fun, argc, argv); */
 	rep_POP_CALL (lc);
 	return ret;
     }
@@ -2503,16 +2506,26 @@ be made available to any error-handler or printed by the default error
 handler.
 ::end:: */
 {
-    repv tmp, errlist, on_error;
+    repv tmp, errlist, on_error, in_cond;
     /* Can only have one error at once.	 */
     if(rep_throw_value)
 	return rep_NULL;
     rep_DECLARE1(error, rep_SYMBOLP);
 
     on_error = Fsymbol_value (Qbacktrace_on_error, Qt);
-    if ((on_error == Qt && error != Qend_of_stream)
-	|| (rep_CONSP(on_error)
-	    && (tmp = Fmemq (error, on_error)) && tmp != Qnil))
+    in_cond = Fsymbol_value(Qin_condition_case, Qt);
+
+    if (/* Usual case */
+	(error != Qend_of_stream
+	 &&
+	 (
+	  (on_error == Qalways)
+	  ||
+	  (on_error != Qnil && !rep_CONSP(on_error) && in_cond != Qt)))
+	||
+	/* a list */
+	(rep_CONSP(on_error)
+	 && (tmp = Fmemq (error, on_error)) && tmp != Qnil))
     {
 	fprintf (stderr, "\nLisp backtrace:\n");
 	Fbacktrace (Fstderr_file());
@@ -2521,9 +2534,16 @@ handler.
 
     errlist = Fcons(error, data);
     on_error = Fsymbol_value(Qdebug_on_error, Qt);
-    if(((on_error != rep_NULL && on_error == Qt && error != Qend_of_stream)
-	|| (rep_CONSP(on_error)
-	    && (tmp = Fmemq(error, on_error)) && !rep_NILP(tmp))))
+    if(/* Usual case */
+       ((on_error != rep_NULL && error != Qend_of_stream)
+	 &&
+	 (
+	  (on_error == Qalways)
+	  ||
+	  (on_error != Qnil && !rep_CONSP(on_error) && in_cond != Qt)))
+       /* a list */
+       || (rep_CONSP(on_error)
+	    && (tmp = Fmemq(error, on_error)) && !rep_NILP(tmp)))
     {
 	/* Enter debugger. */
 	rep_GC_root gc_on_error;
@@ -2848,10 +2868,14 @@ rep_lisp_init(void)
     rep_INTERN_SPECIAL(debug_on_error);
     Fset (Qdebug_on_error, Qnil);
     rep_INTERN_SPECIAL(backtrace_on_error);
-    Fset (Qbacktrace_on_error, Qnil);
+    Fset (Qbacktrace_on_error, Qt);
+    rep_INTERN(always);
     rep_INTERN_SPECIAL(debug_macros);
     Fset (Qdebug_macros, Qnil);
     rep_INTERN_SPECIAL(error_handler_function);
+
+    rep_INTERN_SPECIAL(in_condition_case);
+    Fset (Qin_condition_case, Qnil);
 
     rep_int_cell = Fcons(Quser_interrupt, Qnil);
     rep_mark_static(&rep_int_cell);

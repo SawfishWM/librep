@@ -431,13 +431,13 @@ of the possible declaration types.")
 	 (raise-exception data)
        (let ((type (nth 1 data)))
 	 (let loop ((rest handlers))
-	   (if (null rest)
-	       (raise-exception data)
-	     (let ((h-type (caar rest)))
-	       (if (or (and (listp h-type) (memq type h-type))
-		       (eq h-type 'error) (eq h-type type))
-		   ((cdar rest) (cdr data))
-		 (loop (cdr rest)))))))))))
+	      (if (null rest)
+		  (raise-exception data)
+		(let ((h-type (caar rest)))
+		  (if (or (and (listp h-type) (memq type h-type))
+			  (eq h-type 'error) (eq h-type type))
+		      ((cdar rest) (cdr data))
+		    (loop (cdr rest)))))))))))
 
 (defmacro catch (tag . body)
   "Evaluate BODY in an implicit progn; non-local exits are allowed with
@@ -474,7 +474,8 @@ If VAR is true it's a symbol whose values is bound to `(ERROR-SYMBOL .
 DATA)' while the handler is evaluated (these are the arguments given to
 `signal' when the error was raised)."
   (list* 'call-with-error-handlers
-	 (list 'lambda '() form)
+	 (list 'lambda '()
+	       (list 'let '((%in-condition-case t)) form))
 	 (mapcar (lambda (h)
 		   (list 'cons (list 'quote (car h))
 			 (list* 'lambda (and (symbolp var)

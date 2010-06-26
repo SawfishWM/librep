@@ -747,7 +747,7 @@
 	 (start-label (make-label))
 	 (end-label (make-label))
 	 (handlers (nthcdr 3 form)))
-    (let-fluids ((lexically-pure nil))
+      (let-fluids ((lexically-pure nil))
 
       ;;		jmp start
       ;; cleanup:
@@ -828,7 +828,9 @@
       (emit-insn '(binderr))
       (increment-b-stack)
       (decrement-stack)
-      (compile-form-1 (nth 2 form))
+
+      (compile-form-1
+       (list 'let '((%in-condition-case t)) (nth 2 form)))
 
       ;; end:
       ;;		unbind			;unbind error handler or VAR
