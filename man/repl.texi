@@ -1,8 +1,9 @@
 @c The REPL -*-Texinfo-*-
 
-@chapter The REPL
+@subsection Interactive enviroment
 @cindex The REPL
 @cindex Read-eval-print loop
+@cindex Interactive enviroment
 
 When you invoke the stand-alone librep interpreter without giving it a
 script to execute the system is started in interactive mode. This

@@ -3,22 +3,16 @@
 @settitle librep Manual
 @footnotestyle end
 
-@set EDITION 1.2
-@set VERSION 0.13
-@set UPDATED 2 May 2009
-@set UPDATE-MONTH May 2009
-
 @ifinfo
 @dircategory Programming Languages
 @direntry
-* librep: (librep).		A flexible Lisp environment
+* librep: (librep).		``Liberp'' lisp language
 @end direntry
 
-This is Edition @value{EDITION}, last updated @value{UPDATED},
-of @cite{The librep Manual}, for librep, Version @value{VERSION}.
+This is @cite{The librep Manual}, for librep.
 
 Copyright 1999--2000 John Harper.
-
+Copyright 2009-      Sawfish community.
 Permission is granted to make and distribute verbatim copies of
 this manual provided the copyright notice and this permission notice
 are preserved on all copies.
@@ -39,8 +33,6 @@ notice identical to this one.
 @titlepage
 @title librep
 @subtitle A LISP extension language
-@subtitle Edition @value{EDITION}
-@subtitle @value{UPDATE-MONTH}
 @author John Harper
 @page
 @vskip 0pt plus 1filll
@@ -59,26 +51,17 @@ notice identical to this one.
 @node Top, Copying, (dir), (dir)
 
 @ifinfo
-This document describes @code{librep}, a simple, but powerful, Lisp
-dialect intended both as an embedded extension language, and as a
-stand-alone programming language.
-
-This is Edition @value{EDITION} of its documentation,
-last updated @value{UPDATED} for librep version @value{VERSION}.
+This document describes @code{librep} Lisp dialect.
 @end ifinfo
 
 @menu
 * Copying::                     Distribution conditions
 * Introduction::                Brief introduction to librep
+* News::                        History of user-visible changes
 
 * Invocation::                  How to start the interpreter
 * The language::                The Lisp dialect implemented
-* The REPL::                    The interactive environment
 * librep Internals::		Embedding librep in other programs
-
-* Reporting bugs::              How to contact the maintainers
-
-* News::                        History of user-visible changes
 
 * Function index::              Menu of all documented functions
 * Variable index::              All variables which have been mentioned
@@ -127,10 +110,17 @@ Be aware that there is absolutely NO WARRANTY for this program, you use
 it at your own risk. Obviously I hope there are no bugs, but I make no
 promises regarding the reliability of this software.
 
-
-@node Introduction, Invocation, Copying, Top
+@node Introduction, News, Copying, Top
 @chapter Introduction
 @cindex Introduction
+
+@menu
+* Overview::
+* Reporting bugs::              How to contact the maintainers
+@end menu
+
+@node Overview, Reporting bugs, , Introduction
+@section Overview
 
 @code{librep} is a dialect of Lisp, designed to be used both as an
 extension language for applications and as a general purpose
@@ -174,10 +164,43 @@ Common Lisp and various Scheme implementations
 @item Extensible type, I/O, and file handling
 @end itemize
 
+@node Reporting bugs, , Overview, Introduction
+@section Reporting bugs
+@cindex Reporting bugs
+@cindex Bugs, reporting
 
-@node Invocation, The language, Introduction, Top
+If the @code{librep} interpreter crashes it's probably a bug (unless
+you're using the @code{rep-gtk} binding, in which case creating invalid
+GTK widget hierarchies can easily crash the Lisp system). If the
+interpreter hangs such that sending it interrupt signals doesn't fix
+the problem, that's probably also a bug.
+
+To help me fix any bugs found please try to collect as much meaningful
+information as possible. This will hopefully include stack backtraces
+(of both the C and Lisp stacks if possible), what features are loaded,
+what you did immediately before triggering the bug, a description of
+your the system, etc@dots{}
+
+Please send any bug reports to the mailing list:
+@email{librep-list@@lists.sourceforge.net}. Alternatively, the author
+may be contacted at: @email{jsh@@users.sourceforge.net}.
+
+@node News, Invocation, Introduction, Top
+
+@include news.texi
+
+@node Invocation, The language, News, Top
 @chapter Invocation
 @cindex Invocation
+
+@menu
+* Command `rep'::
+* Implicitly Interpreting rep Scripts::  #!/usr/bin/rep
+* Interactive environment::
+@end menu
+
+@node Command `rep', Implicitly Interpreting rep Scripts, , Invocation
+@section Command `rep'
 
 The @code{rep} program may be used to launch the stand-alone
 @code{librep} environment:
@@ -235,7 +258,8 @@ console; this continues ad infinitum, or until you force an EOF (i.e.
 enter @kbd{C-d}).
 
 
-@subsubheading Implicitly Interpreting @code{rep} Scripts
+@node Implicitly Interpreting rep Scripts, Interactive environment, Command `rep', Invocation
+@section Implicitly Interpreting rep Scripts
 @cindex Implicitly Interpreting @code{rep} scripts
 @cindex Executing @code{rep} scripts
 @cindex Scripts, executing implicitly
@@ -269,46 +293,18 @@ exec rep "$0" "$@@"
 ;; Lisp code follows@dots{}
 @end example
 
+@node Interactive environment, , Implicitly Interpreting rep Scripts, Invocation
+@include repl.texi
 
-@node The language, The REPL, Invocation, Top
+@node The language, librep Internals, Invocation, Top
 @include lang.texi
 
 
-@node The REPL, librep Internals, The language, Top
-@include repl.texi
-
-@node librep Internals, Reporting bugs, The REPL, Top
+@node librep Internals, Function index, The language, Top
 @include interface.texi
 
 
-@node Reporting bugs, News, librep Internals, Top
-@chapter Reporting bugs
-@cindex Reporting bugs
-@cindex Bugs, reporting
-
-If the @code{librep} interpreter crashes it's probably a bug (unless
-you're using the @code{rep-gtk} binding, in which case creating invalid
-GTK widget hierarchies can easily crash the Lisp system). If the
-interpreter hangs such that sending it interrupt signals doesn't fix
-the problem, that's probably also a bug.
-
-To help me fix any bugs found please try to collect as much meaningful
-information as possible. This will hopefully include stack backtraces
-(of both the C and Lisp stacks if possible), what features are loaded,
-what you did immediately before triggering the bug, a description of
-your the system, etc@dots{}
-
-Please send any bug reports to the mailing list:
-@email{librep-list@@lists.sourceforge.net}. Alternatively, the author
-may be contacted at: @email{jsh@@users.sourceforge.net}.
-
-
-@node News, Function index, Reporting bugs, Top
-
-@include news.texi
-
-
-@node Function index, Variable index, News, Top
+@node Function index, Variable index, librep Internals, Top
 @unnumbered Function index
 
 @printindex fn

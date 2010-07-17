@@ -1,6 +1,6 @@
 @c -*-Texinfo-*-
 
-@appendix News
+@chapter News
 @cindex News
 
 @heading 0.90.7
