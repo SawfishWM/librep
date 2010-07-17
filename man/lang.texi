@@ -344,12 +344,13 @@ You can make visible this variable to other modules. This will
 be explained later in the section on modules.
 
 Like Elisp, @code{defvar} does not override an existing value. (But
-@code{define} does.) Function @code{define-special-variable} is
-@code{defvar} + @code{setq}, so it declares a global variable, and
-sets the value. (Yes, a very bad name.)
+@code{define} does.) Function @code{defvar-setq} is @code{defvar} +
+@code{setq}, so it declares a global variable, and sets the value.
+(It was previously called @code{define-special-variable}, but
+a new, better name is provided now.)
 
 Now, an important point. It's a common technique to change the value
-of a varible temporarily with @code{let} in Elisp. This works too
+of a variable temporarily with @code{let} in Elisp. This works too
 in Rep, but ONLY with global variable. Please see the next example:
 
 @lisp
@@ -375,7 +376,7 @@ This is the lexical scope.
 
 There's also the notion of ``fluid'' variables in Rep which is an
 intermediate between lexical and dynamic. In my personal opinion,
-fluids are not so useful because Rep's grammar is poor. But it is
+fluids are not so much useful because Rep's grammar is poor. But it is
 used in Sawfish, too. See @xref{Fluid Variables}.
 
 @subheading Functions
@@ -420,7 +421,7 @@ you can easily write helper functions which are only visible to
 the wrapping function.
 
 Use @code{#!optional} and @code{#!rest}, instead of @code{&}. You can
-also use named argument passing wich @code{#!key}. See @xref{Lambda
+also use named argument passing with @code{#!key}. See @xref{Lambda
 Expressions}.
 
 In Rep, you can't @code{funcall} symbols. It's of frequent use for
@@ -3580,6 +3581,16 @@ special form.")
 Don't use @code{defvar} if @code{define} suffices. For the reason,
 see @xref{Modules and Special Variables}.
 @end defspec
+
+@defmac defvar-setq var @t{#!optional} value doc
+It's @code{defvar} + @code{setq}, so defines @var{var} as a special
+variable, and sets the value to @var{value}.
+@end defmac
+
+@defmac define-special-variable var @t{#!optional} value doc
+Same as @code{defvar-setq} above. A very confusing name, so it's
+deprecated now.
+@end defmac
 
 @defmac defconst constant form [doc-string]
 @code{defconst} defines a global constant, the symbol @var{constant}.
@@ -9066,7 +9077,7 @@ Return a list of substrings of @code{string}, each delimited by
 @cindex Calendar date and time
 
 This section describes how time and date values are handled in
-Librep.
+Librep. These function are exported by the @code{rep.system} module:
 
 @menu
 * Timestamps::                  Internal representation of time
@@ -9087,8 +9098,6 @@ For historical reasons Librep stores ``timestamp''s as a pair of integers,
 using a cons cell. The first integer records the number of whole days
 since the epoch, the second records the number of seconds since the
 start of the day (in universal time).
-
-These function are exported by the @code{rep.system} module:
 
 @defun current-time
 Return the number of seconds since the epoch, in a cons-cell.

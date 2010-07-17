@@ -288,19 +288,26 @@ See also `setq'. Returns the value of the last FORM."
 ;; XXX it would be nice to do the same for setq.. might stress the
 ;; XXX interpreter somewhat..? :-(
 
-(defmacro define-special-variable (var #!optional value doc)
-  "define-special-variable VARIABLE [VALUE [DOC]]
+(defmacro defvar-setq (var #!optional value doc)
+  "defvar-setq VARIABLE [VALUE [DOC]]
 
-Declares the symbol VARIABLE as a special variable, then
-unconditionally sets its value to VALUE (or false if VALUE isn't
-defined). If DOC is given it will be installed as the documentation
-string associated with VARIABLE."
+Declares the symbol VARIABLE as a special variable, and sets its value
+to VALUE (or false if VALUE isn't defined). If DOC is given it will be
+installed as the documentation string associated with VARIABLE.
+
+It's the same as the previous `define-special-variable'."
 
   (list 'progn
 	(list 'defvar var nil doc)
 	(list 'setq var value)))
 
-(export-bindings '(setq-default define-special-variable))
+(defmacro define-special-variable (var #!optional value doc)
+  "Use defvar-setq instead."
+  (list 'progn
+	(list 'defvar var nil doc)
+	(list 'setq var value)))
+
+(export-bindings '(setq-default defvar-setq define-special-variable))
 
 
 ;; Misc syntax

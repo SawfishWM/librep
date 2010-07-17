@@ -52,6 +52,8 @@
 (defun _ (arg) arg)
 (export-bindings '(_))
 
+;; These functions get exported by 'rep' module, so available
+;; virtually without explicit import.
 (export-bindings (parse-interface '(compound-interface
 				    (structure-interface rep.lang.interpreter)
 				    (structure-interface rep.lang.symbols)

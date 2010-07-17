@@ -44,6 +44,10 @@ Functions}), @code{table-size} (@pxref{Hash Tables}), @code{setcar},
 @code{setcdr} and @code{cdddr} family (@pxref{Cons Cells}),
 @code{assoc-regexp} (@pxref{Association Lists}).
 
+@item @code{define-special-variable} is replaced by @code{defvar-setq} [Teika kazura]
+
+The former remains, but it's a very confusing name, so the latter is
+introduced.
 @end itemize
 @heading 0.90.6
 @itemize @bullet
