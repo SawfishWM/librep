@@ -9,7 +9,7 @@
 rep \- Librep Interpreter
 .SH SYNOPSIS
 
-\fBrep\fR [ \fB options \fR ][ \fB FILE \fR ]
+\fBrep\fR [ \fB options \fR ][ \fB FILE \fR [ \fB SCRIPT-OPTIONS .. \fR ] ]
 
 .SH "DESCRIPTION"
 .PP
@@ -22,6 +22,9 @@ Read \fBInfo\fR for the details.
 .TP
 \fBFILE\fR
 load the Lisp file \fIFILE\fR (implies \-\-batch\fR)
+.TP
+\fBSCRIPT-OPTIONS\fR
+Passed to Lisp via \fIcommand-line-args\fR variable.
 .TP
 \fB\-\-batch\fR
 Batch mode: process options and exit.

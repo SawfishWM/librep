@@ -54,7 +54,6 @@
 
 (export-bindings (parse-interface '(compound-interface
 				    (structure-interface rep.lang.interpreter)
-				    (structure-interface rep.lang.debug)
 				    (structure-interface rep.lang.symbols)
 				    (structure-interface rep.lang.math)
 				    (structure-interface rep.lang.debug)

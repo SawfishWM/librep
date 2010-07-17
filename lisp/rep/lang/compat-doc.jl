@@ -19,6 +19,8 @@
    You should have received a copy of the GNU General Public License
    along with librep; see the file COPYING.  If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
+
+   For the current doc system, see doc.jl in this directory.
 |#
 
 (define-structure rep.lang.compat-doc

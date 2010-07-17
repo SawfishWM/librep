@@ -2,15 +2,14 @@
 
 @chapter The language
 @cindex The language
-@cindex Lisp, the rep dialect
 @cindex rep, the Lisp dialect
 
-This chapter of the manual is a guide to the librep Lisp
-programming language, including documentation for most of the built-in
-functions.
+This chapter is a Lisp guide to the librep.  This manual is still far
+from complete.
 
 @menu
-* Intro::                       Introduction and Lisp conventions
+* Rep's Lisp Introduction::           Introduction and Lisp conventions
+* Crash course for Elisp users:: How does it differ from Elisp?
 
 Fundamental data types.
 
@@ -63,62 +62,78 @@ Miscellaneous features.
 * Timers::                      Asynchronous timers
 
 * Debugging::                   How to debug Lisp programs
-* Tips::                        General ideas for @code{librep} programming
+* Tips::                        General ideas for Librep programming
 @end menu
 
-This manual is still far from complete.
-Following functions are not documented, but they're not all:
-default-boundp,
-default-value,
-recursive-edit,
-regexp-cache-control,
-sdbm-close,
-sdbm-delete,
-sdbm-error,
-sdbm-fetch,
-sdbm-firstkey,
-sdbm-nextkey,
-sdbm-open,
-sdbm-rdonly,
-sdbm-store,
-sdbmp,
-set-default,
-setq-default
+Some functions remain not documented. Get the source, and read
 
-@node Intro, Data Types, , The language
-@section Introduction
+@table @asis
+@item Sockets
+@file{src/sockets.c}.
+@item Dbms
+@file{src/repgdbm.c} and @file{src/repsdbm.c}.
+@item @code{dynamic-wind}
+@file{lisp/rep/lang/interpreter.jl}.
+@end table
+
+@node Rep's Lisp Introduction, Crash course for Elisp users, , The language
+@section Rep's Lisp Introduction
 @cindex Introduction, Lisp
 
-As you have probably gathered by now, @code{librep} provides a dialect
-of the Lisp programming language---a dialect originally inspired by
-Emacs Lisp, but later adapted to include many features from various
-Scheme implementations and Common Lisp. The language dialect aims to be
-convenient for both extending applications and writing large
-stand-alone programs.
-
-All programs written using only the information in this manual should
-be compatible with future revisions of @code{librep}.
-
-This following sections explain some of the most important Lisp concepts
-and the conventions I've used in this manual.
+The following sections explain some of the most important Lisp concepts
+and the conventions I've used in this manual. If you know Emacs lisp,
+see also @xref{Crash course for Elisp users}.
 
 @menu
+* Features as Lisp::
 * nil and t::                   Boolean values in Lisp
 * The Lisp Reader::             Basic program structure
 * Notation::                    Special glyphs used
 * Descriptions::                How functions and variables are documented
 @end menu
 
+@node Features as Lisp, nil and t, , Rep's Lisp Introduction
+@subsection Features as Lisp
 
-@node nil and t, The Lisp Reader, , Intro
+Librep was originally inspired by Emacs Lisp, but later included many
+features from Scheme.
+
+Some of the features of Librep are:
+
+@itemize @bullet
+@item Lexically scoped (with special variables from CL)
+
+@item Clean module system
+
+@item Tail-call elimination
+
+@item Compiles to byte-code
+
+@item First-class continuations
+
+@item Uses GNU MP (optionally) for fast bignums/rationals
+
+@item Most Emacs Lisp functions, with others inspired by
+Common Lisp and various Scheme implementations
+
+@item Mostly-Perl-like regular expressions
+
+@item Spawn and control subprocesses
+
+@item Dynamically loads shared libraries (a.k.a. ``plugins'')
+
+@item Extensible type, I/O, and file handling
+@end itemize
+
+@node nil and t, The Lisp Reader, Features as Lisp, Rep's Lisp Introduction
 @subsection nil and t
 @cindex nil and t
 @cindex t
 @cindex Boolean values
 
-In the rep Lisp dialect there is a single data value representing
-boolean ``false''---the empty list, written as @code{()}. All other
-values are considered ``not-false'', i.e. ``true''.
+In librep there is a single data value representing boolean
+``false''---the empty list, written as @code{()}. All other values are
+considered ``not-false'', i.e. ``true''.
 
 By convention the constants @code{nil} and @code{t} are used to
 represent the canonical boolean values. The constant variable
@@ -152,7 +167,7 @@ the false boolean value, i.e. the empty list. When a function is said
 to ``return true'', this means that any non-false value is returned.
 
 
-@node The Lisp Reader, Notation, nil and t, Intro
+@node The Lisp Reader, Notation, nil and t, Rep's Lisp Introduction
 @subsection The Lisp Reader
 @cindex The Lisp reader
 @cindex Reader, the Lisp
@@ -170,7 +185,7 @@ stream until a whole Lisp object has been parsed.
 @xref{Data Types}.
 
 
-@node Notation, Descriptions, The Lisp Reader, Intro
+@node Notation, Descriptions, The Lisp Reader, Rep's Lisp Introduction
 @subsection Notation
 @cindex Notation
 @cindex Manual notation
@@ -209,7 +224,7 @@ by the @samp{@error{}} glyph.
 @end lisp
 
 
-@node Descriptions, , Notation, Intro
+@node Descriptions, , Notation, Rep's Lisp Introduction
 @subsection Descriptions
 @cindex Descriptions
 @cindex Functions, descriptions of
@@ -266,8 +281,180 @@ arguments. Optional values are enclosed in square brackets
 (@samp{@var{repeated-arg}@dots{}}) indicate where zero or more
 arguments are allowed.
 
+@node Crash course for Elisp users, Data Types, Rep's Lisp Introduction, The language
+@section Crash course for Elisp users
+This short course explains how Librep differs from Emacs lisp. It is a
+good way to go, because librep can be seen as Elisp + some good parts
+of Scheme.  The author is NOT lisp-headed, so you may find it rather
+slack.
 
-@node Data Types, Numbers, Intro, The language
+@subheading Interactive evaluation
+To evaluate Lisp expressions interactively, or to enter ``REPL'' --
+read, eval, print loop -- then call @code{rep} or
+@code{sawfish-client}:
+
+@example
+$ rep # or
+$ sawfish-client
+@end example
+
+These two look similar, but there's a striking difference. The
+@code{rep} program starts a clean, new REPL, but in @code{sawfish-client},
+each expression is sent to the Sawfish window manager, and evaluated
+therein. In this way you can change the Sawfish's options on the fly:
+
+@example
+$ sawfish-client
+...
+user> (setq reboot-command "my/reboot/command --no-broadcast")
+@end example
+
+But if you enter an infinite loop by mistake, it makes the window
+manager freeze.
+
+If you're an Emacs user, then you can use ``sawfish-mode'', too.
+If you type @kbd{C-x C-e} like ``Lisp interaction'' mode, it works
+as a wrapper to @code{sawfish-client}, and the expression is sent
+to it. For more on Sawfish, read Sawfish manual.
+
+@subheading Scope
+The biggest difference from Elisp is that Librep has modules and
+lexical scope.  Module will be explained later, so for the time being
+just remember that the module system exists.
+
+Variables and functions always live in a module, unless it's global,
+or ``special'', or ``dynamically scoped''. In Elisp all variables are
+global, but not in Rep. You can declare a global variable with
+@code{defvar}:
+
+@lisp
+(defvar my-var 'a-value "An example variable")
+@end lisp
+
+Do NOT use @code{defvar} unless it's necessary. One common use in
+Sawfish of @code{defvar} is to declare a user option. If you need a
+variable inside of a module, use @code{define}:
+
+@lisp
+;; A variable, not global.
+(define var-2 'value-2)
+@end lisp
+
+You can make visible this variable to other modules. This will
+be explained later in the section on modules.
+
+Like Elisp, @code{defvar} does not override an existing value. (But
+@code{define} does.) Function @code{define-special-variable} is
+@code{defvar} + @code{setq}, so it declares a global variable, and
+sets the value. (Yes, a very bad name.)
+
+Now, an important point. It's a common technique to change the value
+of a varible temporarily with @code{let} in Elisp. This works too
+in Rep, but ONLY with global variable. Please see the next example:
+
+@lisp
+(define a 'outer) ;; Declares a variable.
+(define (foo) a)  ;; In elisp, (defun foo () a) Use `define' for both
+                  ;; variable and function declaration.
+
+(define (bar)
+   (let ((a 'inner)) (foo)))
+
+(bar)
+   @result{} outer
+;; The let binding is newly established @emph{inside} of bar,
+;; and foo doesn't see it.
+
+;; Difference to defvar.
+(defvar a 'outer)
+(bar)
+   @result{} inner ;; The scope of @code{a} is now dynamic.
+@end lisp
+
+This is the lexical scope.
+
+There's also the notion of ``fluid'' variables in Rep which is an
+intermediate between lexical and dynamic. In my personal opinion,
+fluids are not so useful because Rep's grammar is poor. But it is
+used in Sawfish, too. See @xref{Fluid Variables}.
+
+@subheading Functions
+
+You may be shocked by the following example:
+
+@lisp
+(define (foo x)
+  "Returns X."
+  x)
+;; In Elisp, (defun foo (x) x)
+
+(define bar foo)
+(bar 'baz)
+  @result{} baz
+
+bar
+  @result{} <#closure foo @@ my-module>
+
+;; More straight example
+((lambda (a b c)
+   (list c b a))
+ 1 100 10000)
+  @result{} (10000 100 1)
+@end lisp
+
+So not only variables and functions live in the same namespace in Rep,
+but also functions can easily be passed to variables, and called. This
+is called ``Lisp-1'', like Scheme, while Elisp and Common lisp are
+``Lisp-2''. It can be a mnemonic that that's why you use @code{define}
+for both variable and function definition.
+
+In Rep, a lambda does not evaluate to itself, but to a ``closure''.
+A closure can be considered as a function itself, written in lisp,
+and associated to the module it belongs to. (And a ``subr'' is a
+function in C.) That's why the above example worked.
+
+For function definitions, use @code{define}, like the above example.
+The grammar is intuitive, where the definition looks the same as
+invocation. Definitions with @code{define} can be nested, so
+you can easily write helper functions which are only visible to
+the wrapping function.
+
+Use @code{#!optional} and @code{#!rest}, instead of @code{&}. You can
+also use named argument passing wich @code{#!key}. See @xref{Lambda
+Expressions}.
+
+In Rep, you can't @code{funcall} symbols. It's of frequent use for
+hooks in Elisp. Instead, you can just pass a function to
+@code{add-hook}:
+
+@lisp
+(define (viewport-window-uniconified w) ...)
+(add-hook 'uniconify-window-hook viewport-window-uniconified)
+@end lisp
+
+This works by the same logic as the previous example where a function
+is set to a variable.
+
+@subheading Modules
+See @xref{Informal Module Introduction}. (In fact, it was originally
+written as a part of this section, but a good tutorial on modules
+was lacking, so I promoted it to the entire document's tutorial.)
+
+@subheading Misc
+Many differences of Rep from Elisp are there, but in this section
+let us see only some of them.
+
+The symbol @code{nil} is bound to () in Rep. So (eq nil 'nil) is
+t in Elisp, but nil in Rep. () evaluates to itself in both, but not
+in Scheme.
+
+@code{#f} evaluates to @code{()}, and @code{#t} to @code{t}. These two
+come from Scheme.
+
+Rep does not have the notion of ``command'', but Sawfish does.
+See @xref{Commands, , Commands, sawfish, The Sawfish Manual}.
+
+@node Data Types, Numbers, Crash course for Elisp users, The language
 @section Data Types
 @cindex Data types
 
@@ -418,6 +605,8 @@ examples are,
     @result{} 1.23
 @end lisp
 
+For full documentation, read @xref{Number Read Syntax}.
+
 @item Strings
 The read syntax of a string is simply the string with a double-quote
 character (@samp{"}) at each end, for more details see @ref{Strings}.
@@ -465,6 +654,7 @@ the symbol called @samp{my-symbol} is,
 @lisp
 my-symbol
 @end lisp
+For more, read @xref{Symbol Syntax}.
 @end table
 
 
@@ -676,7 +866,7 @@ of the garbage collector.
 @cindex Numbers
 @cindex Integers
 
-@code{Librep} lacks exact number specification. The behavior depends
+Librep lacks exact number specification. The behavior depends
 on if it is compiled with gmp support or not. Of course, some
 feautures are not available without gmp@footnote{GMP, or GNU MP is a
 library which supports arbitrary precision arithmetic.}.
@@ -714,8 +904,8 @@ Returns true if @var{object} is a number.
 @cindex Portability in Number
 
 First understand that librep distinguishes @code{exact} and
-@code{inexact} numbers. This is similar to the Scheme dialect of
-Lisp. Quoting from the Scheme standard:
+@code{inexact} numbers. This is similar to Scheme. Quoting from the
+Scheme standard:
 
 @quotation
 @dots{} numbers are either @emph{exact} or @emph{inexact}. A number is
@@ -726,7 +916,7 @@ ingredients, or if it was derived using inexact operations. Thus
 inexactness is a contagious property of a number.
 @end quotation
 
-@code{Librep} has three types of numbers: integer, rational, and
+Librep has three types of numbers: integer, rational, and
 float.
 
 With gmp, exact numbers include both integers and rational numbers.
@@ -747,7 +937,7 @@ floating point values.
 When exact arguments are passed to functions which take float arguments,
 then they are automatically converted to float.
 
-Note that rep often handles integer overflow by converting the result
+Note that Rep often handles integer overflow by converting the result
 from integer to float.
 
 @node Numeric Predicates, Number Read Syntax, Types of Numbers, Numbers
@@ -1178,7 +1368,7 @@ seeds the generator with the current time of day.
 @subsection Characters
 @cindex Characters
 
-In @code{librep} characters are stored in integers. Their read syntax
+In Librep characters are stored in integers. Their read syntax
 is a question mark followed by the character itself, which may be an
 escape sequence introduced by a backslash. For details of the available
 escape sequences see @ref{Strings}.
@@ -1361,6 +1551,10 @@ This function returns the cdr (second element) of the cons cell
 @end lisp
 @end defun
 
+Rep also provides @code{cXXr}, @code{cXXXr}, and @code{cXXXXr}, where
+each @var{x} is either @code{a} or @code{d}. For example, @code{(cadr z)}
+is equal to @code{(car (cdr z))}.
+
 @defun rplaca cons-cell new-car
 This function sets the value of the car (first element) in the cons
 cell @var{cons-cell} to @var{new-car}. The value returned is
@@ -1381,6 +1575,11 @@ This function is similar to @code{rplacd} except that the cdr slot
 (second element) of @var{cons-cell} is modified.
 @end defun
 
+@defun setcar cons-cell new-car
+@defunx setcdr cons-cell new-cdr
+Same as @code{rplaca} and @code{rplacd} respectively, but the
+return value is @var{new-car} / @var{new-cdr}.
+@end defun
 
 @node Lists, Vectors, Cons Cells, Sequences
 @subsection Lists
@@ -1847,6 +2046,8 @@ The sort is stable, in that elements in the list which are equal will
 preserve their original positions in relation to each other.
 @end defun
 
+See also @code{delete-if}, @code{delete-if-not}, @code{filter} and so on.
+(@pxref{Mapping Functions}).
 
 @node Association Lists, Infinite Lists, Modifying Lists, Lists
 @subsubsection Association Lists
@@ -1926,6 +2127,10 @@ This function is equivalent to @code{rassoc} except that it uses @code{eq}
 to make comparisons.
 @end defun
 
+@defun assoc-regexp key-regex alist @t{#!optional} fold-case
+Same as @code{assoc}, but it is matched with the regular expression
+@var{key-regex}.
+@end defun
 
 @node Infinite Lists, , Association Lists, Lists
 @subsubsection Infinite Lists
@@ -2020,7 +2225,7 @@ they are all @code{()}.
 
 A string is a vector of characters (@pxref{Characters}). It is
 generally used for storing and manipulating pieces of text.
-@code{librep} puts no restrictions on the values which may be stored in
+Librep puts no restrictions on the values which may be stored in
 a string---specifically, the null character (@samp{^@@}) may be
 stored with no problems.
 
@@ -2175,7 +2380,7 @@ This is determined by comparing the two strings a character at a time, the
 first pair of characters which do not match each other are then compared
 with a normal `less-than' function.
 
-In @code{librep} the standard @code{<} function understands strings so
+In Librep the standard @code{<} function understands strings so
 @code{string<} is just a macro calling that function.
 
 @lisp
@@ -2707,9 +2912,12 @@ evaluator treats specially are symbols (which describe variables) and
 lists (subroutine applications), anything else is returned as-is (and
 is called a @dfn{self-evaluating form}).
 
-@defun eval form
+@defun eval form @t{#!optional} structure
 This function computes and returns the value of @var{form} within the
 current module and dynamic environment, and a null lexical environment.
+
+If the optional argument @var{structure} is non-nil, then @var{form}
+is evaluated in that structure.
 @end defun
 
 However, @code{eval} is rarely explicitly invoked, except in the
@@ -2892,7 +3100,7 @@ of their arguments, including the forms to be conditionally evaluated,
 were evaluated automatically this would defeat the object of being
 conditional!).
 
-The special forms supported by @code{librep} are: @code{cond},
+The special forms supported by Librep are: @code{cond},
 @code{defvar}, @code{progn}, @code{quote}, @code{setq}.
 
 @defun special-form-p arg
@@ -2910,7 +3118,7 @@ Returns true if @var{arg} is a special form.
 @cindex Autoload forms
 @cindex Forms, autoload
 
-Not all parts of @code{librep} are needed at once, autoload forms
+Not all parts of Librep are needed at once, autoload forms
 provide a means of marking that a function (or macro) is contained by a
 specific Lisp library. The first time that the function is accessed the
 autoload form will be evaluated; this loads the file containing the
@@ -3230,12 +3438,11 @@ may generate incorrect code in certain circumstances.)
 @cindex Scope and extent
 @cindex Variables, scope and extent of
 
-In the @code{librep} dialect of Lisp by default variables have
-@dfn{lexical scope}. This means that bindings are associated with
-textual regions of programs, and may be accessed by any forms within
-this associated textual region. Moreover, the bindings are persistent,
-even when the flow of control is currently outside the associated
-region.
+In the Librep by default variables have @dfn{lexical
+scope}. This means that bindings are associated with textual regions
+of programs, and may be accessed by any forms within this associated
+textual region. Moreover, the bindings are persistent, even when the
+flow of control is currently outside the associated region.
 
 Consider the following example:
 
@@ -3268,7 +3475,8 @@ this means is that references to these variables may occur anywhere in
 a program (i.e. bindings established in one function are visible within
 functions called from the original function) and that references may
 occur at any point in time between the binding being created and it
-being unbound.
+being unbound. Special variables are stored in a
+separate namespace. 
 
 Dynamic scoping is easy to abuse, making programs hard to understand
 and debug. A quick example of the use of dynamic scope,
@@ -3295,6 +3503,9 @@ and debug. A quick example of the use of dynamic scope,
 As shown in the previous example, a common convention is to mark
 special variables by enclosing their names within asterisks.
 
+@defun special-variable-p symbol
+Returns t if @var{symbol} is a special variable (dynamically scoped).
+@end defun
 
 @node Void Variables, Defining Variables, Scope and Extent, Variables
 @subsection Void Variables
@@ -3365,6 +3576,9 @@ If the @var{doc-string} argument is defined it is a string documenting
 special form.")
     @result{} *my-variable*
 @end lisp
+
+Don't use @code{defvar} if @code{define} suffices. For the reason,
+see @xref{Modules and Special Variables}.
 @end defspec
 
 @defmac defconst constant form [doc-string]
@@ -3510,8 +3724,8 @@ Returns a string naming the primitive subroutine @var{subr}.
 
 @menu
 * Lambda Expressions::          Structure of a function object
-* Defining Functions::          How to write a function definition
-* Anonymous Functions::         Or they can be un-named
+* Closures::                    Function core
+* Defining Named Functions::    Usual way of function definition
 * Predicate Functions::         Functions which return boolean values
 * Local Functions::             Binding functions temporarily
 * Calling Functions::           Functions can be called by hand
@@ -3519,7 +3733,7 @@ Returns a string naming the primitive subroutine @var{subr}.
 @end menu
 
 
-@node Lambda Expressions, Defining Functions, , Functions
+@node Lambda Expressions, Closures, , Functions
 @subsection Lambda Expressions
 @cindex Lambda expressions
 @cindex Functions, lambda expressions
@@ -3538,10 +3752,12 @@ The general format of a lambda expression is:
 @noindent
 Where @var{lambda-list} is a list defining the formal parameters of the
 function, @var{doc} is an optional documentation string,
-@var{interactive-declaration} is only required by interactive commands
-@footnote{Only used when @code{librep} is embedded within another
-application.} and @var{body-forms} is the sequence of forms making up
+and @var{body-forms} is the sequence of forms making up
 the function body, evaluated using an implicit @code{progn}.
+
+@var{interactive-declaration} is an obsolete feature, only required by
+interactive commands@footnote{Only used when Librep is
+embedded within another application.}.
 
 The @var{lambda-list} is a list, it defines how the values applied to
 the function are bound to local variables which represent the
@@ -3558,26 +3774,8 @@ When used in a full lambda expression this looks like:
 
 @noindent
 this evaluates to an anonymous function with two parameters, @code{x}
-and @code{y}, which when called evaluates to their sum.
-
-Note that a lambda expression itself is @emph{not} a function, it must
-be associated with a lexical environment, this conjunction is usually
-called a closure; it is the closure that may be called as a function.
-
-However, to confuse matters, a lambda expression @emph{evaluates} to
-the closure of itself and the current environment. Consider the
-following example:
-
-@lisp
-(lambda (x) (1+ x))
-    @result{} #<closure>
-
-(functionp (lambda (x) (1+ x)))
-    @result{} t
-
-(functionp '(lambda (x) (1+ x)))
-    @result{} ()
-@end lisp
+and @code{y}, which when called evaluates to their sum. More on
+evaluation is described in the next section, @xref{Closures}.
 
 There are several @dfn{lambda-list keywords} which modify the meaning
 of symbols in the lambda-list. The syntax of the lambda list is:
@@ -3644,13 +3842,17 @@ optional arguments, each remaining pair of values is checked for
 associating a value with each keyword.)
 
 @lisp
-((lambda (a #!key b c) (list a b c)) 1 2 3)
+((lambda (a #!key b c) (list a b c))
+ 1 2 3)
     @result{} (1 () ())
-((lambda (a #!key b c) (list a b c)) 1 #:b 2 3)
+((lambda (a #!key b c) (list a b c))
+ 1 #:b 2 3)
     @result{} (1 2 ())
-((lambda (a #!key b c) (list a b c)) 1 #:b 2 #:c 3)
+((lambda (a #!key b c) (list a b c))
+ 1 #:b 2 #:c 3)
     @result{} (1 2 3)
-((lambda (a #!key b c) (list a b c)) 1 #:c 3 #:b 2)
+((lambda (a #!key b c) (list a b c))
+ 1 #:c 3 #:b 2)
     @result{} (1 2 3)
 @end lisp
 
@@ -3691,10 +3893,124 @@ evaluated by an implicit progn, the value of which becomes the value of
 the function call. Finally, all parameters are unbound and control
 passes back to the caller.
 
+@node Closures, Defining Named Functions, Lambda Expressions, Functions
+@subsection Closures
+@cindex Closure
+@cindex Anonymous functions
+@cindex Functions, anonymous
 
-@node Defining Functions, Anonymous Functions, Lambda Expressions, Functions
-@subsection Defining Functions
-@cindex Defining functions
+A lambda expression itself is @emph{not} a function; it must be
+associated with its module, or more correctly a lexical environment.
+This conjunction is called a ``closure''; it is the closure that
+may be called as a function. 
+
+Evaluation turns a lambda expression to its closure. Consider the
+following example:
+
+@lisp
+(lambda (x) (1+ x))
+    @result{}#<closure 1780f10 @@ module.foo> 
+    ;; Anonymous closure is printed with internal pointer value.
+
+(functionp (lambda (x) (1+ x)))
+    @result{} t
+
+(functionp '(lambda (x) (1+ x)))
+    @result{} ()
+@end lisp
+
+A closure can access bindings which belong to the same module as the
+closure. A closure can also have its own private bindings. (They're
+hidden from the outside, thus ``closure''.)
+
+N.B. It seems that @code{define} in a closure which is not top-level
+creates a binding in the closure's module, NOT inside of the closure.
+
+@lisp
+(define (count-0)
+  (define val 0)
+  (setq val (1+ val)))
+
+(count-0)
+    @result{} 1
+(count-0)
+    @result{} 1
+;; Each time `define' resets the value to 0.
+
+(define (count)
+  (unless (boundp 'val)
+    (define val 0))
+  (setq val (1+ val)))
+
+(count)
+    @result{} 1
+(count)
+    @result{} 2 ;; Ok, but
+val
+    @result{} 2 ;; Not invisible.
+@end lisp
+
+@defun closurep arg
+Returns true if @var{arg} is a closure.
+@end defun
+
+@defun closure-name fun
+Returns the name of closure @var{fun}, a string. Or if it's unnamed,
+@code{nil}.
+@end defun
+
+@defun closure-structure fun
+Returns the structure @var{fun} belongs to.
+@end defun
+
+@defun set-closure-structure closure structure
+Sets the structure @var{closure} belongs to to @var{structure}.
+@end defun
+
+It is often useful to pass a function @emph{definition} to other
+functions, instead of function's name, especially for example to
+@code{mapc} or @code{delete-if}. It is called an ``anonymous
+function'', and a lambda expression is all what's needed.
+
+The following example removes all elements from the @var{list} which
+are even and greater than 20.
+
+@lisp
+(setq @var{list} (delete-if (lambda (x)
+                        (and (zerop (% x 2)) (> x 20)))
+                      @var{list}))
+@end lisp
+
+There're some low-level closure handling functions. For example, in
+certain cases it may be necessary to create a non-constant function,
+for example by using backquoting (@pxref{Backquoting}). In these cases
+the @code{make-closure} function may be used to create a function
+object from a lambda expression.
+
+@defun make-closure arg
+Return the closure of @var{arg} and the current lexical environment.
+@end defun
+
+@defun closure-function closure
+Returns the function object associated with the lexical closure
+@var{closure}.
+@end defun
+
+@defun set-closure-function closure function
+Sets the function value of @var{closure} to @code{function}.
+@end defun
+
+@lisp
+(define (foo) 'foo-sym)
+(define (bar) 'bar-sym)
+(set-closure-function foo (closure-function bar))
+(foo)
+    @result{} foo-sym
+@end lisp
+
+@node Defining Named Functions, Predicate Functions, Closures, Functions
+@subsection Defining Named Functions
+@cindex Defining named functions
 @cindex Functions, defining
 
 Functions can be defined by the @code{defun} special form. However
@@ -3711,7 +4027,7 @@ its first (if there is no doc-string) or second form if the function
 may be called interactively by the user (@pxref{Lambda Expressions}).
 @end defmac
 
-An example function definition taken from the @code{librep} source code is:
+An example function definition taken from the Librep source code is:
 
 @lisp
 (defun load-all (file)
@@ -3728,56 +4044,7 @@ directories in the Lisp load path."
 @end lisp
 
 
-@node Anonymous Functions, Predicate Functions, Defining Functions, Functions
-@subsection Anonymous Functions
-@cindex Anonymous functions
-@cindex Functions, anonymous
-
-When supplying functions as arguments to other functions it is often
-useful to give an actual function @emph{definition} (i.e. an enclosed
-lambda expression) instead of the name of a function.
-
-In Lisp, unlike most other programming languages, functions have no
-inherent name. As seen in the last section named-functions are created
-by storing a function object in a variable, if you want, a function can
-have many different names: simply store the function in many different
-variables!
-
-So, when you want to pass a function as an argument there is the option
-of just writing down its definition. This is especially useful with
-functions like @code{mapc} and @code{delete-if}. For example, the
-following form removes all elements from the @var{list} which are even
-and greater than 20.
-
-@lisp
-(setq @var{list} (delete-if (lambda (x)
-                        (and (zerop (% x 2)) (> x 20)))
-                      @var{list}))
-@end lisp
-
-The above lambda expression combines two predicates applied to its
-argument.
-
-In certain cases it may be necessary to create a non-constant function,
-for example by using backquoting (@pxref{Backquoting}). In these cases
-the @code{make-closure} function may be used to create a function
-object from a lambda expression.
-
-@defun make-closure arg
-Return the closure of @var{arg} and the current lexical environment.
-@end defun
-
-@defun closurep arg
-Returns true if @var{arg} is a closure.
-@end defun
-
-@defun closure-function closure
-Returns the function object associated with the lexical closure
-@var{closure}.
-@end defun
-
-
-@node Predicate Functions, Local Functions, Anonymous Functions, Functions
+@node Predicate Functions, Local Functions, Defining Named Functions, Functions
 @subsection Predicate Functions
 @cindex Predicate functions
 @cindex Boolean values, predicate functions
@@ -3821,7 +4088,6 @@ For example,
   @dots{}
 @end lisp
 
-
 @node Calling Functions, Mapping Functions, Local Functions, Functions
 @subsection Calling Functions
 @cindex Calling functions
@@ -3842,6 +4108,7 @@ Similar to @code{funcall} except that the last of its arguments is
 a @emph{list} of arguments which are appended to the other members of
 @var{args} to form the list of argument values to apply to the
 function @var{function}.
+@end defun
 
 @lisp
 (apply + 1 '(2 3))
@@ -3850,8 +4117,6 @@ function @var{function}.
 (apply + (make-list 1000000 1))
     @result{} 1000000
 @end lisp
-@end defun
-
 
 @node Mapping Functions, , Calling Functions, Functions
 @subsection Mapping Functions
@@ -3860,7 +4125,7 @@ function @var{function}.
 @cindex Lists, mapping
 
 A @dfn{mapping function} applies a function to each of a collection of
-objects. @code{librep} currently has two mapping functions,
+objects. Librep currently has two mapping functions,
 @code{mapcar} and @code{mapc}.
 
 @defun mapcar function list
@@ -3918,6 +4183,13 @@ then the element is destructively removed from the list.
 (delete-if-not stringp '(1 "foo" 2 "bar" 3 "baz"))
     @result{} ("foo" "bar" "baz")
 @end lisp
+@end defun
+
+@defun remove-if pred list
+@defunx remove-if-not pred list
+Same as @code{delete-if} / @code{delete-if-not} respectively, but
+returns a new copy, instead of destructively. Defined in
+@code{rep.data}.
 @end defun
 
 The @code{filter} function is similar to @code{delete-if-not}, except
@@ -4148,7 +4420,7 @@ recognised. Use the @code{require} function, the compiler will evaluate
 any @code{require} forms it sees loading any macro definitions used.
 @end itemize
 
-Note however, that the @code{librep} compiler does allow macros to be
+Note however, that the Librep compiler does allow macros to be
 used before they are defined (two passes are made through the source
 file).
 
@@ -4161,11 +4433,11 @@ file).
 
 Previous sections of this document have described several special forms
 and macros for defining top-level functions and variables.
-@code{librep} also provides a higher-level method of creating these
+Librep also provides a higher-level method of creating these
 definitions, the @code{define} statement. It allows block-structured
 programs to be defined intuitively.
 
-The @code{define} originates in the Scheme dialect of Lisp.
+The @code{define} originates in Scheme.
 
 The most basic use of @code{define} is very similar to @code{defun},
 e.g. the two following forms have exactly the same effect:
@@ -4238,93 +4510,330 @@ internal definitions into @code{letrec} statements.
 @section Modules
 @cindex Modules
 
-Rep provides a @dfn{module system} for managing the scope of global
-definitions, inspired by the Scheme48, Xerox Scheme and Standard ML
-module systems.
+In Rep, ``module'' and ``structure'' are synonyms.
+
+@menu
+Introductions
+* Informal Module Introduction::
+* Introduction on Modules::
+
+Module basics
+* Simple Module Definition::
+* Module and File::
+* Using Other Modules::
+* Modules and Special Variables::
+* Module Functions::
+* Implicit Exports::
+
+Formal aspects
+* Module Definition::
+* Module Interfaces::
+* Obsolete Aspects of Modules::  Emacs-like obsolete features.
+@end menu
+
+Some functions are not yet covered. For them, obtain the source,
+and read @file{src/structures.c}.
+
+@node Informal Module Introduction, Introduction on Modules, , Modules
+@subsection Informal Module Introduction
+This is a quick but informal introduction on Rep module system.
+
+What's a module? First, a module is identified by its name. Each has
+its local bindings, i.e. variables and functions. (Remember that
+functions can be stored in variables.) Local bindings can be referred
+to inside of the module. And a module can specify which bindings are
+``exported'', that is, visible to outer worlds.
+
+Ok, so let's use an existing module. How can it be done? To load a
+module dynamically, use @code{require}:
+@lisp
+(require 'rep.util.time) ;; Module name is a symbol
+@end lisp
+
+Looks like Elips, but forget it; Elisp doesn't have the module system.
+There's no @code{provide} in modules.
+
+In fact, two things are done by @code{require}. First, the module is
+loaded into the Rep if it's not yet, and second, the bindings declared
+to be ``exported'' are imported to the current module.
+
+Current module? Yes, the current module always exists. If you're using
+the REPL, then it's @code{user} module. Also the module which the REPL
+of @code{sawfish-client} and Sawfish's @file{~/.sawfish/rc} dwell is
+called @code{user}.
+
+When you want to use, say @code{rep.util.time} from another
+module, then you have to call @code{require} again from there.
+
+In this manual, the module in which a function is defined is
+explicitly shown. If any module isn't named, then you don't have
+to @code{require} any. (In fact, @code{rep} module is necessary,
+but you can forget it now.)
+
+If you look at @file{/usr/share/rep/x.y.z/lisp/rep/util/time.jl},
+then it exports for example @code{seconds->time}. Now you can call it.
+
+@lisp
+(seconds->time (* 3600 72))
+  @result{} (3 . 0) ;; Cons of days and the rest in seconds.
+@end lisp
+
+The file @file{time.jl} is a good example, because it's small. Please
+have a look at it. You now know how to define a module. In the
+@code{open} clause, you declare which modules you import to that
+module. @code{require} is a usual function, but @code{open}
+is only used in the definition of a module. @code{time} module opens
+only one module, @code{rep}.
+
+In a module definition, first comes @code{define-structure} (``structure''
+is a synonym for ``module''), then @code{export}, and @code{open}. After
+them come usual expressions, and they're evaluated in that module. You
+can put there anything, not limited to @code{define}s.
+
+@subsubheading Module name and file name
+How does a module name corresponds to a file name? When loading,
+modules are searched from @code{load-path}. If you're using Sawfish
+in a Unix, its first element is @file{~/.sawfish/lisp}, the second
+@file{/usr/share/sawfish/<version>/lisp}, and so on.
+
+Now assume @code{load-path} is @code{(a b)}. When you require the
+module @code{foo.bar}, then @file{a/foo/bar.jl} is tried e.g. in Unix,
+since the directory separator is a slash '/', and if it exists, it's
+loaded. If not, @file{b/foo/bar.jl} is tried.  If it fails, an error
+is signaled.
+
+A good news. If there're both a byte compiled file and a plain lisp
+source, and if the compiled one is older, then the source is loaded.
+In short, always the newer one is used.
+
+@node Introduction on Modules, Simple Module Definition, Informal Module Introduction, Modules
+@subsection Introduction on Modules
 
 What's modules in general? When writing a large program, it is
 important to break up it into separate components, or modules, and
-encapsulate, such that the interfaces they present to other components
-are well defined, and the implementations of these interfaces may be
-modified without affecting any other components.
+encapsulate so that undesirable interference between modules are avoided.
 
-In rep, modules are known as @dfn{structures} and may be anonymous or
-named. Each structure is a separate global namespace, with a number
-of variable bindings. Each closure contains a reference to the
-structure it was instantiated in, for accessing the bindings of any
-free variables referenced by that closure.
+In Rep, modules may be anonymous or named. Each structure is a
+separate global namespace, with a number of variable bindings. Each
+closure contains a reference to the structure it was instantiated in,
+for accessing the bindings of any free variables referenced by that
+closure.
 
-Each structure specifies and implements an @dfn{interface},
-essentially a list of names listing the definitions within that module
-that may be accessed by other modules.
+An @dfn{interface} of a structure declares the module's bindings
+that may be accessed by other modules. Each module also lists the
+other modules whose bindings it may reference.
 
-As well as specifying its name and interface, each module also lists
-the other modules whose bindings it may reference. Structures may
-either @dfn{open} or @dfn{access} other structures; when opening a
-structure all its exported bindings are immediately referenceable from
-the importing module. Exported bindings from accessed structures are
-referenced using the `structure-ref' form.
+Rep's module system is inspired by the Scheme48, Xerox Scheme and
+Standard ML module systems.
 
-@menu
-* Module Interfaces::
-* Module Definition::
-* Module Loading::
-* Modules and Special Variables::
-@end menu
+@node Simple Module Definition, Module and File, Introduction on Modules, Modules
+@subsection Simple Module Definition
 
-
-@node Module Interfaces, Module Definition, , Modules
-@subsection Module Interfaces
-@cindex Modules, interfaces
-
-Each module implements an interface---the set of bindings (i.e.
-functions, macros or variables) that it exports to other modules.
-Interfaces may either be defined and then referenced by name, written
-literally, or combined from a number of sources.
-
-The syntax of interface definitions is as follows:
-
-@example
-@var{interface} -> (export @var{id} @dots{})
-          |  @var{name}
-          |  (compound-interface @var{interface} @dots{})
-          |  (structure-interface @var{module-name})
-@end example
-
-@noindent
-where each @var{id} is the name of a binding to export, and each
-@var{name} is the name of an interface previously defined using
-@code{define-interface}.
-
-@defmac define-interface name interface
-Associate the symbol @var{name} with the module interface
-@var{interface} (using one of the forms listed above.
-@end defmac
-
-Here is an example defining an interface called @code{foo}:
+In its simplest form, a module definition looks like this:
 
 @lisp
-(define-interface foo (compound-interface bar (export baz quux)))
+(define-structure simple.test
+    (export foo
+            bar)
+    (open rep  ;; Make it rule to open `rep' always.
+          rep.structures)
+  (define (foo x) (* x 42))
+  (define (bar x) (baz x (foo x))
+  (define (baz x y) (+ (foo x) (1+ y)))
+  (format standard-error "Module %s defined!" (current-structure))
+)
 @end lisp
 
-@noindent
-It includes the interface called @code{bar} and adds two extra exported
-symbols: @code{baz} and @code{quux}.
+This module has the name @code{simple.test}.  Then it ``exports'' two
+bindings, @code{foo} and @code{bar}, functions in this case. It also
+declare to use modules @code{rep} and @code{rep.structures}. The
+entire order is fixed; first @code{export}, then @code{open}, and the
+rest.
 
+Always make it rule to open @code{rep} structure. It's because Librep
+used to offer alternative Lisps, for example Scheme mimicry by
+importing @code{scheme} structure, instead of @code{rep} module.
 
-@node Module Definition, Module Loading, Module Interfaces, Modules
+Then comes the body. They're evaluated when @code{define-structure} is
+evaluated, @emph{inside} of this module. It defines three functions,
+and it emits a message to stderr. The third function @code{baz} is
+not exported, so it can't be seen outside of this module.
+
+The function @code{current-structure} is defined in
+@code{rep.structures}, and it can be used in this module because 
+@code{rep.structures} was opened.
+
+@node Module and File, Using Other Modules, Simple Module Definition, Modules
+@subsection Module and File
+
+A module can be defined anywhere, in any lisp expression, but usually
+it only makes sense if the module @code{foo.bar.baz} is defined in a
+file like @file{<prefix>/foo/bar/baz.jl}, and you don't put anything
+other than the module definition in that file. Periods in module name
+are converted to directory separator, in Unix a slash '/'.
+
+Rep modules are searched from directories specified in
+@code{load-path}. Files can be byte-compiled, and usually they have a
+suffix @code{.jlc}, instead of @code{.jl} for plain Lisp source.
+
+The variable @code{load-path} and suffixes are fully described in
+@xref{Load Function}.
+
+@node Using Other Modules, Modules and Special Variables, Module and File, Modules
+@subsection Using Other Modules
+
+We've already seen one way to use other module in the previous
+subsection. It was @code{open}.
+
+There're three aspects in module access: 
+@itemize
+@item Loading of a module to Rep,
+@item How are that module's bindings are referred to from the current module,
+@item And doing these things on the fly, as usual lisp expressions, not only in module definitions.
+@end itemize
+
+We'll see these three in turn.
+
+Function @code{load} loads any file, not only module definitions,
+and evaluate each form in it, but @code{load} does NOT import
+bindings. For the full doc, see @xref{Load Function}.
+
+We've seen @code{open} clause. If specified modules are not yet loaded
+into Rep, then they're loaded. It also imports exported bindings.
+
+The alternative, @code{access} is available, too. With @code{access},
+exported bindings can be referred to by specifying the module it
+belongs to:
+
+@lisp
+;; These three are equivalent
+(structure-ref mod.foo.bar varX)
+mod.foo.bar#varX ;; short form of structure-ref
+(external-structure-ref 'mod.foo.bar 'varX)
+@end lisp
+
+One of @code{open} or @code{access} clauses can only be used at
+the module definition, but there're equivalent lisp functions.
+@code{require} and @code{open-structures} correspond to @code{open},
+and @code{access-structures} to @code{access}:
+
+@defun require module
+@defunx open-structures list
+@defunx access-structures list
+Example:
+@lisp
+(require 'foo.bar)
+(open-structures '(foo.bar baz))
+(access-structures '(foo.bar baz))
+@end lisp
+
+All loads modules to Rep if not yet, and import the bindings of
+specified modules, in the same way as @code{open} or @code{access}.
+The latter two are defined in @code{rep.structures}.
+
+If the load fails, an error is signaled.
+@end defun
+
+@node Modules and Special Variables, Module Functions, Using Other Modules, Modules
+@subsection Modules and Special Variables
+@cindex Modules, and special variables
+
+As described earlier, @code{defvar} creates dynamically scoped
+variables, or special variables. (@pxref{Defining Variables}.)
+They do not fit well with the lexically scoped module system described
+here.
+
+This means special variable definition must avoid clashing of name
+with those declared in other modules. The usual convention is to
+prefix the variable name with a unique string derived from the module
+name.
+
+In fact, it is often advisable to avoid using special variables as
+much as possible. An alternative is to use fluid variable
+objects. These use first class Lisp objects to represent anonymous
+dynamically scoped variables. Since they are just Lisp objects, they
+may be stored in lexically scoped variables---this gives the benefits
+of both lexical (i.e. encapsulation) and dynamic scoping.  @xref{Fluid
+Variables}.
+
+@node Module Functions, Implicit Exports, Modules and Special Variables, Modules
+@subsection Module Functions
+
+In this section basic module functions are explained. All are defined
+in @code{rep.structure}. Functions related to contruction of modules
+are described in following sections.
+
+@defun structurep str
+Returns @code{t} if @var{str} is a Lisp structure object.
+@end defun
+
+@defun current-structure
+Returns the current structure.
+@end defun
+
+Evaluation of a lisp expression can be done in any module you specify,
+not only in the current module, with the function
+@code{eval}. (@pxref{Evaluation}.)
+
+Structure's name is a symbol.
+
+@defun structure-name str
+Returns the name of a structure @code{str}.
+@end defun
+
+@defun get-structure name
+Returns the structure called @var{name}, or @code{nil} if no such
+structure exists.
+@end defun
+
+@defun intern-structure name
+Returns the structure called @var{name}, or if one doesn't exist,
+attempts to load it.
+@end defun
+
+These functions are related to opening other modules.
+
+@defun structure-imports str
+@defunx structure-accessible str
+Returns the list of modules @code{str} has opened or accesses.
+@end defun
+
+Functions @code{open-structures} and @code{access-structures} are
+explained in @xref{Using Other Modules}.
+
+@node Implicit Exports, Module Definition, Module Functions, Modules
+@subsection Implicit Exports
+@cindex Implicit Exports
+@cindex Exports, implicit
+
+If you inspect the Librep source, you may find for example, the
+function @code{caar} is defined in @code{rep.data} module, but you can
+call it without importing.
+
+It's because @code{rep} module exports some functions on behalf of
+their modules. To name all, they are: @code{rep.data},
+@code{rep.io.streams}, @code{rep.lang.debug},
+@code{rep.lang.interpreter}, @code{rep.lang.math},
+@code{rep.lang.symbols}, @code{rep.module-system}, and
+@code{rep.vm.interpreter}.
+
+The interactive environment pulls in a bit more. (@xref{Interactive
+environment}.)
+
+@node Module Definition, Module Interfaces, Implicit Exports, Modules
 @subsection Module Definition
 @cindex Modules, definition of
 
-Two special forms are used to define modules, one for anonymous
-modules, one for named modules. When storing modules in files, each
-file often contains a single instance of one of these forms.
+Formally, module definition needs an ``interface'', a ``config'' and
+the body. An interface declares which bindings are exported,
+and a config is either usually an @code{open} or @code{access} clause.
 
-@defmac structure interface config body@dots{}
-@defmacx define-structure name interface config body@dots{}
+@defmac define-structure name interface config body@dots{}
+@defmacx structure interface config body@dots{}
 These special forms each create a new module with interface
-@var{interface} (using the syntax described in the previous section),
-and configuration @var{config}.
+@var{interface} and configuration @var{config}. The full syntax
+of an interface is described in the next section. @code{structure}
+defines an anonymous structure.
 
 After configuring the module as specified, the sequence of forms
 @var{body@dots{}} is evaluated; it should include the definitions
@@ -4340,31 +4849,15 @@ syntax:
 @end example
 
 @noindent
-Each @var{name} specifies the name of a module, in the case of
-@code{open} clauses, the named module(s) will be loaded such that their
-exported bindings may be referenced from within the current module with
-no qualification (i.e. as if they had been defined within the module
-itself).
-
-Alternatively, if an @code{access} clause was used, the named module(s)
-will be loaded, but their exported bindings will only be accessible
-from within the current module using the @code{structure-ref} form.
-E.g. if a module @code{foo} has been accessed and it exports a binding
-named @code{bar}, then the following form could be used to access its
-value:
-
-@lisp
-(structure-ref foo bar)
-@end lisp
-
-@noindent
-Since this form is used so often, the reader allows the abbreviation
-@code{foo#bar} to be used instead, it is expanded to the form above
-when read. Note that no whitespace is allowed between the three tokens.
+Each @var{name} specifies the name of a module.
 @end defmac
 
-Note that to access the standard features of the @code{rep} language
-described in this manual, modules need to import the @code{rep} module.
+Always make it rule to open @code{rep} structure. It's because Librep
+used to offer Scheme mimicry by importing @code{scheme} structure.
+
+As described in the section @code{Module and File}, it only
+makes sense if a module is defined in a file with an appropriate
+path.
 
 Here is an example module definition, defining a module named
 @code{test} that exports two functions @code{foo} and @code{bar}.
@@ -4404,63 +4897,81 @@ the underlying environment has three bindings. Each created module
 exports two of these.
 @end defmac
 
+@node Module Interfaces, Obsolete Aspects of Modules,Module Definition, Modules
+@subsection Module Interfaces
+@cindex Modules, interfaces
 
-@node Module Loading, Modules and Special Variables, Module Definition, Modules
-@subsection Module Loading
-@cindex Modules, loading
+Module's interface is the set of bindings (i.e.  functions, macros or
+variables) that it exports to other modules.  Interfaces may either be
+defined and then referenced by name, written literally, or combined
+from a number of sources.
 
-As described above, the common way of loading modules is to use the
-@code{open} and @code{access} clauses of the configuration language.
+The syntax of interface definitions is as follows:
 
-If the modules named by these clauses are not currently loaded into the
-interpreter, then the system will attempt to load them from the filing
-system, using the standard @code{load-path} variable to define the
-directories to search.
+@example
+@var{interface} -> (export @var{id} @dots{})
+          |  @var{name}
+          |  (compound-interface @var{interface} @dots{})
+          |  (structure-interface @var{module-name})
+@end example
 
-To allow modules names to be hierarchical, any dot characters in a
-module's name are replaced by the operating system's directory
-separator string (i.e. on unix, all @samp{.} characters are simply
-replaced by @samp{/} characters).
+@noindent
+where each @var{id} is the name of a binding to export, and each
+@var{name} is the name of an interface previously defined using
+@code{define-interface}.
 
-When searching for files to load, the standard filename suffixes are
-used to differentiate Lisp files from other types of files (@pxref{Load
-Function}). This file should contain a @code{define-structure} form (as
-described in the previous section) as the last top-level form in the
-file.
+@defmac define-interface name interface
+Associate the symbol @var{name} with the module interface
+@var{interface} (using one of the forms listed above.
+@end defmac
 
-The @code{require} function can also be used to import modules. In
-fact, @code{require} offers two distinct, but confusing
-functionalities; It loads the module to librep if unloaded. In
-addition, it imports that module to the current module, i.e. access
-the exported symbols, if not yet imported.  For the details,
-@xref{Features}.
+Here is an example defining an interface called @code{foo}:
 
-@node Modules and Special Variables, , Module Loading, Modules
-@subsection Modules and Special Variables
-@cindex Modules, and special variables
+@lisp
+(define-interface foo (compound-interface bar (export baz quux)))
+@end lisp
 
-As described earlier, the @code{defvar} special form may be used to
-create variables that are scoped dynamically, known as special
-variables, see @ref{Defining Variables}. Due to their dynamic scope,
-special variables do not fit well with the lexically scoped module
-system described here.
+@noindent
+It includes the interface called @code{bar} and adds two extra exported
+symbols: @code{baz} and @code{quux}.
 
-As a result of this mismatch, special variables are stored in a
-separate namespace. This means that modules defining special variables
-must take the necessary steps to avoid the names of these variables
-clashing with those declared in other modules@footnote{The usual
-convention is to prefix the variable name with a unique string derived
-from the module name.}.
+@defun structure-interface str
+returns the interface of structure object @var{str}.
+@end defun
 
-In fact, it is often advisable to avoid using special variables as much
-as possible, especially when writing modules of Lisp code. An
-alternative method of creating dynamically scoped variables is to use
-fluid variable objects. These use first class Lisp objects to represent
-anonymous dynamically scoped variables. Since they are just Lisp
-objects, they may be stored in lexically scoped variables---this gives
-the benefits of both lexical (i.e. encapsulation) and dynamic scoping.
-@xref{Fluid Variables}.
+@defun set-interface str int
+Set the interface of structure object @var{str} to @var{int}.
+@end defun
 
+@node Obsolete Aspects of Modules, , Module Interfaces , Modules
+@subsection Obsolete Aspects of Modules
+@cindex Obsolete Aspects of Modules
+@cindex Features
+
+Ususally you can skip this section which describes obsolete, but still
+in effect aspects of Rep modules.
+
+Modules marked as already imported into the current module is called
+@code{feature}s. Function @code{require} imports a module only when its
+feature is absent.
+
+@defvar features
+A list of the features, i.e. module names marked as imported into the
+current module. Each is a symbol.
+@end defvar
+
+@defun featurep feature
+Returns true if the feature @var{feature} has been loaded
+into the current module.
+@end defun
+
+@defun provide feature
+Don't use this function unless you're sure. Usually you don't need it.
+
+This function adds @var{feature} (a symbol) to the list of loaded
+features. A call to this function is normally one of the top-level
+forms in a file.
+@end defun
 
 @node Control Structures, Threads, Modules, The language
 @section Control Structures
@@ -4740,10 +5251,10 @@ returned.
 @cindex Looping structures
 @cindex Control structures, looping
 
-The @code{librep} Lisp dialect only has one method of creating looping
-control structures---recursion. Any looping construct found in an
-imperative language can be represented as a recursive function. For
-example the common @code{while} statement:
+Librep only has one method of creating looping control
+structures---recursion. Any looping construct found in an imperative
+language can be represented as a recursive function. For example the
+common @code{while} statement:
 
 @lisp
 (while @var{condition} @var{body}@dots{})
@@ -4947,7 +5458,7 @@ There are a number of pre-defined throw tags:
 
 @table @code
 @item quit
-Terminate the @code{librep} interpreter, returning the value of the
+Terminate the Librep interpreter, returning the value of the
 throw (if a number).
 
 @item exit
@@ -4973,7 +5484,7 @@ uncaught throws will result in termination.
 @cindex Function exits
 @cindex Non-local exits, function exits
 
-@code{librep} has no explicit @code{return} statement, as found in most
+Librep has no explicit @code{return} statement, as found in most
 other languages. Where a value has to returned from a function before
 the function would normally exit, a @code{catch}/@code{throw} pair may
 be used.
@@ -5133,9 +5644,9 @@ this path when the called function exits.
 
 These continuations are usually not paid much thought, but in some
 cases it may be useful to be able to directly manipulate the
-continuation of a function. For this purpose rep provides the
+continuation of a function. For this purpose Rep provides the
 @code{call-with-current-continuation} function (often shortened to
-@code{call/cc}) that is standard in the Scheme dialect of Lisp.
+@code{call/cc}) that is standard in Scheme.
 
 @defun call/cc function
 @var{function} is a function with a single parameter; it will be
@@ -5228,7 +5739,7 @@ control to pass across a dynamic root (@pxref{Threads}).
 @section Threads
 @cindex Threads
 
-@code{librep} supports a simple model of multi-threaded programming.
+Librep supports a simple model of multi-threaded programming.
 Multiple threads of execution may be created, with control preemptively
 being switched between them.
 
@@ -5249,7 +5760,7 @@ provided by the @code{rep.threads} module.
 @subsection Thread Contexts
 @cindex Thread contexts
 
-Every thread created by rep is a member of a @dfn{thread context}, this
+Every thread created by Rep is a member of a @dfn{thread context}, this
 context is defined by the current position in the lisp call stack. At
 any point in time, only threads which are members of the current
 context may be executing.
@@ -5429,7 +5940,7 @@ new owner.
 @subsection Thread Implementation Notes
 @cindex Thread implementation notes
 
-The threads used by @code{librep} are @emph{software threads}. This
+The threads used by Librep are @emph{software threads}. This
 means that they are currently implemented by manually switching in and
 out thread context (i.e. the call stack) as required. There are a
 number of disadvantages to this method:
@@ -5466,7 +5977,6 @@ the file, i.e. instantiating all function definitions, or whatever.
 @menu
 * Load Function::               The function which loads programs
 * Autoloading::                 Functions can be loaded on reference
-* Features::                    Module management functions
 @end menu
 
 
@@ -5501,16 +6011,18 @@ stored in files with names like this.
 @end enumerate
 
 Notice that the file @var{program} with no modifications is @emph{not}
-loaded. If you want it, set @code{no-suffix} to non-nil.
+loaded. If you want it, set @var{no-suffix} to non-nil.
+
+Filename can have a leading tilde in Unix, and tar archive is
+also readable directly. See @xref{File Handlers}.
 
 If none of these gives a result the next directory is searched in the
-same way, when all directories in @code{load-path} have been exhausted
+same way. When all directories in @code{load-path} have been exhausted
 and the file still has not been found an error is signalled.
 
 Next the file is opened for reading and Lisp forms are read from it
 one at a time, each form is evaluated before the next form is read. When
-the end of the file is reached the file has been loaded and this function
-returns true.
+the end of the file is reached, this function returns true.
 
 The optional arguments to this function are used to modify its behaviour,
 
@@ -5585,12 +6097,12 @@ to @code{load}.
 @end defun
 
 
-@node Autoloading, Features, Load Function, Loading
+@node Autoloading, , Load Function, Loading
 @subsection Autoloading
 @cindex Autoloading
 @cindex Loading, on reference
 
-Obviously, not all features of the @code{librep} environment are always
+Obviously, not all features of the Librep environment are always
 used. @dfn{Autoloading} allows libraries to only be loaded when they
 are first required. This speeds up the initialisation process and may
 save memory.
@@ -5610,127 +6122,14 @@ when @var{symbol} is called as a function the lisp library @var{file}
 should be loaded to provided the actual definition of @var{symbol}.
 @end defun
 
-It is not necessary to call the @code{autoload} function manually.
-Simply prefix the definitions of all the functions that may be
-autoloaded (i.e. the entry points to your module; @emph{not} all the
-internal functions.) with the magic comment @code{;;;###autoload}. Then
-load the file into the Jade editor and invoke the @code{add-autoloads}
-command, creating all the necessary calls to the autoload function in
-the @file{autoloads.jl} Lisp file (this file which lives in the Lisp
-library directory is loaded when the environment is initialised).
-
-@table @kbd
-@item Meta-x add-autoloads
-@kindex Meta-x add-autoloads
-Scans the current buffer for any autoload definitions. Functions with
-the comment @code{;;;###autoload} preceding them have autoload forms
-inserted into the @file{autoloads.jl} file. Simply save this file's
-buffer and the new autoloads will be used the next time Jade is
-initialised.
-
-It is also possible to mark arbitrary forms for inclusion in the
-@file{autoloads.jl} file: put them on a single line which starts with
-the comment @code{;;;###autoload} call the command.
-
-The unsaved @file{autoloads.jl} buffer will become the current buffer.
-
-@lisp
-;;;###autoload
-(defun foo (bar)                ;@code{foo} is to be autoloaded
-  @dots{}
-
-;;;###autoload (setq x y)       ;Form to eval on initialisation
-@end lisp
-
-@item Meta-x remove-autoloads
-@kindex Meta-x remove-autoloads
-Remove all autoload forms from the @file{autoloads.jl} file which
-are marked by the @code{;;;###autoload} comment in the current buffer.
-
-The unsaved @file{autoloads.jl} buffer will become the current buffer.
-@end table
-
-XXX these editor commands don't really belong here, but they'll do for
-now@dots{}
-
-
-@node Features, , Autoloading, Loading
-@subsection Features
-@cindex Features
-
-@dfn{Features} correspond to libraries of Lisp code. Each feature is
-loaded separately. Each feature has a name, when a certain feature is
-required its user asks for it to be present (with the @code{require}
-function), the feature may then be used as normal.
-
-When a feature is loaded one of the top-level forms evaluated is a call to
-the @code{provide} function. This names the feature and installs it into
-the list of present features.
-
-@defvar features
-A list of the features currently present (that is, loaded) in the
-current module. Each feature is represented by a symbol. Usually the
-print name of the symbol (the name of the feature) is the same as the
-name of the file it was loaded from, minus any @samp{.jl} or
-@samp{.jlc} suffix.
-
-@lisp
-features
-    @result{} (info isearch fill-mode texinfo-mode lisp-mode xc)
-@end lisp
-@end defvar
-
-@defun featurep feature
-Returns true if the feature @var{feature} has been loaded
-into the current module.
-@end defun
-
-@defun provide feature
-Adds @var{feature} (a symbol) to the list of loaded features. A call
-to this function is normally one of the top-level forms in a file.
-
-@lisp
-;;;; maths.jl -- the @code{maths} library
-
-(provide 'maths)
-@dots{}
-@end lisp
-@end defun
-
-@defun require feature
-Show that the caller is planning to use the feature @var{feature} (a
-symbol).  This function will check the @code{features} variable to see
-if @var{feature} is already loaded, if so it will return immediately.
-
-If @var{feature} is not present it will be loaded. If it is already
-loaded into librep, then it's imported in the current module. If not,
-the file which defines the module is searched and
-loaded(@pxref{Load Function}). As the filename, the print name of
-the symbol @var{feature} is used, with any @samp{.}  characters
-replaced by the operating system's directory separator (@pxref{Module
-Loading}). If the file does not exist, then an error is signaled.
-
-@lisp
-;;;; physics.jl -- the @code{physics} library
-
-(require 'maths)                ;Need the @code{maths} library
-(provide 'physics)
-@dots{}
-@end lisp
-
-When called interactively the symbol @var{feature} is prompted for.
-@end defun
-
-Features may also be provided by modules, for more details @xref{Module
-Loading}.
-
-On failure, an error is signaled.
+``Magic cookie'' @code{;;;###autoload} comment in the source
+is meaningless. It was supported by Obsolete ``Jade'' editor only.
 
 @node Compiled Lisp, Datums, Loading, The language
 @section Compiled Lisp
 @cindex Compiled Lisp
 
-@code{librep} contains a Lisp compiler as well as an interpreter; this
+Librep contains a Lisp compiler as well as an interpreter; this
 takes a Lisp form or program and compiles it into a @dfn{byte-code}
 object. This byte-code object is a string of characters representing
 virtual machine instructions, a vector of constants and some other
@@ -5770,6 +6169,8 @@ interpreted version.
 @subsection Compilation Functions
 @cindex Compilation functions
 @cindex Functions, compilation
+
+These functions are defined in @code{rep.vm.compiler}.
 
 @defun compile-form form
 This function compiles the Lisp form @var{form} into a byte-code form
@@ -5888,16 +6289,18 @@ the compiler that the forms in the program will be evaluated within the
 context of the module called @var{module-name} (a symbol).
 
 @item (language @var{module})
+Obsolete declaration.
+
 Explicitly specifies the particular language dialect that the current
 module or file body is written for. Language dialects included with the
-librep distribution include @code{rep}, @code{scheme} and
-@code{unscheme}. These are also the names of the modules that should be
+librep distribution include Rep, Scheme and
+Unscheme. These are also the names of the modules that should be
 imported to use a particular dialect.
 
-By default, the @code{rep} dialect is assumed for code outside module
+By default, the Rep is assumed for code outside module
 definitions. For code inside a module definition the list of imported
 modules is scanned for a known language dialect (i.e. if the module
-imports @code{rep}, then the rep language dialect is compiled for).
+imports @code{rep}, then the Rep language dialect is compiled for).
 
 @item (unsafe-for-call/cc)
 Tell the compiler that it may register-allocate variables, even if it
@@ -6110,19 +6513,20 @@ could figure out why the compiler wasn't working but if you're curious
 about how the compiler compiles a form it may be of use to you.
 
 Naturally, the output of the disassembler is a listing in the assembly
-language of the @code{librep} virtual machine---it won't take a
+language of the Librep virtual machine---it won't take a
 byte-code form and produce the equivalent Lisp code!
 
-@deffn Command disassemble-fun function @t{#!optional} stream
+@deffn Command disassemble function @t{#!optional} stream
 This function disassembles the compile Lisp function @var{function}. It
 writes a listing to the output stream @var{stream} (normally the
 value of the @code{standard-output} variable).
 
 When called interactively it will prompt for a function to disassemble.
+Defined in @code{rep.vm.disassembler}.
 @end deffn
 
 When reading the output of the disassembler bear in mind that
-@code{librep} simulates a stack machine for the code to run on. All
+Librep simulates a stack machine for the code to run on. All
 calculations are performed on the stack, the value left on the stack
 when the piece of code ends is the value of the byte-code form.
 
@@ -6173,7 +6577,7 @@ Disassembly of #<closure fib>:
 @cindex Datums
 @cindex Data types, datums
 
-@dfn{Datums} are the mechanism by which @code{librep} allows Lisp
+@dfn{Datums} are the mechanism by which Librep allows Lisp
 programs to define new data types, such that these types are completely
 distinct from the built-in data types (i.e. they match none of the
 standard type predicates).
@@ -6182,6 +6586,8 @@ They also provide encapsulation, in that the data objects they provide
 are completely opaque, unless a pre-defined value is known (which was
 specified when the object was created, and is typically known only by
 the object's creator).
+
+These functions are provided in @code{rep.data.datums}.
 
 @defun make-datum value key
 Create and return a new datum object. It has the value @var{value}
@@ -6220,7 +6626,7 @@ one end of the queue (the @dfn{tail}), and leave from the other end of
 the queue (the @dfn{head}). The acts of entering and leaving a queue
 are often called @dfn{enqueing} and @dfn{dequeueing}.
 
-@code{librep} provides a straightforward queue implementation,
+Librep provides a straightforward queue implementation,
 implemented by the @code{rep.data.queues} module (@pxref{Modules}).
 
 @defun make-queue
@@ -6428,6 +6834,10 @@ table @var{table}. For each pair, the function is called with arguments
 @code{(@var{key} @var{value})}.
 @end defun
 
+@defun table-size table
+Returns the number of items currently stored in @var{table}.
+@end defun
+
 Several hash functions are also provided:
 
 @defun string-hash string
@@ -6628,7 +7038,7 @@ Returns an input stream which will supply the characters of the string
 The input stream which is used when no other is specified or is false.
 @end defvar
 
-Applications that embed @code{librep}, or dynamically loaded
+Applications that embed Librep, or dynamically loaded
 extensions, may provide further input stream types.
 
 
@@ -6694,7 +7104,7 @@ This variable contains the output stream which is used when an error
 message is being reported.
 @end defvar
 
-Applications that embed @code{librep}, or dynamically loaded
+Applications that embed Librep, or dynamically loaded
 extensions, may provide further output stream types.
 
 
@@ -6707,6 +7117,20 @@ extensions, may provide further output stream types.
 @defun read-char stream
 Read and return the next character from the input stream @var{stream}. If
 the end of the stream is reached false is returned.
+@end defun
+
+@defun peek-char stream
+returns the next character from the input-stream @var{stream},
+@emph{without} removing that character from the head of the stream. if
+no more characters are available returns nil.
+@end defun
+
+@defun read-chars stream count
+read upto @var{count} characters from the input stream @var{stream},
+returning a string containing the characters. If EOF is read before
+reading @var{count} characters, the returned string will contain the
+characters read up to that point. If no characters are read,
+@code{nil} will be returned.
 @end defun
 
 @defun read-line stream
@@ -7073,13 +7497,13 @@ returned.
 @section Files
 @cindex Files
 
-@code{librep} allows you to manipulate files in the operating system's
+Librep allows you to manipulate files in the operating system's
 filing system; a special type of Lisp object, a @dfn{file object}, is
 used to represent files which have been opened for reading or writing
 (through the streams mechanism, @pxref{Streams}).
 
 Names of files are represented by strings, the syntax of file names is
-defined by the underlying operating system: @code{librep} simply treats
+defined by the underlying operating system: Librep simply treats
 it as a string.
 
 Many functions described in this chapter signal an error on failure,
@@ -7222,7 +7646,7 @@ possible.
 @end defun
 
 @defun local-file-name file-name
-@code{librep} supports extensible file handling (@pxref{File
+Librep supports extensible file handling (@pxref{File
 Handlers}), so file names may refer to files not residing in the
 system's local file structure, and thus which are unavailable to other
 programs.
@@ -7588,7 +8012,7 @@ Return the string that is the contents of the symbolic link called
 @subsection File Handlers
 @cindex File Handlers
 
-As noted earlier, @code{librep} supports virtual files; that is it
+As noted earlier, Librep supports virtual files; that is it
 allows file names to be accessed that don't reside on the local filing
 system, or aren't normally valid as file names. This is achieved
 through the use of @dfn{file handlers}, Lisp functions that have
@@ -7596,11 +8020,8 @@ signalled that they should be used to redirect all accesses to files
 whose names match a particular regular expression (@pxref{Regular
 Expressions}).
 
-For example, there is a convention under Unix that a user's home
-directory can be accessed via the file name @file{~}, even though there
-is no such support from the operating system itself. So a file handler
-can be (and has been) written that recognises all file names starting
-with a tilde, translating them to the actual file in the file system.
+For example, in Unix, a leading tilde @file{~} expands to the
+home directory. See below.
 
 @defvar file-handler-alist
 This variable contains a list of file handler declarations, each one of
@@ -7676,6 +8097,26 @@ the remote system. This is the method used by the FTP remote file
 backend (see the next section). It has the advantage of simplifying the
 @code{seek-file} operation.
 
+@subheading Default File Handlers
+Librep provides the following file handlers by default:
+
+@itemize
+
+@item Tilde expansion
+
+In Unix, a leading tilde @file{~} is expanded to the user's home
+directory.
+@item Archives as directories
+
+Some archive files' contents are treated like a directory, by adding
+@t{``#tar/''}. For example, the file @file{foo/bar.jl} stored in
+@file{/dir/baz.tar.gz} can be accessed with 
+@lisp
+(load "/dir/baz.tar.gz#tar/foo/bar")
+@end lisp
+Supported compressions are gz with suffixes @code{gz} and @code{tgz}, 
+bzip2 with @code{bz2}, lzma with @code{xz}, @code{lz} and @code{lzma}.
+@end itemize
 
 @node Remote Files, , File Handlers, Files
 @subsection Remote files
@@ -7766,7 +8207,7 @@ default the current uses email address.
 @end defvar
 
 There is a problem with the @code{ftp} backend however; due to
-limitations in the FTP protocol, not all @code{librep} file operations
+limitations in the FTP protocol, not all Librep file operations
 are supported, with the most obvious exception being the
 @code{make-symlink} function.
 
@@ -7774,9 +8215,9 @@ When this is a problem it may be possible to use rep's custom file
 transfer protocol. If it is possible to use @code{rsh} to connect to
 the remote host in question, then the @code{rep} backend may be used.
 
-The @code{rep-remote} program distributed with @code{librep} must exist
+The @code{rep-remote} program distributed with Librep must exist
 on the remote host, this is executed via @code{rsh} and provides a
-protocol for executing all of @code{librep}'s file operations on that
+protocol for executing all of Librep's file operations on that
 host. See the @file{lisp/remote-rep.jl} file in the distribution for
 more details.
 
@@ -7786,7 +8227,7 @@ more details.
 @cindex Processes
 @cindex Subprocesses
 
-When running on a Unix-style operating system @code{librep} allows you
+When running on a Unix-style operating system Librep allows you
 to launch and control an arbitrary number of subprocesses. These
 subprocesses can run either synchronously or asynchronously in respect
 to the Lisp system; data can be sent to the @code{stdin} channel and
@@ -7928,7 +8369,7 @@ objects.
 
 An @dfn{asynchronous process} is one that runs in parallel with Lisp
 evaluation, basically this means that once the subprocess has been
-started (by the @code{start-process} function) @code{librep} will carry
+started (by the @code{start-process} function) Librep will carry
 on as normal.
 
 The event loop checks for output from asynchronous processes, any found
@@ -7939,7 +8380,7 @@ allow output to be processed.
 
 When using asynchronous processes you have a choice as to the Unix
 mechanism used to connect the @code{stdin}, @code{stdout} and
-@code{stderr} streams of the subprocess to @code{librep}'s process.
+@code{stderr} streams of the subprocess to Librep's process.
 
 The two options currently available are pipes or pseudo-terminals; in
 general pseudo-terminals should only be used to provide a direct
@@ -7977,7 +8418,7 @@ is sent to the @code{standard-output} stream.
 @end lisp
 @end defun
 
-Note that when @code{librep} exits it kills all of its asynchronous
+Note that when Librep exits it kills all of its asynchronous
 subprocesses which are still running without warning.
 
 @defun process-connection-type process
@@ -8015,7 +8456,7 @@ normal and error output streams of the process to be separated.
 @cindex Synchronous processes
 @cindex Processes, synchronous
 
-When a @dfn{synchronous process} is started @code{librep} waits for it
+When a @dfn{synchronous process} is started Librep waits for it
 to terminate before continuing; they are usually used when a Lisp
 program must invoke an external program as part of its function, i.e.
 the auto-compression feature runs the compression program @code{gzip}
@@ -8073,7 +8514,7 @@ uncompress a file into a buffer (for Jade).
 
 The user is able to interrupt synchronous subprocesses (for example if
 they seem to have got wedged somehow). Each time a user-interrupt is
-received by @code{librep} (i.e. the @code{INT} signal), a stronger
+received by Librep (i.e. the @code{INT} signal), a stronger
 signal is sent to the subprocess. First an interrupt signal, then a
 termination signal, before finally a non-ignoreable quit signal is
 sent.
@@ -8145,7 +8586,7 @@ end of this time no input has arrived, return true. Otherwise
 return false if input was found.
 
 Note that this function is only distinct to
-@code{accept-process-output} when @code{librep} is embedded in another
+@code{accept-process-output} when Librep is embedded in another
 application, or an extension has been loaded that provides an event
 loop (such as the @code{gtk} binding). In this case other input forms,
 such as user input, for example, can preempt the timeout.
@@ -8252,7 +8693,7 @@ processes in the process group of @var{process}.
 
 @var{process} may be either a Lisp process object, or an integer
 defining the pid of the process to signal (not necessarily started by
-@code{librep}).
+Librep).
 
 @var{signal} may either be an integer defining the actual signal
 number, or a symbol naming the signal. All names are as usual but with
@@ -8335,7 +8776,7 @@ signals to the child each interrupt, until it is eventually terminated.
 @cindex Regexps
 
 Regular expressions (or @dfn{regexps}) are a powerful method of
-matching patterns in strings. @code{librep} uses the @code{regexp(3)}
+matching patterns in strings. Librep uses the @code{regexp(3)}
 implementation by Henry Spencer, with some modifications that I have
 made. It comes with this banner:
 
@@ -8625,7 +9066,7 @@ Return a list of substrings of @code{string}, each delimited by
 @cindex Calendar date and time
 
 This section describes how time and date values are handled in
-@code{librep}.
+Librep.
 
 @menu
 * Timestamps::                  Internal representation of time
@@ -8639,13 +9080,13 @@ This section describes how time and date values are handled in
 @cindex Timestamps
 @cindex Date and time, timestamps
 
-As in UNIX, @code{librep} measures time as the number of seconds since
-January 1st, 1970 (known as the @dfn{epoch}). For historical reasons
-rep stores timestamps as a pair of integers, using a cons cell.
+As in UNIX, Librep measures time as the number of seconds since
+January 1st, 1970 (known as the @dfn{epoch}). 
 
-The first integer records the number of whole days since the epoch, the
-second records the number of seconds since the start of the day (in
-universal time).
+For historical reasons Librep stores ``timestamp''s as a pair of integers,
+using a cons cell. The first integer records the number of whole days
+since the epoch, the second records the number of seconds since the
+start of the day (in universal time).
 
 These function are exported by the @code{rep.system} module:
 
@@ -8654,7 +9095,7 @@ Return the number of seconds since the epoch, in a cons-cell.
 
 @lisp
 (current-time)
-    @result{} (10744 . 61063)
+    @result{} (10744 . 61063) 
 @end lisp
 @end defun
 
@@ -8892,7 +9333,7 @@ incomplete descriptions, etc@dots{}
 @section Internationalisation
 @cindex Internationalisation
 
-@code{librep} has support for internationalisation (or i18n) of text
+Librep has support for internationalisation (or i18n) of text
 messages, using the GNU @code{gettext} implementation (@pxref{Top, ,
 Overview, gettext, The GNU gettext Manual}), a run-time library
 managing the mapping between text strings in the programmer's native
@@ -8948,7 +9389,7 @@ including the domain)
 @end defun
 
 @defvar rep-build-id
-A string describing the environment under which @code{librep} was
+A string describing the environment under which Librep was
 built. This will always have the format @samp{@var{date} by
 @var{user}@@@var{host}, for @var{arch}.}.
 
@@ -8959,7 +9400,7 @@ rep-build-id
 @end defvar
 
 @defvar rep-version
-A string describing the current release of @code{librep}.
+A string describing the current release of Librep.
 
 @lisp
 rep-version
@@ -9155,7 +9596,7 @@ otherwise print it in base 10.
 Some functions for utf-8 strings are available.
 
 They assume that the string is encoded in utf-8. Otherwise, the
-behavior is not defined.
+behavior is not defined. Defined in @code{rep.util.utf8}.
 
 @defun utf8-string-length string
 Returns the number of characters of utf-8 encoded @var{string}.
@@ -9423,7 +9864,7 @@ note that the debugger is unable to step through compiled Lisp code.
 @cindex Tips
 
 This section of the manual gives advice about programming in
-@code{librep}.
+Librep.
 
 For advice on getting the most out of the compiler, see
 @ref{Compilation Tips}.

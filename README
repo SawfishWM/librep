@@ -2,7 +2,7 @@
 
 Complete documentation is given in info file.
 
-This is librep, a Lisp system for UNIX, the backend of Sawfish window
+This is librep, a Lisp system for UNIX, needed by Sawfish window
 manager. It contains a Lisp interpreter, byte-code compiler and
 virtual machine. Applications may use the Lisp interpreter as an
 extension language, or it may be used for stand-alone scripts.

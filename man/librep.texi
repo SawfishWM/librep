@@ -60,7 +60,7 @@ This document describes @code{librep} Lisp dialect.
 * News::                        History of user-visible changes
 
 * Invocation::                  How to start the interpreter
-* The language::                The Lisp dialect implemented
+* The language::                The Lisp manual of librep
 * librep Internals::		Embedding librep in other programs
 
 * Function index::              Menu of all documented functions
@@ -114,63 +114,57 @@ promises regarding the reliability of this software.
 @chapter Introduction
 @cindex Introduction
 
-For compilation instruction, read @file{README}.
-
 @menu
-* Overview::
-* Reporting bugs/patches/etc::              How to contact the maintainers
+* About::
+* Reporting bugs/patches/etc::  How to contact the maintainers
 * Acknowledgment::
 @end menu
 
-@node Overview, Reporting bugs/patches/etc, , Introduction
-@section Overview
+@node About, Reporting bugs/patches/etc, , Introduction
+@section About
+@cindex Sawfish
+@cindex Jade
 
-@code{librep} is a dialect of Lisp, designed to be used both as an
-extension language for applications and as a general purpose
-programming language. It was originally written to be mostly-compatible
-with Emacs Lisp, but has subsequently diverged markedly. Its aim is to
-combine the best features of Scheme and Common Lisp and provide an
-environment that is comfortable for implementing both small and large
-scale systems. It tries to be a ``pragmatic'' programming language.
+Librep offers a Lisp system to Sawfish window manager, and practically
+that's all. Some bugs are known, but Librep is quite stable.
 
-The author has used @code{librep} in its various forms in many projects
-since 1993. This includes two large programs which use it as an
-extension language, and many stand-alone programs.
+@noindent
+Maintainer until Aug 2008: John Harper@*
+Maintainer since Aug 2008: Christopher Bratusek
+
+For more see: @url{http://sawfish.wikia.com/}.
+
+For compilation instructions, read @file{README}.
+
+For Lisp features, see @xref{Rep's Lisp Introduction}.
+
+There used to be an editor ``Jade'' written in Librep, too.
+
+
+Original introduction by John Harper:
+
+@code{librep} is a dialect of Lisp, designed to be used
+both as an extension language for applications and as a general
+purpose programming language. It was originally written to be
+mostly-compatible with Emacs Lisp, but has subsequently diverged
+markedly. Its aim is to combine the best features of Scheme and Common
+Lisp and provide an environment that is comfortable for implementing
+both small and large scale systems. It tries to be a ``pragmatic''
+programming language.
+
+The author, John Harper, has used @code{librep} in its various forms
+in many projects since 1993. This includes two large programs which
+use it as an extension language, and many stand-alone programs.
 
 @code{rep} stands for ``Read, Eval, Print'', the three main components of
 any Lisp system.
 
-Some of the features of @code{librep} are:
-
-@itemize @bullet
-@item Lexically scoped (with special variables from CL)
-
-@item Clean module system
-
-@item Tail-call elimination
-
-@item Compiles to byte-code
-
-@item First-class continuations
-
-@item Uses GNU MP for fast bignums/rationals
-
-@item Most Emacs Lisp functions, with others inspired by
-Common Lisp and various Scheme implementations
-
-@item Mostly-Perl-like regular expressions
-
-@item Spawn and control subprocesses
-
-@item Dynamically loads shared libraries (a.k.a. ``plugins'')
-
-@item Extensible type, I/O, and file handling
-@end itemize
-
-@node Reporting bugs/patches/etc, Acknowledgment , Overview, Introduction
+@node Reporting bugs/patches/etc, Acknowledgment , About, Introduction
 @section Reporting bugs/patches/etc
 @cindex Reporting bugs, patches, etc
 @cindex Bugs, patches, reporting
+
+Known bugs are listed in the file @file{TODO}.
 
 If the @code{librep} interpreter crashes it's probably a bug (unless
 you're using the @code{rep-gtk} binding, in which case creating invalid
@@ -271,9 +265,11 @@ Terminate the Lisp process and exit.
 If @var{file} is given, it names the Lisp file to load, and
 @samp{--batch-mode} is implied. Any @var{script-options} will be made
 available to the script in the @code{command-line-args} variable.
+See @xref{Command Line Options}.
 
 After any arguments have been processed, it enters the interactive
-environment, unless @samp{--batch-mode} was specified. See @pxref{Interactive environment}.
+environment, unless @samp{--batch-mode} was specified. See
+@pxref{Interactive environment}.
 
 @node Shebang invocation, Interactive environment, Rep execution, Invocation
 @section Shebang invocation

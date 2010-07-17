@@ -1,6 +1,6 @@
 [ This is -*-Indented-Text-*- ]
 
-This list is written by John Harper, the original author of Librep,
+This list was written by John Harper, the original author of Librep,
 but the current Sawfish community has little hope to accomplish any
 of them.
 
@@ -68,11 +68,15 @@ Outstanding bugs
    * 0xNN and 0NN integer syntaxes [0.13+]
    * &optional and &rest (replaced by #!optional and #!rest) [0.13+]
 
+ + Closure scope
+
+   Only top level `define's are correct in closures; others are
+   defined in the module.
 
 General programming tasks:
 ==========================
 
- + allow the rng to be seeded with a given value
+ + allow the random number generator to be seeded with a given value
 
  + comparison of datums currently compares type id and contents
 

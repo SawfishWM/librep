@@ -128,7 +128,7 @@ Load the file of Lisp forms called @var{filename}.
 
 @item locate @var{symbol}
 Recursively scan from the current module for the module providing the
-binding of @var{symbol}. 
+binding of @var{symbol}.
 
 @item new @var{struct}
 Create a new module called @var{struct}, and set it as the current
@@ -180,3 +180,13 @@ Scan all loaded modules for those that export a binding of
 @var{symbol}, and print the results.
 @end table
 
+Repl imports some modules by default. They are @code{rep},
+@code{rep.io.files}, @code{rep.io.processes}, @code{rep.module-system},
+@code{rep.regexp}, and @code{rep.system}. It is so because the
+repl itself needs them.
+
+Don't confuse the interactive environment provided by @code{rep}
+command with Sawfish's one - @code{sawfish-client}; it does not
+evaluate any, but it merely sends expressions to the running
+instance of Sawfish window manager, and prints the result.
+(@pxref{Top, , Sawfish Manual, sawfish, The Sawfish Manual}.)
