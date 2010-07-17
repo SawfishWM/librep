@@ -1,6 +1,6 @@
 @c The REPL -*-Texinfo-*-
 
-@subsection Interactive enviroment
+@section Interactive enviroment
 @cindex The REPL
 @cindex Read-eval-print loop
 @cindex Interactive enviroment
@@ -8,6 +8,11 @@
 When you invoke the stand-alone librep interpreter without giving it a
 script to execute the system is started in interactive mode. This
 means that the @dfn{REPL} is entered---the read-eval-print loop.
+
+The read-eval-print loop simply reads complete Lisp forms (@pxref{The
+Lisp Reader}), evaluates them, before printing the result back to the
+console; this continues ad infinitum, or until you force an EOF (i.e.
+enter @kbd{C-d}), or until you enter @code{,quit} command.
 
 The REPL works as its name suggests. It reads Lisp forms from the
 console, evaluates them, and then prints the result back to the

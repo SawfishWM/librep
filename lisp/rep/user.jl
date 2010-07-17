@@ -60,8 +60,7 @@ usage: %s [OPTIONS...]
 
 where OPTIONS are any of:
 
-    FILE		load the Lisp file FILE (from the cwd if possible,
-			 implies --batch mode)
+    FILE		load the Lisp file FILE (implies --batch)
 
     --batch		batch mode: process options and exit
     --interp		interpreted mode: don't load compiled Lisp files
@@ -70,10 +69,8 @@ where OPTIONS are any of:
     --call FUNCTION	call the Lisp function FUNCTION
     --f FUNCTION
 
-    --load FILE		load the file of Lisp forms called FILE
+    --load FILE		load the Lisp file FILE
     -l FILE
-
-    -s FILE		 (implies --batch mode)
 
     --check		run self tests and exit
 

@@ -194,16 +194,16 @@ may be contacted at: @email{jsh@@users.sourceforge.net}.
 @cindex Invocation
 
 @menu
-* Command `rep'::
-* Implicitly Interpreting rep Scripts::  #!/usr/bin/rep
+* Rep execution::
+* Shebang invocation::  #!/usr/bin/rep
 * Interactive environment::
 @end menu
 
-@node Command `rep', Implicitly Interpreting rep Scripts, , Invocation
-@section Command `rep'
+@node Rep execution, Shebang invocation, , Invocation
+@section Rep execution
 
-The @code{rep} program may be used to launch the stand-alone
-@code{librep} environment:
+Call @code{rep} program to launch a stand-alone @code{librep}
+environment:
 
 @example
 usage: rep [@var{rep-options}@dots{}] [@var{script} [@var{script-options}@dots{]}]
@@ -213,9 +213,6 @@ usage: rep [@var{rep-options}@dots{}] [@var{script} [@var{script-options}@dots{]
 Where @var{rep-options} may be any of the following:
 
 @table @samp
-@item --init @var{file}
-Use @var{file} to boot the Lisp system from, instead of @file{init.jl}.
-
 @item --version
 Print the current version number and exit
 
@@ -234,56 +231,40 @@ Don't load the user's @file{~/.reprc} script, or the
 @item -f @var{function}
 Invoke the Lisp function @var{function} (with no arguments)
 
-@item -l @var{script}
-Try to load the Lisp file @var{script}, this is equivalent to evaluating
-the form @samp{(load "@var{script}")}.
+@item -l @var{file}
+Try to load the Lisp file @var{file}, this is equivalent to evaluating
+the form @samp{(load "@var{file}")}.
 
 @item -q
 Terminate the Lisp process and exit.
 @end table
 
 @vindex command-line-args
-If @var{script} is given, it names the Lisp file to load, equivalent to
-the @samp{-l} option, except that @samp{--batch-mode} is implied. Any
-@var{script-options} will be made available to the script (in the
-@code{command-line-args} variable).
+If @var{file} is given, it names the Lisp file to load, and
+@samp{--batch-mode} is implied. Any @var{script-options} will be made
+available to the script in the @code{command-line-args} variable.
 
-After any arguments have been processed a banner message will be
-displayed before entering an interactive read-eval-print loop, unless
-@samp{--batch-mode} was specified, in which case the interpreter exits.
+After any arguments have been processed, it enters the interactive
+environment, unless @samp{--batch-mode} was specified. See @pxref{Interactive environment}.
 
-The read-eval-print loop simply reads complete Lisp forms (@pxref{The
-Lisp Reader}), evaluates them, before printing the result back to the
-console; this continues ad infinitum, or until you force an EOF (i.e.
-enter @kbd{C-d}).
-
-
-@node Implicitly Interpreting rep Scripts, Interactive environment, Command `rep', Invocation
-@section Implicitly Interpreting rep Scripts
-@cindex Implicitly Interpreting @code{rep} scripts
-@cindex Executing @code{rep} scripts
+@node Shebang invocation, Interactive environment, Rep execution, Invocation
+@section Shebang invocation
+@cindex Shebang invocation
+@cindex Executing @code{rep} scripts implicitly
 @cindex Scripts, executing implicitly
 
-The @code{rep} interpreter also supports automatic invocation of
-scripts, using the oeprating system's support for @samp{#!} interpreter
-invocation (i.e. if the first line of an executable text file contains
-@samp{#! @var{prog}}, the program @var{prog} is used to execute the
-script.
+The @code{rep} interpreter also supports ``Shebang'', or @samp{#!}
+interpreter invocation, i.e. if the first line of an executable text
+file contains @samp{#!@var{prog}}, the program @var{prog} is used to
+execute the script, using the operating system's support.
 
-However there is a problem with this method, in that the @code{PATH}
-environment variable is not searched for the location of the
-interpreter, and thus the full file name of the interpreter program
-must be hard-coded into the script. To work around this problem
-@code{rep} supports a slightly different method of invocation.
+However with this method, the @code{PATH} environment variable is not
+searched for the location of the interpreter, and thus the full file
+name of the @code{rep} interpreter program must be hard-coded into the
+script. 
 
-If the first two characters of a loaded Lisp file are @samp{#!}, then
-everything is treated as a comment until the first occurrence of the
-string @samp{!#}. This allows the first part of the script to be
-executed as a shell script invoking the @code{rep} interpreter.
-
-What this means, is that you want to put something like the following
-at the start of any scripts you want to execute implicitly (and
-@kbd{chmod +x} the file as well):
+To work around this problem @code{rep} supports a slightly different
+method of invocation; first look at this example:
 
 @example
 #!/bin/sh
@@ -293,7 +274,12 @@ exec rep "$0" "$@@"
 ;; Lisp code follows@dots{}
 @end example
 
-@node Interactive environment, , Implicitly Interpreting rep Scripts, Invocation
+If the first two characters of a loaded Lisp file are @samp{#!}, then
+everything is treated as a comment until the first occurrence of the
+string @samp{!#}. This allows the first part of the script to be
+executed as a shell script invoking the @code{rep} interpreter.
+
+@node Interactive environment, , Shebang invocation, Invocation
 @include repl.texi
 
 @node The language, librep Internals, Invocation, Top
