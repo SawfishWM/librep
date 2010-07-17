@@ -1,33 +1,34 @@
 [ this is -*-Text-*- ]
 
-This is librep, a Lisp system for UNIX. It contains a Lisp interpreter,
-byte-code compiler and virtual machine. Applications may use the Lisp
-interpreter as an extension language, or it may be used for stand-alone
-scripts.
+Complete documentation is given in info file.
+
+This is librep, a Lisp system for UNIX, the backend of Sawfish window
+manager. It contains a Lisp interpreter, byte-code compiler and
+virtual machine. Applications may use the Lisp interpreter as an
+extension language, or it may be used for stand-alone scripts.
 
 The Lisp dialect was originally inspired by Emacs Lisp, but with the
 worst features removed. It also borrows many ideas from Scheme.
 
-It is known to compile on at least Solaris/sparc and Linux/ix86; it is
-released under the terms of the GNU GPL, copyright John Harper
-<jsh@pixelslut.com>
+It is known to compile on at least Solaris/sparc and Linux, x86 and
+x86-64.
+
+It is released under the terms of the GNU GPL, 
+copyright John Harper <jsh@pixelslut.com>
+
+Maintainer until Aug 2008: John Harper
+Maintainer since Aug 2008: Christopher Bratusek
 
 For more details see:
 
-	http://librep.sourceforge.net/
+	http://sawfish.wikia.com/
 
-Browse the SVN tree at:
-
-	http://svn.gnome.org/viewvc/librep/
-
-To compile this you'll need GNU make, the GNU MP library (see below)
-and GNU dbm installed. Basically, just do:
+To compile this you'll need GNU make, and GNU dbm
+installed. Basically, just do:
 
 	$ ./configure
 	$ make
 	$ make install
-
-(if building from the SVN tree use ./autogen.sh instead of ./configure)
 
 Notes
 =====
@@ -35,10 +36,11 @@ Notes
 64-bit systems
 --------------
 
-If you're on a 64-bit architecture you may want to look at the
-`--with-value-type' configure option. This is an implicitly signed
-integer type (i.e. `int', `long', etc) that is wide enough to store an
-arbitrary pointer without losing any bits.
+Basically support of 64-bit systems works, but if not, read this:
+
+You may want to look at the `--with-value-type' configure option. This
+is an implicitly signed integer type (i.e. `int', `long', etc) that is
+wide enough to store an arbitrary pointer without losing any bits.
 
 It should be detected automatically by the configure script, but if not
 there are two most likely required settings:
@@ -65,9 +67,9 @@ suffix and printf conversion of the chosen type.
 libgmp
 ------
 
-rep uses GNU MP for it's bignum/rational implementation; you can find
-it at any GNU mirror. GMP versions 2 and 3 are both known to work
-(though version 3 is recommended)
+rep optionally uses GNU MP for its bignum/rational implementation;
+you can find it at any GNU mirror. GMP versions 2 and 3 are both known
+to work (though version 3 is recommended)
 
 
 shared libraries

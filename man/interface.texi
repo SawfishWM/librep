@@ -7,8 +7,8 @@
 @cindex librep internals
 @cindex Internals
 
-Sorry, to be written. Some informations can be found at
-@url{http://sawfish.wikia.com/wiki/Librep_Internals}.
+Sorry, it has little chance to be written. Some informations can be
+found at @url{http://sawfish.wikia.com/wiki/Librep_Internals}.
 
 @ignore
 This chapter will document the internals of @code{librep}, including

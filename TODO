@@ -1,5 +1,9 @@
 [ This is -*-Indented-Text-*- ]
 
+This list is written by John Harper, the original author of Librep,
+but the current Sawfish community has little hope to accomplish any
+of them.
+
 TODO list for librep
 ********************
 
@@ -22,10 +26,6 @@ Outstanding bugs
 
  ! non-top-level compiled defvar's aren't quite right
 
- ! scheme define/lambda doesn't splice begin forms
-
- ! the scheme module fails some of the guile test.scm cases
-
  ! the first level lookup of foo#bar isn't cached
 
  ! interfaces aren't re-parsed when modules are reloaded
@@ -46,9 +46,6 @@ Outstanding bugs
    OTOH, there is little or no chance of this ever happening
 
  ! doesn't handle NaN or Inf in floats properly (at all)
-
- ! Putting a breakpoint in a .jaderc file doesn't work correctly; the
-   debugger is entered, but the commands don't work
 
  ! if load can't find the file, its error message is confusing
    (especially if the named file does exist, but no suffixed file
@@ -90,8 +87,6 @@ General programming tasks:
  + avoid spurious init-bind and unbind instructions
 
    (generated when lexical bindings aren't heap allocated)
-
- + rename backquote* as quasiquote* -- helps scheme, doesn't affect rep
 
  + add restricted load to gaol? (same directory only?)
 
@@ -159,14 +154,6 @@ General programming tasks:
 
    [ partially done, there is a test framework now, but only a couple
    of modules define tests ]
-
- - scheme compilation is worse than rep compilation
-
-   should be able to make this a lot better, maybe not as good as rep
-   code (since the vm primitives are designed for that), but still a
-   lot better..
-
-   [ it's better now, but still room for improvement ]
 
  - the gc sucks
 

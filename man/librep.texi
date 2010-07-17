@@ -114,12 +114,15 @@ promises regarding the reliability of this software.
 @chapter Introduction
 @cindex Introduction
 
+For compilation instruction, read @file{README}.
+
 @menu
 * Overview::
-* Reporting bugs::              How to contact the maintainers
+* Reporting bugs/patches/etc::              How to contact the maintainers
+* Acknowledgment::
 @end menu
 
-@node Overview, Reporting bugs, , Introduction
+@node Overview, Reporting bugs/patches/etc, , Introduction
 @section Overview
 
 @code{librep} is a dialect of Lisp, designed to be used both as an
@@ -164,10 +167,10 @@ Common Lisp and various Scheme implementations
 @item Extensible type, I/O, and file handling
 @end itemize
 
-@node Reporting bugs, , Overview, Introduction
-@section Reporting bugs
-@cindex Reporting bugs
-@cindex Bugs, reporting
+@node Reporting bugs/patches/etc, Acknowledgment , Overview, Introduction
+@section Reporting bugs/patches/etc
+@cindex Reporting bugs, patches, etc
+@cindex Bugs, patches, reporting
 
 If the @code{librep} interpreter crashes it's probably a bug (unless
 you're using the @code{rep-gtk} binding, in which case creating invalid
@@ -175,15 +178,40 @@ GTK widget hierarchies can easily crash the Lisp system). If the
 interpreter hangs such that sending it interrupt signals doesn't fix
 the problem, that's probably also a bug.
 
-To help me fix any bugs found please try to collect as much meaningful
+When reporting any bugs, please try to collect as much meaningful
 information as possible. This will hopefully include stack backtraces
 (of both the C and Lisp stacks if possible), what features are loaded,
 what you did immediately before triggering the bug, a description of
 your the system, etc@dots{}
 
 Please send any bug reports to the mailing list:
-@email{librep-list@@lists.sourceforge.net}. Alternatively, the author
-may be contacted at: @email{jsh@@users.sourceforge.net}.
+@email{sawfish-list@@gnome.org}.
+
+To make a patch, please use @code{git diff} or @code{diff -u}.
+
+@node Acknowledgment, , Reporting bugs/patches/etc, Introduction
+@section Acknowledgment
+@cindex Acknowledgment
+Thanks to:
+
+@itemize
+@item Henry Spencer for his excellent regexp matcher
+
+@item Ozan Yigit for SDBM
+
+@item Rick Sladkey for the Emacs backquote implementation
+
+@item Jamie Zawinski for the Emacs peephole optimiser patterns
+
+@item Yukihiro Nakai for the first rep-gettext implementation
+
+@item Mikolaj J. Habryn for being the first 64-bit guinea-pig, and for 
+building Debian packages
+
+@item Aron Griffis for porting to Tru64
+
+@item numerous other people for bug-reports and patches
+@end itemize
 
 @node News, Invocation, Introduction, Top
 
