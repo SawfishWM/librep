@@ -1,3 +1,31 @@
+2010-07-17  Teika Kazura <teika@lavabit.com>
+	* AUTHORS
+	* BUGS
+	* HACKING
+	* THANKS
+	* TREE: Deleted. See the next entry.
+
+	* MAINTAINERS
+	* README
+	* TODO
+	* lisp/rep.jl
+	* lisp/rep/lang/compat-doc.jl
+	* lisp/rep/user.jl
+	* man/interface.texi
+	* man/lang.texi
+	* man/librep.texi
+	* man/news.texi
+	* man/rep.1
+	* man/repl.texi: Major doc revision. Reorganized documentation
+	files. Deleted files are merged into info.
+	For the details, read 0.90.7 news and git log
+	4a3e91e2490..3f7a5aee3b1
+
+	* lisp/rep.jl
+	* lisp/rep/lang/interpreter.jl
+	* man/lang.texi
+	* man/news.texi: Introduced 'defvar-setq'.
+
 2010-06-26  Teika Kazura <teika@lavabit.com>
 	* lisp/rep/lang/interpreter.jl
 	* lisp/rep/vm/bytecode-defs.jl
