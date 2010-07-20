@@ -6,38 +6,38 @@
 @heading 0.90.7
 @itemize @bullet
 
-@item Important notice
+@item Update note [important]:
 
-You have to byte compile all codes again.
+You will need to byte compile all rep-code again.
 
-@item Half way improvement of @code{debug-on-error} and @code{backtrace-on-error} [Teika Kazura]
+@item Halfway improvemed @code{debug-on-error} and @code{backtrace-on-error} [Teika Kazura]
 
 Previously, setting these values to @code{t} triggered the debugger /
-the backtrace even if the error is signalled inside of
-@code{condition-case}. This behavior can be still obtained by setting
-them to a symbol @code{always}.
+backtracer even if the error was signalled inside of @code{condition-case}.
+This behavior can still be obtained by setting them to the symbol @code{always}.
 
-Now, if they're @code{t}, the debugger / the backtrace is invoked only
+Now, if they're @code{t}, the debugger / backtracer is invoked only
 if the control is not inside of any @code{condition-case}. Notice that
 the condition is NOT if the error is actually handled by an error
 handler. It is not the best, but we can't improve it.
 
 The default value of @code{backtrace-on-error} is now @code{t}.
 
-@item When you evaluate a closure, the module to which it belongs is printed, too. [Teika kazura]
+@item When you evaluate a closure, the module it belongs to is beeing printed, too. [Teika kazura]
 
-@item Major document revision [Teika kazura]
+@item Major documentation revision [Teika kazura]
 
-Reorganized documentation files. Many capital letter name files are updated
+Reorganized documentation files. Many capital letter name files were updated
 or merged into the info.
 
 New entries: @xref{Crash course for Elisp users}, @xref{Closures},
-on leading tilde and tar archive access (@pxref{File Handlers}),
+on leading tilde and tarball access (@pxref{File Handlers}),
 fully revised the module section (@pxref{Modules}), improved
 description on invocation (@pxref{Invocation}), improved
-fluid and @code{let} descriptions (@pxref{Fluid Variables}, and @pxref{Local Variables}.) Module names are supplied for all functions.
+fluid and @code{let} descriptions of (@pxref{Fluid Variables},
+and @pxref{Local Variables}.) Module names are supplied for all functions.
 
-Supplied documents to some functions. Input stream functions
+Supplied documentation to some functions. Input stream functions
 @code{peek-char}, @code{read-char} (@pxref{Input Functions}), list
 functions @code{remove-if}, @code{remove-if-not} (@pxref{Mapping
 Functions}), @code{table-size} (@pxref{Hash Tables}), @code{setcar},
@@ -46,7 +46,7 @@ Functions}), @code{table-size} (@pxref{Hash Tables}), @code{setcar},
 
 @item @code{define-special-variable} is replaced by @code{defvar-setq} [Teika kazura]
 
-The former remains, but it's a very confusing name, so the latter is
+The former is still valid, but it's a very confusing name, therefor the latter is
 introduced.
 @end itemize
 @heading 0.90.6
