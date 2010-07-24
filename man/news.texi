@@ -23,7 +23,7 @@ handler. It is not the best, but we can't improve it.
 
 The default value of @code{backtrace-on-error} is now @code{t}.
 
-@item When you evaluate a closure, the module it belongs to is beeing printed, too. [Teika kazura]
+@item When you evaluate a closure, the module it belongs to is printed, too. [Teika kazura]
 
 @item Major documentation revision [Teika kazura]
 
