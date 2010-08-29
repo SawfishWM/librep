@@ -1,3 +1,21 @@
+2010-07-29  Christopher Bratusek <zanghar@freenet.de>
+	* src/find.c: let `string-match' and `string-looking-at'
+	return Qnil if one of the arguements is not a string
+	-- [Mathew Love]
+
+	* lisp/rep/lang/doc.jl
+	* lisp/rep/vm/compiler/rep.jl
+	* src/rep_lisp.h
+	* src/structures.c
+	* src/symbols.c: improved documentation function, which returns
+	the docstring of a variable or function. The previous implementation
+	had several defuncts: - doesn't always work with a subr
+			      - doesn't always work with a macro
+			      - doesn't work for byte-compiled files
+	This change is binary-incompatible! So you need to re-build rep-gtk
+	and sawfish (sawfish-pager is not directly linked against librep)
+	in that order. More descriptive docs are following. [Teika Kazura]
+
 2010-07-24  Christopher Bratusek <zanghar@freenet.de>
 	* debian/source/format: set 3.0 (native) source format
 

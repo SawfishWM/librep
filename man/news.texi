@@ -3,14 +3,15 @@
 @chapter News
 @cindex News
 
-@heading 0.90.7
+@heading 0.91.0
 @itemize @bullet
 
 @item Update note [important]:
 
-You will need to byte compile all rep-code again.
+This release brings an ABI-change, therefore you'll need to rebuild rep-gtk
+and sawfish against this version of librep.
 
-@item Halfway improvemed @code{debug-on-error} and @code{backtrace-on-error} [Teika Kazura]
+@item Halfway improved @code{debug-on-error} and @code{backtrace-on-error} [Teika Kazura]
 
 Previously, setting these values to @code{t} triggered the debugger /
 backtracer even if the error was signalled inside of @code{condition-case}.
@@ -24,6 +25,19 @@ handler. It is not the best, but we can't improve it.
 The default value of @code{backtrace-on-error} is now @code{t}.
 
 @item When you evaluate a closure, the module it belongs to is printed, too. [Teika kazura]
+
+@item Improved @code{sring-match} and @code{string-looking-at} [Matthew Love]
+
+The functions @code{string-match} and @code{string-looking-at} now return 'nil if
+one the passed arguements is not a string.
+
+@item Improved @code{documentation} function [Teika Kazura]
+
+The @code{documenation} function, which returns the docstring of a variable or
+function has been revised. It now works better with docstrings of subrs or macros,
+aswell as docstrings of byte-compiled user-files (eg: pager.jlc).
+
+** more descriptive docs are comming soon.
 
 @item Major documentation revision [Teika kazura]
 
@@ -46,7 +60,7 @@ Functions}), @code{table-size} (@pxref{Hash Tables}), @code{setcar},
 
 @item @code{define-special-variable} is replaced by @code{defvar-setq} [Teika kazura]
 
-The former is still valid, but it's a very confusing name, therefor the latter is
+The former is still valid, but it's a very confusing name, therefore the latter is
 introduced.
 @end itemize
 @heading 0.90.6
