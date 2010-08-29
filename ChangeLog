@@ -1,8 +1,4 @@
 2010-07-29  Christopher Bratusek <zanghar@freenet.de>
-	* src/find.c: let `string-match' and `string-looking-at'
-	return Qnil if one of the arguements is not a string
-	-- [Mathew Love]
-
 	* lisp/rep/lang/doc.jl
 	* lisp/rep/vm/compiler/rep.jl
 	* src/rep_lisp.h

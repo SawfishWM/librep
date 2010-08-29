@@ -26,11 +26,6 @@ The default value of @code{backtrace-on-error} is now @code{t}.
 
 @item When you evaluate a closure, the module it belongs to is printed, too. [Teika kazura]
 
-@item Improved @code{sring-match} and @code{string-looking-at} [Matthew Love]
-
-The functions @code{string-match} and @code{string-looking-at} now return 'nil if
-one the passed arguements is not a string.
-
 @item Improved @code{documentation} function [Teika Kazura]
 
 The @code{documenation} function, which returns the docstring of a variable or
