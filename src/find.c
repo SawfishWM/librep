@@ -280,8 +280,16 @@ still case-significant.
 {
     rep_regexp *prog;
     long xstart;
-    rep_DECLARE1(re, rep_STRINGP);
-    rep_DECLARE2(str, rep_STRINGP);
+    if(rep_STRINGP(re) && rep_STRINGP(str))
+      {
+	rep_DECLARE1(re, rep_STRINGP);
+	rep_DECLARE2(str, rep_STRINGP);
+      }
+    else
+      {
+	fprintf (stdout, " ** only strings are allowed to be passed to `string-match'.");
+	return Qnil;
+      }
     rep_DECLARE3_OPT(start, rep_INTP);
     xstart = rep_INTP(start) ? rep_INT(start) : 0;
     prog = rep_compile_regexp(re);
@@ -312,8 +320,16 @@ Updates the match data.
 {
     rep_regexp *prog;
     long xstart;
-    rep_DECLARE1(re, rep_STRINGP);
-    rep_DECLARE2(string, rep_STRINGP);
+    if(rep_STRINGP(re) && rep_STRINGP(string))
+      {
+	rep_DECLARE1(re, rep_STRINGP);
+	rep_DECLARE2(string, rep_STRINGP);
+      }
+    else
+      {
+	fprintf (stdout, " ** only strings are allowed to be passed to `string-looking-at'.");
+	return Qnil;
+      }
     rep_DECLARE3_OPT(start, rep_INTP);
     xstart = rep_INTP(start) ? rep_INT(start) : 0;
     prog = rep_compile_regexp(re);
