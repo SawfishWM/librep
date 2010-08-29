@@ -27,15 +27,15 @@ AC_CONFIG_MACRO_DIR([m4])
 AM_PROG_LIBTOOL
 
 dnl Release versioning info
-version="0.90.7"
+version="0.91.0"
 
 dnl libtool versioning info: `CURRENT:REVISION:AGE'. CURRENT is the
 dnl current interface id, REVISION is the version number of this
 dnl implementation, AGE defines the first interface id also supported
 dnl (i.e. all interfaces between CURRENT-AGE and CURRENT are supported)
-libcurrent=14
+libcurrent=15
 librevision=0
-libage=5
+libage=6
 libversion="$libcurrent:$librevision:$libage"
 
 makefile_template="Makefile.in:Makedefs.in"
