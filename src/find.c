@@ -287,7 +287,7 @@ still case-significant.
       }
     else
       {
-	fprintf (stdout, " ** only strings are allowed to be passed to `string-match'.");
+	fprintf (stderr, " ** only strings are allowed to be passed to `string-match'.");
 	return Qnil;
       }
     rep_DECLARE3_OPT(start, rep_INTP);
@@ -327,7 +327,7 @@ Updates the match data.
       }
     else
       {
-	fprintf (stdout, " ** only strings are allowed to be passed to `string-looking-at'.");
+	fprintf (stderr, " ** only strings are allowed to be passed to `string-looking-at'.");
 	return Qnil;
       }
     rep_DECLARE3_OPT(start, rep_INTP);
