@@ -564,6 +564,7 @@ typedef struct {
     } fun;
     repv name;
     repv int_spec;
+    repv structure;
 } rep_subr;
 
 typedef struct {
@@ -571,6 +572,7 @@ typedef struct {
     repv (*fun)();
     repv name;
     repv int_spec;			/* put this in plist? */
+    repv structure;
 } rep_xsubr;
 
 /* If set in rep_SubrN types, it'll be passed a vector of args,
@@ -775,7 +777,7 @@ typedef struct rep_gc_n_roots {
     extern repv fsym args;						\
     rep_ALIGN_CELL(rep_xsubr ssym) = { type, (repv (*)()) fsym,		\
 				       rep_VAL(&rep_CONCAT(ssym, __name)), \
-				       rep_NULL };			\
+				       rep_NULL, rep_NULL };		\
     repv fsym args
 
 /* Same as above but with an extra arg -- an interactive-spec string. */
@@ -785,7 +787,8 @@ typedef struct rep_gc_n_roots {
     extern repv fsym args;						\
     rep_ALIGN_CELL(rep_xsubr ssym) = { type, (repv (*)()) fsym,		\
 				       rep_VAL(&rep_CONCAT(ssym, __name)), \
-				       rep_VAL(&rep_CONCAT(ssym, __int)) };\
+				       rep_VAL(&rep_CONCAT(ssym, __int)), \
+				       rep_NULL};			\
     repv fsym args
 
 /* Add a subroutine */    

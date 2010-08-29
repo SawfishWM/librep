@@ -142,11 +142,19 @@ NAME is true, then it should be the symbol that is associated with VALUE."
       'documentation))
 
   (defun documentation (symbol #!optional structure value)
-    "Returns the documentation-string for SYMBOL."
+    "Returns the documentation-string for SYMBOL which should be the name
+of one of a special variable, function, macro, or a special form.
+If it's not a variable, then VALUE should be the function etc.
+
+STRUCTURE is a compatibility argument, and can be nil."
     (catch 'exit
-      (when (and (not structure) (closurep value))
-	(let ((tem (closure-structure value)))
-	  (when (structure-name tem)
+      (when (and (not structure) value)
+	(let (tem)
+	  (if (closurep value)
+	      (setq tem (closure-structure value))
+	    (if (subrp value) ;; t for subr and special form
+		(setq tem (subr-structure value))))
+	  (when (and tem (structure-name tem))
 	    (setq structure (structure-name tem)))))
 
       ;; First check for in-core documentation
