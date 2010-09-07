@@ -455,6 +455,10 @@ come from Scheme.
 Rep does not have the notion of ``command'', but Sawfish does.
 See @xref{Commands, , Commands, sawfish, The Sawfish Manual}.
 
+If you loop over list elements, then @code{mapc} and @code{mapcar} are
+fast, like Emacs. But ``tail-recursion'' is better than a @code{while}
+loop if byte-compiled (@pxref{Compilation Tips}.)
+
 @node Data Types, Numbers, Crash course for Elisp users, The language
 @section Data Types
 @cindex Data types
@@ -614,6 +618,16 @@ character (@samp{"}) at each end, for more details see @ref{Strings}.
 
 @lisp
 "This is a string"
+@end lisp
+
+@item Character
+In Librep, a character is an unsigend 8-bit integer. It read syntax
+is a question mark(@samp{?}) and the character itself. For the
+details, see @xref{Characters}.
+
+@lisp
+?a
+    @result{} 97
 @end lisp
 
 @item Cons cells
@@ -1383,6 +1397,16 @@ escape sequences see @ref{Strings}.
 
 ?\177
     @result{} 127
+
+;; Also special escape syntaxes only for character, not for string.
+#\newline
+    @result{} 10  ; = ?\n
+;; also #\backspace, #\tab, #\linefeed, #\return, #\page, 
+;; #\space, and #\rubout are available.
+
+#\s
+    @result{} 115  ; = ?s
+;; Other than above cases, the first character is read.
 @end lisp
 
 Functions below makes sence for ascii characters only.
@@ -4771,7 +4795,7 @@ Variables}.
 @subsection Module Functions
 
 In this section basic module functions are explained. All are defined
-in @code{rep.structure}. Functions related to contruction of modules
+in @code{rep.structures}. Functions related to contruction of modules
 are described in following sections.
 
 @defun structurep str
@@ -4800,6 +4824,9 @@ structure exists.
 @defun intern-structure name
 Returns the structure called @var{name}, or if one doesn't exist,
 attempts to load it.
+
+This is a kind of mixture of @code{require} and @code{load}; the
+grammar is that of @code{require}, but it doesn't import any.
 @end defun
 
 These functions are related to opening other modules.
@@ -4807,6 +4834,15 @@ These functions are related to opening other modules.
 @defun structure-imports str
 @defunx structure-accessible str
 Returns the list of modules @code{str} has opened or accesses.
+@end defun
+
+There's a function for bindings.
+
+@defun structure-exports-p str sym
+Returns non-nil if the structure @var{structure} exports a binding
+of the symbol @var{sym}. More specifically, it returns the symbol
+@code{local} if @var{structure} defines it, and returns the symbol 
+@code{external} if it exports but does not define it.
 @end defun
 
 Functions @code{open-structures} and @code{access-structures} are
@@ -6736,17 +6772,17 @@ the variable @code{:pare} is bound to the record type. Following this
 definition, the record type could be used as follows:
 
 @lisp
-(define x (kons 1 2))
+(define my-kons (kons 1 2))
 
-(pare? x)
+(pare? my-kons)
     @result{} t
 
-(kar x)
+(kar my-kons)
     @result{} 1
 
-(set-kar! x 42)
+(set-kar! my-kons 42)
 
-(kar x)
+(kar my-kons)
     @result{} 42
 @end lisp
 
@@ -9712,10 +9748,12 @@ command-line-args
 @cindex Timers, asynchronous
 
 The @code{rep.io.timers} module (@pxref{Modules}) allows a Lisp program
-to create multiple asynchronous timers, each of which is primed to call
-a specified function after a specified period of time. These functions
-only work when the Lisp event loop is being used (i.e. at least one
-@code{recursive-edit} is currently in progress).
+to create multiple asynchronous timers, primed to call a specified
+function after some time. 
+
+A timer is not a thread. It works when the event loop is being used,
+i.e. at least one @code{recursive-edit} is currently in progress. A
+timer is called between cycles of event loop.
 
 @defun make-timer function @t{#!optional} seconds milliseconds
 Create and return a new timer object. It will be set to call the Lisp

@@ -51,17 +51,17 @@
   "Create an alias of the structure called FROM as the name TO."
   (name-structure (get-structure from) to))
 
-(defun locate-binding (var imported)
-  "Return the name of the structure binding VAR, using the list of module
+(defun locate-binding (sym imported)
+  "Return the name of the structure binding of SYM, using the list of module
 names IMPORTED as the search start points."
   (when imported
-    (let ((tem (structure-exports-p (get-structure (car imported)) var)))
+    (let ((tem (structure-exports-p (get-structure (car imported)) sym)))
       (cond ((null tem)
-	     (locate-binding var (cdr imported)))
+	     (locate-binding sym (cdr imported)))
 	    ((eq tem 'external)
 	     ;; this module exports it, but it doesn't define
 	     ;; it, so search its imports
-	     (locate-binding var (structure-imports
+	     (locate-binding sym (structure-imports
 				  (get-structure (car imported)))))
 	    (t (car imported))))))
 

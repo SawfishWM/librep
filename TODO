@@ -230,6 +230,7 @@ General programming tasks:
 Manual tasks:
 =============
 
- + Document the error-mode and interrupt-mode variables
+ + Document: variables `error-mode', `interrupt-mode', `idle-hook',
+   and `program-name'
 
  + Document the internals (i.e. the C interface)

@@ -24,7 +24,7 @@ handler. It is not the best, but we can't improve it.
 
 The default value of @code{backtrace-on-error} is now @code{t}.
 
-@item When you evaluate a closure, the module it belongs to is printed, too. [Teika kazura]
+@item When you evaluate a closure interactively, the module it belongs to is printed, too. [Teika kazura]
 
 @item Improved @code{documentation} function [Teika Kazura]
 
@@ -40,13 +40,14 @@ Reorganized documentation files. Many capital letter name files were updated
 or merged into the info.
 
 New entries: @xref{Crash course for Elisp users}, @xref{Closures},
-on leading tilde and tarball access (@pxref{File Handlers}),
+on leading tilde in a filename and tarball access (@pxref{File Handlers}),
 fully revised the module section (@pxref{Modules}), improved
 description on invocation (@pxref{Invocation}), improved
-fluid and @code{let} descriptions of (@pxref{Fluid Variables},
-and @pxref{Local Variables}.) Module names are supplied for all functions.
+``fluid'' and @code{let} descriptions (@pxref{Fluid Variables},
+and @pxref{Local Variables}), improved the read syntax of character
+(@pxref{Characters}). Module names are supplied for all functions.
 
-Supplied documentation to some functions. Input stream functions
+Supplied documentation to some functions: Input stream functions
 @code{peek-char}, @code{read-char} (@pxref{Input Functions}), list
 functions @code{remove-if}, @code{remove-if-not} (@pxref{Mapping
 Functions}), @code{table-size} (@pxref{Hash Tables}), @code{setcar},

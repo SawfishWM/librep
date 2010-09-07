@@ -970,10 +970,10 @@ Returns the interface of structure object STRUCTURE.
 DEFUN ("structure-exports-p", Fstructure_exports_p,
        Sstructure_exports_p, (repv structure, repv var), rep_Subr2) /*
 ::doc:rep.structures#structure-exports-p::
-structure-exports-p STRUCTURE VAR
+structure-exports-p STRUCTURE SYM
 
 Returns true if structure object STRUCTURE exports a binding of symbol
-VAR.
+SYM.
 ::end:: */
 {
     rep_struct_node *n;
@@ -1070,8 +1070,7 @@ DEFUN("intern-structure", Fintern_structure,
 intern-structure STRUCT-NAME
 
 Return the structure called STRUCT-NAME. If no such structure exists,
-attempt to load it into the root structure, i.e. it's loaded, but
-the current module is not affected.
+attempt to load it, but it isn't imported to any module.
 ::end:: */
 {
     repv tem;
@@ -1433,7 +1432,7 @@ loaded is either FILE (if given), or the print name of FEATURE.
 
     /* Need to do all this locally, since the file providing the
        feature/module has to be loaded into the _current_ structure
-       (in case it contains bare code). %intern-structure OTOH
+       (in case it contains bare code). intern-structure OTOH
        always loads into *root-structure*, since it's often called
        with only the %meta structure imported */
 

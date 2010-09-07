@@ -1,4 +1,4 @@
-#| lisp-doc.jl -- Accessing LISP doc strings
+#| doc.jl -- Accessing LISP doc strings
 
    $Id$
 
@@ -19,6 +19,9 @@
    You should have received a copy of the GNU General Public License
    along with Librep; see the file COPYING.  If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
+
+   Module 'lisp-doc' is the alias for rep.lang.compat-doc, NOT of
+   this file.
 |#
 
 (declare (unsafe-for-call/cc))

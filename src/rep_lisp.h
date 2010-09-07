@@ -97,7 +97,8 @@ typedef unsigned rep_PTR_SIZED_INT repv;
 #define rep_NULL	(0)
 
 /* Align the variable or struct member D to the necessary cell alignment.
-   This is used like: ``rep_ALIGN_CELL(rep_cell foo) = ...'' */
+   This is used like: ``rep_ALIGN_CELL(rep_cell foo) = ...''
+   The best examples are the uses for rep_subr and rep_xsubr below. */
 #ifdef __GNUC__
 # define rep_ALIGN_CELL(d) d __attribute__ ((aligned (rep_CELL_ALIGNMENT)))
 #elif defined (__digital__) && defined (__unix__) && defined (__DECC)
@@ -292,7 +293,7 @@ typedef struct rep_type_struct {
 #define rep_Void	0x09
 #define rep_Reserved	0x0b
 #define rep_Number	0x0d
-#define rep_SF		0x0f
+#define rep_SF		0x0f /* Special form */
 #define rep_Subr0	0x11
 #define rep_Subr1	0x13
 #define rep_Subr2	0x15
@@ -300,7 +301,7 @@ typedef struct rep_type_struct {
 #define rep_Subr4	0x19
 #define rep_Subr5	0x1b
 #define rep_SubrN	0x1d
-#define rep_Funarg	0x1f
+#define rep_Funarg	0x1f /* Closure */
 
 /* Assuming that V is a cell, return the type code */
 #define rep_CELL_TYPE(v) (rep_CONSP(v) ? rep_Cons		\
