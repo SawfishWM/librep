@@ -107,7 +107,19 @@
 			       (memq (car out) top-level-compiled))))))
       (case (car form)
 	((defun)
-	 (remember-function (nth 1 form) (nth 2 form) (nthcdr 3 form)))
+	 (remember-function (nth 1 form) (nth 2 form) (nthcdr 3 form))
+	 (let* ((body (cdddr form))
+		(doc (car body))
+		prop-name)
+	   (when (and (not *compiler-write-docs*)
+		      (stringp doc))
+	     (setq prop-name
+		   (intern
+		    (concat "documentation#"
+			    (symbol-name (fluid current-module)))))
+	     (setq form
+		   `(progn (put ',(cadr form) ',prop-name ,doc)
+			   ,form)))))
 
 	((defmacro)
 	 (remember-function (nth 1 form) (nth 2 form))
