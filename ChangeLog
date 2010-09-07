@@ -1,7 +1,7 @@
 2010-09-10  Christohper Bratusek <zanghar@freenet.de>
 	* src/Makefile.in: fix uninstall rule
 
-2010-07-29  Christopher Bratusek <zanghar@freenet.de>
+2010-08-29  Christopher Bratusek <zanghar@freenet.de>
 	* lisp/rep/lang/doc.jl
 	* lisp/rep/vm/compiler/rep.jl
 	* src/rep_lisp.h
