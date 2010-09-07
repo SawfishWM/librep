@@ -417,13 +417,37 @@ Set the function value in the closure FUNARG to FUNCTION.
 DEFUN("closure-structure", Fclosure_structure,
       Sclosure_structure, (repv funarg), rep_Subr1) /*
 ::doc:rep.structures#closure-function::
-closure-function FUNARG
+closure-structure FUNARG
 
 Return the structure associated with the closure FUNARG.
 ::end:: */
 {
     rep_DECLARE1(funarg, rep_FUNARGP);
     return rep_FUNARG(funarg)->structure;
+}
+
+DEFUN("subr-structure", Fsubr_structure,
+      Ssubr_structure, (repv arg), rep_Subr1) /*
+::doc:rep.structures#closure-function::
+subr-structure SUBR
+
+Return the structure associated with the subr SUBR.
+::end:: */
+{
+  /* Simple rep_DECLARE1 can't be used. Borrow rep_DECLARE1 macro
+     definition. */
+  do{
+    if(Fsubrp(arg) == Qnil){
+      rep_signal_arg_error(arg, 1);
+      return rep_NULL;
+    }
+  }while(0);
+
+  if(rep_XSUBR(arg)->structure != rep_NULL){
+    return rep_XSUBR(arg)->structure;
+  }else{
+    return Qnil;
+  }
 }
 
 DEFUN ("set-closure-structure", Fset_closure_structure,
@@ -1494,6 +1518,7 @@ rep_symbols_init(void)
     rep_ADD_SUBR(Sset_closure_function);
     rep_ADD_SUBR(Sclosure_name);
     rep_ADD_SUBR(Sclosurep);
+    rep_ADD_SUBR(Ssubr_structure);
     rep_pop_structure (tem);
 
     tem = rep_push_structure ("rep.structures");
