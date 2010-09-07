@@ -142,24 +142,38 @@ NAME is true, then it should be the symbol that is associated with VALUE."
       'documentation))
 
   (defun documentation (symbol #!optional structure value)
-    "Returns the documentation-string for SYMBOL."
+    "Returns the documentation-string for SYMBOL which should be the name
+of a special variable, function, macro, or a special form.
+If it's not a variable, then VALUE should be the function itself, like
+a closure.
+
+Returns nil when not found.
+
+STRUCTURE is a compatibility argument, and can be nil."
     (catch 'exit
-      (when (and (not structure) (closurep value))
-	(let ((tem (closure-structure value)))
-	  (when (structure-name tem)
+      (when (macrop value)
+	(setq value (cdr value)))
+      (when (and (not structure) value)
+	(let (tem)
+	  (cond
+	   ((closurep value)
+	    (setq tem (closure-structure value)))
+	   ((subrp value) ;; t for subr and special form
+	    (setq tem (subr-structure value))))
+	  (when (and tem (structure-name tem))
 	    (setq structure (structure-name tem)))))
 
       ;; First check for in-core documentation
       (when value
 	(let ((tem value))
-	  (when (eq 'macro (car tem))
-	    (setq tem (cdr tem)))
 	  (when (and (closurep tem)
 		     (eq (car (closure-function tem)) 'lambda))
 	    (setq tem (nth 2 (closure-function tem)))
 	    (when (stringp tem)
 	      (throw 'exit tem)))))
 
+      ;; Docstring is stored in `documentation' property,
+      ;; or `documentation#MODULE' for functions.
       (let ((doc (or (and structure (get symbol
 					 (documentation-property
 					  structure)))
