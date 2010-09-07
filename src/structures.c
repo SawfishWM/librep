@@ -1542,7 +1542,6 @@ rep_add_subr(rep_xsubr *subr, rep_bool export)
 	rep_struct_node *n = lookup_or_add (s, sym);
 	n->binding = rep_VAL (subr);
 	n->is_exported = export;
-	subr->structure = rep_structure;
     }
     return sym;
 }
