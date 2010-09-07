@@ -30,6 +30,7 @@ The core language.
 * Threads::                     Multi-threaded programs
 * Loading::                     Programs are stored in files
 * Compiled Lisp::               Making programs run faster
+* Docstrings::                  Documentation of variable and function
 
 Data structures and I/O.
 
@@ -3592,8 +3593,7 @@ buffer-local value). If no @var{form} is given the assigned value
 defaults to false.
 
 If the @var{doc-string} argument is defined it is a string documenting
-@var{variable}. This string is then stored as the symbol's
-@code{documentation} property.
+@var{variable} (@pxref{Docstrings}).
 
 @lisp
 (defvar *my-variable* '(x y)
@@ -3786,7 +3786,7 @@ The general format of a lambda expression is:
 
 @noindent
 Where @var{lambda-list} is a list defining the formal parameters of the
-function, @var{doc} is an optional documentation string,
+function, @var{doc} is an optional documentation string (@pxref{Docstrings}),
 and @var{body-forms} is the sequence of forms making up
 the function body, evaluated using an implicit @code{progn}.
 
@@ -6172,7 +6172,7 @@ should be loaded to provided the actual definition of @var{symbol}.
 ``Magic cookie'' @code{;;;###autoload} comment in the source
 is meaningless. It was supported by Obsolete ``Jade'' editor only.
 
-@node Compiled Lisp, Datums, Loading, The language
+@node Compiled Lisp, Docstrings, Loading, The language
 @section Compiled Lisp
 @cindex Compiled Lisp
 
@@ -6618,8 +6618,32 @@ Disassembly of #<closure fib>:
 20   return             ;return the sum of the two calls
 @end example
 
+@node Docstrings, Datums, Compiled Lisp, The language
+@section Documentation Strings
+@cindex Docstrings
+@cindex Documentation Strings
 
-@node Datums, Queues, Compiled Lisp, The language
+The ``docstring'', or documentation string, of a variable or function
+gives the description on it, given at its definition.
+
+@defun documentation symbol structure value
+Returns the documentation-string for @var{symbol}. It should be the
+name of a special variable, function, macro, or a special form.  If
+it's not a variable, then @var{value} should be the function itself,
+like a closure.
+
+Returns nil when not found. This function is defined in
+@code{rep.lang.doc} module.
+
+@var{structure} can be nil. It was required in the old syntax.
+@end defun
+
+Docstring is stored in a very complicated way. Those from installed files
+are stored in @file{DOC} file. Others use the plist for the name. If
+it's a special variable, then docstring is in @code{documentation}
+property, and a closure and a macro, in @code{documentation#MODULE}.
+
+@node Datums, Queues, Docstrings, The language
 @section Datums
 @cindex Datums
 @cindex Data types, datums

@@ -8,8 +8,10 @@
 
 @item Update note [important]:
 
-This release brings an ABI-change, therefore you'll need to rebuild rep-gtk
-and sawfish against this version of librep.
+You need to rebuild rep-gtk and sawfish against this version of librep,
+because of an ABI-change.
+
+Your lisp files have to be byte-compiled again, too.
 
 @item Halfway improved @code{debug-on-error} and @code{backtrace-on-error} [Teika Kazura]
 
@@ -26,13 +28,17 @@ The default value of @code{backtrace-on-error} is now @code{t}.
 
 @item When you evaluate a closure interactively, the module it belongs to is printed, too. [Teika kazura]
 
-@item Improved @code{documentation} function [Teika Kazura]
+@item Improved functions' docstring support [Teika Kazura]
 
-The @code{documenation} function, which returns the docstring of a variable or
-function has been revised. It now works better with docstrings of subrs or macros,
-aswell as docstrings of byte-compiled user-files (eg: pager.jlc).
+Handling of functions' docstring is improved. The revised
+@code{documenation} function is ensured to return the docstring
+of functions, macros, and special forms (@pxref{Docstrings}).
 
-** more descriptive docs are comming soon.
+Previously, fuctions' docstrings of byte-compiled user-files (eg:
+pager.jlc) were lost, but not now.
+
+@item New function @code{subr-structure} [Teika Kazura]@*
+It returns the module a subr belongs to.
 
 @item Major documentation revision [Teika kazura]
 

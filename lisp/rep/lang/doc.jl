@@ -145,14 +145,14 @@ NAME is true, then it should be the symbol that is associated with VALUE."
       'documentation))
 
   (defun documentation (symbol #!optional structure value)
-    "Returns the documentation-string for SYMBOL which should be the name
+    "Returns the documentation-string for SYMBOL. It should be the name
 of a special variable, function, macro, or a special form.
 If it's not a variable, then VALUE should be the function itself, like
 a closure.
 
 Returns nil when not found.
 
-STRUCTURE is a compatibility argument, and can be nil."
+STRUCTURE can be nil. It was required by the old syntax."
     (catch 'exit
       (when (macrop value)
 	(setq value (cdr value)))
