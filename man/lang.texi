@@ -46,21 +46,22 @@ Data structures and I/O.
                                  running under Unix
 
 Miscellaneous features.
-
+* String Functions::            Misc string manipulation
+* utf-8::                       utf-8 functions
 * Regular Expressions::         Matching regular expressions
-* Time and Date::               Manipulating time and date
-* i18n::                        Internationalisation
 
+* Time and Date::               Manipulating time and date
 * System Information::          Getting details about the host
 * User Information::            The name of the user
 * Environment Variables::       Reading and writing the environment
-* String Functions::            Misc string manipulation
-* utf-8::                       utf-8 functions
+* Command Line Options::        Retrieving command line arguments
+
+* Timers::                      Asynchronous timers
 * Sleeping::                    Waiting for a period of time
 * Beeping::                     Making a ding! sound
+
+* i18n::                        Internationalisation
 * Messages::                    Writing to the console
-* Command Line Options::        Retrieving command line arguments
-* Timers::                      Asynchronous timers
 
 * Debugging::                   How to debug Lisp programs
 * Tips::                        General ideas for Librep programming
@@ -167,7 +168,6 @@ When a function is said to ``return false'', it means that it returns
 the false boolean value, i.e. the empty list. When a function is said
 to ``return true'', this means that any non-false value is returned.
 
-
 @node The Lisp Reader, Notation, nil and t, Rep's Lisp Introduction
 @subsection The Lisp Reader
 @cindex The Lisp reader
@@ -184,7 +184,6 @@ The Lisp Reader is the collection of internal functions accessed by the
 stream until a whole Lisp object has been parsed.
 
 @xref{Data Types}.
-
 
 @node Notation, Descriptions, The Lisp Reader, Rep's Lisp Introduction
 @subsection Notation
@@ -223,7 +222,6 @@ by the @samp{@error{}} glyph.
 (open-file "/tmp/foo" 'read)
     @error{} File error: No such file or directory, /tmp/foo
 @end lisp
-
 
 @node Descriptions, , Notation, Rep's Lisp Introduction
 @subsection Descriptions
@@ -503,7 +501,6 @@ But this will be explained later.
 * Type Predicates::             Each type has a predicate defining it
 * Garbage Collection::          Reusing memory from stale objects
 @end menu
-
 
 @node Types Summary, Read Syntax, , Data Types
 @subsection Types Summary
@@ -8293,7 +8290,7 @@ host. See the @file{lisp/remote-rep.jl} file in the distribution for
 more details.
 
 
-@node Processes, Regular Expressions, Files, The language
+@node Processes, String Functions, Files, The language
 @section Processes
 @cindex Processes
 @cindex Subprocesses
@@ -8811,7 +8808,7 @@ in the running state false is returned.
 @end defun
 
 @node Shell Commands, , Process Information, Processes
-@section Executing Shell Commands
+@subsection Executing Shell Commands
 @cindex Executing shell commands
 @cindex Shell commands, executing
 
@@ -8841,7 +8838,133 @@ with a normal synchronous process (@pxref{Synchronous Processes}).
 Interrupt the interpreter, it will send progressively harder-to-ignore
 signals to the child each interrupt, until it is eventually terminated.
 
-@node Regular Expressions, Time and Date, Processes, The language
+@node String Functions, utf-8, Processes, The language
+@section String Functions
+@cindex String functions
+
+@defun translate-string string map
+Applies the @var{map} to each character in the @var{string}. @var{map}
+is also string, each character represents the translation for an ASCII
+character of that characters position in the string. If the string is
+less than 256 chars long any undefined characters will remain
+unchanged.
+
+For example, if @var{string} contains the character @samp{A}, with
+ASCII code 65, then it would be replaced by the 65th character in the
+string @var{map}.
+
+Note that the @var{string} really is modified, no copy is made
+@end defun
+
+@defvar upcase-table
+A @code{translate-string} compatible translation map to convert
+lowercase characters to uppercase characters.
+@end defvar
+
+@defvar downcase-table
+A map to convert uppercase characters to lowercase.
+@end defvar
+
+@defvar flatten-table
+A translation map to convert newline characters to spaces.
+@end defvar
+
+@lisp
+(translate-string "Foo" upcase-table)
+    @result{} "FOO"
+
+(translate-string "Foo" downcase-table)
+    @result{} "foo"
+@end lisp
+
+@defun complete-string template list @t{#!optional} ignore-case
+Return a string whose beginning matches the string @var{template}, and
+is unique in the set of all strings in @var{list} which also match
+@var{template}. If @var{ignore-case} is true, all matching
+ignores case of characters.
+
+@lisp
+(complete-string "foo" '("bar" "foobar" "forbarf" "foobat"))
+    @result{} "fooba"
+@end lisp
+@end defun
+
+@defun string-head-eq string-1 string-2
+Returns t if @var{string-2} matches the beginning of @var{string-1}.
+
+@lisp
+(string-head-eq "foobar" "foo")
+    @result{} t
+
+(string-head-eq "foo" "foobar")
+    @result{} ()
+@end lisp
+@end defun
+
+@defun string-upper-case-p string
+Return true if @var{string} contains no lower case characters.
+@end defun
+
+@defun string-lower-case-p string
+Return true if @var{string} contains no upper case characters.
+@end defun
+
+@defun string-capitalized-p string
+Return true if the first character of @var{string} is upper case.
+@end defun
+
+@defun string-upcase string
+Return a new string, an upper case copy of @var{string}.
+@end defun
+
+@defun string-downcase string
+Return a new string, a lower case copy of @var{string}.
+@end defun
+
+@defun capitalize-string string
+Return a new string, a copy of @var{string} with the first character in
+upper case.
+@end defun
+
+@defun mapconcat function sequence separator
+Call @var{function} for each member of @var{sequence}, concatenating
+the results. Between each pair of results, insert @var{separator}.
+Return the resulting string.
+@end defun
+
+@defun string->number string &optional radix
+Return the number represented by @var{string}. If @var{radix} is
+specified, the number is parsed from that base, otherwise base 10 is
+assumed.
+@end defun
+
+@defun number->string num &optional radix
+Return a string containing a printed representation of the number
+@var{num}. If @var{radix} is specified, print the number in that base,
+otherwise print it in base 10.
+@end defun
+
+@node utf-8, Regular Expressions, String Functions, The language
+@section utf-8
+@cindex utf-8
+
+Some functions for utf-8 strings are available.
+
+They assume that the string is encoded in utf-8. Otherwise, the
+behavior is not defined. Defined in @code{rep.util.utf8}.
+
+@defun utf8-string-length string
+Returns the number of characters of utf-8 encoded @var{string}.
+@end defun
+
+@defun utf8-substring string start @t{#!optional} end
+Returns the portion of @var{string}, encoded in utf-8, starting at
+character number @var{start} and ending at the character before
+@var{end} (or the end of the string if @var{end} is not given). All
+indices start at zero.
+@end defun
+
+@node Regular Expressions, Time and Date, utf-8, The language
 @section Regular Expressions
 @cindex Regular expressions
 @cindex Regexps
@@ -9130,7 +9253,7 @@ Return a list of substrings of @code{string}, each delimited by
 @end lisp
 @end defun
 
-@node Time and Date, i18n, Regular Expressions, The language
+@node Time and Date, System Information, Regular Expressions, The language
 @section Time and Date
 @cindex Time and date
 @cindex Date and time
@@ -9398,49 +9521,7 @@ XXX provide more information on accepted formats, outputs for
 incomplete descriptions, etc@dots{}
 
 
-@node i18n, System Information, Time and Date, The language
-@section Internationalisation
-@cindex Internationalisation
-
-Librep has support for internationalisation (or i18n) of text
-messages, using the GNU @code{gettext} implementation (@pxref{Top, ,
-Overview, gettext, The GNU gettext Manual}), a run-time library
-managing the mapping between text strings in the programmer's native
-language and in the language of the end user.
-
-Three functions are provided to access the message catalogues
-maintained by GNU @code{gettext}. Import the @code{rep.i18n.gettext}
-module to load them.
-
-@defun _ string
-Attempt to find a native language equivalent of @var{string}. If no
-equivalent is found the original string is returned.
-
-Note that this function is always defined, even if the @code{gettext}
-module hasn't been required. In this case it always returns the
-original string.
-@end defun
-
-@defun bindtextdomain domain directory
-Tell @code{gettext} that message catalogues for message domain
-@var{domain} (a string) can be found under the directory called
-@var{directory}.
-@end defun
-
-@defun textdomain domain
-Note that any strings that are to be translated in the future (until
-the next call to @code{textdomain}) are in the domain called
-@var{domain} (a string).
-@end defun
-
-The usual method of constructing message catalogue templates
-(@file{.pot} files) is to run @code{xgettext} on the C source files of
-the program (that have been annotated for i18n). librep provides the
-@code{rep-xgettext} program to perform the same task for files of Lisp
-code.
-
-
-@node System Information, User Information, i18n, The language
+@node System Information, User Information, Time and Date, The language
 @section System Information
 @cindex System information
 
@@ -9476,7 +9557,6 @@ rep-version
     @result{} "1.0"
 @end lisp
 @end defvar
-
 
 @node User Information, Environment Variables, System Information, The language
 @section User Information
@@ -9518,8 +9598,7 @@ returned string will be as returned by @code{file-name-as-directory}
 @end lisp
 @end defun
 
-
-@node Environment Variables, String Functions, User Information, The language
+@node Environment Variables, Command Line Options, User Information, The language
 @section Environment Variables
 @cindex Environment variables
 
@@ -9551,179 +9630,7 @@ Deletes any variable in @code{process-environment} named
 See also @ref{Process Objects} for the description of the
 @code{process-environment} variable.
 
-
-@node String Functions, utf-8, Environment Variables, The language
-@section String Functions
-@cindex String functions
-
-@defun translate-string string map
-Applies the @var{map} to each character in the @var{string}. @var{map}
-is also string, each character represents the translation for an ASCII
-character of that characters position in the string. If the string is
-less than 256 chars long any undefined characters will remain
-unchanged.
-
-For example, if @var{string} contains the character @samp{A}, with
-ASCII code 65, then it would be replaced by the 65th character in the
-string @var{map}.
-
-Note that the @var{string} really is modified, no copy is made
-@end defun
-
-@defvar upcase-table
-A @code{translate-string} compatible translation map to convert
-lowercase characters to uppercase characters.
-@end defvar
-
-@defvar downcase-table
-A map to convert uppercase characters to lowercase.
-@end defvar
-
-@defvar flatten-table
-A translation map to convert newline characters to spaces.
-@end defvar
-
-@lisp
-(translate-string "Foo" upcase-table)
-    @result{} "FOO"
-
-(translate-string "Foo" downcase-table)
-    @result{} "foo"
-@end lisp
-
-@defun complete-string template list @t{#!optional} ignore-case
-Return a string whose beginning matches the string @var{template}, and
-is unique in the set of all strings in @var{list} which also match
-@var{template}. If @var{ignore-case} is true, all matching
-ignores case of characters.
-
-@lisp
-(complete-string "foo" '("bar" "foobar" "forbarf" "foobat"))
-    @result{} "fooba"
-@end lisp
-@end defun
-
-@defun string-head-eq string-1 string-2
-Returns t if @var{string-2} matches the beginning of @var{string-1}.
-
-@lisp
-(string-head-eq "foobar" "foo")
-    @result{} t
-
-(string-head-eq "foo" "foobar")
-    @result{} ()
-@end lisp
-@end defun
-
-@defun string-upper-case-p string
-Return true if @var{string} contains no lower case characters.
-@end defun
-
-@defun string-lower-case-p string
-Return true if @var{string} contains no upper case characters.
-@end defun
-
-@defun string-capitalized-p string
-Return true if the first character of @var{string} is upper case.
-@end defun
-
-@defun string-upcase string
-Return a new string, an upper case copy of @var{string}.
-@end defun
-
-@defun string-downcase string
-Return a new string, a lower case copy of @var{string}.
-@end defun
-
-@defun capitalize-string string
-Return a new string, a copy of @var{string} with the first character in
-upper case.
-@end defun
-
-@defun mapconcat function sequence separator
-Call @var{function} for each member of @var{sequence}, concatenating
-the results. Between each pair of results, insert @var{separator}.
-Return the resulting string.
-@end defun
-
-@defun string->number string &optional radix
-Return the number represented by @var{string}. If @var{radix} is
-specified, the number is parsed from that base, otherwise base 10 is
-assumed.
-@end defun
-
-@defun number->string num &optional radix
-Return a string containing a printed representation of the number
-@var{num}. If @var{radix} is specified, print the number in that base,
-otherwise print it in base 10.
-@end defun
-
-@node utf-8, Sleeping, String Functions, The language
-@section utf-8
-@cindex utf-8
-
-Some functions for utf-8 strings are available.
-
-They assume that the string is encoded in utf-8. Otherwise, the
-behavior is not defined. Defined in @code{rep.util.utf8}.
-
-@defun utf8-string-length string
-Returns the number of characters of utf-8 encoded @var{string}.
-@end defun
-
-@defun utf8-substring string start @t{#!optional} end
-Returns the portion of @var{string}, encoded in utf-8, starting at
-character number @var{start} and ending at the character before
-@var{end} (or the end of the string if @var{end} is not given). All
-indices start at zero.
-@end defun
-
-@node Sleeping, Beeping, utf-8, The language
-@section Sleeping
-@cindex Sleeping
-
-@defun sleep-for seconds @t{#!optional} milliseconds
-Pause for a @var{seconds} (plus the optional @var{milliseconds}
-component) long period of time. Input becoming available will
-@emph{not} break the sleep (@pxref{Process I/O}).
-
-This function is exported by the @code{rep.system} module.
-@end defun
-
-
-@node Beeping, Messages, Sleeping, The language
-@section Beeping
-@cindex Beeping
-
-Use this function to attract the user's attention.
-
-@defun beep
-Ring a bell somewhere.
-@end defun
-
-
-@node Messages, Command Line Options, Beeping, The language
-@section Messages
-@cindex Messages
-
-The @code{message} function will show the user a small message
-(typically no more than a single column of text). In graphical
-applications it @emph{won't} bring up a separate window, only
-displaying the text in a status bar or something similar. In a
-console-based environment, the message will be printed to the
-@code{stderr} stream, followed by a line break.
-
-@defun message @t{#!optional} display-now
-Displays a one-line message, the string @var{message}. If
-@var{display-now}, every effort will be made to display the message as
-soon as possible, possibly before the next scheduled screen update (if
-applicable).
-
-This function is exported by the @code{rep.system} module.
-@end defun
-
-
-@node Command Line Options, Timers, Messages, The language
+@node Command Line Options, Timers, Environment Variables, The language
 @section Command Line Options
 @cindex Command line options
 @cindex Options, command line
@@ -9765,8 +9672,7 @@ command-line-args
     @result{} ()
 @end lisp
 
-
-@node Timers, Debugging, Command Line Options, The language
+@node Timers, Sleeping, Command Line Options, The language
 @section Asynchronous Timers
 @cindex Asynchronous timers
 @cindex Timers, asynchronous
@@ -9805,8 +9711,92 @@ the specified time period. If neither are defined then the current
 interval of the timer is preserved.
 @end defun
 
+@node Sleeping, Beeping, Timers, The language
+@section Sleeping
+@cindex Sleeping
 
-@node Debugging, Tips, Timers, The language
+@defun sleep-for seconds @t{#!optional} milliseconds
+Pause for a @var{seconds} (plus the optional @var{milliseconds}
+component) long period of time. Input becoming available will
+@emph{not} break the sleep (@pxref{Process I/O}).
+
+This function is exported by the @code{rep.system} module.
+@end defun
+
+
+@node Beeping, i18n, Sleeping, The language
+@section Beeping
+@cindex Beeping
+
+Use this function to attract the user's attention.
+
+@defun beep
+Ring a bell somewhere.
+@end defun
+
+@node i18n, Messages, Beeping, The language
+@section Internationalisation
+@cindex Internationalisation
+
+Librep has support for internationalisation (or i18n) of text
+messages, using the GNU @code{gettext} implementation (@pxref{Top, ,
+Overview, gettext, The GNU gettext Manual}), a run-time library
+managing the mapping between text strings in the programmer's native
+language and in the language of the end user.
+
+Three functions are provided to access the message catalogues
+maintained by GNU @code{gettext}. Import the @code{rep.i18n.gettext}
+module to load them.
+
+@defun _ string
+Attempt to find a native language equivalent of @var{string}. If no
+equivalent is found the original string is returned.
+
+Note that this function is always defined, even if the @code{gettext}
+module hasn't been required. In this case it always returns the
+original string.
+@end defun
+
+@defun bindtextdomain domain directory
+Tell @code{gettext} that message catalogues for message domain
+@var{domain} (a string) can be found under the directory called
+@var{directory}.
+@end defun
+
+@defun textdomain domain
+Note that any strings that are to be translated in the future (until
+the next call to @code{textdomain}) are in the domain called
+@var{domain} (a string).
+@end defun
+
+The usual method of constructing message catalogue templates
+(@file{.pot} files) is to run @code{xgettext} on the C source files of
+the program (that have been annotated for i18n). librep provides the
+@code{rep-xgettext} program to perform the same task for files of Lisp
+code.
+
+@node Messages, Debugging, i18n, The language
+@section Messages
+@cindex Messages
+
+The @code{message} function will show the user a small message
+(typically no more than a single column of text). In graphical
+applications it @emph{won't} bring up a separate window, only
+displaying the text in a status bar or something similar. In a
+console-based environment, the message will be printed to the
+@code{stderr} stream, followed by a line break.
+
+@defun message @t{#!optional} display-now
+Displays a one-line message, the string @var{message}. If
+@var{display-now}, every effort will be made to display the message as
+soon as possible, possibly before the next scheduled screen update (if
+applicable).
+
+This function is exported by the @code{rep.system} module.
+@end defun
+
+
+@node Debugging, Tips, Messages, The language
 @section Debugging
 @cindex Debugging
 
