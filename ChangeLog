@@ -1,6 +1,56 @@
 2010-09-10  Christohper Bratusek <zanghar@freenet.de>
 	* src/Makefile.in: fix uninstall rule
 
+2010-09-07  Teika Kazura <teika@lavabit.com>
+	* lisp/rep/lang/doc.jl
+	* lisp/rep/vm/compiler/rep.jl
+	* src/rep_lisp.h
+	* src/structures.c
+	* src/symbols.c: Revereted the last edit on 29 Aug.
+	They were replayed as better commits. See below.
+
+	* src/rep_lisp.h
+	* src/structures.c
+	* src/symbols.c: Implements 'subr-structure'. Each subr now
+	remembers the module it belongs to, and the new function
+	'subr-structure' returns it.  This change is ABI
+	incompatible. After this, you have to re-compile rep-gtk and
+	sawfish in this order.
+	It seems that struct rep_subr and rep_xsubr have to have the
+	(almost) same members, because the subr lisp object is cast to
+	both, depending on the need. So I added 'repv structure' to both,
+	though one of rep_subr is never referred to.
+
+	* lisp/rep/vm/compiler/rep.jl: Doc support for 'defun' in
+	user-compiled file.
+	Previously, docstring in defun is lost on byte-compilation done by
+	user, i.e., when it's not saved in DOC.
+	Fixes an error included in the reverted commit d83b5. It used to
+	print debugging messages.
+
+	* lisp/rep/lang/doc.jl: Function 'documentation' works for subr
+	and macro, too.
+
+	* TODO
+	* lisp/rep/lang/doc.jl
+	* lisp/rep/structures.jl
+	* man/lang.texi
+	* man/news.texi
+	* src/rep_lisp.h
+	* src/structures.c: Doc.
+	Improved news. Some addition in TODO. Others.
+	Doc of `structure-exports-p' is given.
+	Doc of `intern-structure' is corrected.
+	Doc on read syntax of character is improved.
+
+	* lisp/rep/lang/doc.jl
+	* man/lang.texi
+	* man/news.texi: Doc on recent improvements on docstring and subr.
+	Related news.
+	Describes 'documentation' function in info.
+
+	* man/lang.texi: Doc. Re-ordered sections in 'The language' chapter.
+
 2010-08-29  Christopher Bratusek <zanghar@freenet.de>
 	* lisp/rep/lang/doc.jl
 	* lisp/rep/vm/compiler/rep.jl
