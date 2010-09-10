@@ -111,13 +111,13 @@ installdirs : mkinstalldirs
 	  $(DESTDIR)$(includedir)/rep/
 
 uninstall :
-	$(LIBTOOL) rm $(DESTDIR)${libdir}/librep.la
-	$(LIBTOOL) rm $(DESTDIR)${bindir}/rep
-	$(LIBTOOL) rm $(DESTDIR)${bindir}/repdoc
+	$(LIBTOOL) --mode=uninstall $(DESTDIR)${libdir}/librep.la
+	$(LIBTOOL) --mode=uninstall $(DESTDIR)${bindir}/rep
+	$(LIBTOOL) --mode=uninstall $(DESTDIR)${bindir}/repdoc
 	rm -f $(DESTDIR)${bindir}/rep-xgettext
 	rm -f $(DESTDIR)${bindir}/rep-remote
 	for dl in $(DL_DSTS); do \
-	  $(LIBTOOL) rm $(DESTDIR)${repexecdir}/$$dl; \
+	  $(LIBTOOL) --mode=uninstall $(DESTDIR)${repexecdir}/$$dl; \
 	done
 	rm -rf $(DESTDIR)$(includedir)/rep/; \
 

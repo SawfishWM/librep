@@ -57,6 +57,8 @@ Functions}), @code{table-size} (@pxref{Hash Tables}), @code{setcar},
 
 The former is still valid, but it's a very confusing name, therefore the latter is
 introduced.
+
+@item Makefile's uninstall rule has been fixed [Christopher Bratusek]
 @end itemize
 @heading 0.90.6
 @itemize @bullet
