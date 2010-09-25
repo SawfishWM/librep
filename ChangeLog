@@ -2,6 +2,8 @@
 	* lisp/Makefile.in
 	* lisp/rep/ffi/util.jl: added ffi utils. [Sergey Bolshakov]
 
+	* librep.spec.in: fixed. [Kim B. Heino]
+
 2010-09-10  Christopher Bratusek <zanghar@freenet.de>
 	* src/Makefile.in: fix uninstall rule
 

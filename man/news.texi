@@ -9,6 +9,8 @@
 @item @code{rep.ffi.util} module [Sergey Bolshakov]
 
 A module containing utils for rep's ffi binding.
+
+@item fixed the spec-file [Kim B. Heino]
 @end itemize
 @heading 0.91.0
 @itemize @bullet
