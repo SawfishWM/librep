@@ -3,6 +3,13 @@
 @chapter News
 @cindex News
 
+@heading 0.91.1
+@itemize @bullet
+
+@item @code{rep.ffi.util} module [Sergey Bolshakov]
+
+A module containing utils for rep's ffi binding.
+@end itemize
 @heading 0.91.0
 @itemize @bullet
 

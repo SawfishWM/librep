@@ -1,4 +1,8 @@
-2010-09-10  Christohper Bratusek <zanghar@freenet.de>
+2010-09-25  Christopher Bratusek <zanghar@freenet.de>
+	* lisp/Makefile.in
+	* lisp/rep/ffi/util.jl: added ffi utils. [Sergey Bolshakov]
+
+2010-09-10  Christopher Bratusek <zanghar@freenet.de>
 	* src/Makefile.in: fix uninstall rule
 
 2010-09-07  Teika Kazura <teika@lavabit.com>
