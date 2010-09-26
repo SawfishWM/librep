@@ -1,3 +1,6 @@
+2010-09-26  Christopher Bratusek <zanghar@freenet.de>
+	* configure.in: fixed libffi detection [Sergey Bolshakov]
+
 2010-09-25  Christopher Bratusek <zanghar@freenet.de>
 	* lisp/Makefile.in
 	* lisp/rep/ffi/util.jl: added ffi utils. [Sergey Bolshakov]
