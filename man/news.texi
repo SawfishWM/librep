@@ -6,6 +6,11 @@
 @heading 0.91.1
 @itemize @bullet
 
+@item libffi-detection [Sergey Bolshakov]
+
+Fixed the detection of libffi. rep.ffi module does
+now build correctly.
+
 @item @code{rep.ffi.util} module [Sergey Bolshakov]
 
 A module containing utils for rep's ffi binding.
