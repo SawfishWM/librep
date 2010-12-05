@@ -214,14 +214,14 @@ AC_ARG_WITH(ffi,
 
 if test "$with_ffi" != "no"; then
   PKG_CHECK_MODULES(LIBFFI, libffi >= $FFI_MIN_VER
-  ,AC_DEFINE(HAVE_FFI_H, 1, [Have ffi.h])
-   AC_DEFINE(HAVE_LIBFFI, 1, [Have libffi])
-   found_ffi=yes
-  ,AC_CHECK_HEADER([ffi.h],[LIBFFI_CFLAGS=],[LIBFFI_FOUND=no])
-   AC_SEARCH_LIBS([ffi_call], [ffi],[LIBFFI_LIBS=-lffi],[LIBFFI_FOUND=no])
-   if test "x${LIBFFI_FOUND}" = xno; then
-     AC_MSG_ERROR([cannot locate libffi])
-   fi)
+  ,[found_ffi=yes]
+  ,[
+     AC_CHECK_HEADER([ffi.h],[LIBFFI_CFLAGS=],[LIBFFI_FOUND=no])
+     AC_SEARCH_LIBS([ffi_call], [ffi],[LIBFFI_LIBS=-lffi],[LIBFFI_FOUND=no])
+     if test "x${LIBFFI_FOUND}" = xno; then
+       AC_MSG_ERROR([cannot locate libffi])
+     fi
+   ])
 fi
 
 dnl Check for dynamic loading
