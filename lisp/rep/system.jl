@@ -40,9 +40,9 @@ is true in which case it is added at the end."
       (set hook-symbol (nconc (symbol-value hook-symbol) (cons new-func nil)))
     (set hook-symbol (cons new-func (symbol-value hook-symbol)))))
 
-(defun remove-hook (hook-symbol old-func)
-  "Remove FUNCTION-NAME from the hook HOOK-SYMBOL."
-  (set hook-symbol (delete old-func (symbol-value hook-symbol))))
+(defun remove-hook (hook func)
+  "Remove FUNC from the hook HOOK (symbol)."
+  (set hook (delete func (symbol-value hook))))
 
 (defun in-hook-p (hook-symbol fun)
   "Returns t if the function FUN is stored in the hook called HOOK-SYMBOL."

@@ -8,7 +8,13 @@
 
 @item @code{rep.ffi.util} module [Sergey Bolshakov]
 
-A module containing utils for rep's ffi binding.
+A new module containing utils for rep's ffi binding is added.
+
+@item Documentation [Teika kazura]
+
+Function @code{in-hook-p} now has the documentation. (@pxref{Normal Hooks})
+
+New section ``Module Aliases''. (@pxref{Module Aliases})
 
 @item fixed the spec-file [Kim B. Heino]
 @end itemize

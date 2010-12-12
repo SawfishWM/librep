@@ -1,3 +1,14 @@
+2010-12-12  Teika Kazura <teika@lavabit.com>
+	* librep.doap
+	* librep.spec.in
+	* lisp/rep/system.jl
+	* man/lang.texi
+	* man/news.texi
+	* src/rep_lisp.h: Doc
+	New section on module alias.
+	That add-hook always add a new element, even if it's already
+	present. Other misc doc.
+
 2010-09-25  Christopher Bratusek <zanghar@freenet.de>
 	* lisp/Makefile.in
 	* lisp/rep/ffi/util.jl: added ffi utils. [Sergey Bolshakov]

@@ -458,6 +458,10 @@ If you loop over list elements, then @code{mapc} and @code{mapcar} are
 fast, like Emacs. But ``tail-recursion'' is better than a @code{while}
 loop if byte-compiled (@pxref{Compilation Tips}.)
 
+Hooks take functions, not function names, because Librep is Lisp-1, as
+we have seen above. The function @code{add-hook} @emph{always} add an
+instance of the passed function, even if there's already one in that hook.
+
 @node Data Types, Numbers, Crash course for Elisp users, The language
 @section Data Types
 @cindex Data types
@@ -3735,13 +3739,13 @@ Returns true if @var{object} is a function (i.e. it can be used
 as the function argument of @code{funcall}.
 
 @lisp
-(functionp set)
+(functionp set) ;; set is a subr
     @result{} t
 
-(functionp setq)
+(functionp setq) ;; setq is a special-form, so not a function
     @result{} ()
 
-(functionp (lambda (x) (+ x 2)))
+(functionp (lambda (x) (+ x 2))) ;; a closure is a function
    @result{} t
 @end lisp
 @end defun
@@ -3801,7 +3805,8 @@ first will be bound to the variable @code{x}, the second to @code{y}.
 When used in a full lambda expression this looks like:
 
 @lisp
-(lambda (x y) (+ x y))
+(lambda (x y)
+  (+ x y))
 @end lisp
 
 @noindent
@@ -3841,15 +3846,23 @@ Note that optional parameters must be specified if a later parameter is
 also specified.
 
 @lisp
-((lambda (#!optional a b) (list a b)))
+((lambda (#!optional a b)
+   (list a b)))
     @result{} (() ())
-((lambda (#!optional a b) (list a b)) 1)
+((lambda (#!optional a b)
+   (list a b))
+ 1)
     @result{} (1 ())
-((lambda (#!optional a b) (list a b)) nil 1)
+((lambda (#!optional a b)
+   (list a b))
+ nil 1)
     @result{} (() 1)
-((lambda (#!optional (a 1)) (list a)))
+((lambda (#!optional (a 1))
+   (list a)))
     @result{} (1)
-((lambda (#!optional (a 1)) (list a)) 2)
+((lambda (#!optional (a 1))
+   (list a))
+ 2)
     @result{} (2)
 @end lisp
 
@@ -4555,6 +4568,7 @@ Module basics
 * Using Other Modules::
 * Modules and Special Variables::
 * Module Functions::
+* Module Aliases::
 * Implicit Exports::
 
 Formal aspects
@@ -4695,6 +4709,15 @@ The function @code{current-structure} is defined in
 @code{rep.structures}, and it can be used in this module because 
 @code{rep.structures} was opened.
 
+@subheading Wrong @code{open} and @code{export}
+
+Suppose a module declares to @code{open} a non-existing module. It
+signals an error at evaluation as it should be. But byte-compilation
+can be done, without any error or messeage. Sorry.
+
+A module can @code{export} a symbol which is not bound in that module.
+Sorry.
+
 @node Module and File, Using Other Modules, Simple Module Definition, Modules
 @subsection Module and File
 
@@ -4788,7 +4811,7 @@ may be stored in lexically scoped variables---this gives the benefits
 of both lexical (i.e. encapsulation) and dynamic scoping.  @xref{Fluid
 Variables}.
 
-@node Module Functions, Implicit Exports, Modules and Special Variables, Modules
+@node Module Functions, Module Aliases, Modules and Special Variables, Modules
 @subsection Module Functions
 
 In this section basic module functions are explained. All are defined
@@ -4845,7 +4868,45 @@ of the symbol @var{sym}. More specifically, it returns the symbol
 Functions @code{open-structures} and @code{access-structures} are
 explained in @xref{Using Other Modules}.
 
-@node Implicit Exports, Module Definition, Module Functions, Modules
+@node Module Aliases, Implicit Exports, Module Functions, Modules
+@subsection Module Aliases
+
+Librep provides rudimetary support of module alias.
+
+@defmac define-structure-alias alias module
+Module named @var{module} will have the alias @var{alias}. This macro is
+usually called inside of the definition of that module, but can be
+called from anywhere, but @var{module} has to be defined already.
+
+@example
+(define-structure-alias baz foo.bar.baz)
+@end example
+@end defmac
+
+Module can be imported via aliases, too. In the above example, both
+of these become possible:
+
+@lisp
+(require 'baz)
+(require 'foo.bar.baz)
+@end lisp
+
+If you use @code{access}, then only the name used in @code{access}
+is allowed.
+
+@lisp
+(access baz)
+...
+(baz#some-func) ;; ok
+(foo.bar.baz#some-func) ;; no
+@end lisp
+
+If a module is part of Librep or Sawfish, then you can load the module
+by its alias even when the module is not yet loaded, i.e. when the
+module alias is not yet defined! This is achieved simply with symbolic
+links prepared at installation time.
+
+@node Implicit Exports, Module Definition, Module Aliases, Modules
 @subsection Implicit Exports
 @cindex Implicit Exports
 @cindex Exports, implicit
@@ -7513,13 +7574,16 @@ The names of hooks of this type will normally end in @code{-hook}.
 These functions are exported by the @code{rep.system} module.
 
 @defun add-hook hook function @t{#!optional} at-end
-This function adds a new function @var{function} to the list of
+This function adds a function @var{function} to the list of
 functions installed in the (list) hook @var{hook} (a symbol).
 
 If @var{at-end} is true the new function is added at the end
 of the hook's list of functions (and therefore will be called last when
 the hook is evaluated), otherwise the new function is added to the
 front of the list.
+
+A new element of @var{function} is always added, i.e. even if it's
+already present in @var{hook}, unlike Emacs lisp.
 
 @lisp
 text-mode-hook
@@ -7534,6 +7598,11 @@ This function removes the function @var{function} from the list of
 functions stored in the (list) hook @var{hook} (a symbol).
 
 @emph{All} instances of @var{function} are deleted from the hook.
+@end defun
+
+@defun in-hook-p hook function
+Returns t is the function @var{function} is stored in the hook
+@var{hook} (a symbol).
 @end defun
 
 There are actually three calling conventions for this type of hook,

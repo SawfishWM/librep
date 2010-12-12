@@ -117,7 +117,7 @@ typedef unsigned rep_PTR_SIZED_INT repv;
 /* Is repv V a cell type? */
 #define rep_CELLP(v)		(((v) & rep_VALUE_IS_INT) == 0)
 
-/* Is repv V a fixnum? */
+/* Is repv V a fixnum (= an integer which fits in a Lisp poniter)? */
 #define rep_INTP(v)		(!rep_CELLP(v))
 
 /* Convert a repv into a signed integer. */
