@@ -1,3 +1,7 @@
+2010-12-17  Christopher Bratusek <zanghar@freenet.de>
+	* debian/control: depend on either libgmp10-dev or libgmp3-dev
+	-- (compat with Debian/Experimental)
+
 2010-12-12  Teika Kazura <teika@lavabit.com>
 	* librep.doap
 	* librep.spec.in

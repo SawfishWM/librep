@@ -17,6 +17,8 @@ Function @code{in-hook-p} now has the documentation. (@pxref{Normal Hooks})
 New section ``Module Aliases''. (@pxref{Module Aliases})
 
 @item fixed the spec-file [Kim B. Heino]
+@item debian/control compat with Debian/Experimental (depend on libgmp10-dev or
+libgmp3-dev) [Christopher Bratusek]
 @end itemize
 @heading 0.91.0
 @itemize @bullet
