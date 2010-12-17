@@ -18,7 +18,7 @@ New section ``Module Aliases''. (@pxref{Module Aliases})
 
 @item fixed the spec-file [Kim B. Heino]
 @item debian/control compat with Debian/Experimental (depend on libgmp10-dev or
-libgmp3-dev) [Christopher Bratusek]
+libgmp3-dev and either suggest libreadline6-dbg or libreadline5-dbg) [Christopher Bratusek]
 @end itemize
 @heading 0.91.0
 @itemize @bullet

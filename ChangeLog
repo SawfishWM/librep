@@ -1,5 +1,6 @@
 2010-12-17  Christopher Bratusek <zanghar@freenet.de>
 	* debian/control: depend on either libgmp10-dev or libgmp3-dev
+	suggest either libreadline6-dbg or libreadline5-dbg
 	-- (compat with Debian/Experimental)
 
 2010-12-12  Teika Kazura <teika@lavabit.com>
