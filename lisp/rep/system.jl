@@ -44,6 +44,18 @@ is true in which case it is added at the end."
   "Remove FUNC from the hook HOOK (symbol)."
   (set hook (delete func (symbol-value hook))))
 
+(defun remove-hook-by-name (hook name)
+  "Remove functions whose name is NAME (a string) from HOOK (a symbol)."
+  (when (symbolp name)
+    (setq name (symbol-name name)))
+  (set hook (delete-if (lambda (f)
+			 (equal (or (and (closurep f)
+					 (closure-name f))
+				    (and (subrp f)
+					 (subr-name f)))
+				name))
+		       (symbol-value hook))))
+
 (defun in-hook-p (hook-symbol fun)
   "Returns t if the function FUN is stored in the hook called HOOK-SYMBOL."
   (and (boundp hook-symbol) (memq fun (symbol-value hook-symbol))))
