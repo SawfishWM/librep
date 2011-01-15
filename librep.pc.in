@@ -5,7 +5,7 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 repexecdir=@repexecdir@
 repcommonexecdir=@repcommonexecdir@
-includedir=@includedir@/rep/
+includedir=@includedir@
 
 Cflags: -I${includedir}/ -I${repcommonexecdir}/
 Libs: -L@libdir@ -lrep -lcrypt -lgmp -lm
