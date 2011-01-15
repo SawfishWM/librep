@@ -1,3 +1,12 @@
+2011-01-15  Christopher Bratusek <zanghar@freenet.de>
+	* lisp/rep/system.jl: added remove-hook-by-name [Teika Kazura]
+
+	* librep.pc.in: fixed a possible build issue in rep-gtk or sawfish
+                        (reported on fedora 14)
+
+	* man/lang.texi:
+	* man/news.texi: updated
+
 2010-12-17  Christopher Bratusek <zanghar@freenet.de>
 	* debian/control: depend on either libgmp10-dev or libgmp3-dev
 	suggest either libreadline6-dbg or libreadline5-dbg

@@ -10,6 +10,13 @@
 
 A new module containing utils for rep's ffi binding is added.
 
+@item Fixed librep.pc to prevent a possible build issue in rep-gtk or sawfish
+(occured on fedora 14) [Christopher Bratusek]
+
+@item @code{remove-hook-by-name} function [Teika Kazura]
+
+This function removes functions from hooks by their name.
+
 @item Documentation [Teika kazura]
 
 Function @code{in-hook-p} now has the documentation. (@pxref{Normal Hooks})
@@ -17,8 +24,7 @@ Function @code{in-hook-p} now has the documentation. (@pxref{Normal Hooks})
 New section ``Module Aliases''. (@pxref{Module Aliases})
 
 @item fixed the spec-file [Kim B. Heino]
-@item debian/control compat with Debian/Experimental (depend on libgmp10-dev or
-libgmp3-dev and either suggest libreadline6-dbg or libreadline5-dbg) [Christopher Bratusek]
+@item debian/control compat with Debian/Experimental [Christopher Bratusek]
 @end itemize
 @heading 0.91.0
 @itemize @bullet
