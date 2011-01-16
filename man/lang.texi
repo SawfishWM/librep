@@ -7600,6 +7600,7 @@ functions stored in the (list) hook @var{hook} (a symbol).
 @defun remove-hook-by-name hook name
 This function removes functions matching @var{name} from the list of
 functions stored in the (list) hook @var{hook} (a symbol).
+@end defun
 
 @emph{All} instances of @var{function} are deleted from the hook.
 @end defun
