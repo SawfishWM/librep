@@ -24,6 +24,7 @@
 (declare (in-module rep.system))
 
 (open-structures '(rep.lang.symbols
+		   rep.lang.interpreter
 		   rep.data
 		   rep.io.files))
 
@@ -45,15 +46,9 @@ is true in which case it is added at the end."
   (set hook (delete func (symbol-value hook))))
 
 (defun remove-hook-by-name (hook name)
-  "Remove functions whose name is NAME (a string) from HOOK (a symbol)."
-  (when (symbolp name)
-    (setq name (symbol-name name)))
+  "Remove functions whose name is NAME from HOOK (a symbol)."
   (set hook (delete-if (lambda (f)
-			 (equal (or (and (closurep f)
-					 (closure-name f))
-				    (and (subrp f)
-					 (subr-name f)))
-				name))
+			 (eq (function-name f) name))
 		       (symbol-value hook))))
 
 (defun in-hook-p (hook-symbol fun)
