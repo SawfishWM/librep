@@ -579,12 +579,20 @@ into the compiled program. When interpreted, nil is returned."
   "A do-nothing command."
   (interactive))
 
+(defun function-name (func)
+  "Returns the function's name (a symbol)."
+  (if (and (functionp func) (subrp func)) ;; subrp is t for special form, too
+      (intern (subr-name func))
+    (and (closure-name func)
+	 (intern (closure-name func)))))
+
 (autoload-macro 'define "rep/lang/define")
 (autoload-macro 'define-macro "rep/lang/define")
 (autoload-macro 'with-internal-definitions "rep/lang/define")
 
 (export-bindings '(error identity eval-when-compile nop interactive eval
-		   define define-macro with-internal-definitions))
+		   define define-macro with-internal-definitions
+		   function-name))
 
 ;; do this last since declare is defined in this file
 (declare (in-module rep.lang.interpreter))

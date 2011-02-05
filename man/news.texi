@@ -13,9 +13,11 @@ A new module containing utils for rep's ffi binding is added.
 @item Fixed librep.pc to prevent a possible build issue in rep-gtk or sawfish
 (occured on fedora 14) [Christopher Bratusek]
 
-@item @code{remove-hook-by-name} function [Teika Kazura]
+@item New functions [Teika Kazura]
 
-This function removes functions from hooks by their name.
+@code{function-name} returns the name of the function object. (@pxref{Functions})
+
+@code{remove-hook-by-name} removes functions from a hook by their name. (@pxref{Normal Hooks})
 
 @item Documentation [Teika kazura]
 

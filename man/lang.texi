@@ -3750,8 +3750,13 @@ as the function argument of @code{funcall}.
 @end lisp
 @end defun
 
+@defun function-name arg
+Return's the name of the function @var{arg} (a symbol).
+@end defun
+
 @defun subrp arg
 Returns true is @var{arg} is a primitive subroutine object.
+This includes special forms.
 @end defun
 
 @defun subr-name subr
@@ -5423,7 +5428,7 @@ convenient looping construct.
 @defmac let function bindings body@dots{}
 This is the same as the @code{(let @var{bindings} @var{body}@dots{})}
 form described in @ref{Local Variables}, but within the
-@var{body}@dots{} forms, the symbol @var{fuction} is bound to a
+@var{body}@dots{} forms, the symbol @var{function} is bound to a
 function whose parameters are the bound variables defined by
 @var{bindings} and whose body is the sequence of forms
 @var{body}@dots{}
