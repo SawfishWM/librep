@@ -60,7 +60,7 @@ is true in which case it is added at the end."
   "Returns t if the function FUN is stored in the hook called HOOK-SYMBOL."
   (and (boundp hook-symbol) (memq fun (symbol-value hook-symbol))))
 
-(export-bindings '(add-hook remove-hook in-hook-p))
+(export-bindings '(add-hook remove-hook remove-hook-by-name in-hook-p))
 
 ;;; misc
 
