@@ -3751,7 +3751,8 @@ as the function argument of @code{funcall}.
 @end defun
 
 @defun function-name arg
-Return's the name of the function @var{arg} (a symbol).
+Return's the name of the function @var{arg} (a symbol). For
+an anonymous closure, it'll be nil.
 @end defun
 
 @defun subrp arg
@@ -3967,6 +3968,9 @@ following example:
 
 (functionp '(lambda (x) (1+ x)))
     @result{} ()
+
+(eq (lambda ()) (lambda ()))
+    @result{} () ; Each time `lambda' generates a new instance of closure.
 @end lisp
 
 A closure can access bindings which belong to the same module as the
@@ -4575,6 +4579,7 @@ Module basics
 * Module Functions::
 * Module Aliases::
 * Implicit Exports::
+* Module Limits:: Limits due to implementation
 
 Formal aspects
 * Module Definition::
@@ -4911,7 +4916,7 @@ by its alias even when the module is not yet loaded, i.e. when the
 module alias is not yet defined! This is achieved simply with symbolic
 links prepared at installation time.
 
-@node Implicit Exports, Module Definition, Module Aliases, Modules
+@node Implicit Exports, Module Limits, Module Aliases, Modules
 @subsection Implicit Exports
 @cindex Implicit Exports
 @cindex Exports, implicit
@@ -4930,7 +4935,39 @@ their modules. To name all, they are: @code{rep.data},
 The interactive environment pulls in a bit more. (@xref{Interactive
 environment}.)
 
-@node Module Definition, Module Interfaces, Implicit Exports, Modules
+@node Module Limits, Module Definition, Implicit Exports, Modules
+@subsection Module Limits
+@cindex Failure of mutual open
+
+Mutual open is ok for ordinary use. Howevere, care is necessary
+if a module definition includes top-level calls. Look at this
+example:
+
+@lisp
+;; file a.jl
+(define-structure a
+    (export aa)
+    (open rep b)
+  (define (aa)))
+;; file b.jl
+(define-structure b
+    (export)
+    (open rep a)
+  (aa))
+;; From somewhere
+(require 'a)  @result{} error: (void-value aa)
+@end lisp
+
+Let's see step by step. File ``a.jl'' is read from the top. It
+declares the symbol @code{aa} is exported. Next, it opens @code{b}.
+The module @code{b} opens @code{a}, i.e. if a symbol @code{aa} is
+found, its value will be refered to @code{a}. Finally, @code{aa}
+is evaluated. But its definition is not yet done, and it fails.
+
+One solution is use of a hook; put the problematic evaluation
+into a hook, and call that hook later somewhere.
+
+@node Module Definition, Module Interfaces, Module Limits, Modules
 @subsection Module Definition
 @cindex Modules, definition of
 
@@ -7606,8 +7643,8 @@ functions stored in the (list) hook @var{hook} (a symbol).
 @end defun
 
 @defun remove-hook-by-name hook name
-This function removes all functions whose name is @var{name} (a string) 
-from the @var{hook} (a symbol).
+This function removes all functions whose name is @var{name} from the
+@var{hook} (a symbol).
 @end defun
 
 @defun in-hook-p hook function

@@ -23,7 +23,8 @@ A new module containing utils for rep's ffi binding is added.
 
 Function @code{in-hook-p} now has the documentation. (@pxref{Normal Hooks})
 
-New section ``Module Aliases''. (@pxref{Module Aliases})
+New sections ``Module Aliases'' (@pxref{Module Aliases}), ``Module Limits''
+(@pxref{Module Limits}).
 
 @item fixed the spec-file [Kim B. Heino]
 @item debian/control compat with Debian/Experimental [Christopher Bratusek]
