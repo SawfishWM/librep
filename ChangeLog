@@ -1,3 +1,26 @@
+2011-02-05  Teika Kazura] <teika@lavabit.com>
+	* lisp/rep/system.jl
+	* man/lang.texi: Bugfix of "remove-hook-by-name"; exported the
+	function.  This fixes the bug in commit
+	c7da736dbdf0cb8b70d0289ebdda03036ec71add.  Also bugfix in
+	lang.texi is included.
+
+	* lisp/rep/lang/interpreter.jl
+	* man/lang.texi
+	* man/news.texi: Implements new function "function-name".
+
+	* lisp/rep/system.jl: Minor change in "remove-hook-by-name".
+	It now relies on "function-name".
+
+	* lisp/rep/system.jl
+	* man/lang.texi
+	* man/news.texi: Doc. New section "Module Limits"
+	Also some minor fixes.
+
+	* lisp/rep/system.jl:
+	* man/news.texi: Minor bugfix in "remove-hook".
+	It doesn't signal an error even if the hook is unbound.
+
 2011-01-15  Christopher Bratusek <zanghar@freenet.de>
 	* lisp/rep/system.jl: added remove-hook-by-name [Teika Kazura]
 
