@@ -1,8 +1,7 @@
 #!/usr/bin/make -f
 
 export DH_VERBOSE=1
-
-include /usr/share/dpatch/dpatch.make
+export LC_ALL=C
 
 version := $(shell sed -n 's/Package: \(librep.*\)/\1/p' debian/control | head -n 1)
 
@@ -18,10 +17,6 @@ else
 endif
 
 ifeq ($(DEB_HOST_ARCH),$(findstring $(DEB_HOST_ARCH),m68k))
-	CFLAGS = -Wall -g -O0
-endif
-
-ifeq ($(DEB_HOST_ARCH),$(findstring $(DEB_HOST_ARCH),amd64))
 	CFLAGS = -Wall -g -O0
 endif
 
@@ -41,53 +36,16 @@ ifeq ($(DEB_HOST_ARCH),$(findstring $(DEB_HOST_ARCH),mipsel))
        ARCH_CONF = --with-stack-direction=-1
 endif
 
-configure: configure-stamp
-configure-stamp: patch-stamp
-	dh_testdir
+%:
+	dh $@
 
-	./configure --prefix=/usr --mandir=/usr/share/man \
-	--build=$(DEB_BUILD_GNU_TYPE) --host=$(DEB_HOST_GNU_TYPE) \
-	--with-readline CFLAGS="$(CFLAGS)" $(ARCH_CONF)
-
-	# Avoid putting an rpath in 64 bit arches
-	sed -i -e 's/lib64/lib/g' libtool
-
-	touch configure-stamp
-
-build: build-stamp
-build-stamp: configure-stamp
-	dh_testdir
-
-	LC_ALL=C $(MAKE)
-
-	touch build-stamp
-
-clean:
-	dh_testdir
-	dh_testroot
-	rm -f build-stamp configure-stamp
-
-	[ ! -f Makefile ] || $(MAKE) realclean
-
-	debian/rules unpatch
-
-	dh_clean debian/librep-dev.install debian/${version}.install \
-	 src/rep-xgettext
-
-install: build
+override_dh_install:
 	dh_testdir
 	dh_testroot
 	dh_prep
 	dh_installdirs
 
-	$(MAKE) install DESTDIR=`pwd`/debian/tmp
-
-	#Fix libdir in *.la files
-	find debian/tmp -name '*.la' |\
-	 while read file; do\
-	  DIRNAME=$$(dirname $$file | sed 's@debian/tmp@@');\
-	  sed -i "/libdir/ s@^.*@libdir=$$DIRNAME@" $$file;\
-	 done
+	$(MAKE) install DESTDIR=$(CURDIR)/debian/tmp
 
 	-rm -rf debian/tmp/usr/info
 	-rm debian/tmp/usr/share/info/dir*
@@ -108,39 +66,3 @@ install: build
 
 	dh_install --fail-missing
 	touch install-stamp
-
-binary-indep: build install
-	dh_testdir -i
-	dh_testroot -i
-	dh_installdocs -i
-	dh_installinfo -i
-	dh_lintian -i
-	dh_installchangelogs -i NEWS
-	dh_link -i
-	dh_compress -i
-	dh_fixperms -i
-	dh_installdeb -i
-	dh_gencontrol -i
-	dh_md5sums -i
-	dh_builddeb -i
-
-binary-arch: build install
-	dh_testdir -a
-	dh_testroot -a
-	dh_installdocs -p ${version}
-	dh_installman -a
-	dh_lintian -a
-	dh_installchangelogs -p${version} NEWS
-	dh_link -a
-	dh_strip -a --dbg-package=librep-dbg
-	dh_compress -a
-	dh_fixperms -a
-	dh_makeshlibs -p${version} -Xusr/lib/rep/
-	dh_installdeb -a
-	dh_shlibdeps -a
-	dh_gencontrol -a
-	dh_md5sums -a
-	dh_builddeb -a
-
-binary: binary-indep binary-arch
-.PHONY: build clean binary-indep binary-arch binary install configure patch unpatch

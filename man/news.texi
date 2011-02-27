@@ -29,7 +29,7 @@ New sections ``Module Aliases'' (@pxref{Module Aliases}), ``Module Limits''
 @item Minor bugfix: @code{remove-hook} used to emit an error if the hook was unbound, but it's fixed. [Teika kazura]
 
 @item fixed the spec-file [Kim B. Heino]
-@item debian/control compat with Debian/Experimental [Christopher Bratusek]
+@item updated debian packaging-scripts (mostly) to the new format [Christopher Bratusek]
 @end itemize
 @heading 0.91.0
 @itemize @bullet

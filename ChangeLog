@@ -1,4 +1,29 @@
-2011-02-05  Teika Kazura] <teika@lavabit.com>
+2011-02-27  Christopher Bratusek <zanghar@freenet.de>
+	* debian/watch
+	* debian/changelog.in
+	* debian/control.in
+	* debian/README.source: removed
+
+	* configure.in: don't substitude gitdate
+	                don't generate debian/changelog
+			don't generate debian/control
+
+	* debian/rules: major update
+
+	* debian/rep-doc.docs
+	* debian/control
+	* debian/changelog: added
+
+	* debian/rep.links
+	* debian/librep-dbg.links
+	* debian/librep-dev.links: updated
+
+	* debian/patches/00list
+	* debian/patches/series: renamed file
+
+	* debian/source/format: changed to 3.0 (quilt)
+
+2011-02-05  Teika Kazura <teika@lavabit.com>
 	* lisp/rep/system.jl
 	* man/lang.texi: Bugfix of "remove-hook-by-name"; exported the
 	function.  This fixes the bug in commit
