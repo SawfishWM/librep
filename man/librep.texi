@@ -6,7 +6,7 @@
 @ifinfo
 @dircategory Programming Languages
 @direntry
-* librep: (librep).		``Liberp'' lisp language
+* librep: (librep).		``Rep'' lisp language
 @end direntry
 
 This is @cite{The librep Manual}, for librep.
