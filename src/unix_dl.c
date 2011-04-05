@@ -320,7 +320,6 @@ rep_intern_dl_library (repv file_name)
 	/* not .la, assume a native library name */
 
 	dlname = rep_STR (file_name);
-	is_rep_module = rep_FALSE;
     }
 
     if (dlname == NULL)

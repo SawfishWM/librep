@@ -1400,11 +1400,11 @@ research:
 		    if (trying_dl)
 		    {
 			if (i == 1)
-			    try = rep_concat2(rep_STR(dir), ".la");
+			    try = rep_concat2(rep_STR(dir), ".so");
 			else
 			{
 			    try = (Fexpand_file_name
-				   (rep_concat3 ("lib", rep_STR(file), ".la"),
+				   (rep_concat3 ("lib", rep_STR(file), ".so"),
 				    rep_CAR(path)));
 			}
 		    }
