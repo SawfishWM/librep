@@ -1,4 +1,4 @@
-librep (3:0.91.1-1nano) unstable; urgency=low
+librep (3:0.92.0-1nano) unstable; urgency=low
 
   * New upstream release
   * merged packaging scripts from Ian Zimmermann
