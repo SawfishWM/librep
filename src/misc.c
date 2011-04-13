@@ -36,7 +36,7 @@
 void (*rep_beep_fun)(void);
 
 DEFSTRING(build_id_string,
-	  BUILD_DATE " by " BUILD_USER "@" BUILD_HOST ", for " HOST_TYPE ".");
+	  BUILD_DATE " by " BUILD_USER "@" BUILD_HOST".");
 DEFSTRING(rep_version_string, REP_VERSION);
 
 DEFSYM(operating_system, "operating-system");
