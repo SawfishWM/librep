@@ -2,8 +2,9 @@ usr/include/rep
 usr/bin/repdoc
 usr/bin/rep-xgettext
 usr/lib/*.{so,a}
-usr/lib/rep/*/libtool
-usr/lib/rep/*/rules.mk
+usr/lib/rep/libtool
+usr/lib/rep/rules.mk
+usr/lib/rep/install-aliases
 usr/lib/pkgconfig/librep.pc
 usr/share/emacs/site-lisp/rep-debugger.el
 usr/share/man/man1/rep-xgettext.1.gz
