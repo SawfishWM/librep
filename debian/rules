@@ -41,7 +41,7 @@ dh_install_auto = xargs dh_install --autodest
 sm := $(shell grep '^Package: librep[0-9]' debian/control | sed -e 's@^Package: librep\([0-9][0-9]*\).*@\1@' )
 
 %:
-	dh $@
+	dh $@ --with autotools-dev --with autoreconf
 
 override_dh_auto_configure:
 	env CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" dh_auto_configure -- $(DEB_CONFIGURE_USER_FLAGS)
