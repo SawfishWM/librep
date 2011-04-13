@@ -156,7 +156,7 @@ ffi.la : ffi.lo
 
 clean :
 	rm -f *~ *.o *.lo *.la build.h
-	rm -f repdoc core rep rep-remote srep
+	rm -f repdoc core rep rep-remote srep rep-xgettext
 
 distclean : clean
 	rm -f .*.d Makefile rep_config.h dump.out dumped.s
