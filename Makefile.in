@@ -102,6 +102,10 @@ gitclean : distclean
 	rm -rf autom4te.cache
 	rm -f librep.spec librep-*.ebuild
 	-fakeroot debian/rules clean
+	rm -f librep-*.ebuild librep.spec
+	rm -rf aclocal.m4 m4/ config.guess config.sub \
+		configure configure.lineno ltmain.sh \
+		autom4te.cache
 
 tags: TAGS
 #
