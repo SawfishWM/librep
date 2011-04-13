@@ -11,6 +11,7 @@
 @item Make librep loading shared-objects, rather than libtool-archives [Kim B. Heino]
 
 @item Improved debian packaging-scripts [Ian Zimmermann, Christopher Bratusek]
+@end itemize
 
 @heading 0.91.1
 @itemize @bullet
