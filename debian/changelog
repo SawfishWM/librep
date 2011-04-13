@@ -1,0 +1,6 @@
+librep (3:0.91.1-1nano) unstable; urgency=low
+
+  * New upstream release
+  * merged packaging scripts from Ian Zimmermann
+
+ -- Christopher Roy Bratusek <nano@tuxfamily.org>  Wed, 13 Apr 2011 19:28:55 +0200
