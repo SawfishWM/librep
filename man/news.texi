@@ -3,6 +3,15 @@
 @chapter News
 @cindex News
 
+@heading 0.92.0
+@itemize @bullet
+
+@item Bumped soname to 16.0.0 [Ian Zimmermann]
+
+@item Make librep loading shared-objects, rather than libtool-archives [Kim B. Heino]
+
+@item Improved debian packaging-scripts [Ian Zimmermann, Christopher Bratusek]
+
 @heading 0.91.1
 @itemize @bullet
 
