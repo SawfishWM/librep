@@ -1,12 +1,6 @@
 #!/usr/bin/make -f
 
 export DH_VERBOSE=1
-export LC_ALL=C
-
-version := $(shell sed -n 's/Package: \(librep.*\)/\1/p' debian/control | head -n 1)
-
-DEB_HOST_GNU_TYPE ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
-DEB_BUILD_GNU_TYPE ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
 
 CFLAGS += -Wall -g
 
@@ -36,33 +30,42 @@ ifeq ($(DEB_HOST_ARCH),$(findstring $(DEB_HOST_ARCH),mipsel))
        ARCH_CONF = --with-stack-direction=-1
 endif
 
+DEB_CONFIGURE_USER_FLAGS += --with-readline $(ARCH_CONF)
+
+dev_extras = debian/tmp -name install-aliases -o -name rep_config.h -o -name *.a -o -name *.jl
+
+rep_extras = debian/tmp/usr/lib/rep debian/tmp/usr/share/rep -name *.jlc -o -name *.so
+
+dh_install_auto = xargs dh_install --autodest
+
+sm := $(shell grep '^Package: librep[0-9]' debian/control | sed -e 's@^Package: librep\([0-9][0-9]*\).*@\1@' )
+
 %:
 	dh $@
 
-override_dh_install:
-	dh_testdir
-	dh_testroot
-	dh_prep
-	dh_installdirs
+override_dh_auto_configure:
+	env CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" dh_auto_configure -- $(DEB_CONFIGURE_USER_FLAGS)
 
-	$(MAKE) install DESTDIR=$(CURDIR)/debian/tmp
+override_dh_auto_build:
+	env LC_ALL=C dh_auto_build
 
-	-rm -rf debian/tmp/usr/info
-	-rm debian/tmp/usr/share/info/dir*
+override_dh_installdocs:
+	dh_installdocs --link-doc=librep$(sm)
 
-	#Create the librep*.install files
-	-rm debian/librep-dev.install
-	cp debian/librep-dev.install.standard debian/librep-dev.install
+override_dh_installchangelogs:
+	dh_installchangelogs -plibrep$(sm) NEWS
 
-	find debian/tmp \
-	 -name install-aliases -o -name rep_config.h -o -name *.a -o -name *.jl \
-	 | cut -d/ -f3- >> debian/librep-dev.install
+override_dh_auto_install:
+	dh_auto_install
+	dh_install
+	find $(dev_extras) | $(dh_install_auto) -plibrep-dev
+	find $(rep_extras) | $(dh_install_auto) -prep
 
-	-rm debian/${version}.install
-	cp debian/${version}.install.standard debian/${version}.install
-	find debian/tmp/usr/lib/rep debian/tmp/usr/share/rep \
-	 -name *.la -o -name *.jlc -o -name *.so \
-	 | cut -d/ -f3- >> debian/${version}.install
+override_dh_strip:
+	dh_strip -a --dbg-package=librep-dbg
 
-	dh_install --fail-missing
-	touch install-stamp
+override_dh_makeshlibs:
+	dh_makeshlibs -Xusr/lib/rep/
+
+override_dh_shlibdeps:
+	dh_shlibdeps -- --warnings=2

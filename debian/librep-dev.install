@@ -1,7 +1,7 @@
 usr/include/rep
 usr/bin/repdoc
 usr/bin/rep-xgettext
-usr/lib/*.{so,la,a}
+usr/lib/*.{so,a}
 usr/lib/rep/*/libtool
 usr/lib/rep/*/rules.mk
 usr/lib/pkgconfig/librep.pc
