@@ -98,7 +98,7 @@ distclean :
 	rm -f *~ NEWS doc-strings TAGS build.h rules.mk configure.orig librep.pc
 
 debclean : distclean
-	rm librep*.ebuild librep.spec
+	rm librep*.ebuild librep.spec config.h.in
 
 gitclean : distclean
 	rm -f aclocal.m4 configure
