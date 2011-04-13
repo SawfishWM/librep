@@ -43,6 +43,9 @@ sm := $(shell grep '^Package: librep[0-9]' debian/control | sed -e 's@^Package: 
 %:
 	dh $@ --with autotools-dev --with autoreconf
 
+override_dh_auto_clean:
+	-make debclean
+
 override_dh_auto_configure:
 	env CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" dh_auto_configure -- $(DEB_CONFIGURE_USER_FLAGS)
 
