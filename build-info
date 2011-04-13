@@ -2,12 +2,12 @@
 # build-info -- Generate header file containing build details
 # $Id$
 
-rep_version="$2"
-repdir="$3"
-replispdir="$4"
-repexecdir="$5"
-repdocfile="$6"
-repcommonexecdir="$7"
+rep_version="$1"
+repdir="$2"
+replispdir="$3"
+repexecdir="$4"
+repdocfile="$5"
+repcommonexecdir="$6"
 
 [ -n "$HOSTNAME" ] \
     || HOSTNAME=`hostname` \
