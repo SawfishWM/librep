@@ -40,7 +40,6 @@ sharedstatedir=@sharedstatedir@
 aclocaldir=@aclocaldir@
 emacssitelispdir=@emacssitelispdir@
 
-host_type=@host@
 repdir=@repdir@
 replispdir=@replispdir@
 repexecdir=@repexecdir@

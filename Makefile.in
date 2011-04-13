@@ -32,7 +32,7 @@ all : build.h rules.mk doc-strings
 	done
 
 build.h : build-info config.status
-	$(SHELL) $< $(host_type) $(version) \
+	$(SHELL) $< $(version) \
 	  '$(repdir)' '$(replispdir)' '$(repexecdir)' \
 	  '$(repdocfile)' '$(repcommonexecdir)' >$@
 
@@ -106,8 +106,8 @@ gitclean : distclean
 	rm -f librep.spec librep-*.ebuild
 	-fakeroot debian/rules clean
 	rm -f librep-*.ebuild librep.spec
-	rm -rf aclocal.m4 m4/ config.guess config.sub \
-		configure configure.lineno ltmain.sh \
+	rm -rf aclocal.m4 m4/ configure \
+		configure.lineno ltmain.sh \
 		autom4te.cache
 
 tags: TAGS

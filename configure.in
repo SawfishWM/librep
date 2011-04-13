@@ -57,8 +57,8 @@ esac
 
 repdir='${datadir}/rep'
 replispdir='${repdir}/${version}/lisp'
-repexecdir='${libdir}/rep/${version}/${host_type}'
-repcommonexecdir='${libdir}/rep/${host_type}'
+repexecdir='${libdir}/rep/${version}/'
+repcommonexecdir='${libdir}/rep/'
 repdocfile='${repexecdir}/doc-strings'
 
 emacssitelispdir='${datadir}/emacs/site-lisp'

@@ -1,5 +1,4 @@
 version=@version@
-host_type=@host@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 libdir=@libdir@
