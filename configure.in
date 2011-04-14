@@ -56,9 +56,9 @@ case "${prefix}" in
 esac
 
 repdir='${datadir}/rep'
-replispdir='${repdir}/${version}/lisp'
-repexecdir='${libdir}/rep/${version}/'
-repcommonexecdir='${libdir}/rep/'
+replispdir='${repdir}/lisp'
+repexecdir='${libdir}/rep'
+repcommonexecdir='${libdir}/rep'
 repdocfile='${repexecdir}/doc-strings'
 
 emacssitelispdir='${datadir}/emacs/site-lisp'

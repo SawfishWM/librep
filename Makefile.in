@@ -58,7 +58,7 @@ install : all installdirs
 	$(INSTALL_DATA) $(top_srcdir)/librep.pc $(DESTDIR)$(libdir)/pkgconfig/
 
 installdirs : mkinstalldirs
-	$(SHELL) $< $(DESTDIR)$(repdir)/$(version) \
+	$(SHELL) $< $(DESTDIR)$(repdir) \
 	  $(DESTDIR)$(bindir) $(DESTDIR)$(aclocaldir) \
 	  $(DESTDIR)$(repcommonexecdir) $(DESTDIR)$(repexecdir) \
 	  $(DESTDIR)$(emacssitelispdir)
@@ -67,7 +67,7 @@ uninstall :
 	-for dir in $(INSTALL_SUBDIRS); do \
 	  ( cd $$dir && $(MAKE) $@ ) || exit 1; \
 	done
-	rm -rf $(DESTDIR)$(repdir)/$(version)
+	rm -rf $(DESTDIR)$(repdir)
 	rm -rf $(DESTDIR)$(repexecdir)
 	rm -f $(DESTDIR)$(repcommonexecdir)/rules.mk
 	rm -f $(DESTDIR)$(repcommonexecdir)/install-aliases
