@@ -18,6 +18,11 @@
 
 	* debian/**: merged packaing scripts from Ian Zimmermann
 
+	* config.h.in: removed from GIT
+
+	* config.guess
+	* config.sub: added
+
 2011-04-05  Christopher Bratusek <nano@tuxfamily.org>
 	* src/unix_dl.c
 	* src/lispcmds.c: load shared-objects rather than libtool-archvies
