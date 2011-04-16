@@ -1,3 +1,32 @@
+2011-04-14  Christopher Bratusek <nano@tuxfamily.org>
+	* configure.in
+	* Makefile.in: remove version from install-paths
+
+	* debian/librep16.install: updated
+
+2011-04-13  Christopher Bratusek <nano@tuxfamily.org>
+	* Makedefs.in
+	* Makefile.in
+	* configure.in
+	* src/misc.c
+	* build-info
+	* librep.pc.in: removed architecture from install-paths
+
+	* Makefile.in: added debclean rule
+	               improved distclean rule
+		       improved gitclean rule
+
+	* debian/**: merged packaing scripts from Ian Zimmermann
+
+2011-04-05  Christopher Bratusek <nano@tuxfamily.org>
+	* src/unix_dl.c
+	* src/lispcmds.c: load shared-objects rather than libtool-archvies
+	 -- Kim B. Heino
+
+2011-03-18  Christopher Bratusek <nano@tuxfamily.org>
+	* man/rep.texi: fixed a typo
+
+
 2011-02-27  Christopher Bratusek <zanghar@freenet.de>
 	* debian/watch
 	* debian/changelog.in

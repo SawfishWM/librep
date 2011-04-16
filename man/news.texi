@@ -10,6 +10,8 @@
 
 @item Make librep loading shared-objects, rather than libtool-archives [Kim B. Heino]
 
+@item Removed architecture and version from installation paths [Christopher Bratusek]
+
 @item Improved debian packaging-scripts [Ian Zimmermann, Christopher Bratusek]
 @end itemize
 
