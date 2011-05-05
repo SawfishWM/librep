@@ -1,3 +1,6 @@
+2011-05-05  Christopher Roy Brautsek <nano@tuxfamily.org>
+	* **/Makefile.in: remove VPATH to appease makepp [Daniel Pfeiffer]
+
 2011-04-14  Christopher Bratusek <nano@tuxfamily.org>
 	* configure.in
 	* Makefile.in: remove version from install-paths

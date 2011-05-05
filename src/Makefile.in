@@ -19,7 +19,6 @@
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 top_builddir=..
-VPATH=@srcdir@:@top_srcdir@
 
 COMMON_SRCS =	continuations.c datums.c debug-buffer.c files.c find.c \
 		fluids.c gh.c lisp.c lispcmds.c lispmach.c macros.c main.c \
@@ -105,7 +104,7 @@ install : all installdirs
 	done
 	$(SHELL) $(top_srcdir)/install-aliases -c . $(DESTDIR)$(repexecdir)
 
-installdirs : mkinstalldirs
+installdirs : $(top_srcdir)/mkinstalldirs
 	$(SHELL) $< $(DESTDIR)$(libdir) $(DESTDIR)$(bindir) \
 	  $(foreach x,$(DL_DIRS),$(DESTDIR)$(repexecdir)/$(x)) \
 	  $(DESTDIR)$(includedir)/rep/

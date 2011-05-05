@@ -19,7 +19,6 @@
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 top_builddir=..
-VPATH=@srcdir@:@top_srcdir@
 
 INSTALL_FILES = *.jl *.jlc
 
@@ -52,7 +51,7 @@ install : all installdirs
 	done
 	$(SHELL) $(top_srcdir)/install-aliases -l . $(DESTDIR)$(replispdir)
 
-installdirs : mkinstalldirs
+installdirs : $(top_srcdir)/mkinstalldirs
 	$(SHELL) $< $(foreach x,$(INSTALL_DIRS),$(DESTDIR)$(replispdir)/$(x))
 
 uninstall :

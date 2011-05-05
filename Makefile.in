@@ -21,7 +21,6 @@
 ETAGS:= etags
 
 top_builddir=.
-VPATH=@srcdir@
 
 ALL_SUBDIRS = intl src lisp man
 INSTALL_SUBDIRS = src lisp man

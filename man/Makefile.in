@@ -20,7 +20,6 @@
 
 top_srcdir=@top_srcdir@
 srcdir=@srcdir@
-VPATH=@srcdir@:@top_srcdir@
 
 SRCS = librep.texi lang.texi repl.texi news.texi interface.texi
 
@@ -54,7 +53,7 @@ install : librep.info installdirs
 		$(INSTALL_DATA) $$f.gz $(DESTDIR)$(prefix)/share/man/man1/; \
 	done
 
-installdirs : mkinstalldirs
+installdirs : $(top_srcdir)/mkinstalldirs
 	$(SHELL) $< $(DESTDIR)$(infodir)
 	$(SHELL) $< $(DESTDIR)$(prefix)/share/man/man1/
 
