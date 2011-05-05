@@ -2,6 +2,7 @@ version=@version@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 libdir=@libdir@
+datadir=@datadir@
 repdir=@repdir@
 replispdir=@replispdir@
 repexecdir=@repexecdir@
