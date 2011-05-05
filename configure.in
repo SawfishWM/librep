@@ -43,7 +43,7 @@ output_files="src/Makefile:Makedefs.in:src/Makefile.in\
  lisp/Makefile:Makedefs.in:lisp/Makefile.in\
  Makefile:Makedefs.in:Makefile.in\
  man/Makefile:Makedefs.in:man/Makefile.in\
- intl/Makefile librep.spec librep.pc librep.ebuild"
+ intl/Makefile librep.spec librep.pc librep.ebuild rules.mk"
 
 dnl Find the system type
 AC_CANONICAL_HOST
@@ -604,8 +604,7 @@ AC_CHECK_FUNC(_nl_msg_cat_cntr,
   AC_CHECK_HEADERS(libintl.h)
   USE_INCLUDED_LIBINTL=no])
 
-dnl Build all files. Makes sure rules.mk is rebuild each time
-AC_OUTPUT(${output_files}, [rm -f rules.mk])
+AC_OUTPUT(${output_files})
 
 mv librep.ebuild librep-$version.ebuild
 

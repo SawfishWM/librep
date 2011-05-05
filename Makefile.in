@@ -25,7 +25,7 @@ top_builddir=.
 ALL_SUBDIRS = intl src lisp man
 INSTALL_SUBDIRS = src lisp man
 
-all : build.h rules.mk doc-strings
+all : build.h doc-strings
 	for dir in $(ALL_SUBDIRS); do \
 	  [ -d $$dir ] && ( cd $$dir && $(MAKE) $@ ) || exit 1; \
 	done
@@ -34,9 +34,6 @@ build.h : build-info config.status
 	$(SHELL) $< $(version) \
 	  '$(repdir)' '$(replispdir)' '$(repexecdir)' \
 	  '$(repdocfile)' '$(repcommonexecdir)' >$@
-
-rules.mk : rules.mk.sh config.status
-	$(SHELL) $< '$(repdir)' '$(repcommonexecdir)' '$(repdocfile)' >$@
 
 check :
 	for dir in $(ALL_SUBDIRS); do \
