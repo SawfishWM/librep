@@ -3,9 +3,9 @@ Section: lisp
 Priority: optional
 Maintainer: Christopher Roy Bratusek <nano@tuxfamily.org>
 Standards-Version: 3.8.2
-Build-Depends: texinfo (>> 4.11-2),
-               debhelper (>> 7),
-               libgmp10-dev | libgmp3-dev (>> 4.1.4-8),
+Build-Depends: texinfo (>= 4.11-2),
+               debhelper (>= 7),
+               libgmp3-dev,
                libgdbm-dev,
                libreadline6-dev | libreadline5-dev,
                libncurses5-dev,
@@ -13,7 +13,7 @@ Build-Depends: texinfo (>> 4.11-2),
                autoconf,
                automake1.11,
                autotools-dev,
-               libffi-dev (>> 3.0)
+               libffi-dev (>= 3.0)
 Build-Conflicts: autoconf2.13, automake1.4
 Homepage: http://sawfish.wikia.com/
 
@@ -51,7 +51,7 @@ Description: embeded lisp command interpreter library
 Package: librep-dev
 Section: libdevel
 Architecture: any
-Depends: rep, librep16 (>> ${source:Version}), ${shlibs:Depends}
+Depends: rep, librep16 (>= ${source:Version}), ${shlibs:Depends}
 Recommends: rep-doc
 Description: development libraries and headers for librep
  rep is a dialect of Lisp, designed to be used both as an extension
@@ -70,8 +70,8 @@ Package: librep-dbg
 Section: debug
 Priority: extra
 Architecture: any
-Depends: librep16 (>> ${source:Version}), ${shlibs:Depends}
-Recommends: rep (>> ${source:Version})
+Depends: librep16 (>= ${source:Version}), ${shlibs:Depends}
+Recommends: rep (>= ${source:Version})
 Suggests: librep-dev, libncurses5-dbg, libreadline6-dbg | libreadline5-dbg, rep-doc
 Description: debug symbols for librep
  rep is a dialect of Lisp, designed to be used both as an extension
@@ -83,7 +83,7 @@ Description: debug symbols for librep
 Package: rep-doc
 Section: doc
 Architecture: all
-Depends: info | info-browser, librep16 (>> ${source:Version}),
+Depends: info | info-browser, librep16 (>= ${source:Version}),
          dpkg (>> 1.15.4) | install-info
 Description: documentation for the lisp command interpreter
  rep is a dialect of Lisp, designed to be used both as an extension
