@@ -95,6 +95,7 @@ distclean :
 
 debclean : distclean
 	rm librep*.ebuild librep.spec config.h.in
+	rm m4/* aclocal.m4 configure ltmain.sh
 
 gitclean : distclean
 	rm -f aclocal.m4 configure
