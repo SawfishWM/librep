@@ -1,3 +1,9 @@
+librep (3:0.92.1~20110521-1nano) unstable; urgency=low
+
+  * New upstream GIT snapshot
+
+ -- Christopher Roy Bratusek <nano@tuxfamily.org>  Sat, 21 May 2011 09:46:15 +0200
+
 librep (3:0.92.0-1nano) unstable; urgency=low
 
   * New upstream release
