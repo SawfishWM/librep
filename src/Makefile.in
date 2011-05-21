@@ -118,7 +118,7 @@ uninstall :
 	for dl in $(DL_DSTS); do \
 	  $(LIBTOOL) --mode=uninstall rm $(DESTDIR)${repexecdir}/$$dl; \
 	done
-	rm -rf $(DESTDIR)$(includedir)/rep/; \
+	rm -rf $(DESTDIR)$(includedir)/rep/
 
 repdoc : repdoc.o
 	$(LIBTOOL) --mode=link --tag=CC $(CC) $(LDFLAGS) -o $@ $^ $(GDBM_LIBS)
