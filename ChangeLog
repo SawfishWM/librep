@@ -1,3 +1,7 @@
+2011-06-02  Christopher Roy Bratusek <nano@tuxfamily.org>
+	* lisp/rep/util/misc.jl: added file containing misc stuff imported
+	from Sawfish. currently `position' and `string->symbol'
+
 2011-05-05  Christopher Roy Brautsek <nano@tuxfamily.org>
 	* **/Makefile.in: remove VPATH to appease makepp [Daniel Pfeiffer]
 
