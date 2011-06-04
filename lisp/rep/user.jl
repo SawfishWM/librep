@@ -132,9 +132,7 @@ where OPTIONS are any of:
     (parse-options))
 
   (unless batch-mode
-    (format standard-output "rep %s, Copyright (C) 1999-2000 John Harper
-rep comes with ABSOLUTELY NO WARRANTY; for details see the file COPYING
-Built %s\n" rep-version rep-build-id)
+    (format standard-output "rep %s, built %s.\n" rep-version rep-build-id)
 
     (require 'rep.util.repl)
     (repl)))
