@@ -24,9 +24,12 @@
 (define-structure rep.util.misc
 
     (export position
-            string->symbol)
+            string->symbol
+            beautify-symbol-name
+            remove-newlines)
 
-    (open rep)
+    (open rep
+	  rep.regexp)
 
   (define string->symbol intern)
 
@@ -36,4 +39,24 @@
          (if (equal item (car rest))
              i
            (if rest
-               (loop (cdr rest) (1+ i)))))))
+               (loop (cdr rest) (1+ i))))))
+
+  (define (beautify-symbol-name symbol)
+    (cond ((stringp symbol) symbol)
+	  ((not (symbolp symbol)) (format "%s" symbol))
+	  (t
+	   (let ((name (copy-sequence (symbol-name symbol))))
+	     (while (string-match "[-:]" name)
+	       (setq name (concat (substring name 0 (match-start))
+				  ?  (substring name (match-end)))))
+	     (aset name 0 (char-upcase (aref name 0)))
+	     (_ name)))))
+
+  (define (remove-newlines string)
+    (let loop
+	((point 0)
+	 (out '()))
+      (if (string-match "\n" string point)
+	  (loop (match-end)
+		(list* #\space (substring string point (match-start)) out))
+	(apply concat (nreverse (cons (substring string point) out)))))))
