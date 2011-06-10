@@ -26,7 +26,8 @@
     (export position
             string->symbol
             beautify-symbol-name
-            remove-newlines)
+            remove-newlines
+            option-index)
 
     (open rep
 	  rep.regexp)
@@ -59,4 +60,10 @@
       (if (string-match "\n" string point)
 	  (loop (match-end)
 		(list* #\space (substring string point (match-start)) out))
-	(apply concat (nreverse (cons (substring string point) out)))))))
+	(apply concat (nreverse (cons (substring string point) out))))))
+
+  (define (option-index lst x)
+    (let loop ((i 0) (rest lst))
+      (cond ((null rest) nil)
+	    ((eq (or (caar rest) (car rest)) x) i)
+	    (t (loop (1+ i) (cdr rest)))))))
