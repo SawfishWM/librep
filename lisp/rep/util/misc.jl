@@ -35,12 +35,14 @@
   (define string->symbol intern)
 
   (define (position item l)
-    (let loop ((rest l)
-               (i 0))
-         (if (equal item (car rest))
-             i
-           (if rest
-               (loop (cdr rest) (1+ i))))))
+    (let loop ((slow l) (l l) (i 0))
+      (cond ((not (consp l)) #f)
+            ((equal item (car l)) i)
+            (#t (let ((l (cdr l)) (i (1+ i)))
+                  (cond ((not (consp l)) #f)
+                        ((equal item (car l)) i)
+                        ((eq l slow) #f)
+                        (#t (loop (cdr slow) (cdr l) (1+ i)))))))))
 
   (define (beautify-symbol-name symbol)
     (cond ((stringp symbol) symbol)
