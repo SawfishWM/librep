@@ -44,11 +44,14 @@
                         ((eq l slow) #f)
                         (#t (loop (cdr slow) (cdr l) (1+ i)))))))))
 
-  (define (beautify-symbol-name symbol)
+  (define (beautify-symbol-name symbol #!key cut)
     (cond ((stringp symbol) symbol)
 	  ((not (symbolp symbol)) (format "%s" symbol))
 	  (t
 	   (let ((name (copy-sequence (symbol-name symbol))))
+	     (when (and cut
+			(string-match cut name))
+	       (setq name (substring name 0 (match-start))))
 	     (while (string-match "[-:]" name)
 	       (setq name (concat (substring name 0 (match-start))
 				  ?  (substring name (match-end)))))
