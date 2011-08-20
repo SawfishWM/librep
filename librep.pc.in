@@ -8,6 +8,7 @@ replispdir=@replispdir@
 repexecdir=@repexecdir@
 repcommonexecdir=@repcommonexecdir@
 includedir=@includedir@
+datarootdir=@datarootdir@
 
 Cflags: -I${includedir}/ -I${repcommonexecdir}/
 Libs: -L@libdir@ -lrep -lcrypt -lgmp -lm
