@@ -5,6 +5,10 @@
 
 	* src/librep.sym: added some missing symbols [John Harper]
 
+	* librep.pc.in: don't ignore datarootdir
+
+	* src/ffi.c: better version of ALIGN if undefined [John Harper]
+
 2011-06-10  Christopher Roy Bratusek <nano@tuxfamily.org>
 	* lisp/rep/util/misc.jl: imported beautify-symbol-name and
 	remove-newlines and option-index from Sawfish.

@@ -215,8 +215,11 @@ if test "$with_ffi" != "no"; then
   PKG_CHECK_MODULES(LIBFFI, libffi >= $FFI_MIN_VER
   ,[found_ffi=yes]
   ,[
-     AC_CHECK_HEADER([ffi.h],[LIBFFI_CFLAGS=],[LIBFFI_FOUND=no])
-     AC_SEARCH_LIBS([ffi_call], [ffi],[LIBFFI_LIBS=-lffi],[LIBFFI_FOUND=no])
+     AC_CHECK_HEADER([ffi.h], AC_DEFINE(HAVE_FFI_H, 1, [Have ffi.h]), [LIBFFI_FOUND=no])
+     if test "x${LIBFFI_FOUND}" = xno; then
+       AC_CHECK_HEADER([ffi/ffi.h], AC_DEFINE(HAVE_FFI_FFI_H, 1, [Have ffi/ffi.h]) ,[LIBFFI_FOUND=no])
+     fi
+     AC_SEARCH_LIBS([ffi_call], [ffi],[LIBFFI_LIBS="-lffi"],[LIBFFI_FOUND=no])
      if test "x${LIBFFI_FOUND}" = xno; then
        AC_MSG_ERROR([cannot locate libffi])
      fi

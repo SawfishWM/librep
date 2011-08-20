@@ -70,11 +70,14 @@
 #include <string.h>
 #include <inttypes.h>
 
-#ifdef HAVE_FFI_H
+#if defined HAVE_FFI_H
 #include <ffi.h>
-#ifndef ALIGN /* was in older ffi.h */
-#define ALIGN(v, a)  (((((unsigned) (v))-1) | ((a)-1))+1)
+#elif defined HAVE_FFI_FFI_H
+#include <ffi/ffi.h>
 #endif
+
+#ifndef ALIGN /* was in older ffi.h */
+#define ALIGN(v, a)     (((size_t)(v) + (a) - 1) & ~((a) - 1)
 #endif
 
 #if SIZEOF_VOID_P == SIZEOF_LONG
