@@ -3,6 +3,30 @@
 @chapter News
 @cindex News
 
+@heading 0.92.1
+@itemize @bullet
+
+@item Fixed building REP on OS-X 10.6 by not exporting librepm.sym
+via libtool[John Harper]
+
+@item Fixed building REP on OS-X 10.7 by defining a proper ALIGN
+if ffi.h doesn't provide one [John Harper]
+
+@item Fixed detection of FFI, if ffi.h isn't found [John Harper]
+
+@item Added various missing symbols in librep.sym [John Harper]
+
+@item Fixed a warning from configure regarding librep.pc [Christopher Bratusek]
+
+@item Removed VPATH from Makefiles, to allow building REP using @code{makepp}
+[Daniel Pfeiffer]
+
+@item Added @code{positon} meta-function [Jeremy Hankins] [Eli Barzilay]
+
+@item Imported utility-functions from Sawfish: @code{beautify-symbol},
+@code{remove-newlines}, @code{option-index} and @code{string->symbol}.
+@end itemize
+
 @heading 0.92.0
 @itemize @bullet
 
