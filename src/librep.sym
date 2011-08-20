@@ -32,6 +32,7 @@ Fcall_process
 Fcall_with_barrier
 Fcall_with_dynamic_root
 Fcall_with_exception_handler
+Fcall_with_lexical_origins
 Fcall_with_object
 Fcanonical_file_name
 Fcar
@@ -40,6 +41,7 @@ Fceiling
 Fchar_downcase
 Fchar_upcase
 Fclose_file
+Fclose_process
 Fclosure_function
 Fclosure_name
 Fclosure_structure
@@ -55,6 +57,7 @@ Fcopy_file
 Fcopy_sequence
 Fcopy_stream
 Fcos
+Fcrypt
 Fcurrent_structure
 Fcurrent_thread
 Fcurrent_time
@@ -112,6 +115,7 @@ Ffile_readable_p
 Ffile_regular_p
 Ffile_size
 Ffile_symlink_p
+Ffile_ttyp
 Ffile_writable_p
 Ffile_executable_p
 Ffilep
@@ -151,6 +155,7 @@ Flambda
 Flast
 Flength
 Flethan
+Flexical_origin
 Flist
 Flist_star
 Flistp
@@ -185,12 +190,14 @@ Fmake_string
 Fmake_string_input_stream
 Fmake_string_output_stream
 Fmake_structure
+Fmake_suspended_thread
 Fmake_symbol
 Fmake_symlink
 Fmake_temp_name
 Fmake_thread
 Fmake_variable_special
 Fmake_vector
+Fmake_weak_ref
 Fmakunbound
 Fmapc
 Fmapcar
@@ -220,6 +227,7 @@ Fnumerator
 Fobarray
 Fopen_file
 Fopen_structures
+Forigin_after_gc
 Foutput_stream_p
 Fpeek_char
 Fplus
@@ -281,6 +289,7 @@ Fset_closure_structure
 Fset_default
 Fset_file_handler_data
 Fset_file_handler_environment
+Fset_file_ignore_errors
 Fset_file_modes
 Fset_input_handler
 Fset_interface
@@ -303,6 +312,7 @@ Fspace_char_p
 Fspecial_form_p
 Fspecial_variable_p
 Fsqrt
+Fstack_frame_ref
 Fstart_process
 Fstderr_file
 Fstdin_file
@@ -366,6 +376,8 @@ Fuser_login_name
 Fvalidate_byte_code
 Fvector
 Fvectorp
+Fweak_ref
+Fweak_ref_set
 Fwith_fluids
 Fwrite
 Fzerop
