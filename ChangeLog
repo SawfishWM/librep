@@ -1,7 +1,9 @@
 2011-08-20  Christopher Roy Bratusek <nano@tuxfamily.org>
 	* src/Makefile.in
 	* lisp/Makefile.in: Fix build on OS-X 10.6 by not exporting librep.sym
-	via libtool
+	via libtool [John Harper]
+
+	* src/librep.sym: added some missing symbols [John Harper]
 
 2011-06-10  Christopher Roy Bratusek <nano@tuxfamily.org>
 	* lisp/rep/util/misc.jl: imported beautify-symbol-name and
