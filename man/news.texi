@@ -3,6 +3,12 @@
 @chapter News
 @cindex News
 
+@heading 0.92.1b
+@itemize @bullet
+
+@item Fixed a bug in librep.pc
+@end itemize
+
 @heading 0.92.1
 @itemize @bullet
 
