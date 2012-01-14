@@ -1,24 +1,19 @@
-# This file in not an offical spec of any distributions.
-# Please read the changelog at the bottom, and send us a fix if it doesn't work.
-# The latest is available from:
-# http://git.gnome.org/browse/librep/tree/librep.spec.in
 Name: librep
 Version: @version@
 Release: 1%{?dist}
-Summary: An embeddable LISP environment
+Summary: A lightweight Lisp environment
 License: GPLv2+
 Group: Development/Languages
-Source0: http://download.tuxfamily.org/sawfish/%{name}/%{name}-%{version}.tar.bz2
+Source0: http://download.tuxfamily.org/%{name}/%{name}-%{version}.tar.bz2
 URL: http://sawfish.wikia.com/
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires: gmp-devel, gdbm-devel, readline-devel, libffi-devel, texinfo
+BuildRequires: gmp-devel
+BuildRequires: gdbm-devel
+BuildRequires: readline-devel
+BuildRequires: libffi-devel
+BuildRequires: texinfo
 BuildRequires: chrpath
-
-%if %{?_emacs_sitelispdir:1}%{!?_emacs_sitelispdir:0}
-%define emacs_lispdir %{_emacs_sitelispdir}
-%else
-%define emacs_lispdir %{_datadir}/emacs/site-lisp
-%endif
+BuildRequires: emacs
 
 %description
 This is a lightweight Lisp environment for UNIX. It contains a Lisp
@@ -27,24 +22,34 @@ use the Lisp interpreter as an extension language, or it may be used
 for standalone scripts.
 
 Originally inspired by Emacs Lisp, the language dialect combines many
-of the elisp features while trying to remove some of the main
+of the Emacs Lisp features while trying to remove some of the main
 deficiencies, with features from Common Lisp and Scheme.
 
 %package devel
 Summary: Development files for librep
 Group: Development/Languages
-Requires: %{name} = %{version}, pkgconfig
+Requires: %{name} = %{version}-%{release}, pkgconfig
 
 %description devel
 Link libraries and C header files for librep development.
 
+%package -n emacs-%{name}
+Group: System Environment/Libraries
+Summary: Emacs bindings for the librep main application
+Requires: emacs(bin) >= %{_emacs_version}
+
+%description -n emacs-%{name}
+This package contains the Emacs related byte compiled files so that
+librep nicely interacts and integrates into Emacs.
+
 %package -n emacs-%{name}-el
 Group: System Environment/Libraries
 Summary: Emacs bindings for the librep main application
+Requires: emacs-%{name} = %{version}-%{release}
 
 %description -n emacs-%{name}-el
-The librep-emacs package contains the emacs related .el files so that librep
-nicely interacts and integrates into emacs.
+This package contains the Emacs related source files so that librep
+nicely interacts and integrates into Emacs.
 
 %prep
 %setup -q
@@ -52,15 +57,18 @@ nicely interacts and integrates into emacs.
 %build
 %configure --with-readline --enable-shared --disable-static
 make %{?_smp_mflags}
+%{_emacs_bytecompile} rep-debugger.el
 
 %install
-rm -rf $RPM_BUILD_ROOT
-make install DESTDIR=$RPM_BUILD_ROOT
-rm -f $RPM_BUILD_ROOT%{_infodir}/dir
-chrpath --delete $RPM_BUILD_ROOT%{_bindir}/rep
+rm -rf %{buildroot}
+make install DESTDIR=%{buildroot}
+rm -f %{buildroot}%{_infodir}/dir
+chrpath --delete %{buildroot}%{_bindir}/rep
+%{__install} -m 644 rep-debugger.elc %{buildroot}%{_emacs_sitelispdir}
+find %{buildroot}%{_libdir} -name \*.la -exec rm '{}' \;
 
 %clean
-rm -rf $RPM_BUILD_ROOT
+rm -rf %{buildroot}
 
 %post
 /sbin/ldconfig
@@ -74,36 +82,59 @@ fi
 %postun -p /sbin/ldconfig
 
 %files
-%defattr(-,root,root,-)
-%doc NEWS README TODO
-%dir %{_libdir}/rep/
-%dir %{_libdir}/rep/%{version}/
+%doc NEWS README TODO COPYING
 %{_bindir}/rep
 %{_bindir}/rep-remote
+%{_libdir}/librep.so.*
+%{_libdir}/rep/
 %{_datadir}/rep/
 %{_datadir}/man/man1/rep-remote.1.gz
 %{_datadir}/man/man1/rep.1.gz
 %{_infodir}/librep.info.gz
-%{_libdir}/librep.so.*
-%{_libdir}/rep/%{version}/%{_host}/
+%exclude %{_libdir}/rep/install-aliases
+%exclude %{_libdir}/rep/libtool
+%exclude %{_libdir}/rep/rules.mk
 
 %files devel
-%defattr(-,root,root,-)
 %{_bindir}/rep-xgettext
 %{_bindir}/repdoc
 %{_includedir}/rep/
-%{_libdir}/rep/%{_host}/
-%{_libdir}/pkgconfig/librep.pc
 %{_libdir}/librep.so
+%{_libdir}/pkgconfig/librep.pc
+%{_libdir}/rep/install-aliases
+%{_libdir}/rep/libtool
+%{_libdir}/rep/rules.mk
 %{_datadir}/man/man1/rep-xgettext.1.gz
 %{_datadir}/man/man1/repdoc.1.gz
-%exclude %{_libdir}/librep.la
+
+%files -n emacs-%{name}
+%{_emacs_sitelispdir}/rep-debugger.elc
 
 %files -n emacs-%{name}-el
-%defattr(-,root,root,-)
-%{emacs_lispdir}/*.el
+%{_emacs_sitelispdir}/rep-debugger.el
 
 %changelog
+* Mon Aug 22 2011 Kim B. Heino <b@bbbs.net> - 0.92.1-1
+- Update to 0.92.1
+
+* Tue May  3 2011 Kim B. Heino <b@bbbs.net> - 0.92.0-1
+- Update to 0.92.0
+
+* Tue Apr 19 2011 Dan Horák <dan[at]danny.cz> - 0.91.1-5
+- don't use %%{_host} which can be modified by configure on non-x86 arches
+
+* Tue Apr 12 2011 Kim B. Heino <b@bbbs.net> - 0.91.1-4
+- Add emacs-librep subpackage
+
+* Sat Apr  2 2011 Kim B. Heino <b@bbbs.net> - 0.91.1-3
+- Fix dynamic loading
+
+* Fri Apr  1 2011 Kim B. Heino <b@bbbs.net> - 0.91.1-2
+- Fix Fedora packaging guideline errors
+
+* Thu Mar 31 2011 Kim B. Heino <b@bbbs.net> - 0.91.1-1
+- Update to 0.91.1
+
 * Sat Sep 25 2010 Kim B. Heino <b@bbbs.net> - 0.91.0-1
 - fix rpath again
 - fix doc-files, url, misc fixes
