@@ -3,6 +3,15 @@
 @chapter News
 @cindex News
 
+@heading 0.92.2
+@itemize @bullet
+
+@item Sync librep.spec with Fedora [Kim B. Heino]
+
+@item Assume stack-direction @code{downwards} for x86_64.
+Self-detection doesn't work with gcc >= 4.7.0 [Kim B. Heino]
+@end itemize
+
 @heading 0.92.1b
 @itemize @bullet
 
