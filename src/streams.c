@@ -653,32 +653,57 @@ DEFUN("read-line", Fread_line, Sread_line, (repv stream), rep_Subr1) /*
 ::doc:rep.io.streams#read-line::
 read-line STREAM
 
-Read one line of text from STREAM.
+Read one line of text from STREAM.  Return it as a string.  If the
+line was terminated by a newline (instead of EOF) it is included in
+the return value.  If end of file occurs immediately before any
+characters can be read, return nil.
 ::end:: */
 {
-    char buf[400];
-    if (rep_FILEP(stream) && rep_LOCAL_FILE_P (stream))
+    int bufsize = 500, offset = 0;
+    char *oldbuf = 0;
+
+    while (1)
     {
-	/* Special case for file streams. We can read a line in one go.	 */
-	if (fgets (buf, sizeof (buf), rep_FILE (stream)->file.fh))
-	    return rep_string_dup (buf);
-	else
-	    return Qnil;
-    }
-    else
-    {
-	char *bufp = buf;
-	int len = 0, c;
-	while ((c = rep_stream_getc (stream)) != EOF)
-	{
-	    *bufp++ = (char) c;
-	    len++;
-	    if ((len >= sizeof (buf) - 1) || (c == '\n'))
-		break;
-	}
-	if (len == 0)
-	    return Qnil;
-	return rep_string_dupn (buf, len);
+        char
+            *fullbuf = realloc(oldbuf, bufsize),
+            *offbuf = fullbuf + offset;
+        int
+            readlen = 0,
+            maxread = bufsize - offset - 1;
+        if (!fullbuf)
+        {
+            free (oldbuf);
+            return rep_mem_error ();
+        }
+        oldbuf = fullbuf;
+        if (rep_FILEP(stream) && rep_LOCAL_FILE_P (stream))
+        {
+            /* Special case for file streams.
+               We can read a line in one go.  Or at least something. */
+            if (fgets (offbuf, maxread + 1, rep_FILE (stream)->file.fh))
+                readlen = strlen (offbuf);
+        }
+        else
+        {
+            char *bufp = offbuf;
+            int c;
+            while ((c = rep_stream_getc (stream)) != EOF)
+            {
+                *bufp++ = (char) c;
+                readlen++;
+                if ((readlen >= maxread) || (c == '\n'))
+                    break;
+            }
+        }
+        if (readlen < maxread || offbuf[readlen - 1] == '\n')
+        {
+            int fulllen = offset + readlen;
+            repv rval = fulllen ? rep_string_dupn (fullbuf, fulllen) : Qnil;
+            free(fullbuf);
+            return rval;
+        }
+        offset += maxread;
+        bufsize *= 2;
     }
 }
 
