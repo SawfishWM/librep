@@ -27,7 +27,7 @@ AC_CONFIG_MACRO_DIR([m4])
 AM_PROG_LIBTOOL
 
 dnl Release versioning info
-version="0.92.2"
+version="0.92.2.1"
 
 dnl libtool versioning info: `CURRENT:REVISION:AGE'. CURRENT is the
 dnl current interface id, REVISION is the version number of this
@@ -536,7 +536,7 @@ AC_ARG_WITH(stack-direction,
  [with_stack_direction=unknown])
 if test "${with_stack_direction}" = unknown; then
   case ${host_cpu} in
-    sparc|i?86|powerpc|x86_64)
+    sparc|i?86|powerpc|x86_64|armv*)
       AC_MSG_RESULT([assuming downwards])
       with_stack_direction="-1"
       ;;
@@ -628,7 +628,7 @@ fi
 
 echo "
   == == == == == == == == == == == == ==
-  
+
   librep:	$version
 
   == == == == == == == == == == == == ==
@@ -638,7 +638,7 @@ echo "
   libdir:       $libdir
 
   == == == == == == == == == == == == ==
-  
+
   compiler:	$CC
   cflags:	$CFLAGS $DEVELOPMENT_CFLAGS
   preprocessor: $CPP
@@ -652,7 +652,7 @@ echo "
   libgdbm:	yes
   readline:	$with_readline
   libffi:	$with_ffi
-  
+
   == == == == == == == == == == == == ==
   "
 

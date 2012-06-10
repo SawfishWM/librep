@@ -3,6 +3,11 @@
 @chapter News
 @cindex News
 
+@heading 0.92.2.1
+@itemize @bullet
+
+@item Assume stack-direction @code{downwards} on ARM [Kim B. Heino]
+
 @heading 0.92.2
 @itemize @bullet
 
