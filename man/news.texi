@@ -7,6 +7,7 @@
 @itemize @bullet
 
 @item Assume stack-direction @code{downwards} on ARM [Kim B. Heino]
+@end itemize
 
 @heading 0.92.2
 @itemize @bullet
