@@ -3,10 +3,17 @@
 @chapter News
 @cindex News
 
+@heading 0.92.X
+@itemize @bullet
+
+@item More entities support for xml-reader (gt, umlauts, esszett)
+
 @heading 0.92.2.1
 @itemize @bullet
 
 @item Assume stack-direction @code{downwards} on ARM [Kim B. Heino]
+
+@item @code{read_line} no longer aborts at 400 characters [Timo Korvola]
 @end itemize
 
 @heading 0.92.2
