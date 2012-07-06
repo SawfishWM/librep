@@ -74,10 +74,18 @@
 
   (define (substitute-entities string)
     ;; XXX other entities?
-    (string-replace "&(lt|amp|apos|quot);"
+    (string-replace "&(lt|amp|apos|quot|gt|Auml|auml|Uuml|uuml|Ouml|ouml|szlig);"
 		    (lambda ()
 		      (cdr (assoc (expand-last-match "\\1")
 				  '(("lt" . "<")
+				    ("gt" . ">")
+				    ("Auml" . "Ä")
+				    ("auml" . "ä")
+				    ("Uuml" . "Ü")
+				    ("uuml" . "ü")
+				    ("Ouml" . "Ö")
+				    ("ouml" . "ö")
+				    ("szlig" . "ß")
 				    ("amp" . "&")
 				    ("apos" . "'")
 				    ("quot" . "\"")))))
