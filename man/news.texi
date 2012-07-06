@@ -8,6 +8,9 @@
 
 @item More entities support for xml-reader (gt, umlauts, esszett)
 
+@item Fix address of FSF in all files [Togan Muftouglu]
+
+@end itemize
 @heading 0.92.2.1
 @itemize @bullet
 
