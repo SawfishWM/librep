@@ -73,28 +73,6 @@
 	* src/rep_subrs.h
 	* src/repint.h
 	* src/repint_subrs.h
-	* src/unix_defs.h: fix fsf address [Togan Muftuoglu]p/rep/vm/compiler/lap.jl
-	* lisp/rep/vm/compiler/modules.jl
-	* lisp/rep/vm/compiler/no-lang.jl
-	* lisp/rep/vm/compiler/rep.jl
-	* lisp/rep/vm/compiler/src.jl
-	* lisp/rep/vm/compiler/utils.jl
-	* lisp/rep/vm/disassembler.jl
-	* lisp/rep/vm/peephole.jl
-	* lisp/rep/www/cgi-get.jl
-	* lisp/rep/www/fetch-url.jl
-	* lisp/rep/www/quote-url.jl
-	* lisp/rep/xml/printer.jl
-	* lisp/rep/xml/reader.jl
-	* rep-debugger.el
-	* src/bytecodes.h
-	* src/lispmach.h
-	* src/rep.h
-	* src/rep_gh.h
-	* src/rep_lisp.h
-	* src/rep_subrs.h
-	* src/repint.h
-	* src/repint_subrs.h
 	* src/unix_defs.h: fix fsf address [Togan Muftuoglu]
 
 2012-03-24  Christopher Roy Bratusek <nano@tuxfamily.org>
