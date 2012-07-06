@@ -1,94 +1,101 @@
 2012-07-06  Christopher Roy Bratusek <nano@tuxfamily.org>
 	* lisp/rep/xml/reader.jl: more entities support: gt, umlauts, esszett
 
-	COPYING
-	lisp/rep.jl
-	lisp/rep/data.jl
-	lisp/rep/data/objects.jl
-	lisp/rep/data/queues.jl
-	lisp/rep/data/records.jl
-	lisp/rep/data/ring.jl
-	lisp/rep/data/sort.jl
-	lisp/rep/data/string-util.jl
-	lisp/rep/data/symbol-table.jl
-	lisp/rep/data/trie.jl
-	lisp/rep/ffi/util.jl
-	lisp/rep/i18n/xgettext.jl
-	lisp/rep/io/file-handlers.jl
-	lisp/rep/io/file-handlers/remote.jl
-	lisp/rep/io/file-handlers/remote/ftp.jl
-	lisp/rep/io/file-handlers/remote/rcp.jl
-	lisp/rep/io/file-handlers/remote/rep.jl
-	lisp/rep/io/file-handlers/remote/utils.jl
-	lisp/rep/io/file-handlers/tar.jl
-	lisp/rep/io/file-handlers/tilde.jl
-	lisp/rep/io/files.jl
-	lisp/rep/io/streams.jl
-	lisp/rep/lang/compat-doc.jl
-	lisp/rep/lang/debugger.jl
-	lisp/rep/lang/define.jl
-	lisp/rep/lang/doc.jl
-	lisp/rep/lang/error-helper.jl
-	lisp/rep/lang/interpreter.jl
-	lisp/rep/lang/math.jl
-	lisp/rep/lang/profiler.jl
-	lisp/rep/mail/addr.jl
-	lisp/rep/module-system.jl
-	lisp/rep/net/domain-name.jl
-	lisp/rep/net/rpc.jl
-	lisp/rep/regexp.jl
-	lisp/rep/structures.jl
-	lisp/rep/system.jl
-	lisp/rep/system/environ.jl
-	lisp/rep/system/pwd-prompt.jl
-	lisp/rep/test/autoload.jl
-	lisp/rep/test/data.jl
-	lisp/rep/test/framework.jl
-	lisp/rep/threads/condition-variable.jl
-	lisp/rep/threads/message-port.jl
-	lisp/rep/threads/mutex.jl
-	lisp/rep/threads/proxy.jl
-	lisp/rep/threads/utils.jl
-	lisp/rep/user.jl
-	lisp/rep/util/autoloader.jl
-	lisp/rep/util/base64.jl
-	lisp/rep/util/date.jl
-	lisp/rep/util/gaol.jl
-	lisp/rep/util/ispell.jl
-	lisp/rep/util/memoize.jl
-	lisp/rep/util/misc.jl
-	lisp/rep/util/repl.jl
-	lisp/rep/util/time.jl
-	lisp/rep/vm/assembler.jl
-	lisp/rep/vm/bytecode-defs.jl
-	lisp/rep/vm/bytecodes.jl
-	lisp/rep/vm/compiler.jl
-	lisp/rep/vm/compiler/basic.jl
-	lisp/rep/vm/compiler/bindings.jl
-	lisp/rep/vm/compiler/inline.jl
-	lisp/rep/vm/compiler/lap.jl
-	lisp/rep/vm/compiler/modules.jl
-	lisp/rep/vm/compiler/no-lang.jl
-	lisp/rep/vm/compiler/rep.jl
-	lisp/rep/vm/compiler/src.jl
-	lisp/rep/vm/compiler/utils.jl
-	lisp/rep/vm/disassembler.jl
-	lisp/rep/vm/peephole.jl
-	lisp/rep/www/cgi-get.jl
-	lisp/rep/www/fetch-url.jl
-	lisp/rep/www/quote-url.jl
-	lisp/rep/xml/printer.jl
-	lisp/rep/xml/reader.jl
-	rep-debugger.el
-	src/bytecodes.h
-	src/lispmach.h
-	src/rep.h
-	src/rep_gh.h
-	src/rep_lisp.h
-	src/rep_subrs.h
-	src/repint.h
-	src/repint_subrs.h
-	src/unix_defs.h: fix fsf address [Togan Muftuoglu]
+	* COPYING
+	* lisp/rep.jl
+	* lisp/rep/data.jl
+	* lisp/rep/data/objects.jl
+	* lisp/rep/data/queues.jl
+	* lisp/rep/data/records.jl
+	* lisp/rep/data/ring.jl
+	* lisp/rep/data/sort.jl
+	* lisp/rep/data/string-util.jl
+	* lisp/rep/data/symbol-table.jl
+	* lisp/rep/data/trie.jl
+	* lisp/rep/ffi/util.jl
+	* lisp/rep/i18n/xgettext.jl
+	* lisp/rep/io/file-handlers.jl
+	* lisp/rep/io/file-handlers/remote.jl
+	* lisp/rep/io/file-handlers/remote/ftp.jl
+	* lisp/rep/io/file-handlers/remote/rcp.jl
+	* lisp/rep/io/file-handlers/remote/rep.jl
+	* lisp/rep/io/file-handlers/remote/utils.jl
+	* lisp/rep/io/file-handlers/tar.jl
+	* lisp/rep/io/file-handlers/tilde.jl
+	* lisp/rep/io/files.jl
+	* lisp/rep/io/streams.jl
+	* lisp/rep/lang/compat-doc.jl
+	* lisp/rep/lang/debugger.jl
+	* lisp/rep/lang/define.jl
+	* lisp/rep/lang/doc.jl
+	* lisp/rep/lang/error-helper.jl
+	* lisp/rep/lang/interpreter.jl
+	* lisp/rep/lang/math.jl
+	* lisp/rep/lang/profiler.jl
+	* lisp/rep/mail/addr.jl
+	* lisp/rep/module-system.jl
+	* lisp/rep/net/domain-name.jl
+	* lisp/rep/net/rpc.jl
+	* lisp/rep/regexp.jl
+	* lisp/rep/structures.jl
+	* lisp/rep/system.jl
+	* lisp/rep/system/environ.jl
+	* lisp/rep/system/pwd-prompt.jl
+	* lisp/rep/test/autoload.jl
+	* lisp/rep/test/data.jl
+	* lisp/rep/test/framework.jl
+	* lisp/rep/threads/condition-variable.jl
+	* lisp/rep/threads/message-port.jl
+	* lisp/rep/threads/mutex.jl
+	* lisp/rep/threads/proxy.jl
+	* lisp/rep/threads/utils.jl
+	* lisp/rep/user.jl
+	* lisp/rep/util/autoloader.jl
+	* lisp/rep/util/base64.jl
+	* lisp/rep/util/date.jl
+	* lisp/rep/util/gaol.jl
+	* lisp/rep/util/ispell.jl
+	* lisp/rep/util/memoize.jl
+	* lisp/rep/util/misc.jl
+	* lisp/rep/util/repl.jl
+	* lisp/rep/util/time.jl
+	* lisp/rep/vm/assembler.jl
+	* lisp/rep/vm/bytecode-defs.jl
+	* lisp/rep/vm/bytecodes.jl
+	* lisp/rep/vm/compiler.jl
+	* lisp/rep/vm/compiler/basic.jl
+	* lisp/rep/vm/compiler/bindings.jl
+	* lisp/rep/vm/compiler/inline.jl
+	* lis/lispmach.h
+	* src/rep.h
+	* src/rep_gh.h
+	* src/rep_lisp.h
+	* src/rep_subrs.h
+	* src/repint.h
+	* src/repint_subrs.h
+	* src/unix_defs.h: fix fsf address [Togan Muftuoglu]p/rep/vm/compiler/lap.jl
+	* lisp/rep/vm/compiler/modules.jl
+	* lisp/rep/vm/compiler/no-lang.jl
+	* lisp/rep/vm/compiler/rep.jl
+	* lisp/rep/vm/compiler/src.jl
+	* lisp/rep/vm/compiler/utils.jl
+	* lisp/rep/vm/disassembler.jl
+	* lisp/rep/vm/peephole.jl
+	* lisp/rep/www/cgi-get.jl
+	* lisp/rep/www/fetch-url.jl
+	* lisp/rep/www/quote-url.jl
+	* lisp/rep/xml/printer.jl
+	* lisp/rep/xml/reader.jl
+	* rep-debugger.el
+	* src/bytecodes.h
+	* src/lispmach.h
+	* src/rep.h
+	* src/rep_gh.h
+	* src/rep_lisp.h
+	* src/rep_subrs.h
+	* src/repint.h
+	* src/repint_subrs.h
+	* src/unix_defs.h: fix fsf address [Togan Muftuoglu]
 
 2012-03-24  Christopher Roy Bratusek <nano@tuxfamily.org>
 	* src/streams.c: read_line no longer aborts at 400 characters [Timo Korvola]
