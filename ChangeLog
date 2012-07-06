@@ -1,9 +1,11 @@
 2012-07-06  Christopher Roy Bratusek <nano@tuxfamily.org>
 	* lisp/rep/xml/reader.jl: more entities support: gt, umlauts, esszett
 
+2012-03-24  Christopher Roy Bratusek <nano@tuxfamily.org>
+	* src/streams.c: read_line no longer aborts at 400 characters [Timo Korvola]
+
 2012-01-14  Christopher Roy Bratusek <nano@tuxfamily.org>
-	* configure.in: fixed build-failure with gcc >= 4.7.0 on x86_64 [Kim
-	B. Heino]
+	* configure.in: fixed build-failure with gcc >= 4.7.0 on x86_64 [Kim B. Heino]
 
 2012-01-13  Christopher Roy Bratusek <nano@tuxfamily.org>
 	* librep.spec: sync with Fedora [Kim B. Heino]
