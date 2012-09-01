@@ -10,6 +10,9 @@
 
 @item Fix address of FSF in all files [Togan Muftouglu]
 
+@item Assume stack-direciton @code{downwards} for all ppc variants [Kimb B. Heino]
+
+@item Updated @file{install-sh} to version 2011-01-19.21.
 @end itemize
 @heading 0.92.2.1
 @itemize @bullet
