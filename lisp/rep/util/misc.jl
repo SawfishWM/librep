@@ -33,6 +33,8 @@
 	    program-exists-p)
 
     (open rep
+	  rep.system
+	  rep.io.files
 	  rep.regexp)
 
   (define string->symbol intern)
