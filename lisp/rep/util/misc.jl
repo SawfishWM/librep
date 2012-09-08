@@ -28,7 +28,9 @@
             string->symbol
             beautify-symbol-name
             remove-newlines
-            option-index)
+            option-index
+	    some
+	    program-exists-p)
 
     (open rep
 	  rep.regexp)
@@ -72,4 +74,15 @@
     (let loop ((i 0) (rest lst))
       (cond ((null rest) nil)
 	    ((eq (or (caar rest) (car rest)) x) i)
-	    (t (loop (1+ i) (cdr rest)))))))
+	    (t (loop (1+ i) (cdr rest))))))
+
+  (define (some pred lst)
+  (cond ((null lst) nil)
+        ((pred (car lst)) t)
+        (t (some pred (cdr lst)))))
+
+(define (program-exists-p program)
+  "Returns true if a program named CMD can be found in the current path"
+  (some (lambda (dir)
+          (file-exists-p (concat dir "/" program)))
+        (string-split ":" (getenv "PATH")))))
