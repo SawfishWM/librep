@@ -3,7 +3,7 @@
 @chapter News
 @cindex News
 
-@heading 0.92.X
+@heading 0.92.3
 @itemize @bullet
 
 @item More entities support for xml-reader (gt, umlauts, esszett)
@@ -13,6 +13,8 @@
 @item Assume stack-direciton @code{downwards} for all ppc and s390 variants [Kimb B. Heino]
 
 @item Updated @file{install-sh} to version 2011-01-19.21.
+
+@item Added @code{program-exists-p} [Mark Triggs]
 @end itemize
 @heading 0.92.2.1
 @itemize @bullet

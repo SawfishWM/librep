@@ -1,3 +1,10 @@
+2012-09-08  Christopher Roy Bratusek <nano@tuxfamily.org>
+	* lisp/rep/util/misc.jl: add program-exists-p [Mark Triggs]
+
+	* configure.in: bump version to 0.92.3
+
+	* man/news.texi: update
+
 2012-09-04  Christopher Roy Bratusek <nano@tuxfamily.org>
 	* configure.in: fix stack-direction for s390 [Kim B. Heino]
 
