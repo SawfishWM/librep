@@ -1,5 +1,5 @@
-librep (3:0.92.2.1-1nano) unstable; urgency=low
+librep (3:0.92.3-1nano) unstable; urgency=low
 
   * New upstream stable release
 
- -- Christopher Roy Bratusek <nano@tuxfamily.org>  Sun, 10 Jun 2012 09:32:27 +0200
+ -- Christopher Roy Bratusek <nano@tuxfamily.org>  Sat, 12 Jan 2013 18:42:47 +0200

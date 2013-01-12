@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Christopher Roy Bratusek <nano@tuxfamily.org>
 Standards-Version: 3.8.2
 Build-Depends: texinfo (>= 4.11-2),
-               debhelper (>= 7),
+               debhelper (>= 7), dh-autoreconf,
                libgmp3-dev,
                libgdbm-dev,
                libreadline6-dev | libreadline5-dev,
