@@ -33,6 +33,7 @@ librep.so.16 librep16 #MINVER#
  Fcall_with_barrier@Base 0.90.1
  Fcall_with_dynamic_root@Base 0.90.1
  Fcall_with_exception_handler@Base 0.90.1
+ Fcall_with_lexical_origins@Base 3:0.92.3-1nano
  Fcall_with_object@Base 0.90.1
  Fcanonical_file_name@Base 0.90.1
  Fcar@Base 0.90.1
@@ -41,6 +42,7 @@ librep.so.16 librep16 #MINVER#
  Fchar_downcase@Base 0.90.1
  Fchar_upcase@Base 0.90.1
  Fclose_file@Base 0.90.1
+ Fclose_process@Base 3:0.92.3-1nano
  Fclosure_function@Base 0.90.1
  Fclosure_name@Base 0.90.1
  Fclosure_structure@Base 0.90.1
@@ -56,6 +58,7 @@ librep.so.16 librep16 #MINVER#
  Fcopy_sequence@Base 0.90.1
  Fcopy_stream@Base 0.90.1
  Fcos@Base 0.90.1
+ Fcrypt@Base 3:0.92.3-1nano
  Fcurrent_structure@Base 0.90.1
  Fcurrent_thread@Base 0.90.1
  Fcurrent_time@Base 0.90.1
@@ -113,6 +116,7 @@ librep.so.16 librep16 #MINVER#
  Ffile_regular_p@Base 0.90.1
  Ffile_size@Base 0.90.1
  Ffile_symlink_p@Base 0.90.1
+ Ffile_ttyp@Base 3:0.92.3-1nano
  Ffile_uid@Base 0.90.1
  Ffile_writable_p@Base 0.90.1
  Ffilep@Base 0.90.1
@@ -152,6 +156,7 @@ librep.so.16 librep16 #MINVER#
  Flast@Base 0.90.1
  Flength@Base 0.90.1
  Flethan@Base 0.90.1
+ Flexical_origin@Base 3:0.92.3-1nano
  Flist@Base 0.90.1
  Flist_star@Base 0.90.1
  Flistp@Base 0.90.1
@@ -161,6 +166,7 @@ librep.so.16 librep16 #MINVER#
  Fload_file@Base 0.90.1
  Flocal_file_name@Base 0.90.1
  Flog@Base 0.90.1
+ Flog_@Base 3:0.92.3-1nano
  Flogand@Base 0.90.1
  Flogior@Base 0.90.1
  Flognot@Base 0.90.1
@@ -186,12 +192,14 @@ librep.so.16 librep16 #MINVER#
  Fmake_string_input_stream@Base 0.90.1
  Fmake_string_output_stream@Base 0.90.1
  Fmake_structure@Base 0.90.1
+ Fmake_suspended_thread@Base 3:0.92.3-1nano
  Fmake_symbol@Base 0.90.1
  Fmake_symlink@Base 0.90.1
  Fmake_temp_name@Base 0.90.1
  Fmake_thread@Base 0.90.1
  Fmake_variable_special@Base 0.90.1
  Fmake_vector@Base 0.90.1
+ Fmake_weak_ref@Base 3:0.92.3-1nano
  Fmakunbound@Base 0.90.1
  Fmapc@Base 0.90.1
  Fmapcar@Base 0.90.1
@@ -208,6 +216,7 @@ librep.so.16 librep16 #MINVER#
  Fmod@Base 0.90.1
  Fname_structure@Base 0.90.1
  Fnconc@Base 0.90.1
+ Fnconc_@Base 3:0.92.3-1nano
  Fnot@Base 0.90.1
  Fnreverse@Base 0.90.1
  Fnth@Base 0.90.1
@@ -221,6 +230,7 @@ librep.so.16 librep16 #MINVER#
  Fobarray@Base 0.90.1
  Fopen_file@Base 0.90.1
  Fopen_structures@Base 0.90.1
+ Forigin_after_gc@Base 3:0.92.3-1nano
  Foutput_stream_p@Base 0.90.1
  Fpeek_char@Base 0.90.1
  Fplus1@Base 0.90.1
@@ -282,6 +292,7 @@ librep.so.16 librep16 #MINVER#
  Fset_default@Base 0.90.1
  Fset_file_handler_data@Base 0.90.1
  Fset_file_handler_environment@Base 0.90.1
+ Fset_file_ignore_errors@Base 3:0.92.3-1nano
  Fset_file_modes@Base 0.90.1
  Fset_input_handler@Base 0.90.1
  Fset_interface@Base 0.90.1
@@ -304,6 +315,7 @@ librep.so.16 librep16 #MINVER#
  Fspecial_form_p@Base 0.90.1
  Fspecial_variable_p@Base 0.90.1
  Fsqrt@Base 0.90.1
+ Fstack_frame_ref@Base 3:0.92.3-1nano
  Fstart_process@Base 0.90.1
  Fstderr_file@Base 0.90.1
  Fstdin_file@Base 0.90.1
@@ -333,6 +345,7 @@ librep.so.16 librep16 #MINVER#
  Fstructurep@Base 0.90.1
  Fsub1@Base 0.90.1
  Fsubr_name@Base 0.90.1
+ Fsubr_structure@Base 3:0.92.3-1nano
  Fsubrp@Base 0.90.1
  Fsubstring@Base 0.90.1
  Fsymbol_name@Base 0.90.1
@@ -367,6 +380,8 @@ librep.so.16 librep16 #MINVER#
  Fvalidate_byte_code@Base 0.90.1
  Fvector@Base 0.90.1
  Fvectorp@Base 0.90.1
+ Fweak_ref@Base 3:0.92.3-1nano
+ Fweak_ref_set@Base 3:0.92.3-1nano
  Fwith_fluids@Base 0.90.1
  Fwrite@Base 0.90.1
  Fzerop@Base 0.90.1
@@ -377,6 +392,7 @@ librep.so.16 librep16 #MINVER#
  Q_user_structure_@Base 0.90.1
  Qafter_gc_hook@Base 0.90.1
  Qafter_load_alist@Base 0.90.1
+ Qalways@Base 3:0.92.3-1nano
  Qamp_optional@Base 0.90.1
  Qamp_rest@Base 0.90.1
  Qand@Base 0.90.1
@@ -414,6 +430,7 @@ librep.so.16 librep16 #MINVER#
  Qdocumentation_file@Base 0.90.1
  Qdocumentation_files@Base 0.90.1
  Qdowncase_table@Base 0.90.1
+ Qellipsis@Base 3:0.92.3-1nano
  Qend@Base 0.90.1
  Qend_of_stream@Base 0.90.1
  Qerror@Base 0.90.1
@@ -453,6 +470,7 @@ librep.so.16 librep16 #MINVER#
  Qformat_hooks_alist@Base 0.90.1
  Qfunction@Base 0.90.1
  Qidle_hook@Base 0.90.1
+ Qin_condition_case@Base 3:0.92.3-1nano
  Qinterpreted_mode@Base 0.90.1
  Qinterrupt_mode@Base 0.90.1
  Qinvalid_autoload@Base 0.90.1
@@ -482,6 +500,7 @@ librep.so.16 librep16 #MINVER#
  Qor@Base 0.90.1
  Qpermanent_local@Base 0.90.1
  Qpipe@Base 0.90.1
+ Qpremature_end_of_stream@Base 3:0.92.3-1nano
  Qprint_escape@Base 0.90.1
  Qprint_length@Base 0.90.1
  Qprint_level@Base 0.90.1
@@ -523,6 +542,510 @@ librep.so.16 librep16 #MINVER#
  Quser_interrupt@Base 0.90.1
  Qvoid_value@Base 0.90.1
  Qwrite@Base 0.90.1
+ S_define@Base 3:0.92.3-1nano
+ S_structure_ref@Base 3:0.92.3-1nano
+ Saccept_process_output@Base 3:0.92.3-1nano
+ Saccept_process_output_1@Base 3:0.92.3-1nano
+ Saccess_structures@Base 3:0.92.3-1nano
+ Sacos@Base 3:0.92.3-1nano
+ Sactive_processes@Base 3:0.92.3-1nano
+ Sall_threads@Base 3:0.92.3-1nano
+ Salpha_char_p@Base 3:0.92.3-1nano
+ Salphanumericp@Base 3:0.92.3-1nano
+ Sappend@Base 3:0.92.3-1nano
+ Sapply@Base 3:0.92.3-1nano
+ Sapropos@Base 3:0.92.3-1nano
+ Saref@Base 3:0.92.3-1nano
+ Sarrayp@Base 3:0.92.3-1nano
+ Saset@Base 3:0.92.3-1nano
+ Sash@Base 3:0.92.3-1nano
+ Sasin@Base 3:0.92.3-1nano
+ Sassoc@Base 3:0.92.3-1nano
+ Sassq@Base 3:0.92.3-1nano
+ Satan@Base 3:0.92.3-1nano
+ Satom@Base 3:0.92.3-1nano
+ Sbacktrace@Base 3:0.92.3-1nano
+ Sbeep@Base 3:0.92.3-1nano
+ Sbinding_immutable_p@Base 3:0.92.3-1nano
+ Sboundp@Base 3:0.92.3-1nano
+ Sbreak@Base 3:0.92.3-1nano
+ Sbytecodep@Base 3:0.92.3-1nano
+ Scall_cc@Base 3:0.92.3-1nano
+ Scall_hook@Base 3:0.92.3-1nano
+ Scall_process@Base 3:0.92.3-1nano
+ Scall_with_barrier@Base 3:0.92.3-1nano
+ Scall_with_dynamic_root@Base 3:0.92.3-1nano
+ Scall_with_exception_handler@Base 3:0.92.3-1nano
+ Scall_with_lexical_origins@Base 3:0.92.3-1nano
+ Scall_with_object@Base 3:0.92.3-1nano
+ Scanonical_file_name@Base 3:0.92.3-1nano
+ Scar@Base 3:0.92.3-1nano
+ Scdr@Base 3:0.92.3-1nano
+ Sceiling@Base 3:0.92.3-1nano
+ Schar_downcase@Base 3:0.92.3-1nano
+ Schar_upcase@Base 3:0.92.3-1nano
+ Sclose_file@Base 3:0.92.3-1nano
+ Sclose_process@Base 3:0.92.3-1nano
+ Sclosure_function@Base 3:0.92.3-1nano
+ Sclosure_name@Base 3:0.92.3-1nano
+ Sclosure_structure@Base 3:0.92.3-1nano
+ Sclosurep@Base 3:0.92.3-1nano
+ Scomplete_string@Base 3:0.92.3-1nano
+ Sconcat@Base 3:0.92.3-1nano
+ Scond@Base 3:0.92.3-1nano
+ Scons@Base 3:0.92.3-1nano
+ Sconsp@Base 3:0.92.3-1nano
+ Scontinuation_callable_p@Base 3:0.92.3-1nano
+ Scontinue_process@Base 3:0.92.3-1nano
+ Scopy_file@Base 3:0.92.3-1nano
+ Scopy_sequence@Base 3:0.92.3-1nano
+ Scopy_stream@Base 3:0.92.3-1nano
+ Scos@Base 3:0.92.3-1nano
+ Scrypt@Base 3:0.92.3-1nano
+ Scurrent_structure@Base 3:0.92.3-1nano
+ Scurrent_thread@Base 3:0.92.3-1nano
+ Scurrent_time@Base 3:0.92.3-1nano
+ Scurrent_time_string@Base 3:0.92.3-1nano
+ Scurrent_utime@Base 3:0.92.3-1nano
+ Sdatum_ref@Base 3:0.92.3-1nano
+ Sdatum_set@Base 3:0.92.3-1nano
+ Sdefault_boundp@Base 3:0.92.3-1nano
+ Sdefault_value@Base 3:0.92.3-1nano
+ Sdefine_datum_printer@Base 3:0.92.3-1nano
+ Sdefvar@Base 3:0.92.3-1nano
+ Sdelete@Base 3:0.92.3-1nano
+ Sdelete_directory@Base 3:0.92.3-1nano
+ Sdelete_file@Base 3:0.92.3-1nano
+ Sdelete_if@Base 3:0.92.3-1nano
+ Sdelete_if_not@Base 3:0.92.3-1nano
+ Sdelq@Base 3:0.92.3-1nano
+ Sdenominator@Base 3:0.92.3-1nano
+ Sdigit_char_p@Base 3:0.92.3-1nano
+ Sdirectory_file_name@Base 3:0.92.3-1nano
+ Sdirectory_files@Base 3:0.92.3-1nano
+ Sdivide@Base 3:0.92.3-1nano
+ Selt@Base 3:0.92.3-1nano
+ Seq@Base 3:0.92.3-1nano
+ Seql@Base 3:0.92.3-1nano
+ Sequal@Base 3:0.92.3-1nano
+ Seval_real@Base 3:0.92.3-1nano
+ Sexact_to_inexact@Base 3:0.92.3-1nano
+ Sexactp@Base 3:0.92.3-1nano
+ Sexp@Base 3:0.92.3-1nano
+ Sexpand_file_name@Base 3:0.92.3-1nano
+ Sexpand_last_match@Base 3:0.92.3-1nano
+ Sexport_bindings@Base 3:0.92.3-1nano
+ Sexpt@Base 3:0.92.3-1nano
+ Sexternal_structure_ref@Base 3:0.92.3-1nano
+ Sfeaturep@Base 3:0.92.3-1nano
+ Sfile_binding@Base 3:0.92.3-1nano
+ Sfile_bound_stream@Base 3:0.92.3-1nano
+ Sfile_directory_p@Base 3:0.92.3-1nano
+ Sfile_executable_p@Base 3:0.92.3-1nano
+ Sfile_exists_p@Base 3:0.92.3-1nano
+ Sfile_gid@Base 3:0.92.3-1nano
+ Sfile_handler_data@Base 3:0.92.3-1nano
+ Sfile_modes@Base 3:0.92.3-1nano
+ Sfile_modes_as_string@Base 3:0.92.3-1nano
+ Sfile_modtime@Base 3:0.92.3-1nano
+ Sfile_name_absolute_p@Base 3:0.92.3-1nano
+ Sfile_name_as_directory@Base 3:0.92.3-1nano
+ Sfile_name_directory@Base 3:0.92.3-1nano
+ Sfile_name_nondirectory@Base 3:0.92.3-1nano
+ Sfile_nlinks@Base 3:0.92.3-1nano
+ Sfile_owner_p@Base 3:0.92.3-1nano
+ Sfile_readable_p@Base 3:0.92.3-1nano
+ Sfile_regular_p@Base 3:0.92.3-1nano
+ Sfile_size@Base 3:0.92.3-1nano
+ Sfile_symlink_p@Base 3:0.92.3-1nano
+ Sfile_ttyp@Base 3:0.92.3-1nano
+ Sfile_uid@Base 3:0.92.3-1nano
+ Sfile_writable_p@Base 3:0.92.3-1nano
+ Sfilep@Base 3:0.92.3-1nano
+ Sfilter@Base 3:0.92.3-1nano
+ Sfind_symbol@Base 3:0.92.3-1nano
+ Sfix_time@Base 3:0.92.3-1nano
+ Sfixnump@Base 3:0.92.3-1nano
+ Sfloor@Base 3:0.92.3-1nano
+ Sfluid@Base 3:0.92.3-1nano
+ Sfluid_set@Base 3:0.92.3-1nano
+ Sflush_file@Base 3:0.92.3-1nano
+ Sformat@Base 3:0.92.3-1nano
+ Sfuncall@Base 3:0.92.3-1nano
+ Sfunctionp@Base 3:0.92.3-1nano
+ Sgarbage_collect@Base 3:0.92.3-1nano
+ Sgarbage_threshold@Base 3:0.92.3-1nano
+ Sgcd@Base 3:0.92.3-1nano
+ Sgensym@Base 3:0.92.3-1nano
+ Sget@Base 3:0.92.3-1nano
+ Sget_command_line_option@Base 3:0.92.3-1nano
+ Sget_output_stream_string@Base 3:0.92.3-1nano
+ Sget_structure@Base 3:0.92.3-1nano
+ Sgethan@Base 3:0.92.3-1nano
+ Sgtthan@Base 3:0.92.3-1nano
+ Shas_type_p@Base 3:0.92.3-1nano
+ Sidle_garbage_threshold@Base 3:0.92.3-1nano
+ Sinexact_to_exact@Base 3:0.92.3-1nano
+ Sinput_stream_p@Base 3:0.92.3-1nano
+ Sintegerp@Base 3:0.92.3-1nano
+ Sintern@Base 3:0.92.3-1nano
+ Sintern_structure@Base 3:0.92.3-1nano
+ Sintern_symbol@Base 3:0.92.3-1nano
+ Sinterrupt_process@Base 3:0.92.3-1nano
+ Skeywordp@Base 3:0.92.3-1nano
+ Skill_process@Base 3:0.92.3-1nano
+ Slambda@Base 3:0.92.3-1nano
+ Slast@Base 3:0.92.3-1nano
+ Slength@Base 3:0.92.3-1nano
+ Slethan@Base 3:0.92.3-1nano
+ Slexical_origin@Base 3:0.92.3-1nano
+ Slist@Base 3:0.92.3-1nano
+ Slist_star@Base 3:0.92.3-1nano
+ Slistp@Base 3:0.92.3-1nano
+ Sload@Base 3:0.92.3-1nano
+ Sload_autoload@Base 3:0.92.3-1nano
+ Sload_dl_file@Base 3:0.92.3-1nano
+ Sload_file@Base 3:0.92.3-1nano
+ Slocal_file_name@Base 3:0.92.3-1nano
+ Slog@Base 3:0.92.3-1nano
+ Slogand@Base 3:0.92.3-1nano
+ Slogior@Base 3:0.92.3-1nano
+ Slognot@Base 3:0.92.3-1nano
+ Slogxor@Base 3:0.92.3-1nano
+ Slower_case_p@Base 3:0.92.3-1nano
+ Sltthan@Base 3:0.92.3-1nano
+ Smacroexpand@Base 3:0.92.3-1nano
+ Smacroexpand_1@Base 3:0.92.3-1nano
+ Smacrop@Base 3:0.92.3-1nano
+ Smake_binding_immutable@Base 3:0.92.3-1nano
+ Smake_byte_code_subr@Base 3:0.92.3-1nano
+ Smake_closure@Base 3:0.92.3-1nano
+ Smake_datum@Base 3:0.92.3-1nano
+ Smake_directory@Base 3:0.92.3-1nano
+ Smake_file_from_stream@Base 3:0.92.3-1nano
+ Smake_fluid@Base 3:0.92.3-1nano
+ Smake_keyword@Base 3:0.92.3-1nano
+ Smake_list@Base 3:0.92.3-1nano
+ Smake_obarray@Base 3:0.92.3-1nano
+ Smake_primitive_guardian@Base 3:0.92.3-1nano
+ Smake_process@Base 3:0.92.3-1nano
+ Smake_string@Base 3:0.92.3-1nano
+ Smake_string_input_stream@Base 3:0.92.3-1nano
+ Smake_string_output_stream@Base 3:0.92.3-1nano
+ Smake_structure@Base 3:0.92.3-1nano
+ Smake_suspended_thread@Base 3:0.92.3-1nano
+ Smake_symbol@Base 3:0.92.3-1nano
+ Smake_symlink@Base 3:0.92.3-1nano
+ Smake_temp_name@Base 3:0.92.3-1nano
+ Smake_thread@Base 3:0.92.3-1nano
+ Smake_variable_special@Base 3:0.92.3-1nano
+ Smake_vector@Base 3:0.92.3-1nano
+ Smake_weak_ref@Base 3:0.92.3-1nano
+ Smakunbound@Base 3:0.92.3-1nano
+ Smapc@Base 3:0.92.3-1nano
+ Smapcar@Base 3:0.92.3-1nano
+ Smatch_end@Base 3:0.92.3-1nano
+ Smatch_start@Base 3:0.92.3-1nano
+ Smax@Base 3:0.92.3-1nano
+ Smax_lisp_depth@Base 3:0.92.3-1nano
+ Smember@Base 3:0.92.3-1nano
+ Smemq@Base 3:0.92.3-1nano
+ Smemql@Base 3:0.92.3-1nano
+ Smessage@Base 3:0.92.3-1nano
+ Smin@Base 3:0.92.3-1nano
+ Sminus@Base 3:0.92.3-1nano
+ Smod@Base 3:0.92.3-1nano
+ Sname_structure@Base 3:0.92.3-1nano
+ Snconc@Base 3:0.92.3-1nano
+ Snot@Base 3:0.92.3-1nano
+ Snreverse@Base 3:0.92.3-1nano
+ Snth@Base 3:0.92.3-1nano
+ Snthcdr@Base 3:0.92.3-1nano
+ Snull@Base 3:0.92.3-1nano
+ Snum_eq@Base 3:0.92.3-1nano
+ Snum_noteq@Base 3:0.92.3-1nano
+ Snumber_to_string@Base 3:0.92.3-1nano
+ Snumberp@Base 3:0.92.3-1nano
+ Snumerator@Base 3:0.92.3-1nano
+ Sobarray@Base 3:0.92.3-1nano
+ Sopen_file@Base 3:0.92.3-1nano
+ Sopen_structures@Base 3:0.92.3-1nano
+ Sorigin_after_gc@Base 3:0.92.3-1nano
+ Soutput_stream_p@Base 3:0.92.3-1nano
+ Speek_char@Base 3:0.92.3-1nano
+ Splus1@Base 3:0.92.3-1nano
+ Splus@Base 3:0.92.3-1nano
+ Sprimitive_guardian_pop@Base 3:0.92.3-1nano
+ Sprimitive_guardian_push@Base 3:0.92.3-1nano
+ Sprimitive_invoke_continuation@Base 3:0.92.3-1nano
+ Sprin1@Base 3:0.92.3-1nano
+ Sprinc@Base 3:0.92.3-1nano
+ Sprint@Base 3:0.92.3-1nano
+ Sprocess_args@Base 3:0.92.3-1nano
+ Sprocess_connection_type@Base 3:0.92.3-1nano
+ Sprocess_dir@Base 3:0.92.3-1nano
+ Sprocess_error_stream@Base 3:0.92.3-1nano
+ Sprocess_exit_status@Base 3:0.92.3-1nano
+ Sprocess_exit_value@Base 3:0.92.3-1nano
+ Sprocess_function@Base 3:0.92.3-1nano
+ Sprocess_id@Base 3:0.92.3-1nano
+ Sprocess_in_use_p@Base 3:0.92.3-1nano
+ Sprocess_output_stream@Base 3:0.92.3-1nano
+ Sprocess_prog@Base 3:0.92.3-1nano
+ Sprocess_running_p@Base 3:0.92.3-1nano
+ Sprocess_stopped_p@Base 3:0.92.3-1nano
+ Sprocessp@Base 3:0.92.3-1nano
+ Sproduct@Base 3:0.92.3-1nano
+ Sprogn@Base 3:0.92.3-1nano
+ Sprovide@Base 3:0.92.3-1nano
+ Sput@Base 3:0.92.3-1nano
+ Squote@Base 3:0.92.3-1nano
+ Squote_regexp@Base 3:0.92.3-1nano
+ Squotient@Base 3:0.92.3-1nano
+ Sraise_exception@Base 3:0.92.3-1nano
+ Srandom@Base 3:0.92.3-1nano
+ Srassoc@Base 3:0.92.3-1nano
+ Srassq@Base 3:0.92.3-1nano
+ Sread@Base 3:0.92.3-1nano
+ Sread_char@Base 3:0.92.3-1nano
+ Sread_chars@Base 3:0.92.3-1nano
+ Sread_line@Base 3:0.92.3-1nano
+ Sread_symlink@Base 3:0.92.3-1nano
+ Srecursion_depth@Base 3:0.92.3-1nano
+ Srecursive_edit@Base 3:0.92.3-1nano
+ Sregexp_cache_control@Base 3:0.92.3-1nano
+ Sremainder@Base 3:0.92.3-1nano
+ Srename_file@Base 3:0.92.3-1nano
+ Srequire@Base 3:0.92.3-1nano
+ Sreverse@Base 3:0.92.3-1nano
+ Sround@Base 3:0.92.3-1nano
+ Srplaca@Base 3:0.92.3-1nano
+ Srplacd@Base 3:0.92.3-1nano
+ Srun_byte_code@Base 3:0.92.3-1nano
+ Sseek_file@Base 3:0.92.3-1nano
+ Ssequencep@Base 3:0.92.3-1nano
+ Sset@Base 3:0.92.3-1nano
+ Sset_closure_function@Base 3:0.92.3-1nano
+ Sset_closure_structure@Base 3:0.92.3-1nano
+ Sset_default@Base 3:0.92.3-1nano
+ Sset_file_handler_data@Base 3:0.92.3-1nano
+ Sset_file_handler_environment@Base 3:0.92.3-1nano
+ Sset_file_ignore_errors@Base 3:0.92.3-1nano
+ Sset_file_modes@Base 3:0.92.3-1nano
+ Sset_input_handler@Base 3:0.92.3-1nano
+ Sset_interface@Base 3:0.92.3-1nano
+ Sset_process_args@Base 3:0.92.3-1nano
+ Sset_process_connection_type@Base 3:0.92.3-1nano
+ Sset_process_dir@Base 3:0.92.3-1nano
+ Sset_process_error_stream@Base 3:0.92.3-1nano
+ Sset_process_function@Base 3:0.92.3-1nano
+ Sset_process_output_stream@Base 3:0.92.3-1nano
+ Sset_process_prog@Base 3:0.92.3-1nano
+ Sset_special_environment@Base 3:0.92.3-1nano
+ Ssetplist@Base 3:0.92.3-1nano
+ Ssetq@Base 3:0.92.3-1nano
+ Ssignal@Base 3:0.92.3-1nano
+ Ssignal_process@Base 3:0.92.3-1nano
+ Ssin@Base 3:0.92.3-1nano
+ Ssit_for@Base 3:0.92.3-1nano
+ Ssleep_for@Base 3:0.92.3-1nano
+ Sspace_char_p@Base 3:0.92.3-1nano
+ Sspecial_form_p@Base 3:0.92.3-1nano
+ Sspecial_variable_p@Base 3:0.92.3-1nano
+ Ssqrt@Base 3:0.92.3-1nano
+ Sstack_frame_ref@Base 3:0.92.3-1nano
+ Sstart_process@Base 3:0.92.3-1nano
+ Sstderr_file@Base 3:0.92.3-1nano
+ Sstdin_file@Base 3:0.92.3-1nano
+ Sstdout_file@Base 3:0.92.3-1nano
+ Sstep@Base 3:0.92.3-1nano
+ Sstop_process@Base 3:0.92.3-1nano
+ Sstring_equal@Base 3:0.92.3-1nano
+ Sstring_head_eq@Base 3:0.92.3-1nano
+ Sstring_lessp@Base 3:0.92.3-1nano
+ Sstring_looking_at@Base 3:0.92.3-1nano
+ Sstring_match@Base 3:0.92.3-1nano
+ Sstring_to_number@Base 3:0.92.3-1nano
+ Sstringp@Base 3:0.92.3-1nano
+ Sstructure_accessible@Base 3:0.92.3-1nano
+ Sstructure_bound_p@Base 3:0.92.3-1nano
+ Sstructure_define@Base 3:0.92.3-1nano
+ Sstructure_exports_all@Base 3:0.92.3-1nano
+ Sstructure_exports_p@Base 3:0.92.3-1nano
+ Sstructure_file@Base 3:0.92.3-1nano
+ Sstructure_imports@Base 3:0.92.3-1nano
+ Sstructure_install_vm@Base 3:0.92.3-1nano
+ Sstructure_interface@Base 3:0.92.3-1nano
+ Sstructure_name@Base 3:0.92.3-1nano
+ Sstructure_set@Base 3:0.92.3-1nano
+ Sstructure_set_binds@Base 3:0.92.3-1nano
+ Sstructure_walk@Base 3:0.92.3-1nano
+ Sstructurep@Base 3:0.92.3-1nano
+ Ssub1@Base 3:0.92.3-1nano
+ Ssubr_name@Base 3:0.92.3-1nano
+ Ssubr_structure@Base 3:0.92.3-1nano
+ Ssubrp@Base 3:0.92.3-1nano
+ Ssubstring@Base 3:0.92.3-1nano
+ Ssymbol_name@Base 3:0.92.3-1nano
+ Ssymbol_plist@Base 3:0.92.3-1nano
+ Ssymbol_value@Base 3:0.92.3-1nano
+ Ssymbolp@Base 3:0.92.3-1nano
+ Ssystem@Base 3:0.92.3-1nano
+ Ssystem_name@Base 3:0.92.3-1nano
+ Stan@Base 3:0.92.3-1nano
+ Sthread_delete@Base 3:0.92.3-1nano
+ Sthread_exited_p@Base 3:0.92.3-1nano
+ Sthread_forbid@Base 3:0.92.3-1nano
+ Sthread_join@Base 3:0.92.3-1nano
+ Sthread_name@Base 3:0.92.3-1nano
+ Sthread_permit@Base 3:0.92.3-1nano
+ Sthread_suspend@Base 3:0.92.3-1nano
+ Sthread_suspended_p@Base 3:0.92.3-1nano
+ Sthread_wake@Base 3:0.92.3-1nano
+ Sthread_yield@Base 3:0.92.3-1nano
+ Sthreadp@Base 3:0.92.3-1nano
+ Stime_later_p@Base 3:0.92.3-1nano
+ Strace@Base 3:0.92.3-1nano
+ Stranslate_string@Base 3:0.92.3-1nano
+ Struncate@Base 3:0.92.3-1nano
+ Sunintern@Base 3:0.92.3-1nano
+ Suntrace@Base 3:0.92.3-1nano
+ Supper_case_p@Base 3:0.92.3-1nano
+ Suser_full_name@Base 3:0.92.3-1nano
+ Suser_home_directory@Base 3:0.92.3-1nano
+ Suser_login_name@Base 3:0.92.3-1nano
+ Svalidate_byte_code@Base 3:0.92.3-1nano
+ Svector@Base 3:0.92.3-1nano
+ Svectorp@Base 3:0.92.3-1nano
+ Sweak_ref@Base 3:0.92.3-1nano
+ Sweak_ref_set@Base 3:0.92.3-1nano
+ Swith_fluids@Base 3:0.92.3-1nano
+ Swrite@Base 3:0.92.3-1nano
+ Szerop@Base 3:0.92.3-1nano
+ gh_append2@Base 3:0.92.3-1nano
+ gh_append3@Base 3:0.92.3-1nano
+ gh_append4@Base 3:0.92.3-1nano
+ gh_append@Base 3:0.92.3-1nano
+ gh_apply@Base 3:0.92.3-1nano
+ gh_assoc@Base 3:0.92.3-1nano
+ gh_assq@Base 3:0.92.3-1nano
+ gh_assv@Base 3:0.92.3-1nano
+ gh_bool2scm@Base 3:0.92.3-1nano
+ gh_boolean_p@Base 3:0.92.3-1nano
+ gh_caaar@Base 3:0.92.3-1nano
+ gh_caadr@Base 3:0.92.3-1nano
+ gh_caar@Base 3:0.92.3-1nano
+ gh_cadar@Base 3:0.92.3-1nano
+ gh_caddr@Base 3:0.92.3-1nano
+ gh_cadr@Base 3:0.92.3-1nano
+ gh_call0@Base 3:0.92.3-1nano
+ gh_call1@Base 3:0.92.3-1nano
+ gh_call2@Base 3:0.92.3-1nano
+ gh_call3@Base 3:0.92.3-1nano
+ gh_car@Base 3:0.92.3-1nano
+ gh_catch@Base 3:0.92.3-1nano
+ gh_cdaar@Base 3:0.92.3-1nano
+ gh_cdadr@Base 3:0.92.3-1nano
+ gh_cdar@Base 3:0.92.3-1nano
+ gh_cddar@Base 3:0.92.3-1nano
+ gh_cdddr@Base 3:0.92.3-1nano
+ gh_cddr@Base 3:0.92.3-1nano
+ gh_cdr@Base 3:0.92.3-1nano
+ gh_char2scm@Base 3:0.92.3-1nano
+ gh_char_p@Base 3:0.92.3-1nano
+ gh_cons@Base 3:0.92.3-1nano
+ gh_define@Base 3:0.92.3-1nano
+ gh_display@Base 3:0.92.3-1nano
+ gh_double2scm@Base 3:0.92.3-1nano
+ gh_doubles2scm@Base 3:0.92.3-1nano
+ gh_enter@Base 3:0.92.3-1nano
+ gh_eq_p@Base 3:0.92.3-1nano
+ gh_equal_p@Base 3:0.92.3-1nano
+ gh_eqv_p@Base 3:0.92.3-1nano
+ gh_eval_file@Base 3:0.92.3-1nano
+ gh_eval_file_with_catch@Base 3:0.92.3-1nano
+ gh_eval_file_with_standard_handler@Base 3:0.92.3-1nano
+ gh_eval_str@Base 3:0.92.3-1nano
+ gh_eval_str_with_catch@Base 3:0.92.3-1nano
+ gh_eval_str_with_stack_saving_handler@Base 3:0.92.3-1nano
+ gh_eval_str_with_standard_handler@Base 3:0.92.3-1nano
+ gh_exact_p@Base 3:0.92.3-1nano
+ gh_get_substr@Base 3:0.92.3-1nano
+ gh_inexact_p@Base 3:0.92.3-1nano
+ gh_int2scm@Base 3:0.92.3-1nano
+ gh_ints2scm@Base 3:0.92.3-1nano
+ gh_length@Base 3:0.92.3-1nano
+ gh_list@Base 3:0.92.3-1nano
+ gh_list_p@Base 3:0.92.3-1nano
+ gh_list_ref@Base 3:0.92.3-1nano
+ gh_list_tail@Base 3:0.92.3-1nano
+ gh_long2scm@Base 3:0.92.3-1nano
+ gh_lookup@Base 3:0.92.3-1nano
+ gh_make_string@Base 3:0.92.3-1nano
+ gh_make_vector@Base 3:0.92.3-1nano
+ gh_member@Base 3:0.92.3-1nano
+ gh_memq@Base 3:0.92.3-1nano
+ gh_memv@Base 3:0.92.3-1nano
+ gh_module_lookup@Base 3:0.92.3-1nano
+ gh_new_procedure0_0@Base 3:0.92.3-1nano
+ gh_new_procedure0_1@Base 3:0.92.3-1nano
+ gh_new_procedure0_2@Base 3:0.92.3-1nano
+ gh_new_procedure1_0@Base 3:0.92.3-1nano
+ gh_new_procedure1_1@Base 3:0.92.3-1nano
+ gh_new_procedure1_2@Base 3:0.92.3-1nano
+ gh_new_procedure2_0@Base 3:0.92.3-1nano
+ gh_new_procedure2_1@Base 3:0.92.3-1nano
+ gh_new_procedure2_2@Base 3:0.92.3-1nano
+ gh_new_procedure3_0@Base 3:0.92.3-1nano
+ gh_new_procedure4_0@Base 3:0.92.3-1nano
+ gh_new_procedure5_0@Base 3:0.92.3-1nano
+ gh_new_procedure@Base 3:0.92.3-1nano
+ gh_newline@Base 3:0.92.3-1nano
+ gh_not@Base 3:0.92.3-1nano
+ gh_null_p@Base 3:0.92.3-1nano
+ gh_number_p@Base 3:0.92.3-1nano
+ gh_pair_p@Base 3:0.92.3-1nano
+ gh_procedure_p@Base 3:0.92.3-1nano
+ gh_repl@Base 3:0.92.3-1nano
+ gh_reverse@Base 3:0.92.3-1nano
+ gh_scm2bool@Base 3:0.92.3-1nano
+ gh_scm2char@Base 3:0.92.3-1nano
+ gh_scm2chars@Base 3:0.92.3-1nano
+ gh_scm2double@Base 3:0.92.3-1nano
+ gh_scm2doubles@Base 3:0.92.3-1nano
+ gh_scm2floats@Base 3:0.92.3-1nano
+ gh_scm2int@Base 3:0.92.3-1nano
+ gh_scm2long@Base 3:0.92.3-1nano
+ gh_scm2longs@Base 3:0.92.3-1nano
+ gh_scm2newstr@Base 3:0.92.3-1nano
+ gh_scm2shorts@Base 3:0.92.3-1nano
+ gh_scm2ulong@Base 3:0.92.3-1nano
+ gh_set_car_x@Base 3:0.92.3-1nano
+ gh_set_cdr_x@Base 3:0.92.3-1nano
+ gh_set_substr@Base 3:0.92.3-1nano
+ gh_standard_handler@Base 3:0.92.3-1nano
+ gh_str02scm@Base 3:0.92.3-1nano
+ gh_str2scm@Base 3:0.92.3-1nano
+ gh_string_append@Base 3:0.92.3-1nano
+ gh_string_equal_p@Base 3:0.92.3-1nano
+ gh_string_length@Base 3:0.92.3-1nano
+ gh_string_p@Base 3:0.92.3-1nano
+ gh_string_ref@Base 3:0.92.3-1nano
+ gh_string_set_x@Base 3:0.92.3-1nano
+ gh_substring@Base 3:0.92.3-1nano
+ gh_symbol2newstr@Base 3:0.92.3-1nano
+ gh_symbol2scm@Base 3:0.92.3-1nano
+ gh_symbol_p@Base 3:0.92.3-1nano
+ gh_ulong2scm@Base 3:0.92.3-1nano
+ gh_uniform_vector_length@Base 3:0.92.3-1nano
+ gh_uniform_vector_ref@Base 3:0.92.3-1nano
+ gh_vector@Base 3:0.92.3-1nano
+ gh_vector_length@Base 3:0.92.3-1nano
+ gh_vector_p@Base 3:0.92.3-1nano
+ gh_vector_ref@Base 3:0.92.3-1nano
+ gh_vector_set_x@Base 3:0.92.3-1nano
+ gh_vector_to_list@Base 3:0.92.3-1nano
+ gh_write@Base 3:0.92.3-1nano
  rep_accept_input@Base 0.90.1
  rep_accept_input_for_callbacks@Base 0.90.1
  rep_accept_input_for_fds@Base 0.90.1
@@ -531,11 +1054,16 @@ librep.so.16 librep16 #MINVER#
  rep_add_subr@Base 0.90.1
  rep_alias_structure@Base 0.90.1
  rep_allocate_cons@Base 0.90.1
+ rep_allocated_cons@Base 3:0.92.3-1nano
+ rep_allocated_funargs@Base 3:0.92.3-1nano
+ rep_allocated_tuples@Base 3:0.92.3-1nano
  rep_apply@Base 0.90.1
+ rep_apply_bytecode@Base 3:0.92.3-1nano
  rep_assign_args@Base 0.90.1
  rep_beep_fun@Base 0.90.1
  rep_bind_special@Base 0.90.1
  rep_bind_symbol@Base 0.90.1
+ rep_blocked_ops@Base 3:0.92.3-1nano
  rep_bootstrap_structure@Base 0.90.1
  rep_box_pointer@Base 0.90.1
  rep_box_string@Base 0.90.1
@@ -549,6 +1077,7 @@ librep.so.16 librep16 #MINVER#
  rep_call_stack@Base 0.90.1
  rep_call_with_barrier@Base 0.90.1
  rep_call_with_closure@Base 0.90.1
+ rep_canonical_file_name@Base 3:0.92.3-1nano
  rep_common_db@Base 0.90.1
  rep_compare_error@Base 0.90.1
  rep_compare_numbers@Base 0.90.1
@@ -556,10 +1085,14 @@ librep.so.16 librep16 #MINVER#
  rep_concat2@Base 0.90.1
  rep_concat3@Base 0.90.1
  rep_concat4@Base 0.90.1
+ rep_cons_block_chain@Base 3:0.92.3-1nano
  rep_cons_free@Base 0.90.1
  rep_cons_freelist@Base 0.90.1
+ rep_continuations_init@Base 3:0.92.3-1nano
+ rep_copy_file@Base 3:0.92.3-1nano
  rep_copy_list@Base 0.90.1
  rep_data_after_gc@Base 0.90.1
+ rep_datums_init@Base 3:0.92.3-1nano
  rep_db_alloc@Base 0.90.1
  rep_db_free@Base 0.90.1
  rep_db_kill@Base 0.90.1
@@ -572,22 +1105,57 @@ librep.so.16 librep16 #MINVER#
  rep_default_regsub@Base 0.90.1
  rep_default_regsublen@Base 0.90.1
  rep_default_structure@Base 0.90.1
+ rep_delete_directory@Base 3:0.92.3-1nano
+ rep_delete_file@Base 3:0.92.3-1nano
  rep_deprecated@Base 0.90.1
  rep_deref_local_symbol_fun@Base 0.90.1
  rep_deregister_input_fd@Base 0.90.1
  rep_deregister_input_fd_fun@Base 0.90.1
+ rep_directory_file_name@Base 3:0.92.3-1nano
+ rep_directory_files@Base 3:0.92.3-1nano
  rep_documentation_property@Base 0.90.1
+ rep_dumped_cons_end@Base 3:0.92.3-1nano
+ rep_dumped_cons_start@Base 3:0.92.3-1nano
+ rep_dumped_non_constants@Base 3:0.92.3-1nano
+ rep_dumped_symbols_end@Base 3:0.92.3-1nano
+ rep_dumped_symbols_start@Base 3:0.92.3-1nano
  rep_env@Base 0.90.1
  rep_eol_datum@Base 0.90.1
  rep_eval@Base 0.90.1
  rep_event_loop@Base 0.90.1
  rep_event_loop_fun@Base 0.90.1
  rep_expand_and_get_handler@Base 0.90.1
+ rep_expand_file_name@Base 3:0.92.3-1nano
+ rep_file_directory_p@Base 3:0.92.3-1nano
+ rep_file_executable_p@Base 3:0.92.3-1nano
+ rep_file_exists_p@Base 3:0.92.3-1nano
  rep_file_fdopen@Base 0.90.1
+ rep_file_gid@Base 3:0.92.3-1nano
  rep_file_length@Base 0.90.1
+ rep_file_modes@Base 3:0.92.3-1nano
+ rep_file_modes_as_string@Base 3:0.92.3-1nano
+ rep_file_modtime@Base 3:0.92.3-1nano
+ rep_file_name_absolute_p@Base 3:0.92.3-1nano
+ rep_file_name_as_directory@Base 3:0.92.3-1nano
+ rep_file_name_directory@Base 3:0.92.3-1nano
+ rep_file_name_nondirectory@Base 3:0.92.3-1nano
+ rep_file_newer_than@Base 3:0.92.3-1nano
+ rep_file_nlinks@Base 3:0.92.3-1nano
+ rep_file_owner_p@Base 3:0.92.3-1nano
+ rep_file_readable_p@Base 3:0.92.3-1nano
+ rep_file_regular_p@Base 3:0.92.3-1nano
+ rep_file_size@Base 3:0.92.3-1nano
+ rep_file_symlink_p@Base 3:0.92.3-1nano
  rep_file_type@Base 0.90.1
+ rep_file_uid@Base 3:0.92.3-1nano
+ rep_file_writable_p@Base 3:0.92.3-1nano
+ rep_files_init@Base 3:0.92.3-1nano
+ rep_files_kill@Base 3:0.92.3-1nano
  rep_find_c_symbol@Base 0.90.1
  rep_find_dl_symbol@Base 0.90.1
+ rep_find_init@Base 3:0.92.3-1nano
+ rep_find_kill@Base 3:0.92.3-1nano
+ rep_fluids_init@Base 3:0.92.3-1nano
  rep_foldl@Base 0.90.1
  rep_funcall@Base 0.90.1
  rep_gc_n_roots_stack@Base 0.90.1
@@ -602,6 +1170,8 @@ librep.so.16 librep16 #MINVER#
  rep_get_long_uint@Base 0.90.1
  rep_get_longlong_int@Base 0.90.1
  rep_get_option@Base 0.90.1
+ rep_getpid@Base 3:0.92.3-1nano
+ rep_getpwd@Base 3:0.92.3-1nano
  rep_guardian_type@Base 0.90.1
  rep_handle_error@Base 0.90.1
  rep_handle_input_exception@Base 0.90.1
@@ -619,7 +1189,13 @@ librep.so.16 librep16 #MINVER#
  rep_intern_static@Base 0.90.1
  rep_keyword_obarray@Base 0.90.1
  rep_kill@Base 0.90.1
+ rep_kill_dl_libraries@Base 3:0.92.3-1nano
  rep_lisp_depth@Base 0.90.1
+ rep_lisp_init@Base 3:0.92.3-1nano
+ rep_lisp_prin@Base 3:0.92.3-1nano
+ rep_lispcmds_init@Base 3:0.92.3-1nano
+ rep_lispmach_init@Base 3:0.92.3-1nano
+ rep_lispmach_kill@Base 3:0.92.3-1nano
  rep_list_1@Base 0.90.1
  rep_list_2@Base 0.90.1
  rep_list_3@Base 0.90.1
@@ -631,15 +1207,23 @@ librep.so.16 librep16 #MINVER#
  rep_localise_and_get_handler@Base 0.90.1
  rep_lookup_dl_symbol@Base 0.90.1
  rep_lookup_errno@Base 0.90.1
+ rep_macros_before_gc@Base 3:0.92.3-1nano
+ rep_macros_clear_history@Base 3:0.92.3-1nano
+ rep_macros_init@Base 3:0.92.3-1nano
+ rep_make_directory@Base 3:0.92.3-1nano
  rep_make_float@Base 0.90.1
  rep_make_long_int@Base 0.90.1
  rep_make_long_uint@Base 0.90.1
  rep_make_longlong_int@Base 0.90.1
  rep_make_string@Base 0.90.1
+ rep_make_symlink@Base 3:0.92.3-1nano
  rep_make_tuple@Base 0.90.1
  rep_make_vector@Base 0.90.1
  rep_map_inputs@Base 0.90.1
+ rep_mark_dl_data@Base 3:0.92.3-1nano
  rep_mark_input_pending@Base 0.90.1
+ rep_mark_origins@Base 3:0.92.3-1nano
+ rep_mark_regexp_data@Base 3:0.92.3-1nano
  rep_mark_static@Base 0.90.1
  rep_mark_tuple@Base 0.90.1
  rep_mark_value@Base 0.90.1
@@ -647,6 +1231,7 @@ librep.so.16 librep16 #MINVER#
  rep_max_sleep_for@Base 0.90.1
  rep_mem_error@Base 0.90.1
  rep_message_fun@Base 0.90.1
+ rep_misc_init@Base 3:0.92.3-1nano
  rep_null_string@Base 0.90.1
  rep_number_add@Base 0.90.1
  rep_number_div@Base 0.90.1
@@ -660,6 +1245,7 @@ librep.so.16 librep16 #MINVER#
  rep_number_mul@Base 0.90.1
  rep_number_neg@Base 0.90.1
  rep_number_sub@Base 0.90.1
+ rep_numbers_init@Base 3:0.92.3-1nano
  rep_obarray@Base 0.90.1
  rep_on_idle@Base 0.90.1
  rep_on_idle_fun@Base 0.90.1
@@ -667,20 +1253,32 @@ librep.so.16 librep16 #MINVER#
  rep_op_insert_file_contents@Base 0.90.1
  rep_op_read_file_contents@Base 0.90.1
  rep_op_write_buffer_contents@Base 0.90.1
+ rep_open_dl_library@Base 3:0.92.3-1nano
+ rep_origin_init@Base 3:0.92.3-1nano
  rep_parse_number@Base 0.90.1
  rep_pending_thread_yield@Base 0.90.1
  rep_poll_input@Base 0.90.1
  rep_pop_regexp_data@Base 0.90.1
  rep_pop_structure@Base 0.90.1
+ rep_pre_datums_init@Base 3:0.92.3-1nano
+ rep_pre_structures_init@Base 3:0.92.3-1nano
+ rep_pre_symbols_init@Base 3:0.92.3-1nano
+ rep_pre_sys_os_init@Base 3:0.92.3-1nano
+ rep_pre_values_init@Base 3:0.92.3-1nano
  rep_princ_val@Base 0.90.1
  rep_print_number_to_string@Base 0.90.1
  rep_print_val@Base 0.90.1
+ rep_proc_init@Base 3:0.92.3-1nano
+ rep_proc_kill@Base 3:0.92.3-1nano
  rep_proc_periodically@Base 0.90.1
  rep_ptr_cmp@Base 0.90.1
  rep_push_regexp_data@Base 0.90.1
  rep_push_structure@Base 0.90.1
  rep_push_structure_name@Base 0.90.1
+ rep_read_symlink@Base 3:0.92.3-1nano
  rep_readl@Base 0.90.1
+ rep_record_origin@Base 3:0.92.3-1nano
+ rep_record_origins@Base 3:0.92.3-1nano
  rep_recurse_depth@Base 0.90.1
  rep_redisplay_fun@Base 0.90.1
  rep_regcomp@Base 0.90.1
@@ -695,9 +1293,13 @@ librep.so.16 librep16 #MINVER#
  rep_regmatch_string@Base 0.90.1
  rep_regsub_fun@Base 0.90.1
  rep_regsublen_fun@Base 0.90.1
+ rep_rename_file@Base 3:0.92.3-1nano
+ rep_saved_matches@Base 3:0.92.3-1nano
+ rep_scan_weak_refs@Base 3:0.92.3-1nano
  rep_scm_f@Base 0.90.1
  rep_scm_t@Base 0.90.1
  rep_search_imports@Base 0.90.1
+ rep_set_file_modes@Base 3:0.92.3-1nano
  rep_set_local_symbol_fun@Base 0.90.1
  rep_set_string_len@Base 0.90.1
  rep_set_string_match@Base 0.90.1
@@ -706,22 +1308,36 @@ librep.so.16 librep16 #MINVER#
  rep_signal_arg_error@Base 0.90.1
  rep_signal_file_error@Base 0.90.1
  rep_signal_missing_arg@Base 0.90.1
+ rep_single_step_flag@Base 3:0.92.3-1nano
  rep_sit_for@Base 0.90.1
  rep_sleep_for@Base 0.90.1
  rep_special_bindings@Base 0.90.1
+ rep_specials_structure@Base 3:0.92.3-1nano
+ rep_stack_bottom@Base 3:0.92.3-1nano
  rep_str_dupn@Base 0.90.1
  rep_stream_getc@Base 0.90.1
  rep_stream_putc@Base 0.90.1
  rep_stream_puts@Base 0.90.1
  rep_stream_read_esc@Base 0.90.1
  rep_stream_ungetc@Base 0.90.1
+ rep_streams_init@Base 3:0.92.3-1nano
  rep_string_dup@Base 0.90.1
  rep_string_dupn@Base 0.90.1
  rep_string_modified@Base 0.90.1
+ rep_string_princ@Base 3:0.92.3-1nano
+ rep_string_print@Base 3:0.92.3-1nano
  rep_structure@Base 0.90.1
  rep_structure_exports_all@Base 0.90.1
+ rep_structure_file@Base 3:0.92.3-1nano
  rep_structure_set_binds@Base 0.90.1
  rep_structure_type@Base 0.90.1
+ rep_structures_init@Base 3:0.92.3-1nano
+ rep_sweep_tuples@Base 3:0.92.3-1nano
+ rep_symbols_init@Base 3:0.92.3-1nano
+ rep_sys_os_init@Base 3:0.92.3-1nano
+ rep_sys_os_kill@Base 3:0.92.3-1nano
+ rep_system@Base 3:0.92.3-1nano
+ rep_system_name@Base 3:0.92.3-1nano
  rep_term_cell@Base 0.90.1
  rep_test_int_counter@Base 0.90.1
  rep_test_int_fun@Base 0.90.1
@@ -731,6 +1347,7 @@ librep.so.16 librep16 #MINVER#
  rep_time@Base 0.90.1
  rep_top_level_exit@Base 0.90.1
  rep_top_level_recursive_edit@Base 0.90.1
+ rep_tuples_kill@Base 3:0.92.3-1nano
  rep_type_cmp@Base 0.90.1
  rep_unbind_symbols@Base 0.90.1
  rep_unbound_file_error@Base 0.90.1
@@ -741,7 +1358,15 @@ librep.so.16 librep16 #MINVER#
  rep_unix_set_fd_nonblocking@Base 0.90.1
  rep_update_last_match@Base 0.90.1
  rep_used_cons@Base 0.90.1
+ rep_used_funargs@Base 3:0.92.3-1nano
+ rep_used_tuples@Base 3:0.92.3-1nano
+ rep_user_full_name@Base 3:0.92.3-1nano
+ rep_user_home_directory@Base 3:0.92.3-1nano
+ rep_user_login_name@Base 3:0.92.3-1nano
  rep_utime@Base 0.90.1
  rep_value_cmp@Base 0.90.1
+ rep_values_init@Base 3:0.92.3-1nano
+ rep_values_kill@Base 3:0.92.3-1nano
  rep_void_value@Base 0.90.1
  rep_wait_for_input_fun@Base 0.90.1
+ rep_weak_refs_init@Base 3:0.92.3-1nano
