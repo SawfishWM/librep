@@ -475,7 +475,8 @@ list_ref (repv list, int elt)
 #ifdef __arm__
 #define PC_REG asm("r9")
 #define SP_REG asm("r8")
-#define SLOTS_REG asm("r7")
+/* register 7 is reserved in THUMB mode */
+#define SLOTS_REG asm("r10")
 #endif
 #endif
 
