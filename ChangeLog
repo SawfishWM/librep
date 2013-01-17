@@ -1,3 +1,11 @@
+2013-01-17  Christopher Roy Bratusek <nano@tuxfamily.org>
+	* src/lispmach.h: fix compilation on ARM [Togan Muftouglu]
+
+2013-01-12  Christopher Roy Bratusek <nano@tuxfamily.org>
+	* debian/changelog
+	* debian/control
+	* debian/librep16.symbols: misc updates to debian packaging scripts
+
 2012-09-08  Christopher Roy Bratusek <nano@tuxfamily.org>
 	* lisp/rep/util/misc.jl: add program-exists-p [Mark Triggs]
 
