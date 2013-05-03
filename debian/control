@@ -13,7 +13,8 @@ Build-Depends: texinfo (>= 4.11-2),
                autoconf,
                automake1.11,
                autotools-dev,
-               libffi-dev (>= 3.0)
+               libffi-dev (>= 3.0),
+               pkg-config
 Build-Conflicts: autoconf2.13, automake1.4
 Homepage: http://sawfish.wikia.com/
 
