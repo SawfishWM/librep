@@ -6,6 +6,7 @@ include /usr/share/dpkg/default.mk
 
 export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
+DEB_PREF = $(shell gcc -print-multiarch)
 
 ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
 	export DEB_CFLAGS_MAINT_APPEND = -O0 -Wall -g
@@ -41,7 +42,7 @@ DEB_CONFIGURE_USER_FLAGS = --with-readline $(ARCH_CONF)
 
 dev_extras = debian/tmp -name install-aliases -o -name rep_config.h -o -name *.a -o -name *.jl
 
-rep_extras = debian/tmp/usr/lib/rep debian/tmp/usr/share/rep -name *.jlc -o -name *.so
+rep_extras = debian/tmp/usr/lib/$(DEB_PREF)/rep debian/tmp/usr/share/rep -name *.jlc -o -name *.so
 
 dh_install_auto = xargs dh_install --autodest
 
