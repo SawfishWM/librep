@@ -8,6 +8,8 @@
 
 @item Fix building librep on ARM [Togan Muftouglu, Christopher Bratusek]
 
+@item Fix building librep on AArch64 [Kim B. Heino]
+
 @item Misc. updates to debian packaging scripts [Christopher Bratusek]
 @end itemize
 @heading 0.92.3
