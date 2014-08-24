@@ -11,7 +11,7 @@ Build-Depends: texinfo (>= 4.11-2),
                libncurses5-dev,
                libtool,
                autoconf,
-               automake1.11,
+               automake,
                autotools-dev,
                libffi-dev (>= 3.0),
                pkg-config
