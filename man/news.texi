@@ -6,7 +6,7 @@
 @heading 0.92.4
 @itemize @bullet
 
-@item Fix building librep on ARM [Togan Muftouglu]
+@item Fix building librep on ARM [Togan Muftouglu, Christopher Bratusek]
 
 @item Misc. updates to debian packaging scripts [Christopher Bratusek]
 @end itemize

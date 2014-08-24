@@ -1,17 +1,20 @@
 #!/usr/bin/make -f
+DH_VERBOSE = 1
 
-export DH_VERBOSE=1
+DPKG_EXPORT_BUILDFLAGS = 1
+include /usr/share/dpkg/default.mk
 
-CFLAGS += -Wall -g
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
 
 ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
-	CFLAGS += -O0
+	export DEB_CFLAGS_MAINT_APPEND = -O0 -Wall -g
 else
-	CFLAGS += -O2
+	export DEB_CFLAGS_MAINT_APPEND = -O2 -Wall -g
 endif
 
 ifeq ($(DEB_HOST_ARCH),$(findstring $(DEB_HOST_ARCH),m68k))
-	CFLAGS = -Wall -g -O0
+	export DEB_CFLAGS_MAINT_APPEND = -Wall -g -O0
 endif
 
 ifeq ($(DEB_HOST_ARCH),$(findstring $(DEB_HOST_ARCH),alpha))
@@ -30,7 +33,11 @@ ifeq ($(DEB_HOST_ARCH),$(findstring $(DEB_HOST_ARCH),mipsel))
        ARCH_CONF = --with-stack-direction=-1
 endif
 
-DEB_CONFIGURE_USER_FLAGS += --with-readline $(ARCH_CONF)
+ifeq ($(DEB_HOST_ARCH),$(findstring $(DEB_HOST_ARCH),armhf))
+       ARCH_CONF = --with-stack-direction=-1
+endif
+
+DEB_CONFIGURE_USER_FLAGS = --with-readline $(ARCH_CONF)
 
 dev_extras = debian/tmp -name install-aliases -o -name rep_config.h -o -name *.a -o -name *.jl
 
@@ -47,7 +54,7 @@ override_dh_auto_clean:
 	-$(MAKE) debclean
 
 override_dh_auto_configure:
-	env CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" dh_auto_configure -- $(DEB_CONFIGURE_USER_FLAGS)
+	dh_auto_configure -- $(shell dpkg-buildflags --export=configure) $(DEB_CONFIGURE_USER_FLAGS)
 
 override_dh_auto_build:
 	env LC_ALL=C dh_auto_build

@@ -1,15 +1,23 @@
-This package was debianized by Mikolaj J. Habryn <dichro-debian@rcpt.to> on
-Thu,  2 Sep 1999 21:09:25 +0800.
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: Sawfish
+Upstream-Contact: Christopher Roy Bratusek <nano@jpberlin.de>
+Source: http://sawfish.wikia.com/
 
-It was downloaded from http://sourceforge.net/project/showfiles.php?group_id=580
+Files: *
+Copyright: 1992 - 2001 Free Software Foundation, Inc
+           1986        University of Toronto.
+           1993 - 2006 John Harper <john@dcs.warwick.ac.uk>
+           2008 - 2014 Christopher Roy Bratusek <nano@jpberlin.de>
+License: GPL-2
 
-Copyright (C) 1992 - 2001 Free Software Foundation, Inc
-Copyright (C) 1986        University of Toronto.
-Copyright (C) 1993 - 2006 John Harper <john@dcs.warwick.ac.uk>
-Copyright (C) 2008 - 2009 Christopher Bratusek <zanghar@freenet.de>
+Files: debian/*
+Copyright: 1999-2000 Mikolaj J. Habryn
+           2000-2007 Christian Marillat
+           2009-2013 Rodrigo Gallardo
+           2013-2014 Christopher Roy Bratusek <nano@jpberlin.de>
+License: GPL-2
 
-License:
-
+License: GPL-2
  This program is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
  the Free Software Foundation; either version 2 of the License, or
@@ -26,11 +34,3 @@ License:
 
 On Debian systems, the complete text of the GNU General Public License
 version 2 can be found in /usr/share/common-licenses/GPL-2 file.
-
-The Debian package itself is
-
-Copyright (C) 1999,2000 Mikolaj J. Habryn
-Copyright (C) 2000-2007 Christian Marillat
-Copyright (C) 2009 Rodrigo Gallardo
-
-and is distributed under the same terms as rep itself.

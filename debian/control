@@ -1,8 +1,8 @@
 Source: librep
 Section: lisp
 Priority: optional
-Maintainer: Christopher Roy Bratusek <nano@tuxfamily.org>
-Standards-Version: 3.8.2
+Maintainer: Christopher Roy Bratusek <nano@jpberlin.de>
+Standards-Version: 3.9.4
 Build-Depends: texinfo (>= 4.11-2),
                debhelper (>= 7), dh-autoreconf,
                libgmp3-dev,
@@ -15,7 +15,6 @@ Build-Depends: texinfo (>= 4.11-2),
                autotools-dev,
                libffi-dev (>= 3.0),
                pkg-config
-Build-Conflicts: autoconf2.13, automake1.4
 Homepage: http://sawfish.wikia.com/
 
 Package: rep
