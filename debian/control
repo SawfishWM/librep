@@ -14,7 +14,8 @@ Build-Depends: texinfo (>= 4.11-2),
                automake,
                autotools-dev,
                libffi-dev (>= 3.0),
-               pkg-config
+               pkg-config,
+               git
 Homepage: http://sawfish.wikia.com/
 
 Package: rep
