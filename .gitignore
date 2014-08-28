@@ -1,0 +1,8 @@
+*.o
+*.lo
+*.a
+*.la
+.libs
+.libexec
+*.jlc
+*.d
