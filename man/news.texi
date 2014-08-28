@@ -3,6 +3,11 @@
 @chapter News
 @cindex News
 
+@heading 0.92.5
+@itemize @bullet
+@item Assume stack-direction @code{downwards} for all sparc, hppa, mips, mipsel, ia64 and alpha variants (fixes compilation) [Christopher Bratusek]
+@end itemize
+
 @heading 0.92.4
 @itemize @bullet
 
