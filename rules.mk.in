@@ -1,7 +1,7 @@
 # rules.mk
 
-repcommonexecdir:=@repcommonexecdir@
-rpath_repcommonexecdir:=@repcommonexecdir@
+repcommonexecdir?=$(shell pkg-config --variable=repcommonexecdir librep)
+rpath_repcommonexecdir:=$(repcommonexecdir)
 
 rep_LIBTOOL:=$(repcommonexecdir)/libtool --tag CC
 rep_INSTALL_ALIASES:=$(repcommonexecdir)/install-aliases
