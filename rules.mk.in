@@ -1,13 +1,5 @@
 # rules.mk
 
-prefix=@prefix@
-datadir=@datadir@
-libdir=@libdir@
-
-# shut up configure
-datarootdir=@datarootdir@
-
-repdir:=@repdir@
 repcommonexecdir:=@repcommonexecdir@
 rpath_repcommonexecdir:=@repcommonexecdir@
 
