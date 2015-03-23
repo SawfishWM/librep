@@ -6,6 +6,15 @@
 @heading 0.92.5
 @itemize @bullet
 @item Assume stack-direction @code{downwards} for all sparc, hppa, mips, mipsel, ia64 and alpha variants (fixes compilation) [Christopher Bratusek]
+@item Fix compilation due to bug in libtool 2.0+ if /bin/sh is not /bin/bash [Christopher Bratusek]
+@item rules.mk clean-up [宋文武] [Daniel M. German]:
+@itemize x
+  @item Variables that depend on prefix should not be recursive
+  @item Don't set prefix, datadir, libdir, datarootdir and repdir
+  @item Use pkg-config to get the absolute path for repcommonexecdir
+@end itemize
+@item Update .gitignore [Meng Zhang]
+@item Update config.sub to 2014-09-11 from autoconf
 @end itemize
 
 @heading 0.92.4
