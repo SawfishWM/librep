@@ -20,7 +20,7 @@
 
 version=@version@
 libversion=@libversion@
-SHELL=/bin/sh
+SHELL=@SHELL@
 
 top_srcdir=@top_srcdir@
 srcdir=@srcdir@
