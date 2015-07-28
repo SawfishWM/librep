@@ -228,7 +228,7 @@ Call @code{rep} program to launch a stand-alone @code{librep}
 environment:
 
 @example
-usage: rep [@var{rep-options}@dots{}] [@var{script} [@var{script-options}@dots{]}]
+usage: rep [@var{rep-options}@dots{}] [@var{script} [@var{script-options}@dots{}]
 @end example
 
 @noindent
