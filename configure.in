@@ -544,7 +544,10 @@ if test "${with_stack_direction}" = unknown; then
   esac
 fi
 if test "${with_stack_direction}" = unknown; then
-  AC_TRY_RUN([ void inner (char *foo) { char bar; exit (!(foo >= &bar)); }
+  AC_TRY_RUN([ int level = 1;
+	       void inner (char *foo) { char bar;
+		 if (level) { --level; inner (foo); }
+		 exit (!(foo >= &bar)); }
 	       void main () { char foo; inner (&foo); } ],
    [AC_MSG_RESULT([downwards])
     with_stack_direction=-1],
