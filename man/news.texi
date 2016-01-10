@@ -13,6 +13,8 @@
 
 @item Fix checking version of libtool in @code{autogen.sh} [Christopher Bratusek]
 
+@item Update config.guess and config.sub to 2015-08-20 [Christopher Bratusek]
+
 @item Debian GNU/Linux code review:
 @itemize +
 @item Rename configure.in to configure.ac [Christopher Bratusek]
