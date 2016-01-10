@@ -16,7 +16,7 @@
 
    You should have received a copy of the GNU General Public License
    along with Jade; see the file COPYING.	If not, write to
-   the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+   the Free Software Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.  */
 
 /* These are the Lisp objects which are classed as streams:
 
@@ -615,7 +615,7 @@ DEFUN("read-chars", Fread_chars, Sread_chars,
 ::doc:rep.io.streams#read-chars::
 read-chars STREAM COUNT
 
-Read upto COUNT characters from the input stream STREAM, returning a
+Read up to COUNT characters from the input stream STREAM, returning a
 string containing the characters. If EOF is read before reading COUNT
 characters, the returned string will contain the characters read up to
 that point. If no characters are read, nil will be returned.

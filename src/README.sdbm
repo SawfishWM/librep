@@ -291,7 +291,7 @@ tions), spiral storage [Mar79] or directory schemes such  as
 extensible  hashing  [Fag79] by Fagin et al. I do hope these
 sources provide a reasonable playground for  experimentation
 with  other algorithms.  See the June 1988 issue of ACM Com-
-puting Surveys [Enb88] for  an  excellent  overview  of  the
+putting Surveys [Enb88] for  an  excellent  overview  of  the
 field.
 
 References
@@ -343,7 +343,7 @@ References
 
 [Enb88]
     R.  J.  Enbody  and  H.   C.   Du,   ``Dynamic   Hashing
-    Schemes'',ACM  Computing  Surveys,  vol.  20, no. 2, pp.
+    Schemes'',ACM  Computting  Surveys,  vol.  20, no. 2, pp.
     85-113, June 1988.
 
 

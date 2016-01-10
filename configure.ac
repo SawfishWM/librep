@@ -16,7 +16,7 @@ dnl  GNU General Public License for more details.
 dnl
 dnl  You should have received a copy of the GNU General Public License
 dnl  along with librep; see the file COPYING.  If not, write to
-dnl  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
+dnl  the Free Software Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 AC_REVISION($Revision: 1.146 $)
 AC_INIT(src/rep_subrs.h)

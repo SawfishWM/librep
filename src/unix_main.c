@@ -16,7 +16,7 @@
 
    You should have received a copy of the GNU General Public License
    along with Jade; see the file COPYING.	If not, write to
-   the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+   the Free Software Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.  */
 
 #define _GNU_SOURCE
 
@@ -449,7 +449,7 @@ wait_for_input(fd_set *inputs, unsigned long timeout_msecs)
 	timeout.tv_usec = (actual_timeout_msecs % 1000) * 1000;
 	memcpy (&copy, inputs, sizeof (copy));
 
-	/* Dont test for interrupts before the first call to select() */
+	/* Don't test for interrupts before the first call to select() */
 	if (ready == 0)
 	{
 	    rep_TEST_INT_SLOW;

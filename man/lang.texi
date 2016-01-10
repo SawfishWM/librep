@@ -787,7 +787,7 @@ Returns true if no two arguments represent the same value.
 
 @defun > arg1 arg2 arg3 @dots{} argn
 Returns true when @var{arg1} is `greater than' @var{arg2}, and
-@var{arg2} is greater than @var{arg3}, and so on, upto @var{argn}.
+@var{arg2} is greater than @var{arg3}, and so on, up to @var{argn}.
 @end defun
 
 @defun >= arg1 arg2 arg3 @dots{} argn
@@ -1411,7 +1411,7 @@ escape sequences see @ref{Strings}.
 ;; Other than above cases, the first character is read.
 @end lisp
 
-Functions below makes sence for ascii characters only.
+Functions below makes sense for ascii characters only.
 
 @defun alpha-char-p character
 This function returns true when @var{character} is one of the
@@ -2920,7 +2920,7 @@ Returns true if @var{arg} is a keyword symbol.
 
 So far only the primitive data types have been discussed, and how the
 Lisp reader converts textual descriptions of these types into Lisp
-objects. Obviously there has to be a way of actually computing
+objects. Obviously there has to be a way of actually computting
 something---it would be difficult to write a useful program
 otherwise.
 
@@ -4825,7 +4825,7 @@ Variables}.
 @subsection Module Functions
 
 In this section basic module functions are explained. All are defined
-in @code{rep.structures}. Functions related to contruction of modules
+in @code{rep.structures}. Functions related to construction of modules
 are described in following sections.
 
 @defun structurep str
@@ -4961,7 +4961,7 @@ example:
 Let's see step by step. File ``a.jl'' is read from the top. It
 declares the symbol @code{aa} is exported. Next, it opens @code{b}.
 The module @code{b} opens @code{a}, i.e. if a symbol @code{aa} is
-found, its value will be refered to @code{a}. Finally, @code{aa}
+found, its value will be referred to @code{a}. Finally, @code{aa}
 is evaluated. But its definition is not yet done, and it fails.
 
 One solution is use of a hook; put the problematic evaluation
@@ -5095,7 +5095,7 @@ Set the interface of structure object @var{str} to @var{int}.
 @cindex Obsolete Aspects of Modules
 @cindex Features
 
-Ususally you can skip this section which describes obsolete, but still
+Usually you can skip this section which describes obsolete, but still
 in effect aspects of Rep modules.
 
 Modules marked as already imported into the current module is called
@@ -7297,7 +7297,7 @@ no more characters are available returns nil.
 @end defun
 
 @defun read-chars stream count
-read upto @var{count} characters from the input stream @var{stream},
+read up to @var{count} characters from the input stream @var{stream},
 returning a string containing the characters. If EOF is read before
 reading @var{count} characters, the returned string will contain the
 characters read up to that point. If no characters are read,
@@ -9364,8 +9364,8 @@ Return a list of substrings of @code{string}, each delimited by
 @code{regexp}.
 
 @lisp
-(string-split ":" "paths/are:often/seperated:by/colon")
-    @result{} ("paths/are/" "often/seperated" "by/colon")
+(string-split ":" "paths/are:often/separated:by/colon")
+    @result{} ("paths/are/" "often/separated" "by/colon")
 @end lisp
 @end defun
 

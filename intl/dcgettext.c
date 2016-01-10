@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software Foundation,
-   Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
+   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.  */
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -171,7 +171,7 @@ static const char *guess_category_value PARAMS ((int category,
      internal_function;
 
 
-/* For those loosing systems which don't have `alloca' we have to add
+/* For those losing systems which don't have `alloca' we have to add
    some additional code emulating it.  */
 #ifdef HAVE_ALLOCA
 /* Nothing has to be done.  */
@@ -243,7 +243,7 @@ DCGETTEXT (domainname, msgid, category)
 
   /* If DOMAINNAME is NULL, we are interested in the default domain.  If
      CATEGORY is not LC_MESSAGES this might not make much sense but the
-     defintion left this undefined.  */
+     definition left this undefined.  */
   if (domainname == NULL)
     domainname = _nl_current_default_domain;
 

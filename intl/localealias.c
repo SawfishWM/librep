@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software Foundation,
-   Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
+   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.  */
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -90,7 +90,7 @@ __libc_lock_define_initialized (static, lock);
 #endif
 
 
-/* For those loosing systems which don't have `alloca' we have to add
+/* For those losing systems which don't have `alloca' we have to add
    some additional code emulating it.  */
 #ifdef HAVE_ALLOCA
 /* Nothing has to be done.  */

@@ -8,6 +8,15 @@
 @item Fix @code{inline_Fcons} multiple definition errors with gcc 5. [Christopher Bratusek]
 
 @item Make detection of stack direction more robust [Andreas Schwab]
+
+@item Remove @code{debclean} target from Makefile, improve @code{gitclean} target [Christopher Bratusek]
+
+@item Debian GNU/Linux code review:
+@itemize +
+@item Rename configure.in to configure.ac [Christopher Bratusek]
+@item Fix various spelling errors found by @code{codespell} [Christopher Bratusek]
+@item Fix the address of the FSF in various files as spotted by @code{licensecheck} [Christopher Bratusek]
+@end itemize
 @end itemize
 
 @heading 0.92.5
@@ -91,7 +100,7 @@ if ffi.h doesn't provide one [John Harper]
 @item Removed VPATH from Makefiles, to allow building REP using @code{makepp}
 [Daniel Pfeiffer]
 
-@item Added @code{positon} meta-function [Jeremy Hankins] [Eli Barzilay]
+@item Added @code{position} meta-function [Jeremy Hankins] [Eli Barzilay]
 
 @item Imported utility-functions from Sawfish: @code{beautify-symbol},
 @code{remove-newlines}, @code{option-index} and @code{string->symbol}.
@@ -117,7 +126,7 @@ if ffi.h doesn't provide one [John Harper]
 A new module containing utils for rep's ffi binding is added.
 
 @item Fixed librep.pc to prevent a possible build issue in rep-gtk or sawfish
-(occured on fedora 14) [Christopher Bratusek]
+(occurred on fedora 14) [Christopher Bratusek]
 
 @item New functions [Teika Kazura]
 
@@ -387,7 +396,7 @@ librep on several architectures. From this version on, we don't ship it.
 
 @item Fixed configure.in's templates for autoheader
 
-@item BSD-Tar is not supported by librep, give users a usefull warning message [Mark Diekhans]
+@item BSD-Tar is not supported by librep, give users a useful warning message [Mark Diekhans]
 @end itemize
 
 @heading 0.17.2
@@ -1287,7 +1296,7 @@ of leaving it to the virtual machine)
 
 @itemize @bullet
 
-@item Better support for numerical computing. Now supports bignums,
+@item Better support for numerical computting. Now supports bignums,
 rational numbers (numerator and denominator are bignums), and floating
 point values as well as the original fixnums. Many new numerical
 functions supporting these types. Promotes and demotes hopefully as

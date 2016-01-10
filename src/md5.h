@@ -1,5 +1,5 @@
 /* md5.h - Declaration of functions and data types used for MD5 sum
-   computing library functions.
+   computting library functions.
    Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    NOTE: The canonical source of this file is maintained with the GNU C
    Library.  Bugs can be reported to bug-glibc@prep.ai.mit.edu.
@@ -16,7 +16,7 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software Foundation,
-   Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
+   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.  */
 
 #ifndef _MD5_H
 #define _MD5_H 1

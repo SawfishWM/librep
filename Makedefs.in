@@ -16,7 +16,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Jade; see the file COPYING.  If not, write to
-# the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
+# the Free Software Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 version=@version@
 libversion=@libversion@
@@ -102,7 +102,7 @@ rep_LIBTOOL=@LIBTOOL@
 	$(LIBTOOL) --mode=compile --tag=CC $(CC) -c $(CPPFLAGS) $(CFLAGS) $<
 	$(rep_DL_LD) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ $*.lo
 
-# Build dependancy files from C source files.
+# Build dependency files from C source files.
 .%.d : %.c
 	$(SHELL) -ec '$(MAKEDEP) $(CPPFLAGS) $< \
 	| sed '\''s/$*\.o/& $*.lo .$*\.d/g'\'' > $@'

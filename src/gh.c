@@ -18,7 +18,7 @@
 
    You should have received a copy of the GNU General Public License
    along with librep; see the file COPYING.  If not, write to
-   the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+   the Free Software Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.  */
 
 /* The GH interface to guile is deprecated, and this is only a partial
    implementation, but it may be useful. E.g. it made it easier to get

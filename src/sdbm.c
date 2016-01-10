@@ -78,7 +78,7 @@ register int mode;
 	if (file == NULL || !*file)
 		return errno = EINVAL, (SDBM *) NULL;
 /*
- * need space for two seperate filenames
+ * need space for two separate filenames
  */
 	n = strlen(file) * 2 + strlen(DIRFEXT) + strlen(PAGFEXT) + 2;
 

@@ -24,7 +24,7 @@
 
 ;; The plan is to use in the compiler at some point to remove the ugly
 ;; lap code representation, instead compile to assembly language, then
-;; assemble that.. (with the peephole pass inbetween)
+;; assemble that.. (with the peephole pass in between)
 
 (define-structure rep.vm.assembler
 
