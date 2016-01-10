@@ -94,11 +94,11 @@ distclean :
 	rm -f *~ NEWS doc-strings TAGS build.h rules.mk configure.orig librep.pc
 
 gitclean : distclean
-	rm -rf m4/
+	rm -rf m4/ autom4te.cache
 	rm -f aclocal.m4 configure \
 		configure.lineno ltmain.sh \
-		autom4te.cache config.h.in \
-		librep-*.ebuild librep.spec
+		config.h.in librep-*.ebuild \
+		librep.spec
 
 tags: TAGS
 #
