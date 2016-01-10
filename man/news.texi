@@ -11,6 +11,8 @@
 
 @item Remove @code{debclean} target from Makefile, improve @code{gitclean} target [Christopher Bratusek]
 
+@item Fix checking version of libtool in @code{autogen.sh} [Christopher Bratusek]
+
 @item Debian GNU/Linux code review:
 @itemize +
 @item Rename configure.in to configure.ac [Christopher Bratusek]
