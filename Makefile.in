@@ -93,19 +93,12 @@ distclean :
 	rm -f config.cache config.h config.log config.status Makefile libtool
 	rm -f *~ NEWS doc-strings TAGS build.h rules.mk configure.orig librep.pc
 
-debclean : distclean
-	rm librep*.ebuild librep.spec config.h.in
-	rm m4/* aclocal.m4 configure ltmain.sh
-
 gitclean : distclean
-	rm -f aclocal.m4 configure
-	rm -rf autom4te.cache
-	rm -f librep.spec librep-*.ebuild
-	-fakeroot debian/rules clean
-	rm -f librep-*.ebuild librep.spec
-	rm -rf aclocal.m4 m4/ configure \
+	rm -rf m4/
+	rm -f aclocal.m4 configure \
 		configure.lineno ltmain.sh \
-		autom4te.cache
+		autom4te.cache config.h.in \
+		librep-*.ebuild librep.spec
 
 tags: TAGS
 #
