@@ -7,6 +7,8 @@
 @itemize @bullet
 @item Assume @code{stack-direction} upwards for @code{hppa} and @code{metag} arches. (Debian patch) [Helge Deller]
 
+@item Update @code{librep.spec} [Allan Duncan]
+
 @heading 0.92.6
 @itemize @bullet
 @item Fix @code{inline_Fcons} multiple definition errors with gcc 5. [Christopher Bratusek]
