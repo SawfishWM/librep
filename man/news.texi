@@ -9,6 +9,7 @@
 
 @item Update @code{librep.spec} [Allan Duncan]
 
+@end itemize
 @heading 0.92.6
 @itemize @bullet
 @item Fix @code{inline_Fcons} multiple definition errors with gcc 5. [Christopher Bratusek]
