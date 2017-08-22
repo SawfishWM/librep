@@ -1,23 +1,23 @@
-Name: librep
-Version: @version@
-Release: 2%{?dist}
-Summary: A lightweight Lisp environment
-License: GPLv2+
-Group: Development/Languages
-URL: http://sawfish.wikia.com/
-Source0: http://download.tuxfamily.org/%{name}/%{name}_%{version}.tar.bz2
+Name:           librep
+Version:        @version@
+Release:        1%{?dist}
+Summary:        A lightweight Lisp environment
+License:        GPLv2+
+URL:            http://sawfish.wikia.com/
+Source0:        http://download.tuxfamily.org/%{name}/%{name}_%{version}.tar.bz2
 
-BuildRoot: %{_tmppath}/%{name}-%{version}_%{release}-root-%(%{__id_u} -n)
-BuildRequires: gmp-devel
-BuildRequires: gdbm-devel
-BuildRequires: readline-devel
-BuildRequires: libffi-devel
-BuildRequires: texinfo
-BuildRequires: chrpath
-BuildRequires: emacs
-Requires:      emacs-filesystem >= %{_emacs_version}
-Obsoletes:     emacs-librep
-Obsoletes:     emacs-librep-el
+BuildRequires:  gmp-devel
+BuildRequires:  gdbm-devel
+BuildRequires:  readline-devel
+BuildRequires:  libffi-devel
+BuildRequires:  autoconf
+BuildRequires:  libtool
+BuildRequires:  texinfo
+BuildRequires:  chrpath
+BuildRequires:  emacs
+Requires:       emacs-filesystem >= %{_emacs_version}
+Obsoletes:      emacs-librep
+Obsoletes:      emacs-librep-el
 
 %description
 This is a lightweight Lisp environment for UNIX. It contains a Lisp
@@ -30,9 +30,10 @@ of the Emacs Lisp features while trying to remove some of the main
 deficiencies, with features from Common Lisp and Scheme.
 
 %package devel
-Summary: Development files for librep
-Group: Development/Languages
-Requires: %{name} = %{version}-%{release}, pkgconfig
+Summary:        Development files for librep
+Group:          Development/Languages
+Requires:       %{name} = %{version}-%{release}
+Requires:       pkgconfig
 
 %description devel
 Link libraries and C header files for librep development.
@@ -41,21 +42,17 @@ Link libraries and C header files for librep development.
 %setup -q -n %{name}_%{version}
 
 %build
-autogen.sh --nocfg
+./autogen.sh --nocfg
 %configure --with-readline --enable-shared --disable-static
 make %{?_smp_mflags}
 %{_emacs_bytecompile} rep-debugger.el
 
 %install
-rm -rf %{buildroot}
 make install DESTDIR=%{buildroot}
 rm -f %{buildroot}%{_infodir}/dir
 chrpath --delete %{buildroot}%{_bindir}/rep
-%{__install} -m 644 rep-debugger.elc %{buildroot}%{_emacs_sitelispdir}
+install -m 644 rep-debugger.elc %{buildroot}%{_emacs_sitelispdir}
 find %{buildroot}%{_libdir} -name \*.la -exec rm '{}' \;
-
-%clean
-rm -rf %{buildroot}
 
 %post
 /sbin/ldconfig
@@ -69,7 +66,8 @@ fi
 %postun -p /sbin/ldconfig
 
 %files
-%doc NEWS README TODO COPYING
+%license COPYING
+%doc NEWS README TODO
 %{_bindir}/rep
 %{_bindir}/rep-remote
 %{_libdir}/librep.so.*
@@ -97,7 +95,10 @@ fi
 %{_datadir}/man/man1/repdoc.1.gz
 
 %changelog
-* Mon Aug  1 2016 Allan Duncan <sawfish@lists.tuxfamily.org> - 0.92.6-2
+* Sat Aug 13 2016 Kim B. Heino <b@bbbs.net> - 0.92.6-1
+- Merge all changes from Fedora's librep.spec
+
+* Mon Aug  1 2016 Allan Duncan <sawfish@lists.tuxfamily.org> - 0.92.6-1
 - Merged librep.spec from Fedora 0.92.5-2 SRPM to include emacs files to main package
 - Altered tar file name to use '_' instead of older '-'
 - Included "autogen.sh" as prelim to "configure" for %prep
