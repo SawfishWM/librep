@@ -72,7 +72,7 @@ uninstall :
 	rm -f $(DESTDIR)$(libdir)/pkgconfig/librep.pc
 
 doc-strings : src/repdoc
-	src/repdoc doc-strings `find $(top_srcdir) -name '*.c' -print`
+	src/repdoc doc-strings `find $(top_srcdir) -name '*.c' -print|LC_ALL=C sort`
 
 src/repdoc :
 	( cd src && $(MAKE) repdoc )
