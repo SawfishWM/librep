@@ -312,7 +312,7 @@ EXCLUDE-RE may be a regexp matching files which shouldn't be compiled."
 				 (file-newer-than-file-p abs-file c-name))
 			 (report-progress abs-file)
 			 (compile-file abs-file))))))))
-	(directory-files dir-name))
+	(sort (directory-files dir-name) <))
   t)
 
 (defun compile-lisp-lib (#!optional directory force-p)
