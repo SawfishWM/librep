@@ -7,7 +7,15 @@
 @itemize @bullet
 @item Assume @code{stack-direction} upwards for @code{hppa} and @code{metag} arches. (Debian patch) [Helge Deller]
 
+@item Make build reproducible [Bernhard M. Wiedemann]
+@itemize x 
+@item make @code{doc-strings} sort the output by default
+@item allow overriding @code{build-info} build time, hostname and username.
+@end itemize
+
 @item Update @code{librep.spec} [Allan Duncan]
+
+@item Update @code{config.guess}, @code{config.sub} and @code{install-sh} [Christopher Bratusek]
 @end itemize
 
 @heading 0.92.6
