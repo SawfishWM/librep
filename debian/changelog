@@ -1,3 +1,9 @@
+librep (3:0.92.7-2nano) unstable; urgency=low
+
+  * rebuild for dependencies
+
+ -- Christopher Roy Bratusek <nano@jpberlin.de>  Tue, 25 Dec 2018 20:09:02 +0100
+
 librep (3:0.92.7-1nano) unstable; urgency=low
 
   * New upstream bugfix release
