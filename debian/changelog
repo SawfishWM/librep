@@ -1,3 +1,10 @@
+librep (3:0.92.7-4nano) unstable; urgency=low
+
+  * rebuild for dependencies
+  * update install-sh
+
+ -- Christopher Roy Bratusek <nano@jpberlin.de>  Sat, 22 Feb 2020 21:44:31 +0100
+
 librep (3:0.92.7-3nano) unstable; urgency=low
 
   * rebuild for dependencies
