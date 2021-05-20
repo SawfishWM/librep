@@ -83,7 +83,6 @@ COMPILE_ENV = REPLISPDIR=$(top_builddir)/lisp \
 	      REPDOCFILE=$(top_builddir)/doc-strings
 
 include $(top_srcdir)/rules.mk
-rep_LIBTOOL=@LIBTOOL@
 
 # Rule for ``normal'' C objects
 %.o : %.c
