@@ -432,15 +432,18 @@ AC_ARG_WITH(value-type,
 			   as a pointer. [TYPE=<probed>] (see README)], [],
  [with_value_type="undef"])
 if test "${with_value_type}" = "undef"; then
-  AC_TRY_RUN([main () { exit (!(sizeof (int) >= sizeof (void *)));}],
+  AC_TRY_RUN([#include <stdlib.h>
+             int main () { exit (!(sizeof (int) >= sizeof (void *)));}],
 	     [with_value_type=int])
 fi
 if test "${with_value_type}" = "undef"; then
-  AC_TRY_RUN([main () { exit (!(sizeof (long int) >= sizeof (void *)));}],
+  AC_TRY_RUN([#include <stdlib.h>
+             int main () { exit (!(sizeof (long int) >= sizeof (void *)));}],
 	     [with_value_type="long int"])
 fi
 if test "${with_value_type}" = "undef"; then
-  AC_TRY_RUN([main () { exit (!(sizeof (long long int) >= sizeof (void *)));}],
+  AC_TRY_RUN([#include <stdlib.h>
+             int main () { exit (!(sizeof (long long int) >= sizeof (void *)));}],
 	     [with_value_type="long long int"])
 fi
 if test "${with_value_type}" = "undef"; then
@@ -457,7 +460,8 @@ AC_ARG_WITH(value-sizeof,
 if test "${with_value_sizeof}" = "undef"; then
   dnl the following fragment is inspired by AC_CHECK_SIZEOF
   AC_TRY_RUN([#include <stdio.h>
-	      main () {
+		#include <stdlib.h>
+		int main () {
 		FILE *f = fopen ("conftestval", "w");
 		if (!f) exit (1);
 		fprintf (f, "%d\n", sizeof (${with_value_type}));
@@ -548,11 +552,12 @@ if test "${with_stack_direction}" = unknown; then
   esac
 fi
 if test "${with_stack_direction}" = unknown; then
-  AC_TRY_RUN([ int level = 1;
-	       void inner (char *foo) { char bar;
+  AC_TRY_RUN([#include <stdlib.h>
+		 int level = 1;
+		 void inner (char *foo) { char bar;
 		 if (level) { --level; inner (foo); }
 		 exit (!(foo >= &bar)); }
-	       void main () { char foo; inner (&foo); } ],
+	       int main () { char foo; inner (&foo); } ],
    [AC_MSG_RESULT([downwards])
     with_stack_direction=-1],
    [AC_MSG_RESULT([upwards])
