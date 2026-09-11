@@ -540,7 +540,7 @@ AC_ARG_WITH(stack-direction,
  [with_stack_direction=unknown])
 if test "${with_stack_direction}" = unknown; then
   case ${host_cpu} in
-    sparc*|i?86*|powerpc*|x86_64*|arm*|aarch64*|s390*|mips*|alpha*|ia64*)
+    sparc*|i?86*|powerpc*|x86_64*|arm*|aarch64*|s390*|mips*|alpha*|ia64*|loongarch64*)
       AC_MSG_RESULT([assuming downwards])
       with_stack_direction="-1"
       ;;
