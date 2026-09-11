@@ -436,6 +436,11 @@ list_ref (repv list, int elt)
 #define SP_REG asm("%l1")
 #define SLOTS_REG asm("%l2")
 #endif
+#ifdef __loongarch__
+#define PC_REG asm("$s0")
+#define SP_REG asm("$s1")
+#define SLOTS_REG asm("$s2")
+#endif
 #ifdef __alpha__
 #ifdef __CRAY__
 #define PC_REG asm("r9")
